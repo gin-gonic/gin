@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<!-- This site was created in Webflow. http://www.webflow.com-->
+<!-- Last Published: Fri Jun 20 2014 17:48:26 GMT+0000 (UTC) -->
+<html data-wf-site="539b89a7a7990e780bfd7c67">
+<head>
+  <meta charset="utf-8">
+  <title>Gin Web Framework</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="generator" content="Webflow">
+  <link rel="stylesheet" type="text/css" href="css/normalize.css">
+  <link rel="stylesheet" type="text/css" href="css/webflow.css">
+  <link rel="stylesheet" type="text/css" href="css/gin.webflow.css">
+  <script src="https://ajax.googleapis.com/ajax/libs/webfont/1.4.7/webfont.js"></script>
+  <script>
+    WebFont.load({
+      google: {
+        families: ["Montserrat:400,700","Varela Round:400","Great Vibes:400","Varela:400","Open Sans:300,300italic,400,400italic,600,600italic,700,700italic,800,800italic","Vollkorn:400,400italic,700,700italic"]
+      }
+    });
+  </script>
+  <script type="text/javascript" src="js/modernizr.js"></script>
+  <link rel="shortcut icon" type="image/x-icon" href="https://y7v4p6k4.ssl.hwcdn.net/placeholder/favicon.ico">
+  <link rel="apple-touch-icon" href="images/webclip-gallio.png">
+</head>
+<body>
+  <div class="section hero">
+    <div class="w-container presenting" data-ix="fadein">
+      <h1 class="hero-heading">Gin Gonic</h1>
+      <p class="hero-subhead">Fastest full-featured web framework for Golang. <strong>Crystal clear.</strong>
+      </p>
+      <div class="button-group"><a class="button sign-up" href="https://github.com/gin-gonic/gin" data-ix="shaking">github pagE</a><a class="button" href="http://godoc.org/github.com/gin-gonic/gin">API REFERENCE</a>
+        <p class="goget"><span class="goget-text">go get github.com/gin-gonic/gin</span>
+        </p>
+      </div>
+    </div>
+  </div>
+  <div class="section" id="mobile">
+    <div class="w-container">
+      <h2 class="section-title">Performance and productivity can work together</h2>
+      <p class="section-subtitle">Gin is a web framework written in Golang. It features a martini-like API with much better performance, up to 40 times faster. If you need performance and good productivity, you will love Gin.</p>
+      <div class="graph-block">
+        <img class="graph-image" src="images/graph.png" alt="Martini vs Gin" width="827">
+        <p class="footgraph"><a href="https://github.com/gin-gonic/go-http-routing-benchmark">Run the tests by yourself</a>
+        </p>
+      </div>
+    </div>
+  </div>
+  <div class="section grey" id="features">
+    <div class="w-container" data-ix="slicefromleft">
+      <h2 class="section-title">Low Overhead Powerful API</h2>
+      <p class="section-subtitle">You can add global, per-group, and per-route middlewares, thousands of nested groups, nice JSON validation and rendering. And the performance will be still&nbsp;great!&nbsp;Gin uses <strong>httprouter</strong> internally, the fastest HTTP router for
+        Golang. Httprouter was created by&nbsp;<em>Julien Schmidt</em> and it’s based in a <a href="http://en.wikipedia.org/wiki/Radix_tree">Radix Tree</a>&nbsp;algorithm. This explains the good performance and scalability of Gin.</p>
+      <div class="w-row">
+        <div class="w-col w-col-6">
+          <h3>Some cool middlewares</h3>
+          <p>If you used Martini before, Gin will be familiar to you. If you don’t, you will need 10 minutes to learn everything.</p><a class="button sentrybutton" href="https://github.com/gin-gonic/gin-sentry">Check out the<br>Sentry midDlEware</a>
+          <p>More coming soon!</p>
+        </div>
+        <div class="w-col w-col-6">
+          <h3>Crystal Clear</h3>
+          <p>If you used Martini before, Gin will be familiar to you. If you don’t, you will need 10 minutes to learn everything.</p>
+          <div class="w-slider sliderexamples" data-animation="slide" data-duration="500" data-infinite="1" data-hide-arrows="1">
+            <div class="w-slider-mask">
+              <div class="w-slide">
+                <img src="images/sample1.png" width="550" alt="539f93b8f281585418675d91_sample1.png">
+              </div>
+              <div class="w-slide">
+                <img src="images/sample11.png" width="550" alt="539f93ccf281585418675d92_sample11.png">
+              </div>
+            </div>
+            <div class="w-slider-arrow-left">
+              <div class="w-icon-slider-left"></div>
+            </div>
+            <div class="w-slider-arrow-right">
+              <div class="w-icon-slider-right"></div>
+            </div>
+            <div class="w-slider-nav w-round"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="section centered">
+    <div class="w-container" data-ix="slicefromright">
+      <h2 class="section-title">Full Featured</h2>
+      <div class="w-row">
+        <div class="w-col w-col-4 w-col-small-4">
+          <div class="icons">I</div>
+          <h3>Fast</h3>
+          <p>Radix tree based routing, small memory foot print. No reflection.&nbsp;Predictable API performance.&nbsp;</p>
+        </div>
+        <div class="w-col w-col-4 w-col-small-4">
+          <div class="icons">II</div>
+          <h3>Middleware support</h3>
+          <p>A incoming HTTP request can by handled by a chain of middlewares and the final action.
+            <br>For example: Logger, Authorization, GZIP and finally post a message in the DB.</p>
+        </div>
+        <div class="w-col w-col-4 w-col-small-4">
+          <div class="icons">III</div>
+          <h3>Crash-free</h3>
+          <p>Gin can catch a panic occurred during a HTTP request and recover it. This way, your server will be always available. It’s also possible to report this panic to Sentry for example!</p>
+        </div>
+      </div>
+      <div class="w-row">
+        <div class="w-col w-col-4 w-col-small-4">
+          <div class="icons">IV</div>
+          <h3>JSON validation</h3>
+          <p>Gin can parse and validate the JSON of a request, checking for example the existence of required values.</p>
+        </div>
+        <div class="w-col w-col-4 w-col-small-4">
+          <div class="icons">V</div>
+          <h3>Routes grouping</h3>
+          <p>Organize your routes better. Authorization required vs non required, different API versions... In addition, the groups can be nested unlimitedly without degrading performance!</p>
+        </div>
+        <div class="w-col w-col-4 w-col-small-4">
+          <div class="icons">VI</div>
+          <h3>Error management</h3>
+          <p>Gin provides a convenient way to collect all the errors occurred during a HTTP request. Eventually, a middleware can write them to a log file, to a database and send them through the network.</p>
+        </div>
+      </div>
+      <div class="w-row">
+        <div class="w-col w-col-4 w-col-small-4">
+          <div class="icons">VII</div>
+          <h3>Rendering built-in</h3>
+          <p>Gin provides a easy to use API for JSON, XML and HTML rendering.</p>
+        </div>
+        <div class="w-col w-col-4 w-col-small-4">
+          <div class="icons">VIII</div>
+          <h3>Extendable</h3>
+          <p>Creating a new middleware is so easy, just check out the sample codes.</p>
+        </div>
+        <div class="w-col w-col-4 w-col-small-4"></div>
+      </div>
+    </div>
+  </div>
+  <div class="section grey" id="features">
+    <div class="w-container" data-ix="slicefromleft">
+      <h2 class="section-title">How to contribute?</h2>
+      <p class="section-subtitle">Gin uses a MIT license, this means that you can do whatever you want, but please, keep the reference to the original authors! To contribute you should <a href="https://github.com/gin-gonic/gin">fork it in Github</a>, add some changes and start posting
+        Pull Requests, we would love to merge them.</p>
+      <div class="w-row">
+        <div class="w-col w-col-4">
+          <div class="circle">
+            <div class="number">1. Fork</div>
+            <img class="frames" src="images/Git-Icon-Black2.png" width="175" alt="539e4fca30eda3837a903182_Git-Icon-Black2.png">
+          </div>
+        </div>
+        <div class="w-col w-col-4">
+          <div class="circle">
+            <div class="number">2. Commit</div>
+            <img class="frames" src="images/idea2.png" width="134" height="169" alt="539e4fbbaa3db5690ebc0c8c_idea2.png">
+          </div>
+        </div>
+        <div class="w-col w-col-4">
+          <div class="circle">
+            <div class="number">3. Pull request</div>
+            <img class="frames" src="images/pull2.png" width="218" alt="539e4fadaa3db5690ebc0c8b_pull2.png">
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <footer class="section footer">
+    <div class="w-container">
+      <div class="w-row">
+        <div class="w-col w-col-6">
+          <div class="footer-text">Gin is developed and maintained by <em>Manu Martinez-Almeida</em>. It uses the fantastic <em>Julien Schmidt</em>’s httprouter.</div>
+        </div>
+        <div class="w-col w-col-6 right-footer-col">
+          <a class="w-inline-block social-icon" href="mailto:manu.valladolid@gmail.com">
+            <img src="images/email.png" width="30" alt="539f9748f281585418675de9_email.png">
+          </a>
+          <a class="w-inline-block social-icon" href="http://forzefield.com">
+            <img src="images/globe2.png" width="30" alt="539f982eb9e5e952181edbc2_globe2.png">
+          </a>
+        </div>
+      </div>
+    </div>
+  </footer>
+  <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
+  <script type="text/javascript" src="js/webflow.js"></script>
+  <!--[if lte IE 9]><script src="https://cdnjs.cloudflare.com/ajax/libs/placeholders/3.0.2/placeholders.min.js"></script><![endif]-->
+</body>
+</html>
