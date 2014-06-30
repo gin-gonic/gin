@@ -23,7 +23,7 @@ import "github.com/gin-gonic/gin"
 
 func main() {
     r := gin.Default()
-    r.GET("ping", func(c *gin.Context){
+    r.GET("/ping", func(c *gin.Context){
         c.String(200, "pong")
     })
     
@@ -207,7 +207,7 @@ Using LoadHTMLTemplates()
 func main() {
     r := gin.Default()
     r.LoadHTMLTemplates("templates/*")
-    r.GET("index", func(c *gin.Context) {
+    r.GET("/index", func(c *gin.Context) {
         obj := gin.H{"title": "Main website"}
         c.HTML(200, "index.tmpl", obj)
     })
@@ -250,7 +250,7 @@ func main() {
     r := gin.New()
     r.Use(Logger())
     
-    r.GET("test", func(c *gin.Context){
+    r.GET("/test", func(c *gin.Context){
         example := r.Get("example").(string)
         
         // it would print: "12345"
