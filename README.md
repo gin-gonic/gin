@@ -28,7 +28,7 @@ func main() {
     })
     
     // Listen and server on 0.0.0.0:8080
-    r.Run(":80")
+    r.Run(":8080")
 }
 ```
 
@@ -43,7 +43,7 @@ func main() {
     r.POST("/somePost", posting)
     r.PUT("/somePut", putting)
     r.DELETE("/someDelete", deleting)
-    r.PATCH("/somePATCH", patching)
+    r.PATCH("/somePatch", patching)
 
     // Listen and server on 0.0.0.0:8080
     r.Run(":8080")
@@ -82,7 +82,7 @@ func main() {
     v2 := r.Group("/v2")
     {
         v2.POST("/login", loginEndpoint)
-        v2.POST("/submit"", submitEndpoint)
+        v2.POST("/submit", submitEndpoint)
         v2.POST("/read"", readEndpoint)
     }
 
