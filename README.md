@@ -36,7 +36,7 @@ func main() {
 
 ```go
 func main() {
-    // Creates a gin router + logger and recovery (crash-free) middlwares
+    // Creates a gin router + logger and recovery (crash-free) middlewares
     r := gin.Default()
     
     r.GET("/someGet", getting)
@@ -78,7 +78,7 @@ func main() {
         v1.POST("/read", readEndpoint)
     }
     
-    // Simple group: v1
+    // Simple group: v2
     v2 := r.Group("/v2")
     {
         v2.POST("/login", loginEndpoint)
@@ -109,27 +109,27 @@ r := gin.Default()
 #### Using middlewares
 ```go
 func main() {
-    // Creates a router without any middlware by default
+    // Creates a router without any middleware by default
     r := gin.New()
     
-    // Global middlwares
+    // Global middlewares
     r.Use(gin.Logger())
     r.Use(gin.Recovery())
     
-    // Per route middlwares, you can add as many as you desire.
+    // Per route middlewares, you can add as many as you desire.
     r.GET("/benchmark", MyBenchLogger(), benchEndpoint)
 
     // Authorization group
     // authorized := r.Group("/", AuthRequired())
     // exactly the same than:
     authorized := r.Group("/")
-    // per group middlwares! in this case we use the custom created
-    // AuthRequired() middlware just in the "authorized" group.
+    // per group middlewares! in this case we use the custom created
+    // AuthRequired() middleware just in the "authorized" group.
     authorized.Use(AuthRequired())
     {
-        authorized.Use.POST("/login", loginEndpoint)
-        authorized.Use.POST("/submit", submitEndpoint)
-        authorized.Use.POST("/read", readEndpoint)
+        authorized.POST("/login", loginEndpoint)
+        authorized.POST("/submit", submitEndpoint)
+        authorized.POST("/read", readEndpoint)
         
         // nested group
         testing := authorized.Group("testing")
