@@ -6,17 +6,6 @@ import (
 	"strings"
 )
 
-func (c *Context) ErrorRender() HandlerFunc {
-	return func(c *Context) {
-		defer func() {
-			if len(c.Errors) > 0 {
-				c.JSON(-1, c.Errors)
-			}
-		}()
-		c.Next()
-	}
-}
-
 func Validate(c *Context, obj interface{}) error {
 
 	var err error
