@@ -26,22 +26,11 @@ type (
 		Meta    interface{} `json:"meta"`
 	}
 
-	ResponseWriter interface {
-		http.ResponseWriter
-		Status() int
-		Written() bool
-	}
-
-	responseWriter struct {
-		http.ResponseWriter
-		status int
-	}
-
 	// Context is the most important part of gin. It allows us to pass variables between middleware,
 	// manage the flow, validate the JSON of a request and render a JSON response for example.
 	Context struct {
 		Req      *http.Request
-		Writer   ResponseWriter
+		Writer   http.ResponseWriter
 		Keys     map[string]interface{}
 		Errors   []ErrorMsg
 		Params   httprouter.Params
@@ -68,28 +57,11 @@ type (
 	}
 )
 
-func (rw *responseWriter) WriteHeader(s int) {
-	rw.ResponseWriter.WriteHeader(s)
-	rw.status = s
-}
-
-func (rw *responseWriter) Write(b []byte) (int, error) {
-	return rw.ResponseWriter.Write(b)
-}
-
-func (rw *responseWriter) Status() int {
-	return rw.status
-}
-
-func (rw *responseWriter) Written() bool {
-	return rw.status != 0
-}
-
 // Returns a new blank Engine instance without any middleware attached.
 // The most basic configuration
 func New() *Engine {
 	engine := &Engine{}
-	engine.RouterGroup = &RouterGroup{nil, "/", nil, engine}
+	engine.RouterGroup = &RouterGroup{nil, "", nil, engine}
 	engine.router = httprouter.New()
 	engine.router.NotFound = engine.handle404
 	return engine
@@ -112,13 +84,15 @@ func (engine *Engine) NotFound404(handlers ...HandlerFunc) {
 }
 
 func (engine *Engine) handle404(w http.ResponseWriter, req *http.Request) {
-
-	handlers := engine.allHandlers(engine.handlers404)
+	handlers := engine.combineHandlers(engine.handlers404)
 	c := engine.createContext(w, req, nil, handlers)
-	c.Next()
-	if !c.Writer.Written() {
+	if engine.handlers404 == nil {
 		http.NotFound(c.Writer, c.Req)
+	} else {
+		c.Writer.WriteHeader(404)
 	}
+
+	c.Next()
 }
 
 // ServeFiles serves files from the given file system root.
@@ -150,7 +124,7 @@ func (engine *Engine) Run(addr string) {
 
 func (group *RouterGroup) createContext(w http.ResponseWriter, req *http.Request, params httprouter.Params, handlers []HandlerFunc) *Context {
 	return &Context{
-		Writer:   &responseWriter{w, 0},
+		Writer:   w,
 		Req:      req,
 		index:    -1,
 		engine:   group.engine,
@@ -169,7 +143,7 @@ func (group *RouterGroup) Use(middlewares ...HandlerFunc) {
 func (group *RouterGroup) Group(component string, handlers ...HandlerFunc) *RouterGroup {
 	prefix := path.Join(group.prefix, component)
 	return &RouterGroup{
-		Handlers: handlers,
+		Handlers: group.combineHandlers(handlers),
 		parent:   group,
 		prefix:   prefix,
 		engine:   group.engine,
@@ -188,7 +162,7 @@ func (group *RouterGroup) Group(component string, handlers ...HandlerFunc) *Rout
 // communication with a proxy).
 func (group *RouterGroup) Handle(method, p string, handlers []HandlerFunc) {
 	p = path.Join(group.prefix, p)
-	handlers = group.allHandlers(handlers)
+	handlers = group.combineHandlers(handlers)
 	group.engine.router.Handle(method, p, func(w http.ResponseWriter, req *http.Request, params httprouter.Params) {
 		group.createContext(w, req, params, handlers).Next()
 	})
@@ -219,13 +193,12 @@ func (group *RouterGroup) PUT(path string, handlers ...HandlerFunc) {
 	group.Handle("PUT", path, handlers)
 }
 
-func (group *RouterGroup) allHandlers(handlers []HandlerFunc) []HandlerFunc {
-	local := append(group.Handlers, handlers...)
-	if group.parent != nil {
-		return group.parent.allHandlers(local)
-	} else {
-		return local
-	}
+func (group *RouterGroup) combineHandlers(handlers []HandlerFunc) []HandlerFunc {
+	s := len(group.Handlers) + len(handlers)
+	h := make([]HandlerFunc, 0, s)
+	h = append(h, group.Handlers...)
+	h = append(h, handlers...)
+	return h
 }
 
 /************************************/
@@ -327,7 +300,9 @@ func (c *Context) ParseBody(item interface{}) error {
 // Serializes the given struct as a JSON into the response body in a fast and efficient way.
 // It also sets the Content-Type as "application/json"
 func (c *Context) JSON(code int, obj interface{}) {
-	c.Writer.WriteHeader(code)
+	if code >= 0 {
+		c.Writer.WriteHeader(code)
+	}
 	c.Writer.Header().Set("Content-Type", "application/json")
 	encoder := json.NewEncoder(c.Writer)
 	if err := encoder.Encode(obj); err != nil {
@@ -339,7 +314,9 @@ func (c *Context) JSON(code int, obj interface{}) {
 // Serializes the given struct as a XML into the response body in a fast and efficient way.
 // It also sets the Content-Type as "application/xml"
 func (c *Context) XML(code int, obj interface{}) {
-	c.Writer.WriteHeader(code)
+	if code >= 0 {
+		c.Writer.WriteHeader(code)
+	}
 	c.Writer.Header().Set("Content-Type", "application/xml")
 	encoder := xml.NewEncoder(c.Writer)
 	if err := encoder.Encode(obj); err != nil {
@@ -352,7 +329,9 @@ func (c *Context) XML(code int, obj interface{}) {
 // It also update the HTTP code and sets the Content-Type as "text/html".
 // See http://golang.org/doc/articles/wiki/
 func (c *Context) HTML(code int, name string, data interface{}) {
-	c.Writer.WriteHeader(code)
+	if code >= 0 {
+		c.Writer.WriteHeader(code)
+	}
 	c.Writer.Header().Set("Content-Type", "text/html")
 	if err := c.engine.HTMLTemplates.ExecuteTemplate(c.Writer, name, data); err != nil {
 		c.Error(err, map[string]interface{}{
