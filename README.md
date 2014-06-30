@@ -208,8 +208,8 @@ func main() {
     r := gin.Default()
     r.LoadHTMLTemplates("templates/*")
     r.GET("index", func(c *gin.Context) {
-        obj := gin.h{"title": "Main website"}
-        c.HTML(200, "templates/index.tmpl", obj)
+        obj := gin.H{"title": "Main website"}
+        c.HTML(200, "index.tmpl", obj)
     })
 }
 ```
