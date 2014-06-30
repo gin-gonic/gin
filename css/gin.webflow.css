@@ -378,7 +378,7 @@ p {
   padding: 4px 14px;
   border-radius: 5px;
   background-color: rgba(105, 105, 105, 0.65);
-  font-family:'Open Sans', sans-serif;
+  font-family:'Trebuchet MS', 'Lucida Grande', 'Lucida Sans Unicode', 'Lucida Sans', Tahoma, sans-serif;
   color: white;
 }
 .footgraph {
@@ -408,6 +408,9 @@ p {
   width: auto;
   height: 558px;
   background-color: #272822;
+}
+.linkfoot {
+  color: #b3c2e3;
 }
 html.w-mod-js.w-mod-no-ios *[data-ix="slicefromleft"] {
   opacity: 0;

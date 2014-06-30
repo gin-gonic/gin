@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- This site was created in Webflow. http://www.webflow.com-->
-<!-- Last Published: Fri Jun 20 2014 17:48:26 GMT+0000 (UTC) -->
+<!-- Last Published: Mon Jun 30 2014 02:10:44 GMT+0000 (UTC) -->
 <html data-wf-site="539b89a7a7990e780bfd7c67">
 <head>
   <meta charset="utf-8">
@@ -14,7 +14,7 @@
   <script>
     WebFont.load({
       google: {
-        families: ["Montserrat:400,700","Varela Round:400","Great Vibes:400","Varela:400","Open Sans:300,300italic,400,400italic,600,600italic,700,700italic,800,800italic","Vollkorn:400,400italic,700,700italic"]
+        families: ["Montserrat:400,700","Varela Round:400","Great Vibes:400","Varela:400","Vollkorn:400,400italic,700,700italic"]
       }
     });
   </script>
@@ -26,10 +26,10 @@
   <div class="section hero">
     <div class="w-container presenting" data-ix="fadein">
       <h1 class="hero-heading">Gin Gonic</h1>
-      <p class="hero-subhead">Fastest full-featured web framework for Golang. <strong>Crystal clear.</strong>
+      <p class="hero-subhead">The fastest full-featured web framework for Golang. <strong>Crystal clear.</strong>
       </p>
       <div class="button-group"><a class="button sign-up" href="https://github.com/gin-gonic/gin" data-ix="shaking">github pagE</a><a class="button" href="http://godoc.org/github.com/gin-gonic/gin">API REFERENCE</a>
-        <p class="goget"><span class="goget-text">go get github.com/gin-gonic/gin</span>
+        <p class="goget"><span class="goget-text">$ go get github.com/gin-gonic/gin</span>
         </p>
       </div>
     </div>
@@ -40,7 +40,8 @@
       <p class="section-subtitle">Gin is a web framework written in Golang. It features a martini-like API with much better performance, up to 40 times faster. If you need performance and good productivity, you will love Gin.</p>
       <div class="graph-block">
         <img class="graph-image" src="images/graph.png" alt="Martini vs Gin" width="827">
-        <p class="footgraph"><a href="https://github.com/gin-gonic/go-http-routing-benchmark">Run the tests by yourself</a>
+        <p class="footgraph">2,3 GHz Intel Core i7&nbsp;8 GB 1600 MHz DDR3,&nbsp;&nbsp;OS X 10.9.3</p>
+        <p class="footgraph"><a href="https://github.com/gin-gonic/go-http-routing-benchmark">Check out the benchmark suite</a>
         </p>
       </div>
     </div>
@@ -48,13 +49,13 @@
   <div class="section grey" id="features">
     <div class="w-container" data-ix="slicefromleft">
       <h2 class="section-title">Low Overhead Powerful API</h2>
-      <p class="section-subtitle">You can add global, per-group, and per-route middlewares, thousands of nested groups, nice JSON validation and rendering. And the performance will be still&nbsp;great!&nbsp;Gin uses <strong>httprouter</strong> internally, the fastest HTTP router for
-        Golang. Httprouter was created by&nbsp;<em>Julien Schmidt</em> and it’s based in a <a href="http://en.wikipedia.org/wiki/Radix_tree">Radix Tree</a>&nbsp;algorithm. This explains the good performance and scalability of Gin.</p>
+      <p class="section-subtitle">You can add global, per-group, and per-route middlewares, thousands of nested groups, nice JSON validation and rendering. And the performance will be still&nbsp;great.&nbsp;Gin uses <strong>httprouter</strong> internally, the fastest HTTP router for
+        Golang. Httprouter was created by&nbsp;Julien Schmidt and it’s based in a <a href="http://en.wikipedia.org/wiki/Radix_tree">Radix Tree</a>&nbsp;algorithm.</p>
       <div class="w-row">
         <div class="w-col w-col-6">
           <h3>Some cool middlewares</h3>
           <p>If you used Martini before, Gin will be familiar to you. If you don’t, you will need 10 minutes to learn everything.</p><a class="button sentrybutton" href="https://github.com/gin-gonic/gin-sentry">Check out the<br>Sentry midDlEware</a>
-          <p>More coming soon!</p>
+          <p>More coming soon</p>
         </div>
         <div class="w-col w-col-6">
           <h3>Crystal Clear</h3>
@@ -76,6 +77,8 @@
             </div>
             <div class="w-slider-nav w-round"></div>
           </div>
+          <p class="footgraph"><a href="https://github.com/gin-gonic/gin/blob/master/README.md">More examples in the README.md</a>
+          </p>
         </div>
       </div>
     </div>
@@ -110,7 +113,7 @@
         <div class="w-col w-col-4 w-col-small-4">
           <div class="icons">V</div>
           <h3>Routes grouping</h3>
-          <p>Organize your routes better. Authorization required vs non required, different API versions... In addition, the groups can be nested unlimitedly without degrading performance!</p>
+          <p>Organize your routes better. Authorization required vs non required, different API versions... In addition, the groups can be nested unlimitedly without degrading performance.</p>
         </div>
         <div class="w-col w-col-4 w-col-small-4">
           <div class="icons">VI</div>
@@ -162,19 +165,8 @@
   </div>
   <footer class="section footer">
     <div class="w-container">
-      <div class="w-row">
-        <div class="w-col w-col-6">
-          <div class="footer-text">Gin is developed and maintained by <em>Manu Martinez-Almeida</em>. It uses the fantastic <em>Julien Schmidt</em>’s httprouter.</div>
-        </div>
-        <div class="w-col w-col-6 right-footer-col">
-          <a class="w-inline-block social-icon" href="mailto:manu.valladolid@gmail.com">
-            <img src="images/email.png" width="30" alt="539f9748f281585418675de9_email.png">
-          </a>
-          <a class="w-inline-block social-icon" href="http://forzefield.com">
-            <img src="images/globe2.png" width="30" alt="539f982eb9e5e952181edbc2_globe2.png">
-          </a>
-        </div>
-      </div>
+      <div class="footer-text">Gin is developed and maintained by <em><a href="https://github.com/manucorporat" class="linkfoot">Manu Martinez-Almeida</a></em>.
+        <br>It uses the fantastic <em><a href="https://github.com/julienschmidt" class="linkfoot">Julien Schmidt</a>&nbsp;</em>’s httprouter.</div>
     </div>
   </footer>
   <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>

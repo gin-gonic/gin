@@ -406,103 +406,6 @@ window.tram=function(t){function i(t,i){var e=new Z.Bare;return e.init(t,i)}func
  * Licensed MIT (/blob/master/LICENSE.txt)
  */
 (function($){if(!$.support.cors&&$.ajaxTransport&&window.XDomainRequest){var n=/^https?:\/\//i;var o=/^get|post$/i;var p=new RegExp('^'+location.protocol,'i');var q=/text\/html/i;var r=/\/json/i;var s=/\/xml/i;$.ajaxTransport('* text html xml json',function(i,j,k){if(i.crossDomain&&i.async&&o.test(i.type)&&n.test(i.url)&&p.test(i.url)){var l=null;var m=(j.dataType||'').toLowerCase();return{send:function(f,g){l=new XDomainRequest();if(/^\d+$/.test(j.timeout)){l.timeout=j.timeout}l.ontimeout=function(){g(500,'timeout')};l.onload=function(){var a='Content-Length: '+l.responseText.length+'\r\nContent-Type: '+l.contentType;var b={code:200,message:'success'};var c={text:l.responseText};try{if(m==='html'||q.test(l.contentType)){c.html=l.responseText}else if(m==='json'||(m!=='text'&&r.test(l.contentType))){try{c.json=$.parseJSON(l.responseText)}catch(e){b.code=500;b.message='parseerror'}}else if(m==='xml'||(m!=='text'&&s.test(l.contentType))){var d=new ActiveXObject('Microsoft.XMLDOM');d.async=false;try{d.loadXML(l.responseText)}catch(e){d=undefined}if(!d||!d.documentElement||d.getElementsByTagName('parsererror').length){b.code=500;b.message='parseerror';throw'Invalid XML: '+l.responseText;}c.xml=d}}catch(parseMessage){throw parseMessage;}finally{g(b.code,b.message,c,a)}};l.onprogress=function(){};l.onerror=function(){g(500,'error',{text:l.responseText})};var h='';if(j.data){h=($.type(j.data)==='string')?j.data:$.param(j.data)}l.open(i.type,i.url);l.send(h)},abort:function(){if(l){l.abort()}}}}})}})(jQuery);
-/*!
- * tap.js
- * Copyright (c) 2013 Alex Gibson, http://alxgbsn.co.uk/
- * Released under MIT license
- */
-(function (window, document) {
-
-    'use strict';
-
-    function Tap(el) {
-        el = typeof el === 'object' ? el : document.getElementById(el);
-        this.element = el;
-        this.moved = false; //flags if the finger has moved
-        this.startX = 0; //starting x coordinate
-        this.startY = 0; //starting y coordinate
-        this.hasTouchEventOccured = false; //flag touch event
-        el.addEventListener('touchstart', this, false);
-        el.addEventListener('touchmove', this, false);
-        el.addEventListener('touchend', this, false);
-        el.addEventListener('touchcancel', this, false);
-        el.addEventListener('mousedown', this, false);
-        el.addEventListener('mouseup', this, false);
-    }
-
-    Tap.prototype.start = function (e) {
-        if (e.type === 'touchstart') {
-            this.hasTouchEventOccured = true;
-        }
-        this.moved = false;
-        this.startX = e.type === 'touchstart' ? e.touches[0].clientX : e.clientX;
-        this.startY = e.type === 'touchstart' ? e.touches[0].clientY : e.clientY;
-    };
-
-    Tap.prototype.move = function (e) {
-        //if finger moves more than 10px flag to cancel
-        if (Math.abs(e.touches[0].clientX - this.startX) > 10 || Math.abs(e.touches[0].clientY - this.startY) > 10) {
-            this.moved = true;
-        }
-    };
-
-    Tap.prototype.end = function (e) {
-        var evt;
-
-        if (this.hasTouchEventOccured && e.type === 'mouseup') {
-            e.preventDefault();
-            e.stopPropagation();
-            this.hasTouchEventOccured = false;
-            return;
-        }
-
-        if (!this.moved) {
-            //create custom event
-            if (typeof document.CustomEvent !== "undefined") {
-                evt = new document.CustomEvent('tap', {
-                    bubbles: true,
-                    cancelable: true
-                });
-            } else {
-                evt = document.createEvent('Event');
-                evt.initEvent('tap', true, true);
-            }
-            e.target.dispatchEvent(evt);
-        }
-    };
-
-    Tap.prototype.cancel = function (e) {
-        this.hasTouchEventOccured = false;
-        this.moved = false;
-        this.startX = 0;
-        this.startY = 0;
-    };
-
-    Tap.prototype.destroy = function () {
-        var el = this.element;
-        el.removeEventListener('touchstart', this, false);
-        el.removeEventListener('touchmove', this, false);
-        el.removeEventListener('touchend', this, false);
-        el.removeEventListener('touchcancel', this, false);
-        el.removeEventListener('mousedown', this, false);
-        el.removeEventListener('mouseup', this, false);
-        this.element = null;
-    };
-
-    Tap.prototype.handleEvent = function (e) {
-        switch (e.type) {
-        case 'touchstart': this.start(e); break;
-        case 'touchmove': this.move(e); break;
-        case 'touchend': this.end(e); break;
-        case 'touchcancel': this.cancel(e); break;
-        case 'mousedown': this.start(e); break;
-        case 'mouseup': this.end(e); break;
-        }
-    };
-
-    window.Tap = Tap;
-
-}(window, document));
 /* jshint ignore:end */
 /**
  * ----------------------------------------------------------------------
@@ -955,120 +858,126 @@ Webflow.define('ix', function ($, _) {
 });
 /**
  * ----------------------------------------------------------------------
- * Webflow: Touch events for jQuery based on tap.js
+ * Webflow: Touch events
  */
 Webflow.define('touch', function ($, _) {
   'use strict';
 
-  var Tap = window.Tap;
-  var namespace = '.w-events-';
-  var dataKey = namespace + 'tap';
-  var fallback = !document.addEventListener;
-
-  // jQuery event "tap" - use click in old + non-touch browsers
-  $.event.special.tap = (fallback || !Webflow.env.touch) ? { bindType: 'click', delegateType: 'click' } : {
-    setup: function () {
-      $.data(this, dataKey, new Tap(this));
-
-      // Returning false instructs jQuery to use native `addEventListener` on the element.
-      return false;
-    },
-    teardown: function () {
-      var tap = $.data(this, dataKey);
-      if (tap && tap.destroy) {
-        tap.destroy();
-        $.removeData(this, dataKey);
-      }
-
-      // Returning false makes sure the native event handlers bound above are removed.
-      return false;
-    }
+  var api = {};
+  api.init = function (el) {
+    el = typeof el === 'string' ? $(el).get(0) : el;
+    return el ? new Touch(el) : null;
   };
 
-  // No swipe events for old browsers
-  if (fallback || !Object.create) return;
+  function Touch(el) {
+    var active = false;
+    var dirty = false;
+    var useTouch = false;
+    var thresholdX = Math.min(Math.round(window.innerWidth * 0.04), 40);
+    var startX, startY, lastX;
 
-  // jQuery event "swipe"
-  dataKey = namespace + 'swipe';
+    el.addEventListener('touchstart', start, false);
+    el.addEventListener('touchmove', move, false);
+    el.addEventListener('touchend', end, false);
+    el.addEventListener('touchcancel', cancel, false);
+    el.addEventListener('mousedown', start, false);
+    el.addEventListener('mousemove', move, false);
+    el.addEventListener('mouseup', end, false);
+    el.addEventListener('mouseout', cancel, false);
 
-  $.event.special.swipe = {
-    setup: function () {
-      $.data(this, dataKey, new Swipe(this));
-
-      // Returning false instructs jQuery to use native `addEventListener` on the element.
-      return false;
-    },
-    teardown: function () {
-      var tap = $.data(this, dataKey);
-      if (tap && tap.destroy) {
-        tap.destroy();
-        $.removeData(this, dataKey);
+    function start(evt) {
+      // We don’t handle multi-touch events yet.
+      var touches = evt.touches;
+      if (touches && touches.length > 1) {
+        return;
       }
 
-      // Returning false makes sure the native event handlers bound above are removed.
-      return false;
-    }
-  };
+      active = true;
+      dirty = false;
 
-  /**
-   * Swipe - extends Tap, supports mouse swipes!
-   */
-  function Swipe(el) {
-    Tap.call(this, el);
+      if (touches) {
+        useTouch = true;
+        startX = touches[0].clientX;
+        startY = touches[0].clientY;
+      } else {
+        startX = evt.clientX;
+        startY = evt.clientY;
+      }
+
+      lastX = startX;
+    }
+
+    function move(evt) {
+      if (!active) return;
+
+      if (useTouch && evt.type === 'mousemove') {
+        evt.preventDefault();
+        evt.stopPropagation();
+        return;
+      }
+
+      var touches = evt.touches;
+      var x = touches ? touches[0].clientX : evt.clientX;
+      var y = touches ? touches[0].clientY : evt.clientY;
+
+      var velocityX = x - lastX;
+      lastX = x;
+
+      if (Math.abs(velocityX) > thresholdX) {
+        triggerEvent('swipe', evt, { direction: velocityX > 0 ? 'right' : 'left' });
+        cancel();
+      }
+
+      // If pointer moves more than 10px flag to cancel tap
+      if (Math.abs(x - startX) > 10 || Math.abs(y - startY) > 10) {
+        dirty = true;
+      }
+    }
+
+    function end(evt) {
+      if (!active) return;
+
+      if (useTouch && evt.type === 'mouseup') {
+        evt.preventDefault();
+        evt.stopPropagation();
+        useTouch = false;
+        return;
+      }
+
+      if (!dirty) triggerEvent('tap', evt);
+    }
+
+    function cancel(evt) {
+      active = false;
+    }
+
+    function destroy() {
+      el.removeEventListener('touchstart', start, false);
+      el.removeEventListener('touchmove', move, false);
+      el.removeEventListener('touchend', end, false);
+      el.removeEventListener('touchcancel', cancel, false);
+      el.removeEventListener('mousedown', start, false);
+      el.removeEventListener('mousemove', move, false);
+      el.removeEventListener('mouseup', end, false);
+      el.removeEventListener('mouseout', cancel, false);
+      el = null;
+    }
+
+    // Public instance methods
+    this.destroy = destroy;
   }
 
-  (function () {
-    var supr = Tap.prototype;
-    var proto = Swipe.prototype = Object.create(supr);
-    var threshold = Math.round(screen.width * 0.04) || 20;
-    if (threshold > 40) threshold = 40;
+  // Wrap native event to supoprt preventdefault + stopPropagation
+  function triggerEvent(type, evt, data) {
+    var newEvent = $.Event(type, { originalEvent: evt });
+    $(evt.target).trigger(newEvent, data);
+  }
 
-    proto.start = function (e) {
-      supr.start.call(this, e);
-      this.element.addEventListener('mousemove', this, false);
-      document.addEventListener('mouseup', this, false);
-      this.velocityX = 0;
-      this.lastX = this.startX;
-      this.enabled = true;
-    };
+  // Listen for touch events on all nodes by default.
+  api.instance = api.init(document);
 
-    proto.move = _.throttle(function (e) {
-      if (!this.enabled) return;
-      var x = e.touches ? e.touches[0].clientX : e.clientX;
-      this.velocityX = x - this.lastX;
-      this.lastX = x;
-      if (Math.abs(this.velocityX) > threshold) {
-        this.end(e);
-      }
-    });
-
-    proto.end = function (e) {
-      if (!this.enabled) return;
-      var velocityX = this.velocityX;
-      this.cancel();
-      if (Math.abs(velocityX) > threshold) {
-        $(this.element).triggerHandler('swipe', { direction: velocityX > 0 ? 'right' : 'left' });
-      }
-    };
-
-    proto.destroy = function () {
-      this.cancel();
-      supr.destroy.call(this);
-    };
-
-    proto.cancel = function () {
-      this.enabled = false;
-      this.element.removeEventListener('mousemove', this, false);
-      document.removeEventListener('mouseup', this, false);
-      supr.cancel.call(this);
-    };
-
-    proto.handleEvent = function (e) {
-      if (e.type == 'mousemove') return this.move(e);
-      supr.handleEvent.call(this, e);
-    };
-  }());
-
+  // Export module
+  return api;
 });
 /**
  * ----------------------------------------------------------------------
@@ -2344,8 +2253,8 @@ Webflow.define('navbar', function ($, _) {
       data.el.on('setting' + namespace, handler(data));
     } else {
       addOverlay(data);
-      data.button.on('click' + namespace, toggle(data));
-      data.menu.on('click' + namespace, 'a', navigate(data));
+      data.button.on('tap' + namespace, toggle(data));
+      data.menu.on('tap' + namespace, 'a', navigate(data));
     }
 
     // Trigger initial resize
@@ -2441,13 +2350,14 @@ Webflow.define('navbar', function ($, _) {
   }
 
   function outside(data) {
-    return function (evt) {
-      var target = evt.target;
-      // Close navbars when clicked outside
-      if (!data.el.has(target).length && !data.el.is(target)) {
+    // Close menu when tapped outside
+    return _.debounce(function (evt) {
+      if (!data.open) return;
+      var menu = $(evt.target).closest('.w-nav-menu');
+      if (!data.menu.is(menu)) {
         close(data);
       }
-    };
+    });
   }
 
   function resize(i, el) {
@@ -2495,7 +2405,7 @@ Webflow.define('navbar', function ($, _) {
     resize(0, data.el[0]);
 
     // Listen for tap outside events
-    if (!designer) $doc.on('click' + namespace, data.outside);
+    if (!designer) $doc.on('tap' + namespace, data.outside);
 
     // Update menu height for Over state
     if (animOver) setMenuHeight(data);
@@ -2547,7 +2457,7 @@ Webflow.define('navbar', function ($, _) {
     var animation = config.animation;
 
     // Stop listening for tap outside events
-    $doc.off('click' + namespace, data.outside);
+    $doc.off('tap' + namespace, data.outside);
 
     if (immediate) {
       tram(data.menu).stop();
