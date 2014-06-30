@@ -83,7 +83,7 @@ func main() {
     {
         v2.POST("/login", loginEndpoint)
         v2.POST("/submit", submitEndpoint)
-        v2.POST("/read"", readEndpoint)
+        v2.POST("/read", readEndpoint)
     }
 
     // Listen and server on 0.0.0.0:8080
