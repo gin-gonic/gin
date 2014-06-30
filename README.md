@@ -1,6 +1,6 @@
 #Gin Web Framework
 Gin is a web framework written in Golang. It features a martini-like API with much better performance, up to 40 times faster. If you need performance and good productivity, you will love Gin.  
-[Check out the official web site](http://gingonic.github.com)
+[Check out the official web site](http://gin-gonic.github.io/gin/)
 
 ## Start using it
 Run:
@@ -18,14 +18,28 @@ import "github.com/gin-gonic/gin"
 ##API Examples
 
 #### Create most basic PING/PONG HTTP endpoint
-```
+```go 
+import "github.com/gin-gonic/gin"
+
 func main() {
-    // Creates a gin router + logger and recovery (crash-free) middlwares
     r := gin.Default()
-    r.GET("/ping", func(c *gin.Context){
+    r.GET("ping", func(c *gin.Context){
         c.String("pong")
     })
     
+    // Listen and server on 0.0.0.0:8080
+    r.Run(":80")
+}
+```
+
+#### Using GET, POST, PUT, PATCH and DELETE
+
+```go
+func main() {
+    // Creates a gin router + logger and recovery (crash-free) middlwares
+    r := gin.Default()
+    
+    r.GET("/someGet", getting)
     r.POST("/somePost", posting)
     r.PUT("/somePut", putting)
     r.DELETE("/someDelete", deleting)
@@ -38,7 +52,7 @@ func main() {
 
 #### Parameters in path
 
-```
+```go
 func main() {
     r := gin.Default()
     
@@ -52,7 +66,7 @@ func main() {
 
 
 #### Grouping routes
-```
+```go
 func main() {
     r := gin.Default()
     
@@ -82,18 +96,18 @@ func main() {
 
 Use
 
-```
+```go
 r := gin.New()
 ```
 instead of
 
-```
+```go
 r := gin.Default()
 ```
 
 
 #### Using middlewares
-```
+```go
 func main() {
     // Creates a router without any middlware by default
     r := gin.New()
@@ -129,8 +143,8 @@ func main() {
 
 
 #### JSON parsing and validation
-```
 
+```go
 type LoginJSON struct {
     User     string `json:"user" binding:"required"`
     Password string `json:"password" binding:"required"`
@@ -158,7 +172,7 @@ func main() {
 
 #### XML, and JSON rendering
 
-```
+```go
 func main() {
     r := gin.Default()
     
@@ -189,7 +203,7 @@ func main() {
 
 Using LoadHTMLTemplates()
 
-```
+```go
 func main() {
     r := gin.Default()
     r.LoadHTMLTemplates("templates/*")
@@ -202,7 +216,7 @@ func main() {
 
 You can also use your own html template render
 
-```
+```go
 import "html/template"
 func main() {
     r := gin.Default()
@@ -214,7 +228,7 @@ func main() {
 
 #### Custom Middlewares
 
-```
+```go
 func Logger() gin.HandlerFunc {
     return func(c *gin.Context) {
         t : time.Now()
@@ -242,6 +256,7 @@ func main() {
         // it would print: "12345"
         log.Println(example)
     })
+}
 ```
 
 
@@ -249,9 +264,9 @@ func main() {
 
 #### Custom HTTP configuration
 
-Do not use the `Run()` method, instead use this:
+Use `http.ListenAndServe()` directly, like this:
 
-```
+```go
 func main() {
     router := gin.Default()
     http.ListenAndServe(":8080", router)
@@ -259,7 +274,7 @@ func main() {
 ```
 or
 
-```
+```go
 func main() {
     router := gin.Default()
 
@@ -273,5 +288,3 @@ func main() {
     s.ListenAndServe()
 }
 ```
-
-
