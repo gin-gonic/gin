@@ -7,6 +7,10 @@ import (
 	"sort"
 )
 
+const (
+	AuthUserKey = "user"
+)
+
 type (
 	BasicAuthPair struct {
 		Code string
@@ -43,16 +47,22 @@ func processCredentials(accounts Accounts) (Pairs, error) {
 	return pairs, nil
 }
 
+func secureCompare(given, actual string) bool {
+	if subtle.ConstantTimeEq(int32(len(given)), int32(len(actual))) == 1 {
+		return subtle.ConstantTimeCompare([]byte(given), []byte(actual)) == 1
+	} else {
+		/* Securely compare actual to itself to keep constant time, but always return false */
+		return subtle.ConstantTimeCompare([]byte(actual), []byte(actual)) == 1 && false
+	}
+}
+
 func searchCredential(pairs Pairs, auth string) string {
 	if len(auth) == 0 {
 		return ""
 	}
 	// Search user in the slice of allowed credentials
 	r := sort.Search(len(pairs), func(i int) bool { return pairs[i].Code >= auth })
-
-	if r < len(pairs) && subtle.ConstantTimeCompare([]byte(pairs[r].Code), []byte(auth)) == 1 {
-		// user is allowed, set UserId to key "user" in this context, the userId can be read later using
-		// c.Get("user"
+	if r < len(pairs) && secureCompare(pairs[r].Code, auth) {
 		return pairs[r].User
 	} else {
 		return ""
@@ -76,8 +86,8 @@ func BasicAuth(accounts Accounts) HandlerFunc {
 			c.Fail(401, errors.New("Unauthorized"))
 		} else {
 			// user is allowed, set UserId to key "user" in this context, the userId can be read later using
-			// c.Get("user")
-			c.Set("user", user)
+			// c.Get(gin.AuthUserKey)
+			c.Set(AuthUserKey, user)
 		}
 	}
 }
