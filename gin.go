@@ -344,7 +344,9 @@ func (c *Context) HTML(code int, name string, data interface{}) {
 
 // Writes the given string into the response body and sets the Content-Type to "text/plain"
 func (c *Context) String(code int, msg string) {
-	c.Writer.WriteHeader(code)
+	if code >= 0 {
+		c.Writer.WriteHeader(code)
+	}
 	c.Writer.Header().Set("Content-Type", "text/plain")
 	c.Writer.Write([]byte(msg))
 }
