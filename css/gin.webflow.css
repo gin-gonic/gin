@@ -263,6 +263,7 @@ p {
   padding-top: 14px;
   border-radius: 40px;
   background-color: #eff1f4;
+  font-family:'Fontawesome webfont';
   font-size: 20px;
   font-weight: 700;
 }
@@ -608,3 +609,4 @@ html.w-mod-js.w-mod-no-ios *[data-ix="slicefromright"] {
     background-position: 8% 17%;
   }
 }
+
