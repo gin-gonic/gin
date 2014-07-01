@@ -300,10 +300,10 @@ func (c *Context) ParseBody(item interface{}) error {
 // Serializes the given struct as a JSON into the response body in a fast and efficient way.
 // It also sets the Content-Type as "application/json"
 func (c *Context) JSON(code int, obj interface{}) {
+	c.Writer.Header().Set("Content-Type", "application/json")
 	if code >= 0 {
 		c.Writer.WriteHeader(code)
 	}
-	c.Writer.Header().Set("Content-Type", "application/json")
 	encoder := json.NewEncoder(c.Writer)
 	if err := encoder.Encode(obj); err != nil {
 		c.Error(err, obj)
@@ -314,10 +314,10 @@ func (c *Context) JSON(code int, obj interface{}) {
 // Serializes the given struct as a XML into the response body in a fast and efficient way.
 // It also sets the Content-Type as "application/xml"
 func (c *Context) XML(code int, obj interface{}) {
+	c.Writer.Header().Set("Content-Type", "application/xml")
 	if code >= 0 {
 		c.Writer.WriteHeader(code)
 	}
-	c.Writer.Header().Set("Content-Type", "application/xml")
 	encoder := xml.NewEncoder(c.Writer)
 	if err := encoder.Encode(obj); err != nil {
 		c.Error(err, obj)
@@ -329,10 +329,10 @@ func (c *Context) XML(code int, obj interface{}) {
 // It also update the HTTP code and sets the Content-Type as "text/html".
 // See http://golang.org/doc/articles/wiki/
 func (c *Context) HTML(code int, name string, data interface{}) {
+	c.Writer.Header().Set("Content-Type", "text/html")
 	if code >= 0 {
 		c.Writer.WriteHeader(code)
 	}
-	c.Writer.Header().Set("Content-Type", "text/html")
 	if err := c.engine.HTMLTemplates.ExecuteTemplate(c.Writer, name, data); err != nil {
 		c.Error(err, map[string]interface{}{
 			"name": name,
