@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"encoding/xml"
+	"errors"
 	"fmt"
 	"github.com/julienschmidt/httprouter"
 	"html/template"
@@ -256,6 +257,15 @@ func (c *Context) Error(err error, meta interface{}) {
 		Err:  err.Error(),
 		Meta: meta,
 	})
+}
+
+func (c *Context) LastError() error {
+	s := len(c.Errors)
+	if s > 0 {
+		return errors.New(c.Errors[s-1].Err)
+	} else {
+		return nil
+	}
 }
 
 /************************************/
