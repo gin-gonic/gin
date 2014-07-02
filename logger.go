@@ -29,7 +29,7 @@ func Logger() HandlerFunc {
 		// Calculate resolution time
 		log.Printf("%s in %v", c.Req.RequestURI, time.Since(t))
 		if len(c.Errors) > 0 {
-			fmt.Println(c.Errors)
+			fmt.Println(c.Errors.String())
 		}
 	}
 }
