@@ -5,6 +5,26 @@
 Gin is a web framework written in Golang. It features a martini-like API with much better performance, up to 40 times faster. If you need performance and good productivity, you will love Gin.  
 [Check out the official web site](http://gin-gonic.github.io/gin/)
 
+
+##Gin is new, will it be supported?
+
+Yes, Gin is an internal project of [my](https://github.com/manucorporat) upcoming startup. We developed it and we are going to continue using and improve it.
+
+
+##Roadmap
+- Performance improments, reduce allocation and garbage collection overhead
+- Fix bugs
+- Ask our designer for a cool logo
+- Add tons of unit tests and benchmarks
+- Improve logging system
+- Improve JSON/XML validation using bindings
+- Improve XML support
+- Improve documentation
+- Add more cool middlewares, for example redis catching (this also helps developers to understand the framework)
+- Continuous integration
+
+
+
 ## Start using it
 Run:
 
