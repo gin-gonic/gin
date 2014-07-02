@@ -75,7 +75,7 @@ func (a ErrorMsgs) String() string {
 // The most basic configuration
 func New() *Engine {
 	engine := &Engine{}
-	engine.RouterGroup = &RouterGroup{nil, "", nil, engine}
+	engine.RouterGroup = &RouterGroup{nil, "/", nil, engine}
 	engine.router = httprouter.New()
 	engine.router.NotFound = engine.handle404
 	return engine
