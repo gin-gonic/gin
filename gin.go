@@ -129,7 +129,9 @@ func (engine *Engine) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 }
 
 func (engine *Engine) Run(addr string) {
-	http.ListenAndServe(addr, engine)
+	if err := http.ListenAndServe(addr, engine); err != nil {
+		panic(err)
+	}
 }
 
 /************************************/
