@@ -253,7 +253,7 @@ func main() {
 ```go
 func Logger() gin.HandlerFunc {
     return func(c *gin.Context) {
-        t : time.Now()
+        t := time.Now()
         
         // Set example variable
         c.Set("example", "12345")
