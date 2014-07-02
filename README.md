@@ -61,6 +61,9 @@ func main() {
         message := "Hello "+name
         c.String(200, message)
     })
+
+    // Listen and server on 0.0.0.0:8080
+    r.Run(":8080")
 }
 ```
 
@@ -167,6 +170,9 @@ func main() {
             }
         }
     })
+
+    // Listen and server on 0.0.0.0:8080
+    r.Run(":8080")
 }
 ```
 
@@ -195,6 +201,9 @@ func main() {
     r.GET("/someXML", func(c *gin.Context) {
         c.XML(200, gin.H{"message": "hey", "status": 200})
     })
+
+    // Listen and server on 0.0.0.0:8080
+    r.Run(":8080")
 }
 ```
 
@@ -211,6 +220,9 @@ func main() {
         obj := gin.H{"title": "Main website"}
         c.HTML(200, "index.tmpl", obj)
     })
+
+    // Listen and server on 0.0.0.0:8080
+    r.Run(":8080")
 }
 ```
 
@@ -222,6 +234,9 @@ func main() {
     r := gin.Default()
     html := template.ParseFiles("file1", "file2")
     r.HTMLTemplates = html
+
+    // Listen and server on 0.0.0.0:8080
+    r.Run(":8080")
 }
 ```
 
@@ -256,6 +271,9 @@ func main() {
         // it would print: "12345"
         log.Println(example)
     })
+
+    // Listen and server on 0.0.0.0:8080
+    r.Run(":8080")
 }
 ```
 
