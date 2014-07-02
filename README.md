@@ -1,4 +1,7 @@
 #Gin Web Framework
+
+[![GoDoc](https://godoc.org/github.com/gin-gonic/gin?status.png)](https://godoc.org/github.com/gin-gonic/gin)
+
 Gin is a web framework written in Golang. It features a martini-like API with much better performance, up to 40 times faster. If you need performance and good productivity, you will love Gin.  
 [Check out the official web site](http://gin-gonic.github.io/gin/)
 
@@ -23,7 +26,7 @@ import "github.com/gin-gonic/gin"
 
 func main() {
     r := gin.Default()
-    r.GET("ping", func(c *gin.Context){
+    r.GET("/ping", func(c *gin.Context){
         c.String(200, "pong")
     })
     
@@ -61,6 +64,9 @@ func main() {
         message := "Hello "+name
         c.String(200, message)
     })
+
+    // Listen and server on 0.0.0.0:8080
+    r.Run(":8080")
 }
 ```
 
@@ -167,6 +173,9 @@ func main() {
             }
         }
     })
+
+    // Listen and server on 0.0.0.0:8080
+    r.Run(":8080")
 }
 ```
 
@@ -184,17 +193,24 @@ func main() {
     r.GET("/moreJSON", func(c *gin.Context) {
         // You also can use a struct
         var msg struct {
+            Name string `json:"user"`
             Message string
-            Status  int
+            Number int
         }
+        msg.Name = "Lena"
         msg.Message = "hey"
-        msg.Status = 200
-        c.JSON(200, msg.Status)
+        msg.Number = 123
+        // Note that msg.Name becomes "user" in the JSON
+        // Will output  :   {"user": "Lena", "Message": "hey", "Number": 123}
+        c.JSON(200, msg)
     })
     
     r.GET("/someXML", func(c *gin.Context) {
         c.XML(200, gin.H{"message": "hey", "status": 200})
     })
+
+    // Listen and server on 0.0.0.0:8080
+    r.Run(":8080")
 }
 ```
 
@@ -207,10 +223,13 @@ Using LoadHTMLTemplates()
 func main() {
     r := gin.Default()
     r.LoadHTMLTemplates("templates/*")
-    r.GET("index", func(c *gin.Context) {
+    r.GET("/index", func(c *gin.Context) {
         obj := gin.H{"title": "Main website"}
         c.HTML(200, "index.tmpl", obj)
     })
+
+    // Listen and server on 0.0.0.0:8080
+    r.Run(":8080")
 }
 ```
 
@@ -222,6 +241,9 @@ func main() {
     r := gin.Default()
     html := template.ParseFiles("file1", "file2")
     r.HTMLTemplates = html
+
+    // Listen and server on 0.0.0.0:8080
+    r.Run(":8080")
 }
 ```
 
@@ -231,7 +253,7 @@ func main() {
 ```go
 func Logger() gin.HandlerFunc {
     return func(c *gin.Context) {
-        t : time.Now()
+        t := time.Now()
         
         // Set example variable
         c.Set("example", "12345")
@@ -250,12 +272,15 @@ func main() {
     r := gin.New()
     r.Use(Logger())
     
-    r.GET("test", func(c *gin.Context){
+    r.GET("/test", func(c *gin.Context){
         example := r.Get("example").(string)
         
         // it would print: "12345"
         log.Println(example)
     })
+
+    // Listen and server on 0.0.0.0:8080
+    r.Run(":8080")
 }
 ```
 
