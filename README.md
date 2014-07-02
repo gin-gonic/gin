@@ -190,14 +190,15 @@ func main() {
     r.GET("/moreJSON", func(c *gin.Context) {
         // You also can use a struct
         var msg struct {
-            Name string
+            Name string `json:"user"`
             Message string
             Number int
         }
         msg.Name = "Lena"
         msg.Message = "hey"
         msg.Number = 123
-        // Will output  :   {"Name": "Lena", "Message": "hey", "Number": 123}
+        // Note that msg.Name becomes "user" in the JSON
+        // Will output  :   {"user": "Lena", "Message": "hey", "Number": 123}
         c.JSON(200, msg)
     })
     
