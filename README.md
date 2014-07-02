@@ -190,12 +190,15 @@ func main() {
     r.GET("/moreJSON", func(c *gin.Context) {
         // You also can use a struct
         var msg struct {
+            Name string
             Message string
-            Status  int
+            Number int
         }
+        msg.Name = "Lena"
         msg.Message = "hey"
-        msg.Status = 200
-        c.JSON(200, msg.Status)
+        msg.Number = 123
+        // Will output  :   {"Name": "Lena", "Message": "hey", "Number": 123}
+        c.JSON(200, msg)
     })
     
     r.GET("/someXML", func(c *gin.Context) {
