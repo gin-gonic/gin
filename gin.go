@@ -1,8 +1,10 @@
 package gin
 
 import (
+	"bytes"
 	"encoding/json"
 	"encoding/xml"
+	"fmt"
 	"github.com/julienschmidt/httprouter"
 	"html/template"
 	"log"
@@ -22,9 +24,11 @@ type (
 
 	// Used internally to collect a error ocurred during a http request.
 	ErrorMsg struct {
-		Message string      `json:"msg"`
-		Meta    interface{} `json:"meta"`
+		Err  string      `json:"error"`
+		Meta interface{} `json:"meta"`
 	}
+
+	ErrorMsgs []ErrorMsg
 
 	// Context is the most important part of gin. It allows us to pass variables between middleware,
 	// manage the flow, validate the JSON of a request and render a JSON response for example.
@@ -32,7 +36,7 @@ type (
 		Req      *http.Request
 		Writer   http.ResponseWriter
 		Keys     map[string]interface{}
-		Errors   []ErrorMsg
+		Errors   ErrorMsgs
 		Params   httprouter.Params
 		handlers []HandlerFunc
 		engine   *Engine
@@ -56,6 +60,15 @@ type (
 		HTMLTemplates *template.Template
 	}
 )
+
+func (a ErrorMsgs) String() string {
+	var buffer bytes.Buffer
+	for i, msg := range a {
+		text := fmt.Sprintf("Error #%02d: %s \n     Meta: %v\n\n", (i + 1), msg.Err, msg.Meta)
+		buffer.WriteString(text)
+	}
+	return buffer.String()
+}
 
 // Returns a new blank Engine instance without any middleware attached.
 // The most basic configuration
@@ -240,8 +253,8 @@ func (c *Context) Fail(code int, err error) {
 // A middleware can be used to collect all the errors and push them to a database together, print a log, or append it in the HTTP response.
 func (c *Context) Error(err error, meta interface{}) {
 	c.Errors = append(c.Errors, ErrorMsg{
-		Message: err.Error(),
-		Meta:    meta,
+		Err:  err.Error(),
+		Meta: meta,
 	})
 }
 
