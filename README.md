@@ -286,6 +286,10 @@ func Logger() gin.HandlerFunc {
         // after request
         latency := time.Since(t)
         log.Print(latency)
+
+        // access the status we are sending
+        status := c.Writer.Status()
+        log.Println(status)
     }
 }
 

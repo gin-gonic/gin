@@ -40,7 +40,7 @@ type (
 	// manage the flow, validate the JSON of a request and render a JSON response for example.
 	Context struct {
 		Req      *http.Request
-		Writer   http.ResponseWriter
+		Writer   ResponseWriter
 		Keys     map[string]interface{}
 		Errors   ErrorMsgs
 		Params   httprouter.Params
@@ -92,7 +92,7 @@ func NewWithConfig(config Config) *Engine {
 
 	// Fill it with empty contexts
 	for i := 0; i < config.Preallocated; i++ {
-		engine.cache <- &Context{Engine: engine}
+		engine.cache <- &Context{Engine: engine, Writer: &responseWriter{}}
 	}
 	return engine
 }
@@ -171,7 +171,7 @@ func (engine *Engine) Run(addr string) {
 func (engine *Engine) createContext(w http.ResponseWriter, req *http.Request, params httprouter.Params, handlers []HandlerFunc) *Context {
 	select {
 	case c := <-engine.cache:
-		c.Writer = w
+		c.Writer.reset(w)
 		c.Req = req
 		c.Params = params
 		c.handlers = handlers
@@ -180,7 +180,7 @@ func (engine *Engine) createContext(w http.ResponseWriter, req *http.Request, pa
 		return c
 	default:
 		return &Context{
-			Writer:   w,
+			Writer:   &responseWriter{w, -1, false},
 			Req:      req,
 			Params:   params,
 			handlers: handlers,
