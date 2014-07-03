@@ -31,6 +31,11 @@ type (
 
 	ErrorMsgs []ErrorMsg
 
+	Config struct {
+		CacheSize    int
+		Preallocated int
+	}
+
 	// Context is the most important part of gin. It allows us to pass variables between middleware,
 	// manage the flow, validate the JSON of a request and render a JSON response for example.
 	Context struct {
@@ -39,8 +44,8 @@ type (
 		Keys     map[string]interface{}
 		Errors   ErrorMsgs
 		Params   httprouter.Params
+		Engine   *Engine
 		handlers []HandlerFunc
-		engine   *Engine
 		index    int8
 	}
 
@@ -72,22 +77,33 @@ func (a ErrorMsgs) String() string {
 	return buffer.String()
 }
 
-// Returns a new blank Engine instance without any middleware attached.
-// The most basic configuration
-func New() *Engine {
-	cacheSize := 1024
-
+func NewWithConfig(config Config) *Engine {
+	if config.CacheSize < 2 {
+		panic("CacheSize must be at least 2")
+	}
+	if config.Preallocated > config.CacheSize {
+		panic("Preallocated must be less or equal to CacheSize")
+	}
 	engine := &Engine{}
 	engine.RouterGroup = &RouterGroup{nil, "/", nil, engine}
 	engine.router = httprouter.New()
 	engine.router.NotFound = engine.handle404
-	engine.cache = make(chan *Context, cacheSize)
+	engine.cache = make(chan *Context, config.CacheSize)
 
 	// Fill it with empty contexts
-	for i := 0; i < cacheSize/2; i++ {
-		engine.cache <- &Context{engine: engine}
+	for i := 0; i < config.Preallocated; i++ {
+		engine.cache <- &Context{Engine: engine}
 	}
 	return engine
+}
+
+// Returns a new blank Engine instance without any middleware attached.
+// The most basic configuration
+func New() *Engine {
+	return NewWithConfig(Config{
+		CacheSize:    1024,
+		Preallocated: 512,
+	})
 }
 
 // Returns a Engine instance with the Logger and Recovery already attached.
@@ -104,6 +120,10 @@ func (engine *Engine) LoadHTMLTemplates(pattern string) {
 // Adds handlers for NotFound. It return a 404 code by default.
 func (engine *Engine) NotFound404(handlers ...HandlerFunc) {
 	engine.handlers404 = handlers
+}
+
+func (engine *Engine) CacheStress() float32 {
+	return 1.0 - float32(len(engine.cache))/float32(cap(engine.cache))
 }
 
 func (engine *Engine) handle404(w http.ResponseWriter, req *http.Request) {
@@ -162,7 +182,7 @@ func (engine *Engine) createContext(w http.ResponseWriter, req *http.Request, pa
 			Params:   params,
 			handlers: handlers,
 			index:    -1,
-			engine:   engine,
+			Engine:   engine,
 		}
 	}
 }
@@ -385,7 +405,7 @@ func (c *Context) HTML(code int, name string, data interface{}) {
 	if code >= 0 {
 		c.Writer.WriteHeader(code)
 	}
-	if err := c.engine.HTMLTemplates.ExecuteTemplate(c.Writer, name, data); err != nil {
+	if err := c.Engine.HTMLTemplates.ExecuteTemplate(c.Writer, name, data); err != nil {
 		c.Error(err, map[string]interface{}{
 			"name": name,
 			"data": data,
