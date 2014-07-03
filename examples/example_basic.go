@@ -38,14 +38,14 @@ func main() {
 	}))
 
 	authorized.POST("admin", func(c *gin.Context) {
-		user := c.Get("user").(string)
+		user, _ := c.Get("user")
 
 		// Parse JSON
 		var json struct {
 			Value string `json:"value" binding:"required"`
 		}
 		if c.EnsureBody(&json) {
-			DB[user] = json.Value
+			DB[user.(string)] = json.Value
 			c.JSON(200, gin.H{"status": "ok"})
 		}
 	})
