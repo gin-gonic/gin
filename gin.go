@@ -264,6 +264,11 @@ func (group *RouterGroup) OPTIONS(path string, handlers ...HandlerFunc) {
 	group.Handle("OPTIONS", path, handlers)
 }
 
+// HEAD is a shortcut for router.Handle("HEAD", path, handle)
+func (group *RouterGroup) HEAD(path string, handlers ...HandlerFunc) {
+	group.Handle("HEAD", path, handlers)
+}
+
 func (group *RouterGroup) combineHandlers(handlers []HandlerFunc) []HandlerFunc {
 	s := len(group.Handlers) + len(handlers)
 	h := make([]HandlerFunc, 0, s)
