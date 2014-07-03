@@ -275,14 +275,14 @@ func main() {
 func Logger() gin.HandlerFunc {
     return func(c *gin.Context) {
         t := time.Now()
-        
+
         // Set example variable
         c.Set("example", "12345")
-        
+
         // before request
-        
+
         c.Next()
-        
+
         // after request
         latency := time.Since(t)
         log.Print(latency)
@@ -292,10 +292,10 @@ func Logger() gin.HandlerFunc {
 func main() {
     r := gin.New()
     r.Use(Logger())
-    
+
     r.GET("/test", func(c *gin.Context){
-        example := r.Get("example").(string)
-        
+        example := c.MustGet("example").(string)
+
         // it would print: "12345"
         log.Println(example)
     })
