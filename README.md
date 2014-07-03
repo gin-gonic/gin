@@ -259,11 +259,7 @@ You can also use your own html template render
 import "html/template"
 func main() {
     r := gin.Default()
-    html, err := template.ParseFiles("file1", "file2")
-    if err != nil {
-        fmt.Printf("Could not parse templates: %v\n", err)
-        return
-    }
+    html := template.Must(template.ParseFiles("file1", "file2"))
     r.HTMLTemplates = html
 
     // Listen and server on 0.0.0.0:8080
