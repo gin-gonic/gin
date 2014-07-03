@@ -31,6 +31,11 @@ type (
 
 	ErrorMsgs []ErrorMsg
 
+	Config struct {
+		CacheSize    int
+		Preallocated int
+	}
+
 	// Context is the most important part of gin. It allows us to pass variables between middleware,
 	// manage the flow, validate the JSON of a request and render a JSON response for example.
 	Context struct {
@@ -39,8 +44,8 @@ type (
 		Keys     map[string]interface{}
 		Errors   ErrorMsgs
 		Params   httprouter.Params
+		Engine   *Engine
 		handlers []HandlerFunc
-		engine   *Engine
 		index    int8
 	}
 
@@ -56,9 +61,10 @@ type (
 	// Represents the web framework, it wrappers the blazing fast httprouter multiplexer and a list of global middlewares.
 	Engine struct {
 		*RouterGroup
+		HTMLTemplates *template.Template
+		cache         chan *Context
 		handlers404   []HandlerFunc
 		router        *httprouter.Router
-		HTMLTemplates *template.Template
 	}
 )
 
@@ -71,14 +77,33 @@ func (a ErrorMsgs) String() string {
 	return buffer.String()
 }
 
-// Returns a new blank Engine instance without any middleware attached.
-// The most basic configuration
-func New() *Engine {
+func NewWithConfig(config Config) *Engine {
+	if config.CacheSize < 2 {
+		panic("CacheSize must be at least 2")
+	}
+	if config.Preallocated > config.CacheSize {
+		panic("Preallocated must be less or equal to CacheSize")
+	}
 	engine := &Engine{}
 	engine.RouterGroup = &RouterGroup{nil, "/", nil, engine}
 	engine.router = httprouter.New()
 	engine.router.NotFound = engine.handle404
+	engine.cache = make(chan *Context, config.CacheSize)
+
+	// Fill it with empty contexts
+	for i := 0; i < config.Preallocated; i++ {
+		engine.cache <- &Context{Engine: engine}
+	}
 	return engine
+}
+
+// Returns a new blank Engine instance without any middleware attached.
+// The most basic configuration
+func New() *Engine {
+	return NewWithConfig(Config{
+		CacheSize:    1024,
+		Preallocated: 512,
+	})
 }
 
 // Returns a Engine instance with the Logger and Recovery already attached.
@@ -97,6 +122,10 @@ func (engine *Engine) NotFound404(handlers ...HandlerFunc) {
 	engine.handlers404 = handlers
 }
 
+func (engine *Engine) CacheStress() float32 {
+	return 1.0 - float32(len(engine.cache))/float32(cap(engine.cache))
+}
+
 func (engine *Engine) handle404(w http.ResponseWriter, req *http.Request) {
 	handlers := engine.combineHandlers(engine.handlers404)
 	c := engine.createContext(w, req, nil, handlers)
@@ -107,6 +136,7 @@ func (engine *Engine) handle404(w http.ResponseWriter, req *http.Request) {
 	}
 
 	c.Next()
+	engine.reuseContext(c)
 }
 
 // ServeFiles serves files from the given file system root.
@@ -138,14 +168,32 @@ func (engine *Engine) Run(addr string) {
 /********** ROUTES GROUPING *********/
 /************************************/
 
-func (group *RouterGroup) createContext(w http.ResponseWriter, req *http.Request, params httprouter.Params, handlers []HandlerFunc) *Context {
-	return &Context{
-		Writer:   w,
-		Req:      req,
-		index:    -1,
-		engine:   group.engine,
-		Params:   params,
-		handlers: handlers,
+func (engine *Engine) createContext(w http.ResponseWriter, req *http.Request, params httprouter.Params, handlers []HandlerFunc) *Context {
+	select {
+	case c := <-engine.cache:
+		c.Writer = w
+		c.Req = req
+		c.Params = params
+		c.handlers = handlers
+		c.Keys = nil
+		c.index = -1
+		return c
+	default:
+		return &Context{
+			Writer:   w,
+			Req:      req,
+			Params:   params,
+			handlers: handlers,
+			index:    -1,
+			Engine:   engine,
+		}
+	}
+}
+
+func (engine *Engine) reuseContext(c *Context) {
+	select {
+	case engine.cache <- c:
+	default:
 	}
 }
 
@@ -180,7 +228,9 @@ func (group *RouterGroup) Handle(method, p string, handlers []HandlerFunc) {
 	p = path.Join(group.prefix, p)
 	handlers = group.combineHandlers(handlers)
 	group.engine.router.Handle(method, p, func(w http.ResponseWriter, req *http.Request, params httprouter.Params) {
-		group.createContext(w, req, params, handlers).Next()
+		c := group.engine.createContext(w, req, params, handlers)
+		c.Next()
+		group.engine.reuseContext(c)
 	})
 }
 
@@ -220,6 +270,13 @@ func (group *RouterGroup) combineHandlers(handlers []HandlerFunc) []HandlerFunc 
 /************************************/
 /****** FLOW AND ERROR MANAGEMENT****/
 /************************************/
+
+func (c *Context) Copy() *Context {
+	var cp Context = *c
+	cp.index = AbortIndex
+	cp.handlers = nil
+	return &cp
+}
 
 // Next should be used only in the middlewares.
 // It executes the pending handlers in the chain inside the calling handler.
@@ -358,7 +415,7 @@ func (c *Context) HTML(code int, name string, data interface{}) {
 	if code >= 0 {
 		c.Writer.WriteHeader(code)
 	}
-	if err := c.engine.HTMLTemplates.ExecuteTemplate(c.Writer, name, data); err != nil {
+	if err := c.Engine.HTMLTemplates.ExecuteTemplate(c.Writer, name, data); err != nil {
 		c.Error(err, map[string]interface{}{
 			"name": name,
 			"data": data,
