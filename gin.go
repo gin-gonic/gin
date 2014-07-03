@@ -207,6 +207,11 @@ func (group *RouterGroup) PUT(path string, handlers ...HandlerFunc) {
 	group.Handle("PUT", path, handlers)
 }
 
+// OPTIONS is a shortcut for router.Handle("OPTIONS", path, handle)
+func (group *RouterGroup) OPTIONS(path string, handlers ...HandlerFunc) {
+	group.Handle("OPTIONS", path, handlers)
+}
+
 func (group *RouterGroup) combineHandlers(handlers []HandlerFunc) []HandlerFunc {
 	s := len(group.Handlers) + len(handlers)
 	h := make([]HandlerFunc, 0, s)
