@@ -129,7 +129,8 @@ func (engine *Engine) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 }
 
 func (engine *Engine) Run(addr string) {
-	http.ListenAndServe(addr, engine)
+	log.Println("You are now running gin on port: ", addr)
+	log.Fatalln(http.ListenAndServe(addr, engine))
 }
 
 /************************************/
