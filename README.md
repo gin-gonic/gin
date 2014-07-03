@@ -1,6 +1,7 @@
 #Gin Web Framework
 
 [![GoDoc](https://godoc.org/github.com/gin-gonic/gin?status.png)](https://godoc.org/github.com/gin-gonic/gin)
+[![Build Status](https://travis-ci.org/gin-gonic/gin.svg)](https://travis-ci.org/gin-gonic/gin)
 
 Gin is a web framework written in Golang. It features a martini-like API with much better performance, up to 40 times faster. If you need performance and good productivity, you will love Gin.  
 [Check out the official web site](http://gin-gonic.github.io/gin/)
@@ -260,7 +261,7 @@ You can also use your own html template render
 import "html/template"
 func main() {
     r := gin.Default()
-    html := template.ParseFiles("file1", "file2")
+    html := template.Must(template.ParseFiles("file1", "file2"))
     r.HTMLTemplates = html
 
     // Listen and server on 0.0.0.0:8080
