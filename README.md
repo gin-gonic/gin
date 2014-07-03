@@ -55,7 +55,7 @@ func main() {
 }
 ```
 
-#### Using GET, POST, PUT, PATCH and DELETE
+#### Using GET, POST, PUT, PATCH, DELETE and OPTIONS
 
 ```go
 func main() {
@@ -67,6 +67,7 @@ func main() {
     r.PUT("/somePut", putting)
     r.DELETE("/someDelete", deleting)
     r.PATCH("/somePatch", patching)
+    r.OPTIONS("/someOptions", options)
 
     // Listen and server on 0.0.0.0:8080
     r.Run(":8080")
