@@ -270,11 +270,10 @@ func (group *RouterGroup) combineHandlers(handlers []HandlerFunc) []HandlerFunc 
 /************************************/
 
 func (c *Context) Copy() *Context {
-	cp := &Context{}
-	*cp = *c
+	var cp Context = *c
 	cp.index = AbortIndex
 	cp.handlers = nil
-	return cp
+	return &cp
 }
 
 // Next should be used only in the middlewares.
