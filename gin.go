@@ -23,7 +23,7 @@ type (
 
 	H map[string]interface{}
 
-	// Used internally to collect a error ocurred during a http request.
+	// Used internally to collect errors that occurred during an http request.
 	ErrorMsg struct {
 		Err  string      `json:"error"`
 		Meta interface{} `json:"meta"`
@@ -53,7 +53,7 @@ type (
 		engine   *Engine
 	}
 
-	// Represents the web framework, it wrappers the blazing fast httprouter multiplexer and a list of global middlewares.
+	// Represents the web framework, it wraps the blazing fast httprouter multiplexer and a list of global middlewares.
 	Engine struct {
 		*RouterGroup
 		handlers404   []HandlerFunc
@@ -152,7 +152,7 @@ func (group *RouterGroup) Use(middlewares ...HandlerFunc) {
 	group.Handlers = append(group.Handlers, middlewares...)
 }
 
-// Greates a new router group. You should create add all the routes that share that have common middlwares or same path prefix.
+// Creates a new router group. You should add all the routes that have common middlwares or the same path prefix.
 // For example, all the routes that use a common middlware for authorization could be grouped.
 func (group *RouterGroup) Group(component string, handlers ...HandlerFunc) *RouterGroup {
 	prefix := path.Join(group.prefix, component)
@@ -238,7 +238,7 @@ func (c *Context) Abort(code int) {
 	c.index = AbortIndex
 }
 
-// Fail is the same than Abort plus an error message.
+// Fail is the same as Abort plus an error message.
 // Calling `context.Fail(500, err)` is equivalent to:
 // ```
 // context.Error("Operation aborted", err)
@@ -249,8 +249,8 @@ func (c *Context) Fail(code int, err error) {
 	c.Abort(code)
 }
 
-// Attachs an error to the current context. The error is pushed to a list of errors.
-// It's a gooc idea to call Error for each error ocurred during the resolution of a request.
+// Attaches an error to the current context. The error is pushed to a list of errors.
+// It's a good idea to call Error for each error that occurred during the resolution of a request.
 // A middleware can be used to collect all the errors and push them to a database together, print a log, or append it in the HTTP response.
 func (c *Context) Error(err error, meta interface{}) {
 	c.Errors = append(c.Errors, ErrorMsg{
@@ -272,8 +272,8 @@ func (c *Context) LastError() error {
 /******** METADATA MANAGEMENT********/
 /************************************/
 
-// Sets a new pair key/value just for the specefied context.
-// It also lazy initializes the hashmap
+// Sets a new pair key/value just for the specified context.
+// It also lazy initializes the hashmap.
 func (c *Context) Set(key string, item interface{}) {
 	if c.Keys == nil {
 		c.Keys = make(map[string]interface{})
@@ -320,8 +320,8 @@ func (c *Context) ParseBody(item interface{}) error {
 	}
 }
 
-// Serializes the given struct as a JSON into the response body in a fast and efficient way.
-// It also sets the Content-Type as "application/json"
+// Serializes the given struct as JSON into the response body in a fast and efficient way.
+// It also sets the Content-Type as "application/json".
 func (c *Context) JSON(code int, obj interface{}) {
 	c.Writer.Header().Set("Content-Type", "application/json")
 	if code >= 0 {
@@ -334,8 +334,8 @@ func (c *Context) JSON(code int, obj interface{}) {
 	}
 }
 
-// Serializes the given struct as a XML into the response body in a fast and efficient way.
-// It also sets the Content-Type as "application/xml"
+// Serializes the given struct as XML into the response body in a fast and efficient way.
+// It also sets the Content-Type as "application/xml".
 func (c *Context) XML(code int, obj interface{}) {
 	c.Writer.Header().Set("Content-Type", "application/xml")
 	if code >= 0 {
@@ -348,8 +348,8 @@ func (c *Context) XML(code int, obj interface{}) {
 	}
 }
 
-// Renders the HTTP template specified by his file name.
-// It also update the HTTP code and sets the Content-Type as "text/html".
+// Renders the HTTP template specified by its file name.
+// It also updates the HTTP code and sets the Content-Type as "text/html".
 // See http://golang.org/doc/articles/wiki/
 func (c *Context) HTML(code int, name string, data interface{}) {
 	c.Writer.Header().Set("Content-Type", "text/html")
@@ -365,7 +365,7 @@ func (c *Context) HTML(code int, name string, data interface{}) {
 	}
 }
 
-// Writes the given string into the response body and sets the Content-Type to "text/plain"
+// Writes the given string into the response body and sets the Content-Type to "text/plain".
 func (c *Context) String(code int, msg string) {
 	if code >= 0 {
 		c.Writer.WriteHeader(code)
@@ -374,7 +374,7 @@ func (c *Context) String(code int, msg string) {
 	c.Writer.Write([]byte(msg))
 }
 
-// Writes some data into the body stream and updates the HTTP code
+// Writes some data into the body stream and updates the HTTP code.
 func (c *Context) Data(code int, data []byte) {
 	c.Writer.WriteHeader(code)
 	c.Writer.Write(data)
