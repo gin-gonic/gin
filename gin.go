@@ -45,7 +45,6 @@ type (
 		Errors   ErrorMsgs
 		Params   httprouter.Params
 		Engine   *Engine
-		keep     bool
 		handlers []HandlerFunc
 		index    int8
 	}
@@ -174,6 +173,7 @@ func (engine *Engine) createContext(w http.ResponseWriter, req *http.Request, pa
 		c.Req = req
 		c.Params = params
 		c.handlers = handlers
+		c.Keys = nil
 		c.index = -1
 		return c
 	default:
@@ -181,7 +181,6 @@ func (engine *Engine) createContext(w http.ResponseWriter, req *http.Request, pa
 			Writer:   w,
 			Req:      req,
 			Params:   params,
-			keep:     false,
 			handlers: handlers,
 			index:    -1,
 			Engine:   engine,
@@ -190,11 +189,9 @@ func (engine *Engine) createContext(w http.ResponseWriter, req *http.Request, pa
 }
 
 func (engine *Engine) reuseContext(c *Context) {
-	if c.keep == false {
-		select {
-		case engine.cache <- c:
-		default:
-		}
+	select {
+	case engine.cache <- c:
+	default:
 	}
 }
 
@@ -272,21 +269,12 @@ func (group *RouterGroup) combineHandlers(handlers []HandlerFunc) []HandlerFunc 
 /****** FLOW AND ERROR MANAGEMENT****/
 /************************************/
 
-func (c *Context) Keep() {
-	if c.keep == false {
-		c.keep = true
-	} else {
-		log.Println("gin: trying to Keep same context several times")
-	}
-}
-
-func (c *Context) Release() {
-	if c.keep == true {
-		c.keep = false
-		c.Engine.reuseContext(c)
-	} else {
-		log.Println("gin: bug: trying to Release same context several times")
-	}
+func (c *Context) Copy() *Context {
+	cp := &Context{}
+	*cp = *c
+	cp.index = AbortIndex
+	cp.handlers = nil
+	return cp
 }
 
 // Next should be used only in the middlewares.
