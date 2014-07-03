@@ -56,9 +56,10 @@ type (
 	// Represents the web framework, it wrappers the blazing fast httprouter multiplexer and a list of global middlewares.
 	Engine struct {
 		*RouterGroup
+		HTMLTemplates *template.Template
+		cache         chan *Context
 		handlers404   []HandlerFunc
 		router        *httprouter.Router
-		HTMLTemplates *template.Template
 	}
 )
 
@@ -74,10 +75,18 @@ func (a ErrorMsgs) String() string {
 // Returns a new blank Engine instance without any middleware attached.
 // The most basic configuration
 func New() *Engine {
+	cacheSize := 1024
+
 	engine := &Engine{}
 	engine.RouterGroup = &RouterGroup{nil, "/", nil, engine}
 	engine.router = httprouter.New()
 	engine.router.NotFound = engine.handle404
+	engine.cache = make(chan *Context, cacheSize)
+
+	// Fill it with empty contexts
+	for i := 0; i < cacheSize/2; i++ {
+		engine.cache <- &Context{engine: engine}
+	}
 	return engine
 }
 
@@ -107,6 +116,7 @@ func (engine *Engine) handle404(w http.ResponseWriter, req *http.Request) {
 	}
 
 	c.Next()
+	engine.reuseContext(c)
 }
 
 // ServeFiles serves files from the given file system root.
@@ -136,14 +146,31 @@ func (engine *Engine) Run(addr string) {
 /********** ROUTES GROUPING *********/
 /************************************/
 
-func (group *RouterGroup) createContext(w http.ResponseWriter, req *http.Request, params httprouter.Params, handlers []HandlerFunc) *Context {
-	return &Context{
-		Writer:   w,
-		Req:      req,
-		index:    -1,
-		engine:   group.engine,
-		Params:   params,
-		handlers: handlers,
+func (engine *Engine) createContext(w http.ResponseWriter, req *http.Request, params httprouter.Params, handlers []HandlerFunc) *Context {
+	select {
+	case c := <-engine.cache:
+		c.Writer = w
+		c.Req = req
+		c.Params = params
+		c.handlers = handlers
+		c.index = -1
+		return c
+	default:
+		return &Context{
+			Writer:   w,
+			Req:      req,
+			Params:   params,
+			handlers: handlers,
+			index:    -1,
+			engine:   engine,
+		}
+	}
+}
+
+func (engine *Engine) reuseContext(c *Context) {
+	select {
+	case engine.cache <- c:
+	default:
 	}
 }
 
@@ -178,7 +205,9 @@ func (group *RouterGroup) Handle(method, p string, handlers []HandlerFunc) {
 	p = path.Join(group.prefix, p)
 	handlers = group.combineHandlers(handlers)
 	group.engine.router.Handle(method, p, func(w http.ResponseWriter, req *http.Request, params httprouter.Params) {
-		group.createContext(w, req, params, handlers).Next()
+		c := group.engine.createContext(w, req, params, handlers)
+		c.Next()
+		group.engine.reuseContext(c)
 	})
 }
 
