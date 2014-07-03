@@ -6,6 +6,7 @@ import (
 	"encoding/xml"
 	"errors"
 	"fmt"
+	"github.com/gin-gonic/gin/binding"
 	"github.com/julienschmidt/httprouter"
 	"html/template"
 	"log"
@@ -371,22 +372,49 @@ func (c *Context) Get(key string) interface{} {
 /************************************/
 
 // Like ParseBody() but this method also writes a 400 error if the json is not valid.
+// DEPRECATED, use Bind() instead.
 func (c *Context) EnsureBody(item interface{}) bool {
-	if err := c.ParseBody(item); err != nil {
+	return c.Bind(item)
+}
+
+// DEPRECATED use bindings directly
+// Parses the body content as a JSON input. It decodes the json payload into the struct specified as a pointer.
+func (c *Context) ParseBody(item interface{}) error {
+	return binding.JSON.Bind(c.Req.Body, item)
+}
+
+// This function checks the Content-Type to select a binding engine automatically,
+// Depending the "Content-Type" header different bindings are used:
+// "application/json" --> JSON binding
+// "application/xml"  --> XML binding
+// else --> returns an error
+// if Parses the request's body as JSON if Content-Type == "application/json"  using JSON or XML  as a JSON input. It decodes the json payload into the struct specified as a pointer.Like ParseBody() but this method also writes a 400 error if the json is not valid.
+func (c *Context) Bind(obj interface{}) bool {
+	var err error
+	switch c.Req.Header.Get("Content-Type") {
+	case "application/json":
+		err = binding.JSON.Bind(c.Req.Body, obj)
+	case "application/xml":
+		err = binding.XML.Bind(c.Req.Body, obj)
+	default:
+		err = errors.New("unknown content-type: " + c.Req.Header.Get("Content-Type"))
+	}
+	if err == nil {
+		err = Validate(c, obj)
+	}
+	if err != nil {
 		c.Fail(400, err)
 		return false
 	}
 	return true
 }
 
-// Parses the body content as a JSON input. It decodes the json payload into the struct specified as a pointer.
-func (c *Context) ParseBody(item interface{}) error {
-	decoder := json.NewDecoder(c.Req.Body)
-	if err := decoder.Decode(&item); err == nil {
-		return Validate(c, item)
-	} else {
-		return err
+func (c *Context) BindWith(obj interface{}, b binding.Binding) bool {
+	if err := b.Bind(c.Req.Body, obj); err != nil {
+		c.Fail(400, err)
+		return false
 	}
+	return true
 }
 
 // Serializes the given struct as a JSON into the response body in a fast and efficient way.
