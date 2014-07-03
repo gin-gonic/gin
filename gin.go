@@ -129,13 +129,11 @@ func (engine *Engine) CacheStress() float32 {
 func (engine *Engine) handle404(w http.ResponseWriter, req *http.Request) {
 	handlers := engine.combineHandlers(engine.handlers404)
 	c := engine.createContext(w, req, nil, handlers)
-	if engine.handlers404 == nil {
-		http.NotFound(c.Writer, c.Req)
-	} else {
-		c.Writer.WriteHeader(404)
-	}
-
+	c.Writer.setStatus(404)
 	c.Next()
+	if !c.Writer.Written() {
+		c.String(404, "404 page not found")
+	}
 	engine.reuseContext(c)
 }
 
