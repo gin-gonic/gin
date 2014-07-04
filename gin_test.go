@@ -29,6 +29,24 @@ func TestRouterGroupGETRouteOK(t *testing.T) {
 	}
 }
 
+// TestRouterGroupGETNoRootExistsRouteOK tests that a GET requse to root is correctly
+// handled (404) when no root route exists.
+func TestRouterGroupGETNoRootExistsRouteOK(t *testing.T) {
+	req, _ := http.NewRequest("GET", "/", nil)
+	w := httptest.NewRecorder()
+	
+	r := Default()
+	r.GET("/test", func (c *Context) {
+	})
+
+	r.ServeHTTP(w, req)
+
+	if w.Code != http.StatusNotFound {
+		// If this fails, it's because httprouter needs to be updated to at least f78f58a0db
+		t.Errorf("Status code should be %v, was %d. Location: %s", http.StatusNotFound, w.Code, w.HeaderMap.Get("Location"))
+	}
+}
+
 // TestRouterGroupPOSTRouteOK tests that POST route is correctly invoked.
 func TestRouterGroupPOSTRouteOK(t *testing.T) {
 	req, _ := http.NewRequest("POST", "/test", nil)
