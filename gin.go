@@ -355,20 +355,24 @@ func (c *Context) Set(key string, item interface{}) {
 	c.Keys[key] = item
 }
 
-// Returns the value for the given key.
-// It panics if the value doesn't exist.
-func (c *Context) Get(key string) interface{} {
-	var ok bool
-	var item interface{}
+// Get returns the value for the given key or an error if the key does not exist.
+func (c *Context) Get(key string) (interface{}, error) {
 	if c.Keys != nil {
-		item, ok = c.Keys[key]
-	} else {
-		item, ok = nil, false
+		item, ok := c.Keys[key]
+		if ok {
+			return item, nil
+		}
 	}
-	if !ok || item == nil {
+	return nil, errors.New("Key does not exist.")
+}
+
+// MustGet returns the value for the given key or panics if the value doesn't exist.
+func (c *Context) MustGet(key string) interface{} {
+	value, err := c.Get(key)
+	if err != nil || value == nil {
 		log.Panicf("Key %s doesn't exist", key)
 	}
-	return item
+	return value
 }
 
 /************************************/

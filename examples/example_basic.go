@@ -38,7 +38,7 @@ func main() {
 	}))
 
 	authorized.POST("admin", func(c *gin.Context) {
-		user := c.Get(gin.AuthUserKey).(string)
+		user := c.MustGet(gin.AuthUserKey).(string)
 
 		// Parse JSON
 		var json struct {
