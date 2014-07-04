@@ -4,8 +4,7 @@
 [![Build Status](https://travis-ci.org/gin-gonic/gin.svg)](https://travis-ci.org/gin-gonic/gin)
 
 Gin is a web framework written in Golang. It features a martini-like API with much better performance, up to 40 times faster. If you need performance and good productivity, you will love Gin.  
-[Check out the official web site](http://gin-gonic.github.io/gin/)
-
+![Gin console logger](http://gin-gonic.github.io/gin/other/console.png)
 
 ##Gin is new, will it be supported?
 
