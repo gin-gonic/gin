@@ -138,7 +138,7 @@ func (engine *Engine) Run(addr string) {
 
 func (group *RouterGroup) createContext(w http.ResponseWriter, req *http.Request, params httprouter.Params, handlers []HandlerFunc) *Context {
 	return &Context{
-		Writer:   ResponseWriter{w, -1},
+		Writer:   ResponseWriter{w, StatusUnset},
 		Req:      req,
 		index:    -1,
 		engine:   group.engine,
@@ -327,7 +327,7 @@ func (c *Context) JSON(code int, obj interface{}) {
 	if code >= 0 {
 		c.Writer.WriteHeader(code)
 	}
-	encoder := json.NewEncoder(c.Writer)
+	encoder := json.NewEncoder(&c.Writer)
 	if err := encoder.Encode(obj); err != nil {
 		c.Error(err, obj)
 		http.Error(&c.Writer, err.Error(), 500)
@@ -341,7 +341,7 @@ func (c *Context) XML(code int, obj interface{}) {
 	if code >= 0 {
 		c.Writer.WriteHeader(code)
 	}
-	encoder := xml.NewEncoder(c.Writer)
+	encoder := xml.NewEncoder(&c.Writer)
 	if err := encoder.Encode(obj); err != nil {
 		c.Error(err, obj)
 		http.Error(&c.Writer, err.Error(), 500)
@@ -356,7 +356,7 @@ func (c *Context) HTML(code int, name string, data interface{}) {
 	if code >= 0 {
 		c.Writer.WriteHeader(code)
 	}
-	if err := c.engine.HTMLTemplates.ExecuteTemplate(c.Writer, name, data); err != nil {
+	if err := c.engine.HTMLTemplates.ExecuteTemplate(&c.Writer, name, data); err != nil {
 		c.Error(err, map[string]interface{}{
 			"name": name,
 			"data": data,
