@@ -68,6 +68,13 @@ type (
 	}
 )
 
+var (
+	DefaultConfig = Config{
+		CacheSize:    1024,
+		Preallocated: 512,
+	}
+)
+
 func (a ErrorMsgs) String() string {
 	var buffer bytes.Buffer
 	for i, msg := range a {
@@ -101,10 +108,7 @@ func NewWithConfig(config Config) *Engine {
 // Returns a new blank Engine instance without any middleware attached.
 // The most basic configuration
 func New() *Engine {
-	return NewWithConfig(Config{
-		CacheSize:    1024,
-		Preallocated: 512,
-	})
+	return NewWithConfig(DefaultConfig)
 }
 
 // Returns a Engine instance with the Logger and Recovery already attached.
