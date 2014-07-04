@@ -33,12 +33,12 @@ func main() {
 	//	  "manu": "123",
 	//}))
 	authorized := r.Group("/", gin.BasicAuth(gin.Accounts{
-		{"foo", "bar"},  //1. user:foo password:bar
-		{"manu", "123"}, //2. user:manu password:123
+		"foo":  "bar", // user:foo password:bar
+		"manu": "123", // user:manu password:123
 	}))
 
 	authorized.POST("admin", func(c *gin.Context) {
-		user := c.Get("user").(string)
+		user := c.Get(gin.AuthUserKey).(string)
 
 		// Parse JSON
 		var json struct {
