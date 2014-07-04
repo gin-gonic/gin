@@ -71,9 +71,10 @@ type (
 func (a ErrorMsgs) String() string {
 	var buffer bytes.Buffer
 	for i, msg := range a {
-		text := fmt.Sprintf("Error #%02d: %s \n     Meta: %v\n\n", (i + 1), msg.Err, msg.Meta)
+		text := fmt.Sprintf("Error #%02d: %s \n     Meta: %v\n", (i + 1), msg.Err, msg.Meta)
 		buffer.WriteString(text)
 	}
+	buffer.WriteString("\n")
 	return buffer.String()
 }
 
