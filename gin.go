@@ -17,6 +17,11 @@ import (
 
 const (
 	AbortIndex = math.MaxInt8 / 2
+	MIMEJSON   = "application/json"
+	MIMEHTML   = "text/html"
+	MIMEXML    = "application/xml"
+	MIMEXML2   = "text/xml"
+	MIMEPlain  = "text/plain"
 )
 
 type (
@@ -371,16 +376,13 @@ func (c *Context) Get(key string) interface{} {
 /******** ENCOGING MANAGEMENT********/
 /************************************/
 
-// Like ParseBody() but this method also writes a 400 error if the json is not valid.
-// DEPRECATED, use Bind() instead.
-func (c *Context) EnsureBody(item interface{}) bool {
-	return c.Bind(item)
-}
-
-// DEPRECATED use bindings directly
-// Parses the body content as a JSON input. It decodes the json payload into the struct specified as a pointer.
-func (c *Context) ParseBody(item interface{}) error {
-	return binding.JSON.Bind(c.Req.Body, item)
+func filterFlags(content string) string {
+	for i, a := range content {
+		if a == ' ' || a == ';' {
+			return content[:i]
+		}
+	}
+	return content
 }
 
 // This function checks the Content-Type to select a binding engine automatically,
@@ -390,27 +392,24 @@ func (c *Context) ParseBody(item interface{}) error {
 // else --> returns an error
 // if Parses the request's body as JSON if Content-Type == "application/json"  using JSON or XML  as a JSON input. It decodes the json payload into the struct specified as a pointer.Like ParseBody() but this method also writes a 400 error if the json is not valid.
 func (c *Context) Bind(obj interface{}) bool {
-	var err error
-	switch c.Req.Header.Get("Content-Type") {
-	case "application/json":
-		err = binding.JSON.Bind(c.Req.Body, obj)
-	case "application/xml":
-		err = binding.XML.Bind(c.Req.Body, obj)
+	var b binding.Binding
+	ctype := filterFlags(c.Req.Header.Get("Content-Type"))
+	switch {
+	case c.Req.Method == "GET":
+		b = binding.Form
+	case ctype == MIMEJSON:
+		b = binding.JSON
+	case ctype == MIMEXML || ctype == MIMEXML2:
+		b = binding.XML
 	default:
-		err = errors.New("unknown content-type: " + c.Req.Header.Get("Content-Type"))
-	}
-	if err == nil {
-		err = Validate(c, obj)
-	}
-	if err != nil {
-		c.Fail(400, err)
+		c.Fail(400, errors.New("unknown content-type: "+ctype))
 		return false
 	}
-	return true
+	return c.BindWith(obj, b)
 }
 
 func (c *Context) BindWith(obj interface{}, b binding.Binding) bool {
-	if err := b.Bind(c.Req.Body, obj); err != nil {
+	if err := b.Bind(c.Req, obj); err != nil {
 		c.Fail(400, err)
 		return false
 	}
