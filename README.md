@@ -320,40 +320,39 @@ func main() {
 
 #### Using BasicAuth() middleware
 ```go
-func main() {
-    r := gin.Default()
-	// note than: type gin.H map[string]interface{}
-	secrets := gin.H{
-		"foo": gin.H{"email": "foo@bar.com", "phone": "123433"},
-		"austin": gin.H{"email": "austin@example.com", "phone": "666"},
-		"lena": gin.H{"email": "lena@guapa.com", "phone": "523443"}
-	}
+// similate some private data
+var secrets = gin.H{
+	"foo":    gin.H{"email": "foo@bar.com", "phone": "123433"},
+	"austin": gin.H{"email": "austin@example.com", "phone": "666"},
+	"lena":   gin.H{"email": "lena@guapa.com", "phone": "523443"},
+}
 
+func main() {
+	r := gin.Default()
+
+	// Group using gin.BasicAuth() middleware
+	// gin.Accounts is a shortcut for map[string]string
 	authorized := r.Group("/admin", gin.BasicAuth(gin.Accounts{
-		"foo": "bar",
+		"foo":    "bar",
 		"austin": "1234",
-		"lena": "hello2",
-		"manu": "4321"
-	}
+		"lena":   "hello2",
+		"manu":   "4321",
+	}))
+
+	// /admin/secrets endpoint
+	// hit "localhost:8080/admin/secrets
 	authorized.GET("/secrets", func(c *gin.Context) {
 		// get user, it was setted by the BasicAuth middleware
-		user := c.GET(gin.AuthUserKey).(string)
+		user := c.Get(gin.AuthUserKey).(string)
 		if secret, ok := secrets[user]; ok {
-			c.JSON(200, gin.H{
-				"user": user,
-				"secret": secret
-			}
+			c.JSON(200, gin.H{"user": user, "secret": secret})
 		} else {
-			c.JSON(200, gin.H{
-				"user": user,
-				"secret": "NO SECRET :("
-			}
+			c.JSON(200, gin.H{"user": user, "secret": "NO SECRET :("})
 		}
-	}
-	// hit "localhost:8080/admin/secrets
+	})
 
-    // Listen and server on 0.0.0.0:8080
-    r.Run(":8080")
+	// Listen and server on 0.0.0.0:8080
+	r.Run(":8080")
 }
 ```
 
