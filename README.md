@@ -11,7 +11,7 @@ Gin is a web framework written in Golang. It features a martini-like API with mu
 Yes, Gin is an internal project of [my](https://github.com/manucorporat) upcoming startup. We developed it and we are going to continue using and improve it.
 
 
-##Roadmap
+##Roadmap for v0.2
 - Performance improments, reduce allocation and garbage collection overhead
 - Fix bugs
 - Ask our designer for a cool logo
@@ -26,12 +26,13 @@ Yes, Gin is an internal project of [my](https://github.com/manucorporat) upcomin
 
 
 ## Start using it
-Run:
+Obviously, you need to have Git and Go! already installed to run Gin.  
+Run this in your terminal
 
 ```
 go get github.com/gin-gonic/gin
 ```
-Then import it in your Golang code:
+Then import it in your Go! code:
 
 ```
 import "github.com/gin-gonic/gin"
@@ -67,6 +68,7 @@ func main() {
     r.PUT("/somePut", putting)
     r.DELETE("/someDelete", deleting)
     r.PATCH("/somePatch", patching)
+    r.HEAD("/someHead", head)
     r.OPTIONS("/someOptions", options)
 
     // Listen and server on 0.0.0.0:8080
@@ -83,6 +85,13 @@ func main() {
     r.GET("/user/:name", func(c *gin.Context) {
         name := c.Params.ByName("name")
         message := "Hello "+name
+        c.String(200, message)
+    })
+
+    r.GET("/user/:name/:action", func(c *gin.Context) {
+        name := c.Params.ByName("name")
+        action := c.Params.ByName("action")
+        message := name + " is " + action
         c.String(200, message)
     })
 
@@ -309,8 +318,78 @@ func main() {
 }
 ```
 
+#### Using BasicAuth() middleware
+```go
+func main() {
+    r := gin.Default()
+	// note than: type gin.H map[string]interface{}
+	secrets := gin.H{
+		"foo": gin.H{"email": "foo@bar.com", "phone": "123433"},
+		"austin": gin.H{"email": "austin@example.com", "phone": "666"},
+		"lena": gin.H{"email": "lena@guapa.com", "phone": "523443"}
+	}
+
+	authorized := r.Group("/admin", gin.BasicAuth(gin.Accounts{
+		"foo": "bar",
+		"austin": "1234",
+		"lena": "hello2",
+		"manu": "4321"
+	}
+	authorized.GET("/secrets", func(c *gin.Context) {
+		// get user, it was setted by the BasicAuth middleware
+		user := c.GET(gin.AuthUserKey).(string)
+		if secret, ok := secrets[user]; ok {
+			c.JSON(200, gin.H{
+				"user": user,
+				"secret": secret
+			}
+		} else {
+			c.JSON(200, gin.H{
+				"user": user,
+				"secret": "NO SECRET :("
+			}
+		}
+	}
+	// hit "localhost:8080/admin/secrets
+
+    // Listen and server on 0.0.0.0:8080
+    r.Run(":8080")
+}
+```
 
 
+#### Goroutines inside a middleware
+When starting inside a middleware or handler, you **SHOULD NOT** use the original context inside it, you have to use a read-only copy.
+
+```go
+func main() {
+	r := gin.Default()
+
+	r.GET("/long_async", func(c *gin.Context) {
+		// create copy to be used inside the goroutine
+		c_cp := c.Copy()
+		go func() {
+			// simulate a long task with time.Sleep(). 5 seconds
+			time.Sleep(5 * time.Second)
+
+			// note than you are using the copied context "c_cp", IMPORTANT
+			log.Println("Done! in path " + c_cp.Req.URL.Path)
+		}()
+	})
+
+
+	r.GET("/long_sync", func(c *gin.Context) {
+		// simulate a long task with time.Sleep(). 5 seconds
+		time.Sleep(5 * time.Second)
+
+		// since we are NOT using a goroutine, we do not have to copy the context
+		log.Println("Done! in path " + c.Req.URL.Path)
+	})
+
+    // Listen and server on 0.0.0.0:8080
+    r.Run(":8080")
+}
+```
 
 #### Custom HTTP configuration
 
