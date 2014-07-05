@@ -44,7 +44,8 @@ func main() {
 		var json struct {
 			Value string `json:"value" binding:"required"`
 		}
-		if c.EnsureBody(&json) {
+
+		if c.Bind(&json) {
 			DB[user] = json.Value
 			c.JSON(200, gin.H{"status": "ok"})
 		}

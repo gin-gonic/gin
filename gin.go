@@ -6,6 +6,7 @@ import (
 	"encoding/xml"
 	"errors"
 	"fmt"
+	"github.com/gin-gonic/gin/binding"
 	"github.com/julienschmidt/httprouter"
 	"html/template"
 	"log"
@@ -16,6 +17,11 @@ import (
 
 const (
 	AbortIndex = math.MaxInt8 / 2
+	MIMEJSON   = "application/json"
+	MIMEHTML   = "text/html"
+	MIMEXML    = "application/xml"
+	MIMEXML2   = "text/xml"
+	MIMEPlain  = "text/plain"
 )
 
 type (
@@ -379,23 +385,44 @@ func (c *Context) MustGet(key string) interface{} {
 /******** ENCOGING MANAGEMENT********/
 /************************************/
 
-// Like ParseBody() but this method also writes a 400 error if the json is not valid.
-func (c *Context) EnsureBody(item interface{}) bool {
-	if err := c.ParseBody(item); err != nil {
+func filterFlags(content string) string {
+	for i, a := range content {
+		if a == ' ' || a == ';' {
+			return content[:i]
+		}
+	}
+	return content
+}
+
+// This function checks the Content-Type to select a binding engine automatically,
+// Depending the "Content-Type" header different bindings are used:
+// "application/json" --> JSON binding
+// "application/xml"  --> XML binding
+// else --> returns an error
+// if Parses the request's body as JSON if Content-Type == "application/json"  using JSON or XML  as a JSON input. It decodes the json payload into the struct specified as a pointer.Like ParseBody() but this method also writes a 400 error if the json is not valid.
+func (c *Context) Bind(obj interface{}) bool {
+	var b binding.Binding
+	ctype := filterFlags(c.Req.Header.Get("Content-Type"))
+	switch {
+	case c.Req.Method == "GET":
+		b = binding.Form
+	case ctype == MIMEJSON:
+		b = binding.JSON
+	case ctype == MIMEXML || ctype == MIMEXML2:
+		b = binding.XML
+	default:
+		c.Fail(400, errors.New("unknown content-type: "+ctype))
+		return false
+	}
+	return c.BindWith(obj, b)
+}
+
+func (c *Context) BindWith(obj interface{}, b binding.Binding) bool {
+	if err := b.Bind(c.Req, obj); err != nil {
 		c.Fail(400, err)
 		return false
 	}
 	return true
-}
-
-// Parses the body content as a JSON input. It decodes the json payload into the struct specified as a pointer.
-func (c *Context) ParseBody(item interface{}) error {
-	decoder := json.NewDecoder(c.Req.Body)
-	if err := decoder.Decode(&item); err == nil {
-		return Validate(c, item)
-	} else {
-		return err
-	}
 }
 
 // Serializes the given struct as JSON into the response body in a fast and efficient way.
