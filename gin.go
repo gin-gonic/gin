@@ -148,20 +148,6 @@ func (engine *Engine) handle404(w http.ResponseWriter, req *http.Request) {
 	engine.reuseContext(c)
 }
 
-// ServeFiles serves files from the given file system root.
-// The path must end with "/*filepath", files are then served from the local
-// path /defined/root/dir/*filepath.
-// For example if root is "/etc" and *filepath is "passwd", the local file
-// "/etc/passwd" would be served.
-// Internally a http.FileServer is used, therefore http.NotFound is used instead
-// of the Router's NotFound handler.
-// To use the operating system's file system implementation,
-// use http.Dir:
-//     router.ServeFiles("/src/*filepath", http.Dir("/var/www"))
-func (engine *Engine) ServeFiles(path string, root http.FileSystem) {
-	engine.router.ServeFiles(path, root)
-}
-
 // ServeHTTP makes the router implement the http.Handler interface.
 func (engine *Engine) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	engine.router.ServeHTTP(w, req)
@@ -471,12 +457,12 @@ func (c *Context) HTML(code int, name string, data interface{}) {
 }
 
 // Writes the given string into the response body and sets the Content-Type to "text/plain".
-func (c *Context) String(code int, msg string) {
+func (c *Context) String(code int, format string, values ...interface{}) {
 	c.Writer.Header().Set("Content-Type", MIMEPlain)
 	if code >= 0 {
 		c.Writer.WriteHeader(code)
 	}
-	c.Writer.Write([]byte(msg))
+	c.Writer.Write([]byte(fmt.Sprintf(format, values...)))
 }
 
 // Writes some data into the body stream and updates the HTTP code.
