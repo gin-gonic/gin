@@ -12,16 +12,16 @@ Yes, Gin is an internal project of [my](https://github.com/manucorporat) upcomin
 
 
 ##Roadmap for v0.2
-- Performance improments, reduce allocation and garbage collection overhead
-- Fix bugs
-- Ask our designer for a cool logo
-- Add tons of unit tests and benchmarks
-- Improve logging system
-- Improve JSON/XML validation using bindings
-- Improve XML support
-- Improve documentation
-- Add more cool middlewares, for example redis catching (this also helps developers to understand the framework)
-- Continuous integration
+- [x] Performance improments, reduce allocation and garbage collection overhead
+- [] Fix bugs
+- [ ] Ask our designer for a cool logo
+- [ ] Add tons of unit tests and benchmarks
+- [x] Improve logging system
+- [x] Improve JSON/XML validation using bindings
+- [ ] Improve XML support
+- [ ]Improve documentation
+- [ ]Add more cool middlewares, for example redis catching (this also helps developers to understand the framework)
+- [x]Continuous integration
 
 
 
