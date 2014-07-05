@@ -480,7 +480,12 @@ func (c *Context) String(code int, msg string) {
 }
 
 // Writes some data into the body stream and updates the HTTP code.
-func (c *Context) Data(code int, data []byte) {
-	c.Writer.WriteHeader(code)
+func (c *Context) Data(code int, contentType string, data []byte) {
+	if len(contentType) > 0 {
+		c.Writer.Header().Set("Content-Type", contentType)
+	}
+	if code >= 0 {
+		c.Writer.WriteHeader(code)
+	}
 	c.Writer.Write(data)
 }
