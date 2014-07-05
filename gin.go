@@ -143,7 +143,7 @@ func (engine *Engine) handle404(w http.ResponseWriter, req *http.Request) {
 	c.Writer.setStatus(404)
 	c.Next()
 	if !c.Writer.Written() {
-		c.String(404, "404 page not found")
+		c.Data(404, MIMEPlain, []byte("404 page not found"))
 	}
 	engine.reuseContext(c)
 }
