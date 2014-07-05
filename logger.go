@@ -48,10 +48,11 @@ func Logger() HandlerFunc {
 			color = red
 		}
 		latency := time.Since(start)
-		logger.Printf("[GIN] %v |%s %3d %s| %12v | %3s %s\n",
+		logger.Printf("[GIN] %v |%s %3d %s| %12v | %3.1f%% | %3s | %s\n",
 			time.Now().Format("2006/01/02 - 15:04:05"),
 			color, c.Writer.Status(), reset,
 			latency,
+			c.Engine.CacheStress()*100,
 			c.Req.Method, c.Req.URL.Path,
 		)
 
