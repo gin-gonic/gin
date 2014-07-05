@@ -62,6 +62,17 @@ type (
 	}
 )
 
+// Allows type H to be used with xml.Marshal
+func (h H) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
+	e.EncodeToken(start)
+	for key, value := range h {
+		elem := xml.StartElement{Name: xml.Name{Local: key}}
+		e.EncodeElement(value, elem)
+	}
+	e.EncodeToken(xml.EndElement{start.Name})
+	return nil
+}
+
 func (a ErrorMsgs) String() string {
 	var buffer bytes.Buffer
 	for i, msg := range a {
