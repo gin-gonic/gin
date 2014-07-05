@@ -94,6 +94,8 @@ func main() {
 
 #### Grouping routes
 ```go
+package main
+
 func main() {
     r := gin.Default()
     
