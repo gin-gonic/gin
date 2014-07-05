@@ -428,7 +428,7 @@ func (c *Context) BindWith(obj interface{}, b binding.Binding) bool {
 // Serializes the given struct as JSON into the response body in a fast and efficient way.
 // It also sets the Content-Type as "application/json".
 func (c *Context) JSON(code int, obj interface{}) {
-	c.Writer.Header().Set("Content-Type", "application/json")
+	c.Writer.Header().Set("Content-Type", MIMEJSON)
 	if code >= 0 {
 		c.Writer.WriteHeader(code)
 	}
@@ -442,7 +442,7 @@ func (c *Context) JSON(code int, obj interface{}) {
 // Serializes the given struct as XML into the response body in a fast and efficient way.
 // It also sets the Content-Type as "application/xml".
 func (c *Context) XML(code int, obj interface{}) {
-	c.Writer.Header().Set("Content-Type", "application/xml")
+	c.Writer.Header().Set("Content-Type", MIMEXML)
 	if code >= 0 {
 		c.Writer.WriteHeader(code)
 	}
@@ -457,7 +457,7 @@ func (c *Context) XML(code int, obj interface{}) {
 // It also updates the HTTP code and sets the Content-Type as "text/html".
 // See http://golang.org/doc/articles/wiki/
 func (c *Context) HTML(code int, name string, data interface{}) {
-	c.Writer.Header().Set("Content-Type", "text/html")
+	c.Writer.Header().Set("Content-Type", MIMEHTML)
 	if code >= 0 {
 		c.Writer.WriteHeader(code)
 	}
@@ -475,7 +475,7 @@ func (c *Context) String(code int, msg string) {
 	if code >= 0 {
 		c.Writer.WriteHeader(code)
 	}
-	c.Writer.Header().Set("Content-Type", "text/plain")
+	c.Writer.Header().Set("Content-Type", MIMEPlain)
 	c.Writer.Write([]byte(msg))
 }
 
