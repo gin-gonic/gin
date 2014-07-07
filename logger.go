@@ -60,9 +60,10 @@ func Logger() HandlerFunc {
 		default:
 			color = red
 		}
-		latency := time.Since(start)
+		end := time.Now()
+		latency := end.Sub(start)
 		stdlogger.Printf("[GIN] %v |%s %3d %s| %12v | %3.1f%% | %s %4s %s\n",
-			time.Now().Format("2006/01/02 - 15:04:05"),
+			end.Format("2006/01/02 - 15:04:05"),
 			color, c.Writer.Status(), reset,
 			latency,
 			c.Engine.CacheStress()*100,
