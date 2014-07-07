@@ -294,7 +294,7 @@ func main() {
     r.Use(Logger())
     
     r.GET("/test", func(c *gin.Context){
-        example := r.Get("example").(string)
+        example := c.Get("example").(string)
         
         // it would print: "12345"
         log.Println(example)
