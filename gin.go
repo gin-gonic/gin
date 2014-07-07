@@ -35,7 +35,7 @@ type (
 	// manage the flow, validate the JSON of a request and render a JSON response for example.
 	Context struct {
 		Req      *http.Request
-		Writer   http.ResponseWriter
+		Writer   ResponseWriter
 		Keys     map[string]interface{}
 		Errors   ErrorMsgs
 		Params   httprouter.Params
@@ -101,7 +101,7 @@ func (engine *Engine) handle404(w http.ResponseWriter, req *http.Request) {
 	handlers := engine.combineHandlers(engine.handlers404)
 	c := engine.createContext(w, req, nil, handlers)
 	if engine.handlers404 == nil {
-		http.NotFound(c.Writer, c.Req)
+		http.NotFound(&c.Writer, c.Req)
 	} else {
 		c.Writer.WriteHeader(404)
 	}
@@ -125,7 +125,7 @@ func (engine *Engine) ServeFiles(path string, root http.FileSystem) {
 
 // ServeHTTP makes the router implement the http.Handler interface.
 func (engine *Engine) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	engine.router.ServeHTTP(w, req)
+	engine.router.ServeHTTP(&ResponseWriter{w, -1}, req)
 }
 
 func (engine *Engine) Run(addr string) {
@@ -140,7 +140,7 @@ func (engine *Engine) Run(addr string) {
 
 func (group *RouterGroup) createContext(w http.ResponseWriter, req *http.Request, params httprouter.Params, handlers []HandlerFunc) *Context {
 	return &Context{
-		Writer:   w,
+		Writer:   ResponseWriter{w, StatusUnset},
 		Req:      req,
 		index:    -1,
 		engine:   group.engine,
@@ -180,7 +180,7 @@ func (group *RouterGroup) Handle(method, p string, handlers []HandlerFunc) {
 	p = path.Join(group.prefix, p)
 	handlers = group.combineHandlers(handlers)
 	group.engine.router.Handle(method, p, func(w http.ResponseWriter, req *http.Request, params httprouter.Params) {
-		group.createContext(w, req, params, handlers).Next()
+		group.createContext(&ResponseWriter{w, -1}, req, params, handlers).Next()
 	})
 }
 
@@ -329,10 +329,10 @@ func (c *Context) JSON(code int, obj interface{}) {
 	if code >= 0 {
 		c.Writer.WriteHeader(code)
 	}
-	encoder := json.NewEncoder(c.Writer)
+	encoder := json.NewEncoder(&c.Writer)
 	if err := encoder.Encode(obj); err != nil {
 		c.Error(err, obj)
-		http.Error(c.Writer, err.Error(), 500)
+		http.Error(&c.Writer, err.Error(), 500)
 	}
 }
 
@@ -343,10 +343,10 @@ func (c *Context) XML(code int, obj interface{}) {
 	if code >= 0 {
 		c.Writer.WriteHeader(code)
 	}
-	encoder := xml.NewEncoder(c.Writer)
+	encoder := xml.NewEncoder(&c.Writer)
 	if err := encoder.Encode(obj); err != nil {
 		c.Error(err, obj)
-		http.Error(c.Writer, err.Error(), 500)
+		http.Error(&c.Writer, err.Error(), 500)
 	}
 }
 
@@ -358,12 +358,12 @@ func (c *Context) HTML(code int, name string, data interface{}) {
 	if code >= 0 {
 		c.Writer.WriteHeader(code)
 	}
-	if err := c.engine.HTMLTemplates.ExecuteTemplate(c.Writer, name, data); err != nil {
+	if err := c.engine.HTMLTemplates.ExecuteTemplate(&c.Writer, name, data); err != nil {
 		c.Error(err, map[string]interface{}{
 			"name": name,
 			"data": data,
 		})
-		http.Error(c.Writer, err.Error(), 500)
+		http.Error(&c.Writer, err.Error(), 500)
 	}
 }
 
