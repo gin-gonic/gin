@@ -6,16 +6,29 @@ import (
 	"encoding/xml"
 	"errors"
 	"fmt"
+	"github.com/gin-gonic/gin/binding"
 	"github.com/julienschmidt/httprouter"
 	"html/template"
 	"log"
 	"math"
 	"net/http"
 	"path"
+	"sync"
 )
 
 const (
 	AbortIndex = math.MaxInt8 / 2
+	MIMEJSON   = "application/json"
+	MIMEHTML   = "text/html"
+	MIMEXML    = "application/xml"
+	MIMEXML2   = "text/xml"
+	MIMEPlain  = "text/plain"
+)
+
+const (
+	ErrorTypeInternal = 1 << iota
+	ErrorTypeExternal = 1 << iota
+	ErrorTypeAll      = 0xffffffff
 )
 
 type (
@@ -24,23 +37,24 @@ type (
 	H map[string]interface{}
 
 	// Used internally to collect errors that occurred during an http request.
-	ErrorMsg struct {
+	errorMsg struct {
 		Err  string      `json:"error"`
+		Type uint32      `json:"-"`
 		Meta interface{} `json:"meta"`
 	}
 
-	ErrorMsgs []ErrorMsg
+	errorMsgs []errorMsg
 
 	// Context is the most important part of gin. It allows us to pass variables between middleware,
 	// manage the flow, validate the JSON of a request and render a JSON response for example.
 	Context struct {
 		Req      *http.Request
-		Writer   http.ResponseWriter
+		Writer   ResponseWriter
 		Keys     map[string]interface{}
-		Errors   ErrorMsgs
+		Errors   errorMsgs
 		Params   httprouter.Params
+		Engine   *Engine
 		handlers []HandlerFunc
-		engine   *Engine
 		index    int8
 	}
 
@@ -56,16 +70,51 @@ type (
 	// Represents the web framework, it wraps the blazing fast httprouter multiplexer and a list of global middlewares.
 	Engine struct {
 		*RouterGroup
+		HTMLTemplates *template.Template
+		cache         sync.Pool
 		handlers404   []HandlerFunc
 		router        *httprouter.Router
-		HTMLTemplates *template.Template
 	}
 )
 
-func (a ErrorMsgs) String() string {
+// Allows type H to be used with xml.Marshal
+func (h H) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
+	start.Name = xml.Name{"", "map"}
+	if err := e.EncodeToken(start); err != nil {
+		return err
+	}
+	for key, value := range h {
+		elem := xml.StartElement{
+			xml.Name{"", key},
+			[]xml.Attr{},
+		}
+		if err := e.EncodeElement(value, elem); err != nil {
+			return err
+		}
+	}
+	if err := e.EncodeToken(xml.EndElement{start.Name}); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (a errorMsgs) ByType(typ uint32) errorMsgs {
+	if len(a) == 0 {
+		return a
+	}
+	result := make(errorMsgs, 0, len(a))
+	for _, msg := range a {
+		if msg.Type&typ > 0 {
+			result = append(result, msg)
+		}
+	}
+	return result
+}
+
+func (a errorMsgs) String() string {
 	var buffer bytes.Buffer
 	for i, msg := range a {
-		text := fmt.Sprintf("Error #%02d: %s \n     Meta: %v\n\n", (i + 1), msg.Err, msg.Meta)
+		text := fmt.Sprintf("Error #%02d: %s \n     Meta: %v\n", (i + 1), msg.Err, msg.Meta)
 		buffer.WriteString(text)
 	}
 	return buffer.String()
@@ -78,6 +127,9 @@ func New() *Engine {
 	engine.RouterGroup = &RouterGroup{nil, "/", nil, engine}
 	engine.router = httprouter.New()
 	engine.router.NotFound = engine.handle404
+	engine.cache.New = func() interface{} {
+		return &Context{Engine: engine, Writer: &responseWriter{}}
+	}
 	return engine
 }
 
@@ -100,27 +152,12 @@ func (engine *Engine) NotFound404(handlers ...HandlerFunc) {
 func (engine *Engine) handle404(w http.ResponseWriter, req *http.Request) {
 	handlers := engine.combineHandlers(engine.handlers404)
 	c := engine.createContext(w, req, nil, handlers)
-	if engine.handlers404 == nil {
-		http.NotFound(c.Writer, c.Req)
-	} else {
-		c.Writer.WriteHeader(404)
-	}
-
+	c.Writer.setStatus(404)
 	c.Next()
-}
-
-// ServeFiles serves files from the given file system root.
-// The path must end with "/*filepath", files are then served from the local
-// path /defined/root/dir/*filepath.
-// For example if root is "/etc" and *filepath is "passwd", the local file
-// "/etc/passwd" would be served.
-// Internally a http.FileServer is used, therefore http.NotFound is used instead
-// of the Router's NotFound handler.
-// To use the operating system's file system implementation,
-// use http.Dir:
-//     router.ServeFiles("/src/*filepath", http.Dir("/var/www"))
-func (engine *Engine) ServeFiles(path string, root http.FileSystem) {
-	engine.router.ServeFiles(path, root)
+	if !c.Writer.Written() {
+		c.Data(404, MIMEPlain, []byte("404 page not found"))
+	}
+	engine.cache.Put(c)
 }
 
 // ServeHTTP makes the router implement the http.Handler interface.
@@ -138,15 +175,15 @@ func (engine *Engine) Run(addr string) {
 /********** ROUTES GROUPING *********/
 /************************************/
 
-func (group *RouterGroup) createContext(w http.ResponseWriter, req *http.Request, params httprouter.Params, handlers []HandlerFunc) *Context {
-	return &Context{
-		Writer:   w,
-		Req:      req,
-		index:    -1,
-		engine:   group.engine,
-		Params:   params,
-		handlers: handlers,
-	}
+func (engine *Engine) createContext(w http.ResponseWriter, req *http.Request, params httprouter.Params, handlers []HandlerFunc) *Context {
+	c := engine.cache.Get().(*Context)
+	c.Writer.reset(w)
+	c.Req = req
+	c.Params = params
+	c.handlers = handlers
+	c.Keys = nil
+	c.index = -1
+	return c
 }
 
 // Adds middlewares to the group, see example code in github.
@@ -180,7 +217,9 @@ func (group *RouterGroup) Handle(method, p string, handlers []HandlerFunc) {
 	p = path.Join(group.prefix, p)
 	handlers = group.combineHandlers(handlers)
 	group.engine.router.Handle(method, p, func(w http.ResponseWriter, req *http.Request, params httprouter.Params) {
-		group.createContext(w, req, params, handlers).Next()
+		c := group.engine.createContext(w, req, params, handlers)
+		c.Next()
+		group.engine.cache.Put(c)
 	})
 }
 
@@ -209,6 +248,34 @@ func (group *RouterGroup) PUT(path string, handlers ...HandlerFunc) {
 	group.Handle("PUT", path, handlers)
 }
 
+// OPTIONS is a shortcut for router.Handle("OPTIONS", path, handle)
+func (group *RouterGroup) OPTIONS(path string, handlers ...HandlerFunc) {
+	group.Handle("OPTIONS", path, handlers)
+}
+
+// HEAD is a shortcut for router.Handle("HEAD", path, handle)
+func (group *RouterGroup) HEAD(path string, handlers ...HandlerFunc) {
+	group.Handle("HEAD", path, handlers)
+}
+
+// Static serves files from the given file system root.
+// Internally a http.FileServer is used, therefore http.NotFound is used instead
+// of the Router's NotFound handler.
+// To use the operating system's file system implementation,
+// use :
+//     router.Static("/static", "/var/www")
+func (group *RouterGroup) Static(p, root string) {
+	p = path.Join(p, "/*filepath")
+	fileServer := http.FileServer(http.Dir(root))
+
+	group.GET(p, func(c *Context) {
+		original := c.Req.URL.Path
+		c.Req.URL.Path = c.Params.ByName("filepath")
+		fileServer.ServeHTTP(c.Writer, c.Req)
+		c.Req.URL.Path = original
+	})
+}
+
 func (group *RouterGroup) combineHandlers(handlers []HandlerFunc) []HandlerFunc {
 	s := len(group.Handlers) + len(handlers)
 	h := make([]HandlerFunc, 0, s)
@@ -220,6 +287,13 @@ func (group *RouterGroup) combineHandlers(handlers []HandlerFunc) []HandlerFunc 
 /************************************/
 /****** FLOW AND ERROR MANAGEMENT****/
 /************************************/
+
+func (c *Context) Copy() *Context {
+	var cp Context = *c
+	cp.index = AbortIndex
+	cp.handlers = nil
+	return &cp
+}
 
 // Next should be used only in the middlewares.
 // It executes the pending handlers in the chain inside the calling handler.
@@ -236,7 +310,9 @@ func (c *Context) Next() {
 // For example, the first handler checks if the request is authorized. If it's not, context.Abort(401) should be called.
 // The rest of pending handlers would never be called for that request.
 func (c *Context) Abort(code int) {
-	c.Writer.WriteHeader(code)
+	if code >= 0 {
+		c.Writer.WriteHeader(code)
+	}
 	c.index = AbortIndex
 }
 
@@ -251,14 +327,19 @@ func (c *Context) Fail(code int, err error) {
 	c.Abort(code)
 }
 
+func (c *Context) ErrorTyped(err error, typ uint32, meta interface{}) {
+	c.Errors = append(c.Errors, errorMsg{
+		Err:  err.Error(),
+		Type: typ,
+		Meta: meta,
+	})
+}
+
 // Attaches an error to the current context. The error is pushed to a list of errors.
 // It's a good idea to call Error for each error that occurred during the resolution of a request.
 // A middleware can be used to collect all the errors and push them to a database together, print a log, or append it in the HTTP response.
 func (c *Context) Error(err error, meta interface{}) {
-	c.Errors = append(c.Errors, ErrorMsg{
-		Err:  err.Error(),
-		Meta: meta,
-	})
+	c.ErrorTyped(err, ErrorTypeExternal, meta)
 }
 
 func (c *Context) LastError() error {
@@ -283,70 +364,95 @@ func (c *Context) Set(key string, item interface{}) {
 	c.Keys[key] = item
 }
 
-// Returns the value for the given key.
-// It panics if the value doesn't exist.
-func (c *Context) Get(key string) interface{} {
-	var ok bool
-	var item interface{}
+// Get returns the value for the given key or an error if the key does not exist.
+func (c *Context) Get(key string) (interface{}, error) {
 	if c.Keys != nil {
-		item, ok = c.Keys[key]
-	} else {
-		item, ok = nil, false
+		item, ok := c.Keys[key]
+		if ok {
+			return item, nil
+		}
 	}
-	if !ok || item == nil {
+	return nil, errors.New("Key does not exist.")
+}
+
+// MustGet returns the value for the given key or panics if the value doesn't exist.
+func (c *Context) MustGet(key string) interface{} {
+	value, err := c.Get(key)
+	if err != nil || value == nil {
 		log.Panicf("Key %s doesn't exist", key)
 	}
-	return item
+	return value
 }
 
 /************************************/
 /******** ENCOGING MANAGEMENT********/
 /************************************/
 
-// Like ParseBody() but this method also writes a 400 error if the json is not valid.
-func (c *Context) EnsureBody(item interface{}) bool {
-	if err := c.ParseBody(item); err != nil {
+func filterFlags(content string) string {
+	for i, a := range content {
+		if a == ' ' || a == ';' {
+			return content[:i]
+		}
+	}
+	return content
+}
+
+// This function checks the Content-Type to select a binding engine automatically,
+// Depending the "Content-Type" header different bindings are used:
+// "application/json" --> JSON binding
+// "application/xml"  --> XML binding
+// else --> returns an error
+// if Parses the request's body as JSON if Content-Type == "application/json"  using JSON or XML  as a JSON input. It decodes the json payload into the struct specified as a pointer.Like ParseBody() but this method also writes a 400 error if the json is not valid.
+func (c *Context) Bind(obj interface{}) bool {
+	var b binding.Binding
+	ctype := filterFlags(c.Req.Header.Get("Content-Type"))
+	switch {
+	case c.Req.Method == "GET":
+		b = binding.Form
+	case ctype == MIMEJSON:
+		b = binding.JSON
+	case ctype == MIMEXML || ctype == MIMEXML2:
+		b = binding.XML
+	default:
+		c.Fail(400, errors.New("unknown content-type: "+ctype))
+		return false
+	}
+	return c.BindWith(obj, b)
+}
+
+func (c *Context) BindWith(obj interface{}, b binding.Binding) bool {
+	if err := b.Bind(c.Req, obj); err != nil {
 		c.Fail(400, err)
 		return false
 	}
 	return true
 }
 
-// Parses the body content as a JSON input. It decodes the json payload into the struct specified as a pointer.
-func (c *Context) ParseBody(item interface{}) error {
-	decoder := json.NewDecoder(c.Req.Body)
-	if err := decoder.Decode(&item); err == nil {
-		return Validate(c, item)
-	} else {
-		return err
-	}
-}
-
 // Serializes the given struct as JSON into the response body in a fast and efficient way.
 // It also sets the Content-Type as "application/json".
 func (c *Context) JSON(code int, obj interface{}) {
-	c.Writer.Header().Set("Content-Type", "application/json")
+	c.Writer.Header().Set("Content-Type", MIMEJSON)
 	if code >= 0 {
 		c.Writer.WriteHeader(code)
 	}
 	encoder := json.NewEncoder(c.Writer)
 	if err := encoder.Encode(obj); err != nil {
-		c.Error(err, obj)
-		http.Error(c.Writer, err.Error(), 500)
+		c.ErrorTyped(err, ErrorTypeInternal, obj)
+		c.Abort(500)
 	}
 }
 
 // Serializes the given struct as XML into the response body in a fast and efficient way.
 // It also sets the Content-Type as "application/xml".
 func (c *Context) XML(code int, obj interface{}) {
-	c.Writer.Header().Set("Content-Type", "application/xml")
+	c.Writer.Header().Set("Content-Type", MIMEXML)
 	if code >= 0 {
 		c.Writer.WriteHeader(code)
 	}
 	encoder := xml.NewEncoder(c.Writer)
 	if err := encoder.Encode(obj); err != nil {
-		c.Error(err, obj)
-		http.Error(c.Writer, err.Error(), 500)
+		c.ErrorTyped(err, ErrorTypeInternal, obj)
+		c.Abort(500)
 	}
 }
 
@@ -354,30 +460,35 @@ func (c *Context) XML(code int, obj interface{}) {
 // It also updates the HTTP code and sets the Content-Type as "text/html".
 // See http://golang.org/doc/articles/wiki/
 func (c *Context) HTML(code int, name string, data interface{}) {
-	c.Writer.Header().Set("Content-Type", "text/html")
+	c.Writer.Header().Set("Content-Type", MIMEHTML)
 	if code >= 0 {
 		c.Writer.WriteHeader(code)
 	}
-	if err := c.engine.HTMLTemplates.ExecuteTemplate(c.Writer, name, data); err != nil {
-		c.Error(err, map[string]interface{}{
+	if err := c.Engine.HTMLTemplates.ExecuteTemplate(c.Writer, name, data); err != nil {
+		c.ErrorTyped(err, ErrorTypeInternal, H{
 			"name": name,
 			"data": data,
 		})
-		http.Error(c.Writer, err.Error(), 500)
+		c.Abort(500)
 	}
 }
 
 // Writes the given string into the response body and sets the Content-Type to "text/plain".
-func (c *Context) String(code int, msg string) {
+func (c *Context) String(code int, format string, values ...interface{}) {
+	c.Writer.Header().Set("Content-Type", MIMEPlain)
 	if code >= 0 {
 		c.Writer.WriteHeader(code)
 	}
-	c.Writer.Header().Set("Content-Type", "text/plain")
-	c.Writer.Write([]byte(msg))
+	c.Writer.Write([]byte(fmt.Sprintf(format, values...)))
 }
 
 // Writes some data into the body stream and updates the HTTP code.
-func (c *Context) Data(code int, data []byte) {
-	c.Writer.WriteHeader(code)
+func (c *Context) Data(code int, contentType string, data []byte) {
+	if len(contentType) > 0 {
+		c.Writer.Header().Set("Content-Type", contentType)
+	}
+	if code >= 0 {
+		c.Writer.WriteHeader(code)
+	}
 	c.Writer.Write(data)
 }

@@ -16,12 +16,7 @@ type (
 		Code string
 		User string
 	}
-	Account struct {
-		User     string
-		Password string
-	}
-
-	Accounts []Account
+	Accounts map[string]string
 	Pairs    []BasicAuthPair
 )
 
@@ -34,13 +29,13 @@ func processCredentials(accounts Accounts) (Pairs, error) {
 		return nil, errors.New("Empty list of authorized credentials.")
 	}
 	pairs := make(Pairs, 0, len(accounts))
-	for _, account := range accounts {
-		if len(account.User) == 0 || len(account.Password) == 0 {
+	for user, password := range accounts {
+		if len(user) == 0 || len(password) == 0 {
 			return nil, errors.New("User or password is empty")
 		}
-		base := account.User + ":" + account.Password
+		base := user + ":" + password
 		code := "Basic " + base64.StdEncoding.EncodeToString([]byte(base))
-		pairs = append(pairs, BasicAuthPair{code, account.User})
+		pairs = append(pairs, BasicAuthPair{code, user})
 	}
 	// We have to sort the credentials in order to use bsearch later.
 	sort.Sort(pairs)
