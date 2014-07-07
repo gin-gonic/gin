@@ -304,6 +304,24 @@ func (group *RouterGroup) HEAD(path string, handlers ...HandlerFunc) {
 	group.Handle("HEAD", path, handlers)
 }
 
+// Static serves files from the given file system root.
+// Internally a http.FileServer is used, therefore http.NotFound is used instead
+// of the Router's NotFound handler.
+// To use the operating system's file system implementation,
+// use :
+//     router.Static("/static", "/var/www")
+func (group *RouterGroup) Static(p, root string) {
+	p = path.Join(p, "/*filepath")
+	fileServer := http.FileServer(http.Dir(root))
+
+	group.GET(p, func(c *Context) {
+		original := c.Req.URL.Path
+		c.Req.URL.Path = c.Params.ByName("filepath")
+		fileServer.ServeHTTP(c.Writer, c.Req)
+		c.Req.URL.Path = original
+	})
+}
+
 func (group *RouterGroup) combineHandlers(handlers []HandlerFunc) []HandlerFunc {
 	s := len(group.Handlers) + len(handlers)
 	h := make([]HandlerFunc, 0, s)
