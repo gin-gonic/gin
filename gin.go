@@ -24,18 +24,25 @@ const (
 	MIMEPlain  = "text/plain"
 )
 
+const (
+	ErrorTypeInternal = 1 << iota
+	ErrorTypeExternal = 1 << iota
+	ErrorTypeAll      = 0xffffffff
+)
+
 type (
 	HandlerFunc func(*Context)
 
 	H map[string]interface{}
 
 	// Used internally to collect errors that occurred during an http request.
-	ErrorMsg struct {
+	errorMsg struct {
 		Err  string      `json:"error"`
+		Type uint32      `json:"-"`
 		Meta interface{} `json:"meta"`
 	}
 
-	ErrorMsgs []ErrorMsg
+	errorMsgs []errorMsg
 
 	Config struct {
 		CacheSize    int
@@ -48,7 +55,7 @@ type (
 		Req      *http.Request
 		Writer   ResponseWriter
 		Keys     map[string]interface{}
-		Errors   ErrorMsgs
+		Errors   errorMsgs
 		Params   httprouter.Params
 		Engine   *Engine
 		handlers []HandlerFunc
@@ -102,13 +109,25 @@ func (h H) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
 	return nil
 }
 
-func (a ErrorMsgs) String() string {
+func (a errorMsgs) ByType(typ uint32) errorMsgs {
+	if len(a) == 0 {
+		return a
+	}
+	result := make(errorMsgs, 0, len(a))
+	for _, msg := range a {
+		if msg.Type&typ > 0 {
+			result = append(result, msg)
+		}
+	}
+	return result
+}
+
+func (a errorMsgs) String() string {
 	var buffer bytes.Buffer
 	for i, msg := range a {
 		text := fmt.Sprintf("Error #%02d: %s \n     Meta: %v\n", (i + 1), msg.Err, msg.Meta)
 		buffer.WriteString(text)
 	}
-	buffer.WriteString("\n")
 	return buffer.String()
 }
 
@@ -336,14 +355,19 @@ func (c *Context) Fail(code int, err error) {
 	c.Abort(code)
 }
 
+func (c *Context) ErrorTyped(err error, typ uint32, meta interface{}) {
+	c.Errors = append(c.Errors, errorMsg{
+		Err:  err.Error(),
+		Type: typ,
+		Meta: meta,
+	})
+}
+
 // Attaches an error to the current context. The error is pushed to a list of errors.
 // It's a good idea to call Error for each error that occurred during the resolution of a request.
 // A middleware can be used to collect all the errors and push them to a database together, print a log, or append it in the HTTP response.
 func (c *Context) Error(err error, meta interface{}) {
-	c.Errors = append(c.Errors, ErrorMsg{
-		Err:  err.Error(),
-		Meta: meta,
-	})
+	c.ErrorTyped(err, ErrorTypeExternal, meta)
 }
 
 func (c *Context) LastError() error {
@@ -441,8 +465,8 @@ func (c *Context) JSON(code int, obj interface{}) {
 	}
 	encoder := json.NewEncoder(c.Writer)
 	if err := encoder.Encode(obj); err != nil {
-		c.Error(err, obj)
-		http.Error(c.Writer, err.Error(), 500)
+		c.ErrorTyped(err, ErrorTypeInternal, obj)
+		c.Abort(500)
 	}
 }
 
@@ -455,8 +479,8 @@ func (c *Context) XML(code int, obj interface{}) {
 	}
 	encoder := xml.NewEncoder(c.Writer)
 	if err := encoder.Encode(obj); err != nil {
-		c.Error(err, obj)
-		http.Error(c.Writer, err.Error(), 500)
+		c.ErrorTyped(err, ErrorTypeInternal, obj)
+		c.Abort(500)
 	}
 }
 
@@ -469,11 +493,11 @@ func (c *Context) HTML(code int, name string, data interface{}) {
 		c.Writer.WriteHeader(code)
 	}
 	if err := c.Engine.HTMLTemplates.ExecuteTemplate(c.Writer, name, data); err != nil {
-		c.Error(err, map[string]interface{}{
+		c.ErrorTyped(err, ErrorTypeInternal, H{
 			"name": name,
 			"data": data,
 		})
-		http.Error(c.Writer, err.Error(), 500)
+		c.Abort(500)
 	}
 }
 

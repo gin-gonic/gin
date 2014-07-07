@@ -7,10 +7,15 @@ import (
 )
 
 func ErrorLogger() HandlerFunc {
+	return ErrorLoggerT(ErrorTypeAll)
+}
+
+func ErrorLoggerT(typ uint32) HandlerFunc {
 	return func(c *Context) {
 		c.Next()
 
-		if len(c.Errors) > 0 {
+		errs := c.Errors.ByType(typ)
+		if len(errs) > 0 {
 			// -1 status code = do not change current one
 			c.JSON(-1, c.Errors)
 		}
