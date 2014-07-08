@@ -69,7 +69,7 @@ func Logger() HandlerFunc {
 		latency := end.Sub(start)
 		stdlogger.Printf("[GIN] %v |%s %3d %s| %12v | %s %4s %s\n",
 			end.Format("2006/01/02 - 15:04:05"),
-			color, c.Writer.Status(), reset,
+			color, code, reset,
 			latency,
 			requester,
 			c.Req.Method, c.Req.URL.Path,
