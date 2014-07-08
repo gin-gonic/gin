@@ -123,7 +123,9 @@ func (a errorMsgs) String() string {
 // Returns a new blank Engine instance without any middleware attached.
 // The most basic configuration
 func New() *Engine {
-	engine := &Engine{}
+	engine := &Engine{
+		HTMLTemplates: template.New(""),
+	}
 	engine.RouterGroup = &RouterGroup{nil, "/", nil, engine}
 	engine.router = httprouter.New()
 	engine.router.NotFound = engine.handle404
@@ -141,7 +143,7 @@ func Default() *Engine {
 }
 
 func (engine *Engine) LoadHTMLTemplates(pattern string) {
-	engine.HTMLTemplates = template.Must(template.ParseGlob(pattern))
+	engine.HTMLTemplates = template.Must(engine.HTMLTemplates.ParseGlob(pattern))
 }
 
 // Adds handlers for NotFound. It return a 404 code by default.
