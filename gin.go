@@ -330,7 +330,7 @@ func (c *Context) Fail(code int, err error) {
 // Dump is the same as Fail except instead of an error
 // you are able to dump out any data that you may need to
 // trouble shoot for your application.
-func (c *Context) Dump(code int, dump interface) {
+func (c *Context) Dump(code int, dump interface{}) {
 	c.Writer.Write([]byte(fmt.Sprint("%v", dump)))
 	c.Abort(code)
 }
