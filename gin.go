@@ -17,12 +17,13 @@ import (
 )
 
 const (
-	AbortIndex = math.MaxInt8 / 2
-	MIMEJSON   = "application/json"
-	MIMEHTML   = "text/html"
-	MIMEXML    = "application/xml"
-	MIMEXML2   = "text/xml"
-	MIMEPlain  = "text/plain"
+	AbortIndex   = math.MaxInt8 / 2
+	MIMEJSON     = "application/json"
+	MIMEHTML     = "text/html"
+	MIMEXML      = "application/xml"
+	MIMEXML2     = "text/xml"
+	MIMEPlain    = "text/plain"
+	MIMEPOSTForm = "application/x-www-form-urlencoded"
 )
 
 const (
@@ -407,7 +408,7 @@ func (c *Context) Bind(obj interface{}) bool {
 	var b binding.Binding
 	ctype := filterFlags(c.Req.Header.Get("Content-Type"))
 	switch {
-	case c.Req.Method == "GET":
+	case c.Req.Method == "GET" || ctype == MIMEPOSTForm:
 		b = binding.Form
 	case ctype == MIMEJSON:
 		b = binding.JSON
