@@ -74,7 +74,7 @@ func BasicAuth(accounts Accounts) HandlerFunc {
 	}
 	return func(c *Context) {
 		// Search user in the slice of allowed credentials
-		user := searchCredential(pairs, c.Req.Header.Get("Authorization"))
+		user := searchCredential(pairs, c.Request.Header.Get("Authorization"))
 		if len(user) == 0 {
 			// Credentials doesn't match, we return 401 Unauthorized and abort request.
 			c.Writer.Header().Set("WWW-Authenticate", "Basic realm=\"Authorization Required\"")

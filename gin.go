@@ -49,7 +49,7 @@ type (
 	// Context is the most important part of gin. It allows us to pass variables between middleware,
 	// manage the flow, validate the JSON of a request and render a JSON response for example.
 	Context struct {
-		Req      *http.Request
+		Request  *http.Request
 		Writer   ResponseWriter
 		Keys     map[string]interface{}
 		Errors   errorMsgs
@@ -185,7 +185,7 @@ func (engine *Engine) RunTLS(addr string, cert string, key string) {
 func (engine *Engine) createContext(w http.ResponseWriter, req *http.Request, params httprouter.Params, handlers []HandlerFunc) *Context {
 	c := engine.cache.Get().(*Context)
 	c.Writer.reset(w)
-	c.Req = req
+	c.Request = req
 	c.Params = params
 	c.handlers = handlers
 	c.Keys = nil
@@ -276,10 +276,10 @@ func (group *RouterGroup) Static(p, root string) {
 	fileServer := http.FileServer(http.Dir(root))
 
 	group.GET(p, func(c *Context) {
-		original := c.Req.URL.Path
-		c.Req.URL.Path = c.Params.ByName("filepath")
-		fileServer.ServeHTTP(c.Writer, c.Req)
-		c.Req.URL.Path = original
+		original := c.Request.URL.Path
+		c.Request.URL.Path = c.Params.ByName("filepath")
+		fileServer.ServeHTTP(c.Writer, c.Request)
+		c.Request.URL.Path = original
 	})
 }
 
@@ -412,9 +412,9 @@ func filterFlags(content string) string {
 // if Parses the request's body as JSON if Content-Type == "application/json"  using JSON or XML  as a JSON input. It decodes the json payload into the struct specified as a pointer.Like ParseBody() but this method also writes a 400 error if the json is not valid.
 func (c *Context) Bind(obj interface{}) bool {
 	var b binding.Binding
-	ctype := filterFlags(c.Req.Header.Get("Content-Type"))
+	ctype := filterFlags(c.Request.Header.Get("Content-Type"))
 	switch {
-	case c.Req.Method == "GET" || ctype == MIMEPOSTForm:
+	case c.Request.Method == "GET" || ctype == MIMEPOSTForm:
 		b = binding.Form
 	case ctype == MIMEJSON:
 		b = binding.JSON
@@ -428,7 +428,7 @@ func (c *Context) Bind(obj interface{}) bool {
 }
 
 func (c *Context) BindWith(obj interface{}, b binding.Binding) bool {
-	if err := b.Bind(c.Req, obj); err != nil {
+	if err := b.Bind(c.Request, obj); err != nil {
 		c.Fail(400, err)
 		return false
 	}

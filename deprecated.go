@@ -14,7 +14,7 @@ func (c *Context) EnsureBody(item interface{}) bool {
 // DEPRECATED use bindings directly
 // Parses the body content as a JSON input. It decodes the json payload into the struct specified as a pointer.
 func (c *Context) ParseBody(item interface{}) error {
-	return binding.JSON.Bind(c.Req, item)
+	return binding.JSON.Bind(c.Request, item)
 }
 
 // DEPRECATED use gin.Static() instead
