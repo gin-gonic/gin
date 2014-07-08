@@ -1,6 +1,6 @@
 {
 	"ImportPath": "github.com/gin-gonic/gin",
-	"GoVersion": "devel +2699961d1143 Wed Jun 25 09:57:48 2014 -0400",
+	"GoVersion": "go1.3",
 	"Deps": [
 		{
 			"ImportPath": "github.com/julienschmidt/httprouter",
