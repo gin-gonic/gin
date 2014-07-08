@@ -171,6 +171,12 @@ func (engine *Engine) Run(addr string) {
 	}
 }
 
+func (engine *Engine) RunTLS(addr string, cert string, key string) {
+	if err := http.ListenAndServeTLS(addr, cert, key, engine); err != nil {
+		panic(err)
+	}
+}
+
 /************************************/
 /********** ROUTES GROUPING *********/
 /************************************/
