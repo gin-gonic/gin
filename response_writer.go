@@ -1,6 +1,9 @@
 package gin
 
 import (
+	"bufio"
+	"errors"
+	"net"
 	"net/http"
 )
 
@@ -45,4 +48,13 @@ func (w *ResponseWriter) Status() int {
 // return a boolean acknowledging if a status code has all ready been set
 func (w *ResponseWriter) WasWritten() bool {
 	return w.status == StatusUnset
+}
+
+// allow connection hijacking
+func (w *ResponseWriter) Hijack() (net.Conn, *bufio.ReadWriter, error) {
+	hijacker, ok := w.ResponseWriter.(http.Hijacker)
+	if !ok {
+		return nil, nil, errors.New("the ResponseWriter doesn't support the Hijacker interface")
+	}
+	return hijacker.Hijack()
 }
