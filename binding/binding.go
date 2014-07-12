@@ -152,7 +152,6 @@ func ensureNotPointer(obj interface{}) {
 }
 
 func Validate(obj interface{}) error {
-
 	typ := reflect.TypeOf(obj)
 	val := reflect.ValueOf(obj)
 
@@ -161,30 +160,46 @@ func Validate(obj interface{}) error {
 		val = val.Elem()
 	}
 
-	for i := 0; i < typ.NumField(); i++ {
-		field := typ.Field(i)
-		fieldValue := val.Field(i).Interface()
-		zero := reflect.Zero(field.Type).Interface()
+	switch typ.Kind() {
+	case reflect.Struct:
+		for i := 0; i < typ.NumField(); i++ {
+			field := typ.Field(i)
 
-		// Validate nested and embedded structs (if pointer, only do so if not nil)
-		if field.Type.Kind() == reflect.Struct ||
-			(field.Type.Kind() == reflect.Ptr && !reflect.DeepEqual(zero, fieldValue)) {
-			if err := Validate(fieldValue); err != nil {
+			// Allow ignored fields in the struct
+			if field.Tag.Get("form") == "-" {
+				continue
+			}
+
+			fieldValue := val.Field(i).Interface()
+			zero := reflect.Zero(field.Type).Interface()
+
+			if strings.Index(field.Tag.Get("binding"), "required") > -1 {
+				fieldType := field.Type.Kind()
+				if fieldType == reflect.Struct {
+					err := Validate(fieldValue)
+					if err != nil {
+						return err
+					}
+				} else if reflect.DeepEqual(zero, fieldValue) {
+					return errors.New("Required " + field.Name)
+				} else if fieldType == reflect.Slice && field.Type.Elem().Kind() == reflect.Struct {
+					err := Validate(fieldValue)
+					if err != nil {
+						return err
+					}
+				}
+			}
+		}
+	case reflect.Slice:
+		for i := 0; i < val.Len(); i++ {
+			fieldValue := val.Index(i).Interface()
+			err := Validate(fieldValue)
+			if err != nil {
 				return err
 			}
 		}
-
-		if strings.Index(field.Tag.Get("binding"), "required") > -1 {
-			if reflect.DeepEqual(zero, fieldValue) {
-				name := field.Name
-				if j := field.Tag.Get("json"); j != "" {
-					name = j
-				} else if f := field.Tag.Get("form"); f != "" {
-					name = f
-				}
-				return errors.New("Required " + name)
-			}
-		}
+	default:
+		return nil
 	}
 	return nil
 }
