@@ -67,17 +67,13 @@ func Logger() HandlerFunc {
 		}
 		end := time.Now()
 		latency := end.Sub(start)
-		stdlogger.Printf("[GIN] %v |%s %3d %s| %12v | %s %4s %s\n",
+		stdlogger.Printf("[GIN] %v |%s %3d %s| %12v | %s %4s %s\n%s",
 			end.Format("2006/01/02 - 15:04:05"),
 			color, code, reset,
 			latency,
 			requester,
 			c.Request.Method, c.Request.URL.Path,
+			c.Errors.String(),
 		)
-
-		// Calculate resolution time
-		if len(c.Errors) > 0 {
-			stdlogger.Println(c.Errors.String())
-		}
 	}
 }
