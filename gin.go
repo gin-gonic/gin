@@ -2,11 +2,11 @@ package gin
 
 import (
 	"bytes"
-	"encoding/json"
 	"encoding/xml"
 	"errors"
 	"fmt"
 	"github.com/gin-gonic/gin/binding"
+	"github.com/gin-gonic/gin/render"
 	"github.com/julienschmidt/httprouter"
 	"html/template"
 	"log"
@@ -71,10 +71,10 @@ type (
 	// Represents the web framework, it wraps the blazing fast httprouter multiplexer and a list of global middlewares.
 	Engine struct {
 		*RouterGroup
-		HTMLTemplates *template.Template
-		cache         sync.Pool
-		handlers404   []HandlerFunc
-		router        *httprouter.Router
+		HTMLRender  render.Render
+		cache       sync.Pool
+		handlers404 []HandlerFunc
+		router      *httprouter.Router
 	}
 )
 
@@ -147,8 +147,20 @@ func Default() *Engine {
 	return engine
 }
 
-func (engine *Engine) LoadHTMLTemplates(pattern string) {
-	engine.HTMLTemplates = template.Must(template.ParseGlob(pattern))
+func (engine *Engine) LoadHTMLGlob(pattern string) {
+	templ := template.Must(template.ParseGlob(pattern))
+	engine.SetHTTPTemplate(templ)
+}
+
+func (engine *Engine) LoadHTMLFiles(files ...string) {
+	templ := template.Must(template.ParseFiles(files...))
+	engine.SetHTTPTemplate(templ)
+}
+
+func (engine *Engine) SetHTTPTemplate(templ *template.Template) {
+	engine.HTMLRender = render.HTMLRender{
+		Template: templ,
+	}
 }
 
 // Adds handlers for NotFound. It return a 404 code by default.
@@ -441,58 +453,35 @@ func (c *Context) BindWith(obj interface{}, b binding.Binding) bool {
 	return true
 }
 
-// Serializes the given struct as JSON into the response body in a fast and efficient way.
-// It also sets the Content-Type as "application/json".
-func (c *Context) JSON(code int, obj interface{}) {
-	c.Writer.Header().Set("Content-Type", MIMEJSON)
-	if code >= 0 {
-		c.Writer.WriteHeader(code)
-	}
-	encoder := json.NewEncoder(c.Writer)
-	if err := encoder.Encode(obj); err != nil {
+func (c *Context) Render(code int, render render.Render, obj ...interface{}) {
+	if err := render.Render(c.Writer, code, obj); err != nil {
 		c.ErrorTyped(err, ErrorTypeInternal, obj)
 		c.Abort(500)
 	}
+}
+
+// Serializes the given struct as JSON into the response body in a fast and efficient way.
+// It also sets the Content-Type as "application/json".
+func (c *Context) JSON(code int, obj interface{}) {
+	c.Render(code, render.JSON, obj)
 }
 
 // Serializes the given struct as XML into the response body in a fast and efficient way.
 // It also sets the Content-Type as "application/xml".
 func (c *Context) XML(code int, obj interface{}) {
-	c.Writer.Header().Set("Content-Type", MIMEXML)
-	if code >= 0 {
-		c.Writer.WriteHeader(code)
-	}
-	encoder := xml.NewEncoder(c.Writer)
-	if err := encoder.Encode(obj); err != nil {
-		c.ErrorTyped(err, ErrorTypeInternal, obj)
-		c.Abort(500)
-	}
+	c.Render(code, render.XML, obj)
 }
 
 // Renders the HTTP template specified by its file name.
 // It also updates the HTTP code and sets the Content-Type as "text/html".
 // See http://golang.org/doc/articles/wiki/
-func (c *Context) HTML(code int, name string, data interface{}) {
-	c.Writer.Header().Set("Content-Type", MIMEHTML)
-	if code >= 0 {
-		c.Writer.WriteHeader(code)
-	}
-	if err := c.Engine.HTMLTemplates.ExecuteTemplate(c.Writer, name, data); err != nil {
-		c.ErrorTyped(err, ErrorTypeInternal, H{
-			"name": name,
-			"data": data,
-		})
-		c.Abort(500)
-	}
+func (c *Context) HTML(code int, name string, obj interface{}) {
+	c.Render(code, c.Engine.HTMLRender, name, obj)
 }
 
 // Writes the given string into the response body and sets the Content-Type to "text/plain".
 func (c *Context) String(code int, format string, values ...interface{}) {
-	c.Writer.Header().Set("Content-Type", MIMEPlain)
-	if code >= 0 {
-		c.Writer.WriteHeader(code)
-	}
-	c.Writer.Write([]byte(fmt.Sprintf(format, values...)))
+	c.Render(code, render.Plain, format, values)
 }
 
 // Writes some data into the body stream and updates the HTTP code.

@@ -31,3 +31,8 @@ func (c *Context) ParseBody(item interface{}) error {
 func (engine *Engine) ServeFiles(path string, root http.FileSystem) {
 	engine.router.ServeFiles(path, root)
 }
+
+// DEPRECATED use gin.LoadHTMLGlob() or gin.LoadHTMLFiles() instead
+func (engine *Engine) LoadHTMLTemplates(pattern string) {
+	engine.LoadHTMLGlob(pattern)
+}
