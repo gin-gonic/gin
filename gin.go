@@ -464,7 +464,7 @@ func (c *Context) BindWith(obj interface{}, b binding.Binding) bool {
 }
 
 func (c *Context) Render(code int, render render.Render, obj ...interface{}) {
-	if err := render.Render(c.Writer, code, obj); err != nil {
+	if err := render.Render(c.Writer, code, obj...); err != nil {
 		c.ErrorTyped(err, ErrorTypeInternal, obj)
 		c.Abort(500)
 	}
