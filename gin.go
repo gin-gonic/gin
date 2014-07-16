@@ -64,15 +64,15 @@ func Default() *Engine {
 
 func (engine *Engine) LoadHTMLGlob(pattern string) {
 	templ := template.Must(template.ParseGlob(pattern))
-	engine.SetHTTPTemplate(templ)
+	engine.SetHTMLTemplate(templ)
 }
 
 func (engine *Engine) LoadHTMLFiles(files ...string) {
 	templ := template.Must(template.ParseFiles(files...))
-	engine.SetHTTPTemplate(templ)
+	engine.SetHTMLTemplate(templ)
 }
 
-func (engine *Engine) SetHTTPTemplate(templ *template.Template) {
+func (engine *Engine) SetHTMLTemplate(templ *template.Template) {
 	engine.HTMLRender = render.HTMLRender{
 		Template: templ,
 	}
