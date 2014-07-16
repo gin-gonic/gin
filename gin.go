@@ -216,10 +216,20 @@ func (group *RouterGroup) Use(middlewares ...HandlerFunc) {
 	group.Handlers = append(group.Handlers, middlewares...)
 }
 
+func joinGroupPath(elems ...string) string {
+	joined := path.Join(elems...)
+	lastComponent := elems[len(elems)-1]
+	// Append a '/' if the last component had one, but only if it's not there already
+	if len(lastComponent) > 0 && lastComponent[len(lastComponent)-1] == '/' && joined[len(joined)-1] != '/' {
+		return joined + "/"
+	}
+	return joined
+}
+
 // Creates a new router group. You should add all the routes that have common middlwares or the same path prefix.
 // For example, all the routes that use a common middlware for authorization could be grouped.
 func (group *RouterGroup) Group(component string, handlers ...HandlerFunc) *RouterGroup {
-	prefix := path.Join(group.prefix, component)
+	prefix := joinGroupPath(group.prefix, component)
 	return &RouterGroup{
 		Handlers: group.combineHandlers(handlers),
 		parent:   group,
@@ -239,7 +249,7 @@ func (group *RouterGroup) Group(component string, handlers ...HandlerFunc) *Rout
 // frequently used, non-standardized or custom methods (e.g. for internal
 // communication with a proxy).
 func (group *RouterGroup) Handle(method, p string, handlers []HandlerFunc) {
-	p = path.Join(group.prefix, p)
+	p = joinGroupPath(group.prefix, p)
 	handlers = group.combineHandlers(handlers)
 	group.engine.router.Handle(method, p, func(w http.ResponseWriter, req *http.Request, params httprouter.Params) {
 		c := group.engine.createContext(w, req, params, handlers)
