@@ -68,6 +68,7 @@ People and companies, who have contributed, in alphabetical order.
 
 **@mopemope (Yutaka Matsubara)**
 - ★ Adds Godep support (Dependencies Manager)
+- Fix variadic parameter in the flexible render API
 
 
 **@msemenistyi (Mykyta Semenistyi)**
