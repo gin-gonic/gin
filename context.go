@@ -72,12 +72,12 @@ type Context struct {
 func (engine *Engine) createContext(w http.ResponseWriter, req *http.Request, params httprouter.Params, handlers []HandlerFunc) *Context {
 	c := engine.cache.Get().(*Context)
 	c.writermem.reset(w)
-
 	c.Request = req
 	c.Params = params
 	c.handlers = handlers
 	c.Keys = nil
 	c.index = -1
+	c.Errors = c.Errors[0:0]
 	return c
 }
 
