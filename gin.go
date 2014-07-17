@@ -35,15 +35,16 @@ type (
 	// Represents the web framework, it wraps the blazing fast httprouter multiplexer and a list of global middlewares.
 	Engine struct {
 		*RouterGroup
-		HTMLRender  render.Render
-		cache       sync.Pool
-		handlers404 []HandlerFunc
-		router      *httprouter.Router
+		HTMLRender   render.Render
+		cache        sync.Pool
+		finalNoRoute []HandlerFunc
+		noRoute      []HandlerFunc
+		router       *httprouter.Router
 	}
 )
 
 func (engine *Engine) handle404(w http.ResponseWriter, req *http.Request) {
-	c := engine.createContext(w, req, nil, engine.handlers404)
+	c := engine.createContext(w, req, nil, engine.finalNoRoute)
 	c.Writer.setStatus(404)
 	c.Next()
 	if !c.Writer.Written() {
@@ -92,7 +93,13 @@ func (engine *Engine) SetHTMLTemplate(templ *template.Template) {
 
 // Adds handlers for NoRoute. It return a 404 code by default.
 func (engine *Engine) NoRoute(handlers ...HandlerFunc) {
-	engine.handlers404 = engine.combineHandlers(handlers)
+	engine.noRoute = handlers
+	engine.finalNoRoute = engine.combineHandlers(engine.noRoute)
+}
+
+func (engine *Engine) Use(middlewares ...HandlerFunc) {
+	engine.RouterGroup.Use(middlewares...)
+	engine.finalNoRoute = engine.combineHandlers(engine.noRoute)
 }
 
 // ServeHTTP makes the router implement the http.Handler interface.
