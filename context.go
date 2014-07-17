@@ -54,14 +54,15 @@ func (a errorMsgs) String() string {
 // Context is the most important part of gin. It allows us to pass variables between middleware,
 // manage the flow, validate the JSON of a request and render a JSON response for example.
 type Context struct {
-	Request  *http.Request
-	Writer   ResponseWriter
-	Keys     map[string]interface{}
-	Errors   errorMsgs
-	Params   httprouter.Params
-	Engine   *Engine
-	handlers []HandlerFunc
-	index    int8
+	writermem responseWriter
+	Request   *http.Request
+	Writer    ResponseWriter
+	Keys      map[string]interface{}
+	Errors    errorMsgs
+	Params    httprouter.Params
+	Engine    *Engine
+	handlers  []HandlerFunc
+	index     int8
 }
 
 /************************************/
@@ -70,7 +71,8 @@ type Context struct {
 
 func (engine *Engine) createContext(w http.ResponseWriter, req *http.Request, params httprouter.Params, handlers []HandlerFunc) *Context {
 	c := engine.cache.Get().(*Context)
-	c.Writer.reset(w)
+	c.writermem.reset(w)
+
 	c.Request = req
 	c.Params = params
 	c.handlers = handlers

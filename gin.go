@@ -60,7 +60,9 @@ func New() *Engine {
 	engine.router = httprouter.New()
 	engine.router.NotFound = engine.handle404
 	engine.cache.New = func() interface{} {
-		return &Context{Engine: engine, Writer: &responseWriter{}}
+		c := &Context{Engine: engine}
+		c.Writer = &c.writermem
+		return c
 	}
 	return engine
 }
