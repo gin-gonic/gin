@@ -2,7 +2,6 @@ package gin
 
 import (
 	"encoding/xml"
-	"path"
 )
 
 type H map[string]interface{}
@@ -29,16 +28,6 @@ func (h H) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
 		return err
 	}
 	return nil
-}
-
-func joinGroupPath(elems ...string) string {
-	joined := path.Join(elems...)
-	lastComponent := elems[len(elems)-1]
-	// Append a '/' if the last component had one, but only if it's not there already
-	if len(lastComponent) > 0 && lastComponent[len(lastComponent)-1] == '/' && joined[len(joined)-1] != '/' {
-		return joined + "/"
-	}
-	return joined
 }
 
 func filterFlags(content string) string {

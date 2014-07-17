@@ -123,13 +123,23 @@ func (group *RouterGroup) Use(middlewares ...HandlerFunc) {
 // Creates a new router group. You should add all the routes that have common middlwares or the same path prefix.
 // For example, all the routes that use a common middlware for authorization could be grouped.
 func (group *RouterGroup) Group(component string, handlers ...HandlerFunc) *RouterGroup {
-	prefix := joinGroupPath(group.prefix, component)
+	prefix := group.pathFor(component)
+
 	return &RouterGroup{
 		Handlers: group.combineHandlers(handlers),
 		parent:   group,
 		prefix:   prefix,
 		engine:   group.engine,
 	}
+}
+
+func (group *RouterGroup) pathFor(p string) string {
+	joined := path.Join(group.prefix, p)
+	// Append a '/' if the last component had one, but only if it's not there already
+	if len(p) > 0 && p[len(p)-1] == '/' && joined[len(p)-1] != '/' {
+		return joined + "/"
+	}
+	return joined
 }
 
 // Handle registers a new request handle and middlewares with the given path and method.
@@ -143,7 +153,7 @@ func (group *RouterGroup) Group(component string, handlers ...HandlerFunc) *Rout
 // frequently used, non-standardized or custom methods (e.g. for internal
 // communication with a proxy).
 func (group *RouterGroup) Handle(method, p string, handlers []HandlerFunc) {
-	p = joinGroupPath(group.prefix, p)
+	p = group.pathFor(p)
 	handlers = group.combineHandlers(handlers)
 	group.engine.router.Handle(method, p, func(w http.ResponseWriter, req *http.Request, params httprouter.Params) {
 		c := group.engine.createContext(w, req, params, handlers)
@@ -194,14 +204,11 @@ func (group *RouterGroup) HEAD(path string, handlers ...HandlerFunc) {
 // use :
 //     router.Static("/static", "/var/www")
 func (group *RouterGroup) Static(p, root string) {
+	prefix := group.pathFor(p)
 	p = path.Join(p, "/*filepath")
-	fileServer := http.FileServer(http.Dir(root))
-
+	fileServer := http.StripPrefix(prefix, http.FileServer(http.Dir(root)))
 	group.GET(p, func(c *Context) {
-		original := c.Request.URL.Path
-		c.Request.URL.Path = c.Params.ByName("filepath")
 		fileServer.ServeHTTP(c.Writer, c.Request)
-		c.Request.URL.Path = original
 	})
 }
 
