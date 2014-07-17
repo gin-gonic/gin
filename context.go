@@ -255,3 +255,8 @@ func (c *Context) Data(code int, contentType string, data []byte) {
 	}
 	c.Writer.Write(data)
 }
+
+// Writes the specified file into the body stream
+func (c *Context) File(filepath string) {
+	http.ServeFile(c.Writer, c.Request, filepath)
+}
