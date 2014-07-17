@@ -82,9 +82,6 @@ func function(pc uintptr) []byte {
 func Recovery() HandlerFunc {
 	return func(c *Context) {
 		defer func() {
-			if len(c.Errors) > 0 {
-				log.Println(c.Errors.String())
-			}
 			if err := recover(); err != nil {
 				stack := stack(3)
 				log.Printf("PANIC: %s\n%s", err, stack)
