@@ -79,7 +79,7 @@ func (engine *Engine) SetHTMLTemplate(templ *template.Template) {
 }
 
 // Adds handlers for NotFound. It return a 404 code by default.
-func (engine *Engine) NotFound404(handlers ...HandlerFunc) {
+func (engine *Engine) NotFound(handlers ...HandlerFunc) {
 	engine.handlers404 = handlers
 }
 

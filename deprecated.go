@@ -36,3 +36,8 @@ func (engine *Engine) ServeFiles(path string, root http.FileSystem) {
 func (engine *Engine) LoadHTMLTemplates(pattern string) {
 	engine.LoadHTMLGlob(pattern)
 }
+
+// DEPRECATED. Use NotFound() instead
+func (engine *Engine) NotFound404(handlers ...HandlerFunc) {
+	engine.NotFound(handlers...)
+}
