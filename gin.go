@@ -42,6 +42,16 @@ type (
 	}
 )
 
+func (engine *Engine) handle404(w http.ResponseWriter, req *http.Request) {
+	c := engine.createContext(w, req, nil, engine.handlers404)
+	c.Writer.setStatus(404)
+	c.Next()
+	if !c.Writer.Written() {
+		c.Data(404, MIMEPlain, []byte("404 page not found"))
+	}
+	engine.cache.Put(c)
+}
+
 // Returns a new blank Engine instance without any middleware attached.
 // The most basic configuration
 func New() *Engine {
@@ -80,18 +90,7 @@ func (engine *Engine) SetHTMLTemplate(templ *template.Template) {
 
 // Adds handlers for NoRoute. It return a 404 code by default.
 func (engine *Engine) NoRoute(handlers ...HandlerFunc) {
-	engine.handlers404 = handlers
-}
-
-func (engine *Engine) handle404(w http.ResponseWriter, req *http.Request) {
-	handlers := engine.combineHandlers(engine.handlers404)
-	c := engine.createContext(w, req, nil, handlers)
-	c.Writer.setStatus(404)
-	c.Next()
-	if !c.Writer.Written() {
-		c.Data(404, MIMEPlain, []byte("404 page not found"))
-	}
-	engine.cache.Put(c)
+	engine.handlers404 = engine.combineHandlers(handlers)
 }
 
 // ServeHTTP makes the router implement the http.Handler interface.
