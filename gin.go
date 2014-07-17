@@ -144,7 +144,7 @@ func (group *RouterGroup) Group(component string, handlers ...HandlerFunc) *Rout
 func (group *RouterGroup) pathFor(p string) string {
 	joined := path.Join(group.prefix, p)
 	// Append a '/' if the last component had one, but only if it's not there already
-	if len(p) > 0 && p[len(p)-1] == '/' && joined[len(p)-1] != '/' {
+	if len(p) > 0 && p[len(p)-1] == '/' && joined[len(joined)-1] != '/' {
 		return joined + "/"
 	}
 	return joined
