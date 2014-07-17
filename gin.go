@@ -210,6 +210,9 @@ func (group *RouterGroup) Static(p, root string) {
 	group.GET(p, func(c *Context) {
 		fileServer.ServeHTTP(c.Writer, c.Request)
 	})
+	group.HEAD(p, func(c *Context) {
+		fileServer.ServeHTTP(c.Writer, c.Request)
+	})
 }
 
 func (group *RouterGroup) combineHandlers(handlers []HandlerFunc) []HandlerFunc {
