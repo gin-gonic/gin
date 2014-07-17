@@ -39,5 +39,5 @@ func (engine *Engine) LoadHTMLTemplates(pattern string) {
 
 // DEPRECATED. Use NotFound() instead
 func (engine *Engine) NotFound404(handlers ...HandlerFunc) {
-	engine.NotFound(handlers...)
+	engine.NoRoute(handlers...)
 }
