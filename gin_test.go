@@ -230,7 +230,11 @@ func TestContextSetGet(t *testing.T) {
 		// Set
 		c.Set("foo", "bar")
 
-		if v := c.Get("foo"); v != "bar" {
+		v, err := c.Get("foo")
+		if err != nil {
+			t.Errorf("Error on exist key")
+		}
+		if v != "bar" {
 			t.Errorf("Value should be bar, was %s", v)
 		}
 	})
@@ -267,7 +271,8 @@ func TestContextHTML(t *testing.T) {
 	w := httptest.NewRecorder()
 
 	r := Default()
-	r.HTMLTemplates = template.Must(template.New("t").Parse(`Hello {{.Name}}`))
+	templ, _ := template.New("t").Parse(`Hello {{.Name}}`)
+	r.SetHTMLTemplate(templ)
 
 	type TestData struct{ Name string }
 
