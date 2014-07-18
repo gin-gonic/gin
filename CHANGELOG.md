@@ -1,6 +1,9 @@
 ##Changelog
 
-###Gin 0.3 (??)
+###Gin 0.4 (??)
+
+
+###Gin 0.3 (Jul 18, 2014)
 
 - [PERFORMANCE] Normal log and error log are printed in the same call.
 - [PERFORMANCE] Improve performance of NoRouter()
