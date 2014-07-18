@@ -64,6 +64,11 @@ func (_ plainRender) Render(w http.ResponseWriter, code int, data ...interface{}
 	writeHeader(w, code, "text/plain")
 	format := data[0].(string)
 	args := data[1].([]interface{})
-	_, err := w.Write([]byte(fmt.Sprintf(format, args)))
+	var err error
+	if len(args) > 0 {
+		_, err = w.Write([]byte(fmt.Sprintf(format, args...)))
+	} else {
+		_, err = w.Write([]byte(format))
+	}
 	return err
 }
