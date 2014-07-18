@@ -43,6 +43,17 @@ import "github.com/gin-gonic/gin"
 ```
 
 
+##Community
+If you'd like to help out with the project, there's a mailing list and IRC channel where Gin discussions normally happen.
+
+* IRC
+ * [irc.freenode.net #getgin](irc://irc.freenode.net:6667/getgin)
+ * [Webchat](http://webchat.freenode.net?randomnick=1&channels=%23getgin)
+* Mailing List
+ * Subscribe: [getgin@librelist.org](mailto:getgin@librelist.org)
+ * [Archives](http://librelist.com/browser/getgin/)
+
+
 ##API Examples
 
 #### Create most basic PING/PONG HTTP endpoint
