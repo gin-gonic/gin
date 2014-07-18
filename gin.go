@@ -5,8 +5,11 @@ import (
 	"github.com/julienschmidt/httprouter"
 	"html/template"
 	"math"
+	"mime"
 	"net/http"
+	"os"
 	"path"
+	"path/filepath"
 	"sync"
 )
 
@@ -220,6 +223,19 @@ func (group *RouterGroup) Static(p, root string) {
 	})
 	group.HEAD(p, func(c *Context) {
 		fileServer.ServeHTTP(c.Writer, c.Request)
+	})
+
+	group.HEAD(p, func(c *Context) {
+		fp := path.Join(root, c.Params.ByName("filepath"))
+
+		info, err := os.Stat(fp)
+		if err != nil || info == nil {
+			c.Abort(404)
+		} else {
+			c.Writer.Header().Set("Content-Type", mime.TypeByExtension(filepath.Ext(fp)))
+			c.Writer.Header().Set("Last-Modified", info.ModTime().Format(http.TimeFormat))
+			c.Abort(200)
+		}
 	})
 }
 
