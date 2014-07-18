@@ -40,6 +40,10 @@ People and companies, who have contributed, in alphabetical order.
 - Typos in README
 
 
+**@fmd (Fareed Dudhia)**
+- Fix typo. SetHTTPTemplate -> SetHTMLTemplate
+
+
 **@jasonrhansen**
 - Fix spelling and grammar errors in documentation
 
@@ -69,6 +73,8 @@ People and companies, who have contributed, in alphabetical order.
 **@mopemope (Yutaka Matsubara)**
 - ★ Adds Godep support (Dependencies Manager)
 - Fix variadic parameter in the flexible render API
+- Fix Corrupted plain render
+- Fix variadic parameter in new flexible render API
 
 
 **@msemenistyi (Mykyta Semenistyi)**
