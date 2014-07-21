@@ -4,11 +4,12 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"log"
+	"net/http"
+
 	"github.com/gin-gonic/gin/binding"
 	"github.com/gin-gonic/gin/render"
 	"github.com/julienschmidt/httprouter"
-	"log"
-	"net/http"
 )
 
 const (
@@ -122,6 +123,13 @@ func (c *Context) Abort(code int) {
 func (c *Context) Fail(code int, err error) {
 	c.Error(err, "Operation aborted")
 	c.Abort(code)
+}
+
+// Redirect replies to the request with a redirect to url,
+// which may be a path relative to the request path.
+func (c *Context) Redirect(urlStr string) {
+	http.Redirect(c.Writer, c.Request, urlStr, http.StatusFound)
+	c.Abort(-1) // About with code < 0, so that don't WriteHeader twice.
 }
 
 func (c *Context) ErrorTyped(err error, typ uint32, meta interface{}) {
