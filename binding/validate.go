@@ -20,6 +20,12 @@ func Validate(obj interface{}) error {
 		value = value.Elem()
 	}
 
+	// Kill process if obj did not pass in a scruct.
+	// This happens when a pointer passed in.
+	if value.Kind() != reflect.Struct {
+		return nil
+	}
+
 	for i := 0; i < typ.NumField(); i++ {
 
 		field := typ.Field(i)
@@ -48,6 +54,11 @@ func Validate(obj interface{}) error {
 
 				match := array[setting]
 
+				//Check that value was passed in and is not required.
+				if match != "required" && null(fieldValue) == true {
+					return nil
+				}
+
 				switch {
 				case "required" == match:
 					if err := required(field, fieldValue, zero); err != nil {
@@ -73,6 +84,14 @@ func Validate(obj interface{}) error {
 					if err := regex(match, fieldValue); err != nil {
 						return err
 					}
+				case strings.HasPrefix(match, "length:"):
+					if err := length(match, fieldValue); err != nil {
+						return err
+					}
+				case strings.HasPrefix(match, "length_between:"):
+					if err := length_between(match, fieldValue); err != nil {
+						return err
+					}
 				default:
 					panic("The field " + match + " is not a valid validation check.")
 				}
@@ -81,6 +100,15 @@ func Validate(obj interface{}) error {
 	}
 
 	return nil
+}
+
+// Ensure that the value being passed in is not of type nil.
+func null(value interface{}) bool {
+	if reflect.ValueOf(value).IsNil() {
+		return true
+	}
+
+	return false
 }
 
 // Check that the following function features
@@ -103,15 +131,15 @@ func required(field reflect.StructField, value, zero interface{}) error {
 // Currently only supports strings, ints
 func in(field string, value interface{}) error {
 
-	if data, ok := value.(string); ok {
-		if len(data) == 0 {
+	if data, ok := value.(*string); ok {
+		if len(*data) == 0 {
 			return nil
 		}
 
 		valid := strings.Split(field[3:], ",")
 
 		for option := range valid {
-			if valid[option] == data {
+			if valid[option] == *data {
 				return nil
 			}
 		}
@@ -125,13 +153,13 @@ func in(field string, value interface{}) error {
 
 func min(field string, value interface{}) error {
 
-	if data, ok := value.(int); ok {
+	if data, ok := value.(*int); ok {
 
 		min := field[strings.Index(field, ":")+1:]
 
 		if minNum, ok := strconv.ParseInt(min, 0, 64); ok == nil {
 
-			if int64(data) >= minNum {
+			if int64(*data) >= minNum {
 				return nil
 			} else {
 				return errors.New("The data you passed in was smaller then the allowed minimum.")
@@ -145,12 +173,12 @@ func min(field string, value interface{}) error {
 
 func max(field string, value interface{}) error {
 
-	if data, ok := value.(int); ok {
+	if data, ok := value.(*int); ok {
 
 		max := field[strings.Index(field, ":")+1:]
 
 		if maxNum, ok := strconv.ParseInt(max, 0, 64); ok == nil {
-			if int64(data) <= maxNum {
+			if int64(*data) <= maxNum {
 				return nil
 			} else {
 				return errors.New("The data you passed in was larger than the maximum.")
@@ -168,14 +196,14 @@ func regex(field string, value interface{}) error {
 
 	reg := field[strings.Index(field, ":")+1:]
 
-	if data, ok := value.(string); ok {
-		if len(data) == 0 {
+	if data, ok := value.(*string); ok {
+		if len(*data) == 0 {
 			return nil
-		} else if err := match_regex(reg, []byte(data)); err != nil {
+		} else if err := match_regex(reg, []byte(*data)); err != nil {
 			return err
 		}
-	} else if data, ok := value.(int); ok {
-		if err := match_regex(reg, []byte(strconv.Itoa(data))); err != nil {
+	} else if data, ok := value.(*int); ok {
+		if err := match_regex(reg, []byte(strconv.Itoa(*data))); err != nil {
 			return err
 		}
 	} else {
@@ -192,5 +220,62 @@ func match_regex(reg string, data []byte) error {
 		return nil
 	} else {
 		return errors.New("Your regex did not match or was not valid.")
+	}
+}
+
+// Check passed in json length string is exact value passed in.
+// Also checks if passed in values is between two different ones.
+func length(field string, value interface{}) error {
+
+	length := field[strings.Index(field, ":")+1:]
+
+	if data, ok := value.(*string); ok {
+		if intdata, intok := strconv.Atoi(length); intok == nil {
+			if len(*data) == intdata {
+				return nil
+			} else {
+				return errors.New("The data passed in was not equal to the expected length.")
+			}
+		} else {
+			return errors.New("The value passed in for LENGTH could not be converted to an int.")
+		}
+	} else {
+		return errors.New("The value passed in for LENGTH could not be converted to a string.")
+	}
+}
+
+// Check if the strings length is between high,low.
+func length_between(field string, value interface{}) error {
+
+	length := field[strings.Index(field, ":")+1:]
+	vals := strings.Split(length, ",")
+
+	if len(vals) == 2 {
+
+		if data, ok := value.(*string); ok {
+
+			if lowerbound, lowok := strconv.Atoi(vals[0]); lowok == nil {
+
+				if upperbound, upok := strconv.Atoi(vals[1]); upok == nil {
+
+					if lowerbound <= len(*data) && upperbound >= len(*data) {
+						return nil
+					} else {
+						return errors.New("The value passed in for LENGTH BETWEEN was not in bounds.")
+					}
+
+				} else {
+					return errors.New("The value passed in for LENGTH BETWEEN could not be converted to an int.")
+				}
+
+			} else {
+				return errors.New("The value passed in for LENGTH BETWEEN could not be converted to an int.")
+			}
+
+		} else {
+			return errors.New("The value passed in for LENGTH BETWEEN could not be converted to a string.")
+		}
+	} else {
+		return errors.New("LENGTH BETWEEN requires exactly two paramaters.")
 	}
 }

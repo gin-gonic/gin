@@ -1,7 +1,6 @@
 package binding
 
 import (
-	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -20,7 +19,7 @@ func TestRequired(t *testing.T) {
 
 	// // Test if STRING required is valid
 	var testString struct {
-		Test string `json:"something" validate:"required" `
+		Test *string `json:"something" validate:"required" `
 	}
 
 	req, _ := http.NewRequest("POST", "/", jsonFactory(`{"something": "hello"}`))
@@ -30,7 +29,7 @@ func TestRequired(t *testing.T) {
 	}
 
 	var testString2 struct {
-		Test string `json:"something" validate:"required" `
+		Test *string `json:"something" validate:"required" `
 	}
 
 	req, _ = http.NewRequest("POST", "/", jsonFactory(`{}`))
@@ -41,7 +40,7 @@ func TestRequired(t *testing.T) {
 
 	// Test if INT require is valid
 	var testInt struct {
-		Test int `json:"something" validate:"required" `
+		Test *int `json:"something" validate:"required" `
 	}
 
 	req, _ = http.NewRequest("POST", "/", jsonFactory(`{"something": 2}`))
@@ -52,7 +51,7 @@ func TestRequired(t *testing.T) {
 
 	// Test if BOOL required is valid
 	var testBool struct {
-		Test bool `json:"something" validate:"required" `
+		Test *bool `json:"something" validate:"required" `
 	}
 
 	req, _ = http.NewRequest("POST", "/", jsonFactory(`{"something": true}`))
@@ -62,7 +61,7 @@ func TestRequired(t *testing.T) {
 	}
 
 	var testBool2 struct {
-		Test string `json:"something" validate:"required" `
+		Test *string `json:"something" validate:"required" `
 	}
 
 	req, _ = http.NewRequest("POST", "/", jsonFactory(`{}`))
@@ -73,7 +72,7 @@ func TestRequired(t *testing.T) {
 
 	// Test if ARRAY required is valid
 	var testArray struct {
-		Test []string `json:"something" validate:"required" `
+		Test *[]string `json:"something" validate:"required" `
 	}
 
 	req, _ = http.NewRequest("POST", "/", jsonFactory(`{"something": ["test", "data"]}`))
@@ -101,7 +100,7 @@ func TestRequired(t *testing.T) {
 func TestEmail(t *testing.T) {
 
 	var testValEmail struct {
-		Test string `json:"email" validate:"email" `
+		Test *string `json:"email" validate:"email" `
 	}
 
 	req, _ := http.NewRequest("POST", "/", jsonFactory(`{"email": "michaeljs@gmail.com"}`))
@@ -111,7 +110,7 @@ func TestEmail(t *testing.T) {
 	}
 
 	var testValEmail2 struct {
-		Test string `json:"email" validate:"email" `
+		Test *string `json:"email" validate:"email" `
 	}
 
 	req, _ = http.NewRequest("POST", "/", jsonFactory(`{"email": "michaeljs@gail.edu"}`))
@@ -121,7 +120,7 @@ func TestEmail(t *testing.T) {
 	}
 
 	var testValEmail3 struct {
-		Test string `json:"email" validate:"email" `
+		Test *string `json:"email" validate:"email" `
 	}
 
 	req, _ = http.NewRequest("POST", "/", jsonFactory(`{"email": "michaeljs.edu"}`))
@@ -132,7 +131,7 @@ func TestEmail(t *testing.T) {
 
 	// This should not return an error since email is not required.
 	var testValEmail4 struct {
-		Test string `json:"email" validate:"email" `
+		Test *string `json:"email" validate:"email" `
 	}
 
 	req, _ = http.NewRequest("POST", "/", jsonFactory(`{"jeff": "really"}`))
@@ -148,7 +147,7 @@ func TestEmail(t *testing.T) {
 func TestIn(t *testing.T) {
 
 	var testValIn struct {
-		Test string `json:"special" validate:"in:admin,user,other" `
+		Test *string `json:"special" validate:"in:admin,user,other" `
 	}
 
 	req, _ := http.NewRequest("POST", "/", jsonFactory(`{"special": "admin"}`))
@@ -158,7 +157,7 @@ func TestIn(t *testing.T) {
 	}
 
 	var testValIn2 struct {
-		Test string `json:"special" validate:"in:1,3,2" `
+		Test *string `json:"special" validate:"in:1,3,2" `
 	}
 
 	req, _ = http.NewRequest("POST", "/", jsonFactory(`{"special": "3"}`))
@@ -168,7 +167,7 @@ func TestIn(t *testing.T) {
 	}
 
 	var testValIn3 struct {
-		Test int `json:"special" validate:"in:1,3,2" `
+		Test *int `json:"special" validate:"in:1,3,2" `
 	}
 
 	req, _ = http.NewRequest("POST", "/", jsonFactory(`{"special": 6}`))
@@ -178,8 +177,8 @@ func TestIn(t *testing.T) {
 	}
 
 	var testValIn4 struct {
-		Test2 string `json:"what" validate:in:this,that`
-		Test  string `json:"special" validate:"in:1,3,2" `
+		Test2 *string `json:"what" validate:in:this,that`
+		Test  *string `json:"special" validate:"in:1,3,2" `
 	}
 
 	req, _ = http.NewRequest("POST", "/", jsonFactory(`{"special": "3","what": "this"}`))
@@ -189,8 +188,8 @@ func TestIn(t *testing.T) {
 	}
 
 	var testValIn5 struct {
-		Test2 string `json:"what" validate:in:this,that`
-		Test  string `json:"special" validate:"in:1,3,2" `
+		Test2 *string `json:"what" validate:in:this,that`
+		Test  *string `json:"special" validate:"in:1,3,2" `
 	}
 
 	req, _ = http.NewRequest("POST", "/", jsonFactory(`{"special": "3"}`))
@@ -200,16 +199,15 @@ func TestIn(t *testing.T) {
 	}
 
 	var testValIn6 struct {
-		Test2 string `json:"what" validate:"in:this,that"`
-		Test3 string `json:"what1" validate:"in:this,then"`
-		Test4 string `json:"what2" validate:"in:this,that"`
-		Test5 string `json:"what3" validate:"in:this,that"`
-		Test  string `json:"special" validate:"in:1,3,2"`
+		Test2 *string `json:"what" validate:"in:this,that"`
+		Test3 *string `json:"what1" validate:"in:this,then"`
+		Test4 *string `json:"what2" validate:"in:this,that"`
+		Test5 *string `json:"what3" validate:"in:this,that"`
+		Test  *string `json:"special" validate:"in:1,3,2"`
 	}
 
 	req, _ = http.NewRequest("POST", "/", jsonFactory(`{"sa": 34, "what":"this", "what1":"then", "what2":"this"}`))
 
-	fmt.Println("error here:")
 	if err := JSON.Bind(req, &testValIn6); err != nil {
 		t.Error(err)
 	}
@@ -219,7 +217,7 @@ func TestIn(t *testing.T) {
 func TestMin(t *testing.T) {
 
 	var testValMin struct {
-		Test int `json:"digit" validate:"min:23" `
+		Test *int `json:"digit" validate:"min:23" `
 	}
 
 	req, _ := http.NewRequest("POST", "/", jsonFactory(`{"digit": 24}`))
@@ -229,7 +227,7 @@ func TestMin(t *testing.T) {
 	}
 
 	var testValMin2 struct {
-		Test int `json:"digit" validate:"min:20" `
+		Test *int `json:"digit" validate:"min:20" `
 	}
 
 	req, _ = http.NewRequest("POST", "/", jsonFactory(`{"digit": 19}`))
@@ -238,21 +236,21 @@ func TestMin(t *testing.T) {
 		t.Error("Min was 20 digit of 19 should not have validated properly.")
 	}
 
-	// var testValMin3 struct {
-	// 	Test int `json:"digit" validate:"min:20" `
-	// }
+	var testValMin3 struct {
+		Test *int `json:"digit" validate:"min:20" `
+	}
 
-	// req, _ = http.NewRequest("POST", "/", jsonFactory(`{"jeff":"greg"}`))
+	req, _ = http.NewRequest("POST", "/", jsonFactory(`{"jeff":"greg"}`))
 
-	// if err := JSON.Bind(req, &testValMin3); err != nil {
-	// 	t.Error("Nothing was entered but min was not required. No error should be thrown.")
-	// }
+	if err := JSON.Bind(req, &testValMin3); err != nil {
+		t.Error("Nothing was entered but min was not required. No error should be thrown.")
+	}
 }
 
 func TestMax(t *testing.T) {
 
 	var testValMin struct {
-		Test int `json:"digit" validate:"max:23" `
+		Test *int `json:"digit" validate:"max:23" `
 	}
 
 	req, _ := http.NewRequest("POST", "/", jsonFactory(`{"digit": 23}`))
@@ -262,7 +260,7 @@ func TestMax(t *testing.T) {
 	}
 
 	var testValMin2 struct {
-		Test int `json:"digit" validate:"max:20" `
+		Test *int `json:"digit" validate:"max:20" `
 	}
 
 	req, _ = http.NewRequest("POST", "/", jsonFactory(`{"digit": 21}`))
@@ -272,7 +270,7 @@ func TestMax(t *testing.T) {
 	}
 
 	var testValMin3 struct {
-		Test int `json:"digit" validate:"max:20" `
+		Test *int `json:"digit" validate:"max:20" `
 	}
 
 	req, _ = http.NewRequest("POST", "/", jsonFactory(`{"jeff":"greg"}`))
@@ -285,7 +283,7 @@ func TestMax(t *testing.T) {
 func TestRegex(t *testing.T) {
 
 	var testValDigit struct {
-		Test int `json:"digit" validate:"regex:\d+" `
+		Test *int `json:"digit" validate:"regex:\\d+" `
 	}
 
 	req, _ := http.NewRequest("POST", "/", jsonFactory(`{"digit": 23}`))
@@ -295,7 +293,7 @@ func TestRegex(t *testing.T) {
 	}
 
 	var testValDigit2 struct {
-		Test int `json:"digit" validate:"regex:\d+" `
+		Test *int `json:"digit" validate:"regex:\\d+" `
 	}
 
 	req, _ = http.NewRequest("POST", "/", jsonFactory(`{"digit": 2dsa3}`))
@@ -308,7 +306,7 @@ func TestRegex(t *testing.T) {
 func TestMultiple(t *testing.T) {
 
 	var testValMulti struct {
-		Test int `json:"digit" validate:"regex:\\d+|required|max:23" `
+		Test *int `json:"digit" validate:"regex:\\d+|required|max:23" `
 	}
 
 	req, _ := http.NewRequest("POST", "/", jsonFactory(`{"digit": 23}`))
@@ -318,13 +316,115 @@ func TestMultiple(t *testing.T) {
 	}
 
 	var testValMulti2 struct {
-		Test string `json:"digit" validate:"email|required|regex:\\d+" `
+		Test *string `json:"digit" validate:"email|required|regex:\\d+" `
 	}
 
 	req, _ = http.NewRequest("POST", "/", jsonFactory(`{"digit": "m@g.com"}`))
 
 	if err := JSON.Bind(req, &testValMulti2); err == nil {
 		t.Error("Should have returned error but did not.")
+	}
+
+}
+
+func TestPointers(t *testing.T) {
+
+	var testValMulti struct {
+		Test *string `json:"digit" validate:"in:3,4,5" `
+	}
+
+	req, _ := http.NewRequest("POST", "/", jsonFactory(`{"invalid": "23"}`))
+
+	if err := JSON.Bind(req, &testValMulti); err != nil {
+		t.Error(err)
+	}
+
+	var testValMulti2 struct {
+		Test *string `json:"digit" validate:"in:3,4,5" `
+	}
+
+	req, _ = http.NewRequest("POST", "/", jsonFactory(`{"digit": "23"}`))
+
+	if err := JSON.Bind(req, &testValMulti2); err == nil {
+		t.Error("Value was passed in but did not match in:3,4,5 error should have been returned.")
+	}
+
+	var testValMulti3 struct {
+		Test *string `json:"digit" validate:"in:3,4,5" `
+	}
+
+	req, _ = http.NewRequest("POST", "/", jsonFactory(`{"digit": "4"}`))
+
+	if err := JSON.Bind(req, &testValMulti3); err != nil {
+		t.Error(err)
+	}
+
+}
+
+func TestLength(t *testing.T) {
+
+	var testValLength struct {
+		Test *string `json:"username" validate:"length:5" `
+	}
+
+	req, _ := http.NewRequest("POST", "/", jsonFactory(`{"username": "aaaaa"}`))
+
+	if err := JSON.Bind(req, &testValLength); err != nil {
+		t.Error(err)
+	}
+
+	var testValLength2 struct {
+		Test *string `json:"username" validate:"length:4" `
+	}
+
+	req, _ = http.NewRequest("POST", "/", jsonFactory(`{"username": "aaa"}`))
+
+	if err := JSON.Bind(req, &testValLength2); err == nil {
+		t.Error("Value was passed in but did not match length of 4 error should have been returned.")
+	}
+
+	var testValLength3 struct {
+		Test *string `json:"username" validate:"length:23" `
+	}
+
+	req, _ = http.NewRequest("POST", "/", jsonFactory(`{"digit": "4"}`))
+
+	if err := JSON.Bind(req, &testValLength3); err != nil {
+		t.Error(err)
+	}
+
+}
+
+func TestLengthBetween(t *testing.T) {
+
+	var testValLength struct {
+		Test *string `json:"username" validate:"length_between:5,10" `
+	}
+
+	req, _ := http.NewRequest("POST", "/", jsonFactory(`{"username": "aaaaaa"}`))
+
+	if err := JSON.Bind(req, &testValLength); err != nil {
+		t.Error(err)
+	}
+
+	var testValLength2 struct {
+		Test *string `json:"username" validate:"length_between:4,5" `
+	}
+
+	req, _ = http.NewRequest("POST", "/", jsonFactory(`{"username": "aaa"}`))
+
+	if err := JSON.Bind(req, &testValLength2); err == nil {
+		t.Error("Value was passed in but was not inbetween 4,5 should have returned error.")
+	}
+
+	var testValLength3 struct {
+		Test *string `json:"username" validate:"length_between:2,3" `
+	}
+
+	req, _ = http.NewRequest("POST", "/", jsonFactory(`{"digit": "4"}`))
+
+	if err := JSON.Bind(req, &testValLength3); err != nil {
+		t.Error(err)
 	}
 
 }
