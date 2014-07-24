@@ -334,7 +334,7 @@ func TestHandleStaticFile(t *testing.T) {
 	w := httptest.NewRecorder()
 
 	r := Default()
-	r.ServeFiles("/*filepath", http.Dir("./"))
+	r.Static("./", testRoot)
 
 	r.ServeHTTP(w, req)
 
@@ -359,7 +359,7 @@ func TestHandleStaticDir(t *testing.T) {
 	w := httptest.NewRecorder()
 
 	r := Default()
-	r.ServeFiles("/*filepath", http.Dir("./"))
+	r.Static("/", "./")
 
 	r.ServeHTTP(w, req)
 
