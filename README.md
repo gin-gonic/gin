@@ -228,7 +228,7 @@ func main() {
 }
 ```
 
-#### XML, and JSON rendering
+#### XML and JSON rendering
 
 ```go
 func main() {
@@ -297,6 +297,16 @@ func main() {
 }
 ```
 
+#### Redirects
+
+Issuing a HTTP redirect is easy:
+
+```r.GET("/test", func(c *gin.Context) {
+	c.Redirect("http://www.google.com/", 302)
+})
+
+Both internal and external locations are supported.
+```
 
 #### Custom Middlewares
 
