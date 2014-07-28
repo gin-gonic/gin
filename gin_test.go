@@ -1,6 +1,7 @@
 package gin
 
 import (
+	"errors"
 	"html/template"
 	"io/ioutil"
 	"net/http"
@@ -380,4 +381,160 @@ func TestHandleStaticDir(t *testing.T) {
 	if w.HeaderMap.Get("Content-Type") != "text/html; charset=utf-8" {
 		t.Errorf("Content-Type should be text/plain, was %s", w.HeaderMap.Get("Content-Type"))
 	}
+}
+
+// TestHandleHeadToDir - ensure the root/sub dir handles properly
+func TestHandleHeadToDir(t *testing.T) {
+
+	req, _ := http.NewRequest("HEAD", "/", nil)
+
+	w := httptest.NewRecorder()
+
+	r := Default()
+	r.Static("/", "./")
+
+	r.ServeHTTP(w, req)
+
+	if w.Code != 200 {
+		t.Errorf("Response code should be Ok, was: %s", w.Code)
+	}
+
+	bodyAsString := w.Body.String()
+
+	if len(bodyAsString) == 0 {
+		t.Errorf("Got empty body instead of file tree")
+	}
+	if !strings.Contains(bodyAsString, "gin.go") {
+		t.Errorf("Can't find:`gin.go` in file tree: %s", bodyAsString)
+	}
+
+	if w.HeaderMap.Get("Content-Type") != "text/html; charset=utf-8" {
+		t.Errorf("Content-Type should be text/plain, was %s", w.HeaderMap.Get("Content-Type"))
+	}
+}
+
+// TestHandlerFunc - ensure that custom middleware works properly
+func TestHandlerFunc(t *testing.T) {
+
+	req, _ := http.NewRequest("GET", "/", nil)
+	w := httptest.NewRecorder()
+
+	r := Default()
+	var stepsPassed int = 0
+
+	r.Use(func(context *Context) {
+		stepsPassed += 1
+		context.Next()
+		stepsPassed += 1
+	})
+
+	r.ServeHTTP(w, req)
+
+	if w.Code != 404 {
+		t.Errorf("Response code should be Not found, was: %s", w.Code)
+	}
+
+	if stepsPassed != 2 {
+		t.Errorf("Falied to switch context in handler function: %s", stepsPassed)
+	}
+}
+
+// TestBadAbortHandlersChain - ensure that Abort after switch context will not interrupt pending handlers
+func TestBadAbortHandlersChain(t *testing.T) {
+
+	req, _ := http.NewRequest("GET", "/", nil)
+	w := httptest.NewRecorder()
+
+	r := Default()
+	var stepsPassed int = 0
+
+	r.Use(func(context *Context) {
+		stepsPassed += 1
+		context.Next()
+		stepsPassed += 1
+		// after check and abort
+		context.Abort(409)
+	},
+		func(context *Context) {
+			stepsPassed += 1
+			context.Next()
+			stepsPassed += 1
+			context.Abort(403)
+		},
+	)
+
+	r.ServeHTTP(w, req)
+
+	if w.Code != 403 {
+		t.Errorf("Response code should be Forbiden, was: %s", w.Code)
+	}
+
+	if stepsPassed != 4 {
+		t.Errorf("Falied to switch context in handler function: %s", stepsPassed)
+	}
+}
+
+// TestAbortHandlersChain - ensure that Abort interrupt used middlewares in fifo order
+func TestAbortHandlersChain(t *testing.T) {
+
+	req, _ := http.NewRequest("GET", "/", nil)
+	w := httptest.NewRecorder()
+
+	r := Default()
+	var stepsPassed int = 0
+
+	r.Use(func(context *Context) {
+		stepsPassed += 1
+		context.Abort(409)
+	},
+		func(context *Context) {
+			stepsPassed += 1
+			context.Next()
+			stepsPassed += 1
+		},
+	)
+
+	r.ServeHTTP(w, req)
+
+	if w.Code != 409 {
+		t.Errorf("Response code should be Conflict, was: %s", w.Code)
+	}
+
+	if stepsPassed != 1 {
+		t.Errorf("Falied to switch context in handler function: %s", stepsPassed)
+	}
+}
+
+// TestFailHandlersChain - ensure that Fail interrupt used middlewares in fifo order as
+// as well as Abort
+func TestFailHandlersChain(t *testing.T) {
+
+	req, _ := http.NewRequest("GET", "/", nil)
+	w := httptest.NewRecorder()
+
+	r := Default()
+	var stepsPassed int = 0
+
+	r.Use(func(context *Context) {
+		stepsPassed += 1
+
+		context.Fail(500, errors.New("foo"))
+	},
+		func(context *Context) {
+			stepsPassed += 1
+			context.Next()
+			stepsPassed += 1
+		},
+	)
+
+	r.ServeHTTP(w, req)
+
+	if w.Code != 500 {
+		t.Errorf("Response code should be Server error, was: %s", w.Code)
+	}
+
+	if stepsPassed != 1 {
+		t.Errorf("Falied to switch context in handler function: %s", stepsPassed)
+	}
+
 }
