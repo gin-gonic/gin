@@ -247,9 +247,9 @@ func (c *Context) String(code int, format string, values ...interface{}) {
 	c.Render(code, render.Plain, format, values)
 }
 
-// Returns a 302 redirect to the specific location.
+// Returns a HTTP redirect to the specific location.
 func (c *Context) Redirect(location string, code int) {
-	c.Render(302, render.Redirect, location, code)
+	c.Render(code, render.Redirect, location, code)
 }
 
 // Writes some data into the body stream and updates the HTTP code.
