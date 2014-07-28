@@ -53,7 +53,7 @@ func (_ jsonRender) Render(w http.ResponseWriter, code int, data ...interface{})
 
 func (_ redirectRender) Render(w http.ResponseWriter, code int, data ...interface{}) error {
 	w.Header().Set("Location", data[0].(string))
-	w.WriteHeader(data[1].(int))
+	w.WriteHeader(code)
 	return nil
 }
 
