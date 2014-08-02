@@ -196,32 +196,55 @@ func main() {
 }
 ```
 
+#### Model binding and validation
 
-#### JSON parsing and validation
+To bind a request body into a type, use model binding. We currently support binding of JSON, XML and standard form values (foo=bar&boo=baz).
+
+Note that you need to set the corresponding binding tag on all fields you want to bind. For example, when binding from JSON, set `json:"fieldname"`.
+
+When using the Bind-method, Gin tries to infer the binder depending on the Content-Type header. If you are sure what you are binding, you can use BindWith. 
+
+You can also specify that specific fields are required. If a field is decorated with `binding:"required"` and has a empty value when binding, the current request will fail with an error.
 
 ```go
+// Binding from JSON
 type LoginJSON struct {
 	User     string `json:"user" binding:"required"`
 	Password string `json:"password" binding:"required"`
 }
 
+// Binding from form values
+type LoginForm struct {
+    User     string `form:"user" binding:"required"`
+    Password string `form:"password" binding:"required"`   
+}
+
 func main() {
 	r := gin.Default()
 
+    // Example for binding JSON ({"user": "manu", "password": "123"})
 	r.POST("/login", func(c *gin.Context) {
 		var json LoginJSON
 
-		// If EnsureBody returns false, it will write automatically the error
-		// in the HTTP stream and return a 400 error. If you want custom error
-		// handling you should use: c.ParseBody(interface{}) error
-		if c.EnsureBody(&json) {
-			if json.User == "manu" && json.Password == "123" {
-				c.JSON(200, gin.H{"status": "you are logged in"})
-			} else {
-				c.JSON(401, gin.H{"status": "unauthorized"})
-			}
-		}
+        c.Bind(&json) // This will infer what binder to use depending on the content-type header.
+        if json.User == "manu" && json.Password == "123" {
+            c.JSON(200, gin.H{"status": "you are logged in"})
+        } else {
+            c.JSON(401, gin.H{"status": "unauthorized"})
+        }
 	})
+
+    // Example for binding a HTLM form (user=manu&password=123)
+    r.POST("/login", func(c *gin.Context) {
+        var form LoginForm
+
+        c.BindWith(&form, binding.Form) // You can also specify which binder to use. We support binding.Form, binding.JSON and binding.XML.
+        if form.User == "manu" && form.Password == "123" {
+            c.JSON(200, gin.H{"status": "you are logged in"})
+        } else {
+            c.JSON(401, gin.H{"status": "unauthorized"})
+        }
+    })
 
 	// Listen and server on 0.0.0.0:8080
 	r.Run(":8080")
