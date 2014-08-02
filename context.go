@@ -248,8 +248,12 @@ func (c *Context) String(code int, format string, values ...interface{}) {
 }
 
 // Returns a HTTP redirect to the specific location.
-func (c *Context) Redirect(location string, code int) {
-	c.Render(code, render.Redirect, location)
+func (c *Context) Redirect(code int, location string) {
+	if code >= 300 && code <= 308 {
+		c.Render(code, render.Redirect, location)
+	} else {
+		panic(fmt.Sprintf("Cannot send a redirect with status code %d", code))
+	}
 }
 
 // Writes some data into the body stream and updates the HTTP code.
