@@ -1,53 +1,27 @@
 package gin
 
 import (
-	"bytes"
-	"encoding/json"
-	"encoding/xml"
-	"errors"
-	"fmt"
+	"github.com/gin-gonic/gin/render"
 	"github.com/julienschmidt/httprouter"
 	"html/template"
-	"log"
 	"math"
 	"net/http"
 	"path"
+	"sync"
 )
 
 const (
-	AbortIndex = math.MaxInt8 / 2
+	AbortIndex   = math.MaxInt8 / 2
+	MIMEJSON     = "application/json"
+	MIMEHTML     = "text/html"
+	MIMEXML      = "application/xml"
+	MIMEXML2     = "text/xml"
+	MIMEPlain    = "text/plain"
+	MIMEPOSTForm = "application/x-www-form-urlencoded"
 )
 
 type (
 	HandlerFunc func(*Context)
-
-	H map[string]interface{}
-
-	// Used internally to collect errors that occurred during an http request.
-	ErrorMsg struct {
-		Err  string      `json:"error"`
-		Meta interface{} `json:"meta"`
-	}
-
-	ErrorMsgs []ErrorMsg
-
-	Config struct {
-		CacheSize    int
-		Preallocated int
-	}
-
-	// Context is the most important part of gin. It allows us to pass variables between middleware,
-	// manage the flow, validate the JSON of a request and render a JSON response for example.
-	Context struct {
-		Req      *http.Request
-		Writer   ResponseWriter
-		Keys     map[string]interface{}
-		Errors   ErrorMsgs
-		Params   httprouter.Params
-		Engine   *Engine
-		handlers []HandlerFunc
-		index    int8
-	}
 
 	// Used internally to configure router, a RouterGroup is associated with a prefix
 	// and an array of handlers (middlewares)
@@ -61,50 +35,37 @@ type (
 	// Represents the web framework, it wraps the blazing fast httprouter multiplexer and a list of global middlewares.
 	Engine struct {
 		*RouterGroup
-		HTMLTemplates *template.Template
-		cache         chan *Context
-		handlers404   []HandlerFunc
-		router        *httprouter.Router
+		HTMLRender   render.Render
+		cache        sync.Pool
+		finalNoRoute []HandlerFunc
+		noRoute      []HandlerFunc
+		router       *httprouter.Router
 	}
 )
 
-func (a ErrorMsgs) String() string {
-	var buffer bytes.Buffer
-	for i, msg := range a {
-		text := fmt.Sprintf("Error #%02d: %s \n     Meta: %v\n", (i + 1), msg.Err, msg.Meta)
-		buffer.WriteString(text)
+func (engine *Engine) handle404(w http.ResponseWriter, req *http.Request) {
+	c := engine.createContext(w, req, nil, engine.finalNoRoute)
+	c.Writer.setStatus(404)
+	c.Next()
+	if !c.Writer.Written() {
+		c.Data(404, MIMEPlain, []byte("404 page not found"))
 	}
-	buffer.WriteString("\n")
-	return buffer.String()
-}
-
-func NewWithConfig(config Config) *Engine {
-	if config.CacheSize < 2 {
-		panic("CacheSize must be at least 2")
-	}
-	if config.Preallocated > config.CacheSize {
-		panic("Preallocated must be less or equal to CacheSize")
-	}
-	engine := &Engine{}
-	engine.RouterGroup = &RouterGroup{nil, "/", nil, engine}
-	engine.router = httprouter.New()
-	engine.router.NotFound = engine.handle404
-	engine.cache = make(chan *Context, config.CacheSize)
-
-	// Fill it with empty contexts
-	for i := 0; i < config.Preallocated; i++ {
-		engine.cache <- &Context{Engine: engine, Writer: &responseWriter{}}
-	}
-	return engine
+	engine.cache.Put(c)
 }
 
 // Returns a new blank Engine instance without any middleware attached.
 // The most basic configuration
 func New() *Engine {
-	return NewWithConfig(Config{
-		CacheSize:    1024,
-		Preallocated: 512,
-	})
+	engine := &Engine{}
+	engine.RouterGroup = &RouterGroup{nil, "/", nil, engine}
+	engine.router = httprouter.New()
+	engine.router.NotFound = engine.handle404
+	engine.cache.New = func() interface{} {
+		c := &Context{Engine: engine}
+		c.Writer = &c.writermem
+		return c
+	}
+	return engine
 }
 
 // Returns a Engine instance with the Logger and Recovery already attached.
@@ -114,42 +75,31 @@ func Default() *Engine {
 	return engine
 }
 
-func (engine *Engine) LoadHTMLTemplates(pattern string) {
-	engine.HTMLTemplates = template.Must(template.ParseGlob(pattern))
+func (engine *Engine) LoadHTMLGlob(pattern string) {
+	templ := template.Must(template.ParseGlob(pattern))
+	engine.SetHTMLTemplate(templ)
 }
 
-// Adds handlers for NotFound. It return a 404 code by default.
-func (engine *Engine) NotFound404(handlers ...HandlerFunc) {
-	engine.handlers404 = handlers
+func (engine *Engine) LoadHTMLFiles(files ...string) {
+	templ := template.Must(template.ParseFiles(files...))
+	engine.SetHTMLTemplate(templ)
 }
 
-func (engine *Engine) CacheStress() float32 {
-	return 1.0 - float32(len(engine.cache))/float32(cap(engine.cache))
-}
-
-func (engine *Engine) handle404(w http.ResponseWriter, req *http.Request) {
-	handlers := engine.combineHandlers(engine.handlers404)
-	c := engine.createContext(w, req, nil, handlers)
-	c.Writer.setStatus(404)
-	c.Next()
-	if !c.Writer.Written() {
-		c.String(404, "404 page not found")
+func (engine *Engine) SetHTMLTemplate(templ *template.Template) {
+	engine.HTMLRender = render.HTMLRender{
+		Template: templ,
 	}
-	engine.reuseContext(c)
 }
 
-// ServeFiles serves files from the given file system root.
-// The path must end with "/*filepath", files are then served from the local
-// path /defined/root/dir/*filepath.
-// For example if root is "/etc" and *filepath is "passwd", the local file
-// "/etc/passwd" would be served.
-// Internally a http.FileServer is used, therefore http.NotFound is used instead
-// of the Router's NotFound handler.
-// To use the operating system's file system implementation,
-// use http.Dir:
-//     router.ServeFiles("/src/*filepath", http.Dir("/var/www"))
-func (engine *Engine) ServeFiles(path string, root http.FileSystem) {
-	engine.router.ServeFiles(path, root)
+// Adds handlers for NoRoute. It return a 404 code by default.
+func (engine *Engine) NoRoute(handlers ...HandlerFunc) {
+	engine.noRoute = handlers
+	engine.finalNoRoute = engine.combineHandlers(engine.noRoute)
+}
+
+func (engine *Engine) Use(middlewares ...HandlerFunc) {
+	engine.RouterGroup.Use(middlewares...)
+	engine.finalNoRoute = engine.combineHandlers(engine.noRoute)
 }
 
 // ServeHTTP makes the router implement the http.Handler interface.
@@ -163,38 +113,15 @@ func (engine *Engine) Run(addr string) {
 	}
 }
 
+func (engine *Engine) RunTLS(addr string, cert string, key string) {
+	if err := http.ListenAndServeTLS(addr, cert, key, engine); err != nil {
+		panic(err)
+	}
+}
+
 /************************************/
 /********** ROUTES GROUPING *********/
 /************************************/
-
-func (engine *Engine) createContext(w http.ResponseWriter, req *http.Request, params httprouter.Params, handlers []HandlerFunc) *Context {
-	select {
-	case c := <-engine.cache:
-		c.Writer.reset(w)
-		c.Req = req
-		c.Params = params
-		c.handlers = handlers
-		c.Keys = nil
-		c.index = -1
-		return c
-	default:
-		return &Context{
-			Writer:   &responseWriter{w, -1, false},
-			Req:      req,
-			Params:   params,
-			handlers: handlers,
-			index:    -1,
-			Engine:   engine,
-		}
-	}
-}
-
-func (engine *Engine) reuseContext(c *Context) {
-	select {
-	case engine.cache <- c:
-	default:
-	}
-}
 
 // Adds middlewares to the group, see example code in github.
 func (group *RouterGroup) Use(middlewares ...HandlerFunc) {
@@ -204,13 +131,23 @@ func (group *RouterGroup) Use(middlewares ...HandlerFunc) {
 // Creates a new router group. You should add all the routes that have common middlwares or the same path prefix.
 // For example, all the routes that use a common middlware for authorization could be grouped.
 func (group *RouterGroup) Group(component string, handlers ...HandlerFunc) *RouterGroup {
-	prefix := path.Join(group.prefix, component)
+	prefix := group.pathFor(component)
+
 	return &RouterGroup{
 		Handlers: group.combineHandlers(handlers),
 		parent:   group,
 		prefix:   prefix,
 		engine:   group.engine,
 	}
+}
+
+func (group *RouterGroup) pathFor(p string) string {
+	joined := path.Join(group.prefix, p)
+	// Append a '/' if the last component had one, but only if it's not there already
+	if len(p) > 0 && p[len(p)-1] == '/' && joined[len(joined)-1] != '/' {
+		return joined + "/"
+	}
+	return joined
 }
 
 // Handle registers a new request handle and middlewares with the given path and method.
@@ -224,12 +161,12 @@ func (group *RouterGroup) Group(component string, handlers ...HandlerFunc) *Rout
 // frequently used, non-standardized or custom methods (e.g. for internal
 // communication with a proxy).
 func (group *RouterGroup) Handle(method, p string, handlers []HandlerFunc) {
-	p = path.Join(group.prefix, p)
+	p = group.pathFor(p)
 	handlers = group.combineHandlers(handlers)
 	group.engine.router.Handle(method, p, func(w http.ResponseWriter, req *http.Request, params httprouter.Params) {
 		c := group.engine.createContext(w, req, params, handlers)
 		c.Next()
-		group.engine.reuseContext(c)
+		group.engine.cache.Put(c)
 	})
 }
 
@@ -268,184 +205,28 @@ func (group *RouterGroup) HEAD(path string, handlers ...HandlerFunc) {
 	group.Handle("HEAD", path, handlers)
 }
 
+// Static serves files from the given file system root.
+// Internally a http.FileServer is used, therefore http.NotFound is used instead
+// of the Router's NotFound handler.
+// To use the operating system's file system implementation,
+// use :
+//     router.Static("/static", "/var/www")
+func (group *RouterGroup) Static(p, root string) {
+	prefix := group.pathFor(p)
+	p = path.Join(p, "/*filepath")
+	fileServer := http.StripPrefix(prefix, http.FileServer(http.Dir(root)))
+	group.GET(p, func(c *Context) {
+		fileServer.ServeHTTP(c.Writer, c.Request)
+	})
+	group.HEAD(p, func(c *Context) {
+		fileServer.ServeHTTP(c.Writer, c.Request)
+	})
+}
+
 func (group *RouterGroup) combineHandlers(handlers []HandlerFunc) []HandlerFunc {
 	s := len(group.Handlers) + len(handlers)
 	h := make([]HandlerFunc, 0, s)
 	h = append(h, group.Handlers...)
 	h = append(h, handlers...)
 	return h
-}
-
-/************************************/
-/****** FLOW AND ERROR MANAGEMENT****/
-/************************************/
-
-func (c *Context) Copy() *Context {
-	var cp Context = *c
-	cp.index = AbortIndex
-	cp.handlers = nil
-	return &cp
-}
-
-// Next should be used only in the middlewares.
-// It executes the pending handlers in the chain inside the calling handler.
-// See example in github.
-func (c *Context) Next() {
-	c.index++
-	s := int8(len(c.handlers))
-	for ; c.index < s; c.index++ {
-		c.handlers[c.index](c)
-	}
-}
-
-// Forces the system to do not continue calling the pending handlers.
-// For example, the first handler checks if the request is authorized. If it's not, context.Abort(401) should be called.
-// The rest of pending handlers would never be called for that request.
-func (c *Context) Abort(code int) {
-	if code >= 0 {
-		c.Writer.WriteHeader(code)
-	}
-	c.index = AbortIndex
-}
-
-// Fail is the same as Abort plus an error message.
-// Calling `context.Fail(500, err)` is equivalent to:
-// ```
-// context.Error("Operation aborted", err)
-// context.Abort(500)
-// ```
-func (c *Context) Fail(code int, err error) {
-	c.Error(err, "Operation aborted")
-	c.Abort(code)
-}
-
-// Attaches an error to the current context. The error is pushed to a list of errors.
-// It's a good idea to call Error for each error that occurred during the resolution of a request.
-// A middleware can be used to collect all the errors and push them to a database together, print a log, or append it in the HTTP response.
-func (c *Context) Error(err error, meta interface{}) {
-	c.Errors = append(c.Errors, ErrorMsg{
-		Err:  err.Error(),
-		Meta: meta,
-	})
-}
-
-func (c *Context) LastError() error {
-	s := len(c.Errors)
-	if s > 0 {
-		return errors.New(c.Errors[s-1].Err)
-	} else {
-		return nil
-	}
-}
-
-/************************************/
-/******** METADATA MANAGEMENT********/
-/************************************/
-
-// Sets a new pair key/value just for the specified context.
-// It also lazy initializes the hashmap.
-func (c *Context) Set(key string, item interface{}) {
-	if c.Keys == nil {
-		c.Keys = make(map[string]interface{})
-	}
-	c.Keys[key] = item
-}
-
-// Returns the value for the given key.
-// It panics if the value doesn't exist.
-func (c *Context) Get(key string) interface{} {
-	var ok bool
-	var item interface{}
-	if c.Keys != nil {
-		item, ok = c.Keys[key]
-	} else {
-		item, ok = nil, false
-	}
-	if !ok || item == nil {
-		log.Panicf("Key %s doesn't exist", key)
-	}
-	return item
-}
-
-/************************************/
-/******** ENCOGING MANAGEMENT********/
-/************************************/
-
-// Like ParseBody() but this method also writes a 400 error if the json is not valid.
-func (c *Context) EnsureBody(item interface{}) bool {
-	if err := c.ParseBody(item); err != nil {
-		c.Fail(400, err)
-		return false
-	}
-	return true
-}
-
-// Parses the body content as a JSON input. It decodes the json payload into the struct specified as a pointer.
-func (c *Context) ParseBody(item interface{}) error {
-	decoder := json.NewDecoder(c.Req.Body)
-	if err := decoder.Decode(&item); err == nil {
-		return Validate(c, item)
-	} else {
-		return err
-	}
-}
-
-// Serializes the given struct as JSON into the response body in a fast and efficient way.
-// It also sets the Content-Type as "application/json".
-func (c *Context) JSON(code int, obj interface{}) {
-	c.Writer.Header().Set("Content-Type", "application/json")
-	if code >= 0 {
-		c.Writer.WriteHeader(code)
-	}
-	encoder := json.NewEncoder(c.Writer)
-	if err := encoder.Encode(obj); err != nil {
-		c.Error(err, obj)
-		http.Error(c.Writer, err.Error(), 500)
-	}
-}
-
-// Serializes the given struct as XML into the response body in a fast and efficient way.
-// It also sets the Content-Type as "application/xml".
-func (c *Context) XML(code int, obj interface{}) {
-	c.Writer.Header().Set("Content-Type", "application/xml")
-	if code >= 0 {
-		c.Writer.WriteHeader(code)
-	}
-	encoder := xml.NewEncoder(c.Writer)
-	if err := encoder.Encode(obj); err != nil {
-		c.Error(err, obj)
-		http.Error(c.Writer, err.Error(), 500)
-	}
-}
-
-// Renders the HTTP template specified by its file name.
-// It also updates the HTTP code and sets the Content-Type as "text/html".
-// See http://golang.org/doc/articles/wiki/
-func (c *Context) HTML(code int, name string, data interface{}) {
-	c.Writer.Header().Set("Content-Type", "text/html")
-	if code >= 0 {
-		c.Writer.WriteHeader(code)
-	}
-	if err := c.Engine.HTMLTemplates.ExecuteTemplate(c.Writer, name, data); err != nil {
-		c.Error(err, map[string]interface{}{
-			"name": name,
-			"data": data,
-		})
-		http.Error(c.Writer, err.Error(), 500)
-	}
-}
-
-// Writes the given string into the response body and sets the Content-Type to "text/plain".
-func (c *Context) String(code int, msg string) {
-	if code >= 0 {
-		c.Writer.WriteHeader(code)
-	}
-	c.Writer.Header().Set("Content-Type", "text/plain")
-	c.Writer.Write([]byte(msg))
-}
-
-// Writes some data into the body stream and updates the HTTP code.
-func (c *Context) Data(code int, data []byte) {
-	c.Writer.WriteHeader(code)
-	c.Writer.Write(data)
 }

@@ -11,7 +11,6 @@ type (
 		Written() bool
 
 		// private
-		reset(http.ResponseWriter)
 		setStatus(int)
 	}
 

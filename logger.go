@@ -1,17 +1,21 @@
 package gin
 
 import (
-	"fmt"
 	"log"
 	"os"
 	"time"
 )
 
 func ErrorLogger() HandlerFunc {
+	return ErrorLoggerT(ErrorTypeAll)
+}
+
+func ErrorLoggerT(typ uint32) HandlerFunc {
 	return func(c *Context) {
 		c.Next()
 
-		if len(c.Errors) > 0 {
+		errs := c.Errors.ByType(typ)
+		if len(errs) > 0 {
 			// -1 status code = do not change current one
 			c.JSON(-1, c.Errors)
 		}
@@ -27,13 +31,27 @@ var (
 )
 
 func Logger() HandlerFunc {
-	logger := log.New(os.Stdout, "", 0)
+	stdlogger := log.New(os.Stdout, "", 0)
+	//errlogger := log.New(os.Stderr, "", 0)
+
 	return func(c *Context) {
 		// Start timer
 		start := time.Now()
 
 		// Process request
 		c.Next()
+
+		// save the IP of the requester
+		requester := c.Request.Header.Get("X-Real-IP")
+		// if the requester-header is empty, check the forwarded-header
+		if requester == "" {
+			requester = c.Request.Header.Get("X-Forwarded-For")
+		}
+
+		// if the requester is still empty, use the hard-coded address from the socket
+		if requester == "" {
+			requester = c.Request.RemoteAddr
+		}
 
 		var color string
 		code := c.Writer.Status()
@@ -47,17 +65,15 @@ func Logger() HandlerFunc {
 		default:
 			color = red
 		}
-		latency := time.Since(start)
-		logger.Printf("[GIN] %v |%s %3d %s| %12v | %3s %s\n",
-			time.Now().Format("2006/01/02 - 15:04:05"),
-			color, c.Writer.Status(), reset,
+		end := time.Now()
+		latency := end.Sub(start)
+		stdlogger.Printf("[GIN] %v |%s %3d %s| %12v | %s %4s %s\n%s",
+			end.Format("2006/01/02 - 15:04:05"),
+			color, code, reset,
 			latency,
-			c.Req.Method, c.Req.URL.Path,
+			requester,
+			c.Request.Method, c.Request.URL.Path,
+			c.Errors.String(),
 		)
-
-		// Calculate resolution time
-		if len(c.Errors) > 0 {
-			fmt.Println(c.Errors.String())
-		}
 	}
 }
