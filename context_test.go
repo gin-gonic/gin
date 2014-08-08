@@ -125,6 +125,73 @@ func TestContextString(t *testing.T) {
 	}
 }
 
+// TestContextXML tests that the response is serialized as XML
+// and Content-Type is set to application/xml
+func TestContextXML(t *testing.T) {
+	req, _ := http.NewRequest("GET", "/test", nil)
+	w := httptest.NewRecorder()
+
+	r := Default()
+	r.GET("/test", func(c *Context) {
+		c.XML(200, H{"foo": "bar"})
+	})
+
+	r.ServeHTTP(w, req)
+
+	if w.Body.String() != "<map><foo>bar</foo></map>" {
+		t.Errorf("Response should be <map><foo>bar</foo></map>, was: %s", w.Body.String())
+	}
+
+	if w.HeaderMap.Get("Content-Type") != "application/xml" {
+		t.Errorf("Content-Type should be application/xml, was %s", w.HeaderMap.Get("Content-Type"))
+	}
+}
+
+// TestContextData tests that the response can be written from `bytesting`
+// with specified MIME type
+func TestContextData(t *testing.T) {
+	req, _ := http.NewRequest("GET", "/test/csv", nil)
+	w := httptest.NewRecorder()
+
+	r := Default()
+	r.GET("/test/csv", func(c *Context) {
+		c.Data(200, "text/csv", []byte(`foo,bar`))
+	})
+
+	r.ServeHTTP(w, req)
+
+	if w.Body.String() != "foo,bar" {
+		t.Errorf("Response should be foo&bar, was: %s", w.Body.String())
+	}
+
+	if w.HeaderMap.Get("Content-Type") != "text/csv" {
+		t.Errorf("Content-Type should be text/csv, was %s", w.HeaderMap.Get("Content-Type"))
+	}
+}
+
+
+func TestContextFile(t *testing.T) {
+	req, _ := http.NewRequest("GET", "/test/file", nil)
+	w := httptest.NewRecorder()
+
+	r := Default()
+	r.GET("/test/file", func(c *Context) {
+		c.File("./gin.go")
+	})
+
+	r.ServeHTTP(w, req)
+
+	bodyAsString := w.Body.String()
+
+	if len(bodyAsString) == 0 {
+		t.Errorf("Got empty body instead of file data")
+	}
+
+	if w.HeaderMap.Get("Content-Type") != "text/plain; charset=utf-8" {
+		t.Errorf("Content-Type should be text/plain; charset=utf-8, was %s", w.HeaderMap.Get("Content-Type"))
+	}
+}
+
 // TestHandlerFunc - ensure that custom middleware works properly
 func TestHandlerFunc(t *testing.T) {
 
