@@ -1,6 +1,7 @@
 package gin
 
 import (
+	"bytes"
 	"errors"
 	"html/template"
 	"net/http"
@@ -169,7 +170,6 @@ func TestContextData(t *testing.T) {
 	}
 }
 
-
 func TestContextFile(t *testing.T) {
 	req, _ := http.NewRequest("GET", "/test/file", nil)
 	w := httptest.NewRecorder()
@@ -316,4 +316,137 @@ func TestFailHandlersChain(t *testing.T) {
 		t.Errorf("Falied to switch context in handler function: %s", stepsPassed)
 	}
 
+}
+
+func TestBindingJSON(t *testing.T) {
+
+	body := bytes.NewBuffer([]byte("{\"foo\":\"bar\"}"))
+
+	r := Default()
+	r.POST("/binding/json", func(c *Context) {
+		var body struct {
+			Foo string `json:"foo"`
+		}
+		if c.Bind(&body) {
+			c.JSON(200, H{"parsed": body.Foo})
+		}
+	})
+
+	req, _ := http.NewRequest("POST", "/binding/json", body)
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+
+	r.ServeHTTP(w, req)
+
+	if w.Code != 200 {
+		t.Errorf("Response code should be Ok, was: %s", w.Code)
+	}
+
+	if w.Body.String() != "{\"parsed\":\"bar\"}\n" {
+		t.Errorf("Response should be {\"parsed\":\"bar\"}, was: %s", w.Body.String())
+	}
+
+	if w.HeaderMap.Get("Content-Type") != "application/json" {
+		t.Errorf("Content-Type should be application/json, was %s", w.HeaderMap.Get("Content-Type"))
+	}
+}
+
+func TestBindingJSONEncoding(t *testing.T) {
+
+	body := bytes.NewBuffer([]byte("{\"foo\":\"嘉\"}"))
+
+	r := Default()
+	r.POST("/binding/json", func(c *Context) {
+		var body struct {
+			Foo string `json:"foo"`
+		}
+		if c.Bind(&body) {
+			c.JSON(200, H{"parsed": body.Foo})
+		}
+	})
+
+	req, _ := http.NewRequest("POST", "/binding/json", body)
+	req.Header.Set("Content-Type", "application/json; charset=utf-8")
+	w := httptest.NewRecorder()
+
+	r.ServeHTTP(w, req)
+
+	if w.Code != 200 {
+		t.Errorf("Response code should be Ok, was: %s", w.Code)
+	}
+
+	if w.Body.String() != "{\"parsed\":\"嘉\"}\n" {
+		t.Errorf("Response should be {\"parsed\":\"嘉\"}, was: %s", w.Body.String())
+	}
+
+	if w.HeaderMap.Get("Content-Type") != "application/json" {
+		t.Errorf("Content-Type should be application/json, was %s", w.HeaderMap.Get("Content-Type"))
+	}
+}
+
+func TestBindingJSONNoContentType(t *testing.T) {
+
+	body := bytes.NewBuffer([]byte("{\"foo\":\"bar\"}"))
+
+	r := Default()
+	r.POST("/binding/json", func(c *Context) {
+		var body struct {
+			Foo string `json:"foo"`
+		}
+		if c.Bind(&body) {
+			c.JSON(200, H{"parsed": body.Foo})
+		}
+
+	})
+
+	req, _ := http.NewRequest("POST", "/binding/json", body)
+	w := httptest.NewRecorder()
+
+	r.ServeHTTP(w, req)
+
+	if w.Code != 400 {
+		t.Errorf("Response code should be Bad request, was: %s", w.Code)
+	}
+
+	if w.Body.String() == "{\"parsed\":\"bar\"}\n" {
+		t.Errorf("Response should not be {\"parsed\":\"bar\"}, was: %s", w.Body.String())
+	}
+
+	if w.HeaderMap.Get("Content-Type") == "application/json" {
+		t.Errorf("Content-Type should not be application/json, was %s", w.HeaderMap.Get("Content-Type"))
+	}
+}
+
+func TestBindingJSONMalformed(t *testing.T) {
+
+	body := bytes.NewBuffer([]byte("\"foo\":\"bar\"\n"))
+
+	r := Default()
+	r.POST("/binding/json", func(c *Context) {
+		var body struct {
+			Foo string `json:"foo"`
+		}
+		if c.Bind(&body) {
+			c.JSON(200, H{"parsed": body.Foo})
+		}
+
+	})
+
+	req, _ := http.NewRequest("POST", "/binding/json", body)
+	req.Header.Set("Content-Type", "application/json")
+
+	w := httptest.NewRecorder()
+
+	r.ServeHTTP(w, req)
+
+	if w.Code != 400 {
+		t.Errorf("Response code should be Bad request, was: %s", w.Code)
+	}
+	if w.Body.String() == "{\"parsed\":\"bar\"}\n" {
+		t.Errorf("Response should not be {\"parsed\":\"bar\"}, was: %s", w.Body.String())
+	}
+
+	if w.HeaderMap.Get("Content-Type") == "application/json" {
+		t.Errorf("Content-Type should not be application/json, was %s", w.HeaderMap.Get("Content-Type"))
+	}
 }
