@@ -22,7 +22,7 @@ type (
 
 func (w *responseWriter) reset(writer http.ResponseWriter) {
 	w.ResponseWriter = writer
-	w.status = 0
+	w.status = 200
 	w.written = false
 }
 
@@ -43,12 +43,7 @@ func (w *responseWriter) WriteHeaderNow() {
 }
 
 func (w *responseWriter) Write(data []byte) (n int, err error) {
-	if !w.written {
-		if w.status != 0 {
-			w.ResponseWriter.WriteHeader(w.status)
-		}
-		w.written = true
-	}
+	w.WriteHeaderNow()
 	return w.ResponseWriter.Write(data)
 }
 
