@@ -45,10 +45,15 @@ type (
 
 func (engine *Engine) handle404(w http.ResponseWriter, req *http.Request) {
 	c := engine.createContext(w, req, nil, engine.finalNoRoute)
-	c.Writer.setStatus(404)
+	// set 404 by default, useful for logging
+	c.Writer.WriteHeader(404)
 	c.Next()
 	if !c.Writer.Written() {
-		c.Data(404, MIMEPlain, []byte("404 page not found"))
+		if c.Writer.Status() == 404 {
+			c.Data(-1, MIMEPlain, []byte("404 page not found"))
+		} else {
+			c.Writer.WriteHeaderNow()
+		}
 	}
 	engine.cache.Put(c)
 }
@@ -166,6 +171,7 @@ func (group *RouterGroup) Handle(method, p string, handlers []HandlerFunc) {
 	group.engine.router.Handle(method, p, func(w http.ResponseWriter, req *http.Request, params httprouter.Params) {
 		c := group.engine.createContext(w, req, params, handlers)
 		c.Next()
+		c.Writer.WriteHeaderNow()
 		group.engine.cache.Put(c)
 	})
 }

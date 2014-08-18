@@ -47,7 +47,6 @@ func Logger() HandlerFunc {
 		if len(requester) == 0 {
 			requester = c.Request.Header.Get("X-Forwarded-For")
 		}
-
 		// if the requester is still empty, use the hard-coded address from the socket
 		if len(requester) == 0 {
 			requester = c.Request.RemoteAddr
