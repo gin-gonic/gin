@@ -7,7 +7,6 @@ import (
 	"math"
 	"net/http"
 	"path"
-	"sync"
 )
 
 const (
@@ -36,7 +35,6 @@ type (
 	Engine struct {
 		*RouterGroup
 		HTMLRender   render.Render
-		cache        sync.Pool
 		finalNoRoute []HandlerFunc
 		noRoute      []HandlerFunc
 		router       *httprouter.Router
@@ -55,7 +53,6 @@ func (engine *Engine) handle404(w http.ResponseWriter, req *http.Request) {
 			c.Writer.WriteHeaderNow()
 		}
 	}
-	engine.cache.Put(c)
 }
 
 // Returns a new blank Engine instance without any middleware attached.
@@ -65,11 +62,6 @@ func New() *Engine {
 	engine.RouterGroup = &RouterGroup{nil, "/", nil, engine}
 	engine.router = httprouter.New()
 	engine.router.NotFound = engine.handle404
-	engine.cache.New = func() interface{} {
-		c := &Context{Engine: engine}
-		c.Writer = &c.writermem
-		return c
-	}
 	return engine
 }
 
@@ -172,7 +164,6 @@ func (group *RouterGroup) Handle(method, p string, handlers []HandlerFunc) {
 		c := group.engine.createContext(w, req, params, handlers)
 		c.Next()
 		c.Writer.WriteHeaderNow()
-		group.engine.cache.Put(c)
 	})
 }
 

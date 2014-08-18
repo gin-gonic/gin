@@ -70,8 +70,9 @@ type Context struct {
 /************************************/
 
 func (engine *Engine) createContext(w http.ResponseWriter, req *http.Request, params httprouter.Params, handlers []HandlerFunc) *Context {
-	c := engine.cache.Get().(*Context)
+	c := &Context{Engine: engine}
 	c.writermem.reset(w)
+	c.Writer = &c.writermem
 	c.Request = req
 	c.Params = params
 	c.handlers = handlers
