@@ -22,10 +22,13 @@ People and companies, who have contributed, in alphabetical order.
 - Using template.Must to fix multiple return issue
 - ★ Added support for OPTIONS verb
 - ★ Setting response headers before calling WriteHeader
+- Improved documentation for model binding
+- ★ Added Content.Redirect()
+- ★ Added tons of Unit tests
 
 
 **@austinheap (Austin Heap)**
-- Adds travis CI integration
+- Added travis CI integration
 
 
 **@bluele (Jun Kimura)**
@@ -67,18 +70,21 @@ People and companies, who have contributed, in alphabetical order.
 **@mdigger (Dmitry Sedykh)**
 - Fixes Form binding when content-type is x-www-form-urlencoded
 - No repeat call c.Writer.Status() in gin.Logger
-- Fixed Content-Type for json render
+- Fixes Content-Type for json render
 
 
 **@mopemope (Yutaka Matsubara)**
 - ★ Adds Godep support (Dependencies Manager)
 - Fix variadic parameter in the flexible render API
 - Fix Corrupted plain render
-- Fix variadic parameter in new flexible render API
-
+ 
 
 **@msemenistyi (Mykyta Semenistyi)**
 - update Readme.md. Add code to String method
+
+
+**@msoedov (Sasha Myasoedov)**
+- ★ Adds tons of unit tests.
 
 
 **@ngerakines (Nick Gerakines)**
