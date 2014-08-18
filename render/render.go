@@ -22,6 +22,9 @@ type (
 	// Plain text
 	plainRender struct{}
 
+	// Redirects
+	redirectRender struct{}
+
 	// form binding
 	HTMLRender struct {
 		Template *template.Template
@@ -29,9 +32,10 @@ type (
 )
 
 var (
-	JSON  = jsonRender{}
-	XML   = xmlRender{}
-	Plain = plainRender{}
+	JSON     = jsonRender{}
+	XML      = xmlRender{}
+	Plain    = plainRender{}
+	Redirect = redirectRender{}
 )
 
 func writeHeader(w http.ResponseWriter, code int, contentType string) {
@@ -43,6 +47,12 @@ func (_ jsonRender) Render(w http.ResponseWriter, code int, data ...interface{})
 	writeHeader(w, code, "application/json")
 	encoder := json.NewEncoder(w)
 	return encoder.Encode(data[0])
+}
+
+func (_ redirectRender) Render(w http.ResponseWriter, code int, data ...interface{}) error {
+	w.Header().Set("Location", data[0].(string))
+	w.WriteHeader(code)
+	return nil
 }
 
 func (_ xmlRender) Render(w http.ResponseWriter, code int, data ...interface{}) error {
