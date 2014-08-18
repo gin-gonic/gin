@@ -11,7 +11,7 @@ func TestBasicAuthSucceed(t *testing.T) {
 	req, _ := http.NewRequest("GET", "/login", nil)
 	w := httptest.NewRecorder()
 
-	r := Default()
+	r := New()
 	accounts := Accounts{"admin": "password"}
 	r.Use(BasicAuth(accounts))
 
@@ -36,7 +36,7 @@ func TestBasicAuth401(t *testing.T) {
 	req, _ := http.NewRequest("GET", "/login", nil)
 	w := httptest.NewRecorder()
 
-	r := Default()
+	r := New()
 	accounts := Accounts{"foo": "bar"}
 	r.Use(BasicAuth(accounts))
 

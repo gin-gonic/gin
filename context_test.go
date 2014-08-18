@@ -15,7 +15,7 @@ func TestContextParamsByName(t *testing.T) {
 	w := httptest.NewRecorder()
 	name := ""
 
-	r := Default()
+	r := New()
 	r.GET("/test/:name", func(c *Context) {
 		name = c.Params.ByName("name")
 	})
@@ -33,7 +33,7 @@ func TestContextSetGet(t *testing.T) {
 	req, _ := http.NewRequest("GET", "/test", nil)
 	w := httptest.NewRecorder()
 
-	r := Default()
+	r := New()
 	r.GET("/test", func(c *Context) {
 		// Key should be lazily created
 		if c.Keys != nil {
@@ -61,7 +61,7 @@ func TestContextJSON(t *testing.T) {
 	req, _ := http.NewRequest("GET", "/test", nil)
 	w := httptest.NewRecorder()
 
-	r := Default()
+	r := New()
 	r.GET("/test", func(c *Context) {
 		c.JSON(200, H{"foo": "bar"})
 	})
@@ -83,7 +83,7 @@ func TestContextHTML(t *testing.T) {
 	req, _ := http.NewRequest("GET", "/test", nil)
 	w := httptest.NewRecorder()
 
-	r := Default()
+	r := New()
 	templ, _ := template.New("t").Parse(`Hello {{.Name}}`)
 	r.SetHTMLTemplate(templ)
 
@@ -110,7 +110,7 @@ func TestContextString(t *testing.T) {
 	req, _ := http.NewRequest("GET", "/test", nil)
 	w := httptest.NewRecorder()
 
-	r := Default()
+	r := New()
 	r.GET("/test", func(c *Context) {
 		c.String(200, "test")
 	})
@@ -132,7 +132,7 @@ func TestContextXML(t *testing.T) {
 	req, _ := http.NewRequest("GET", "/test", nil)
 	w := httptest.NewRecorder()
 
-	r := Default()
+	r := New()
 	r.GET("/test", func(c *Context) {
 		c.XML(200, H{"foo": "bar"})
 	})
@@ -154,7 +154,7 @@ func TestContextData(t *testing.T) {
 	req, _ := http.NewRequest("GET", "/test/csv", nil)
 	w := httptest.NewRecorder()
 
-	r := Default()
+	r := New()
 	r.GET("/test/csv", func(c *Context) {
 		c.Data(200, "text/csv", []byte(`foo,bar`))
 	})
@@ -174,7 +174,7 @@ func TestContextFile(t *testing.T) {
 	req, _ := http.NewRequest("GET", "/test/file", nil)
 	w := httptest.NewRecorder()
 
-	r := Default()
+	r := New()
 	r.GET("/test/file", func(c *Context) {
 		c.File("./gin.go")
 	})
@@ -198,7 +198,7 @@ func TestHandlerFunc(t *testing.T) {
 	req, _ := http.NewRequest("GET", "/", nil)
 	w := httptest.NewRecorder()
 
-	r := Default()
+	r := New()
 	var stepsPassed int = 0
 
 	r.Use(func(context *Context) {
@@ -220,109 +220,95 @@ func TestHandlerFunc(t *testing.T) {
 
 // TestBadAbortHandlersChain - ensure that Abort after switch context will not interrupt pending handlers
 func TestBadAbortHandlersChain(t *testing.T) {
-
-	req, _ := http.NewRequest("GET", "/", nil)
-	w := httptest.NewRecorder()
-
-	r := Default()
+	// SETUP
 	var stepsPassed int = 0
-
-	r.Use(func(context *Context) {
+	r := New()
+	r.Use(func(c *Context) {
 		stepsPassed += 1
-		context.Next()
+		c.Next()
 		stepsPassed += 1
 		// after check and abort
-		context.Abort(409)
-	},
-		func(context *Context) {
-			stepsPassed += 1
-			context.Next()
-			stepsPassed += 1
-			context.Abort(403)
-		},
-	)
+		c.Abort(409)
+	})
+	r.Use(func(c *Context) {
+		stepsPassed += 1
+		c.Next()
+		stepsPassed += 1
+		c.Abort(403)
+	})
 
-	r.ServeHTTP(w, req)
+	// RUN
+	w := PerformRequest(r, "GET", "/")
 
-	if w.Code != 403 {
-		t.Errorf("Response code should be Forbiden, was: %s", w.Code)
+	// TEST
+	if w.Code != 409 {
+		t.Errorf("Response code should be Forbiden, was: %d", w.Code)
 	}
-
 	if stepsPassed != 4 {
-		t.Errorf("Falied to switch context in handler function: %s", stepsPassed)
+		t.Errorf("Falied to switch context in handler function: %d", stepsPassed)
 	}
 }
 
 // TestAbortHandlersChain - ensure that Abort interrupt used middlewares in fifo order
 func TestAbortHandlersChain(t *testing.T) {
-
-	req, _ := http.NewRequest("GET", "/", nil)
-	w := httptest.NewRecorder()
-
-	r := Default()
+	// SETUP
 	var stepsPassed int = 0
-
+	r := New()
 	r.Use(func(context *Context) {
 		stepsPassed += 1
 		context.Abort(409)
-	},
-		func(context *Context) {
-			stepsPassed += 1
-			context.Next()
-			stepsPassed += 1
-		},
-	)
+	})
+	r.Use(func(context *Context) {
+		stepsPassed += 1
+		context.Next()
+		stepsPassed += 1
+	})
 
-	r.ServeHTTP(w, req)
+	// RUN
+	w := PerformRequest(r, "GET", "/")
 
+	// TEST
 	if w.Code != 409 {
-		t.Errorf("Response code should be Conflict, was: %s", w.Code)
+		t.Errorf("Response code should be Conflict, was: %d", w.Code)
 	}
-
 	if stepsPassed != 1 {
-		t.Errorf("Falied to switch context in handler function: %s", stepsPassed)
+		t.Errorf("Falied to switch context in handler function: %d", stepsPassed)
 	}
 }
 
 // TestFailHandlersChain - ensure that Fail interrupt used middlewares in fifo order as
 // as well as Abort
 func TestFailHandlersChain(t *testing.T) {
-
-	req, _ := http.NewRequest("GET", "/", nil)
-	w := httptest.NewRecorder()
-
-	r := Default()
+	// SETUP
 	var stepsPassed int = 0
-
+	r := New()
 	r.Use(func(context *Context) {
 		stepsPassed += 1
-
 		context.Fail(500, errors.New("foo"))
-	},
-		func(context *Context) {
-			stepsPassed += 1
-			context.Next()
-			stepsPassed += 1
-		},
-	)
+	})
+	r.Use(func(context *Context) {
+		stepsPassed += 1
+		context.Next()
+		stepsPassed += 1
+	})
 
-	r.ServeHTTP(w, req)
+	// RUN
+	w := PerformRequest(r, "GET", "/")
 
+	// TEST
 	if w.Code != 500 {
-		t.Errorf("Response code should be Server error, was: %s", w.Code)
+		t.Errorf("Response code should be Server error, was: %d", w.Code)
 	}
-
 	if stepsPassed != 1 {
-		t.Errorf("Falied to switch context in handler function: %s", stepsPassed)
+		t.Errorf("Falied to switch context in handler function: %d", stepsPassed)
 	}
-
 }
 
 func TestBindingJSON(t *testing.T) {
 
 	body := bytes.NewBuffer([]byte("{\"foo\":\"bar\"}"))
 
-	r := Default()
+	r := New()
 	r.POST("/binding/json", func(c *Context) {
 		var body struct {
 			Foo string `json:"foo"`
@@ -355,7 +341,7 @@ func TestBindingJSONEncoding(t *testing.T) {
 
 	body := bytes.NewBuffer([]byte("{\"foo\":\"嘉\"}"))
 
-	r := Default()
+	r := New()
 	r.POST("/binding/json", func(c *Context) {
 		var body struct {
 			Foo string `json:"foo"`
@@ -388,7 +374,7 @@ func TestBindingJSONNoContentType(t *testing.T) {
 
 	body := bytes.NewBuffer([]byte("{\"foo\":\"bar\"}"))
 
-	r := Default()
+	r := New()
 	r.POST("/binding/json", func(c *Context) {
 		var body struct {
 			Foo string `json:"foo"`
@@ -421,7 +407,7 @@ func TestBindingJSONMalformed(t *testing.T) {
 
 	body := bytes.NewBuffer([]byte("\"foo\":\"bar\"\n"))
 
-	r := Default()
+	r := New()
 	r.POST("/binding/json", func(c *Context) {
 		var body struct {
 			Foo string `json:"foo"`
