@@ -2,6 +2,11 @@
 
 ###Gin 0.4 (??)
 
+- [NEW] Unit tests
+- [NEW] Add Content.Redirect()
+- [FIX] Deferring WriteHeader()
+- [FIX] Improved documentation for model binding
+
 
 ###Gin 0.3 (Jul 18, 2014)
 
