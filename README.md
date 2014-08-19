@@ -392,7 +392,7 @@ func main() {
 			time.Sleep(5 * time.Second)
 
 			// note than you are using the copied context "c_cp", IMPORTANT
-			log.Println("Done! in path " + c_cp.Req.URL.Path)
+			log.Println("Done! in path " + c_cp.Request.URL.Path)
 		}()
 	})
 
@@ -402,7 +402,7 @@ func main() {
 		time.Sleep(5 * time.Second)
 
 		// since we are NOT using a goroutine, we do not have to copy the context
-		log.Println("Done! in path " + c.Req.URL.Path)
+		log.Println("Done! in path " + c.Request.URL.Path)
 	})
 
     // Listen and server on 0.0.0.0:8080
