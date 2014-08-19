@@ -5,7 +5,7 @@ List of all the awesome people working to make Gin the best Web Framework in Go!
 ##gin 0.x series authors
 
 **Lead Developer:**  Manu Martinez-Almeida (@manucorporat)  
-**Stuff:**
+**Staff:**
 Javier Provecho (@javierprovecho)
 
 People and companies, who have contributed, in alphabetical order.
