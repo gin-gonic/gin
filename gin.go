@@ -82,22 +82,26 @@ func Default() *Engine {
 }
 
 func (engine *Engine) LoadHTMLGlob(pattern string) {
-	templ := template.Must(template.ParseGlob(pattern))
-	engine.SetHTMLTemplate(templ)
-}
-
-func (engine *Engine) LoadHTMLFiles(files ...string) {
-	templ := template.Must(template.ParseFiles(files...))
-	engine.SetHTMLTemplate(templ)
-}
-
-func (engine *Engine) SetHTMLTemplate(templ *template.Template) {
 	if gin_mode == debugCode {
 		engine.HTMLRender = render.HTMLDebug
 	} else {
-		engine.HTMLRender = render.HTMLRender{
-			Template: templ,
-		}
+		templ := template.Must(template.ParseGlob(pattern))
+		engine.SetHTMLTemplate(templ)
+	}
+}
+
+func (engine *Engine) LoadHTMLFiles(files ...string) {
+	if gin_mode == debugCode {
+		engine.HTMLRender = render.HTMLDebug
+	} else {
+		templ := template.Must(template.ParseFiles(files...))
+		engine.SetHTMLTemplate(templ)
+	}
+}
+
+func (engine *Engine) SetHTMLTemplate(templ *template.Template) {
+	engine.HTMLRender = render.HTMLRender{
+		Template: templ,
 	}
 }
 

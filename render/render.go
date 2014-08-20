@@ -82,7 +82,11 @@ func (_ htmlDebugRender) Render(w http.ResponseWriter, code int, data ...interfa
 	writeHeader(w, code, "text/html")
 	file := data[0].(string)
 	obj := data[1]
-	return template.New(file).Execute(w, obj)
+	t, err := template.ParseFiles(file)
+	if err != nil {
+		return err
+	}
+	return t.ExecuteTemplate(w, file, obj)
 }
 
 func (html HTMLRender) Render(w http.ResponseWriter, code int, data ...interface{}) error {
