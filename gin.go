@@ -205,15 +205,19 @@ func (group *RouterGroup) HEAD(path string, handlers ...HandlerFunc) {
 	group.Handle("HEAD", path, handlers)
 }
 
-// Resouce API
 // All of the methods are the same type as HandlerFunc
-type Resource interface {
+// if you don't want to support any methods of CRUD, then don't implement it
+type CreateSupported interface {
 	CreateHandler(*Context)
+}
+type ReadSupported interface {
 	ReadHandler(*Context)
+}
+type UpdateSupported interface {
 	UpdateHandler(*Context)
+}
+type DeleteSupported interface {
 	DeleteHandler(*Context)
-
-	Supported(string) bool
 }
 
 // It defines
@@ -221,20 +225,17 @@ type Resource interface {
 //   GET:  /path
 //   PUT:  /path/:id
 //   POST: /path/:id
-func (group *RouterGroup) CRUD(path string, resource Resource) {
-	if resource.Supported("C") {
+func (group *RouterGroup) CRUD(path string, resource interface{}) {
+	if resource, ok := resource.(CreateSupported); ok {
 		group.POST(path, resource.CreateHandler)
 	}
-
-	if resource.Supported("R") {
+	if resource, ok := resource.(ReadSupported); ok {
 		group.GET(path, resource.ReadHandler)
 	}
-
-	if resource.Supported("U") {
+	if resource, ok := resource.(UpdateSupported); ok {
 		group.PUT(path+"/:id", resource.UpdateHandler)
 	}
-
-	if resource.Supported("D") {
+	if resource, ok := resource.(DeleteSupported); ok {
 		group.DELETE(path+"/:id", resource.DeleteHandler)
 	}
 }
