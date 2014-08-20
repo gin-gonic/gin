@@ -25,6 +25,9 @@ type (
 	// Redirects
 	redirectRender struct{}
 
+	// Redirects
+	htmlDebugRender struct{}
+
 	// form binding
 	HTMLRender struct {
 		Template *template.Template
@@ -32,10 +35,11 @@ type (
 )
 
 var (
-	JSON     = jsonRender{}
-	XML      = xmlRender{}
-	Plain    = plainRender{}
-	Redirect = redirectRender{}
+	JSON      = jsonRender{}
+	XML       = xmlRender{}
+	Plain     = plainRender{}
+	Redirect  = redirectRender{}
+	HTMLDebug = htmlDebugRender{}
 )
 
 func writeHeader(w http.ResponseWriter, code int, contentType string) {
@@ -61,13 +65,6 @@ func (_ xmlRender) Render(w http.ResponseWriter, code int, data ...interface{}) 
 	return encoder.Encode(data[0])
 }
 
-func (html HTMLRender) Render(w http.ResponseWriter, code int, data ...interface{}) error {
-	writeHeader(w, code, "text/html")
-	file := data[0].(string)
-	obj := data[1]
-	return html.Template.ExecuteTemplate(w, file, obj)
-}
-
 func (_ plainRender) Render(w http.ResponseWriter, code int, data ...interface{}) error {
 	writeHeader(w, code, "text/plain")
 	format := data[0].(string)
@@ -79,4 +76,18 @@ func (_ plainRender) Render(w http.ResponseWriter, code int, data ...interface{}
 		_, err = w.Write([]byte(format))
 	}
 	return err
+}
+
+func (_ htmlDebugRender) Render(w http.ResponseWriter, code int, data ...interface{}) error {
+	writeHeader(w, code, "text/html")
+	file := data[0].(string)
+	obj := data[1]
+	return template.New(file).Execute(w, obj)
+}
+
+func (html HTMLRender) Render(w http.ResponseWriter, code int, data ...interface{}) error {
+	writeHeader(w, code, "text/html")
+	file := data[0].(string)
+	obj := data[1]
+	return html.Template.ExecuteTemplate(w, file, obj)
 }
