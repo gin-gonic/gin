@@ -22,6 +22,12 @@ type (
 	// Plain text
 	plainRender struct{}
 
+	// Redirects
+	redirectRender struct{}
+
+	// Redirects
+	htmlDebugRender struct{}
+
 	// form binding
 	HTMLRender struct {
 		Template *template.Template
@@ -29,16 +35,16 @@ type (
 )
 
 var (
-	JSON  = jsonRender{}
-	XML   = xmlRender{}
-	Plain = plainRender{}
+	JSON      = jsonRender{}
+	XML       = xmlRender{}
+	Plain     = plainRender{}
+	Redirect  = redirectRender{}
+	HTMLDebug = htmlDebugRender{}
 )
 
 func writeHeader(w http.ResponseWriter, code int, contentType string) {
-	if code >= 0 {
-		w.Header().Set("Content-Type", contentType)
-		w.WriteHeader(code)
-	}
+	w.Header().Set("Content-Type", contentType)
+	w.WriteHeader(code)
 }
 
 func (_ jsonRender) Render(w http.ResponseWriter, code int, data ...interface{}) error {
@@ -47,17 +53,16 @@ func (_ jsonRender) Render(w http.ResponseWriter, code int, data ...interface{})
 	return encoder.Encode(data[0])
 }
 
+func (_ redirectRender) Render(w http.ResponseWriter, code int, data ...interface{}) error {
+	w.Header().Set("Location", data[0].(string))
+	w.WriteHeader(code)
+	return nil
+}
+
 func (_ xmlRender) Render(w http.ResponseWriter, code int, data ...interface{}) error {
 	writeHeader(w, code, "application/xml")
 	encoder := xml.NewEncoder(w)
 	return encoder.Encode(data[0])
-}
-
-func (html HTMLRender) Render(w http.ResponseWriter, code int, data ...interface{}) error {
-	writeHeader(w, code, "text/html")
-	file := data[0].(string)
-	obj := data[1]
-	return html.Template.ExecuteTemplate(w, file, obj)
 }
 
 func (_ plainRender) Render(w http.ResponseWriter, code int, data ...interface{}) error {
@@ -71,4 +76,22 @@ func (_ plainRender) Render(w http.ResponseWriter, code int, data ...interface{}
 		_, err = w.Write([]byte(format))
 	}
 	return err
+}
+
+func (_ htmlDebugRender) Render(w http.ResponseWriter, code int, data ...interface{}) error {
+	writeHeader(w, code, "text/html")
+	file := data[0].(string)
+	obj := data[1]
+	t, err := template.ParseFiles(file)
+	if err != nil {
+		return err
+	}
+	return t.ExecuteTemplate(w, file, obj)
+}
+
+func (html HTMLRender) Render(w http.ResponseWriter, code int, data ...interface{}) error {
+	writeHeader(w, code, "text/html")
+	file := data[0].(string)
+	obj := data[1]
+	return html.Template.ExecuteTemplate(w, file, obj)
 }
