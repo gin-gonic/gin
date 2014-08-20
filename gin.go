@@ -212,6 +212,8 @@ type Resource interface {
 	ReadHandler(*Context)
 	UpdateHandler(*Context)
 	DeleteHandler(*Context)
+
+	Supported(string) bool
 }
 
 // It defines
@@ -220,10 +222,21 @@ type Resource interface {
 //   PUT:  /path/:id
 //   POST: /path/:id
 func (group *RouterGroup) CRUD(path string, resource Resource) {
-	group.POST(path, resource.CreateHandler)
-	group.GET(path, resource.ReadHandler)
-	group.PUT(path+"/:id", resource.UpdateHandler)
-	group.DELETE(path+"/:id", resource.DeleteHandler)
+	if resource.Supported("C") {
+		group.POST(path, resource.CreateHandler)
+	}
+
+	if resource.Supported("R") {
+		group.GET(path, resource.ReadHandler)
+	}
+
+	if resource.Supported("U") {
+		group.PUT(path+"/:id", resource.UpdateHandler)
+	}
+
+	if resource.Supported("D") {
+		group.DELETE(path+"/:id", resource.DeleteHandler)
+	}
 }
 
 // Static serves files from the given file system root.
