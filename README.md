@@ -1,6 +1,6 @@
 #Gin Web Framework
 
-[![GoDoc](https://godoc.org/github.com/gin-gonic/gin?status.png)](https://godoc.org/github.com/gin-gonic/gin)
+[![GoDoc](https://godoc.org/github.com/gin-gonic/gin?status.svg)](https://godoc.org/github.com/gin-gonic/gin)
 [![Build Status](https://travis-ci.org/gin-gonic/gin.svg)](https://travis-ci.org/gin-gonic/gin)
 
 Gin is a web framework written in Golang. It features a martini-like API with much better performance, up to 40 times faster. If you need performance and good productivity, you will love Gin.  
