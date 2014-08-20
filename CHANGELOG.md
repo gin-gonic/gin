@@ -1,7 +1,8 @@
-##Changelog
+#Changelog
 
-###Gin 0.4 (??)
+###Gin 0.4 (Aug 21, 2014)
 
+- [NEW] Development mode
 - [NEW] Unit tests
 - [NEW] Add Content.Redirect()
 - [FIX] Deferring WriteHeader()

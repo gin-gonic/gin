@@ -102,3 +102,7 @@ People and companies, who have contributed, in alphabetical order.
 
 **@SkuliOskarsson (Skuli Oskarsson)**
 - Fixes some texts in README II
+
+
+**@yuyabee**
+- Fixed README
