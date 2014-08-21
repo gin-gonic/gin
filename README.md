@@ -324,12 +324,13 @@ func main() {
 
 Issuing a HTTP redirect is easy:
 
-```r.GET("/test", func(c *gin.Context) {
+```go
+r.GET("/test", func(c *gin.Context) {
 	c.Redirect(301, "http://www.google.com/")
 })
-
-Both internal and external locations are supported.
 ```
+Both internal and external locations are supported.
+
 
 #### Custom Middlewares
 
