@@ -176,6 +176,10 @@ func Validate(obj interface{}) error {
 			if strings.Index(field.Tag.Get("binding"), "required") > -1 {
 				fieldType := field.Type.Kind()
 				if fieldType == reflect.Struct {
+					if reflect.DeepEqual(zero, fieldValue) {
+						return errors.New("Required " + field.Name)
+					}
+
 					err := Validate(fieldValue)
 					if err != nil {
 						return err
