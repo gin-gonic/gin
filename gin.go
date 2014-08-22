@@ -210,8 +210,11 @@ func (group *RouterGroup) HEAD(path string, handlers ...HandlerFunc) {
 type CreateSupported interface {
 	CreateHandler(*Context)
 }
-type ReadSupported interface {
-	ReadHandler(*Context)
+type ListSupported interface {
+	ListHandler(*Context)
+}
+type TakeSupported interface {
+	TakeHandler(*Context)
 }
 type UpdateSupported interface {
 	UpdateHandler(*Context)
@@ -229,8 +232,11 @@ func (group *RouterGroup) CRUD(path string, resource interface{}) {
 	if resource, ok := resource.(CreateSupported); ok {
 		group.POST(path, resource.CreateHandler)
 	}
-	if resource, ok := resource.(ReadSupported); ok {
-		group.GET(path, resource.ReadHandler)
+	if resource, ok := resource.(ListSupported); ok {
+		group.GET(path, resource.ListHandler)
+	}
+	if resource, ok := resource.(TakeSupported); ok {
+		group.GET(path+"/:id", resource.TakeHandler)
 	}
 	if resource, ok := resource.(UpdateSupported); ok {
 		group.PUT(path+"/:id", resource.UpdateHandler)
