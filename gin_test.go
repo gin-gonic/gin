@@ -10,6 +10,10 @@ import (
 	"testing"
 )
 
+func init() {
+	SetMode(TestMode)
+}
+
 func PerformRequest(r http.Handler, method, path string) *httptest.ResponseRecorder {
 	req, _ := http.NewRequest(method, path, nil)
 	w := httptest.NewRecorder()

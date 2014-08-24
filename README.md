@@ -1,6 +1,6 @@
 #Gin Web Framework
 
-[![GoDoc](https://godoc.org/github.com/gin-gonic/gin?status.png)](https://godoc.org/github.com/gin-gonic/gin)
+[![GoDoc](https://godoc.org/github.com/gin-gonic/gin?status.svg)](https://godoc.org/github.com/gin-gonic/gin)
 [![Build Status](https://travis-ci.org/gin-gonic/gin.svg)](https://travis-ci.org/gin-gonic/gin)
 
 Gin is a web framework written in Golang. It features a martini-like API with much better performance, up to 40 times faster. If you need performance and good productivity, you will love Gin.  
@@ -324,12 +324,13 @@ func main() {
 
 Issuing a HTTP redirect is easy:
 
-```r.GET("/test", func(c *gin.Context) {
+```go
+r.GET("/test", func(c *gin.Context) {
 	c.Redirect(301, "http://www.google.com/")
 })
-
-Both internal and external locations are supported.
 ```
+Both internal and external locations are supported.
+
 
 #### Custom Middlewares
 
@@ -425,7 +426,7 @@ func main() {
 			time.Sleep(5 * time.Second)
 
 			// note than you are using the copied context "c_cp", IMPORTANT
-			log.Println("Done! in path " + c_cp.Req.URL.Path)
+			log.Println("Done! in path " + c_cp.Request.URL.Path)
 		}()
 	})
 
@@ -435,7 +436,7 @@ func main() {
 		time.Sleep(5 * time.Second)
 
 		// since we are NOT using a goroutine, we do not have to copy the context
-		log.Println("Done! in path " + c.Req.URL.Path)
+		log.Println("Done! in path " + c.Request.URL.Path)
 	})
 
     // Listen and server on 0.0.0.0:8080
