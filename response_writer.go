@@ -27,7 +27,7 @@ func (w *responseWriter) reset(writer http.ResponseWriter) {
 }
 
 func (w *responseWriter) WriteHeader(code int) {
-	if code != 0 {
+	if code > 0 {
 		w.status = code
 		if w.written {
 			log.Println("[GIN] WARNING. Headers were already written!")
