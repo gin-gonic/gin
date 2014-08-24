@@ -66,6 +66,15 @@ type Context struct {
 }
 
 /************************************/
+/*********** TEST HELPERS ***********/
+/************************************/
+
+func CreateContext(w http.ResponseWriter, req *http.Request) *Context {
+	engine := New()
+	return engine.createContext(w, req, nil, nil)
+}
+
+/************************************/
 /********** ROUTES GROUPING *********/
 /************************************/
 
