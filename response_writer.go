@@ -1,7 +1,10 @@
 package gin
 
 import (
+	"bufio"
+	"errors"
 	"log"
+	"net"
 	"net/http"
 )
 
@@ -11,6 +14,7 @@ type (
 		Status() int
 		Written() bool
 		WriteHeaderNow()
+		Hijack() (net.Conn, *bufio.ReadWriter, error)
 	}
 
 	responseWriter struct {
@@ -53,4 +57,13 @@ func (w *responseWriter) Status() int {
 
 func (w *responseWriter) Written() bool {
 	return w.written
+}
+
+// allow connection hijacking
+func (w *responseWriter) Hijack() (net.Conn, *bufio.ReadWriter, error) {
+	hijacker, ok := w.ResponseWriter.(http.Hijacker)
+	if !ok {
+		return nil, nil, errors.New("the ResponseWriter doesn't support the Hijacker interface")
+	}
+	return hijacker.Hijack()
 }
