@@ -11,10 +11,10 @@ import (
 type (
 	ResponseWriter interface {
 		http.ResponseWriter
+		http.Hijacker
 		Status() int
 		Written() bool
 		WriteHeaderNow()
-		Hijack() (net.Conn, *bufio.ReadWriter, error)
 	}
 
 	responseWriter struct {
@@ -59,7 +59,7 @@ func (w *responseWriter) Written() bool {
 	return w.written
 }
 
-// allow connection hijacking
+// Implements the http.Hijacker interface
 func (w *responseWriter) Hijack() (net.Conn, *bufio.ReadWriter, error) {
 	hijacker, ok := w.ResponseWriter.(http.Hijacker)
 	if !ok {
