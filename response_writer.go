@@ -12,6 +12,9 @@ type (
 	ResponseWriter interface {
 		http.ResponseWriter
 		http.Hijacker
+		http.Flusher
+		http.CloseNotifier
+
 		Status() int
 		Written() bool
 		WriteHeaderNow()
@@ -66,4 +69,17 @@ func (w *responseWriter) Hijack() (net.Conn, *bufio.ReadWriter, error) {
 		return nil, nil, errors.New("the ResponseWriter doesn't support the Hijacker interface")
 	}
 	return hijacker.Hijack()
+}
+
+// Implements the http.CloseNotify interface
+func (w *responseWriter) CloseNotify() <-chan bool {
+	return w.ResponseWriter.(http.CloseNotifier).CloseNotify()
+}
+
+// Implements the http.Flush interface
+func (w *responseWriter) Flush() {
+	flusher, ok := w.ResponseWriter.(http.Flusher)
+	if ok {
+		flusher.Flush()
+	}
 }
