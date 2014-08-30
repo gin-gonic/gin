@@ -1,5 +1,10 @@
 #Changelog
 
+###Gin 0.5 (Aug 21, 2014)
+
+- [NEW] Content Negotiation
+
+
 ###Gin 0.4 (Aug 21, 2014)
 
 - [NEW] Development mode

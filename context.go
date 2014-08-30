@@ -67,6 +67,7 @@ type Context struct {
 	Engine    *Engine
 	handlers  []HandlerFunc
 	index     int8
+	accepted  []string
 }
 
 /************************************/
@@ -274,4 +275,76 @@ func (c *Context) Data(code int, contentType string, data []byte) {
 // Writes the specified file into the body stream
 func (c *Context) File(filepath string) {
 	http.ServeFile(c.Writer, c.Request, filepath)
+}
+
+/************************************/
+/******** CONTENT NEGOTIATION *******/
+/************************************/
+type Negotiate struct {
+	Offered  []string
+	Data     interface{}
+	JsonData interface{}
+	XMLData  interface{}
+	HTMLData interface{}
+	HTMLPath string
+}
+
+func (c *Context) Negotiate2(code int, config Negotiate) {
+	result := c.NegotiateFormat(config.Offered...)
+	switch result {
+	case MIMEJSON:
+		c.JSON(code, config.Data)
+
+	case MIMEHTML:
+		name := config.HTMLPath
+		c.HTML(code, name, config.Data)
+
+	case MIMEXML:
+		c.XML(code, config.Data)
+	default:
+		c.Fail(400, errors.New("m"))
+	}
+}
+
+func (c *Context) Negotiate(code int, config map[string]interface{}, offerts ...string) {
+	result := c.NegotiateFormat(offerts...)
+	switch result {
+	case MIMEJSON:
+		data := readData("json.data", config)
+		c.JSON(code, data)
+
+	case MIMEHTML:
+		data := readData("html.data", config)
+		name := config["html.path"].(string)
+		c.HTML(code, name, data)
+
+	case MIMEXML:
+		data := readData("xml.data", config)
+		c.XML(code, data)
+	default:
+		c.Fail(400, errors.New("m"))
+	}
+}
+
+func (c *Context) NegotiateFormat(offered ...string) string {
+	if c.accepted == nil {
+		c.accepted = parseAccept(c.Request.Header.Get("Accept"))
+	}
+	if len(c.accepted) == 0 {
+		return offered[0]
+
+	} else {
+		for _, accepted := range c.accepted {
+			for _, offert := range offered {
+				if accepted == offert {
+					return offert
+				}
+			}
+		}
+		return ""
+	}
+}
+
+func (c *Context) SetAccepted(formats ...string) {
+	c.accepted = formats
 }
