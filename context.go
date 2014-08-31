@@ -292,8 +292,7 @@ type Negotiate struct {
 }
 
 func (c *Context) Negotiate(code int, config Negotiate) {
-	result := c.NegotiateFormat(config.Offered...)
-	switch result {
+	switch c.NegotiateFormat(config.Offered...) {
 	case MIMEJSON:
 		data := chooseData(config.JSONData, config.Data)
 		c.JSON(code, data)
@@ -310,11 +309,14 @@ func (c *Context) Negotiate(code int, config Negotiate) {
 		c.XML(code, data)
 
 	default:
-		c.Fail(400, errors.New("m"))
+		c.Fail(http.StatusNotAcceptable, errors.New("the accepted formats are not offered by the server"))
 	}
 }
 
 func (c *Context) NegotiateFormat(offered ...string) string {
+	if len(offered) == 0 {
+		panic("you must provide at least one offer")
+	}
 	if c.accepted == nil {
 		c.accepted = parseAccept(c.Request.Header.Get("Accept"))
 	}
