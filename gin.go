@@ -205,47 +205,6 @@ func (group *RouterGroup) HEAD(path string, handlers ...HandlerFunc) {
 	group.Handle("HEAD", path, handlers)
 }
 
-// All of the methods are the same type as HandlerFunc
-// if you don't want to support any methods of CRUD, then don't implement it
-type CreateSupported interface {
-	CreateHandler(*Context)
-}
-type ListSupported interface {
-	ListHandler(*Context)
-}
-type TakeSupported interface {
-	TakeHandler(*Context)
-}
-type UpdateSupported interface {
-	UpdateHandler(*Context)
-}
-type DeleteSupported interface {
-	DeleteHandler(*Context)
-}
-
-// It defines
-//   POST: /path
-//   GET:  /path
-//   PUT:  /path/:id
-//   POST: /path/:id
-func (group *RouterGroup) CRUD(path string, resource interface{}) {
-	if resource, ok := resource.(CreateSupported); ok {
-		group.POST(path, resource.CreateHandler)
-	}
-	if resource, ok := resource.(ListSupported); ok {
-		group.GET(path, resource.ListHandler)
-	}
-	if resource, ok := resource.(TakeSupported); ok {
-		group.GET(path+"/:id", resource.TakeHandler)
-	}
-	if resource, ok := resource.(UpdateSupported); ok {
-		group.PUT(path+"/:id", resource.UpdateHandler)
-	}
-	if resource, ok := resource.(DeleteSupported); ok {
-		group.DELETE(path+"/:id", resource.DeleteHandler)
-	}
-}
-
 // Static serves files from the given file system root.
 // Internally a http.FileServer is used, therefore http.NotFound is used instead
 // of the Router's NotFound handler.
