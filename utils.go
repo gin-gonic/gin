@@ -46,16 +46,14 @@ func filterFlags(content string) string {
 	return content
 }
 
-func readData(key string, config map[string]interface{}) interface{} {
-	data, ok := config[key]
-	if ok {
-		return data
+func chooseData(custom, wildcard interface{}) interface{} {
+	if custom == nil {
+		if wildcard == nil {
+			panic("negotiation config is invalid")
+		}
+		return wildcard
 	}
-	data, ok = config["*.data"]
-	if !ok {
-		panic("negotiation config is invalid")
-	}
-	return data
+	return custom
 }
 
 func parseAccept(accept string) []string {

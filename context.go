@@ -82,6 +82,7 @@ func (engine *Engine) createContext(w http.ResponseWriter, req *http.Request, pa
 	c.handlers = handlers
 	c.Keys = nil
 	c.index = -1
+	c.accepted = nil
 	c.Errors = c.Errors[0:0]
 	return c
 }
@@ -280,47 +281,34 @@ func (c *Context) File(filepath string) {
 /************************************/
 /******** CONTENT NEGOTIATION *******/
 /************************************/
+
 type Negotiate struct {
 	Offered  []string
-	Data     interface{}
-	JsonData interface{}
-	XMLData  interface{}
-	HTMLData interface{}
 	HTMLPath string
+	HTMLData interface{}
+	JSONData interface{}
+	XMLData  interface{}
+	Data     interface{}
 }
 
-func (c *Context) Negotiate2(code int, config Negotiate) {
+func (c *Context) Negotiate(code int, config Negotiate) {
 	result := c.NegotiateFormat(config.Offered...)
 	switch result {
 	case MIMEJSON:
-		c.JSON(code, config.Data)
-
-	case MIMEHTML:
-		name := config.HTMLPath
-		c.HTML(code, name, config.Data)
-
-	case MIMEXML:
-		c.XML(code, config.Data)
-	default:
-		c.Fail(400, errors.New("m"))
-	}
-}
-
-func (c *Context) Negotiate(code int, config map[string]interface{}, offerts ...string) {
-	result := c.NegotiateFormat(offerts...)
-	switch result {
-	case MIMEJSON:
-		data := readData("json.data", config)
+		data := chooseData(config.JSONData, config.Data)
 		c.JSON(code, data)
 
 	case MIMEHTML:
-		data := readData("html.data", config)
-		name := config["html.path"].(string)
-		c.HTML(code, name, data)
+		data := chooseData(config.HTMLData, config.Data)
+		if len(config.HTMLPath) == 0 {
+			panic("negotiate config is wrong. html path is needed")
+		}
+		c.HTML(code, config.HTMLPath, data)
 
 	case MIMEXML:
-		data := readData("xml.data", config)
+		data := chooseData(config.XMLData, config.Data)
 		c.XML(code, data)
+
 	default:
 		c.Fail(400, errors.New("m"))
 	}
