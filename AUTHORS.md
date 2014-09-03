@@ -1,4 +1,4 @@
-List of all the awesome people working to make Gin the best Web Framework in Go!
+List of all the awesome people working to make Gin the best Web Framework in Go.
 
 
 

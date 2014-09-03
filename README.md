@@ -30,13 +30,13 @@ Yes, Gin is an internal project of [my](https://github.com/manucorporat) upcomin
 
 
 ## Start using it
-Obviously, you need to have Git and Go! already installed to run Gin.  
+Obviously, you need to have Git and Go already installed to run Gin.  
 Run this in your terminal
 
 ```
 go get github.com/gin-gonic/gin
 ```
-Then import it in your Go! code:
+Then import it in your Go code:
 
 ```
 import "github.com/gin-gonic/gin"
