@@ -22,6 +22,7 @@ const (
 )
 
 var gin_mode int = debugCode
+var mode_name string = DebugMode
 
 func SetMode(value string) {
 	switch value {
@@ -34,6 +35,11 @@ func SetMode(value string) {
 	default:
 		panic("gin mode unknown, the allowed modes are: " + DebugMode + " and " + ReleaseMode)
 	}
+	mode_name = value
+}
+
+func Mode() string {
+	return mode_name
 }
 
 func init() {
