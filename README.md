@@ -3,8 +3,35 @@
 [![GoDoc](https://godoc.org/github.com/gin-gonic/gin?status.svg)](https://godoc.org/github.com/gin-gonic/gin)
 [![Build Status](https://travis-ci.org/gin-gonic/gin.svg)](https://travis-ci.org/gin-gonic/gin)
 
-Gin is a web framework written in Golang. It features a martini-like API with much better performance, up to 40 times faster. If you need performance and good productivity, you will love Gin.  
+Gin is a web framework written in Golang. It features a martini-like API with much better performance, up to 40 times faster. If you need performance and good productivity, you will love Gin. 
+
 ![Gin console logger](http://forzefield.com/gin_example.png)
+
+```
+$ cat test.go
+```
+```go
+package main
+
+import "github.com/gin-gonic/gin"
+
+func main() {
+	router := gin.Default()
+	router.GET("/", func(c *gin.Context) {
+		c.String(200, "hello world")
+	})
+	router.GET("/ping", func(c *gin.Context) {
+		c.String(200, "pong")
+	})
+	router.POST("/submit", func(c *gin.Context) {
+		c.String(401, "not authorized")
+	})
+	router.PUT("/error", func(c *gin.Context) {
+		c.String(500, "and error hapenned :(")
+	})
+	router.Run(":8080")
+}
+```
 
 ##Gin is new, will it be supported?
 
