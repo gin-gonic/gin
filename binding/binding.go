@@ -7,11 +7,9 @@ package binding
 import (
 	"encoding/json"
 	"encoding/xml"
-	"errors"
 	"net/http"
 	"reflect"
 	"strconv"
-	"strings"
 )
 
 type (
@@ -153,57 +151,4 @@ func ensureNotPointer(obj interface{}) {
 	if reflect.TypeOf(obj).Kind() == reflect.Ptr {
 		panic("Pointers are not accepted as binding models")
 	}
-}
-
-func Validate(obj interface{}) error {
-	typ := reflect.TypeOf(obj)
-	val := reflect.ValueOf(obj)
-
-	if typ.Kind() == reflect.Ptr {
-		typ = typ.Elem()
-		val = val.Elem()
-	}
-
-	switch typ.Kind() {
-	case reflect.Struct:
-		for i := 0; i < typ.NumField(); i++ {
-			field := typ.Field(i)
-
-			// Allow ignored fields in the struct
-			if field.Tag.Get("form") == "-" {
-				continue
-			}
-
-			fieldValue := val.Field(i).Interface()
-			zero := reflect.Zero(field.Type).Interface()
-
-			if strings.Index(field.Tag.Get("binding"), "required") > -1 {
-				fieldType := field.Type.Kind()
-				if fieldType == reflect.Struct {
-					err := Validate(fieldValue)
-					if err != nil {
-						return err
-					}
-				} else if reflect.DeepEqual(zero, fieldValue) {
-					return errors.New("Required " + field.Name)
-				} else if fieldType == reflect.Slice && field.Type.Elem().Kind() == reflect.Struct {
-					err := Validate(fieldValue)
-					if err != nil {
-						return err
-					}
-				}
-			}
-		}
-	case reflect.Slice:
-		for i := 0; i < val.Len(); i++ {
-			fieldValue := val.Index(i).Interface()
-			err := Validate(fieldValue)
-			if err != nil {
-				return err
-			}
-		}
-	default:
-		return nil
-	}
-	return nil
 }

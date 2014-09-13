@@ -3,3 +3,6 @@ language: go
 go:
   - 1.3
   - tip
+
+script:
+  - go test github.com/gin-gonic/gin/binding
