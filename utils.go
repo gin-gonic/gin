@@ -8,6 +8,7 @@ import (
 	"encoding/xml"
 	"reflect"
 	"runtime"
+	"strings"
 )
 
 type H map[string]interface{}
@@ -43,6 +44,29 @@ func filterFlags(content string) string {
 		}
 	}
 	return content
+}
+
+func chooseData(custom, wildcard interface{}) interface{} {
+	if custom == nil {
+		if wildcard == nil {
+			panic("negotiation config is invalid")
+		}
+		return wildcard
+	}
+	return custom
+}
+
+func parseAccept(accept string) []string {
+	parts := strings.Split(accept, ",")
+	for i, part := range parts {
+		index := strings.IndexByte(part, ';')
+		if index >= 0 {
+			part = part[0:index]
+		}
+		part = strings.TrimSpace(part)
+		parts[i] = part
+	}
+	return parts
 }
 
 func funcName(f interface{}) string {
