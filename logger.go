@@ -92,7 +92,7 @@ func Logger() HandlerFunc {
 		}
 		end := time.Now()
 		latency := end.Sub(start)
-		stdlogger.Printf("[GIN] %v |%s %3d %s| %12v | %s |%s %4s %s| %s\n%s",
+		stdlogger.Printf("[GIN] %v |%s %3d %s| %12v | %s |%s %-7s %s| %s\n%s",
 			end.Format("2006/01/02 - 15:04:05"),
 			color, code, reset,
 			latency,
