@@ -30,7 +30,10 @@ type (
 	redirectRender struct{}
 
 	// Redirects
-	htmlDebugRender struct{}
+	htmlDebugRender struct {
+		files []string
+		globs []string
+	}
 
 	// form binding
 	HTMLRender struct {
@@ -43,7 +46,7 @@ var (
 	XML       = xmlRender{}
 	Plain     = plainRender{}
 	Redirect  = redirectRender{}
-	HTMLDebug = htmlDebugRender{}
+	HTMLDebug = &htmlDebugRender{}
 )
 
 func writeHeader(w http.ResponseWriter, code int, contentType string) {
@@ -82,14 +85,33 @@ func (_ plainRender) Render(w http.ResponseWriter, code int, data ...interface{}
 	return err
 }
 
-func (_ htmlDebugRender) Render(w http.ResponseWriter, code int, data ...interface{}) error {
+func (r *htmlDebugRender) AddGlob(pattern string) {
+	r.globs = append(r.globs, pattern)
+}
+
+func (r *htmlDebugRender) AddFiles(files ...string) {
+	r.files = append(r.files, files...)
+}
+
+func (r *htmlDebugRender) Render(w http.ResponseWriter, code int, data ...interface{}) error {
 	writeHeader(w, code, "text/html")
 	file := data[0].(string)
 	obj := data[1]
-	t, err := template.ParseFiles(file)
-	if err != nil {
-		return err
+
+	t := template.New("")
+
+	if len(r.files) > 0 {
+		if _, err := t.ParseFiles(r.files...); err != nil {
+			return err
+		}
 	}
+
+	for _, glob := range r.globs {
+		if _, err = t.ParseGlob(glob); err != nil {
+			return err
+		}
+	}
+
 	return t.ExecuteTemplate(w, file, obj)
 }
 

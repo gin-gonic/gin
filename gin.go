@@ -87,6 +87,7 @@ func Default() *Engine {
 
 func (engine *Engine) LoadHTMLGlob(pattern string) {
 	if gin_mode == debugCode {
+		render.HTMLDebug.AddGlob(pattern)
 		engine.HTMLRender = render.HTMLDebug
 	} else {
 		templ := template.Must(template.ParseGlob(pattern))
@@ -96,6 +97,7 @@ func (engine *Engine) LoadHTMLGlob(pattern string) {
 
 func (engine *Engine) LoadHTMLFiles(files ...string) {
 	if gin_mode == debugCode {
+		render.HTMLDebug.AddFiles(files...)
 		engine.HTMLRender = render.HTMLDebug
 	} else {
 		templ := template.Must(template.ParseFiles(files...))
