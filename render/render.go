@@ -107,7 +107,7 @@ func (r *htmlDebugRender) Render(w http.ResponseWriter, code int, data ...interf
 	}
 
 	for _, glob := range r.globs {
-		if _, err = t.ParseGlob(glob); err != nil {
+		if _, err := t.ParseGlob(glob); err != nil {
 			return err
 		}
 	}
