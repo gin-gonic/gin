@@ -146,7 +146,7 @@ func TestHandleStaticFile(t *testing.T) {
 
 	// TEST
 	if w.Code != 200 {
-		t.Errorf("Response code should be Ok, was: %s", w.Code)
+		t.Errorf("Response code should be 200, was: %d", w.Code)
 	}
 	if w.Body.String() != "Gin Web Framework" {
 		t.Errorf("Response should be test, was: %s", w.Body.String())
@@ -168,7 +168,7 @@ func TestHandleStaticDir(t *testing.T) {
 	// TEST
 	bodyAsString := w.Body.String()
 	if w.Code != 200 {
-		t.Errorf("Response code should be Ok, was: %s", w.Code)
+		t.Errorf("Response code should be 200, was: %d", w.Code)
 	}
 	if len(bodyAsString) == 0 {
 		t.Errorf("Got empty body instead of file tree")
