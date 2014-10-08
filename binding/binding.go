@@ -174,6 +174,11 @@ func Validate(obj interface{}) error {
 				continue
 			}
 
+			// skip unexported fields
+			if field.PkgPath != "" {
+				continue
+			}
+
 			fieldValue := val.Field(i).Interface()
 			zero := reflect.Zero(field.Type).Interface()
 
