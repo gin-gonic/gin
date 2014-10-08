@@ -54,6 +54,17 @@ func TestContextSetGet(t *testing.T) {
 		if v != "bar" {
 			t.Errorf("Value should be bar, was %s", v)
 		}
+
+		// GetDefault
+		v = c.GetDefault("foo", "baz")
+		if v != "bar" {
+			t.Errorf("Value should be bar, was %s", v)
+		}
+
+		v = c.GetDefault("badKey", "baz")
+		if v != "baz" {
+			t.Errorf("Value should be baz, was %s", v)
+		}
 	})
 
 	r.ServeHTTP(w, req)

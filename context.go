@@ -8,11 +8,12 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"log"
+	"net/http"
+
 	"github.com/gin-gonic/gin/binding"
 	"github.com/gin-gonic/gin/render"
 	"github.com/julienschmidt/httprouter"
-	"log"
-	"net/http"
 )
 
 const (
@@ -185,6 +186,16 @@ func (c *Context) MustGet(key string) interface{} {
 		log.Panicf("Key %s doesn't exist", key)
 	}
 	return value
+}
+
+// GetDefault returns the value for the given key or a default value if the key does not exist.
+func (c *Context) GetDefault(key string, defaultVal interface{}) interface{} {
+	item, err := c.Get(key)
+	if err != nil {
+		return defaultVal
+	}
+
+	return item
 }
 
 /************************************/
