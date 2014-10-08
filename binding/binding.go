@@ -169,8 +169,8 @@ func Validate(obj interface{}) error {
 		for i := 0; i < typ.NumField(); i++ {
 			field := typ.Field(i)
 
-			// Allow ignored fields in the struct
-			if field.Tag.Get("form") == "-" {
+			// Allow ignored and unexported fields in the struct
+			if field.Tag.Get("form") == "-" || field.PkgPath != "" {
 				continue
 			}
 
