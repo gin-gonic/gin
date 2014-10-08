@@ -6,6 +6,7 @@ package gin
 
 import (
 	"encoding/xml"
+	"fmt"
 	"reflect"
 	"runtime"
 	"strings"
@@ -46,6 +47,12 @@ func filterFlags(content string) string {
 	return content
 }
 
+func debugPrint(format string, values ...interface{}) {
+	if IsDebugging() {
+		fmt.Printf("[GIN-debug] "+format, values)
+	}
+}
+
 func chooseData(custom, wildcard interface{}) interface{} {
 	if custom == nil {
 		if wildcard == nil {
@@ -69,6 +76,14 @@ func parseAccept(accept string) []string {
 	return parts
 }
 
-func funcName(f interface{}) string {
+func lastChar(str string) uint8 {
+	size := len(str)
+	if size == 0 {
+		panic("The length of the string can't be 0")
+	}
+	return str[size-1]
+}
+
+func nameOfFuncion(f interface{}) string {
 	return runtime.FuncForPC(reflect.ValueOf(f).Pointer()).Name()
 }

@@ -232,13 +232,13 @@ func TestBadAbortHandlersChain(t *testing.T) {
 		c.Next()
 		stepsPassed += 1
 		// after check and abort
-		c.Abort(409)
+		c.AbortWithStatus(409)
 	})
 	r.Use(func(c *Context) {
 		stepsPassed += 1
 		c.Next()
 		stepsPassed += 1
-		c.Abort(403)
+		c.AbortWithStatus(403)
 	})
 
 	// RUN
@@ -260,7 +260,7 @@ func TestAbortHandlersChain(t *testing.T) {
 	r := New()
 	r.Use(func(context *Context) {
 		stepsPassed += 1
-		context.Abort(409)
+		context.AbortWithStatus(409)
 	})
 	r.Use(func(context *Context) {
 		stepsPassed += 1

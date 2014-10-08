@@ -71,11 +71,11 @@ type Context struct {
 }
 
 /************************************/
-/********** ROUTES GROUPING *********/
+/********** CONTEXT CREATION ********/
 /************************************/
 
 func (engine *Engine) createContext(w http.ResponseWriter, req *http.Request, params httprouter.Params, handlers []HandlerFunc) *Context {
-	c := engine.cache.Get().(*Context)
+	c := engine.pool.Get().(*Context)
 	c.writermem.reset(w)
 	c.Request = req
 	c.Params = params
@@ -87,9 +87,9 @@ func (engine *Engine) createContext(w http.ResponseWriter, req *http.Request, pa
 	return c
 }
 
-/************************************/
-/****** FLOW AND ERROR MANAGEMENT****/
-/************************************/
+func (engine *Engine) reuseContext(c *Context) {
+	engine.pool.Put(c)
+}
 
 func (c *Context) Copy() *Context {
 	var cp Context = *c
@@ -97,6 +97,10 @@ func (c *Context) Copy() *Context {
 	cp.handlers = nil
 	return &cp
 }
+
+/************************************/
+/*************** FLOW ***************/
+/************************************/
 
 // Next should be used only in the middlewares.
 // It executes the pending handlers in the chain inside the calling handler.
@@ -109,25 +113,31 @@ func (c *Context) Next() {
 	}
 }
 
-// Forces the system to do not continue calling the pending handlers.
-// For example, the first handler checks if the request is authorized. If it's not, context.Abort(401) should be called.
-// The rest of pending handlers would never be called for that request.
-func (c *Context) Abort(code int) {
-	if code >= 0 {
-		c.Writer.WriteHeader(code)
-	}
+// Forces the system to do not continue calling the pending handlers in the chain.
+func (c *Context) Abort() {
 	c.index = AbortIndex
 }
+
+// Same than AbortWithStatus() but also writes the specified response status code.
+// For example, the first handler checks if the request is authorized. If it's not, context.AbortWithStatus(401) should be called.
+func (c *Context) AbortWithStatus(code int) {
+	c.Writer.WriteHeader(code)
+	c.Abort()
+}
+
+/************************************/
+/********* ERROR MANAGEMENT *********/
+/************************************/
 
 // Fail is the same as Abort plus an error message.
 // Calling `context.Fail(500, err)` is equivalent to:
 // ```
 // context.Error("Operation aborted", err)
-// context.Abort(500)
+// context.AbortWithStatus(500)
 // ```
 func (c *Context) Fail(code int, err error) {
 	c.Error(err, "Operation aborted")
-	c.Abort(code)
+	c.AbortWithStatus(code)
 }
 
 func (c *Context) ErrorTyped(err error, typ uint32, meta interface{}) {
@@ -146,9 +156,9 @@ func (c *Context) Error(err error, meta interface{}) {
 }
 
 func (c *Context) LastError() error {
-	s := len(c.Errors)
-	if s > 0 {
-		return errors.New(c.Errors[s-1].Err)
+	nuErrors := len(c.Errors)
+	if nuErrors > 0 {
+		return errors.New(c.Errors[nuErrors-1].Err)
 	} else {
 		return nil
 	}
@@ -170,9 +180,9 @@ func (c *Context) Set(key string, item interface{}) {
 // Get returns the value for the given key or an error if the key does not exist.
 func (c *Context) Get(key string) (interface{}, error) {
 	if c.Keys != nil {
-		item, ok := c.Keys[key]
+		value, ok := c.Keys[key]
 		if ok {
-			return item, nil
+			return value, nil
 		}
 	}
 	return nil, errors.New("Key does not exist.")
@@ -182,13 +192,13 @@ func (c *Context) Get(key string) (interface{}, error) {
 func (c *Context) MustGet(key string) interface{} {
 	value, err := c.Get(key)
 	if err != nil || value == nil {
-		log.Panicf("Key %s doesn't exist", key)
+		log.Panicf("Key %s doesn't exist", value)
 	}
 	return value
 }
 
 /************************************/
-/******** ENCOGING MANAGEMENT********/
+/********* PARSING REQUEST **********/
 /************************************/
 
 // This function checks the Content-Type to select a binding engine automatically,
@@ -222,10 +232,14 @@ func (c *Context) BindWith(obj interface{}, b binding.Binding) bool {
 	return true
 }
 
+/************************************/
+/******** RESPONSE RENDERING ********/
+/************************************/
+
 func (c *Context) Render(code int, render render.Render, obj ...interface{}) {
 	if err := render.Render(c.Writer, code, obj...); err != nil {
 		c.ErrorTyped(err, ErrorTypeInternal, obj)
-		c.Abort(500)
+		c.AbortWithStatus(500)
 	}
 }
 
@@ -267,9 +281,7 @@ func (c *Context) Data(code int, contentType string, data []byte) {
 	if len(contentType) > 0 {
 		c.Writer.Header().Set("Content-Type", contentType)
 	}
-	if code >= 0 {
-		c.Writer.WriteHeader(code)
-	}
+	c.Writer.WriteHeader(code)
 	c.Writer.Write(data)
 }
 

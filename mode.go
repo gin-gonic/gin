@@ -42,6 +42,10 @@ func Mode() string {
 	return mode_name
 }
 
+func IsDebugging() bool {
+	return gin_mode == debugCode
+}
+
 func init() {
 	value := os.Getenv(GIN_MODE)
 	if len(value) == 0 {
