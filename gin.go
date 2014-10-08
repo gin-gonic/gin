@@ -29,28 +29,14 @@ type (
 	// Represents the web framework, it wraps the blazing fast httprouter multiplexer and a list of global middlewares.
 	Engine struct {
 		*RouterGroup
-		HTMLRender render.Render
-		pool       sync.Pool
-		allNoRoute []HandlerFunc
-		noRoute    []HandlerFunc
-		router     *httprouter.Router
+		HTMLRender     render.Render
+		Default404Body []byte
+		pool           sync.Pool
+		allNoRoute     []HandlerFunc
+		noRoute        []HandlerFunc
+		router         *httprouter.Router
 	}
 )
-
-func (engine *Engine) handle404(w http.ResponseWriter, req *http.Request) {
-	c := engine.createContext(w, req, nil, engine.allNoRoute)
-	// set 404 by default, useful for logging
-	c.Writer.WriteHeader(404)
-	c.Next()
-	if !c.Writer.Written() {
-		if c.Writer.Status() == 404 {
-			c.Data(-1, MIMEPlain, []byte("404 page not found"))
-		} else {
-			c.Writer.WriteHeaderNow()
-		}
-	}
-	engine.reuseContext(c)
-}
 
 // Returns a new blank Engine instance without any middleware attached.
 // The most basic configuration
@@ -62,6 +48,7 @@ func New() *Engine {
 		engine:       engine,
 	}
 	engine.router = httprouter.New()
+	engine.Default404Body = []byte("404 page not found")
 	engine.router.NotFound = engine.handle404
 	engine.pool.New = func() interface{} {
 		c := &Context{Engine: engine}
@@ -117,6 +104,21 @@ func (engine *Engine) Use(middlewares ...HandlerFunc) {
 
 func (engine *Engine) rebuild404Handlers() {
 	engine.allNoRoute = engine.combineHandlers(engine.noRoute)
+}
+
+func (engine *Engine) handle404(w http.ResponseWriter, req *http.Request) {
+	c := engine.createContext(w, req, nil, engine.allNoRoute)
+	// set 404 by default, useful for logging
+	c.Writer.WriteHeader(404)
+	c.Next()
+	if !c.Writer.Written() {
+		if c.Writer.Status() == 404 {
+			c.Data(-1, MIMEPlain, engine.Default404Body)
+		} else {
+			c.Writer.WriteHeaderNow()
+		}
+	}
+	engine.reuseContext(c)
 }
 
 // ServeHTTP makes the router implement the http.Handler interface.

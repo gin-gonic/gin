@@ -6,7 +6,6 @@ package gin
 
 import (
 	"encoding/xml"
-	"fmt"
 	"reflect"
 	"runtime"
 	"strings"
@@ -39,18 +38,12 @@ func (h H) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
 }
 
 func filterFlags(content string) string {
-	for i, a := range content {
-		if a == ' ' || a == ';' {
+	for i, char := range content {
+		if char == ' ' || char == ';' {
 			return content[:i]
 		}
 	}
 	return content
-}
-
-func debugPrint(format string, values ...interface{}) {
-	if IsDebugging() {
-		fmt.Printf("[GIN-debug] "+format, values)
-	}
 }
 
 func chooseData(custom, wildcard interface{}) interface{} {
@@ -84,6 +77,6 @@ func lastChar(str string) uint8 {
 	return str[size-1]
 }
 
-func nameOfFuncion(f interface{}) string {
+func nameOfFunction(f interface{}) string {
 	return runtime.FuncForPC(reflect.ValueOf(f).Pointer()).Name()
 }

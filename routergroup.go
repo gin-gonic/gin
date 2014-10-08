@@ -48,7 +48,7 @@ func (group *RouterGroup) Handle(httpMethod, relativePath string, handlers []Han
 	handlers = group.combineHandlers(handlers)
 	if IsDebugging() {
 		nuHandlers := len(handlers)
-		handlerName := nameOfFuncion(handlers[nuHandlers-1])
+		handlerName := nameOfFunction(handlers[nuHandlers-1])
 		debugPrint("%-5s %-25s --> %s (%d handlers)\n", httpMethod, absolutePath, handlerName, nuHandlers)
 	}
 
@@ -105,6 +105,8 @@ func (group *RouterGroup) Static(relativePath, root string) {
 	absolutePath := group.calculateAbsolutePath(relativePath)
 	handler := group.createStaticHandler(absolutePath, root)
 	absolutePath = path.Join(absolutePath, "/*filepath")
+
+	// Register GET and HEAD handlers
 	group.GET(absolutePath, handler)
 	group.HEAD(absolutePath, handler)
 }
@@ -120,8 +122,7 @@ func (group *RouterGroup) combineHandlers(handlers []HandlerFunc) []HandlerFunc 
 	finalSize := len(group.Handlers) + len(handlers)
 	mergedHandlers := make([]HandlerFunc, 0, finalSize)
 	mergedHandlers = append(mergedHandlers, group.Handlers...)
-	mergedHandlers = append(mergedHandlers, handlers...)
-	return mergedHandlers
+	return append(mergedHandlers, handlers...)
 }
 
 func (group *RouterGroup) calculateAbsolutePath(relativePath string) string {

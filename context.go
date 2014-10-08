@@ -197,6 +197,17 @@ func (c *Context) MustGet(key string) interface{} {
 	return value
 }
 
+func (c *Context) ClientIP() string {
+	clientIP := c.Request.Header.Get("X-Real-IP")
+	if len(clientIP) == 0 {
+		clientIP = c.Request.Header.Get("X-Forwarded-For")
+	}
+	if len(clientIP) == 0 {
+		clientIP = c.Request.RemoteAddr
+	}
+	return clientIP
+}
+
 /************************************/
 /********* PARSING REQUEST **********/
 /************************************/

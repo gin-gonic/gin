@@ -5,6 +5,7 @@
 package gin
 
 import (
+	"fmt"
 	"os"
 )
 
@@ -24,6 +25,15 @@ const (
 var gin_mode int = debugCode
 var mode_name string = DebugMode
 
+func init() {
+	value := os.Getenv(GIN_MODE)
+	if len(value) == 0 {
+		SetMode(DebugMode)
+	} else {
+		SetMode(value)
+	}
+}
+
 func SetMode(value string) {
 	switch value {
 	case DebugMode:
@@ -33,7 +43,7 @@ func SetMode(value string) {
 	case TestMode:
 		gin_mode = testCode
 	default:
-		panic("gin mode unknown, the allowed modes are: " + DebugMode + " and " + ReleaseMode)
+		panic("gin mode unknown: " + value)
 	}
 	mode_name = value
 }
@@ -46,11 +56,8 @@ func IsDebugging() bool {
 	return gin_mode == debugCode
 }
 
-func init() {
-	value := os.Getenv(GIN_MODE)
-	if len(value) == 0 {
-		SetMode(DebugMode)
-	} else {
-		SetMode(value)
+func debugPrint(format string, values ...interface{}) {
+	if IsDebugging() {
+		fmt.Printf("[GIN-debug] "+format, values)
 	}
 }
