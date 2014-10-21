@@ -58,6 +58,6 @@ func IsDebugging() bool {
 
 func debugPrint(format string, values ...interface{}) {
 	if IsDebugging() {
-		fmt.Printf("[GIN-debug] "+format, values)
+		fmt.Printf("[GIN-debug] "+format, values...)
 	}
 }
