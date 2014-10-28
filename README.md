@@ -261,7 +261,7 @@ func main() {
         }
 	})
 
-    // Example for binding a HTLM form (user=manu&password=123)
+    // Example for binding a HTML form (user=manu&password=123)
     r.POST("/login", func(c *gin.Context) {
         var form LoginForm
 
