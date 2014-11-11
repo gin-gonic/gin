@@ -87,7 +87,7 @@ func mapForm(ptr interface{}, form map[string][]string) error {
 						return err
 					}
 				}
-				formStruct.Elem().Field(i).Set(slice)
+				formStruct.Field(i).Set(slice)
 			} else {
 				if err := setWithProperType(typeField.Type.Kind(), inputValue[0], structField); err != nil {
 					return err
