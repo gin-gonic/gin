@@ -284,7 +284,7 @@ func main() {
 func main() {
 	r := gin.Default()
 
-	// gin.H is a shortcup for map[string]interface{}
+	// gin.H is a shortcut for map[string]interface{}
 	r.GET("/someJSON", func(c *gin.Context) {
 		c.JSON(200, gin.H{"message": "hey", "status": 200})
 	})
