@@ -340,7 +340,7 @@ import "html/template"
 func main() {
 	r := gin.Default()
 	html := template.Must(template.ParseFiles("file1", "file2"))
-	r.HTMLTemplates = html
+	r.SetHTMLTemplate(html)
 
 	// Listen and server on 0.0.0.0:8080
 	r.Run(":8080")
