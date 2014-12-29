@@ -440,3 +440,44 @@ func TestBindingJSONMalformed(t *testing.T) {
 		t.Errorf("Content-Type should not be application/json, was %s", w.HeaderMap.Get("Content-Type"))
 	}
 }
+
+func TestClientIP(t *testing.T) {
+	r := New()
+
+	var clientIP string = ""
+	r.GET("/", func(c *Context) {
+		clientIP = c.ClientIP()
+	})
+
+	body := bytes.NewBuffer([]byte(""))
+	req, _ := http.NewRequest("GET", "/", body)
+	req.RemoteAddr = "clientip:1234"
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+
+	if clientIP != "clientip:1234" {
+		t.Errorf("ClientIP should not be %s, but clientip:1234", clientIP)
+	}
+}
+
+func TestClientIPWithXForwardedForWithProxy(t *testing.T) {
+	r := New()
+	r.Use(ForwardedFor())
+
+	var clientIP string = ""
+	r.GET("/", func(c *Context) {
+		clientIP = c.ClientIP()
+	})
+
+	body := bytes.NewBuffer([]byte(""))
+	req, _ := http.NewRequest("GET", "/", body)
+	req.RemoteAddr = "172.16.8.3:1234"
+	req.Header.Set("X-Real-Ip", "realip")
+	req.Header.Set("X-Forwarded-For", "1.2.3.4, 10.10.0.4, 192.168.0.43, 172.16.8.4")
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+
+	if clientIP != "1.2.3.4:0" {
+		t.Errorf("ClientIP should not be %s, but 1.2.3.4:0", clientIP)
+	}
+}
