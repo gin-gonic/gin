@@ -186,7 +186,7 @@ func (c *Context) MustGet(key string) interface{} {
 }
 
 /************************************/
-/******** ENCOGING MANAGEMENT********/
+/******** ENCODING MANAGEMENT********/
 /************************************/
 
 // This function checks the Content-Type to select a binding engine automatically,
