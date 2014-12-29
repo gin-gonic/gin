@@ -284,7 +284,7 @@ func main() {
 func main() {
 	r := gin.Default()
 
-	// gin.H is a shortcup for map[string]interface{}
+	// gin.H is a shortcut for map[string]interface{}
 	r.GET("/someJSON", func(c *gin.Context) {
 		c.JSON(200, gin.H{"message": "hey", "status": 200})
 	})
@@ -340,7 +340,7 @@ import "html/template"
 func main() {
 	r := gin.Default()
 	html := template.Must(template.ParseFiles("file1", "file2"))
-	r.HTMLTemplates = html
+	r.SetHTMLTemplate(html)
 
 	// Listen and server on 0.0.0.0:8080
 	r.Run(":8080")
