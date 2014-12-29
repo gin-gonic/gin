@@ -287,6 +287,22 @@ func main() {
 ```
 
 
+####Serving static files
+
+Use Engine.ServeFiles(path string, root http.FileSystem):
+
+```go
+func main() {
+    r := gin.Default()
+    r.Static("/assets", "./assets")
+
+    // Listen and server on 0.0.0.0:8080
+    r.Run(":8080")
+}
+```
+
+Note: this will use `httpNotFound` instead of the Router's `NotFound` handler.
+
 ####HTML rendering
 
 Using LoadHTMLTemplates()
