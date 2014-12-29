@@ -155,7 +155,7 @@ func ensureNotPointer(obj interface{}) {
 	}
 }
 
-func Validate(obj interface{}) error {
+func Validate(obj interface{}, parents ...string) error {
 	typ := reflect.TypeOf(obj)
 	val := reflect.ValueOf(obj)
 
@@ -180,12 +180,19 @@ func Validate(obj interface{}) error {
 			if strings.Index(field.Tag.Get("binding"), "required") > -1 {
 				fieldType := field.Type.Kind()
 				if fieldType == reflect.Struct {
-					err := Validate(fieldValue)
+					if reflect.DeepEqual(zero, fieldValue) {
+						return errors.New("Required " + field.Name)
+					}
+					err := Validate(fieldValue, field.Name)
 					if err != nil {
 						return err
 					}
 				} else if reflect.DeepEqual(zero, fieldValue) {
-					return errors.New("Required " + field.Name)
+					if len(parents) > 0 {
+						return errors.New("Required " + field.Name + " on " + parents[0])
+					} else {
+						return errors.New("Required " + field.Name)
+					}
 				} else if fieldType == reflect.Slice && field.Type.Elem().Kind() == reflect.Struct {
 					err := Validate(fieldValue)
 					if err != nil {
