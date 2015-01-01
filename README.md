@@ -250,7 +250,7 @@ func main() {
 	r := gin.Default()
 
     // Example for binding JSON ({"user": "manu", "password": "123"})
-	r.POST("/login", func(c *gin.Context) {
+	r.POST("/loginJSON", func(c *gin.Context) {
 		var json LoginJSON
 
         c.Bind(&json) // This will infer what binder to use depending on the content-type header.
@@ -262,7 +262,7 @@ func main() {
 	})
 
     // Example for binding a HTML form (user=manu&password=123)
-    r.POST("/login", func(c *gin.Context) {
+    r.POST("/loginHTML", func(c *gin.Context) {
         var form LoginForm
 
         c.BindWith(&form, binding.Form) // You can also specify which binder to use. We support binding.Form, binding.JSON and binding.XML.
@@ -424,7 +424,7 @@ func main() {
 	// hit "localhost:8080/admin/secrets
 	authorized.GET("/secrets", func(c *gin.Context) {
 		// get user, it was setted by the BasicAuth middleware
-		user := c.Get(gin.AuthUserKey).(string)
+		user := c.MustGet(gin.AuthUserKey).(string)
 		if secret, ok := secrets[user]; ok {
 			c.JSON(200, gin.H{"user": user, "secret": secret})
 		} else {
