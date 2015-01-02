@@ -440,3 +440,23 @@ func TestBindingJSONMalformed(t *testing.T) {
 		t.Errorf("Content-Type should not be application/json, was %s", w.HeaderMap.Get("Content-Type"))
 	}
 }
+
+func TestCreateContext(t *testing.T) {
+	req, _ := http.NewRequest("GET", "/", nil)
+	w := httptest.NewRecorder()
+
+	c := CreateContext(w, req)
+	c.JSON(200, H{"foo": "bar"})
+
+	if w.Code != 200 {
+		t.Errorf("Response code should be Ok, was: %s", w.Code)
+	}
+
+	if w.HeaderMap.Get("Content-Type") != "application/json" {
+		t.Errorf("Content-Type should be application/json, was %s", w.HeaderMap.Get("Content-Type"))
+	}
+
+	if w.Body.String() != "{\"foo\":\"bar\"}\n" {
+		t.Errorf("Response should be {\"foo\":\"bar\"}, was: %s", w.Body.String())
+	}
+}
