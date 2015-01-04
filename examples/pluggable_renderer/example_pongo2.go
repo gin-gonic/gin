@@ -37,7 +37,7 @@ func (p *pongoRender) Render(w http.ResponseWriter, code int, data ...interface{
 		t = tmpl
 	}
 	writeHeader(w, code, "text/html")
-	return t.ExecuteRW(w, ctx)
+	return t.ExecuteWriter(ctx, w)
 }
 
 func main() {
