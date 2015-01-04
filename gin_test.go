@@ -108,9 +108,8 @@ func testRouteNotOK2(method string, t *testing.T) {
 	if passed == true {
 		t.Errorf(method + " route handler was invoked, when it should not")
 	}
-	if w.Code != http.StatusNotFound {
-		// If this fails, it's because httprouter needs to be updated to at least f78f58a0db
-		t.Errorf("Status code should be %v, was %d. Location: %s", http.StatusNotFound, w.Code, w.HeaderMap.Get("Location"))
+	if w.Code != http.StatusMethodNotAllowed {
+		t.Errorf("Status code should be %v, was %d. Location: %s", http.StatusMethodNotAllowed, w.Code, w.HeaderMap.Get("Location"))
 	}
 }
 
