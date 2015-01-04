@@ -5,10 +5,9 @@
 package gin
 
 import (
+	"github.com/julienschmidt/httprouter"
 	"net/http"
 	"path"
-
-	"github.com/julienschmidt/httprouter"
 )
 
 // Used internally to configure router, a RouterGroup is associated with a prefix
