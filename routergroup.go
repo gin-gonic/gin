@@ -95,6 +95,16 @@ func (group *RouterGroup) HEAD(relativePath string, handlers ...HandlerFunc) {
 	group.Handle("HEAD", relativePath, handlers)
 }
 
+// LINK is a shortcut for router.Handle("LINK", path, handle)
+func (group *RouterGroup) LINK(relativePath string, handlers ...HandlerFunc) {
+	group.Handle("LINK", relativePath, handlers)
+}
+
+// UNLINK is a shortcut for router.Handle("UNLINK", path, handle)
+func (group *RouterGroup) UNLINK(relativePath string, handlers ...HandlerFunc) {
+	group.Handle("UNLINK", relativePath, handlers)
+}
+
 // Static serves files from the given file system root.
 // Internally a http.FileServer is used, therefore http.NotFound is used instead
 // of the Router's NotFound handler.
