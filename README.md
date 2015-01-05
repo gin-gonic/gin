@@ -321,7 +321,7 @@ Using LoadHTMLTemplates()
 ```go
 func main() {
 	r := gin.Default()
-	r.LoadHTMLTemplates("templates/*")
+	r.LoadHTMLGlob("templates/*")
 	r.GET("/index", func(c *gin.Context) {
 		obj := gin.H{"title": "Main website"}
 		c.HTML(200, "index.tmpl", obj)
@@ -330,6 +330,11 @@ func main() {
 	// Listen and server on 0.0.0.0:8080
 	r.Run(":8080")
 }
+```
+```html
+<h1>
+	{{ .title }}
+</h1>
 ```
 
 You can also use your own html template render
