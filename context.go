@@ -12,7 +12,9 @@ import (
 	"github.com/gin-gonic/gin/render"
 	"github.com/julienschmidt/httprouter"
 	"log"
+	"net"
 	"net/http"
+	"strings"
 )
 
 const (
@@ -67,27 +69,29 @@ type Context struct {
 	Engine    *Engine
 	handlers  []HandlerFunc
 	index     int8
+	accepted  []string
 }
 
 /************************************/
-/********** ROUTES GROUPING *********/
+/********** CONTEXT CREATION ********/
 /************************************/
 
 func (engine *Engine) createContext(w http.ResponseWriter, req *http.Request, params httprouter.Params, handlers []HandlerFunc) *Context {
-	c := engine.cache.Get().(*Context)
+	c := engine.pool.Get().(*Context)
 	c.writermem.reset(w)
 	c.Request = req
 	c.Params = params
 	c.handlers = handlers
 	c.Keys = nil
 	c.index = -1
+	c.accepted = nil
 	c.Errors = c.Errors[0:0]
 	return c
 }
 
-/************************************/
-/****** FLOW AND ERROR MANAGEMENT****/
-/************************************/
+func (engine *Engine) reuseContext(c *Context) {
+	engine.pool.Put(c)
+}
 
 func (c *Context) Copy() *Context {
 	var cp Context = *c
@@ -95,6 +99,10 @@ func (c *Context) Copy() *Context {
 	cp.handlers = nil
 	return &cp
 }
+
+/************************************/
+/*************** FLOW ***************/
+/************************************/
 
 // Next should be used only in the middlewares.
 // It executes the pending handlers in the chain inside the calling handler.
@@ -107,25 +115,31 @@ func (c *Context) Next() {
 	}
 }
 
-// Forces the system to do not continue calling the pending handlers.
-// For example, the first handler checks if the request is authorized. If it's not, context.Abort(401) should be called.
-// The rest of pending handlers would never be called for that request.
-func (c *Context) Abort(code int) {
-	if code >= 0 {
-		c.Writer.WriteHeader(code)
-	}
+// Forces the system to do not continue calling the pending handlers in the chain.
+func (c *Context) Abort() {
 	c.index = AbortIndex
 }
+
+// Same than AbortWithStatus() but also writes the specified response status code.
+// For example, the first handler checks if the request is authorized. If it's not, context.AbortWithStatus(401) should be called.
+func (c *Context) AbortWithStatus(code int) {
+	c.Writer.WriteHeader(code)
+	c.Abort()
+}
+
+/************************************/
+/********* ERROR MANAGEMENT *********/
+/************************************/
 
 // Fail is the same as Abort plus an error message.
 // Calling `context.Fail(500, err)` is equivalent to:
 // ```
 // context.Error("Operation aborted", err)
-// context.Abort(500)
+// context.AbortWithStatus(500)
 // ```
 func (c *Context) Fail(code int, err error) {
 	c.Error(err, "Operation aborted")
-	c.Abort(code)
+	c.AbortWithStatus(code)
 }
 
 func (c *Context) ErrorTyped(err error, typ uint32, meta interface{}) {
@@ -144,9 +158,9 @@ func (c *Context) Error(err error, meta interface{}) {
 }
 
 func (c *Context) LastError() error {
-	s := len(c.Errors)
-	if s > 0 {
-		return errors.New(c.Errors[s-1].Err)
+	nuErrors := len(c.Errors)
+	if nuErrors > 0 {
+		return errors.New(c.Errors[nuErrors-1].Err)
 	} else {
 		return nil
 	}
@@ -168,9 +182,9 @@ func (c *Context) Set(key string, item interface{}) {
 // Get returns the value for the given key or an error if the key does not exist.
 func (c *Context) Get(key string) (interface{}, error) {
 	if c.Keys != nil {
-		item, ok := c.Keys[key]
+		value, ok := c.Keys[key]
 		if ok {
-			return item, nil
+			return value, nil
 		}
 	}
 	return nil, errors.New("Key does not exist.")
@@ -180,13 +194,93 @@ func (c *Context) Get(key string) (interface{}, error) {
 func (c *Context) MustGet(key string) interface{} {
 	value, err := c.Get(key)
 	if err != nil || value == nil {
-		log.Panicf("Key %s doesn't exist", key)
+		log.Panicf("Key %s doesn't exist", value)
 	}
 	return value
 }
 
+func ipInMasks(ip net.IP, masks []interface{}) bool {
+	for _, proxy := range masks {
+		var mask *net.IPNet
+		var err error
+
+		switch t := proxy.(type) {
+		case string:
+			if _, mask, err = net.ParseCIDR(t); err != nil {
+				panic(err)
+			}
+		case net.IP:
+			mask = &net.IPNet{IP: t, Mask: net.CIDRMask(len(t)*8, len(t)*8)}
+		case net.IPNet:
+			mask = &t
+		}
+
+		if mask.Contains(ip) {
+			return true
+		}
+	}
+
+	return false
+}
+
+// the ForwardedFor middleware unwraps the X-Forwarded-For headers, be careful to only use this
+// middleware if you've got servers in front of this server. The list with (known) proxies and
+// local ips are being filtered out of the forwarded for list, giving the last not local ip being
+// the real client ip.
+func ForwardedFor(proxies ...interface{}) HandlerFunc {
+	if len(proxies) == 0 {
+		// default to local ips
+		var reservedLocalIps = []string{"10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16"}
+
+		proxies = make([]interface{}, len(reservedLocalIps))
+
+		for i, v := range reservedLocalIps {
+			proxies[i] = v
+		}
+	}
+
+	return func(c *Context) {
+		// the X-Forwarded-For header contains an array with left most the client ip, then
+		// comma separated, all proxies the request passed. The last proxy appears
+		// as the remote address of the request. Returning the client
+		// ip to comply with default RemoteAddr response.
+
+		// check if remoteaddr is local ip or in list of defined proxies
+		remoteIp := net.ParseIP(strings.Split(c.Request.RemoteAddr, ":")[0])
+
+		if !ipInMasks(remoteIp, proxies) {
+			return
+		}
+
+		if forwardedFor := c.Request.Header.Get("X-Forwarded-For"); forwardedFor != "" {
+			parts := strings.Split(forwardedFor, ",")
+
+			for i := len(parts) - 1; i >= 0; i-- {
+				part := parts[i]
+
+				ip := net.ParseIP(strings.TrimSpace(part))
+
+				if ipInMasks(ip, proxies) {
+					continue
+				}
+
+				// returning remote addr conform the original remote addr format
+				c.Request.RemoteAddr = ip.String() + ":0"
+
+				// remove forwarded for address
+				c.Request.Header.Set("X-Forwarded-For", "")
+				return
+			}
+		}
+	}
+}
+
+func (c *Context) ClientIP() string {
+	return c.Request.RemoteAddr
+}
+
 /************************************/
-/******** ENCODING MANAGEMENT********/
+/********* PARSING REQUEST **********/
 /************************************/
 
 // This function checks the Content-Type to select a binding engine automatically,
@@ -220,10 +314,14 @@ func (c *Context) BindWith(obj interface{}, b binding.Binding) bool {
 	return true
 }
 
+/************************************/
+/******** RESPONSE RENDERING ********/
+/************************************/
+
 func (c *Context) Render(code int, render render.Render, obj ...interface{}) {
 	if err := render.Render(c.Writer, code, obj...); err != nil {
 		c.ErrorTyped(err, ErrorTypeInternal, obj)
-		c.Abort(500)
+		c.AbortWithStatus(500)
 	}
 }
 
@@ -265,13 +363,72 @@ func (c *Context) Data(code int, contentType string, data []byte) {
 	if len(contentType) > 0 {
 		c.Writer.Header().Set("Content-Type", contentType)
 	}
-	if code >= 0 {
-		c.Writer.WriteHeader(code)
-	}
+	c.Writer.WriteHeader(code)
 	c.Writer.Write(data)
 }
 
 // Writes the specified file into the body stream
 func (c *Context) File(filepath string) {
 	http.ServeFile(c.Writer, c.Request, filepath)
+}
+
+/************************************/
+/******** CONTENT NEGOTIATION *******/
+/************************************/
+
+type Negotiate struct {
+	Offered  []string
+	HTMLPath string
+	HTMLData interface{}
+	JSONData interface{}
+	XMLData  interface{}
+	Data     interface{}
+}
+
+func (c *Context) Negotiate(code int, config Negotiate) {
+	switch c.NegotiateFormat(config.Offered...) {
+	case MIMEJSON:
+		data := chooseData(config.JSONData, config.Data)
+		c.JSON(code, data)
+
+	case MIMEHTML:
+		data := chooseData(config.HTMLData, config.Data)
+		if len(config.HTMLPath) == 0 {
+			panic("negotiate config is wrong. html path is needed")
+		}
+		c.HTML(code, config.HTMLPath, data)
+
+	case MIMEXML:
+		data := chooseData(config.XMLData, config.Data)
+		c.XML(code, data)
+
+	default:
+		c.Fail(http.StatusNotAcceptable, errors.New("the accepted formats are not offered by the server"))
+	}
+}
+
+func (c *Context) NegotiateFormat(offered ...string) string {
+	if len(offered) == 0 {
+		panic("you must provide at least one offer")
+	}
+	if c.accepted == nil {
+		c.accepted = parseAccept(c.Request.Header.Get("Accept"))
+	}
+	if len(c.accepted) == 0 {
+		return offered[0]
+
+	} else {
+		for _, accepted := range c.accepted {
+			for _, offert := range offered {
+				if accepted == offert {
+					return offert
+				}
+			}
+		}
+		return ""
+	}
+}
+
+func (c *Context) SetAccepted(formats ...string) {
+	c.accepted = formats
 }

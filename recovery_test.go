@@ -39,7 +39,7 @@ func TestPanicWithAbort(t *testing.T) {
 	r := New()
 	r.Use(Recovery())
 	r.GET("/recovery", func(c *Context) {
-		c.Abort(400)
+		c.AbortWithStatus(400)
 		panic("Oupps, Houston, we have a problem")
 	})
 

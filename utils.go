@@ -8,6 +8,7 @@ import (
 	"encoding/xml"
 	"reflect"
 	"runtime"
+	"strings"
 )
 
 type H map[string]interface{}
@@ -37,14 +38,45 @@ func (h H) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
 }
 
 func filterFlags(content string) string {
-	for i, a := range content {
-		if a == ' ' || a == ';' {
+	for i, char := range content {
+		if char == ' ' || char == ';' {
 			return content[:i]
 		}
 	}
 	return content
 }
 
-func funcName(f interface{}) string {
+func chooseData(custom, wildcard interface{}) interface{} {
+	if custom == nil {
+		if wildcard == nil {
+			panic("negotiation config is invalid")
+		}
+		return wildcard
+	}
+	return custom
+}
+
+func parseAccept(accept string) []string {
+	parts := strings.Split(accept, ",")
+	for i, part := range parts {
+		index := strings.IndexByte(part, ';')
+		if index >= 0 {
+			part = part[0:index]
+		}
+		part = strings.TrimSpace(part)
+		parts[i] = part
+	}
+	return parts
+}
+
+func lastChar(str string) uint8 {
+	size := len(str)
+	if size == 0 {
+		panic("The length of the string can't be 0")
+	}
+	return str[size-1]
+}
+
+func nameOfFunction(f interface{}) string {
 	return runtime.FuncForPC(reflect.ValueOf(f).Pointer()).Name()
 }
