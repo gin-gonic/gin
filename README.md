@@ -35,24 +35,25 @@ func main() {
 
 ##Gin is new, will it be supported?
 
-Yes, Gin is an internal project of [my](https://github.com/manucorporat) upcoming startup. We developed it and we are going to continue using and improve it.
+Yes, Gin is an internal tool of [Manu](https://github.com/manucorporat) and [Javi](https://github.com/javierprovecho) for many of our projects/start-ups. We developed it and we are going to continue using and improve it.
 
 
 ##Roadmap for v1.0
-- [x] Performance improments, reduce allocation and garbage collection overhead
-- [x] Fix bugs
-- [ ] Stable API
 - [ ] Ask our designer for a cool logo
 - [ ] Add tons of unit tests
 - [ ] Add internal benchmarks suite
+- [ ] More powerful validation API
+- [ ] Improve documentation
+- [ ] Add Swagger support
+- [x] Stable API
 - [x] Improve logging system
 - [x] Improve JSON/XML validation using bindings
 - [x] Improve XML support
 - [x] Flexible rendering system
-- [ ] More powerful validation API
-- [ ] Improve documentation
-- [ ] Add more cool middlewares, for example redis caching (this also helps developers to understand the framework).
+- [x] Add more cool middlewares, for example redis caching (this also helps developers to understand the framework).
 - [x] Continuous integration
+- [x] Performance improments, reduce allocation and garbage collection overhead
+- [x] Fix bugs
 
 
 
