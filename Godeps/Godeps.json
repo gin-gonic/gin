@@ -4,7 +4,7 @@
 	"Deps": [
 		{
 			"ImportPath": "github.com/julienschmidt/httprouter",
-			"Rev": "90d58bada7e6154006f2728ee09053271154a8f6"
+			"Rev": "aeec11926f7a8fab580383810e1b1bbba99bdaa7"
 		}
 	]
 }
