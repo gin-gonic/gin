@@ -146,7 +146,25 @@ func main() {
 	r.Run(":8080")
 }
 ```
+###Form parameters
+```go
+func main() {
+	r := gin.Default()
+	
+	// This will respond to urls like search?firstname=Jane&lastname=Doe
+	r.GET("/search", func(c *gin.Context) {
+		// You need to call ParseForm() on the request to receive url and form params first
+		c.Request.ParseForm()
+		
+		firstname := c.Request.Form.Get("firstname")
+		lastname := c.Request.Form.get("lastname")
 
+		message := "Hello "+ firstname + lastname
+		c.String(200, message)
+	})
+	r.Run(":8080")
+}
+```
 
 #### Grouping routes
 ```go
