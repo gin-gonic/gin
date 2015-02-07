@@ -134,7 +134,8 @@ func main() {
 		c.String(200, message)
 	})
 
-	// However, this one will match /user/john and also /user/john/send
+	// However, this one will match /user/john/ and also /user/john/send
+	// If no other routers match /user/john, it will redirect to /user/join/
 	r.GET("/user/:name/*action", func(c *gin.Context) {
 		name := c.Params.ByName("name")
 		action := c.Params.ByName("action")
