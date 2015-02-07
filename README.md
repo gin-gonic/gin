@@ -1,7 +1,4 @@
-#Gin Web Framework
-
-[![GoDoc](https://godoc.org/github.com/gin-gonic/gin?status.svg)](https://godoc.org/github.com/gin-gonic/gin)
-[![Build Status](https://travis-ci.org/gin-gonic/gin.svg)](https://travis-ci.org/gin-gonic/gin)
+#Gin Web Framework [![GoDoc](https://godoc.org/github.com/gin-gonic/gin?status.svg)](https://godoc.org/github.com/gin-gonic/gin) [![Build Status](https://travis-ci.org/gin-gonic/gin.svg)](https://travis-ci.org/gin-gonic/gin)
 
 Gin is a web framework written in Golang. It features a martini-like API with much better performance, up to 40 times faster thanks to [httprouter](https://github.com/julienschmidt/httprouter). If you need performance and good productivity, you will love Gin. 
 
@@ -35,24 +32,25 @@ func main() {
 
 ##Gin is new, will it be supported?
 
-Yes, Gin is an internal project of [my](https://github.com/manucorporat) upcoming startup. We developed it and we are going to continue using and improve it.
+Yes, Gin is an internal tool of [Manu](https://github.com/manucorporat) and [Javi](https://github.com/javierprovecho) for many of our projects/start-ups. We developed it and we are going to continue using and improve it.
 
 
 ##Roadmap for v1.0
-- [x] Performance improments, reduce allocation and garbage collection overhead
-- [x] Fix bugs
-- [ ] Stable API
 - [ ] Ask our designer for a cool logo
 - [ ] Add tons of unit tests
 - [ ] Add internal benchmarks suite
+- [ ] More powerful validation API
+- [ ] Improve documentation
+- [ ] Add Swagger support
+- [x] Stable API
 - [x] Improve logging system
 - [x] Improve JSON/XML validation using bindings
 - [x] Improve XML support
 - [x] Flexible rendering system
-- [ ] More powerful validation API
-- [ ] Improve documentation
-- [X] Add more cool middlewares, for example redis caching (this also helps developers to understand the framework).
+- [x] Add more cool middlewares, for example redis caching (this also helps developers to understand the framework).
 - [x] Continuous integration
+- [x] Performance improments, reduce allocation and garbage collection overhead
+- [x] Fix bugs
 
 
 
@@ -133,7 +131,8 @@ func main() {
 		c.String(200, message)
 	})
 
-	// However, this one will match /user/john and also /user/john/send
+	// However, this one will match /user/john/ and also /user/john/send
+	// If no other routers match /user/john, it will redirect to /user/join/
 	r.GET("/user/:name/*action", func(c *gin.Context) {
 		name := c.Params.ByName("name")
 		action := c.Params.ByName("action")
@@ -145,7 +144,25 @@ func main() {
 	r.Run(":8080")
 }
 ```
+###Form parameters
+```go
+func main() {
+	r := gin.Default()
+	
+	// This will respond to urls like search?firstname=Jane&lastname=Doe
+	r.GET("/search", func(c *gin.Context) {
+		// You need to call ParseForm() on the request to receive url and form params first
+		c.Request.ParseForm()
+		
+		firstname := c.Request.Form.Get("firstname")
+		lastname := c.Request.Form.get("lastname")
 
+		message := "Hello "+ firstname + lastname
+		c.String(200, message)
+	})
+	r.Run(":8080")
+}
+```
 
 #### Grouping routes
 ```go
@@ -312,22 +329,6 @@ func main() {
 	r.Run(":8080")
 }
 ```
-
-####Serving static files
-
-Use Engine.ServeFiles(path string, root http.FileSystem):
-
-```go
-func main() {
-    r := gin.Default()
-    r.Static("/assets", "./assets")
-
-    // Listen and server on 0.0.0.0:8080
-    r.Run(":8080")
-}
-```
-
-Note: this will use `httpNotFound` instead of the Router's `NotFound` handler.
 
 ####Serving static files
 

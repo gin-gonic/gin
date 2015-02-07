@@ -1,6 +1,9 @@
 #Changelog
 
-###Gin 0.5 (Jan 4, 2015)
+###Gin 0.6 (Mar 7, 2015)
+
+
+###Gin 0.5 (Feb 7, 2015)
 
 - [NEW] Content Negotiation
 - [FIX] Solved security bug that allow a client to spoof ip

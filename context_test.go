@@ -76,7 +76,7 @@ func TestContextJSON(t *testing.T) {
 		t.Errorf("Response should be {\"foo\":\"bar\"}, was: %s", w.Body.String())
 	}
 
-	if w.HeaderMap.Get("Content-Type") != "application/json" {
+	if w.HeaderMap.Get("Content-Type") != "application/json; charset=utf-8" {
 		t.Errorf("Content-Type should be application/json, was %s", w.HeaderMap.Get("Content-Type"))
 	}
 }
@@ -103,7 +103,7 @@ func TestContextHTML(t *testing.T) {
 		t.Errorf("Response should be Hello alexandernyquist, was: %s", w.Body.String())
 	}
 
-	if w.HeaderMap.Get("Content-Type") != "text/html" {
+	if w.HeaderMap.Get("Content-Type") != "text/html; charset=utf-8" {
 		t.Errorf("Content-Type should be text/html, was %s", w.HeaderMap.Get("Content-Type"))
 	}
 }
@@ -125,7 +125,7 @@ func TestContextString(t *testing.T) {
 		t.Errorf("Response should be test, was: %s", w.Body.String())
 	}
 
-	if w.HeaderMap.Get("Content-Type") != "text/plain" {
+	if w.HeaderMap.Get("Content-Type") != "text/plain; charset=utf-8" {
 		t.Errorf("Content-Type should be text/plain, was %s", w.HeaderMap.Get("Content-Type"))
 	}
 }
@@ -147,7 +147,7 @@ func TestContextXML(t *testing.T) {
 		t.Errorf("Response should be <map><foo>bar</foo></map>, was: %s", w.Body.String())
 	}
 
-	if w.HeaderMap.Get("Content-Type") != "application/xml" {
+	if w.HeaderMap.Get("Content-Type") != "application/xml; charset=utf-8" {
 		t.Errorf("Content-Type should be application/xml, was %s", w.HeaderMap.Get("Content-Type"))
 	}
 }
@@ -336,7 +336,7 @@ func TestBindingJSON(t *testing.T) {
 		t.Errorf("Response should be {\"parsed\":\"bar\"}, was: %s", w.Body.String())
 	}
 
-	if w.HeaderMap.Get("Content-Type") != "application/json" {
+	if w.HeaderMap.Get("Content-Type") != "application/json; charset=utf-8" {
 		t.Errorf("Content-Type should be application/json, was %s", w.HeaderMap.Get("Content-Type"))
 	}
 }
@@ -369,7 +369,7 @@ func TestBindingJSONEncoding(t *testing.T) {
 		t.Errorf("Response should be {\"parsed\":\"嘉\"}, was: %s", w.Body.String())
 	}
 
-	if w.HeaderMap.Get("Content-Type") != "application/json" {
+	if w.HeaderMap.Get("Content-Type") != "application/json; charset=utf-8" {
 		t.Errorf("Content-Type should be application/json, was %s", w.HeaderMap.Get("Content-Type"))
 	}
 }

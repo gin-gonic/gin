@@ -9,6 +9,10 @@ List of all the awesome people working to make Gin the best Web Framework in Go.
 
 People and companies, who have contributed, in alphabetical order.
 
+**@achedeuzot (Klemen Sever)**
+- Fix newline debug printing
+
+
 **@adammck (Adam Mckaig)**
 - Add MIT license
 
@@ -60,7 +64,7 @@ People and companies, who have contributed, in alphabetical order.
 - Fix typo. SetHTTPTemplate -> SetHTMLTemplate
 
 
-**@jammie-stackhouse (Jamie Stackhouse)
+**@jammie-stackhouse (Jamie Stackhouse)**
 - Add more shortcuts for router methods
 
 
@@ -70,6 +74,10 @@ People and companies, who have contributed, in alphabetical order.
 
 **@JasonSoft (Jason Lee)**
 - Fix typo in comment
+
+
+**@joiggama (Ignacio Galindo)**
+- Add utf-8 charset header on renders
 
 
 **@julienschmidt (Julien Schmidt)**
@@ -130,6 +138,10 @@ People and companies, who have contributed, in alphabetical order.
 - Fix Port usage in README.
 
 
+**@RobAWilkinson (Robert Wilkinson)**
+- Add example of forms and params
+
+
 **@se77en (Damon Zhao)**
 - Improve color logging
 
@@ -142,12 +154,16 @@ People and companies, who have contributed, in alphabetical order.
 - Fixes some texts in README II
 
 
-**@slimmy (Jimmy Pettersson)
+**@slimmy (Jimmy Pettersson)**
 - Added messages for required bindings
 
 
 **@smira (Andrey Smirnov)**
 - Add support for ignored/unexported fields in binding
+
+
+**@superalsrk (SRK.Lyu)**
+- Update httprouter godeps
 
 
 **@yosssi (Keiji Yoshida)**

@@ -170,7 +170,7 @@ func Validate(obj interface{}, parents ...string) error {
 			field := typ.Field(i)
 
 			// Allow ignored and unexported fields in the struct
-			if field.Tag.Get("form") == "-" || field.PkgPath != "" {
+			if len(field.PkgPath) > 0 || field.Tag.Get("form") == "-" {
 				continue
 			}
 
