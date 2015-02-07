@@ -1,8 +1,13 @@
 #Changelog
 
-###Gin 0.5 (Aug 21, 2014)
+###Gin 0.6 (Mar 7, 2015)
+
+
+###Gin 0.5 (Feb 7, 2015)
 
 - [NEW] Content Negotiation
+- [FIX] Solved security bug that allow a client to spoof ip
+- [FIX] Fix unexported/ignored fields in binding
 
 
 ###Gin 0.4 (Aug 21, 2014)
@@ -39,7 +44,7 @@
 - [NEW] New API for serving static files. gin.Static()
 - [NEW] gin.H() can be serialized into XML
 - [NEW] Typed errors. Errors can be typed. Internet/external/custom.
-- [NEW] Support for Godebs
+- [NEW] Support for Godeps
 - [NEW] Travis/Godocs badges in README
 - [NEW] New Bind() and BindWith() methods for parsing request body.
 - [NEW] Add Content.Copy()

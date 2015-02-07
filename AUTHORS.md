@@ -4,11 +4,14 @@ List of all the awesome people working to make Gin the best Web Framework in Go.
 
 ##gin 0.x series authors
 
-**Lead Developer:**  Manu Martinez-Almeida (@manucorporat)  
-**Staff:**
-Javier Provecho (@javierprovecho)
+**Original Developer:**  Manu Martinez-Almeida (@manucorporat)  
+**Long-term Maintainer:** Javier Provecho (@javierprovecho)
 
 People and companies, who have contributed, in alphabetical order.
+
+**@achedeuzot (Klemen Sever)**
+- Fix newline debug printing
+
 
 **@adammck (Adam Mckaig)**
 - Add MIT license
@@ -31,6 +34,14 @@ People and companies, who have contributed, in alphabetical order.
 - Added travis CI integration
 
 
+**@andredublin (Andre Dublin)**
+- Fix typo in comment
+
+
+**@bredov (Ludwig Valda Vasquez)**
+- Fix html templating in debug mode
+
+
 **@bluele (Jun Kimura)**
 - Fixes code examples in README
 
@@ -41,18 +52,40 @@ People and companies, who have contributed, in alphabetical order.
 
 **@dickeyxxx (Jeff Dickey)**
 - Typos in README
+- Add example about serving static files
+
+
+**@dutchcoders (DutchCoders)**
+- ★ Fix security bug that allows client to spoof ip
+- Fix typo. r.HTMLTemplates -> SetHTMLTemplate
 
 
 **@fmd (Fareed Dudhia)**
 - Fix typo. SetHTTPTemplate -> SetHTMLTemplate
 
 
+**@jammie-stackhouse (Jamie Stackhouse)**
+- Add more shortcuts for router methods
+
+
 **@jasonrhansen**
 - Fix spelling and grammar errors in documentation
 
 
+**@JasonSoft (Jason Lee)**
+- Fix typo in comment
+
+
+**@joiggama (Ignacio Galindo)**
+- Add utf-8 charset header on renders
+
+
 **@julienschmidt (Julien Schmidt)**
 - gofmt the code examples
+
+
+**@kelcecil (Kel Cecil)**
+- Fix readme typo
 
 
 **@kyledinh (Kyle Dinh)**
@@ -61,6 +94,10 @@ People and companies, who have contributed, in alphabetical order.
 
 **@LinusU (Linus Unnebäck)**
 - Small fixes in README
+
+
+**@loongmxbt (Saint Asky)**
+- Fix typo in example
 
 
 **@lucas-clemente (Lucas Clemente)**
@@ -73,10 +110,15 @@ People and companies, who have contributed, in alphabetical order.
 - Fixes Content-Type for json render
 
 
+**@mirzac (Mirza Ceric)**
+- Fix debug printing
+
+
 **@mopemope (Yutaka Matsubara)**
 - ★ Adds Godep support (Dependencies Manager)
 - Fix variadic parameter in the flexible render API
 - Fix Corrupted plain render
+- Add Pluggable View Renderer Example
  
 
 **@msemenistyi (Mykyta Semenistyi)**
@@ -96,12 +138,36 @@ People and companies, who have contributed, in alphabetical order.
 - Fix Port usage in README.
 
 
+**@RobAWilkinson (Robert Wilkinson)**
+- Add example of forms and params
+
+
+**@se77en (Damon Zhao)**
+- Improve color logging
+
+
 **@silasb (Silas Baronda)**
 - Fixing quotes in README
 
 
 **@SkuliOskarsson (Skuli Oskarsson)**
 - Fixes some texts in README II
+
+
+**@slimmy (Jimmy Pettersson)**
+- Added messages for required bindings
+
+
+**@smira (Andrey Smirnov)**
+- Add support for ignored/unexported fields in binding
+
+
+**@superalsrk (SRK.Lyu)**
+- Update httprouter godeps
+
+
+**@yosssi (Keiji Yoshida)**
+- Fix link in README
 
 
 **@yuyabee**
