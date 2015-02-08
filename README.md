@@ -93,7 +93,7 @@ func main() {
 		c.String(200, "pong")
 	})
 
-	// Listen and server on 0.0.0.0:8080
+	// Listen and serve on 0.0.0.0:8080
 	r.Run(":8080")
 }
 ```
