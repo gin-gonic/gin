@@ -155,7 +155,7 @@ func main() {
 		c.Request.ParseForm()
 		
 		firstname := c.Request.Form.Get("firstname")
-		lastname := c.Request.Form.get("lastname")
+		lastname := c.Request.Form.Get("lastname")
 
 		message := "Hello "+ firstname + lastname
 		c.String(200, message)
