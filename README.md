@@ -24,7 +24,7 @@ func main() {
 		c.String(401, "not authorized")
 	})
 	router.PUT("/error", func(c *gin.Context) {
-		c.String(500, "and error hapenned :(")
+		c.String(500, "and error happened :(")
 	})
 	router.Run(":8080")
 }
