@@ -230,7 +230,7 @@ func ipInMasks(ip net.IP, masks []interface{}) bool {
 func ForwardedFor(proxies ...interface{}) HandlerFunc {
 	if len(proxies) == 0 {
 		// default to local ips
-		var reservedLocalIps = []string{"10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16"}
+		var reservedLocalIps = []string{"10.0.0.0/8", "127.0.0.1/32", "172.16.0.0/12", "192.168.0.0/16"}
 
 		proxies = make([]interface{}, len(reservedLocalIps))
 
