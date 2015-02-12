@@ -438,7 +438,7 @@ func main() {
 
 #### Using BasicAuth() middleware
 ```go
-// similate some private data
+// simulate some private data
 var secrets = gin.H{
 	"foo":    gin.H{"email": "foo@bar.com", "phone": "123433"},
 	"austin": gin.H{"email": "austin@example.com", "phone": "666"},
