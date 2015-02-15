@@ -331,7 +331,6 @@ func main() {
 ```
 
 ####Serving static files
-
 Use Engine.ServeFiles(path string, root http.FileSystem):
 
 ```go
@@ -342,6 +341,13 @@ func main() {
     // Listen and server on 0.0.0.0:8080
     r.Run(":8080")
 }
+```
+
+Use the following example to serve static files at top level route of your domain. Files are being served from directory ./html.
+
+```
+r := gin.Default()
+r.Use(static.Serve("/", static.LocalFile("html", false)))
 ```
 
 Note: this will use `httpNotFound` instead of the Router's `NotFound` handler.
