@@ -209,6 +209,11 @@ func Validate(obj interface{}, parents ...string) error {
 					if err != nil {
 						return err
 					}
+				} else if fieldType == reflect.Slice && field.Type.Elem().Kind() == reflect.Struct {
+					err := Validate(fieldValue, field.Name)
+					if err != nil {
+						return err
+					}
 				}
 			}
 		}
