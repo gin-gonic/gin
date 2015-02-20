@@ -199,6 +199,17 @@ func Validate(obj interface{}, parents ...string) error {
 						return err
 					}
 				}
+			} else {
+				fieldType := field.Type.Kind()
+				if fieldType == reflect.Struct {
+					if reflect.DeepEqual(zero, fieldValue) {
+						continue
+					}
+					err := Validate(fieldValue, field.Name)
+					if err != nil {
+						return err
+					}
+				}
 			}
 		}
 	case reflect.Slice:
