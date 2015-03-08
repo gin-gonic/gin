@@ -295,6 +295,8 @@ func (c *Context) Bind(obj interface{}) bool {
 	switch {
 	case c.Request.Method == "GET" || ctype == MIMEPOSTForm:
 		b = binding.Form
+	case ctype == MIMEMultipartPOSTForm:
+		b = binding.MultipartForm
 	case ctype == MIMEJSON:
 		b = binding.JSON
 	case ctype == MIMEXML || ctype == MIMEXML2:
