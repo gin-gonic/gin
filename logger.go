@@ -6,8 +6,9 @@ package gin
 
 import (
 	"log"
-	"os"
 	"time"
+
+	"github.com/mattn/go-colorable"
 )
 
 var (
@@ -38,7 +39,7 @@ func ErrorLoggerT(typ uint32) HandlerFunc {
 }
 
 func Logger() HandlerFunc {
-	stdlogger := log.New(os.Stdout, "", 0)
+	stdlogger := log.New(colorable.NewColorableStdout(), "", 0)
 	//errlogger := log.New(os.Stderr, "", 0)
 
 	return func(c *Context) {
