@@ -351,6 +351,11 @@ func (c *Context) String(code int, format string, values ...interface{}) {
 	c.Render(code, render.Plain, format, values)
 }
 
+// Writes the given string into the response body and sets the Content-Type to "text/html" without template.
+func (c *Context) HTMLString(code int, format string, values ...interface{}) {
+	c.Render(code, render.HTMLPlain, format, values)
+}
+
 // Returns a HTTP redirect to the specific location.
 func (c *Context) Redirect(code int, location string) {
 	if code >= 300 && code <= 308 {

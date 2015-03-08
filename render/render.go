@@ -26,6 +26,9 @@ type (
 	// Plain text
 	plainRender struct{}
 
+	// HTML Plain text
+	htmlPlainRender struct{}
+
 	// Redirects
 	redirectRender struct{}
 
@@ -45,6 +48,7 @@ var (
 	JSON      = jsonRender{}
 	XML       = xmlRender{}
 	Plain     = plainRender{}
+	HTMLPlain = htmlPlainRender{}
 	Redirect  = redirectRender{}
 	HTMLDebug = &htmlDebugRender{}
 )
@@ -74,6 +78,19 @@ func (_ xmlRender) Render(w http.ResponseWriter, code int, data ...interface{}) 
 
 func (_ plainRender) Render(w http.ResponseWriter, code int, data ...interface{}) error {
 	writeHeader(w, code, "text/plain")
+	format := data[0].(string)
+	args := data[1].([]interface{})
+	var err error
+	if len(args) > 0 {
+		_, err = w.Write([]byte(fmt.Sprintf(format, args...)))
+	} else {
+		_, err = w.Write([]byte(format))
+	}
+	return err
+}
+
+func (_ htmlPlainRender) Render(w http.ResponseWriter, code int, data ...interface{}) error {
+	writeHeader(w, code, "text/html")
 	format := data[0].(string)
 	args := data[1].([]interface{})
 	var err error
