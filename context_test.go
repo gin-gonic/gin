@@ -441,6 +441,42 @@ func TestBindingJSONMalformed(t *testing.T) {
 	}
 }
 
+func TestBindingForm(t *testing.T) {
+
+	body := bytes.NewBuffer([]byte("foo=bar&num=123&unum=1234567890"))
+
+	r := New()
+	r.POST("/binding/form", func(c *Context) {
+		var body struct {
+			Foo  string `form:"foo"`
+			Num  int    `form:"num"`
+			Unum uint   `form:"unum"`
+		}
+		if c.Bind(&body) {
+			c.JSON(200, H{"foo": body.Foo, "num": body.Num, "unum": body.Unum})
+		}
+	})
+
+	req, _ := http.NewRequest("POST", "/binding/form", body)
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	w := httptest.NewRecorder()
+
+	r.ServeHTTP(w, req)
+
+	if w.Code != 200 {
+		t.Errorf("Response code should be Ok, was: %d", w.Code)
+	}
+
+	expected := "{\"foo\":\"bar\",\"num\":123,\"unum\":1234567890}\n"
+	if w.Body.String() != expected {
+		t.Errorf("Response should be %s, was %s", expected, w.Body.String())
+	}
+
+	if w.HeaderMap.Get("Content-Type") != "application/json; charset=utf-8" {
+		t.Errorf("Content-Type should be application/json, was %s", w.HeaderMap.Get("Content-Type"))
+	}
+}
+
 func TestClientIP(t *testing.T) {
 	r := New()
 
