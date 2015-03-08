@@ -439,6 +439,33 @@ func main() {
 }
 ```
 
+#####Using layout files with templates
+```go
+var baseTemplate = "main.tmpl"
+
+r.GET("/", func(c *gin.Context) {
+    r.SetHTMLTemplate(template.Must(template.ParseFiles(baseTemplate, "whatever.tmpl")))
+    c.HTML(200, "base", data)
+})
+```
+main.tmpl
+```html
+{{define "base"}}
+<html>
+    <head></head>
+    <body>
+        {{template "content" .}}
+    </body>
+</html>
+{{end}}
+```
+whatever.tmpl
+```html
+{{define "content"}}
+<h1>Hello World!</h1>
+{{end}}
+```
+
 #### Redirects
 
 Issuing a HTTP redirect is easy:
