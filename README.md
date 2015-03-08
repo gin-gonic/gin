@@ -172,6 +172,47 @@ func main() {
 }
 ```
 
+###Multipart Form
+```go
+package main
+
+import (
+	"github.com/gin-gonic/gin"
+	"github.com/gin-gonic/gin/binding"
+)
+
+type LoginForm struct {
+	User     string `form:"user" binding:"required"`
+	Password string `form:"password" binding:"required"`
+}
+
+func main() {
+
+	r := gin.Default()
+
+	r.POST("/login", func(c *gin.Context) {
+
+		var form LoginForm
+		c.BindWith(&form, binding.MultipartForm)
+
+		if form.User == "user" && form.Password == "password" {
+			c.JSON(200, gin.H{"status": "you are logged in"})
+		} else {
+			c.JSON(401, gin.H{"status": "unauthorized"})
+		}
+
+	})
+
+	r.Run(":8080")
+
+}
+```
+
+Test it with:
+```bash
+$ curl -v --form user=user --form password=password http://localhost:8080/login
+```
+
 #### Grouping routes
 ```go
 func main() {
