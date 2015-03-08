@@ -25,14 +25,20 @@ type (
 	// XML binding
 	xmlBinding struct{}
 
-	// // form binding
+	// form binding
 	formBinding struct{}
+
+	// multipart form binding
+	multipartFormBinding struct{}
 )
 
+const MAX_MEMORY = 1 * 1024 * 1024
+
 var (
-	JSON = jsonBinding{}
-	XML  = xmlBinding{}
-	Form = formBinding{} // todo
+	JSON          = jsonBinding{}
+	XML           = xmlBinding{}
+	Form          = formBinding{} // todo
+	MultipartForm = multipartFormBinding{}
 )
 
 func (_ jsonBinding) Bind(req *http.Request, obj interface{}) error {
@@ -55,6 +61,16 @@ func (_ xmlBinding) Bind(req *http.Request, obj interface{}) error {
 
 func (_ formBinding) Bind(req *http.Request, obj interface{}) error {
 	if err := req.ParseForm(); err != nil {
+		return err
+	}
+	if err := mapForm(obj, req.Form); err != nil {
+		return err
+	}
+	return Validate(obj)
+}
+
+func (_ multipartFormBinding) Bind(req *http.Request, obj interface{}) error {
+	if err := req.ParseMultipartForm(MAX_MEMORY); err != nil {
 		return err
 	}
 	if err := mapForm(obj, req.Form); err != nil {
