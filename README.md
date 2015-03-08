@@ -12,21 +12,24 @@ $ cat test.go
 ```go
 package main
 
-import "github.com/gin-gonic/gin"
+import (
+	"net/http"
+	"github.com/gin-gonic/gin"
+)
 
 func main() {
 	router := gin.Default()
 	router.GET("/", func(c *gin.Context) {
-		c.String(200, "hello world")
+		c.String(http.StatusOK, "hello world")
 	})
 	router.GET("/ping", func(c *gin.Context) {
-		c.String(200, "pong")
+		c.String(http.StatusOK, "pong")
 	})
 	router.POST("/submit", func(c *gin.Context) {
-		c.String(401, "not authorized")
+		c.String(http.StatusUnauthorized, "not authorized")
 	})
 	router.PUT("/error", func(c *gin.Context) {
-		c.String(500, "and error happened :(")
+		c.String(http.StatusInternalServerError, "and error happened :(")
 	})
 	router.Run(":8080")
 }
@@ -87,12 +90,15 @@ If you'd like to help out with the project, there's a mailing list and IRC chann
 ```go 
 package main
 
-import "github.com/gin-gonic/gin"
+import (
+	"net/http"
+	"github.com/gin-gonic/gin"
+)
 
 func main() {
 	r := gin.Default()
 	r.GET("/ping", func(c *gin.Context) {
-		c.String(200, "pong")
+		c.String(http.StatusOK, "pong")
 	})
 
 	// Listen and serve on 0.0.0.0:8080
@@ -130,7 +136,7 @@ func main() {
 	r.GET("/user/:name", func(c *gin.Context) {
 		name := c.Params.ByName("name")
 		message := "Hello "+name
-		c.String(200, message)
+		c.String(http.StatusOK, message)
 	})
 
 	// However, this one will match /user/john/ and also /user/john/send
@@ -139,7 +145,7 @@ func main() {
 		name := c.Params.ByName("name")
 		action := c.Params.ByName("action")
 		message := name + " is " + action
-		c.String(200, message)
+		c.String(http.StatusOK, message)
 	})
 	
 	// Listen and server on 0.0.0.0:8080
@@ -160,7 +166,7 @@ func main() {
 		lastname := c.Request.Form.Get("lastname")
 
 		message := "Hello "+ firstname + lastname
-		c.String(200, message)
+		c.String(http.StatusOK, message)
 	})
 	r.Run(":8080")
 }
@@ -274,9 +280,9 @@ func main() {
 
         c.Bind(&json) // This will infer what binder to use depending on the content-type header.
         if json.User == "manu" && json.Password == "123" {
-            c.JSON(200, gin.H{"status": "you are logged in"})
+            c.JSON(http.StatusOK, gin.H{"status": "you are logged in"})
         } else {
-            c.JSON(401, gin.H{"status": "unauthorized"})
+            c.JSON(http.StatusUnauthorized, gin.H{"status": "unauthorized"})
         }
 	})
 
@@ -286,9 +292,9 @@ func main() {
 
         c.BindWith(&form, binding.Form) // You can also specify which binder to use. We support binding.Form, binding.JSON and binding.XML.
         if form.User == "manu" && form.Password == "123" {
-            c.JSON(200, gin.H{"status": "you are logged in"})
+            c.JSON(http.StatusOK, gin.H{"status": "you are logged in"})
         } else {
-            c.JSON(401, gin.H{"status": "unauthorized"})
+            c.JSON(http.StatusUnauthorized, gin.H{"status": "unauthorized"})
         }
     })
 
@@ -305,7 +311,7 @@ func main() {
 
 	// gin.H is a shortcut for map[string]interface{}
 	r.GET("/someJSON", func(c *gin.Context) {
-		c.JSON(200, gin.H{"message": "hey", "status": 200})
+		c.JSON(http.StatusOK, gin.H{"message": "hey", "status": http.StatusOK})
 	})
 
 	r.GET("/moreJSON", func(c *gin.Context) {
@@ -320,11 +326,11 @@ func main() {
 		msg.Number = 123
 		// Note that msg.Name becomes "user" in the JSON
 		// Will output  :   {"user": "Lena", "Message": "hey", "Number": 123}
-		c.JSON(200, msg)
+		c.JSON(http.StatusOK, msg)
 	})
 
 	r.GET("/someXML", func(c *gin.Context) {
-		c.XML(200, gin.H{"message": "hey", "status": 200})
+		c.XML(http.StatusOK, gin.H{"message": "hey", "status": http.StatusOK})
 	})
 
 	// Listen and server on 0.0.0.0:8080
@@ -364,7 +370,7 @@ func main() {
 	r.LoadHTMLGlob("templates/*")
 	r.GET("/index", func(c *gin.Context) {
 		obj := gin.H{"title": "Main website"}
-		c.HTML(200, "index.tmpl", obj)
+		c.HTML(http.StatusOK, "index.tmpl", obj)
 	})
 
 	// Listen and server on 0.0.0.0:8080
@@ -398,7 +404,7 @@ Issuing a HTTP redirect is easy:
 
 ```go
 r.GET("/test", func(c *gin.Context) {
-	c.Redirect(301, "http://www.google.com/")
+	c.Redirect(http.StatusMovedPermanently, "http://www.google.com/")
 })
 ```
 Both internal and external locations are supported.
@@ -471,9 +477,9 @@ func main() {
 		// get user, it was setted by the BasicAuth middleware
 		user := c.MustGet(gin.AuthUserKey).(string)
 		if secret, ok := secrets[user]; ok {
-			c.JSON(200, gin.H{"user": user, "secret": secret})
+			c.JSON(http.StatusOK, gin.H{"user": user, "secret": secret})
 		} else {
-			c.JSON(200, gin.H{"user": user, "secret": "NO SECRET :("})
+			c.JSON(http.StatusOK, gin.H{"user": user, "secret": "NO SECRET :("})
 		}
 	})
 
