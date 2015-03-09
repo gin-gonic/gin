@@ -1,6 +1,13 @@
 #Changelog
 
-###Gin 0.6 (Mar 7, 2015)
+###Gin 0.6 (Mar 9, 2015)
+
+- [ADD] Support multipart/form-data
+- [ADD] NoMethod handler
+- [ADD] Validate sub structures
+- [ADD] Support for HTTP Realm Auth
+- [FIX] Unsigned integers in binding
+- [FIX] Improve color logger
 
 
 ###Gin 0.5 (Feb 7, 2015)

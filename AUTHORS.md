@@ -9,6 +9,10 @@ List of all the awesome people working to make Gin the best Web Framework in Go.
 
 People and companies, who have contributed, in alphabetical order.
 
+**@858806258 (杰哥)**
+- Fix typo in example
+
+
 **@achedeuzot (Klemen Sever)**
 - Fix newline debug printing
 
@@ -19,6 +23,10 @@ People and companies, who have contributed, in alphabetical order.
 
 **@AlexanderChen1989 (Alexander)**
 - Typos in README
+
+
+**@alexanderdidenko (Aleksandr Didenko)**
+- Add support multipart/form-data
 
 
 **@alexandernyquist (Alexander Nyquist)**
@@ -55,13 +63,37 @@ People and companies, who have contributed, in alphabetical order.
 - Add example about serving static files
 
 
+**@donileo (Adonis)**
+- Add NoMethod handler
+
+
 **@dutchcoders (DutchCoders)**
 - ★ Fix security bug that allows client to spoof ip
 - Fix typo. r.HTMLTemplates -> SetHTMLTemplate
 
 
+**@el3ctro- (Joshua Loper)**
+- Fix typo in example
+
+
+**@ethankan (Ethan Kan)**
+- Unsigned integers in binding
+
+
+**(Evgeny Persienko)**
+- Validate sub structures
+
+
+**@frankbille (Frank Bille)**
+- Add support for HTTP Realm Auth
+
+
 **@fmd (Fareed Dudhia)**
 - Fix typo. SetHTTPTemplate -> SetHTMLTemplate
+
+
+**@ironiridis (Christopher Harrington)**
+- Remove old reference
 
 
 **@jammie-stackhouse (Jamie Stackhouse)**
@@ -104,6 +136,10 @@ People and companies, who have contributed, in alphabetical order.
 - ★ work around path.Join removing trailing slashes from routes
 
 
+**@mattn (Yasuhiro Matsumoto)**
+- Improve color logger
+
+
 **@mdigger (Dmitry Sedykh)**
 - Fixes Form binding when content-type is x-www-form-urlencoded
 - No repeat call c.Writer.Status() in gin.Logger
@@ -138,8 +174,20 @@ People and companies, who have contributed, in alphabetical order.
 - Fix Port usage in README.
 
 
+**@rayrod2030 (Ray Rodriguez)**
+- Fix typo in example
+
+
+**@rns**
+- Fix typo in example
+
+
 **@RobAWilkinson (Robert Wilkinson)**
 - Add example of forms and params
+
+
+**@rogierlommers (Rogier Lommers)**
+- Add updated static serve example
 
 
 **@se77en (Damon Zhao)**
@@ -164,6 +212,14 @@ People and companies, who have contributed, in alphabetical order.
 
 **@superalsrk (SRK.Lyu)**
 - Update httprouter godeps
+
+
+**@tebeka (Miki Tebeka)**
+- Use net/http constants instead of numeric values
+
+
+**@techjanitor**
+- Update context.go reserved IPs
 
 
 **@yosssi (Keiji Yoshida)**
