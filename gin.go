@@ -14,13 +14,14 @@ import (
 )
 
 const (
-	AbortIndex   = math.MaxInt8 / 2
-	MIMEJSON     = "application/json"
-	MIMEHTML     = "text/html"
-	MIMEXML      = "application/xml"
-	MIMEXML2     = "text/xml"
-	MIMEPlain    = "text/plain"
-	MIMEPOSTForm = "application/x-www-form-urlencoded"
+	AbortIndex            = math.MaxInt8 / 2
+	MIMEJSON              = "application/json"
+	MIMEHTML              = "text/html"
+	MIMEXML               = "application/xml"
+	MIMEXML2              = "text/xml"
+	MIMEPlain             = "text/plain"
+	MIMEPOSTForm          = "application/x-www-form-urlencoded"
+	MIMEMultipartPOSTForm = "multipart/form-data"
 )
 
 type (
@@ -29,12 +30,14 @@ type (
 	// Represents the web framework, it wraps the blazing fast httprouter multiplexer and a list of global middlewares.
 	Engine struct {
 		*RouterGroup
-		HTMLRender     render.Render
-		Default404Body []byte
-		pool           sync.Pool
-		allNoRoute     []HandlerFunc
-		noRoute        []HandlerFunc
-		router         *httprouter.Router
+		HTMLRender         render.Render
+		Default404Body     []byte
+		Default405Body     []byte
+		pool               sync.Pool
+		allNoRouteNoMethod []HandlerFunc
+		noRoute            []HandlerFunc
+		noMethod           []HandlerFunc
+		router             *httprouter.Router
 	}
 )
 
@@ -49,7 +52,9 @@ func New() *Engine {
 	}
 	engine.router = httprouter.New()
 	engine.Default404Body = []byte("404 page not found")
+	engine.Default405Body = []byte("405 method not allowed")
 	engine.router.NotFound = engine.handle404
+	engine.router.MethodNotAllowed = engine.handle405
 	engine.pool.New = func() interface{} {
 		c := &Context{Engine: engine}
 		c.Writer = &c.writermem
@@ -97,23 +102,48 @@ func (engine *Engine) NoRoute(handlers ...HandlerFunc) {
 	engine.rebuild404Handlers()
 }
 
+func (engine *Engine) NoMethod(handlers ...HandlerFunc) {
+	engine.noMethod = handlers
+	engine.rebuild405Handlers()
+}
+
 func (engine *Engine) Use(middlewares ...HandlerFunc) {
 	engine.RouterGroup.Use(middlewares...)
 	engine.rebuild404Handlers()
+	engine.rebuild405Handlers()
 }
 
 func (engine *Engine) rebuild404Handlers() {
-	engine.allNoRoute = engine.combineHandlers(engine.noRoute)
+	engine.allNoRouteNoMethod = engine.combineHandlers(engine.noRoute)
+}
+
+func (engine *Engine) rebuild405Handlers() {
+	engine.allNoRouteNoMethod = engine.combineHandlers(engine.noMethod)
 }
 
 func (engine *Engine) handle404(w http.ResponseWriter, req *http.Request) {
-	c := engine.createContext(w, req, nil, engine.allNoRoute)
+	c := engine.createContext(w, req, nil, engine.allNoRouteNoMethod)
 	// set 404 by default, useful for logging
 	c.Writer.WriteHeader(404)
 	c.Next()
 	if !c.Writer.Written() {
 		if c.Writer.Status() == 404 {
 			c.Data(-1, MIMEPlain, engine.Default404Body)
+		} else {
+			c.Writer.WriteHeaderNow()
+		}
+	}
+	engine.reuseContext(c)
+}
+
+func (engine *Engine) handle405(w http.ResponseWriter, req *http.Request) {
+	c := engine.createContext(w, req, nil, engine.allNoRouteNoMethod)
+	// set 405 by default, useful for logging
+	c.Writer.WriteHeader(405)
+	c.Next()
+	if !c.Writer.Written() {
+		if c.Writer.Status() == 405 {
+			c.Data(-1, MIMEPlain, engine.Default405Body)
 		} else {
 			c.Writer.WriteHeaderNow()
 		}

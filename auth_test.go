@@ -59,3 +59,27 @@ func TestBasicAuth401(t *testing.T) {
 		t.Errorf("WWW-Authenticate header is incorrect: %s", w.HeaderMap.Get("Content-Type"))
 	}
 }
+
+func TestBasicAuth401WithCustomRealm(t *testing.T) {
+	req, _ := http.NewRequest("GET", "/login", nil)
+	w := httptest.NewRecorder()
+
+	r := New()
+	accounts := Accounts{"foo": "bar"}
+	r.Use(BasicAuthForRealm(accounts, "My Custom Realm"))
+
+	r.GET("/login", func(c *Context) {
+		c.String(200, "autorized")
+	})
+
+	req.Header.Set("Authorization", "Basic "+base64.StdEncoding.EncodeToString([]byte("admin:password")))
+	r.ServeHTTP(w, req)
+
+	if w.Code != 401 {
+		t.Errorf("Response code should be Not autorized, was: %s", w.Code)
+	}
+
+	if w.HeaderMap.Get("WWW-Authenticate") != "Basic realm=\"My Custom Realm\"" {
+		t.Errorf("WWW-Authenticate header is incorrect: %s", w.HeaderMap.Get("Content-Type"))
+	}
+}

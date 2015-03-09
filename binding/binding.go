@@ -25,14 +25,20 @@ type (
 	// XML binding
 	xmlBinding struct{}
 
-	// // form binding
+	// form binding
 	formBinding struct{}
+
+	// multipart form binding
+	multipartFormBinding struct{}
 )
 
+const MAX_MEMORY = 1 * 1024 * 1024
+
 var (
-	JSON = jsonBinding{}
-	XML  = xmlBinding{}
-	Form = formBinding{} // todo
+	JSON          = jsonBinding{}
+	XML           = xmlBinding{}
+	Form          = formBinding{} // todo
+	MultipartForm = multipartFormBinding{}
 )
 
 func (_ jsonBinding) Bind(req *http.Request, obj interface{}) error {
@@ -55,6 +61,16 @@ func (_ xmlBinding) Bind(req *http.Request, obj interface{}) error {
 
 func (_ formBinding) Bind(req *http.Request, obj interface{}) error {
 	if err := req.ParseForm(); err != nil {
+		return err
+	}
+	if err := mapForm(obj, req.Form); err != nil {
+		return err
+	}
+	return Validate(obj)
+}
+
+func (_ multipartFormBinding) Bind(req *http.Request, obj interface{}) error {
+	if err := req.ParseMultipartForm(MAX_MEMORY); err != nil {
 		return err
 	}
 	if err := mapForm(obj, req.Form); err != nil {
@@ -98,18 +114,54 @@ func mapForm(ptr interface{}, form map[string][]string) error {
 	return nil
 }
 
+func setIntField(val string, bitSize int, structField reflect.Value) error {
+	if val == "" {
+		val = "0"
+	}
+
+	intVal, err := strconv.ParseInt(val, 10, bitSize)
+	if err == nil {
+		structField.SetInt(intVal)
+	}
+
+	return err
+}
+
+func setUintField(val string, bitSize int, structField reflect.Value) error {
+	if val == "" {
+		val = "0"
+	}
+
+	uintVal, err := strconv.ParseUint(val, 10, bitSize)
+	if err == nil {
+		structField.SetUint(uintVal)
+	}
+
+	return err
+}
+
 func setWithProperType(valueKind reflect.Kind, val string, structField reflect.Value) error {
 	switch valueKind {
-	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-		if val == "" {
-			val = "0"
-		}
-		intVal, err := strconv.Atoi(val)
-		if err != nil {
-			return err
-		} else {
-			structField.SetInt(int64(intVal))
-		}
+	case reflect.Int:
+		return setIntField(val, 0, structField)
+	case reflect.Int8:
+		return setIntField(val, 8, structField)
+	case reflect.Int16:
+		return setIntField(val, 16, structField)
+	case reflect.Int32:
+		return setIntField(val, 32, structField)
+	case reflect.Int64:
+		return setIntField(val, 64, structField)
+	case reflect.Uint:
+		return setUintField(val, 0, structField)
+	case reflect.Uint8:
+		return setUintField(val, 8, structField)
+	case reflect.Uint16:
+		return setUintField(val, 16, structField)
+	case reflect.Uint32:
+		return setUintField(val, 32, structField)
+	case reflect.Uint64:
+		return setUintField(val, 64, structField)
 	case reflect.Bool:
 		if val == "" {
 			val = "false"
@@ -195,6 +247,22 @@ func Validate(obj interface{}, parents ...string) error {
 					}
 				} else if fieldType == reflect.Slice && field.Type.Elem().Kind() == reflect.Struct {
 					err := Validate(fieldValue)
+					if err != nil {
+						return err
+					}
+				}
+			} else {
+				fieldType := field.Type.Kind()
+				if fieldType == reflect.Struct {
+					if reflect.DeepEqual(zero, fieldValue) {
+						continue
+					}
+					err := Validate(fieldValue, field.Name)
+					if err != nil {
+						return err
+					}
+				} else if fieldType == reflect.Slice && field.Type.Elem().Kind() == reflect.Struct {
+					err := Validate(fieldValue, field.Name)
 					if err != nil {
 						return err
 					}

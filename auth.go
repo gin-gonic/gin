@@ -8,6 +8,7 @@ import (
 	"crypto/subtle"
 	"encoding/base64"
 	"errors"
+	"fmt"
 	"sort"
 )
 
@@ -28,9 +29,10 @@ func (a authPairs) Len() int           { return len(a) }
 func (a authPairs) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
 func (a authPairs) Less(i, j int) bool { return a[i].Value < a[j].Value }
 
-// Implements a basic Basic HTTP Authorization. It takes as argument a map[string]string where
-// the key is the user name and the value is the password.
-func BasicAuth(accounts Accounts) HandlerFunc {
+// Implements a basic Basic HTTP Authorization. It takes as arguments a map[string]string where
+// the key is the user name and the value is the password, as well as the name of the Realm
+// (see http://tools.ietf.org/html/rfc2617#section-1.2)
+func BasicAuthForRealm(accounts Accounts, realm string) HandlerFunc {
 	pairs, err := processAccounts(accounts)
 	if err != nil {
 		panic(err)
@@ -40,7 +42,10 @@ func BasicAuth(accounts Accounts) HandlerFunc {
 		user, ok := searchCredential(pairs, c.Request.Header.Get("Authorization"))
 		if !ok {
 			// Credentials doesn't match, we return 401 Unauthorized and abort request.
-			c.Writer.Header().Set("WWW-Authenticate", "Basic realm=\"Authorization Required\"")
+			if realm == "" {
+				realm = "Authorization Required"
+			}
+			c.Writer.Header().Set("WWW-Authenticate", fmt.Sprintf("Basic realm=\"%s\"", realm))
 			c.Fail(401, errors.New("Unauthorized"))
 		} else {
 			// user is allowed, set UserId to key "user" in this context, the userId can be read later using
@@ -48,6 +53,12 @@ func BasicAuth(accounts Accounts) HandlerFunc {
 			c.Set(AuthUserKey, user)
 		}
 	}
+}
+
+// Implements a basic Basic HTTP Authorization. It takes as argument a map[string]string where
+// the key is the user name and the value is the password.
+func BasicAuth(accounts Accounts) HandlerFunc {
+	return BasicAuthForRealm(accounts, "")
 }
 
 func processAccounts(accounts Accounts) (authPairs, error) {

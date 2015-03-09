@@ -1,5 +1,7 @@
 #Gin Web Framework [![GoDoc](https://godoc.org/github.com/gin-gonic/gin?status.svg)](https://godoc.org/github.com/gin-gonic/gin) [![Build Status](https://travis-ci.org/gin-gonic/gin.svg)](https://travis-ci.org/gin-gonic/gin)
 
+[![Join the chat at https://gitter.im/gin-gonic/gin](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/gin-gonic/gin?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
 Gin is a web framework written in Golang. It features a martini-like API with much better performance, up to 40 times faster thanks to [httprouter](https://github.com/julienschmidt/httprouter). If you need performance and good productivity, you will love Gin. 
 
 ![Gin console logger](https://gin-gonic.github.io/gin/other/console.png)
@@ -10,21 +12,24 @@ $ cat test.go
 ```go
 package main
 
-import "github.com/gin-gonic/gin"
+import (
+	"net/http"
+	"github.com/gin-gonic/gin"
+)
 
 func main() {
 	router := gin.Default()
 	router.GET("/", func(c *gin.Context) {
-		c.String(200, "hello world")
+		c.String(http.StatusOK, "hello world")
 	})
 	router.GET("/ping", func(c *gin.Context) {
-		c.String(200, "pong")
+		c.String(http.StatusOK, "pong")
 	})
 	router.POST("/submit", func(c *gin.Context) {
-		c.String(401, "not authorized")
+		c.String(http.StatusUnauthorized, "not authorized")
 	})
 	router.PUT("/error", func(c *gin.Context) {
-		c.String(500, "and error hapenned :(")
+		c.String(http.StatusInternalServerError, "and error happened :(")
 	})
 	router.Run(":8080")
 }
@@ -85,15 +90,18 @@ If you'd like to help out with the project, there's a mailing list and IRC chann
 ```go 
 package main
 
-import "github.com/gin-gonic/gin"
+import (
+	"net/http"
+	"github.com/gin-gonic/gin"
+)
 
 func main() {
 	r := gin.Default()
 	r.GET("/ping", func(c *gin.Context) {
-		c.String(200, "pong")
+		c.String(http.StatusOK, "pong")
 	})
 
-	// Listen and server on 0.0.0.0:8080
+	// Listen and serve on 0.0.0.0:8080
 	r.Run(":8080")
 }
 ```
@@ -128,7 +136,7 @@ func main() {
 	r.GET("/user/:name", func(c *gin.Context) {
 		name := c.Params.ByName("name")
 		message := "Hello "+name
-		c.String(200, message)
+		c.String(http.StatusOK, message)
 	})
 
 	// However, this one will match /user/john/ and also /user/john/send
@@ -137,7 +145,7 @@ func main() {
 		name := c.Params.ByName("name")
 		action := c.Params.ByName("action")
 		message := name + " is " + action
-		c.String(200, message)
+		c.String(http.StatusOK, message)
 	})
 	
 	// Listen and server on 0.0.0.0:8080
@@ -155,13 +163,54 @@ func main() {
 		c.Request.ParseForm()
 		
 		firstname := c.Request.Form.Get("firstname")
-		lastname := c.Request.Form.get("lastname")
+		lastname := c.Request.Form.Get("lastname")
 
 		message := "Hello "+ firstname + lastname
-		c.String(200, message)
+		c.String(http.StatusOK, message)
 	})
 	r.Run(":8080")
 }
+```
+
+###Multipart Form
+```go
+package main
+
+import (
+	"github.com/gin-gonic/gin"
+	"github.com/gin-gonic/gin/binding"
+)
+
+type LoginForm struct {
+	User     string `form:"user" binding:"required"`
+	Password string `form:"password" binding:"required"`
+}
+
+func main() {
+
+	r := gin.Default()
+
+	r.POST("/login", func(c *gin.Context) {
+
+		var form LoginForm
+		c.BindWith(&form, binding.MultipartForm)
+
+		if form.User == "user" && form.Password == "password" {
+			c.JSON(200, gin.H{"status": "you are logged in"})
+		} else {
+			c.JSON(401, gin.H{"status": "unauthorized"})
+		}
+
+	})
+
+	r.Run(":8080")
+
+}
+```
+
+Test it with:
+```bash
+$ curl -v --form user=user --form password=password http://localhost:8080/login
 ```
 
 #### Grouping routes
@@ -272,9 +321,9 @@ func main() {
 
         c.Bind(&json) // This will infer what binder to use depending on the content-type header.
         if json.User == "manu" && json.Password == "123" {
-            c.JSON(200, gin.H{"status": "you are logged in"})
+            c.JSON(http.StatusOK, gin.H{"status": "you are logged in"})
         } else {
-            c.JSON(401, gin.H{"status": "unauthorized"})
+            c.JSON(http.StatusUnauthorized, gin.H{"status": "unauthorized"})
         }
 	})
 
@@ -284,9 +333,9 @@ func main() {
 
         c.BindWith(&form, binding.Form) // You can also specify which binder to use. We support binding.Form, binding.JSON and binding.XML.
         if form.User == "manu" && form.Password == "123" {
-            c.JSON(200, gin.H{"status": "you are logged in"})
+            c.JSON(http.StatusOK, gin.H{"status": "you are logged in"})
         } else {
-            c.JSON(401, gin.H{"status": "unauthorized"})
+            c.JSON(http.StatusUnauthorized, gin.H{"status": "unauthorized"})
         }
     })
 
@@ -303,7 +352,7 @@ func main() {
 
 	// gin.H is a shortcut for map[string]interface{}
 	r.GET("/someJSON", func(c *gin.Context) {
-		c.JSON(200, gin.H{"message": "hey", "status": 200})
+		c.JSON(http.StatusOK, gin.H{"message": "hey", "status": http.StatusOK})
 	})
 
 	r.GET("/moreJSON", func(c *gin.Context) {
@@ -318,11 +367,11 @@ func main() {
 		msg.Number = 123
 		// Note that msg.Name becomes "user" in the JSON
 		// Will output  :   {"user": "Lena", "Message": "hey", "Number": 123}
-		c.JSON(200, msg)
+		c.JSON(http.StatusOK, msg)
 	})
 
 	r.GET("/someXML", func(c *gin.Context) {
-		c.XML(200, gin.H{"message": "hey", "status": 200})
+		c.XML(http.StatusOK, gin.H{"message": "hey", "status": http.StatusOK})
 	})
 
 	// Listen and server on 0.0.0.0:8080
@@ -331,7 +380,6 @@ func main() {
 ```
 
 ####Serving static files
-
 Use Engine.ServeFiles(path string, root http.FileSystem):
 
 ```go
@@ -342,6 +390,13 @@ func main() {
     // Listen and server on 0.0.0.0:8080
     r.Run(":8080")
 }
+```
+
+Use the following example to serve static files at top level route of your domain. Files are being served from directory ./html.
+
+```
+r := gin.Default()
+r.Use(static.Serve("/", static.LocalFile("html", false)))
 ```
 
 Note: this will use `httpNotFound` instead of the Router's `NotFound` handler.
@@ -356,7 +411,7 @@ func main() {
 	r.LoadHTMLGlob("templates/*")
 	r.GET("/index", func(c *gin.Context) {
 		obj := gin.H{"title": "Main website"}
-		c.HTML(200, "index.tmpl", obj)
+		c.HTML(http.StatusOK, "index.tmpl", obj)
 	})
 
 	// Listen and server on 0.0.0.0:8080
@@ -384,13 +439,40 @@ func main() {
 }
 ```
 
+#####Using layout files with templates
+```go
+var baseTemplate = "main.tmpl"
+
+r.GET("/", func(c *gin.Context) {
+    r.SetHTMLTemplate(template.Must(template.ParseFiles(baseTemplate, "whatever.tmpl")))
+    c.HTML(200, "base", data)
+})
+```
+main.tmpl
+```html
+{{define "base"}}
+<html>
+    <head></head>
+    <body>
+        {{template "content" .}}
+    </body>
+</html>
+{{end}}
+```
+whatever.tmpl
+```html
+{{define "content"}}
+<h1>Hello World!</h1>
+{{end}}
+```
+
 #### Redirects
 
 Issuing a HTTP redirect is easy:
 
 ```go
 r.GET("/test", func(c *gin.Context) {
-	c.Redirect(301, "http://www.google.com/")
+	c.Redirect(http.StatusMovedPermanently, "http://www.google.com/")
 })
 ```
 Both internal and external locations are supported.
@@ -438,7 +520,7 @@ func main() {
 
 #### Using BasicAuth() middleware
 ```go
-// similate some private data
+// simulate some private data
 var secrets = gin.H{
 	"foo":    gin.H{"email": "foo@bar.com", "phone": "123433"},
 	"austin": gin.H{"email": "austin@example.com", "phone": "666"},
@@ -463,9 +545,9 @@ func main() {
 		// get user, it was setted by the BasicAuth middleware
 		user := c.MustGet(gin.AuthUserKey).(string)
 		if secret, ok := secrets[user]; ok {
-			c.JSON(200, gin.H{"user": user, "secret": secret})
+			c.JSON(http.StatusOK, gin.H{"user": user, "secret": secret})
 		} else {
-			c.JSON(200, gin.H{"user": user, "secret": "NO SECRET :("})
+			c.JSON(http.StatusOK, gin.H{"user": user, "secret": "NO SECRET :("})
 		}
 	})
 
