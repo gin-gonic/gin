@@ -26,13 +26,15 @@ type (
 		Status() int
 		Size() int
 		Written() bool
+		Hijacked() bool
 		WriteHeaderNow()
 	}
 
 	responseWriter struct {
 		http.ResponseWriter
-		status int
-		size   int
+		status   int
+		size     int
+		hijacked bool
 	}
 )
 
@@ -52,7 +54,7 @@ func (w *responseWriter) WriteHeader(code int) {
 }
 
 func (w *responseWriter) WriteHeaderNow() {
-	if !w.Written() {
+	if !w.Written() && !w.Hijacked() {
 		w.size = 0
 		w.ResponseWriter.WriteHeader(w.status)
 	}
@@ -77,12 +79,17 @@ func (w *responseWriter) Written() bool {
 	return w.size != NoWritten
 }
 
+func (w *responseWriter) Hijacked() bool {
+	return w.hijacked
+}
+
 // Implements the http.Hijacker interface
 func (w *responseWriter) Hijack() (net.Conn, *bufio.ReadWriter, error) {
 	hijacker, ok := w.ResponseWriter.(http.Hijacker)
 	if !ok {
 		return nil, nil, errors.New("the ResponseWriter doesn't support the Hijacker interface")
 	}
+	w.hijacked = true
 	return hijacker.Hijack()
 }
 
