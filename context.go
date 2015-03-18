@@ -115,7 +115,7 @@ func (c *Context) Next() {
 	}
 }
 
-// Forces the system to do not continue calling the pending handlers in the chain.
+// Forces the system to not continue calling the pending handlers in the chain.
 func (c *Context) Abort() {
 	c.index = AbortIndex
 }
