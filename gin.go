@@ -5,12 +5,13 @@
 package gin
 
 import (
-	"github.com/gin-gonic/gin/render"
-	"github.com/julienschmidt/httprouter"
 	"html/template"
 	"math"
 	"net/http"
 	"sync"
+
+	"github.com/gin-gonic/gin/render"
+	"github.com/julienschmidt/httprouter"
 )
 
 const (
@@ -158,16 +159,10 @@ func (engine *Engine) ServeHTTP(writer http.ResponseWriter, request *http.Reques
 
 func (engine *Engine) Run(addr string) error {
 	debugPrint("Listening and serving HTTP on %s\n", addr)
-	if err := http.ListenAndServe(addr, engine); err != nil {
-		return err
-	}
-	return nil
+	return http.ListenAndServe(addr, engine)
 }
 
 func (engine *Engine) RunTLS(addr string, cert string, key string) error {
 	debugPrint("Listening and serving HTTPS on %s\n", addr)
-	if err := http.ListenAndServeTLS(addr, cert, key, engine); err != nil {
-		return err
-	}
-	return nil
+	return http.ListenAndServeTLS(addr, cert, key, engine)
 }

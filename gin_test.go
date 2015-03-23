@@ -192,7 +192,7 @@ func TestHandleHeadToDir(t *testing.T) {
 	// TEST
 	bodyAsString := w.Body.String()
 	if w.Code != 200 {
-		t.Errorf("Response code should be Ok, was: %s", w.Code)
+		t.Errorf("Response code should be Ok, was: %d", w.Code)
 	}
 	if len(bodyAsString) == 0 {
 		t.Errorf("Got empty body instead of file tree")
