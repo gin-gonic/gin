@@ -79,11 +79,8 @@ func (w *responseWriter) Written() bool {
 
 // Implements the http.Hijacker interface
 func (w *responseWriter) Hijack() (net.Conn, *bufio.ReadWriter, error) {
-	hijacker, ok := w.ResponseWriter.(http.Hijacker)
-	if !ok {
-		return nil, nil, errors.New("the ResponseWriter doesn't support the Hijacker interface")
-	}
-	return hijacker.Hijack()
+	w.size = 0 // this prevents Gin to write the HTTP headers
+	return w.ResponseWriter.(http.Hijacker).Hijack()
 }
 
 // Implements the http.CloseNotify interface
