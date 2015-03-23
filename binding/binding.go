@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"encoding/xml"
 	"errors"
+	"log"
 	"net/http"
 	"reflect"
 	"strconv"
@@ -203,7 +204,7 @@ func setWithProperType(valueKind reflect.Kind, val string, structField reflect.V
 // https://github.com/codegangsta/martini-contrib/pull/34#issuecomment-29683659
 func ensureNotPointer(obj interface{}) {
 	if reflect.TypeOf(obj).Kind() == reflect.Ptr {
-		panic("Pointers are not accepted as binding models")
+		log.Panic("Pointers are not accepted as binding models")
 	}
 }
 

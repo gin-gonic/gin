@@ -18,7 +18,7 @@ func TestPanicInHandler(t *testing.T) {
 	r := New()
 	r.Use(Recovery())
 	r.GET("/recovery", func(_ *Context) {
-		panic("Oupps, Houston, we have a problem")
+		log.Panic("Oupps, Houston, we have a problem")
 	})
 
 	// RUN
@@ -40,7 +40,7 @@ func TestPanicWithAbort(t *testing.T) {
 	r.Use(Recovery())
 	r.GET("/recovery", func(c *Context) {
 		c.AbortWithStatus(400)
-		panic("Oupps, Houston, we have a problem")
+		log.Panic("Oupps, Houston, we have a problem")
 	})
 
 	// RUN

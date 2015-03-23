@@ -195,7 +195,7 @@ func (c *Context) Get(key string) (interface{}, error) {
 func (c *Context) MustGet(key string) interface{} {
 	value, err := c.Get(key)
 	if err != nil {
-		log.Panicf(err.Error())
+		log.Panic(err.Error())
 	}
 	return value
 }
@@ -208,7 +208,7 @@ func ipInMasks(ip net.IP, masks []interface{}) bool {
 		switch t := proxy.(type) {
 		case string:
 			if _, mask, err = net.ParseCIDR(t); err != nil {
-				panic(err)
+				log.Panic(err)
 			}
 		case net.IP:
 			mask = &net.IPNet{IP: t, Mask: net.CIDRMask(len(t)*8, len(t)*8)}
@@ -402,7 +402,7 @@ func (c *Context) Negotiate(code int, config Negotiate) {
 	case MIMEHTML:
 		data := chooseData(config.HTMLData, config.Data)
 		if len(config.HTMLPath) == 0 {
-			panic("negotiate config is wrong. html path is needed")
+			log.Panic("negotiate config is wrong. html path is needed")
 		}
 		c.HTML(code, config.HTMLPath, data)
 
@@ -417,7 +417,7 @@ func (c *Context) Negotiate(code int, config Negotiate) {
 
 func (c *Context) NegotiateFormat(offered ...string) string {
 	if len(offered) == 0 {
-		panic("you must provide at least one offer")
+		log.Panic("you must provide at least one offer")
 	}
 	if c.accepted == nil {
 		c.accepted = parseAccept(c.Request.Header.Get("Accept"))

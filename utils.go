@@ -6,6 +6,7 @@ package gin
 
 import (
 	"encoding/xml"
+	"log"
 	"reflect"
 	"runtime"
 	"strings"
@@ -49,7 +50,7 @@ func filterFlags(content string) string {
 func chooseData(custom, wildcard interface{}) interface{} {
 	if custom == nil {
 		if wildcard == nil {
-			panic("negotiation config is invalid")
+			log.Panic("negotiation config is invalid")
 		}
 		return wildcard
 	}
@@ -71,7 +72,7 @@ func parseAccept(acceptHeader string) (parts []string) {
 func lastChar(str string) uint8 {
 	size := len(str)
 	if size == 0 {
-		panic("The length of the string can't be 0")
+		log.Panic("The length of the string can't be 0")
 	}
 	return str[size-1]
 }
