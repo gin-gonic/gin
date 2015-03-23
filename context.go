@@ -8,13 +8,14 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"github.com/gin-gonic/gin/binding"
-	"github.com/gin-gonic/gin/render"
-	"github.com/julienschmidt/httprouter"
 	"log"
 	"net"
 	"net/http"
 	"strings"
+
+	"github.com/gin-gonic/gin/binding"
+	"github.com/gin-gonic/gin/render"
+	"github.com/julienschmidt/httprouter"
 )
 
 const (
@@ -187,14 +188,14 @@ func (c *Context) Get(key string) (interface{}, error) {
 			return value, nil
 		}
 	}
-	return nil, errors.New("Key does not exist.")
+	return nil, errors.New("Key %s does not exist")
 }
 
 // MustGet returns the value for the given key or panics if the value doesn't exist.
 func (c *Context) MustGet(key string) interface{} {
 	value, err := c.Get(key)
-	if err != nil || value == nil {
-		log.Panicf("Key %s doesn't exist", value)
+	if err != nil {
+		log.Panicf(err.Error())
 	}
 	return value
 }

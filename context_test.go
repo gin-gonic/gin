@@ -214,11 +214,11 @@ func TestHandlerFunc(t *testing.T) {
 	r.ServeHTTP(w, req)
 
 	if w.Code != 404 {
-		t.Errorf("Response code should be Not found, was: %s", w.Code)
+		t.Errorf("Response code should be Not found, was: %d", w.Code)
 	}
 
 	if stepsPassed != 2 {
-		t.Errorf("Falied to switch context in handler function: %s", stepsPassed)
+		t.Errorf("Falied to switch context in handler function: %d", stepsPassed)
 	}
 }
 
@@ -329,7 +329,7 @@ func TestBindingJSON(t *testing.T) {
 	r.ServeHTTP(w, req)
 
 	if w.Code != 200 {
-		t.Errorf("Response code should be Ok, was: %s", w.Code)
+		t.Errorf("Response code should be Ok, was: %d", w.Code)
 	}
 
 	if w.Body.String() != "{\"parsed\":\"bar\"}\n" {
@@ -362,7 +362,7 @@ func TestBindingJSONEncoding(t *testing.T) {
 	r.ServeHTTP(w, req)
 
 	if w.Code != 200 {
-		t.Errorf("Response code should be Ok, was: %s", w.Code)
+		t.Errorf("Response code should be Ok, was: %d", w.Code)
 	}
 
 	if w.Body.String() != "{\"parsed\":\"嘉\"}\n" {
@@ -395,7 +395,7 @@ func TestBindingJSONNoContentType(t *testing.T) {
 	r.ServeHTTP(w, req)
 
 	if w.Code != 400 {
-		t.Errorf("Response code should be Bad request, was: %s", w.Code)
+		t.Errorf("Response code should be Bad request, was: %d", w.Code)
 	}
 
 	if w.Body.String() == "{\"parsed\":\"bar\"}\n" {
@@ -430,7 +430,7 @@ func TestBindingJSONMalformed(t *testing.T) {
 	r.ServeHTTP(w, req)
 
 	if w.Code != 400 {
-		t.Errorf("Response code should be Bad request, was: %s", w.Code)
+		t.Errorf("Response code should be Bad request, was: %d", w.Code)
 	}
 	if w.Body.String() == "{\"parsed\":\"bar\"}\n" {
 		t.Errorf("Response should not be {\"parsed\":\"bar\"}, was: %s", w.Body.String())
