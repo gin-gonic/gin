@@ -362,7 +362,7 @@ func (c *Context) Redirect(code int, location string) {
 	if code >= 300 && code <= 308 {
 		c.Render(code, render.Redirect, location)
 	} else {
-		panic(fmt.Sprintf("Cannot send a redirect with status code %d", code))
+		log.Panicf("Cannot send a redirect with status code %d", code)
 	}
 }
 

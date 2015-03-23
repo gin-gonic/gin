@@ -76,7 +76,7 @@ func TestBasicAuth401WithCustomRealm(t *testing.T) {
 	r.ServeHTTP(w, req)
 
 	if w.Code != 401 {
-		t.Errorf("Response code should be Not autorized, was: %s", w.Code)
+		t.Errorf("Response code should be Not autorized, was: %d", w.Code)
 	}
 
 	if w.HeaderMap.Get("WWW-Authenticate") != "Basic realm=\"My Custom Realm\"" {

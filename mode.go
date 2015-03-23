@@ -51,13 +51,3 @@ func SetMode(value string) {
 func Mode() string {
 	return mode_name
 }
-
-func IsDebugging() bool {
-	return gin_mode == debugCode
-}
-
-func debugPrint(format string, values ...interface{}) {
-	if IsDebugging() {
-		log.Printf("[GIN-debug] "+format, values...)
-	}
-}

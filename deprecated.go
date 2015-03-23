@@ -5,8 +5,9 @@
 package gin
 
 import (
-	"github.com/gin-gonic/gin/binding"
 	"net/http"
+
+	"github.com/gin-gonic/gin/binding"
 )
 
 // DEPRECATED, use Bind() instead.

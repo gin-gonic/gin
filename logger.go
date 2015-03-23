@@ -5,9 +5,10 @@
 package gin
 
 import (
-	"github.com/mattn/go-colorable"
 	"log"
 	"time"
+
+	"github.com/mattn/go-colorable"
 )
 
 var (
