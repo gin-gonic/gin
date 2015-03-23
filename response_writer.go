@@ -6,14 +6,14 @@ package gin
 
 import (
 	"bufio"
-	"errors"
 	"log"
 	"net"
 	"net/http"
 )
 
 const (
-	NoWritten = -1
+	NoWritten     = -1
+	DefaultStatus = 200
 )
 
 type (
@@ -31,15 +31,15 @@ type (
 
 	responseWriter struct {
 		http.ResponseWriter
-		status int
 		size   int
+		status int
 	}
 )
 
 func (w *responseWriter) reset(writer http.ResponseWriter) {
 	w.ResponseWriter = writer
-	w.status = 200
 	w.size = NoWritten
+	w.status = DefaultStatus
 }
 
 func (w *responseWriter) WriteHeader(code int) {
@@ -90,8 +90,5 @@ func (w *responseWriter) CloseNotify() <-chan bool {
 
 // Implements the http.Flush interface
 func (w *responseWriter) Flush() {
-	flusher, ok := w.ResponseWriter.(http.Flusher)
-	if ok {
-		flusher.Flush()
-	}
+	w.ResponseWriter.(http.Flusher).Flush()
 }
