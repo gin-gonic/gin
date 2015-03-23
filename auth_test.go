@@ -27,7 +27,7 @@ func TestBasicAuthSucceed(t *testing.T) {
 	r.ServeHTTP(w, req)
 
 	if w.Code != 200 {
-		t.Errorf("Response code should be Ok, was: %s", w.Code)
+		t.Errorf("Response code should be Ok, was: %d", w.Code)
 	}
 	bodyAsString := w.Body.String()
 
@@ -52,7 +52,7 @@ func TestBasicAuth401(t *testing.T) {
 	r.ServeHTTP(w, req)
 
 	if w.Code != 401 {
-		t.Errorf("Response code should be Not autorized, was: %s", w.Code)
+		t.Errorf("Response code should be Not autorized, was: %d", w.Code)
 	}
 
 	if w.HeaderMap.Get("WWW-Authenticate") != "Basic realm=\"Authorization Required\"" {
