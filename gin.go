@@ -6,7 +6,6 @@ package gin
 
 import (
 	"html/template"
-	"math"
 	"net/http"
 	"sync"
 
@@ -15,7 +14,6 @@ import (
 )
 
 const (
-	AbortIndex            = math.MaxInt8 / 2
 	MIMEJSON              = "application/json"
 	MIMEHTML              = "text/html"
 	MIMEXML               = "application/xml"
@@ -31,14 +29,15 @@ type (
 	// Represents the web framework, it wraps the blazing fast httprouter multiplexer and a list of global middlewares.
 	Engine struct {
 		*RouterGroup
-		HTMLRender         render.Render
-		Default404Body     []byte
-		Default405Body     []byte
-		pool               sync.Pool
-		allNoRouteNoMethod []HandlerFunc
-		noRoute            []HandlerFunc
-		noMethod           []HandlerFunc
-		router             *httprouter.Router
+		HTMLRender     render.Render
+		Default404Body []byte
+		Default405Body []byte
+		pool           sync.Pool
+		allNoRoute     []HandlerFunc
+		allNoMethod    []HandlerFunc
+		noRoute        []HandlerFunc
+		noMethod       []HandlerFunc
+		router         *httprouter.Router
 	}
 )
 
@@ -115,15 +114,15 @@ func (engine *Engine) Use(middlewares ...HandlerFunc) {
 }
 
 func (engine *Engine) rebuild404Handlers() {
-	engine.allNoRouteNoMethod = engine.combineHandlers(engine.noRoute)
+	engine.allNoRoute = engine.combineHandlers(engine.noRoute)
 }
 
 func (engine *Engine) rebuild405Handlers() {
-	engine.allNoRouteNoMethod = engine.combineHandlers(engine.noMethod)
+	engine.allNoMethod = engine.combineHandlers(engine.noMethod)
 }
 
 func (engine *Engine) handle404(w http.ResponseWriter, req *http.Request) {
-	c := engine.createContext(w, req, nil, engine.allNoRouteNoMethod)
+	c := engine.createContext(w, req, nil, engine.allNoRoute)
 	// set 404 by default, useful for logging
 	c.Writer.WriteHeader(404)
 	c.Next()
@@ -138,7 +137,7 @@ func (engine *Engine) handle404(w http.ResponseWriter, req *http.Request) {
 }
 
 func (engine *Engine) handle405(w http.ResponseWriter, req *http.Request) {
-	c := engine.createContext(w, req, nil, engine.allNoRouteNoMethod)
+	c := engine.createContext(w, req, nil, engine.allNoMethod)
 	// set 405 by default, useful for logging
 	c.Writer.WriteHeader(405)
 	c.Next()
