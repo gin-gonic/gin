@@ -56,9 +56,7 @@ func New() *Engine {
 	engine.router.NotFound = engine.handle404
 	engine.router.MethodNotAllowed = engine.handle405
 	engine.pool.New = func() interface{} {
-		c := &Context{Engine: engine}
-		c.Writer = &c.writermem
-		return c
+		return engine.allocateContext()
 	}
 	return engine
 }
@@ -68,6 +66,12 @@ func Default() *Engine {
 	engine := New()
 	engine.Use(Recovery(), Logger())
 	return engine
+}
+
+func (engine *Engine) allocateContext() (c *Context) {
+	c = &Context{Engine: engine}
+	c.Writer = &c.writermem
+	return
 }
 
 func (engine *Engine) LoadHTMLGlob(pattern string) {

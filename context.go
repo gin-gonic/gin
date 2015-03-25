@@ -79,19 +79,23 @@ type Context struct {
 
 func (engine *Engine) createContext(w http.ResponseWriter, req *http.Request, params httprouter.Params, handlers []HandlerFunc) *Context {
 	c := engine.pool.Get().(*Context)
+	c.reset()
 	c.writermem.reset(w)
 	c.Request = req
 	c.Params = params
 	c.handlers = handlers
-	c.Keys = nil
-	c.index = -1
-	c.accepted = nil
-	c.Errors = c.Errors[0:0]
 	return c
 }
 
 func (engine *Engine) reuseContext(c *Context) {
 	engine.pool.Put(c)
+}
+
+func (c *Context) reset() {
+	c.Keys = nil
+	c.index = -1
+	c.accepted = nil
+	c.Errors = c.Errors[0:0]
 }
 
 func (c *Context) Copy() *Context {
