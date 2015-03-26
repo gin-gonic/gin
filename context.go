@@ -5,9 +5,7 @@
 package gin
 
 import (
-	"bytes"
 	"errors"
-	"fmt"
 	"log"
 	"net"
 	"math"
@@ -19,45 +17,6 @@ import (
 	"github.com/julienschmidt/httprouter"
 )
 
-const (
-	ErrorTypeInternal = 1 << iota
-	ErrorTypeExternal = 1 << iota
-	ErrorTypeAll      = 0xffffffff
-)
-
-// Used internally to collect errors that occurred during an http request.
-type errorMsg struct {
-	Err  string      `json:"error"`
-	Type uint32      `json:"-"`
-	Meta interface{} `json:"meta"`
-}
-
-type errorMsgs []errorMsg
-
-func (a errorMsgs) ByType(typ uint32) errorMsgs {
-	if len(a) == 0 {
-		return a
-	}
-	result := make(errorMsgs, 0, len(a))
-	for _, msg := range a {
-		if msg.Type&typ > 0 {
-			result = append(result, msg)
-		}
-	}
-	return result
-}
-
-func (a errorMsgs) String() string {
-	if len(a) == 0 {
-		return ""
-	}
-	var buffer bytes.Buffer
-	for i, msg := range a {
-		text := fmt.Sprintf("Error #%02d: %s \n     Meta: %v\n", (i + 1), msg.Err, msg.Meta)
-		buffer.WriteString(text)
-	}
-	return buffer.String()
-}
 const AbortIndex = math.MaxInt8 / 2
 
 // Context is the most important part of gin. It allows us to pass variables between middleware,
