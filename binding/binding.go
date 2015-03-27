@@ -84,6 +84,17 @@ func mapForm(ptr interface{}, form map[string][]string) error {
 	formStruct := reflect.ValueOf(ptr).Elem()
 	for i := 0; i < typ.NumField(); i++ {
 		typeField := typ.Field(i)
+
+		// support for embeded fields
+		valueField := formStruct.Field(i)
+		if valueField.Kind() == reflect.Struct {
+			err := mapForm(valueField.Addr().Interface(), form)
+			if err != nil {
+				return err
+			}
+			continue
+		}
+
 		if inputFieldName := typeField.Tag.Get("form"); inputFieldName != "" {
 			structField := formStruct.Field(i)
 			if !structField.CanSet() {
