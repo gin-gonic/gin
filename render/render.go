@@ -56,7 +56,7 @@ func (_ jsonRender) Render(w http.ResponseWriter, code int, data ...interface{})
 
 func (_ indentedJSON) Render(w http.ResponseWriter, code int, data ...interface{}) error {
 	WriteHeader(w, code, "application/json")
-	jsonData, err := json.MarshalIndent(data, "", "    ")
+	jsonData, err := json.MarshalIndent(data[0], "", "    ")
 	if err != nil {
 		return err
 	}
