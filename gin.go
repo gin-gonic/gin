@@ -9,19 +9,11 @@ import (
 	"net/http"
 	"sync"
 
+	"github.com/gin-gonic/gin/binding"
 	"github.com/gin-gonic/gin/render"
 	"github.com/julienschmidt/httprouter"
 )
 
-const (
-	MIMEJSON              = "application/json"
-	MIMEHTML              = "text/html"
-	MIMEXML               = "application/xml"
-	MIMEXML2              = "text/xml"
-	MIMEPlain             = "text/plain"
-	MIMEPOSTForm          = "application/x-www-form-urlencoded"
-	MIMEMultipartPOSTForm = "multipart/form-data"
-)
 
 type (
 	HandlerFunc func(*Context)
@@ -147,7 +139,7 @@ func (engine *Engine) handle404(w http.ResponseWriter, req *http.Request) {
 	c.Next()
 	if !c.Writer.Written() {
 		if c.Writer.Status() == 404 {
-			c.Data(-1, MIMEPlain, engine.Default404Body)
+			c.Data(-1, binding.MIMEPlain, engine.Default404Body)
 		} else {
 			c.Writer.WriteHeaderNow()
 		}
@@ -162,7 +154,7 @@ func (engine *Engine) handle405(w http.ResponseWriter, req *http.Request) {
 	c.Next()
 	if !c.Writer.Written() {
 		if c.Writer.Status() == 405 {
-			c.Data(-1, MIMEPlain, engine.Default405Body)
+			c.Data(-1, binding.MIMEPlain, engine.Default405Body)
 		} else {
 			c.Writer.WriteHeaderNow()
 		}

@@ -179,21 +179,7 @@ func (c *Context) ContentType() string {
 // else --> returns an error
 // if Parses the request's body as JSON if Content-Type == "application/json"  using JSON or XML  as a JSON input. It decodes the json payload into the struct specified as a pointer.Like ParseBody() but this method also writes a 400 error if the json is not valid.
 func (c *Context) Bind(obj interface{}) bool {
-	var b binding.Binding
-	ctype := filterFlags(c.Request.Header.Get("Content-Type"))
-	switch {
-	case c.Request.Method == "GET" || ctype == MIMEPOSTForm:
-		b = binding.Form
-	case ctype == MIMEMultipartPOSTForm:
-		b = binding.MultipartForm
-	case ctype == MIMEJSON:
-		b = binding.JSON
-	case ctype == MIMEXML || ctype == MIMEXML2:
-		b = binding.XML
-	default:
-		c.Fail(400, errors.New("unknown content-type: "+ctype))
-		return false
-	}
+	b := binding.Default(c.Request.Method, c.ContentType())
 	return c.BindWith(obj, b)
 }
 
@@ -283,18 +269,18 @@ type Negotiate struct {
 
 func (c *Context) Negotiate(code int, config Negotiate) {
 	switch c.NegotiateFormat(config.Offered...) {
-	case MIMEJSON:
+	case binding.MIMEJSON:
 		data := chooseData(config.JSONData, config.Data)
 		c.JSON(code, data)
 
-	case MIMEHTML:
-		data := chooseData(config.HTMLData, config.Data)
+	case binding.MIMEHTML:
 		if len(config.HTMLPath) == 0 {
 			log.Panic("negotiate config is wrong. html path is needed")
 		}
+		data := chooseData(config.HTMLData, config.Data)
 		c.HTML(code, config.HTMLPath, data)
 
-	case MIMEXML:
+	case binding.MIMEXML:
 		data := chooseData(config.XMLData, config.Data)
 		c.XML(code, data)
 

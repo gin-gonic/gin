@@ -13,6 +13,16 @@ import (
 	"github.com/gin-gonic/gin/binding"
 )
 
+const (
+	MIMEJSON              = binding.MIMEJSON
+	MIMEHTML              = binding.MIMEHTML
+	MIMEXML               = binding.MIMEXML
+	MIMEXML2              = binding.MIMEXML2
+	MIMEPlain             = binding.MIMEPlain
+	MIMEPOSTForm          = binding.MIMEPOSTForm
+	MIMEMultipartPOSTForm = binding.MIMEMultipartPOSTForm
+)
+
 // DEPRECATED, use Bind() instead.
 // Like ParseBody() but this method also writes a 400 error if the json is not valid.
 func (c *Context) EnsureBody(item interface{}) bool {
