@@ -7,8 +7,6 @@ package gin
 import (
 	"net/http"
 	"path"
-
-	"github.com/julienschmidt/httprouter"
 )
 
 // Used internally to configure router, a RouterGroup is associated with a prefix
@@ -48,13 +46,7 @@ func (group *RouterGroup) Handle(httpMethod, relativePath string, handlers []Han
 	absolutePath := group.calculateAbsolutePath(relativePath)
 	handlers = group.combineHandlers(handlers)
 	debugRoute(httpMethod, absolutePath, handlers)
-
-	group.engine.router.Handle(httpMethod, absolutePath, func(w http.ResponseWriter, req *http.Request, params httprouter.Params) {
-		context := group.engine.createContext(w, req, params, handlers)
-		context.Next()
-		context.Writer.WriteHeaderNow()
-		group.engine.reuseContext(context)
-	})
+	group.engine.handle(httpMethod, absolutePath, handlers)
 }
 
 // POST is a shortcut for router.Handle("POST", path, handle)

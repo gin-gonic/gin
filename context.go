@@ -13,7 +13,6 @@ import (
 
 	"github.com/gin-gonic/gin/binding"
 	"github.com/gin-gonic/gin/render"
-	"github.com/julienschmidt/httprouter"
 )
 
 const AbortIndex = math.MaxInt8 / 2
@@ -26,7 +25,7 @@ type Context struct {
 	Request   *http.Request
 	Writer    ResponseWriter
 
-	Params   httprouter.Params
+	Params   Params
 	Input    inputHolder
 	handlers []HandlerFunc
 	index    int8
