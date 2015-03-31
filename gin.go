@@ -229,6 +229,7 @@ func (engine *Engine) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 			c.handlers = handlers
 			c.Params = params
 			c.Next()
+			c.Writer.WriteHeaderNow()
 			engine.reuseContext(c)
 			return
 		}
