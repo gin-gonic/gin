@@ -47,8 +47,8 @@ func TestContextSetGet(t *testing.T) {
 		// Set
 		c.Set("foo", "bar")
 
-		v, err := c.Get("foo")
-		if err != nil {
+		v, ok := c.Get("foo")
+		if !ok {
 			t.Errorf("Error on exist key")
 		}
 		if v != "bar" {
