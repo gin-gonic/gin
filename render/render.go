@@ -19,6 +19,8 @@ type (
 
 	jsonRender struct{}
 
+	indentedJSON struct{}
+
 	xmlRender struct{}
 
 	plainTextRender struct{}
@@ -33,11 +35,12 @@ type (
 )
 
 var (
-	JSON      = jsonRender{}
-	XML       = xmlRender{}
-	HTMLPlain = htmlPlainRender{}
-	Plain     = plainTextRender{}
-	Redirect  = redirectRender{}
+	JSON         = jsonRender{}
+	IndentedJSON = indentedJSON{}
+	XML          = xmlRender{}
+	HTMLPlain    = htmlPlainRender{}
+	Plain        = plainTextRender{}
+	Redirect     = redirectRender{}
 )
 
 func (_ redirectRender) Render(w http.ResponseWriter, code int, data ...interface{}) error {
@@ -49,6 +52,16 @@ func (_ redirectRender) Render(w http.ResponseWriter, code int, data ...interfac
 func (_ jsonRender) Render(w http.ResponseWriter, code int, data ...interface{}) error {
 	WriteHeader(w, code, "application/json")
 	return json.NewEncoder(w).Encode(data[0])
+}
+
+func (_ indentedJSON) Render(w http.ResponseWriter, code int, data ...interface{}) error {
+	WriteHeader(w, code, "application/json")
+	jsonData, err := json.MarshalIndent(data, "", "    ")
+	if err != nil {
+		return err
+	}
+	_, err = w.Write(jsonData)
+	return err
 }
 
 func (_ xmlRender) Render(w http.ResponseWriter, code int, data ...interface{}) error {
