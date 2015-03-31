@@ -68,10 +68,25 @@ func Default() *Engine {
 	return engine
 }
 
-func (engine *Engine) allocateContext() (c *Context) {
-	c = &Context{Engine: engine}
-	c.Writer = &c.writermem
+func (engine *Engine) allocateContext() (context *Context) {
+	context = &Context{Engine: engine}
+	context.Writer = &context.writermem
+	context.Input = inputHolder{context: context}
 	return
+}
+
+func (engine *Engine) createContext(w http.ResponseWriter, req *http.Request, params httprouter.Params, handlers []HandlerFunc) *Context {
+	c := engine.pool.Get().(*Context)
+	c.reset()
+	c.writermem.reset(w)
+	c.Request = req
+	c.Params = params
+	c.handlers = handlers
+	return c
+}
+
+func (engine *Engine) reuseContext(c *Context) {
+	engine.pool.Put(c)
 }
 
 func (engine *Engine) LoadHTMLGlob(pattern string) {

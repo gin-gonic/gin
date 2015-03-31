@@ -10,16 +10,8 @@ import (
 )
 
 type HTMLDebugRender struct {
-	files []string
-	globs []string
-}
-
-func (r *HTMLDebugRender) AddGlob(pattern string) {
-	r.globs = append(r.globs, pattern)
-}
-
-func (r *HTMLDebugRender) AddFiles(files ...string) {
-	r.files = append(r.files, files...)
+	Files []string
+	Glob  string
 }
 
 func (r *HTMLDebugRender) Render(w http.ResponseWriter, code int, data ...interface{}) error {
@@ -36,13 +28,13 @@ func (r *HTMLDebugRender) Render(w http.ResponseWriter, code int, data ...interf
 
 func (r *HTMLDebugRender) newTemplate() (*template.Template, error) {
 	t := template.New("")
-	if len(r.files) > 0 {
-		if _, err := t.ParseFiles(r.files...); err != nil {
+	if len(r.Files) > 0 {
+		if _, err := t.ParseFiles(r.Files...); err != nil {
 			return nil, err
 		}
 	}
-	for _, glob := range r.globs {
-		if _, err := t.ParseGlob(glob); err != nil {
+	if len(r.Glob) > 0 {
+		if _, err := t.ParseGlob(r.Glob); err != nil {
 			return nil, err
 		}
 	}
