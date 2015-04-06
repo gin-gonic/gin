@@ -111,11 +111,11 @@ func (group *RouterGroup) UNLINK(relativePath string, handlers ...HandlerFunc) {
 func (group *RouterGroup) Static(relativePath, root string) {
 	absolutePath := group.calculateAbsolutePath(relativePath)
 	handler := group.createStaticHandler(absolutePath, root)
-	absolutePath = path.Join(absolutePath, "/*filepath")
+	relativePath = path.Join(relativePath, "/*filepath")
 
 	// Register GET and HEAD handlers
-	group.GET(absolutePath, handler)
-	group.HEAD(absolutePath, handler)
+	group.GET(relativePath, handler)
+	group.HEAD(relativePath, handler)
 }
 
 func (group *RouterGroup) createStaticHandler(absolutePath, root string) func(*Context) {
