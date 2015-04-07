@@ -27,9 +27,9 @@ type Params []Param
 // ByName returns the value of the first Param which key matches the given name.
 // If no matching Param is found, an empty string is returned.
 func (ps Params) ByName(name string) string {
-	for i := range ps {
-		if ps[i].Key == name {
-			return ps[i].Value
+	for _, entry := range ps {
+		if entry.Key == name {
+			return entry.Value
 		}
 	}
 	return ""
@@ -43,7 +43,7 @@ type (
 
 	// Represents the web framework, it wraps the blazing fast httprouter multiplexer and a list of global middlewares.
 	Engine struct {
-		*RouterGroup
+		RouterGroup
 		HTMLRender  render.Render
 		pool        sync.Pool
 		allNoRoute  []HandlerFunc
@@ -84,16 +84,16 @@ type (
 // The most basic configuration
 func New() *Engine {
 	engine := &Engine{
+		RouterGroup: RouterGroup{
+			Handlers:     nil,
+			absolutePath: "/",
+		},
 		RedirectTrailingSlash:  true,
 		RedirectFixedPath:      true,
 		HandleMethodNotAllowed: true,
 		trees: make(map[string]*node),
 	}
-	engine.RouterGroup = &RouterGroup{
-		Handlers:     nil,
-		absolutePath: "/",
-		engine:       engine,
-	}
+	engine.RouterGroup.engine = engine
 	engine.pool.New = func() interface{} {
 		return engine.allocateContext()
 	}
@@ -109,21 +109,8 @@ func Default() *Engine {
 
 func (engine *Engine) allocateContext() (context *Context) {
 	context = &Context{Engine: engine}
-	context.Writer = &context.writermem
 	context.Input = inputHolder{context: context}
 	return
-}
-
-func (engine *Engine) createContext(w http.ResponseWriter, req *http.Request) *Context {
-	c := engine.pool.Get().(*Context)
-	c.reset()
-	c.writermem.reset(w)
-	c.Request = req
-	return c
-}
-
-func (engine *Engine) reuseContext(c *Context) {
-	engine.pool.Put(c)
 }
 
 func (engine *Engine) LoadHTMLGlob(pattern string) {
@@ -177,67 +164,16 @@ func (engine *Engine) rebuild405Handlers() {
 	engine.allNoMethod = engine.combineHandlers(engine.noMethod)
 }
 
-func (engine *Engine) handle404(c *Context) {
-	// set 404 by default, useful for logging
-	c.handlers = engine.allNoRoute
-	c.Writer.WriteHeader(404)
-	c.Next()
-	if !c.Writer.Written() {
-		if c.Writer.Status() == 404 {
-			c.Data(-1, binding.MIMEPlain, default404Body)
-		} else {
-			c.Writer.WriteHeaderNow()
-		}
-	}
-}
-
-func (engine *Engine) handle405(c *Context) {
-	// set 405 by default, useful for logging
-	c.handlers = engine.allNoMethod
-	c.Writer.WriteHeader(405)
-	c.Next()
-	if !c.Writer.Written() {
-		if c.Writer.Status() == 405 {
-			c.Data(-1, binding.MIMEPlain, default405Body)
-		} else {
-			c.Writer.WriteHeaderNow()
-		}
-	}
-}
-
 func (engine *Engine) handle(method, path string, handlers []HandlerFunc) {
 	if path[0] != '/' {
 		panic("path must begin with '/'")
 	}
-
-	//methodCode := codeForHTTPMethod(method)
 	root := engine.trees[method]
 	if root == nil {
 		root = new(node)
 		engine.trees[method] = root
 	}
 	root.addRoute(path, handlers)
-}
-
-// ServeHTTP makes the router implement the http.Handler interface.
-func (engine *Engine) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	c := engine.createContext(w, req)
-	//methodCode := codeForHTTPMethod(req.Method)
-	if root := engine.trees[req.Method]; root != nil {
-		path := req.URL.Path
-		if handlers, params, _ := root.getValue(path, c.Params); handlers != nil {
-			c.handlers = handlers
-			c.Params = params
-			c.Next()
-			c.Writer.WriteHeaderNow()
-			engine.reuseContext(c)
-			return
-		}
-	}
-
-	// Handle 404
-	engine.handle404(c)
-	engine.reuseContext(c)
 }
 
 func (engine *Engine) Run(addr string) error {
@@ -248,4 +184,99 @@ func (engine *Engine) Run(addr string) error {
 func (engine *Engine) RunTLS(addr string, cert string, key string) error {
 	debugPrint("Listening and serving HTTPS on %s\n", addr)
 	return http.ListenAndServeTLS(addr, cert, key, engine)
+}
+
+// ServeHTTP makes the router implement the http.Handler interface.
+func (engine *Engine) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	context := engine.pool.Get().(*Context)
+	context.writermem.reset(w)
+	context.Request = req
+	context.reset()
+
+	engine.serveHTTPRequest(context)
+
+	engine.pool.Put(context)
+}
+
+func (engine *Engine) serveHTTPRequest(context *Context) {
+	httpMethod := context.Request.Method
+	path := context.Request.URL.Path
+
+	// Find root of the tree for the given HTTP method
+	if root := engine.trees[httpMethod]; root != nil {
+		// Find route in tree
+		handlers, params, tsr := root.getValue(path, context.Params)
+		// Dispatch if we found any handlers
+		if handlers != nil {
+			context.handlers = handlers
+			context.Params = params
+			context.Next()
+			context.writermem.WriteHeaderNow()
+			return
+
+		} else if httpMethod != "CONNECT" && path != "/" {
+			if engine.serveAutoRedirect(context, root, tsr) {
+				return
+			}
+		}
+	}
+
+	if engine.HandleMethodNotAllowed {
+		for method, root := range engine.trees {
+			if method != httpMethod {
+				if handlers, _, _ := root.getValue(path, nil); handlers != nil {
+					context.handlers = engine.allNoMethod
+					serveError(context, 405, default405Body)
+					return
+				}
+			}
+		}
+	}
+	context.handlers = engine.allNoMethod
+	serveError(context, 404, default404Body)
+}
+
+func (engine *Engine) serveAutoRedirect(c *Context, root *node, tsr bool) bool {
+	req := c.Request
+	path := req.URL.Path
+	code := 301 // Permanent redirect, request with GET method
+	if req.Method != "GET" {
+		code = 307
+	}
+
+	if tsr && engine.RedirectTrailingSlash {
+		if len(path) > 1 && path[len(path)-1] == '/' {
+			req.URL.Path = path[:len(path)-1]
+		} else {
+			req.URL.Path = path + "/"
+		}
+		http.Redirect(c.Writer, req, req.URL.String(), code)
+		return true
+	}
+
+	// Try to fix the request path
+	if engine.RedirectFixedPath {
+		fixedPath, found := root.findCaseInsensitivePath(
+			CleanPath(path),
+			engine.RedirectTrailingSlash,
+		)
+		if found {
+			req.URL.Path = string(fixedPath)
+			http.Redirect(c.Writer, req, req.URL.String(), code)
+			return true
+		}
+	}
+	return false
+}
+
+func serveError(c *Context, code int, defaultMessage []byte) {
+	c.writermem.status = code
+	c.Next()
+	if !c.Writer.Written() {
+		if c.Writer.Status() == code {
+			c.Data(-1, binding.MIMEPlain, defaultMessage)
+		} else {
+			c.Writer.WriteHeaderNow()
+		}
+	}
 }

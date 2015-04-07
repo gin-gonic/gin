@@ -20,7 +20,6 @@ const AbortIndex = math.MaxInt8 / 2
 // Context is the most important part of gin. It allows us to pass variables between middleware,
 // manage the flow, validate the JSON of a request and render a JSON response for example.
 type Context struct {
-	Engine    *Engine
 	writermem responseWriter
 	Request   *http.Request
 	Writer    ResponseWriter
@@ -30,6 +29,7 @@ type Context struct {
 	handlers []HandlerFunc
 	index    int8
 
+	Engine   *Engine
 	Keys     map[string]interface{}
 	Errors   errorMsgs
 	accepted []string
@@ -40,10 +40,13 @@ type Context struct {
 /************************************/
 
 func (c *Context) reset() {
-	c.Keys = nil
+	c.Writer = &c.writermem
+	c.Params = c.Params[0:0]
+	c.handlers = nil
 	c.index = -1
-	c.accepted = nil
+	c.Keys = nil
 	c.Errors = c.Errors[0:0]
+	c.accepted = nil
 }
 
 func (c *Context) Copy() *Context {
@@ -114,9 +117,8 @@ func (c *Context) LastError() error {
 	nuErrors := len(c.Errors)
 	if nuErrors > 0 {
 		return errors.New(c.Errors[nuErrors-1].Err)
-	} else {
-		return nil
 	}
+	return nil
 }
 
 /************************************/

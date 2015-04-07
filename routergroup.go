@@ -125,13 +125,5 @@ func (group *RouterGroup) combineHandlers(handlers []HandlerFunc) []HandlerFunc 
 }
 
 func (group *RouterGroup) calculateAbsolutePath(relativePath string) string {
-	if len(relativePath) == 0 {
-		return group.absolutePath
-	}
-	absolutePath := path.Join(group.absolutePath, relativePath)
-	appendSlash := lastChar(relativePath) == '/' && lastChar(absolutePath) != '/'
-	if appendSlash {
-		return absolutePath + "/"
-	}
-	return absolutePath
+	return joinPaths(group.absolutePath, relativePath)
 }

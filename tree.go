@@ -312,6 +312,7 @@ func (n *node) insertChild(numParams uint8, path string, handlers []HandlerFunc)
 // made if a handle exists with an extra (without the) trailing slash for the
 // given path.
 func (n *node) getValue(path string, po Params) (handlers []HandlerFunc, p Params, tsr bool) {
+	p = po
 walk: // Outer loop for walking the tree
 	for {
 		if len(path) > len(n.path) {
@@ -334,7 +335,6 @@ walk: // Outer loop for walking the tree
 					// trailing slash if a leaf exists for that path.
 					tsr = (path == "/" && n.handlers != nil)
 					return
-
 				}
 
 				// handle wildcard child
@@ -348,12 +348,8 @@ walk: // Outer loop for walking the tree
 					}
 
 					// save param value
-					if p == nil {
-						if cap(po) < int(n.maxParams) {
-							p = make(Params, 0, n.maxParams)
-						} else {
-							p = po[0:0]
-						}
+					if cap(p) < int(n.maxParams) {
+						p = make(Params, 0, n.maxParams)
 					}
 					i := len(p)
 					p = p[:i+1] // expand slice within preallocated capacity
@@ -386,12 +382,8 @@ walk: // Outer loop for walking the tree
 
 				case catchAll:
 					// save param value
-					if p == nil {
-						if cap(po) < int(n.maxParams) {
-							p = make(Params, 0, n.maxParams)
-						} else {
-							p = po[0:0]
-						}
+					if cap(p) < int(n.maxParams) {
+						p = make(Params, 0, n.maxParams)
 					}
 					i := len(p)
 					p = p[:i+1] // expand slice within preallocated capacity

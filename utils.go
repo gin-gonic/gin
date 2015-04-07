@@ -7,21 +7,10 @@ package gin
 import (
 	"encoding/xml"
 	"log"
+	"path"
 	"reflect"
 	"runtime"
 	"strings"
-)
-
-const (
-	methodGET     = iota
-	methodPOST    = iota
-	methodPUT     = iota
-	methodAHEAD   = iota
-	methodOPTIONS = iota
-	methodDELETE  = iota
-	methodCONNECT = iota
-	methodTRACE   = iota
-	methodUnknown = iota
 )
 
 type H map[string]interface{}
@@ -93,25 +82,14 @@ func nameOfFunction(f interface{}) string {
 	return runtime.FuncForPC(reflect.ValueOf(f).Pointer()).Name()
 }
 
-func codeForHTTPMethod(method string) int {
-	switch method {
-	case "GET":
-		return methodGET
-	case "POST":
-		return methodPOST
-	case "PUT":
-		return methodPUT
-	case "AHEAD":
-		return methodAHEAD
-	case "OPTIONS":
-		return methodOPTIONS
-	case "DELETE":
-		return methodDELETE
-	case "TRACE":
-		return methodTRACE
-	case "CONNECT":
-		return methodCONNECT
-	default:
-		return methodUnknown
+func joinPaths(absolutePath, relativePath string) string {
+	if len(relativePath) == 0 {
+		return absolutePath
 	}
+	absolutePath = path.Join(absolutePath, relativePath)
+	appendSlash := lastChar(relativePath) == '/' && lastChar(absolutePath) != '/'
+	if appendSlash {
+		return absolutePath + "/"
+	}
+	return absolutePath
 }
