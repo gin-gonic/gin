@@ -17,9 +17,11 @@ func (_ xmlBinding) Name() string {
 
 func (_ xmlBinding) Bind(req *http.Request, obj interface{}) error {
 	decoder := xml.NewDecoder(req.Body)
-	if err := decoder.Decode(obj); err == nil {
-		return Validate(obj)
-	} else {
+	if err := decoder.Decode(obj); err != nil {
 		return err
 	}
+	if err := _validator.ValidateStruct(obj); err != nil {
+		return error(err)
+	}
+	return nil
 }

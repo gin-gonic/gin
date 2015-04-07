@@ -115,8 +115,7 @@ func (engine *Engine) allocateContext() (context *Context) {
 
 func (engine *Engine) LoadHTMLGlob(pattern string) {
 	if IsDebugging() {
-		r := &render.HTMLDebugRender{Glob: pattern}
-		engine.HTMLRender = r
+		engine.HTMLRender = &render.HTMLDebugRender{Glob: pattern}
 	} else {
 		templ := template.Must(template.ParseGlob(pattern))
 		engine.SetHTMLTemplate(templ)
@@ -125,8 +124,7 @@ func (engine *Engine) LoadHTMLGlob(pattern string) {
 
 func (engine *Engine) LoadHTMLFiles(files ...string) {
 	if IsDebugging() {
-		r := &render.HTMLDebugRender{Files: files}
-		engine.HTMLRender = r
+		engine.HTMLRender = &render.HTMLDebugRender{Files: files}
 	} else {
 		templ := template.Must(template.ParseFiles(files...))
 		engine.SetHTMLTemplate(templ)

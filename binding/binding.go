@@ -4,7 +4,11 @@
 
 package binding
 
-import "net/http"
+import (
+	"net/http"
+
+	"gopkg.in/joeybloggs/go-validate-yourself.v4"
+)
 
 const (
 	MIMEJSON              = "application/json"
@@ -20,6 +24,8 @@ type Binding interface {
 	Name() string
 	Bind(*http.Request, interface{}) error
 }
+
+var _validator = validator.NewValidator("binding", validator.BakedInValidators)
 
 var (
 	JSON     = jsonBinding{}

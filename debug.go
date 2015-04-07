@@ -7,7 +7,7 @@ package gin
 import "log"
 
 func IsDebugging() bool {
-	return gin_mode == debugCode
+	return ginMode == debugCode
 }
 
 func debugRoute(httpMethod, absolutePath string, handlers []HandlerFunc) {
