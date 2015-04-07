@@ -21,5 +21,8 @@ func (_ jsonBinding) Bind(req *http.Request, obj interface{}) error {
 	if err := decoder.Decode(obj); err != nil {
 		return err
 	}
-	return _validator.ValidateStruct(obj)
+	if err := _validator.ValidateStruct(obj); err != nil {
+		return error(err)
+	}
+	return nil
 }
