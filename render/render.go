@@ -44,8 +44,9 @@ var (
 )
 
 func (_ redirectRender) Render(w http.ResponseWriter, code int, data ...interface{}) error {
-	w.Header().Set("Location", data[0].(string))
-	w.WriteHeader(code)
+	req := data[0].(*http.Request)
+	location := data[1].(string)
+	http.Redirect(w, req, location, code)
 	return nil
 }
 
