@@ -12,8 +12,8 @@ import (
 )
 
 const (
-	NoWritten     = -1
-	DefaultStatus = 200
+	noWritten     = -1
+	defaultStatus = 200
 )
 
 type (
@@ -38,8 +38,8 @@ type (
 
 func (w *responseWriter) reset(writer http.ResponseWriter) {
 	w.ResponseWriter = writer
-	w.size = NoWritten
-	w.status = DefaultStatus
+	w.size = noWritten
+	w.status = defaultStatus
 }
 
 func (w *responseWriter) WriteHeader(code int) {
@@ -74,7 +74,7 @@ func (w *responseWriter) Size() int {
 }
 
 func (w *responseWriter) Written() bool {
-	return w.size != NoWritten
+	return w.size != noWritten
 }
 
 // Implements the http.Hijacker interface
