@@ -5,10 +5,9 @@
 package gin
 
 import (
-	"log"
+	"fmt"
+	"io"
 	"time"
-
-	"github.com/mattn/go-colorable"
 )
 
 var (
@@ -39,9 +38,10 @@ func ErrorLoggerT(typ uint32) HandlerFunc {
 }
 
 func Logger() HandlerFunc {
-	stdlogger := log.New(colorable.NewColorableStdout(), "", 0)
-	//errlogger := log.New(os.Stderr, "", 0)
+	return LoggerInFile(DefaultLogFile)
+}
 
+func LoggerInFile(out io.Writer) HandlerFunc {
 	return func(c *Context) {
 		// Start timer
 		start := time.Now()
@@ -58,15 +58,16 @@ func Logger() HandlerFunc {
 		statusCode := c.Writer.Status()
 		statusColor := colorForStatus(statusCode)
 		methodColor := colorForMethod(method)
+		comment := c.Errors.String()
 
-		stdlogger.Printf("[GIN] %v |%s %3d %s| %12v | %s |%s  %s %-7s %s\n%s",
+		fmt.Fprintf(out, "[GIN] %v |%s %3d %s| %12v | %s |%s  %s %-7s %s\n%s",
 			end.Format("2006/01/02 - 15:04:05"),
 			statusColor, statusCode, reset,
 			latency,
 			clientIP,
 			methodColor, reset, method,
 			c.Request.URL.Path,
-			c.Errors.String(),
+			comment,
 		)
 	}
 }

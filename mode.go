@@ -7,6 +7,8 @@ package gin
 import (
 	"log"
 	"os"
+
+	"github.com/mattn/go-colorable"
 )
 
 const GIN_MODE = "GIN_MODE"
@@ -22,6 +24,7 @@ const (
 	testCode    = iota
 )
 
+var DefaultLogFile = colorable.NewColorableStdout()
 var ginMode int = debugCode
 var modeName string = DebugMode
 
