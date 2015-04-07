@@ -29,10 +29,11 @@ func ErrorLoggerT(typ uint32) HandlerFunc {
 	return func(c *Context) {
 		c.Next()
 
-		errs := c.Errors.ByType(typ)
-		if len(errs) > 0 {
-			// -1 status code = do not change current one
-			c.JSON(-1, c.Errors)
+		if !c.Writer.Written() {
+			errs := c.Errors.ByType(typ)
+			if len(errs) > 0 {
+				c.JSON(-1, c.Errors)
+			}
 		}
 	}
 }
