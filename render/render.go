@@ -74,7 +74,7 @@ func (_ plainTextRender) Render(w http.ResponseWriter, code int, data ...interfa
 	format := data[0].(string)
 	args := data[1].([]interface{})
 	if len(args) > 0 {
-		_, err = w.Write([]byte(fmt.Sprintf(format, args...)))
+		_, err = fmt.Fprintf(w, format, args...)
 	} else {
 		_, err = w.Write([]byte(format))
 	}
@@ -86,7 +86,7 @@ func (_ htmlPlainRender) Render(w http.ResponseWriter, code int, data ...interfa
 	format := data[0].(string)
 	args := data[1].([]interface{})
 	if len(args) > 0 {
-		_, err = w.Write([]byte(fmt.Sprintf(format, args...)))
+		_, err = fmt.Fprintf(w, format, args...)
 	} else {
 		_, err = w.Write([]byte(format))
 	}
