@@ -34,16 +34,17 @@ func (a authPairs) Less(i, j int) bool { return a[i].Value < a[j].Value }
 // the key is the user name and the value is the password, as well as the name of the Realm
 // (see http://tools.ietf.org/html/rfc2617#section-1.2)
 func BasicAuthForRealm(accounts Accounts, realm string) HandlerFunc {
+	if realm == "" {
+		realm = "Authorization Required"
+	}
+	realm = fmt.Sprintf("Basic realm=\"%s\"", realm)
 	pairs := processAccounts(accounts)
 	return func(c *Context) {
 		// Search user in the slice of allowed credentials
 		user, ok := searchCredential(pairs, c.Request.Header.Get("Authorization"))
 		if !ok {
 			// Credentials doesn't match, we return 401 Unauthorized and abort request.
-			if realm == "" {
-				realm = "Authorization Required"
-			}
-			c.Writer.Header().Set("WWW-Authenticate", fmt.Sprintf("Basic realm=\"%s\"", realm))
+			c.Writer.Header().Set("WWW-Authenticate", realm)
 			c.Fail(401, errors.New("Unauthorized"))
 		} else {
 			// user is allowed, set UserId to key "user" in this context, the userId can be read later using
