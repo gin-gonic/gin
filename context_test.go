@@ -374,39 +374,6 @@ func TestBindingJSONEncoding(t *testing.T) {
 	}
 }
 
-func TestBindingJSONNoContentType(t *testing.T) {
-
-	body := bytes.NewBuffer([]byte("{\"foo\":\"bar\"}"))
-
-	r := New()
-	r.POST("/binding/json", func(c *Context) {
-		var body struct {
-			Foo string `json:"foo"`
-		}
-		if c.Bind(&body) {
-			c.JSON(200, H{"parsed": body.Foo})
-		}
-
-	})
-
-	req, _ := http.NewRequest("POST", "/binding/json", body)
-	w := httptest.NewRecorder()
-
-	r.ServeHTTP(w, req)
-
-	if w.Code != 400 {
-		t.Errorf("Response code should be Bad request, was: %d", w.Code)
-	}
-
-	if w.Body.String() == "{\"parsed\":\"bar\"}\n" {
-		t.Errorf("Response should not be {\"parsed\":\"bar\"}, was: %s", w.Body.String())
-	}
-
-	if w.HeaderMap.Get("Content-Type") == "application/json" {
-		t.Errorf("Content-Type should not be application/json, was %s", w.HeaderMap.Get("Content-Type"))
-	}
-}
-
 func TestBindingJSONMalformed(t *testing.T) {
 
 	body := bytes.NewBuffer([]byte("\"foo\":\"bar\"\n"))
@@ -493,27 +460,5 @@ func TestClientIP(t *testing.T) {
 
 	if clientIP != "clientip:1234" {
 		t.Errorf("ClientIP should not be %s, but clientip:1234", clientIP)
-	}
-}
-
-func TestClientIPWithXForwardedForWithProxy(t *testing.T) {
-	r := New()
-	r.Use(ForwardedFor())
-
-	var clientIP string = ""
-	r.GET("/", func(c *Context) {
-		clientIP = c.ClientIP()
-	})
-
-	body := bytes.NewBuffer([]byte(""))
-	req, _ := http.NewRequest("GET", "/", body)
-	req.RemoteAddr = "172.16.8.3:1234"
-	req.Header.Set("X-Real-Ip", "realip")
-	req.Header.Set("X-Forwarded-For", "1.2.3.4, 10.10.0.4, 192.168.0.43, 172.16.8.4")
-	w := httptest.NewRecorder()
-	r.ServeHTTP(w, req)
-
-	if clientIP != "1.2.3.4:0" {
-		t.Errorf("ClientIP should not be %s, but 1.2.3.4:0", clientIP)
 	}
 }

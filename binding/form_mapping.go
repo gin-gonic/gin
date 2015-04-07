@@ -6,7 +6,6 @@ package binding
 
 import (
 	"errors"
-	"fmt"
 	"log"
 	"reflect"
 	"strconv"
@@ -27,7 +26,6 @@ func mapForm(ptr interface{}, form map[string][]string) error {
 			inputFieldName = typeField.Name
 		}
 		inputValue, exists := form[inputFieldName]
-		fmt.Println("Field: "+inputFieldName+" Value: ", inputValue)
 
 		if !exists {
 			continue
