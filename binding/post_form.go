@@ -19,5 +19,5 @@ func (_ postFormBinding) Bind(req *http.Request, obj interface{}) error {
 	if err := mapForm(obj, req.PostForm); err != nil {
 		return err
 	}
-	return Validate(obj)
+	return _validator.ValidateStruct(obj)
 }
