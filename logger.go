@@ -39,7 +39,7 @@ func ErrorLoggerT(typ uint32) HandlerFunc {
 }
 
 func Logger() HandlerFunc {
-	return LoggerWithFile(DefaultLogFile)
+	return LoggerWithFile(DefaultWriter)
 }
 
 func LoggerWithFile(out io.Writer) HandlerFunc {

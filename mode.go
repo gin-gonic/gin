@@ -24,7 +24,7 @@ const (
 	testCode    = iota
 )
 
-var DefaultLogFile = colorable.NewColorableStdout()
+var DefaultWriter = colorable.NewColorableStdout()
 var ginMode int = debugCode
 var modeName string = DebugMode
 
