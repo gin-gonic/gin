@@ -39,10 +39,10 @@ func ErrorLoggerT(typ uint32) HandlerFunc {
 }
 
 func Logger() HandlerFunc {
-	return LoggerInFile(DefaultLogFile)
+	return LoggerWithFile(DefaultLogFile)
 }
 
-func LoggerInFile(out io.Writer) HandlerFunc {
+func LoggerWithFile(out io.Writer) HandlerFunc {
 	return func(c *Context) {
 		// Start timer
 		start := time.Now()
