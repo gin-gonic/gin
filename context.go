@@ -33,7 +33,7 @@ type Context struct {
 
 	Keys     map[string]interface{}
 	Errors   errorMsgs
-	accepted []string
+	Accepted []string
 }
 
 /************************************/
@@ -43,7 +43,7 @@ type Context struct {
 func (c *Context) reset() {
 	c.Keys = nil
 	c.index = -1
-	c.accepted = nil
+	c.Accepted = nil
 	c.Errors = c.Errors[0:0]
 }
 
@@ -293,24 +293,22 @@ func (c *Context) NegotiateFormat(offered ...string) string {
 	if len(offered) == 0 {
 		log.Panic("you must provide at least one offer")
 	}
-	if c.accepted == nil {
-		c.accepted = parseAccept(c.Request.Header.Get("Accept"))
+	if c.Accepted == nil {
+		c.Accepted = parseAccept(c.Request.Header.Get("Accept"))
 	}
-	if len(c.accepted) == 0 {
+	if len(c.Accepted) == 0 {
 		return offered[0]
-
-	} else {
-		for _, accepted := range c.accepted {
-			for _, offert := range offered {
-				if accepted == offert {
-					return offert
-				}
+	}
+	for _, accepted := range c.Accepted {
+		for _, offert := range offered {
+			if accepted == offert {
+				return offert
 			}
 		}
-		return ""
 	}
+	return ""
 }
 
 func (c *Context) SetAccepted(formats ...string) {
-	c.accepted = formats
+	c.Accepted = formats
 }
