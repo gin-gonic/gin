@@ -46,6 +46,7 @@ func LoggerWithFile(out io.Writer) HandlerFunc {
 	return func(c *Context) {
 		// Start timer
 		start := time.Now()
+		path := c.Request.URL.Path
 
 		// Process request
 		c.Next()
@@ -67,7 +68,7 @@ func LoggerWithFile(out io.Writer) HandlerFunc {
 			latency,
 			clientIP,
 			methodColor, reset, method,
-			c.Request.URL.Path,
+			path,
 			comment,
 		)
 	}
