@@ -13,7 +13,6 @@ import (
 	"testing"
 
 	"github.com/gin-gonic/gin/binding"
-	"github.com/julienschmidt/httprouter"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -33,7 +32,7 @@ func TestContextReset(t *testing.T) {
 
 	c.index = 2
 	c.Writer = &responseWriter{ResponseWriter: httptest.NewRecorder()}
-	c.Params = httprouter.Params{httprouter.Param{}}
+	c.Params = Params{Param{}}
 	c.Error(errors.New("test"), nil)
 	c.Set("foo", "bar")
 	c.reset()

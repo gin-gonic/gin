@@ -11,7 +11,6 @@ import (
 	"net/http/httptest"
 	"os"
 	"path"
-	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -129,15 +128,9 @@ func TestHandleStaticFile(t *testing.T) {
 	w := performRequest(r, "GET", filePath)
 
 	// TEST
-	if w.Code != 200 {
-		t.Errorf("Response code should be 200, was: %d", w.Code)
-	}
-	if w.Body.String() != "Gin Web Framework" {
-		t.Errorf("Response should be test, was: %s", w.Body.String())
-	}
-	if w.HeaderMap.Get("Content-Type") != "text/plain; charset=utf-8" {
-		t.Errorf("Content-Type should be text/plain, was %s", w.HeaderMap.Get("Content-Type"))
-	}
+	assert.Equal(t, w.Code, 200)
+	assert.Equal(t, w.Body.String(), "Gin Web Framework")
+	assert.Equal(t, w.HeaderMap.Get("Content-Type"), "text/plain; charset=utf-8")
 }
 
 // TestHandleStaticDir - ensure the root/sub dir handles properly
@@ -151,18 +144,10 @@ func TestHandleStaticDir(t *testing.T) {
 
 	// TEST
 	bodyAsString := w.Body.String()
-	if w.Code != 200 {
-		t.Errorf("Response code should be 200, was: %d", w.Code)
-	}
-	if len(bodyAsString) == 0 {
-		t.Errorf("Got empty body instead of file tree")
-	}
-	if !strings.Contains(bodyAsString, "gin.go") {
-		t.Errorf("Can't find:`gin.go` in file tree: %s", bodyAsString)
-	}
-	if w.HeaderMap.Get("Content-Type") != "text/html; charset=utf-8" {
-		t.Errorf("Content-Type should be text/plain, was %s", w.HeaderMap.Get("Content-Type"))
-	}
+	assert.Equal(t, w.Code, 200)
+	assert.NotEmpty(t, bodyAsString)
+	assert.Contains(t, bodyAsString, "gin.go")
+	assert.Equal(t, w.HeaderMap.Get("Content-Type"), "text/html; charset=utf-8")
 }
 
 // TestHandleHeadToDir - ensure the root/sub dir handles properly
@@ -264,8 +249,8 @@ func TestAbortHandlersChain(t *testing.T) {
 	w := performRequest(router, "GET", "/")
 
 	// TEST
-	assert.Equal(t, signature, "ACD")
 	assert.Equal(t, w.Code, 409)
+	assert.Equal(t, signature, "ACD")
 }
 
 func TestAbortHandlersChainAndNext(t *testing.T) {
@@ -286,8 +271,8 @@ func TestAbortHandlersChainAndNext(t *testing.T) {
 	w := performRequest(router, "GET", "/")
 
 	// TEST
-	assert.Equal(t, signature, "AB")
 	assert.Equal(t, w.Code, 410)
+	assert.Equal(t, signature, "AB")
 }
 
 // TestContextParamsGet tests that a parameter can be parsed from the URL.
@@ -312,21 +297,21 @@ func TestContextParamsByName(t *testing.T) {
 // as well as Abort
 func TestFailHandlersChain(t *testing.T) {
 	// SETUP
-	var stepsPassed int = 0
-	r := New()
-	r.Use(func(context *Context) {
-		stepsPassed += 1
+	signature := ""
+	router := New()
+	router.Use(func(context *Context) {
+		signature += "A"
 		context.Fail(500, errors.New("foo"))
 	})
-	r.Use(func(context *Context) {
-		stepsPassed += 1
+	router.Use(func(context *Context) {
+		signature += "B"
 		context.Next()
-		stepsPassed += 1
+		signature += "C"
 	})
 	// RUN
-	w := performRequest(r, "GET", "/")
+	w := performRequest(router, "GET", "/")
 
 	// TEST
-	assert.Equal(t, w.Code, 500, "Response code should be Server error, was: %d", w.Code)
-	assert.Equal(t, stepsPassed, 1, "Falied to switch context in handler function: %d", stepsPassed)
+	assert.Equal(t, w.Code, 500)
+	assert.Equal(t, signature, "A")
 }

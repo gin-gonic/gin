@@ -13,28 +13,6 @@ import (
 	"github.com/gin-gonic/gin/render"
 )
 
-// Param is a single URL parameter, consisting of a key and a value.
-type Param struct {
-	Key   string
-	Value string
-}
-
-// Params is a Param-slice, as returned by the router.
-// The slice is ordered, the first URL parameter is also the first slice value.
-// It is therefore safe to read values by the index.
-type Params []Param
-
-// ByName returns the value of the first Param which key matches the given name.
-// If no matching Param is found, an empty string is returned.
-func (ps Params) ByName(name string) string {
-	for _, entry := range ps {
-		if entry.Key == name {
-			return entry.Value
-		}
-	}
-	return ""
-}
-
 var default404Body = []byte("404 page not found")
 var default405Body = []byte("405 method not allowed")
 
@@ -230,7 +208,7 @@ func (engine *Engine) serveHTTPRequest(context *Context) {
 			}
 		}
 	}
-	context.handlers = engine.allNoMethod
+	context.handlers = engine.allNoRoute
 	serveError(context, 404, default404Body)
 }
 

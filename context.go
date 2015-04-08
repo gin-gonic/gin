@@ -15,6 +15,16 @@ import (
 	"github.com/gin-gonic/gin/render"
 )
 
+const (
+	MIMEJSON              = binding.MIMEJSON
+	MIMEHTML              = binding.MIMEHTML
+	MIMEXML               = binding.MIMEXML
+	MIMEXML2              = binding.MIMEXML2
+	MIMEPlain             = binding.MIMEPlain
+	MIMEPOSTForm          = binding.MIMEPOSTForm
+	MIMEMultipartPOSTForm = binding.MIMEMultipartPOSTForm
+)
+
 const AbortIndex = math.MaxInt8 / 2
 
 // Context is the most important part of gin. It allows us to pass variables between middleware,
