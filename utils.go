@@ -89,10 +89,11 @@ func joinPaths(absolutePath, relativePath string) string {
 	if len(relativePath) == 0 {
 		return absolutePath
 	}
-	absolutePath = path.Join(absolutePath, relativePath)
-	appendSlash := lastChar(relativePath) == '/' && lastChar(absolutePath) != '/'
+
+	finalPath := path.Join(absolutePath, relativePath)
+	appendSlash := lastChar(relativePath) == '/' && lastChar(finalPath) != '/'
 	if appendSlash {
-		return absolutePath + "/"
+		return finalPath + "/"
 	}
-	return absolutePath
+	return finalPath
 }

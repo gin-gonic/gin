@@ -81,8 +81,7 @@ func processAccounts(accounts Accounts) authPairs {
 		if len(user) == 0 {
 			panic("User can not be empty")
 		}
-		base := user + ":" + password
-		value := "Basic " + base64.StdEncoding.EncodeToString([]byte(base))
+		value := authorizationHeader(user, password)
 		pairs = append(pairs, authPair{
 			Value: value,
 			User:  user,
