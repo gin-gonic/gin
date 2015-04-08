@@ -15,6 +15,9 @@ import (
 var _ ResponseWriter = &responseWriter{}
 var _ http.ResponseWriter = &responseWriter{}
 var _ http.ResponseWriter = ResponseWriter(&responseWriter{})
+var _ http.Hijacker = ResponseWriter(&responseWriter{})
+var _ http.Flusher = ResponseWriter(&responseWriter{})
+var _ http.CloseNotifier = ResponseWriter(&responseWriter{})
 
 func init() {
 	SetMode(TestMode)
