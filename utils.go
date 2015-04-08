@@ -6,7 +6,6 @@ package gin
 
 import (
 	"encoding/xml"
-	"log"
 	"reflect"
 	"runtime"
 	"strings"
@@ -50,29 +49,33 @@ func filterFlags(content string) string {
 func chooseData(custom, wildcard interface{}) interface{} {
 	if custom == nil {
 		if wildcard == nil {
-			log.Panic("negotiation config is invalid")
+			panic("negotiation config is invalid")
 		}
 		return wildcard
 	}
 	return custom
 }
 
-func parseAccept(acceptHeader string) (parts []string) {
-	parts = strings.Split(acceptHeader, ",")
-	for i, part := range parts {
+func parseAccept(acceptHeader string) []string {
+	parts := strings.Split(acceptHeader, ",")
+	out := make([]string, 0, len(parts))
+	for _, part := range parts {
 		index := strings.IndexByte(part, ';')
 		if index >= 0 {
 			part = part[0:index]
 		}
-		parts[i] = strings.TrimSpace(part)
+		part = strings.TrimSpace(part)
+		if len(part) > 0 {
+			out = append(out, part)
+		}
 	}
-	return
+	return out
 }
 
 func lastChar(str string) uint8 {
 	size := len(str)
 	if size == 0 {
-		log.Panic("The length of the string can't be 0")
+		panic("The length of the string can't be 0")
 	}
 	return str[size-1]
 }

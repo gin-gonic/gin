@@ -6,7 +6,6 @@ package binding
 
 import (
 	"errors"
-	"log"
 	"reflect"
 	"strconv"
 )
@@ -136,6 +135,6 @@ func setFloatField(val string, bitSize int, field reflect.Value) error {
 // https://github.com/codegangsta/martini-contrib/pull/34#issuecomment-29683659
 func ensureNotPointer(obj interface{}) {
 	if reflect.TypeOf(obj).Kind() == reflect.Ptr {
-		log.Panic("Pointers are not accepted as binding models")
+		panic("Pointers are not accepted as binding models")
 	}
 }

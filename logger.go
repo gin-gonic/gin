@@ -25,14 +25,13 @@ func ErrorLogger() HandlerFunc {
 	return ErrorLoggerT(ErrorTypeAll)
 }
 
-func ErrorLoggerT(typ uint32) HandlerFunc {
+func ErrorLoggerT(typ int) HandlerFunc {
 	return func(c *Context) {
 		c.Next()
 
 		if !c.Writer.Written() {
-			errs := c.Errors.ByType(typ)
-			if len(errs) > 0 {
-				c.JSON(-1, c.Errors)
+			if errs := c.Errors.ByType(typ); len(errs) > 0 {
+				c.JSON(-1, errs)
 			}
 		}
 	}

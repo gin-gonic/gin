@@ -11,454 +11,311 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/gin-gonic/gin/binding"
+	"github.com/julienschmidt/httprouter"
+	"github.com/stretchr/testify/assert"
 )
 
-// TestContextParamsGet tests that a parameter can be parsed from the URL.
-func TestContextParamsByName(t *testing.T) {
-	req, _ := http.NewRequest("GET", "/test/alexandernyquist", nil)
-	w := httptest.NewRecorder()
-	name := ""
+func createTestContext() (c *Context, w *httptest.ResponseRecorder, r *Engine) {
+	w = httptest.NewRecorder()
+	r = New()
+	c = r.allocateContext()
+	c.reset()
+	c.writermem.reset(w)
+	return
+}
 
-	r := New()
-	r.GET("/test/:name", func(c *Context) {
-		name = c.Params.ByName("name")
-	})
+func TestContextReset(t *testing.T) {
+	router := New()
+	c := router.allocateContext()
+	assert.Equal(t, c.Engine, router)
 
-	r.ServeHTTP(w, req)
+	c.index = 2
+	c.Writer = &responseWriter{ResponseWriter: httptest.NewRecorder()}
+	c.Params = httprouter.Params{httprouter.Param{}}
+	c.Error(errors.New("test"), nil)
+	c.Set("foo", "bar")
+	c.reset()
 
-	if name != "alexandernyquist" {
-		t.Errorf("Url parameter was not correctly parsed. Should be alexandernyquist, was %s.", name)
-	}
+	assert.False(t, c.IsAborted())
+	assert.Nil(t, c.Keys)
+	assert.Nil(t, c.Accepted)
+	assert.Len(t, c.Errors, 0)
+	assert.Len(t, c.Params, 0)
+	assert.Equal(t, c.index, -1)
+	assert.Equal(t, c.Writer.(*responseWriter), &c.writermem)
 }
 
 // TestContextSetGet tests that a parameter is set correctly on the
 // current context and can be retrieved using Get.
 func TestContextSetGet(t *testing.T) {
-	req, _ := http.NewRequest("GET", "/test", nil)
-	w := httptest.NewRecorder()
+	c, _, _ := createTestContext()
+	c.Set("foo", "bar")
 
-	r := New()
-	r.GET("/test", func(c *Context) {
-		// Key should be lazily created
-		if c.Keys != nil {
-			t.Error("Keys should be nil")
-		}
+	value, err := c.Get("foo")
+	assert.Equal(t, value, "bar")
+	assert.True(t, err)
 
-		// Set
-		c.Set("foo", "bar")
+	value, err = c.Get("foo2")
+	assert.Nil(t, value)
+	assert.False(t, err)
 
-		v, ok := c.Get("foo")
-		if !ok {
-			t.Errorf("Error on exist key")
-		}
-		if v != "bar" {
-			t.Errorf("Value should be bar, was %s", v)
-		}
-	})
-
-	r.ServeHTTP(w, req)
+	assert.Equal(t, c.MustGet("foo"), "bar")
+	assert.Panics(t, func() { c.MustGet("no_exist") })
 }
 
-// TestContextJSON tests that the response is serialized as JSON
+// Tests that the response is serialized as JSON
 // and Content-Type is set to application/json
-func TestContextJSON(t *testing.T) {
-	req, _ := http.NewRequest("GET", "/test", nil)
-	w := httptest.NewRecorder()
+func TestContextRenderJSON(t *testing.T) {
+	c, w, _ := createTestContext()
+	c.JSON(201, H{"foo": "bar"})
 
-	r := New()
-	r.GET("/test", func(c *Context) {
-		c.JSON(200, H{"foo": "bar"})
-	})
-
-	r.ServeHTTP(w, req)
-
-	if w.Body.String() != "{\"foo\":\"bar\"}\n" {
-		t.Errorf("Response should be {\"foo\":\"bar\"}, was: %s", w.Body.String())
-	}
-
-	if w.HeaderMap.Get("Content-Type") != "application/json; charset=utf-8" {
-		t.Errorf("Content-Type should be application/json, was %s", w.HeaderMap.Get("Content-Type"))
-	}
+	assert.Equal(t, w.Code, 201)
+	assert.Equal(t, w.Body.String(), "{\"foo\":\"bar\"}\n")
+	assert.Equal(t, w.HeaderMap.Get("Content-Type"), "application/json; charset=utf-8")
 }
 
-// TestContextHTML tests that the response executes the templates
+// Tests that the response executes the templates
 // and responds with Content-Type set to text/html
-func TestContextHTML(t *testing.T) {
-	req, _ := http.NewRequest("GET", "/test", nil)
-	w := httptest.NewRecorder()
+func TestContextRenderHTML(t *testing.T) {
+	c, w, router := createTestContext()
+	templ, _ := template.New("t").Parse(`Hello {{.name}}`)
+	router.SetHTMLTemplate(templ)
 
-	r := New()
-	templ, _ := template.New("t").Parse(`Hello {{.Name}}`)
-	r.SetHTMLTemplate(templ)
+	c.HTML(201, "t", H{"name": "alexandernyquist"})
 
-	type TestData struct{ Name string }
-
-	r.GET("/test", func(c *Context) {
-		c.HTML(200, "t", TestData{"alexandernyquist"})
-	})
-
-	r.ServeHTTP(w, req)
-
-	if w.Body.String() != "Hello alexandernyquist" {
-		t.Errorf("Response should be Hello alexandernyquist, was: %s", w.Body.String())
-	}
-
-	if w.HeaderMap.Get("Content-Type") != "text/html; charset=utf-8" {
-		t.Errorf("Content-Type should be text/html, was %s", w.HeaderMap.Get("Content-Type"))
-	}
-}
-
-// TestContextString tests that the response is returned
-// with Content-Type set to text/plain
-func TestContextString(t *testing.T) {
-	req, _ := http.NewRequest("GET", "/test", nil)
-	w := httptest.NewRecorder()
-
-	r := New()
-	r.GET("/test", func(c *Context) {
-		c.String(200, "test")
-	})
-
-	r.ServeHTTP(w, req)
-
-	if w.Body.String() != "test" {
-		t.Errorf("Response should be test, was: %s", w.Body.String())
-	}
-
-	if w.HeaderMap.Get("Content-Type") != "text/plain; charset=utf-8" {
-		t.Errorf("Content-Type should be text/plain, was %s", w.HeaderMap.Get("Content-Type"))
-	}
+	assert.Equal(t, w.Code, 201)
+	assert.Equal(t, w.Body.String(), "Hello alexandernyquist")
+	assert.Equal(t, w.HeaderMap.Get("Content-Type"), "text/html; charset=utf-8")
 }
 
 // TestContextXML tests that the response is serialized as XML
 // and Content-Type is set to application/xml
-func TestContextXML(t *testing.T) {
-	req, _ := http.NewRequest("GET", "/test", nil)
-	w := httptest.NewRecorder()
+func TestContextRenderXML(t *testing.T) {
+	c, w, _ := createTestContext()
+	c.XML(201, H{"foo": "bar"})
 
-	r := New()
-	r.GET("/test", func(c *Context) {
-		c.XML(200, H{"foo": "bar"})
-	})
+	assert.Equal(t, w.Code, 201)
+	assert.Equal(t, w.Body.String(), "<map><foo>bar</foo></map>")
+	assert.Equal(t, w.HeaderMap.Get("Content-Type"), "application/xml; charset=utf-8")
+}
 
-	r.ServeHTTP(w, req)
+// TestContextString tests that the response is returned
+// with Content-Type set to text/plain
+func TestContextRenderString(t *testing.T) {
+	c, w, _ := createTestContext()
+	c.String(201, "test %s %d", "string", 2)
 
-	if w.Body.String() != "<map><foo>bar</foo></map>" {
-		t.Errorf("Response should be <map><foo>bar</foo></map>, was: %s", w.Body.String())
-	}
+	assert.Equal(t, w.Code, 201)
+	assert.Equal(t, w.Body.String(), "test string 2")
+	assert.Equal(t, w.HeaderMap.Get("Content-Type"), "text/plain; charset=utf-8")
+}
 
-	if w.HeaderMap.Get("Content-Type") != "application/xml; charset=utf-8" {
-		t.Errorf("Content-Type should be application/xml, was %s", w.HeaderMap.Get("Content-Type"))
-	}
+// TestContextString tests that the response is returned
+// with Content-Type set to text/html
+func TestContextRenderHTMLString(t *testing.T) {
+	c, w, _ := createTestContext()
+	c.HTMLString(201, "<html>%s %d</html>", "string", 3)
+
+	assert.Equal(t, w.Code, 201)
+	assert.Equal(t, w.Body.String(), "<html>string 3</html>")
+	assert.Equal(t, w.HeaderMap.Get("Content-Type"), "text/html; charset=utf-8")
 }
 
 // TestContextData tests that the response can be written from `bytesting`
 // with specified MIME type
-func TestContextData(t *testing.T) {
-	req, _ := http.NewRequest("GET", "/test/csv", nil)
-	w := httptest.NewRecorder()
+func TestContextRenderData(t *testing.T) {
+	c, w, _ := createTestContext()
+	c.Data(201, "text/csv", []byte(`foo,bar`))
 
-	r := New()
-	r.GET("/test/csv", func(c *Context) {
-		c.Data(200, "text/csv", []byte(`foo,bar`))
-	})
+	assert.Equal(t, w.Code, 201)
+	assert.Equal(t, w.Body.String(), "foo,bar")
+	assert.Equal(t, w.HeaderMap.Get("Content-Type"), "text/csv")
+}
 
-	r.ServeHTTP(w, req)
+// TODO
+func TestContextRenderRedirectWithRelativePath(t *testing.T) {
+	c, w, _ := createTestContext()
+	c.Request, _ = http.NewRequest("POST", "http://example.com", nil)
+	assert.Panics(t, func() { c.Redirect(299, "/new_path") })
+	assert.Panics(t, func() { c.Redirect(309, "/new_path") })
 
-	if w.Body.String() != "foo,bar" {
-		t.Errorf("Response should be foo&bar, was: %s", w.Body.String())
+	c.Redirect(302, "/path")
+	c.Writer.WriteHeaderNow()
+	assert.Equal(t, w.Code, 302)
+	assert.Equal(t, w.Header().Get("Location"), "/path")
+}
+
+func TestContextRenderRedirectWithAbsolutePath(t *testing.T) {
+	c, w, _ := createTestContext()
+	c.Request, _ = http.NewRequest("POST", "http://example.com", nil)
+	c.Redirect(302, "http://google.com")
+	c.Writer.WriteHeaderNow()
+
+	assert.Equal(t, w.Code, 302)
+	assert.Equal(t, w.Header().Get("Location"), "http://google.com")
+}
+
+func TestContextNegotiationFormat(t *testing.T) {
+	c, _, _ := createTestContext()
+	c.Request, _ = http.NewRequest("POST", "", nil)
+
+	assert.Equal(t, c.NegotiateFormat(MIMEJSON, MIMEXML), MIMEJSON)
+	assert.Equal(t, c.NegotiateFormat(MIMEHTML, MIMEJSON), MIMEHTML)
+}
+
+func TestContextNegotiationFormatWithAccept(t *testing.T) {
+	c, _, _ := createTestContext()
+	c.Request, _ = http.NewRequest("POST", "", nil)
+	c.Request.Header.Add("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8")
+
+	assert.Equal(t, c.NegotiateFormat(MIMEJSON, MIMEXML), MIMEXML)
+	assert.Equal(t, c.NegotiateFormat(MIMEXML, MIMEHTML), MIMEHTML)
+	assert.Equal(t, c.NegotiateFormat(MIMEJSON), "")
+}
+
+func TestContextNegotiationFormatCustum(t *testing.T) {
+	c, _, _ := createTestContext()
+	c.Request, _ = http.NewRequest("POST", "", nil)
+	c.Request.Header.Add("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8")
+
+	c.Accepted = nil
+	c.SetAccepted(MIMEJSON, MIMEXML)
+
+	assert.Equal(t, c.NegotiateFormat(MIMEJSON, MIMEXML), MIMEJSON)
+	assert.Equal(t, c.NegotiateFormat(MIMEXML, MIMEHTML), MIMEXML)
+	assert.Equal(t, c.NegotiateFormat(MIMEJSON), MIMEJSON)
+}
+
+// TestContextData tests that the response can be written from `bytesting`
+// with specified MIME type
+func TestContextAbortWithStatus(t *testing.T) {
+	c, w, _ := createTestContext()
+	c.index = 4
+	c.AbortWithStatus(401)
+	c.Writer.WriteHeaderNow()
+
+	assert.Equal(t, c.index, AbortIndex)
+	assert.Equal(t, c.Writer.Status(), 401)
+	assert.Equal(t, w.Code, 401)
+	assert.True(t, c.IsAborted())
+}
+
+func TestContextError(t *testing.T) {
+	c, _, _ := createTestContext()
+	c.Error(errors.New("first error"), "some data")
+	assert.Equal(t, c.LastError().Error(), "first error")
+	assert.Len(t, c.Errors, 1)
+
+	c.Error(errors.New("second error"), "some data 2")
+	assert.Equal(t, c.LastError().Error(), "second error")
+	assert.Len(t, c.Errors, 2)
+
+	assert.Equal(t, c.Errors[0].Err, "first error")
+	assert.Equal(t, c.Errors[0].Meta, "some data")
+	assert.Equal(t, c.Errors[0].Type, ErrorTypeExternal)
+
+	assert.Equal(t, c.Errors[1].Err, "second error")
+	assert.Equal(t, c.Errors[1].Meta, "some data 2")
+	assert.Equal(t, c.Errors[1].Type, ErrorTypeExternal)
+}
+
+func TestContextTypedError(t *testing.T) {
+	c, _, _ := createTestContext()
+	c.ErrorTyped(errors.New("externo 0"), ErrorTypeExternal, nil)
+	c.ErrorTyped(errors.New("externo 1"), ErrorTypeExternal, nil)
+	c.ErrorTyped(errors.New("interno 0"), ErrorTypeInternal, nil)
+	c.ErrorTyped(errors.New("externo 2"), ErrorTypeExternal, nil)
+	c.ErrorTyped(errors.New("interno 1"), ErrorTypeInternal, nil)
+	c.ErrorTyped(errors.New("interno 2"), ErrorTypeInternal, nil)
+
+	for _, err := range c.Errors.ByType(ErrorTypeExternal) {
+		assert.Equal(t, err.Type, ErrorTypeExternal)
 	}
 
-	if w.HeaderMap.Get("Content-Type") != "text/csv" {
-		t.Errorf("Content-Type should be text/csv, was %s", w.HeaderMap.Get("Content-Type"))
+	for _, err := range c.Errors.ByType(ErrorTypeInternal) {
+		assert.Equal(t, err.Type, ErrorTypeInternal)
 	}
 }
 
-func TestContextFile(t *testing.T) {
-	req, _ := http.NewRequest("GET", "/test/file", nil)
-	w := httptest.NewRecorder()
+func TestContextFail(t *testing.T) {
+	c, w, _ := createTestContext()
+	c.Fail(401, errors.New("bad input"))
+	c.Writer.WriteHeaderNow()
 
-	r := New()
-	r.GET("/test/file", func(c *Context) {
-		c.File("./gin.go")
-	})
-
-	r.ServeHTTP(w, req)
-
-	bodyAsString := w.Body.String()
-
-	if len(bodyAsString) == 0 {
-		t.Errorf("Got empty body instead of file data")
-	}
-
-	if w.HeaderMap.Get("Content-Type") != "text/plain; charset=utf-8" {
-		t.Errorf("Content-Type should be text/plain; charset=utf-8, was %s", w.HeaderMap.Get("Content-Type"))
-	}
+	assert.Equal(t, w.Code, 401)
+	assert.Equal(t, c.LastError().Error(), "bad input")
+	assert.Equal(t, c.index, AbortIndex)
+	assert.True(t, c.IsAborted())
 }
 
-// TestHandlerFunc - ensure that custom middleware works properly
-func TestHandlerFunc(t *testing.T) {
+func TestContextClientIP(t *testing.T) {
+	c, _, _ := createTestContext()
+	c.Request, _ = http.NewRequest("POST", "", nil)
 
-	req, _ := http.NewRequest("GET", "/", nil)
-	w := httptest.NewRecorder()
+	c.Request.Header.Set("X-Real-IP", "10.10.10.10")
+	c.Request.Header.Set("X-Forwarded-For", "20.20.20.20 , 30.30.30.30")
+	c.Request.RemoteAddr = "40.40.40.40"
 
-	r := New()
-	var stepsPassed int = 0
-
-	r.Use(func(context *Context) {
-		stepsPassed += 1
-		context.Next()
-		stepsPassed += 1
-	})
-
-	r.ServeHTTP(w, req)
-
-	if w.Code != 404 {
-		t.Errorf("Response code should be Not found, was: %d", w.Code)
-	}
-
-	if stepsPassed != 2 {
-		t.Errorf("Falied to switch context in handler function: %d", stepsPassed)
-	}
+	assert.Equal(t, c.ClientIP(), "10.10.10.10")
+	c.Request.Header.Del("X-Real-IP")
+	assert.Equal(t, c.ClientIP(), "20.20.20.20")
+	c.Request.Header.Del("X-Forwarded-For")
+	assert.Equal(t, c.ClientIP(), "40.40.40.40")
 }
 
-// TestBadAbortHandlersChain - ensure that Abort after switch context will not interrupt pending handlers
-func TestBadAbortHandlersChain(t *testing.T) {
-	// SETUP
-	var stepsPassed int = 0
-	r := New()
-	r.Use(func(c *Context) {
-		stepsPassed += 1
-		c.Next()
-		stepsPassed += 1
-		// after check and abort
-		c.AbortWithStatus(409)
-	})
-	r.Use(func(c *Context) {
-		stepsPassed += 1
-		c.Next()
-		stepsPassed += 1
-		c.AbortWithStatus(403)
-	})
+func TestContextContentType(t *testing.T) {
+	c, _, _ := createTestContext()
+	c.Request, _ = http.NewRequest("POST", "", nil)
+	c.Request.Header.Set("Content-Type", "application/json; charset=utf-8")
 
-	// RUN
-	w := PerformRequest(r, "GET", "/")
-
-	// TEST
-	if w.Code != 409 {
-		t.Errorf("Response code should be Forbiden, was: %d", w.Code)
-	}
-	if stepsPassed != 4 {
-		t.Errorf("Falied to switch context in handler function: %d", stepsPassed)
-	}
+	assert.Equal(t, c.ContentType(), "application/json")
 }
 
-// TestAbortHandlersChain - ensure that Abort interrupt used middlewares in fifo order
-func TestAbortHandlersChain(t *testing.T) {
-	// SETUP
-	var stepsPassed int = 0
-	r := New()
-	r.Use(func(context *Context) {
-		stepsPassed += 1
-		context.AbortWithStatus(409)
-	})
-	r.Use(func(context *Context) {
-		stepsPassed += 1
-		context.Next()
-		stepsPassed += 1
-	})
-
-	// RUN
-	w := PerformRequest(r, "GET", "/")
-
-	// TEST
-	if w.Code != 409 {
-		t.Errorf("Response code should be Conflict, was: %d", w.Code)
+func TestContextAutoBind(t *testing.T) {
+	c, w, _ := createTestContext()
+	c.Request, _ = http.NewRequest("POST", "http://example.com", bytes.NewBufferString("{\"foo\":\"bar\", \"bar\":\"foo\"}"))
+	c.Request.Header.Add("Content-Type", MIMEJSON)
+	var obj struct {
+		Foo string `json:"foo"`
+		Bar string `json:"bar"`
 	}
-	if stepsPassed != 1 {
-		t.Errorf("Falied to switch context in handler function: %d", stepsPassed)
-	}
+	assert.True(t, c.Bind(&obj))
+	assert.Equal(t, obj.Bar, "foo")
+	assert.Equal(t, obj.Foo, "bar")
+	assert.Equal(t, w.Body.Len(), 0)
 }
 
-// TestFailHandlersChain - ensure that Fail interrupt used middlewares in fifo order as
-// as well as Abort
-func TestFailHandlersChain(t *testing.T) {
-	// SETUP
-	var stepsPassed int = 0
-	r := New()
-	r.Use(func(context *Context) {
-		stepsPassed += 1
-		context.Fail(500, errors.New("foo"))
-	})
-	r.Use(func(context *Context) {
-		stepsPassed += 1
-		context.Next()
-		stepsPassed += 1
-	})
-
-	// RUN
-	w := PerformRequest(r, "GET", "/")
-
-	// TEST
-	if w.Code != 500 {
-		t.Errorf("Response code should be Server error, was: %d", w.Code)
+func TestContextBadAutoBind(t *testing.T) {
+	c, w, _ := createTestContext()
+	c.Request, _ = http.NewRequest("POST", "http://example.com", bytes.NewBufferString("\"foo\":\"bar\", \"bar\":\"foo\"}"))
+	c.Request.Header.Add("Content-Type", MIMEJSON)
+	var obj struct {
+		Foo string `json:"foo"`
+		Bar string `json:"bar"`
 	}
-	if stepsPassed != 1 {
-		t.Errorf("Falied to switch context in handler function: %d", stepsPassed)
-	}
+
+	assert.False(t, c.IsAborted())
+	assert.False(t, c.Bind(&obj))
+	c.Writer.WriteHeaderNow()
+
+	assert.Empty(t, obj.Bar)
+	assert.Empty(t, obj.Foo)
+	assert.Equal(t, w.Code, 400)
+	assert.True(t, c.IsAborted())
 }
 
-func TestBindingJSON(t *testing.T) {
-
-	body := bytes.NewBuffer([]byte("{\"foo\":\"bar\"}"))
-
-	r := New()
-	r.POST("/binding/json", func(c *Context) {
-		var body struct {
-			Foo string `json:"foo"`
-		}
-		if c.Bind(&body) {
-			c.JSON(200, H{"parsed": body.Foo})
-		}
-	})
-
-	req, _ := http.NewRequest("POST", "/binding/json", body)
-	req.Header.Set("Content-Type", "application/json")
-	w := httptest.NewRecorder()
-
-	r.ServeHTTP(w, req)
-
-	if w.Code != 200 {
-		t.Errorf("Response code should be Ok, was: %d", w.Code)
+func TestContextBindWith(t *testing.T) {
+	c, w, _ := createTestContext()
+	c.Request, _ = http.NewRequest("POST", "http://example.com", bytes.NewBufferString("{\"foo\":\"bar\", \"bar\":\"foo\"}"))
+	c.Request.Header.Add("Content-Type", MIMEXML)
+	var obj struct {
+		Foo string `json:"foo"`
+		Bar string `json:"bar"`
 	}
-
-	if w.Body.String() != "{\"parsed\":\"bar\"}\n" {
-		t.Errorf("Response should be {\"parsed\":\"bar\"}, was: %s", w.Body.String())
-	}
-
-	if w.HeaderMap.Get("Content-Type") != "application/json; charset=utf-8" {
-		t.Errorf("Content-Type should be application/json, was %s", w.HeaderMap.Get("Content-Type"))
-	}
-}
-
-func TestBindingJSONEncoding(t *testing.T) {
-
-	body := bytes.NewBuffer([]byte("{\"foo\":\"嘉\"}"))
-
-	r := New()
-	r.POST("/binding/json", func(c *Context) {
-		var body struct {
-			Foo string `json:"foo"`
-		}
-		if c.Bind(&body) {
-			c.JSON(200, H{"parsed": body.Foo})
-		}
-	})
-
-	req, _ := http.NewRequest("POST", "/binding/json", body)
-	req.Header.Set("Content-Type", "application/json; charset=utf-8")
-	w := httptest.NewRecorder()
-
-	r.ServeHTTP(w, req)
-
-	if w.Code != 200 {
-		t.Errorf("Response code should be Ok, was: %d", w.Code)
-	}
-
-	if w.Body.String() != "{\"parsed\":\"嘉\"}\n" {
-		t.Errorf("Response should be {\"parsed\":\"嘉\"}, was: %s", w.Body.String())
-	}
-
-	if w.HeaderMap.Get("Content-Type") != "application/json; charset=utf-8" {
-		t.Errorf("Content-Type should be application/json, was %s", w.HeaderMap.Get("Content-Type"))
-	}
-}
-
-func TestBindingJSONMalformed(t *testing.T) {
-
-	body := bytes.NewBuffer([]byte("\"foo\":\"bar\"\n"))
-
-	r := New()
-	r.POST("/binding/json", func(c *Context) {
-		var body struct {
-			Foo string `json:"foo"`
-		}
-		if c.Bind(&body) {
-			c.JSON(200, H{"parsed": body.Foo})
-		}
-
-	})
-
-	req, _ := http.NewRequest("POST", "/binding/json", body)
-	req.Header.Set("Content-Type", "application/json")
-
-	w := httptest.NewRecorder()
-
-	r.ServeHTTP(w, req)
-
-	if w.Code != 400 {
-		t.Errorf("Response code should be Bad request, was: %d", w.Code)
-	}
-	if w.Body.String() == "{\"parsed\":\"bar\"}\n" {
-		t.Errorf("Response should not be {\"parsed\":\"bar\"}, was: %s", w.Body.String())
-	}
-
-	if w.HeaderMap.Get("Content-Type") == "application/json" {
-		t.Errorf("Content-Type should not be application/json, was %s", w.HeaderMap.Get("Content-Type"))
-	}
-}
-
-func TestBindingForm(t *testing.T) {
-
-	body := bytes.NewBuffer([]byte("foo=bar&num=123&unum=1234567890"))
-
-	r := New()
-	r.POST("/binding/form", func(c *Context) {
-		var body struct {
-			Foo  string `form:"foo"`
-			Num  int    `form:"num"`
-			Unum uint   `form:"unum"`
-		}
-		if c.Bind(&body) {
-			c.JSON(200, H{"foo": body.Foo, "num": body.Num, "unum": body.Unum})
-		}
-	})
-
-	req, _ := http.NewRequest("POST", "/binding/form", body)
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	w := httptest.NewRecorder()
-
-	r.ServeHTTP(w, req)
-
-	if w.Code != 200 {
-		t.Errorf("Response code should be Ok, was: %d", w.Code)
-	}
-
-	expected := "{\"foo\":\"bar\",\"num\":123,\"unum\":1234567890}\n"
-	if w.Body.String() != expected {
-		t.Errorf("Response should be %s, was %s", expected, w.Body.String())
-	}
-
-	if w.HeaderMap.Get("Content-Type") != "application/json; charset=utf-8" {
-		t.Errorf("Content-Type should be application/json, was %s", w.HeaderMap.Get("Content-Type"))
-	}
-}
-
-func TestClientIP(t *testing.T) {
-	r := New()
-
-	var clientIP string = ""
-	r.GET("/", func(c *Context) {
-		clientIP = c.ClientIP()
-	})
-
-	body := bytes.NewBuffer([]byte(""))
-	req, _ := http.NewRequest("GET", "/", body)
-	req.RemoteAddr = "clientip:1234"
-	w := httptest.NewRecorder()
-	r.ServeHTTP(w, req)
-
-	if clientIP != "clientip:1234" {
-		t.Errorf("ClientIP should not be %s, but clientip:1234", clientIP)
-	}
+	assert.True(t, c.BindWith(&obj, binding.JSON))
+	assert.Equal(t, obj.Bar, "foo")
+	assert.Equal(t, obj.Foo, "bar")
+	assert.Equal(t, w.Body.Len(), 0)
 }

@@ -18,13 +18,13 @@ const (
 // Used internally to collect errors that occurred during an http request.
 type errorMsg struct {
 	Err  string      `json:"error"`
-	Type uint32      `json:"-"`
+	Type int         `json:"-"`
 	Meta interface{} `json:"meta"`
 }
 
 type errorMsgs []errorMsg
 
-func (a errorMsgs) ByType(typ uint32) errorMsgs {
+func (a errorMsgs) ByType(typ int) errorMsgs {
 	if len(a) == 0 {
 		return a
 	}

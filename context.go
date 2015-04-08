@@ -6,7 +6,7 @@ package gin
 
 import (
 	"errors"
-	"log"
+	"fmt"
 	"math"
 	"net/http"
 	"strings"
@@ -81,6 +81,10 @@ func (c *Context) AbortWithStatus(code int) {
 	c.Abort()
 }
 
+func (c *Context) IsAborted() bool {
+	return c.index == AbortIndex
+}
+
 /************************************/
 /********* ERROR MANAGEMENT *********/
 /************************************/
@@ -96,7 +100,7 @@ func (c *Context) Fail(code int, err error) {
 	c.AbortWithStatus(code)
 }
 
-func (c *Context) ErrorTyped(err error, typ uint32, meta interface{}) {
+func (c *Context) ErrorTyped(err error, typ int, meta interface{}) {
 	c.Errors = append(c.Errors, errorMsg{
 		Err:  err.Error(),
 		Type: typ,
@@ -146,9 +150,8 @@ func (c *Context) MustGet(key string) interface{} {
 	if value, exists := c.Get(key); exists {
 		return value
 	} else {
-		log.Panicf("Key %s does not exist", key)
+		panic("Key " + key + " does not exist")
 	}
-	return nil
 }
 
 /************************************/
@@ -163,7 +166,7 @@ func (c *Context) ClientIP() string {
 	clientIP = c.Request.Header.Get("X-Forwarded-For")
 	clientIP = strings.Split(clientIP, ",")[0]
 	if len(clientIP) > 0 {
-		return clientIP
+		return strings.TrimSpace(clientIP)
 	}
 	return c.Request.RemoteAddr
 }
@@ -236,7 +239,7 @@ func (c *Context) Redirect(code int, location string) {
 	if code >= 300 && code <= 308 {
 		c.Render(code, render.Redirect, c.Request, location)
 	} else {
-		log.Panicf("Cannot redirect with status code %d", code)
+		panic(fmt.Sprintf("Cannot redirect with status code %d", code))
 	}
 }
 
@@ -275,7 +278,7 @@ func (c *Context) Negotiate(code int, config Negotiate) {
 
 	case binding.MIMEHTML:
 		if len(config.HTMLPath) == 0 {
-			log.Panic("negotiate config is wrong. html path is needed")
+			panic("negotiate config is wrong. html path is needed")
 		}
 		data := chooseData(config.HTMLData, config.Data)
 		c.HTML(code, config.HTMLPath, data)
@@ -291,7 +294,7 @@ func (c *Context) Negotiate(code int, config Negotiate) {
 
 func (c *Context) NegotiateFormat(offered ...string) string {
 	if len(offered) == 0 {
-		log.Panic("you must provide at least one offer")
+		panic("you must provide at least one offer")
 	}
 	if c.Accepted == nil {
 		c.Accepted = parseAccept(c.Request.Header.Get("Accept"))

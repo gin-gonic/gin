@@ -5,7 +5,6 @@
 package gin
 
 import (
-	"log"
 	"os"
 
 	"github.com/mattn/go-colorable"
@@ -46,7 +45,7 @@ func SetMode(value string) {
 	case TestMode:
 		ginMode = testCode
 	default:
-		log.Panic("gin mode unknown: " + value)
+		panic("gin mode unknown: " + value)
 	}
 	modeName = value
 }

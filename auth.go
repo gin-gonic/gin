@@ -9,7 +9,6 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
-	"log"
 	"sort"
 )
 
@@ -61,12 +60,12 @@ func BasicAuth(accounts Accounts) HandlerFunc {
 
 func processAccounts(accounts Accounts) authPairs {
 	if len(accounts) == 0 {
-		log.Panic("Empty list of authorized credentials")
+		panic("Empty list of authorized credentials")
 	}
 	pairs := make(authPairs, 0, len(accounts))
 	for user, password := range accounts {
 		if len(user) == 0 {
-			log.Panic("User can not be empty")
+			panic("User can not be empty")
 		}
 		base := user + ":" + password
 		value := "Basic " + base64.StdEncoding.EncodeToString([]byte(base))
