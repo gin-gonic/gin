@@ -29,6 +29,19 @@ func (a authPairs) Len() int           { return len(a) }
 func (a authPairs) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
 func (a authPairs) Less(i, j int) bool { return a[i].Value < a[j].Value }
 
+func (a authPairs) searchCredential(auth string) (string, bool) {
+	if len(auth) == 0 {
+		return "", false
+	}
+	// Search user in the slice of allowed credentials
+	r := sort.Search(len(a), func(i int) bool { return a[i].Value >= auth })
+	if r < len(a) && secureCompare(a[r].Value, auth) {
+		return a[r].User, true
+	} else {
+		return "", false
+	}
+}
+
 // Implements a basic Basic HTTP Authorization. It takes as arguments a map[string]string where
 // the key is the user name and the value is the password, as well as the name of the Realm
 // (see http://tools.ietf.org/html/rfc2617#section-1.2)
@@ -40,7 +53,7 @@ func BasicAuthForRealm(accounts Accounts, realm string) HandlerFunc {
 	pairs := processAccounts(accounts)
 	return func(c *Context) {
 		// Search user in the slice of allowed credentials
-		user, ok := searchCredential(pairs, c.Request.Header.Get("Authorization"))
+		user, ok := pairs.searchCredential(c.Request.Header.Get("Authorization"))
 		if !ok {
 			// Credentials doesn't match, we return 401 Unauthorized and abort request.
 			c.Writer.Header().Set("WWW-Authenticate", realm)
@@ -80,17 +93,9 @@ func processAccounts(accounts Accounts) authPairs {
 	return pairs
 }
 
-func searchCredential(pairs authPairs, auth string) (string, bool) {
-	if len(auth) == 0 {
-		return "", false
-	}
-	// Search user in the slice of allowed credentials
-	r := sort.Search(len(pairs), func(i int) bool { return pairs[i].Value >= auth })
-	if r < len(pairs) && secureCompare(pairs[r].Value, auth) {
-		return pairs[r].User, true
-	} else {
-		return "", false
-	}
+func authorizationHeader(user, password string) string {
+	base := user + ":" + password
+	return "Basic " + base64.StdEncoding.EncodeToString([]byte(base))
 }
 
 func secureCompare(given, actual string) bool {
