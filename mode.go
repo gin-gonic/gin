@@ -5,7 +5,6 @@
 package gin
 
 import (
-	"log"
 	"os"
 
 	"github.com/mattn/go-colorable"
@@ -24,7 +23,7 @@ const (
 	testCode    = iota
 )
 
-var DefaultLogFile = colorable.NewColorableStdout()
+var DefaultWriter = colorable.NewColorableStdout()
 var ginMode int = debugCode
 var modeName string = DebugMode
 
@@ -46,7 +45,7 @@ func SetMode(value string) {
 	case TestMode:
 		ginMode = testCode
 	default:
-		log.Panic("gin mode unknown: " + value)
+		panic("gin mode unknown: " + value)
 	}
 	modeName = value
 }

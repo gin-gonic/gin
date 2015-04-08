@@ -19,10 +19,10 @@ func (i inputHolder) FromPOST(key string) (va string) {
 }
 
 func (i inputHolder) Get(key string) string {
-	if value, exists := i.fromGET(key); exists {
+	if value, exists := i.fromPOST(key); exists {
 		return value
 	}
-	if value, exists := i.fromPOST(key); exists {
+	if value, exists := i.fromGET(key); exists {
 		return value
 	}
 	return ""
@@ -31,19 +31,17 @@ func (i inputHolder) Get(key string) string {
 func (i inputHolder) fromGET(key string) (string, bool) {
 	req := i.context.Request
 	req.ParseForm()
-	if values, ok := req.Form[key]; ok {
+	if values, ok := req.Form[key]; ok && len(values) > 0 {
 		return values[0], true
-	} else {
-		return "", false
 	}
+	return "", false
 }
 
 func (i inputHolder) fromPOST(key string) (string, bool) {
 	req := i.context.Request
 	req.ParseForm()
-	if values, ok := req.PostForm[key]; ok {
+	if values, ok := req.PostForm[key]; ok && len(values) > 0 {
 		return values[0], true
-	} else {
-		return "", false
 	}
+	return "", false
 }

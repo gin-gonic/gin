@@ -1,10 +1,25 @@
 package main
 
 import (
+	"net/http"
+
 	"github.com/flosch/pongo2"
 	"github.com/gin-gonic/gin"
-	"net/http"
+	"github.com/gin-gonic/gin/render"
 )
+
+func main() {
+	router := gin.Default()
+	router.HTMLRender = newPongoRender()
+
+	router.GET("/index", func(c *gin.Context) {
+		c.HTML(200, "index.html", gin.H{
+			"title": "Gin meets pongo2 !",
+			"name":  c.Input.Get("name"),
+		})
+	})
+	router.Run(":8080")
+}
 
 type pongoRender struct {
 	cache map[string]*pongo2.Template
@@ -12,13 +27,6 @@ type pongoRender struct {
 
 func newPongoRender() *pongoRender {
 	return &pongoRender{map[string]*pongo2.Template{}}
-}
-
-func writeHeader(w http.ResponseWriter, code int, contentType string) {
-	if code >= 0 {
-		w.Header().Set("Content-Type", contentType)
-		w.WriteHeader(code)
-	}
 }
 
 func (p *pongoRender) Render(w http.ResponseWriter, code int, data ...interface{}) error {
@@ -36,23 +44,6 @@ func (p *pongoRender) Render(w http.ResponseWriter, code int, data ...interface{
 		p.cache[file] = tmpl
 		t = tmpl
 	}
-	writeHeader(w, code, "text/html")
+	render.WriteHeader(w, code, "text/html")
 	return t.ExecuteWriter(ctx, w)
-}
-
-func main() {
-	r := gin.Default()
-	r.HTMLRender = newPongoRender()
-
-	r.GET("/index", func(c *gin.Context) {
-		name := c.Request.FormValue("name")
-		ctx := pongo2.Context{
-			"title": "Gin meets pongo2 !",
-			"name":  name,
-		}
-		c.HTML(200, "index.html", ctx)
-	})
-
-	// Listen and server on 0.0.0.0:8080
-	r.Run(":8080")
 }

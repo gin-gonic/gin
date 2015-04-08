@@ -25,27 +25,27 @@ func ErrorLogger() HandlerFunc {
 	return ErrorLoggerT(ErrorTypeAll)
 }
 
-func ErrorLoggerT(typ uint32) HandlerFunc {
+func ErrorLoggerT(typ int) HandlerFunc {
 	return func(c *Context) {
 		c.Next()
 
 		if !c.Writer.Written() {
-			errs := c.Errors.ByType(typ)
-			if len(errs) > 0 {
-				c.JSON(-1, c.Errors)
+			if errs := c.Errors.ByType(typ); len(errs) > 0 {
+				c.JSON(-1, errs)
 			}
 		}
 	}
 }
 
 func Logger() HandlerFunc {
-	return LoggerWithFile(DefaultLogFile)
+	return LoggerWithFile(DefaultWriter)
 }
 
 func LoggerWithFile(out io.Writer) HandlerFunc {
 	return func(c *Context) {
 		// Start timer
 		start := time.Now()
+		path := c.Request.URL.Path
 
 		// Process request
 		c.Next()
@@ -67,7 +67,7 @@ func LoggerWithFile(out io.Writer) HandlerFunc {
 			latency,
 			clientIP,
 			methodColor, reset, method,
-			c.Request.URL.Path,
+			path,
 			comment,
 		)
 	}

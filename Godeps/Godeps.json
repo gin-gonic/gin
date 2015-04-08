@@ -3,12 +3,21 @@
 	"GoVersion": "go1.4.2",
 	"Deps": [
 		{
+			"ImportPath": "github.com/julienschmidt/httprouter",
+			"Rev": "999ba04938b528fb4fb859231ee929958b8db4a6"
+		},
+		{
 			"ImportPath": "github.com/mattn/go-colorable",
 			"Rev": "043ae16291351db8465272edf465c9f388161627"
 		},
 		{
 			"ImportPath": "github.com/stretchr/testify/assert",
 			"Rev": "de7fcff264cd05cc0c90c509ea789a436a0dd206"
+		},
+		{
+			"ImportPath": "gopkg.in/joeybloggs/go-validate-yourself.v4",
+			"Comment": "v4.0",
+			"Rev": "a3cb430fa1e43b15e72d7bec5b20d0bdff4c2bb8"
 		}
 	]
 }
