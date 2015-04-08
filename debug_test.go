@@ -18,21 +18,3 @@ func TestIsDebugging(t *testing.T) {
 	SetMode(TestMode)
 	assert.False(t, IsDebugging())
 }
-
-// TODO
-// func TestDebugPrint(t *testing.T) {
-// 	buffer := bytes.NewBufferString("")
-// 	debugLogger.
-// 	log.SetOutput(buffer)
-
-// 	SetMode(ReleaseMode)
-// 	debugPrint("This is a example")
-// 	assert.Equal(t, buffer.Len(), 0)
-
-// 	SetMode(DebugMode)
-// 	debugPrint("This is %s", "a example")
-// 	assert.Equal(t, buffer.String(), "[GIN-debug] This is a example")
-
-// 	SetMode(TestMode)
-// 	log.SetOutput(os.Stdout)
-// }
