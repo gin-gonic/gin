@@ -5,7 +5,6 @@ import (
 
 	"github.com/flosch/pongo2"
 	"github.com/gin-gonic/gin"
-	"github.com/gin-gonic/gin/render"
 )
 
 func main() {
@@ -13,10 +12,11 @@ func main() {
 	router.HTMLRender = newPongoRender()
 
 	router.GET("/index", func(c *gin.Context) {
-		c.HTML(200, "index.html", gin.H{
+		ctx := pongo2.Context{
 			"title": "Gin meets pongo2 !",
-			"name":  c.Input.Get("name"),
-		})
+			"name":  "gin and pongo2",
+		}
+		c.HTML(200, "index.html", ctx)
 	})
 	router.Run(":8080")
 }
@@ -28,7 +28,12 @@ type pongoRender struct {
 func newPongoRender() *pongoRender {
 	return &pongoRender{map[string]*pongo2.Template{}}
 }
-
+func writeHeader(w http.ResponseWriter, code int, contentType string) {
+	if code >= 0 {
+		w.Header().Set("Content-Type", contentType)
+		w.WriteHeader(code)
+	}
+}
 func (p *pongoRender) Render(w http.ResponseWriter, code int, data ...interface{}) error {
 	file := data[0].(string)
 	ctx := data[1].(pongo2.Context)
@@ -44,6 +49,6 @@ func (p *pongoRender) Render(w http.ResponseWriter, code int, data ...interface{
 		p.cache[file] = tmpl
 		t = tmpl
 	}
-	render.WriteHeader(w, code, "text/html")
+	writeHeader(w, code, "text/html")
 	return t.ExecuteWriter(ctx, w)
 }
