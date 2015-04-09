@@ -73,6 +73,10 @@ func TestBasicAuthSearchCredential(t *testing.T) {
 	user, found = pairs.searchCredential(authorizationHeader("foo", "bar "))
 	assert.Empty(t, user)
 	assert.False(t, found)
+
+	user, found = pairs.searchCredential("")
+	assert.Empty(t, user)
+	assert.False(t, found)
 }
 
 func TestBasicAuthAuthorizationHeader(t *testing.T) {

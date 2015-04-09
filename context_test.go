@@ -16,6 +16,11 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+// Unit tes TODO
+// func (c *Context) File(filepath string) {
+// func (c *Context) Negotiate(code int, config Negotiate) {
+// BAD case: func (c *Context) Render(code int, render render.Render, obj ...interface{}) {
+
 func createTestContext() (c *Context, w *httptest.ResponseRecorder, r *Engine) {
 	w = httptest.NewRecorder()
 	r = New()
@@ -64,6 +69,25 @@ func TestContextSetGet(t *testing.T) {
 	assert.Panics(t, func() { c.MustGet("no_exist") })
 }
 
+func TestContextCopy(t *testing.T) {
+	c, _, _ := createTestContext()
+	c.index = 2
+	c.Request, _ = http.NewRequest("POST", "/hola", nil)
+	c.handlers = []HandlerFunc{func(c *Context) {}}
+	c.Params = Params{Param{Key: "foo", Value: "bar"}}
+	c.Set("foo", "bar")
+
+	cp := c.Copy()
+	assert.Nil(t, cp.handlers)
+	assert.Equal(t, cp.Request, c.Request)
+	assert.Equal(t, cp.index, AbortIndex)
+	assert.Equal(t, &cp.writermem, cp.Writer.(*responseWriter))
+	assert.Equal(t, cp.Input.context, cp)
+	assert.Equal(t, cp.Keys, c.Keys)
+	assert.Equal(t, cp.Engine, c.Engine)
+	assert.Equal(t, cp.Params, c.Params)
+}
+
 // Tests that the response is serialized as JSON
 // and Content-Type is set to application/json
 func TestContextRenderJSON(t *testing.T) {
@@ -79,7 +103,7 @@ func TestContextRenderJSON(t *testing.T) {
 // and responds with Content-Type set to text/html
 func TestContextRenderHTML(t *testing.T) {
 	c, w, router := createTestContext()
-	templ, _ := template.New("t").Parse(`Hello {{.name}}`)
+	templ := template.Must(template.New("t").Parse(`Hello {{.name}}`))
 	router.SetHTMLTemplate(templ)
 
 	c.HTML(201, "t", H{"name": "alexandernyquist"})
@@ -160,6 +184,7 @@ func TestContextNegotiationFormat(t *testing.T) {
 	c, _, _ := createTestContext()
 	c.Request, _ = http.NewRequest("POST", "", nil)
 
+	assert.Panics(t, func() { c.NegotiateFormat() })
 	assert.Equal(t, c.NegotiateFormat(MIMEJSON, MIMEXML), MIMEJSON)
 	assert.Equal(t, c.NegotiateFormat(MIMEHTML, MIMEJSON), MIMEHTML)
 }
@@ -203,13 +228,19 @@ func TestContextAbortWithStatus(t *testing.T) {
 
 func TestContextError(t *testing.T) {
 	c, _, _ := createTestContext()
+	assert.Nil(t, c.LastError())
+	assert.Empty(t, c.Errors.String())
+
 	c.Error(errors.New("first error"), "some data")
 	assert.Equal(t, c.LastError().Error(), "first error")
 	assert.Len(t, c.Errors, 1)
+	assert.Equal(t, c.Errors.String(), "Error #01: first error\n     Meta: some data\n")
 
 	c.Error(errors.New("second error"), "some data 2")
 	assert.Equal(t, c.LastError().Error(), "second error")
 	assert.Len(t, c.Errors, 2)
+	assert.Equal(t, c.Errors.String(), "Error #01: first error\n     Meta: some data\n"+
+		"Error #02: second error\n     Meta: some data 2\n")
 
 	assert.Equal(t, c.Errors[0].Err, "first error")
 	assert.Equal(t, c.Errors[0].Meta, "some data")

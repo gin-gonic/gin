@@ -50,3 +50,10 @@ func Default(method, contentType string) Binding {
 		}
 	}
 }
+
+func Validate(obj interface{}) error {
+	if err := _validator.ValidateStruct(obj); err != nil {
+		return error(err)
+	}
+	return nil
+}

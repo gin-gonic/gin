@@ -12,6 +12,11 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+// TODO
+// func (w *responseWriter) Hijack() (net.Conn, *bufio.ReadWriter, error) {
+// func (w *responseWriter) CloseNotify() <-chan bool {
+// func (w *responseWriter) Flush() {
+
 var _ ResponseWriter = &responseWriter{}
 var _ http.ResponseWriter = &responseWriter{}
 var _ http.ResponseWriter = ResponseWriter(&responseWriter{})

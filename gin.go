@@ -144,6 +144,13 @@ func (engine *Engine) handle(method, path string, handlers []HandlerFunc) {
 	if path[0] != '/' {
 		panic("path must begin with '/'")
 	}
+	if method == "" {
+		panic("HTTP method can not be empty")
+	}
+	if len(handlers) == 0 {
+		panic("there must be at least one handler")
+	}
+
 	root := engine.trees[method]
 	if root == nil {
 		root = new(node)

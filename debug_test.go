@@ -10,6 +10,10 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+// TODO
+// func debugRoute(httpMethod, absolutePath string, handlers []HandlerFunc) {
+// func debugPrint(format string, values ...interface{}) {
+
 func TestIsDebugging(t *testing.T) {
 	SetMode(DebugMode)
 	assert.True(t, IsDebugging())

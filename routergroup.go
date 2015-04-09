@@ -119,9 +119,10 @@ func (group *RouterGroup) createStaticHandler(absolutePath, root string) func(*C
 
 func (group *RouterGroup) combineHandlers(handlers []HandlerFunc) []HandlerFunc {
 	finalSize := len(group.Handlers) + len(handlers)
-	mergedHandlers := make([]HandlerFunc, 0, finalSize)
-	mergedHandlers = append(mergedHandlers, group.Handlers...)
-	return append(mergedHandlers, handlers...)
+	mergedHandlers := make([]HandlerFunc, finalSize)
+	copy(mergedHandlers, group.Handlers)
+	copy(mergedHandlers[len(group.Handlers):], handlers)
+	return mergedHandlers
 }
 
 func (group *RouterGroup) calculateAbsolutePath(relativePath string) string {

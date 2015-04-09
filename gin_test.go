@@ -10,6 +10,12 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+//TODO
+// func (engine *Engine) LoadHTMLGlob(pattern string) {
+// func (engine *Engine) LoadHTMLFiles(files ...string) {
+// func (engine *Engine) Run(addr string) error {
+// func (engine *Engine) RunTLS(addr string, cert string, key string) error {
+
 func init() {
 	SetMode(TestMode)
 }
@@ -20,9 +26,9 @@ func TestCreateEngine(t *testing.T) {
 	assert.Equal(t, router.engine, router)
 	assert.Empty(t, router.Handlers)
 
-	// TODO
-	// assert.Equal(t, router.router.NotFound, router.handle404)
-	// assert.Equal(t, router.router.MethodNotAllowed, router.handle405)
+	assert.Panics(t, func() { router.handle("", "/", []HandlerFunc{func(_ *Context) {}}) })
+	assert.Panics(t, func() { router.handle("GET", "", []HandlerFunc{func(_ *Context) {}}) })
+	assert.Panics(t, func() { router.handle("GET", "/", []HandlerFunc{}) })
 }
 
 func TestCreateDefaultRouter(t *testing.T) {

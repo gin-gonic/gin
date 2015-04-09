@@ -45,7 +45,17 @@ func TestFilterFlags(t *testing.T) {
 	assert.Equal(t, result, "text/html")
 }
 
+func TestFunctionName(t *testing.T) {
+	assert.Equal(t, nameOfFunction(somefunction), "github.com/gin-gonic/gin.somefunction")
+}
+
+func somefunction() {
+
+}
+
 func TestJoinPaths(t *testing.T) {
+	assert.Equal(t, joinPaths("", ""), "")
+	assert.Equal(t, joinPaths("", "/"), "/")
 	assert.Equal(t, joinPaths("/a", ""), "/a")
 	assert.Equal(t, joinPaths("/a/", ""), "/a/")
 	assert.Equal(t, joinPaths("/a/", "/"), "/a/")

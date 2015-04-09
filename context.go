@@ -61,6 +61,9 @@ func (c *Context) reset() {
 
 func (c *Context) Copy() *Context {
 	var cp Context = *c
+	cp.writermem.ResponseWriter = nil
+	cp.Writer = &cp.writermem
+	cp.Input.context = &cp
 	cp.index = AbortIndex
 	cp.handlers = nil
 	return &cp
@@ -161,7 +164,7 @@ func (c *Context) MustGet(key string) interface{} {
 	if value, exists := c.Get(key); exists {
 		return value
 	} else {
-		panic("Key " + key + " does not exist")
+		panic("Key \"" + key + "\" does not exist")
 	}
 }
 
