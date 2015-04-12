@@ -9,7 +9,9 @@ import (
 	"github.com/julienschmidt/httprouter"
 	"html/template"
 	"math"
+    "net"
 	"net/http"
+    "os"
 	"sync"
 )
 
@@ -21,6 +23,9 @@ const (
 	MIMEXML2     = "text/xml"
 	MIMEPlain    = "text/plain"
 	MIMEPOSTForm = "application/x-www-form-urlencoded"
+
+    UNIX = "unix"
+    TCP  = "tcp"
 )
 
 type (
@@ -131,6 +136,25 @@ func (engine *Engine) Run(addr string) {
 	if err := http.ListenAndServe(addr, engine); err != nil {
 		panic(err)
 	}
+}
+
+func (engine *Engine) RunSocket(addr string) {
+    debugPrint("Listening and serving HTTP on %s", addr)
+    os.Remove(addr)     
+
+    listener, err := net.Listen(UNIX, addr)
+    if err != nil {
+        panic(err)
+    }
+    os.Chmod(0666)
+
+    server := http.Server{Handler: engine}
+    err = server.Serve(listener)
+    if err != nil {
+        listener.Close() 
+        panic(err)
+    }
+    listener.Close() 
 }
 
 func (engine *Engine) RunTLS(addr string, cert string, key string) {
