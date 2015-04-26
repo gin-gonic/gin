@@ -32,48 +32,49 @@ func TestBindingDefault(t *testing.T) {
 
 func TestBindingJSON(t *testing.T) {
 	testBinding(t,
-		JSON, "json",
+		JSON, MIMEJSON, "json",
 		"/", "/",
 		`{"foo": "bar"}`, `{"bar": "foo"}`)
 }
 
 func TestBindingPOSTForm(t *testing.T) {
 	testBinding(t,
-		POSTForm, "post_form",
+		POSTForm, MIMEPOSTForm, "post_form",
 		"/", "/",
 		"foo=bar", "bar=foo")
 }
 
 func TestBindingGETForm(t *testing.T) {
 	testBinding(t,
-		GETForm, "get_form",
+		GETForm, MIMEPOSTForm, "get_form",
 		"/?foo=bar", "/?bar=foo",
 		"", "")
 }
 
 func TestBindingXML(t *testing.T) {
 	testBinding(t,
-		XML, "xml",
+		XML, MIMEXML, "xml",
 		"/", "/",
 		"<map><foo>bar</foo></map>", "<map><bar>foo</bar></map>")
 }
 
-func testBinding(t *testing.T, b Binding, name, path, badPath, body, badBody string) {
+func testBinding(t *testing.T, b Binding, contentType, name, path, badPath, body, badBody string) {
 	assert.Equal(t, b.Name(), name)
 
 	obj := FooStruct{}
-	req := requestWithBody(path, body)
+	req := requestWithBody(path, body, contentType)
 	err := b.Bind(req, &obj)
 	assert.NoError(t, err)
 	assert.Equal(t, obj.Foo, "bar")
 
 	obj = FooStruct{}
-	req = requestWithBody(badPath, badBody)
+	req = requestWithBody(badPath, badBody, contentType)
 	err = JSON.Bind(req, &obj)
 	assert.Error(t, err)
 }
 
-func requestWithBody(path, body string) (req *http.Request) {
+func requestWithBody(path, body, contentType string) (req *http.Request) {
 	req, _ = http.NewRequest("POST", path, bytes.NewBufferString(body))
-	return
+	req.Header.Add("Content-Type", contentType)
+	return req
 }
