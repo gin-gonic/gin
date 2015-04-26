@@ -120,7 +120,7 @@ func (c *Context) Abort() {
 	c.index = AbortIndex
 }
 
-// Same than AbortWithStatus() but also writes the specified response status code.
+// AbortWithStatus is the same as Abort but also writes the specified response status code.
 // For example, the first handler checks if the request is authorized. If it's not, context.AbortWithStatus(401) should be called.
 func (c *Context) AbortWithStatus(code int) {
 	c.Writer.WriteHeader(code)
