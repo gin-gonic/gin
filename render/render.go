@@ -17,124 +17,112 @@ type (
 		Render(http.ResponseWriter, int, ...interface{}) error
 	}
 
-	// JSON binding
 	jsonRender struct{}
 
-	// XML binding
+	indentedJSON struct{}
+
 	xmlRender struct{}
 
-	// Plain text
-	plainRender struct{}
+	plainTextRender struct{}
 
-	// HTML Plain text
 	htmlPlainRender struct{}
 
-	// Redirects
 	redirectRender struct{}
 
-	// Redirects
-	htmlDebugRender struct {
-		files []string
-		globs []string
-	}
-
-	// form binding
 	HTMLRender struct {
 		Template *template.Template
 	}
 )
 
 var (
-	JSON      = jsonRender{}
-	XML       = xmlRender{}
-	Plain     = plainRender{}
-	HTMLPlain = htmlPlainRender{}
-	Redirect  = redirectRender{}
-	HTMLDebug = &htmlDebugRender{}
+	JSON         = jsonRender{}
+	IndentedJSON = indentedJSON{}
+	XML          = xmlRender{}
+	HTMLPlain    = htmlPlainRender{}
+	Plain        = plainTextRender{}
+	Redirect     = redirectRender{}
 )
 
-func writeHeader(w http.ResponseWriter, code int, contentType string) {
-	w.Header().Set("Content-Type", contentType+"; charset=utf-8")
-	w.WriteHeader(code)
-}
-
-func (_ jsonRender) Render(w http.ResponseWriter, code int, data ...interface{}) error {
-	writeHeader(w, code, "application/json")
-	encoder := json.NewEncoder(w)
-	return encoder.Encode(data[0])
-}
-
 func (_ redirectRender) Render(w http.ResponseWriter, code int, data ...interface{}) error {
-	w.Header().Set("Location", data[0].(string))
-	w.WriteHeader(code)
+	req := data[0].(*http.Request)
+	location := data[1].(string)
+	http.Redirect(w, req, location, code)
 	return nil
 }
 
+func (_ jsonRender) Render(w http.ResponseWriter, code int, data ...interface{}) error {
+	WriteHeader(w, code, "application/json")
+	return json.NewEncoder(w).Encode(data[0])
+}
+
+func (_ indentedJSON) Render(w http.ResponseWriter, code int, data ...interface{}) error {
+	WriteHeader(w, code, "application/json")
+	jsonData, err := json.MarshalIndent(data[0], "", "    ")
+	if err != nil {
+		return err
+	}
+	_, err = w.Write(jsonData)
+	return err
+}
+
 func (_ xmlRender) Render(w http.ResponseWriter, code int, data ...interface{}) error {
-	writeHeader(w, code, "application/xml")
-	encoder := xml.NewEncoder(w)
-	return encoder.Encode(data[0])
+	WriteHeader(w, code, "application/xml")
+	return xml.NewEncoder(w).Encode(data[0])
 }
 
-func (_ plainRender) Render(w http.ResponseWriter, code int, data ...interface{}) error {
-	writeHeader(w, code, "text/plain")
+func (_ plainTextRender) Render(w http.ResponseWriter, code int, data ...interface{}) (err error) {
+	WriteHeader(w, code, "text/plain")
 	format := data[0].(string)
 	args := data[1].([]interface{})
-	var err error
 	if len(args) > 0 {
 		_, err = w.Write([]byte(fmt.Sprintf(format, args...)))
 	} else {
 		_, err = w.Write([]byte(format))
 	}
-	return err
+	return
 }
 
-func (_ htmlPlainRender) Render(w http.ResponseWriter, code int, data ...interface{}) error {
-	writeHeader(w, code, "text/html")
+func (_ htmlPlainRender) Render(w http.ResponseWriter, code int, data ...interface{}) (err error) {
+	WriteHeader(w, code, "text/html")
 	format := data[0].(string)
 	args := data[1].([]interface{})
-	var err error
 	if len(args) > 0 {
 		_, err = w.Write([]byte(fmt.Sprintf(format, args...)))
 	} else {
 		_, err = w.Write([]byte(format))
 	}
-	return err
-}
-
-func (r *htmlDebugRender) AddGlob(pattern string) {
-	r.globs = append(r.globs, pattern)
-}
-
-func (r *htmlDebugRender) AddFiles(files ...string) {
-	r.files = append(r.files, files...)
-}
-
-func (r *htmlDebugRender) Render(w http.ResponseWriter, code int, data ...interface{}) error {
-	writeHeader(w, code, "text/html")
-	file := data[0].(string)
-	obj := data[1]
-
-	t := template.New("")
-
-	if len(r.files) > 0 {
-		if _, err := t.ParseFiles(r.files...); err != nil {
-			return err
-		}
-	}
-
-	for _, glob := range r.globs {
-		if _, err := t.ParseGlob(glob); err != nil {
-			return err
-		}
-	}
-
-	return t.ExecuteTemplate(w, file, obj)
+	return
 }
 
 func (html HTMLRender) Render(w http.ResponseWriter, code int, data ...interface{}) error {
-	writeHeader(w, code, "text/html")
+	WriteHeader(w, code, "text/html")
 	file := data[0].(string)
-	obj := data[1]
-	return html.Template.ExecuteTemplate(w, file, obj)
+	args := data[1]
+	return html.Template.ExecuteTemplate(w, file, args)
+}
+
+func WriteHeader(w http.ResponseWriter, code int, contentType string) {
+	contentType = joinStrings(contentType, "; charset=utf-8")
+	w.Header().Set("Content-Type", contentType)
+	w.WriteHeader(code)
+}
+
+func joinStrings(a ...string) string {
+	if len(a) == 0 {
+		return ""
+	}
+	if len(a) == 1 {
+		return a[0]
+	}
+	n := 0
+	for i := 0; i < len(a); i++ {
+		n += len(a[i])
+	}
+
+	b := make([]byte, n)
+	n = 0
+	for _, s := range a {
+		n += copy(b[n:], s)
+	}
+	return string(b)
 }

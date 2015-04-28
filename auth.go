@@ -33,10 +33,7 @@ func (a authPairs) Less(i, j int) bool { return a[i].Value < a[j].Value }
 // the key is the user name and the value is the password, as well as the name of the Realm
 // (see http://tools.ietf.org/html/rfc2617#section-1.2)
 func BasicAuthForRealm(accounts Accounts, realm string) HandlerFunc {
-	pairs, err := processAccounts(accounts)
-	if err != nil {
-		panic(err)
-	}
+	pairs := processAccounts(accounts)
 	return func(c *Context) {
 		// Search user in the slice of allowed credentials
 		user, ok := searchCredential(pairs, c.Request.Header.Get("Authorization"))
@@ -61,14 +58,14 @@ func BasicAuth(accounts Accounts) HandlerFunc {
 	return BasicAuthForRealm(accounts, "")
 }
 
-func processAccounts(accounts Accounts) (authPairs, error) {
+func processAccounts(accounts Accounts) authPairs {
 	if len(accounts) == 0 {
-		return nil, errors.New("Empty list of authorized credentials")
+		panic("Empty list of authorized credentials")
 	}
 	pairs := make(authPairs, 0, len(accounts))
 	for user, password := range accounts {
 		if len(user) == 0 {
-			return nil, errors.New("User can not be empty")
+			panic("User can not be empty")
 		}
 		base := user + ":" + password
 		value := "Basic " + base64.StdEncoding.EncodeToString([]byte(base))
@@ -79,7 +76,7 @@ func processAccounts(accounts Accounts) (authPairs, error) {
 	}
 	// We have to sort the credentials in order to use bsearch later.
 	sort.Sort(pairs)
-	return pairs, nil
+	return pairs
 }
 
 func searchCredential(pairs authPairs, auth string) (string, bool) {

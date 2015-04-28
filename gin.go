@@ -5,24 +5,15 @@
 package gin
 
 import (
-	"github.com/gin-gonic/gin/render"
-	"github.com/julienschmidt/httprouter"
 	"html/template"
-	"math"
 	"net/http"
 	"sync"
+
+	"github.com/gin-gonic/gin/binding"
+	"github.com/gin-gonic/gin/render"
+	"github.com/julienschmidt/httprouter"
 )
 
-const (
-	AbortIndex            = math.MaxInt8 / 2
-	MIMEJSON              = "application/json"
-	MIMEHTML              = "text/html"
-	MIMEXML               = "application/xml"
-	MIMEXML2              = "text/xml"
-	MIMEPlain             = "text/plain"
-	MIMEPOSTForm          = "application/x-www-form-urlencoded"
-	MIMEMultipartPOSTForm = "multipart/form-data"
-)
 
 type (
 	HandlerFunc func(*Context)
@@ -30,14 +21,15 @@ type (
 	// Represents the web framework, it wraps the blazing fast httprouter multiplexer and a list of global middlewares.
 	Engine struct {
 		*RouterGroup
-		HTMLRender         render.Render
-		Default404Body     []byte
-		Default405Body     []byte
-		pool               sync.Pool
-		allNoRouteNoMethod []HandlerFunc
-		noRoute            []HandlerFunc
-		noMethod           []HandlerFunc
-		router             *httprouter.Router
+		HTMLRender     render.Render
+		Default404Body []byte
+		Default405Body []byte
+		pool           sync.Pool
+		allNoRoute     []HandlerFunc
+		allNoMethod    []HandlerFunc
+		noRoute        []HandlerFunc
+		noMethod       []HandlerFunc
+		router         *httprouter.Router
 	}
 )
 
@@ -56,9 +48,7 @@ func New() *Engine {
 	engine.router.NotFound = engine.handle404
 	engine.router.MethodNotAllowed = engine.handle405
 	engine.pool.New = func() interface{} {
-		c := &Context{Engine: engine}
-		c.Writer = &c.writermem
-		return c
+		return engine.allocateContext()
 	}
 	return engine
 }
@@ -70,10 +60,30 @@ func Default() *Engine {
 	return engine
 }
 
+func (engine *Engine) allocateContext() (context *Context) {
+	context = &Context{Engine: engine}
+	context.Writer = &context.writermem
+	context.Input = inputHolder{context: context}
+	return
+}
+
+func (engine *Engine) createContext(w http.ResponseWriter, req *http.Request, params httprouter.Params, handlers []HandlerFunc) *Context {
+	c := engine.pool.Get().(*Context)
+	c.reset()
+	c.writermem.reset(w)
+	c.Request = req
+	c.Params = params
+	c.handlers = handlers
+	return c
+}
+
+func (engine *Engine) reuseContext(c *Context) {
+	engine.pool.Put(c)
+}
+
 func (engine *Engine) LoadHTMLGlob(pattern string) {
 	if IsDebugging() {
-		render.HTMLDebug.AddGlob(pattern)
-		engine.HTMLRender = render.HTMLDebug
+		engine.HTMLRender = &render.HTMLDebugRender{Glob: pattern}
 	} else {
 		templ := template.Must(template.ParseGlob(pattern))
 		engine.SetHTMLTemplate(templ)
@@ -82,8 +92,7 @@ func (engine *Engine) LoadHTMLGlob(pattern string) {
 
 func (engine *Engine) LoadHTMLFiles(files ...string) {
 	if IsDebugging() {
-		render.HTMLDebug.AddFiles(files...)
-		engine.HTMLRender = render.HTMLDebug
+		engine.HTMLRender = &render.HTMLDebugRender{Files: files}
 	} else {
 		templ := template.Must(template.ParseFiles(files...))
 		engine.SetHTMLTemplate(templ)
@@ -114,21 +123,21 @@ func (engine *Engine) Use(middlewares ...HandlerFunc) {
 }
 
 func (engine *Engine) rebuild404Handlers() {
-	engine.allNoRouteNoMethod = engine.combineHandlers(engine.noRoute)
+	engine.allNoRoute = engine.combineHandlers(engine.noRoute)
 }
 
 func (engine *Engine) rebuild405Handlers() {
-	engine.allNoRouteNoMethod = engine.combineHandlers(engine.noMethod)
+	engine.allNoMethod = engine.combineHandlers(engine.noMethod)
 }
 
 func (engine *Engine) handle404(w http.ResponseWriter, req *http.Request) {
-	c := engine.createContext(w, req, nil, engine.allNoRouteNoMethod)
+	c := engine.createContext(w, req, nil, engine.allNoRoute)
 	// set 404 by default, useful for logging
 	c.Writer.WriteHeader(404)
 	c.Next()
 	if !c.Writer.Written() {
 		if c.Writer.Status() == 404 {
-			c.Data(-1, MIMEPlain, engine.Default404Body)
+			c.Data(-1, binding.MIMEPlain, engine.Default404Body)
 		} else {
 			c.Writer.WriteHeaderNow()
 		}
@@ -137,13 +146,13 @@ func (engine *Engine) handle404(w http.ResponseWriter, req *http.Request) {
 }
 
 func (engine *Engine) handle405(w http.ResponseWriter, req *http.Request) {
-	c := engine.createContext(w, req, nil, engine.allNoRouteNoMethod)
+	c := engine.createContext(w, req, nil, engine.allNoMethod)
 	// set 405 by default, useful for logging
 	c.Writer.WriteHeader(405)
 	c.Next()
 	if !c.Writer.Written() {
 		if c.Writer.Status() == 405 {
-			c.Data(-1, MIMEPlain, engine.Default405Body)
+			c.Data(-1, binding.MIMEPlain, engine.Default405Body)
 		} else {
 			c.Writer.WriteHeaderNow()
 		}
@@ -158,16 +167,10 @@ func (engine *Engine) ServeHTTP(writer http.ResponseWriter, request *http.Reques
 
 func (engine *Engine) Run(addr string) error {
 	debugPrint("Listening and serving HTTP on %s\n", addr)
-	if err := http.ListenAndServe(addr, engine); err != nil {
-		return err
-	}
-	return nil
+	return http.ListenAndServe(addr, engine)
 }
 
 func (engine *Engine) RunTLS(addr string, cert string, key string) error {
 	debugPrint("Listening and serving HTTPS on %s\n", addr)
-	if err := http.ListenAndServeTLS(addr, cert, key, engine); err != nil {
-		return err
-	}
-	return nil
+	return http.ListenAndServeTLS(addr, cert, key, engine)
 }

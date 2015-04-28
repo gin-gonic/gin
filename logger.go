@@ -5,8 +5,8 @@
 package gin
 
 import (
-	"github.com/mattn/go-colorable"
-	"log"
+	"fmt"
+	"io"
 	"time"
 )
 
@@ -25,25 +25,27 @@ func ErrorLogger() HandlerFunc {
 	return ErrorLoggerT(ErrorTypeAll)
 }
 
-func ErrorLoggerT(typ uint32) HandlerFunc {
+func ErrorLoggerT(typ int) HandlerFunc {
 	return func(c *Context) {
 		c.Next()
 
-		errs := c.Errors.ByType(typ)
-		if len(errs) > 0 {
-			// -1 status code = do not change current one
-			c.JSON(-1, c.Errors)
+		if !c.Writer.Written() {
+			if errs := c.Errors.ByType(typ); len(errs) > 0 {
+				c.JSON(-1, errs)
+			}
 		}
 	}
 }
 
 func Logger() HandlerFunc {
-	stdlogger := log.New(colorable.NewColorableStdout(), "", 0)
-	//errlogger := log.New(os.Stderr, "", 0)
+	return LoggerWithFile(DefaultWriter)
+}
 
+func LoggerWithFile(out io.Writer) HandlerFunc {
 	return func(c *Context) {
 		// Start timer
 		start := time.Now()
+		path := c.Request.URL.Path
 
 		// Process request
 		c.Next()
@@ -57,15 +59,16 @@ func Logger() HandlerFunc {
 		statusCode := c.Writer.Status()
 		statusColor := colorForStatus(statusCode)
 		methodColor := colorForMethod(method)
+		comment := c.Errors.String()
 
-		stdlogger.Printf("[GIN] %v |%s %3d %s| %12v | %s |%s  %s %-7s %s\n%s",
+		fmt.Fprintf(out, "[GIN] %v |%s %3d %s| %12v | %s |%s  %s %-7s %s\n%s",
 			end.Format("2006/01/02 - 15:04:05"),
 			statusColor, statusCode, reset,
 			latency,
 			clientIP,
 			methodColor, reset, method,
-			c.Request.URL.Path,
-			c.Errors.String(),
+			path,
+			comment,
 		)
 	}
 }

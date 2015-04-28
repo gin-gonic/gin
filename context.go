@@ -5,92 +5,46 @@
 package gin
 
 import (
-	"bytes"
 	"errors"
 	"fmt"
+	"math"
+	"net/http"
+	"strings"
+
 	"github.com/gin-gonic/gin/binding"
 	"github.com/gin-gonic/gin/render"
 	"github.com/julienschmidt/httprouter"
-	"log"
-	"net"
-	"net/http"
-	"strings"
 )
 
-const (
-	ErrorTypeInternal = 1 << iota
-	ErrorTypeExternal = 1 << iota
-	ErrorTypeAll      = 0xffffffff
-)
-
-// Used internally to collect errors that occurred during an http request.
-type errorMsg struct {
-	Err  string      `json:"error"`
-	Type uint32      `json:"-"`
-	Meta interface{} `json:"meta"`
-}
-
-type errorMsgs []errorMsg
-
-func (a errorMsgs) ByType(typ uint32) errorMsgs {
-	if len(a) == 0 {
-		return a
-	}
-	result := make(errorMsgs, 0, len(a))
-	for _, msg := range a {
-		if msg.Type&typ > 0 {
-			result = append(result, msg)
-		}
-	}
-	return result
-}
-
-func (a errorMsgs) String() string {
-	if len(a) == 0 {
-		return ""
-	}
-	var buffer bytes.Buffer
-	for i, msg := range a {
-		text := fmt.Sprintf("Error #%02d: %s \n     Meta: %v\n", (i + 1), msg.Err, msg.Meta)
-		buffer.WriteString(text)
-	}
-	return buffer.String()
-}
+const AbortIndex = math.MaxInt8 / 2
 
 // Context is the most important part of gin. It allows us to pass variables between middleware,
 // manage the flow, validate the JSON of a request and render a JSON response for example.
 type Context struct {
+	Engine    *Engine
 	writermem responseWriter
 	Request   *http.Request
 	Writer    ResponseWriter
-	Keys      map[string]interface{}
-	Errors    errorMsgs
-	Params    httprouter.Params
-	Engine    *Engine
-	handlers  []HandlerFunc
-	index     int8
-	accepted  []string
+
+	Params   httprouter.Params
+	Input    inputHolder
+	handlers []HandlerFunc
+	index    int8
+
+	Keys     map[string]interface{}
+	Errors   errorMsgs
+	Accepted []string
 }
 
 /************************************/
 /********** CONTEXT CREATION ********/
 /************************************/
 
-func (engine *Engine) createContext(w http.ResponseWriter, req *http.Request, params httprouter.Params, handlers []HandlerFunc) *Context {
-	c := engine.pool.Get().(*Context)
-	c.writermem.reset(w)
-	c.Request = req
-	c.Params = params
-	c.handlers = handlers
+func (c *Context) reset() {
 	c.Keys = nil
 	c.index = -1
-	c.accepted = nil
+	c.Accepted = nil
 	c.Errors = c.Errors[0:0]
-	return c
-}
-
-func (engine *Engine) reuseContext(c *Context) {
-	engine.pool.Put(c)
 }
 
 func (c *Context) Copy() *Context {
@@ -115,7 +69,7 @@ func (c *Context) Next() {
 	}
 }
 
-// Forces the system to do not continue calling the pending handlers in the chain.
+// Forces the system to not continue calling the pending handlers in the chain.
 func (c *Context) Abort() {
 	c.index = AbortIndex
 }
@@ -125,6 +79,10 @@ func (c *Context) Abort() {
 func (c *Context) AbortWithStatus(code int) {
 	c.Writer.WriteHeader(code)
 	c.Abort()
+}
+
+func (c *Context) IsAborted() bool {
+	return c.index == AbortIndex
 }
 
 /************************************/
@@ -142,7 +100,7 @@ func (c *Context) Fail(code int, err error) {
 	c.AbortWithStatus(code)
 }
 
-func (c *Context) ErrorTyped(err error, typ uint32, meta interface{}) {
+func (c *Context) ErrorTyped(err error, typ int, meta interface{}) {
 	c.Errors = append(c.Errors, errorMsg{
 		Err:  err.Error(),
 		Type: typ,
@@ -180,108 +138,42 @@ func (c *Context) Set(key string, item interface{}) {
 }
 
 // Get returns the value for the given key or an error if the key does not exist.
-func (c *Context) Get(key string) (interface{}, error) {
+func (c *Context) Get(key string) (value interface{}, ok bool) {
 	if c.Keys != nil {
-		value, ok := c.Keys[key]
-		if ok {
-			return value, nil
-		}
+		value, ok = c.Keys[key]
 	}
-	return nil, errors.New("Key does not exist.")
+	return
 }
 
 // MustGet returns the value for the given key or panics if the value doesn't exist.
 func (c *Context) MustGet(key string) interface{} {
-	value, err := c.Get(key)
-	if err != nil || value == nil {
-		log.Panicf("Key %s doesn't exist", value)
+	if value, exists := c.Get(key); exists {
+		return value
+	} else {
+		panic("Key " + key + " does not exist")
 	}
-	return value
-}
-
-func ipInMasks(ip net.IP, masks []interface{}) bool {
-	for _, proxy := range masks {
-		var mask *net.IPNet
-		var err error
-
-		switch t := proxy.(type) {
-		case string:
-			if _, mask, err = net.ParseCIDR(t); err != nil {
-				panic(err)
-			}
-		case net.IP:
-			mask = &net.IPNet{IP: t, Mask: net.CIDRMask(len(t)*8, len(t)*8)}
-		case net.IPNet:
-			mask = &t
-		}
-
-		if mask.Contains(ip) {
-			return true
-		}
-	}
-
-	return false
-}
-
-// the ForwardedFor middleware unwraps the X-Forwarded-For headers, be careful to only use this
-// middleware if you've got servers in front of this server. The list with (known) proxies and
-// local ips are being filtered out of the forwarded for list, giving the last not local ip being
-// the real client ip.
-func ForwardedFor(proxies ...interface{}) HandlerFunc {
-	if len(proxies) == 0 {
-		// default to local ips
-		var reservedLocalIps = []string{"10.0.0.0/8", "127.0.0.1/32", "172.16.0.0/12", "192.168.0.0/16"}
-
-		proxies = make([]interface{}, len(reservedLocalIps))
-
-		for i, v := range reservedLocalIps {
-			proxies[i] = v
-		}
-	}
-
-	return func(c *Context) {
-		// the X-Forwarded-For header contains an array with left most the client ip, then
-		// comma separated, all proxies the request passed. The last proxy appears
-		// as the remote address of the request. Returning the client
-		// ip to comply with default RemoteAddr response.
-
-		// check if remoteaddr is local ip or in list of defined proxies
-		remoteIp := net.ParseIP(strings.Split(c.Request.RemoteAddr, ":")[0])
-
-		if !ipInMasks(remoteIp, proxies) {
-			return
-		}
-
-		if forwardedFor := c.Request.Header.Get("X-Forwarded-For"); forwardedFor != "" {
-			parts := strings.Split(forwardedFor, ",")
-
-			for i := len(parts) - 1; i >= 0; i-- {
-				part := parts[i]
-
-				ip := net.ParseIP(strings.TrimSpace(part))
-
-				if ipInMasks(ip, proxies) {
-					continue
-				}
-
-				// returning remote addr conform the original remote addr format
-				c.Request.RemoteAddr = ip.String() + ":0"
-
-				// remove forwarded for address
-				c.Request.Header.Set("X-Forwarded-For", "")
-				return
-			}
-		}
-	}
-}
-
-func (c *Context) ClientIP() string {
-	return c.Request.RemoteAddr
 }
 
 /************************************/
 /********* PARSING REQUEST **********/
 /************************************/
+
+func (c *Context) ClientIP() string {
+	clientIP := c.Request.Header.Get("X-Real-IP")
+	if len(clientIP) > 0 {
+		return clientIP
+	}
+	clientIP = c.Request.Header.Get("X-Forwarded-For")
+	clientIP = strings.Split(clientIP, ",")[0]
+	if len(clientIP) > 0 {
+		return strings.TrimSpace(clientIP)
+	}
+	return c.Request.RemoteAddr
+}
+
+func (c *Context) ContentType() string {
+	return filterFlags(c.Request.Header.Get("Content-Type"))
+}
 
 // This function checks the Content-Type to select a binding engine automatically,
 // Depending the "Content-Type" header different bindings are used:
@@ -290,21 +182,7 @@ func (c *Context) ClientIP() string {
 // else --> returns an error
 // if Parses the request's body as JSON if Content-Type == "application/json"  using JSON or XML  as a JSON input. It decodes the json payload into the struct specified as a pointer.Like ParseBody() but this method also writes a 400 error if the json is not valid.
 func (c *Context) Bind(obj interface{}) bool {
-	var b binding.Binding
-	ctype := filterFlags(c.Request.Header.Get("Content-Type"))
-	switch {
-	case c.Request.Method == "GET" || ctype == MIMEPOSTForm:
-		b = binding.Form
-	case ctype == MIMEMultipartPOSTForm:
-		b = binding.MultipartForm
-	case ctype == MIMEJSON:
-		b = binding.JSON
-	case ctype == MIMEXML || ctype == MIMEXML2:
-		b = binding.XML
-	default:
-		c.Fail(400, errors.New("unknown content-type: "+ctype))
-		return false
-	}
+	b := binding.Default(c.Request.Method, c.ContentType())
 	return c.BindWith(obj, b)
 }
 
@@ -359,9 +237,9 @@ func (c *Context) HTMLString(code int, format string, values ...interface{}) {
 // Returns a HTTP redirect to the specific location.
 func (c *Context) Redirect(code int, location string) {
 	if code >= 300 && code <= 308 {
-		c.Render(code, render.Redirect, location)
+		c.Render(code, render.Redirect, c.Request, location)
 	} else {
-		panic(fmt.Sprintf("Cannot send a redirect with status code %d", code))
+		panic(fmt.Sprintf("Cannot redirect with status code %d", code))
 	}
 }
 
@@ -394,18 +272,18 @@ type Negotiate struct {
 
 func (c *Context) Negotiate(code int, config Negotiate) {
 	switch c.NegotiateFormat(config.Offered...) {
-	case MIMEJSON:
+	case binding.MIMEJSON:
 		data := chooseData(config.JSONData, config.Data)
 		c.JSON(code, data)
 
-	case MIMEHTML:
-		data := chooseData(config.HTMLData, config.Data)
+	case binding.MIMEHTML:
 		if len(config.HTMLPath) == 0 {
 			panic("negotiate config is wrong. html path is needed")
 		}
+		data := chooseData(config.HTMLData, config.Data)
 		c.HTML(code, config.HTMLPath, data)
 
-	case MIMEXML:
+	case binding.MIMEXML:
 		data := chooseData(config.XMLData, config.Data)
 		c.XML(code, data)
 
@@ -418,24 +296,22 @@ func (c *Context) NegotiateFormat(offered ...string) string {
 	if len(offered) == 0 {
 		panic("you must provide at least one offer")
 	}
-	if c.accepted == nil {
-		c.accepted = parseAccept(c.Request.Header.Get("Accept"))
+	if c.Accepted == nil {
+		c.Accepted = parseAccept(c.Request.Header.Get("Accept"))
 	}
-	if len(c.accepted) == 0 {
+	if len(c.Accepted) == 0 {
 		return offered[0]
-
-	} else {
-		for _, accepted := range c.accepted {
-			for _, offert := range offered {
-				if accepted == offert {
-					return offert
-				}
+	}
+	for _, accepted := range c.Accepted {
+		for _, offert := range offered {
+			if accepted == offert {
+				return offert
 			}
 		}
-		return ""
 	}
+	return ""
 }
 
 func (c *Context) SetAccepted(formats ...string) {
-	c.accepted = formats
+	c.Accepted = formats
 }

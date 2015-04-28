@@ -56,17 +56,20 @@ func chooseData(custom, wildcard interface{}) interface{} {
 	return custom
 }
 
-func parseAccept(accept string) []string {
-	parts := strings.Split(accept, ",")
-	for i, part := range parts {
+func parseAccept(acceptHeader string) []string {
+	parts := strings.Split(acceptHeader, ",")
+	out := make([]string, 0, len(parts))
+	for _, part := range parts {
 		index := strings.IndexByte(part, ';')
 		if index >= 0 {
 			part = part[0:index]
 		}
 		part = strings.TrimSpace(part)
-		parts[i] = part
+		if len(part) > 0 {
+			out = append(out, part)
+		}
 	}
-	return parts
+	return out
 }
 
 func lastChar(str string) uint8 {
