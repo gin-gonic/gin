@@ -78,6 +78,7 @@ func (n *node) incrementChildPrio(pos int) int {
 // addRoute adds a node with the given handle to the path.
 // Not concurrency-safe!
 func (n *node) addRoute(path string, handlers []HandlerFunc) {
+	fullPath := path
 	n.priority++
 	numParams := countParams(path)
 
@@ -147,7 +148,9 @@ func (n *node) addRoute(path string, handlers []HandlerFunc) {
 						}
 					}
 
-					panic("conflict with wildcard route")
+					panic("path segment '" + path +
+						"' conflicts with existing wildcard '" + n.path +
+						"' in path '" + fullPath + "'")
 				}
 
 				c := path[0]
@@ -179,23 +182,23 @@ func (n *node) addRoute(path string, handlers []HandlerFunc) {
 					n.incrementChildPrio(len(n.indices) - 1)
 					n = child
 				}
-				n.insertChild(numParams, path, handlers)
+				n.insertChild(numParams, path, fullPath, handlers)
 				return
 
 			} else if i == len(path) { // Make node a (in-path) leaf
 				if n.handlers != nil {
-					panic("a Handle is already registered for this path")
+					panic("handlers are already registered for path ''" + fullPath + "'")
 				}
 				n.handlers = handlers
 			}
 			return
 		}
 	} else { // Empty tree
-		n.insertChild(numParams, path, handlers)
+		n.insertChild(numParams, path, fullPath, handlers)
 	}
 }
 
-func (n *node) insertChild(numParams uint8, path string, handlers []HandlerFunc) {
+func (n *node) insertChild(numParams uint8, path string, fullPath string, handlers []HandlerFunc) {
 	var offset int // already handled bytes of the path
 
 	// find prefix until first wildcard (beginning with ':'' or '*'')
@@ -205,27 +208,29 @@ func (n *node) insertChild(numParams uint8, path string, handlers []HandlerFunc)
 			continue
 		}
 
-		// check if this Node existing children which would be
-		// unreachable if we insert the wildcard here
-		if len(n.children) > 0 {
-			panic("wildcard route conflicts with existing children")
-		}
-
 		// find wildcard end (either '/' or path end)
 		end := i + 1
 		for end < max && path[end] != '/' {
 			switch path[end] {
 			// the wildcard name must not contain ':' and '*'
 			case ':', '*':
-				panic("only one wildcard per path segment is allowed")
+				panic("only one wildcard per path segment is allowed, has: '" +
+					path[i:] + "' in path '" + fullPath + "'")
 			default:
 				end++
 			}
 		}
 
+		// check if this Node existing children which would be
+		// unreachable if we insert the wildcard here
+		if len(n.children) > 0 {
+			panic("wildcard route '" + path[i:end] +
+				"' conflicts with existing children in path '" + fullPath + "'")
+		}
+
 		// check if the wildcard has a name
 		if end-i < 2 {
-			panic("wildcards must be named with a non-empty name")
+			panic("wildcards must be named with a non-empty name in path '" + fullPath + "'")
 		}
 
 		if c == ':' { // param
@@ -261,17 +266,17 @@ func (n *node) insertChild(numParams uint8, path string, handlers []HandlerFunc)
 
 		} else { // catchAll
 			if end != max || numParams > 1 {
-				panic("catch-all routes are only allowed at the end of the path")
+				panic("catch-all routes are only allowed at the end of the path in path '" + fullPath + "'")
 			}
 
 			if len(n.path) > 0 && n.path[len(n.path)-1] == '/' {
-				panic("catch-all conflicts with existing handle for the path segment root")
+				panic("catch-all conflicts with existing handle for the path segment root in path '" + fullPath + "'")
 			}
 
 			// currently fixed width 1 for '/'
 			i--
 			if path[i] != '/' {
-				panic("no / before catch-all")
+				panic("no / before catch-all in path '" + fullPath + "'")
 			}
 
 			n.path = path[offset:i]
@@ -394,7 +399,7 @@ walk: // Outer loop for walking the tree
 					return
 
 				default:
-					panic("Invalid node type")
+					panic("invalid node type")
 				}
 			}
 		} else if path == n.path {
@@ -505,7 +510,7 @@ func (n *node) findCaseInsensitivePath(path string, fixTrailingSlash bool) (ciPa
 				return append(ciPath, path...), true
 
 			default:
-				panic("Invalid node type")
+				panic("invalid node type")
 			}
 		} else {
 			// We should have reached the node containing the handle.

@@ -25,6 +25,9 @@ func TestCreateEngine(t *testing.T) {
 	assert.Equal(t, "/", router.absolutePath)
 	assert.Equal(t, router.engine, router)
 	assert.Empty(t, router.Handlers)
+	assert.True(t, router.RedirectTrailingSlash)
+	assert.True(t, router.RedirectFixedPath)
+	assert.True(t, router.HandleMethodNotAllowed)
 
 	assert.Panics(t, func() { router.handle("", "/", []HandlerFunc{func(_ *Context) {}}) })
 	assert.Panics(t, func() { router.handle("GET", "", []HandlerFunc{func(_ *Context) {}}) })

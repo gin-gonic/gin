@@ -233,6 +233,7 @@ func (engine *Engine) serveAutoRedirect(c *Context, root *node, tsr bool) bool {
 		}
 		debugPrint("redirecting request %d: %s --> %s", code, path, req.URL.String())
 		http.Redirect(c.Writer, req, req.URL.String(), code)
+		c.writermem.WriteHeaderNow()
 		return true
 	}
 
@@ -246,6 +247,7 @@ func (engine *Engine) serveAutoRedirect(c *Context, root *node, tsr bool) bool {
 			req.URL.Path = string(fixedPath)
 			debugPrint("redirecting request %d: %s --> %s", code, path, req.URL.String())
 			http.Redirect(c.Writer, req, req.URL.String(), code)
+			c.writermem.WriteHeaderNow()
 			return true
 		}
 	}
