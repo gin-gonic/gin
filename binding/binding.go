@@ -28,25 +28,22 @@ type Binding interface {
 var _validator = validator.NewValidator("binding", validator.BakedInValidators)
 
 var (
-	JSON     = jsonBinding{}
-	XML      = xmlBinding{}
-	GETForm  = getFormBinding{}
-	POSTForm = postFormBinding{}
+	JSON = jsonBinding{}
+	XML  = xmlBinding{}
+	Form = formBinding{}
 )
 
 func Default(method, contentType string) Binding {
 	if method == "GET" {
-		return GETForm
+		return Form
 	} else {
 		switch contentType {
-		case MIMEPOSTForm:
-			return POSTForm
 		case MIMEJSON:
 			return JSON
 		case MIMEXML, MIMEXML2:
 			return XML
 		default:
-			return GETForm
+			return Form
 		}
 	}
 }

@@ -75,5 +75,4 @@ func TestRenderJoinStrings(t *testing.T) {
 	assert.Equal(t, joinStrings("a", "BB", "c"), "aBBc")
 	assert.Equal(t, joinStrings("a", "", "c"), "ac")
 	assert.Equal(t, joinStrings("text/html", "; charset=utf-8"), "text/html; charset=utf-8")
-
 }

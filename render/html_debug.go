@@ -5,6 +5,7 @@
 package render
 
 import (
+	"errors"
 	"html/template"
 	"net/http"
 )
@@ -19,24 +20,19 @@ func (r *HTMLDebugRender) Render(w http.ResponseWriter, code int, data ...interf
 	file := data[0].(string)
 	obj := data[1]
 
-	if t, err := r.newTemplate(); err == nil {
+	if t, err := r.loadTemplate(); err == nil {
 		return t.ExecuteTemplate(w, file, obj)
 	} else {
 		return err
 	}
 }
 
-func (r *HTMLDebugRender) newTemplate() (*template.Template, error) {
-	t := template.New("")
+func (r *HTMLDebugRender) loadTemplate() (*template.Template, error) {
 	if len(r.Files) > 0 {
-		if _, err := t.ParseFiles(r.Files...); err != nil {
-			return nil, err
-		}
+		return template.ParseFiles(r.Files...)
 	}
 	if len(r.Glob) > 0 {
-		if _, err := t.ParseGlob(r.Glob); err != nil {
-			return nil, err
-		}
+		return template.ParseGlob(r.Glob)
 	}
-	return t, nil
+	return nil, errors.New("the HTML debug render was created without files or glob pattern")
 }

@@ -13,6 +13,7 @@ import (
 
 	"github.com/gin-gonic/gin/binding"
 	"github.com/gin-gonic/gin/render"
+	"golang.org/x/net/context"
 )
 
 const (
@@ -27,15 +28,37 @@ const (
 
 const AbortIndex = math.MaxInt8 / 2
 
+// Param is a single URL parameter, consisting of a key and a value.
+type Param struct {
+	Key   string
+	Value string
+}
+
+// Params is a Param-slice, as returned by the router.
+// The slice is ordered, the first URL parameter is also the first slice value.
+// It is therefore safe to read values by the index.
+type Params []Param
+
+// ByName returns the value of the first Param which key matches the given name.
+// If no matching Param is found, an empty string is returned.
+func (ps Params) ByName(name string) string {
+	for _, entry := range ps {
+		if entry.Key == name {
+			return entry.Value
+		}
+	}
+	return ""
+}
+
 // Context is the most important part of gin. It allows us to pass variables between middleware,
 // manage the flow, validate the JSON of a request and render a JSON response for example.
 type Context struct {
+	context.Context
 	writermem responseWriter
 	Request   *http.Request
 	Writer    ResponseWriter
 
 	Params   Params
-	Input    inputHolder
 	handlers []HandlerFunc
 	index    int8
 
@@ -63,7 +86,6 @@ func (c *Context) Copy() *Context {
 	var cp Context = *c
 	cp.writermem.ResponseWriter = nil
 	cp.Writer = &cp.writermem
-	cp.Input.context = &cp
 	cp.index = AbortIndex
 	cp.handlers = nil
 	return &cp
@@ -139,6 +161,75 @@ func (c *Context) LastError() error {
 }
 
 /************************************/
+/************ INPUT DATA ************/
+/************************************/
+
+/** Shortcut for c.Request.FormValue(key) */
+func (c *Context) FormValue(key string) (va string) {
+	va, _ = c.formValue(key)
+	return
+}
+
+/** Shortcut for c.Request.PostFormValue(key) */
+func (c *Context) PostFormValue(key string) (va string) {
+	va, _ = c.postFormValue(key)
+	return
+}
+
+/** Shortcut for c.Params.ByName(key) */
+func (c *Context) ParamValue(key string) (va string) {
+	va, _ = c.paramValue(key)
+	return
+}
+
+func (c *Context) DefaultPostFormValue(key, defaultValue string) string {
+	if va, ok := c.postFormValue(key); ok {
+		return va
+	} else {
+		return defaultValue
+	}
+}
+
+func (c *Context) DefaultFormValue(key, defaultValue string) string {
+	if va, ok := c.formValue(key); ok {
+		return va
+	} else {
+		return defaultValue
+	}
+}
+
+func (c *Context) DefaultParamValue(key, defaultValue string) string {
+	if va, ok := c.paramValue(key); ok {
+		return va
+	} else {
+		return defaultValue
+	}
+}
+
+func (c *Context) paramValue(key string) (string, bool) {
+	va := c.Params.ByName(key)
+	return va, len(va) > 0
+}
+
+func (c *Context) formValue(key string) (string, bool) {
+	req := c.Request
+	req.ParseForm()
+	if values, ok := req.Form[key]; ok && len(values) > 0 {
+		return values[0], true
+	}
+	return "", false
+}
+
+func (c *Context) postFormValue(key string) (string, bool) {
+	req := c.Request
+	req.ParseForm()
+	if values, ok := req.PostForm[key]; ok && len(values) > 0 {
+		return values[0], true
+	}
+	return "", false
+}
+
+/************************************/
 /******** METADATA MANAGEMENT********/
 /************************************/
 
@@ -166,6 +257,17 @@ func (c *Context) MustGet(key string) interface{} {
 	} else {
 		panic("Key \"" + key + "\" does not exist")
 	}
+}
+
+func (c *Context) Value(key interface{}) interface{} {
+	if key == 0 {
+		return c.Request
+	}
+	if keyAsString, ok := key.(string); ok {
+		val, _ := c.Get(keyAsString)
+		return val
+	}
+	return c.Context.Value(key)
 }
 
 /************************************/

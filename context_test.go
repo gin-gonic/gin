@@ -79,13 +79,56 @@ func TestContextCopy(t *testing.T) {
 
 	cp := c.Copy()
 	assert.Nil(t, cp.handlers)
+	assert.Nil(t, cp.writermem.ResponseWriter)
+	assert.Equal(t, &cp.writermem, cp.Writer.(*responseWriter))
 	assert.Equal(t, cp.Request, c.Request)
 	assert.Equal(t, cp.index, AbortIndex)
-	assert.Equal(t, &cp.writermem, cp.Writer.(*responseWriter))
-	assert.Equal(t, cp.Input.context, cp)
 	assert.Equal(t, cp.Keys, c.Keys)
 	assert.Equal(t, cp.Engine, c.Engine)
 	assert.Equal(t, cp.Params, c.Params)
+}
+
+func TestContextFormParse(t *testing.T) {
+	c, _, _ := createTestContext()
+	c.Request, _ = http.NewRequest("GET", "http://example.com/?foo=bar&page=10", nil)
+
+	assert.Equal(t, c.DefaultFormValue("foo", "none"), "bar")
+	assert.Equal(t, c.FormValue("foo"), "bar")
+	assert.Empty(t, c.PostFormValue("foo"))
+
+	assert.Equal(t, c.DefaultFormValue("page", "0"), "10")
+	assert.Equal(t, c.FormValue("page"), "10")
+	assert.Empty(t, c.PostFormValue("page"))
+
+	assert.Equal(t, c.DefaultFormValue("NoKey", "nada"), "nada")
+	assert.Empty(t, c.FormValue("NoKey"))
+	assert.Empty(t, c.PostFormValue("NoKey"))
+
+}
+
+func TestContextPostFormParse(t *testing.T) {
+	c, _, _ := createTestContext()
+	body := bytes.NewBufferString("foo=bar&page=11&both=POST")
+	c.Request, _ = http.NewRequest("POST", "http://example.com/?both=GET&id=main", body)
+	c.Request.Header.Add("Content-Type", MIMEPOSTForm)
+
+	assert.Equal(t, c.DefaultPostFormValue("foo", "none"), "bar")
+	assert.Equal(t, c.PostFormValue("foo"), "bar")
+	assert.Equal(t, c.FormValue("foo"), "bar")
+
+	assert.Equal(t, c.DefaultPostFormValue("page", "0"), "11")
+	assert.Equal(t, c.PostFormValue("page"), "11")
+	assert.Equal(t, c.FormValue("page"), "11")
+
+	assert.Equal(t, c.PostFormValue("both"), "POST")
+	assert.Equal(t, c.FormValue("both"), "POST")
+
+	assert.Equal(t, c.FormValue("id"), "main")
+	assert.Empty(t, c.PostFormValue("id"))
+
+	assert.Equal(t, c.DefaultPostFormValue("NoKey", "nada"), "nada")
+	assert.Empty(t, c.PostFormValue("NoKey"))
+	assert.Empty(t, c.FormValue("NoKey"))
 }
 
 // Tests that the response is serialized as JSON

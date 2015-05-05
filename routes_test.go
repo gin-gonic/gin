@@ -5,7 +5,6 @@
 package gin
 
 import (
-	"errors"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -107,8 +106,26 @@ func TestRouteNotOK2(t *testing.T) {
 	testRouteNotOK2("HEAD", t)
 }
 
+// TestContextParamsGet tests that a parameter can be parsed from the URL.
+func TestRouteParamsByName(t *testing.T) {
+	name := ""
+	lastName := ""
+	router := New()
+	router.GET("/test/:name/:last_name", func(c *Context) {
+		name = c.Params.ByName("name")
+		lastName = c.Params.ByName("last_name")
+	})
+	// RUN
+	w := performRequest(router, "GET", "/test/john/smith")
+
+	// TEST
+	assert.Equal(t, w.Code, 200)
+	assert.Equal(t, name, "john")
+	assert.Equal(t, lastName, "smith")
+}
+
 // TestHandleStaticFile - ensure the static file handles properly
-func TestHandleStaticFile(t *testing.T) {
+func TestRouteStaticFile(t *testing.T) {
 	// SETUP file
 	testRoot, _ := os.Getwd()
 	f, err := ioutil.TempFile(testRoot, "")
@@ -134,7 +151,7 @@ func TestHandleStaticFile(t *testing.T) {
 }
 
 // TestHandleStaticDir - ensure the root/sub dir handles properly
-func TestHandleStaticDir(t *testing.T) {
+func TestRouteStaticDir(t *testing.T) {
 	// SETUP
 	r := New()
 	r.Static("/", "./")
@@ -151,7 +168,7 @@ func TestHandleStaticDir(t *testing.T) {
 }
 
 // TestHandleHeadToDir - ensure the root/sub dir handles properly
-func TestHandleHeadToDir(t *testing.T) {
+func TestRouteHeadToDir(t *testing.T) {
 	// SETUP
 	router := New()
 	router.Static("/", "./")
@@ -165,153 +182,4 @@ func TestHandleHeadToDir(t *testing.T) {
 	assert.NotEmpty(t, bodyAsString)
 	assert.Contains(t, bodyAsString, "gin.go")
 	assert.Equal(t, w.HeaderMap.Get("Content-Type"), "text/html; charset=utf-8")
-}
-
-func TestContextGeneralCase(t *testing.T) {
-	signature := ""
-	router := New()
-	router.Use(func(c *Context) {
-		signature += "A"
-		c.Next()
-		signature += "B"
-	})
-	router.Use(func(c *Context) {
-		signature += "C"
-	})
-	router.GET("/", func(c *Context) {
-		signature += "D"
-	})
-	router.NoRoute(func(c *Context) {
-		signature += "X"
-	})
-	router.NoMethod(func(c *Context) {
-		signature += "X"
-	})
-	// RUN
-	w := performRequest(router, "GET", "/")
-
-	// TEST
-	assert.Equal(t, w.Code, 200)
-	assert.Equal(t, signature, "ACDB")
-}
-
-// TestBadAbortHandlersChain - ensure that Abort after switch context will not interrupt pending handlers
-func TestContextNextOrder(t *testing.T) {
-	signature := ""
-	router := New()
-	router.Use(func(c *Context) {
-		signature += "A"
-		c.Next()
-		signature += "B"
-	})
-	router.Use(func(c *Context) {
-		signature += "C"
-		c.Next()
-		signature += "D"
-	})
-	router.NoRoute(func(c *Context) {
-		signature += "E"
-		c.Next()
-		signature += "F"
-	}, func(c *Context) {
-		signature += "G"
-		c.Next()
-		signature += "H"
-	})
-	// RUN
-	w := performRequest(router, "GET", "/")
-
-	// TEST
-	assert.Equal(t, w.Code, 404)
-	assert.Equal(t, signature, "ACEGHFDB")
-}
-
-// TestAbortHandlersChain - ensure that Abort interrupt used middlewares in fifo order
-func TestAbortHandlersChain(t *testing.T) {
-	signature := ""
-	router := New()
-	router.Use(func(c *Context) {
-		signature += "A"
-	})
-	router.Use(func(c *Context) {
-		signature += "C"
-		c.AbortWithStatus(409)
-		c.Next()
-		signature += "D"
-	})
-	router.GET("/", func(c *Context) {
-		signature += "D"
-		c.Next()
-		signature += "E"
-	})
-
-	// RUN
-	w := performRequest(router, "GET", "/")
-
-	// TEST
-	assert.Equal(t, w.Code, 409)
-	assert.Equal(t, signature, "ACD")
-}
-
-func TestAbortHandlersChainAndNext(t *testing.T) {
-	signature := ""
-	router := New()
-	router.Use(func(c *Context) {
-		signature += "A"
-		c.AbortWithStatus(410)
-		c.Next()
-		signature += "B"
-
-	})
-	router.GET("/", func(c *Context) {
-		signature += "C"
-		c.Next()
-	})
-	// RUN
-	w := performRequest(router, "GET", "/")
-
-	// TEST
-	assert.Equal(t, w.Code, 410)
-	assert.Equal(t, signature, "AB")
-}
-
-// TestContextParamsGet tests that a parameter can be parsed from the URL.
-func TestContextParamsByName(t *testing.T) {
-	name := ""
-	lastName := ""
-	router := New()
-	router.GET("/test/:name/:last_name", func(c *Context) {
-		name = c.Params.ByName("name")
-		lastName = c.Params.ByName("last_name")
-	})
-	// RUN
-	w := performRequest(router, "GET", "/test/john/smith")
-
-	// TEST
-	assert.Equal(t, w.Code, 200)
-	assert.Equal(t, name, "john")
-	assert.Equal(t, lastName, "smith")
-}
-
-// TestFailHandlersChain - ensure that Fail interrupt used middlewares in fifo order as
-// as well as Abort
-func TestFailHandlersChain(t *testing.T) {
-	// SETUP
-	signature := ""
-	router := New()
-	router.Use(func(context *Context) {
-		signature += "A"
-		context.Fail(500, errors.New("foo"))
-	})
-	router.Use(func(context *Context) {
-		signature += "B"
-		context.Next()
-		signature += "C"
-	})
-	// RUN
-	w := performRequest(router, "GET", "/")
-
-	// TEST
-	assert.Equal(t, w.Code, 500)
-	assert.Equal(t, signature, "A")
 }

@@ -86,9 +86,7 @@ func Default() *Engine {
 }
 
 func (engine *Engine) allocateContext() (context *Context) {
-	context = &Context{Engine: engine}
-	context.Input = inputHolder{context: context}
-	return
+	return &Context{Engine: engine}
 }
 
 func (engine *Engine) LoadHTMLGlob(pattern string) {
@@ -110,9 +108,7 @@ func (engine *Engine) LoadHTMLFiles(files ...string) {
 }
 
 func (engine *Engine) SetHTMLTemplate(templ *template.Template) {
-	engine.HTMLRender = render.HTMLRender{
-		Template: templ,
-	}
+	engine.HTMLRender = render.HTMLRender{Template: templ}
 }
 
 // Adds handlers for NoRoute. It return a 404 code by default.
@@ -160,11 +156,13 @@ func (engine *Engine) handle(method, path string, handlers []HandlerFunc) {
 }
 
 func (engine *Engine) Run(addr string) error {
+	debugPrint("[WARNING] Running in DEBUG mode! Disable it before going production")
 	debugPrint("Listening and serving HTTP on %s\n", addr)
 	return http.ListenAndServe(addr, engine)
 }
 
 func (engine *Engine) RunTLS(addr string, cert string, key string) error {
+	debugPrint("[WARNING] Running in DEBUG mode! Disable it before going production")
 	debugPrint("Listening and serving HTTPS on %s\n", addr)
 	return http.ListenAndServeTLS(addr, cert, key, engine)
 }
@@ -233,6 +231,7 @@ func (engine *Engine) serveAutoRedirect(c *Context, root *node, tsr bool) bool {
 		} else {
 			req.URL.Path = path + "/"
 		}
+		debugPrint("redirecting request %d: %s --> %s", code, path, req.URL.String())
 		http.Redirect(c.Writer, req, req.URL.String(), code)
 		return true
 	}
@@ -245,6 +244,7 @@ func (engine *Engine) serveAutoRedirect(c *Context, root *node, tsr bool) bool {
 		)
 		if found {
 			req.URL.Path = string(fixedPath)
+			debugPrint("redirecting request %d: %s --> %s", code, path, req.URL.String())
 			http.Redirect(c.Writer, req, req.URL.String(), code)
 			return true
 		}
