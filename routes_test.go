@@ -132,7 +132,26 @@ func TestRouteParamsByName(t *testing.T) {
 	assert.Equal(t, w.Code, 200)
 	assert.Equal(t, name, "john")
 	assert.Equal(t, lastName, "smith")
-	assert.Equal(t, wild, "/is/super/great")
+	assert.Equal(t, wild, "is/super/great")
+}
+
+func TestRouteEmptyWildcardParam(t *testing.T) {
+	name := "A"
+	wild := "A"
+	router := New()
+	router.GET("/test/:name/*wild", func(c *Context) {
+		name = c.Params.ByName("name")
+		wild = c.Params.ByName("wild")
+	})
+
+	// RUN
+	w := performRequest(router, "GET", "/test/john/")
+	assert.Equal(t, w.Code, 200)
+	assert.Equal(t, name, "john")
+	assert.Empty(t, wild)
+
+	w = performRequest(router, "GET", "/test/john")
+	assert.Equal(t, w.Code, 404)
 }
 
 // TestHandleStaticFile - ensure the static file handles properly
@@ -162,7 +181,7 @@ func TestRouteStaticFile(t *testing.T) {
 }
 
 // TestHandleStaticDir - ensure the root/sub dir handles properly
-func TestRouteStaticDir(t *testing.T) {
+func TestRouteStaticGETToDir(t *testing.T) {
 	// SETUP
 	r := New()
 	r.Static("/", "./")
@@ -179,7 +198,7 @@ func TestRouteStaticDir(t *testing.T) {
 }
 
 // TestHandleHeadToDir - ensure the root/sub dir handles properly
-func TestRouteHeadToDir(t *testing.T) {
+func TestRouteStaticHeadToDir(t *testing.T) {
 	// SETUP
 	router := New()
 	router.Static("/", "./")
