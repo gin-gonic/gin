@@ -327,6 +327,10 @@ func (c *Context) JSON(code int, obj interface{}) {
 	c.Render(code, render.JSON, obj)
 }
 
+func (c *Context) IndentedJSON(code int, obj interface{}) {
+	c.Render(code, render.IndentedJSON, obj)
+}
+
 // Serializes the given struct as XML into the response body in a fast and efficient way.
 // It also sets the Content-Type as "application/xml".
 func (c *Context) XML(code int, obj interface{}) {
