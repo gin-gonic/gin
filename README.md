@@ -29,7 +29,7 @@ func main() {
 		c.String(http.StatusUnauthorized, "not authorized")
 	})
 	router.PUT("/error", func(c *gin.Context) {
-		c.String(http.StatusInternalServerError, "and error happened :(")
+		c.String(http.StatusInternalServerError, "an error happened :(")
 	})
 	router.Run(":8080")
 }
