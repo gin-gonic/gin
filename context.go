@@ -6,7 +6,6 @@ package gin
 
 import (
 	"errors"
-	"fmt"
 	"math"
 	"net/http"
 	"strings"
@@ -314,27 +313,15 @@ func (c *Context) BindWith(obj interface{}, b binding.Binding) bool {
 /******** RESPONSE RENDERING ********/
 /************************************/
 
+func (c *Context) renderingError(err error, meta ...interface{}) {
+	c.ErrorTyped(err, ErrorTypeInternal, meta)
+	c.AbortWithStatus(500)
+}
+
 func (c *Context) Render(code int, render render.Render, obj ...interface{}) {
 	if err := render.Render(c.Writer, code, obj...); err != nil {
-		c.ErrorTyped(err, ErrorTypeInternal, obj)
-		c.AbortWithStatus(500)
+		c.renderingError(err, obj)
 	}
-}
-
-// Serializes the given struct as JSON into the response body in a fast and efficient way.
-// It also sets the Content-Type as "application/json".
-func (c *Context) JSON(code int, obj interface{}) {
-	c.Render(code, render.JSON, obj)
-}
-
-func (c *Context) IndentedJSON(code int, obj interface{}) {
-	c.Render(code, render.IndentedJSON, obj)
-}
-
-// Serializes the given struct as XML into the response body in a fast and efficient way.
-// It also sets the Content-Type as "application/xml".
-func (c *Context) XML(code int, obj interface{}) {
-	c.Render(code, render.XML, obj)
 }
 
 // Renders the HTTP template specified by its file name.
@@ -344,31 +331,44 @@ func (c *Context) HTML(code int, name string, obj interface{}) {
 	c.Render(code, c.Engine.HTMLRender, name, obj)
 }
 
+func (c *Context) IndentedJSON(code int, obj interface{}) {
+	c.Render(code, render.IndentedJSON, obj)
+}
+
+// Serializes the given struct as JSON into the response body in a fast and efficient way.
+// It also sets the Content-Type as "application/json".
+func (c *Context) JSON(code int, obj interface{}) {
+	if err := render.WriteJSON(c.Writer, code, obj); err != nil {
+		c.renderingError(err, obj)
+	}
+}
+
+// Serializes the given struct as XML into the response body in a fast and efficient way.
+// It also sets the Content-Type as "application/xml".
+func (c *Context) XML(code int, obj interface{}) {
+	if err := render.WriteXML(c.Writer, code, obj); err != nil {
+		c.renderingError(err, obj)
+	}
+}
+
 // Writes the given string into the response body and sets the Content-Type to "text/plain".
 func (c *Context) String(code int, format string, values ...interface{}) {
-	c.Render(code, render.Plain, format, values)
+	render.WritePlainText(c.Writer, code, format, values)
 }
 
 // Writes the given string into the response body and sets the Content-Type to "text/html" without template.
 func (c *Context) HTMLString(code int, format string, values ...interface{}) {
-	c.Render(code, render.HTMLPlain, format, values)
+	render.WriteHTMLString(c.Writer, code, format, values)
 }
 
 // Returns a HTTP redirect to the specific location.
 func (c *Context) Redirect(code int, location string) {
-	if code < 300 || code > 308 {
-		panic(fmt.Sprintf("Cannot redirect with status code %d", code))
-	}
-	c.Render(code, render.Redirect, c.Request, location)
+	render.WriteRedirect(c.Writer, code, c.Request, location)
 }
 
 // Writes some data into the body stream and updates the HTTP code.
 func (c *Context) Data(code int, contentType string, data []byte) {
-	if len(contentType) > 0 {
-		c.Writer.Header().Set("Content-Type", contentType)
-	}
-	c.Writer.WriteHeader(code)
-	c.Writer.Write(data)
+	render.WriteData(c.Writer, code, contentType, data)
 }
 
 // Writes the specified file into the body stream

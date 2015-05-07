@@ -5,6 +5,7 @@
 package render
 
 import (
+	"encoding/xml"
 	"html/template"
 	"net/http/httptest"
 	"testing"
@@ -14,10 +15,15 @@ import (
 
 func TestRenderJSON(t *testing.T) {
 	w := httptest.NewRecorder()
-	err := JSON.Render(w, 201, map[string]interface{}{
+	w2 := httptest.NewRecorder()
+	data := map[string]interface{}{
 		"foo": "bar",
-	})
+	}
 
+	err := JSON.Render(w, 201, data)
+	WriteJSON(w2, 201, data)
+
+	assert.Equal(t, w, w2)
 	assert.NoError(t, err)
 	assert.Equal(t, w.Code, 201)
 	assert.Equal(t, w.Body.String(), "{\"foo\":\"bar\"}\n")
@@ -37,10 +43,76 @@ func TestRenderIndentedJSON(t *testing.T) {
 	assert.Equal(t, w.Header().Get("Content-Type"), "application/json; charset=utf-8")
 }
 
+type xmlmap map[string]interface{}
+
+// Allows type H to be used with xml.Marshal
+func (h xmlmap) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
+	start.Name = xml.Name{
+		Space: "",
+		Local: "map",
+	}
+	if err := e.EncodeToken(start); err != nil {
+		return err
+	}
+	for key, value := range h {
+		elem := xml.StartElement{
+			Name: xml.Name{Space: "", Local: key},
+			Attr: []xml.Attr{},
+		}
+		if err := e.EncodeElement(value, elem); err != nil {
+			return err
+		}
+	}
+	if err := e.EncodeToken(xml.EndElement{Name: start.Name}); err != nil {
+		return err
+	}
+	return nil
+}
+
+func TestRenderXML(t *testing.T) {
+	w := httptest.NewRecorder()
+	w2 := httptest.NewRecorder()
+	data := xmlmap{
+		"foo": "bar",
+	}
+
+	err := XML.Render(w, 200, data)
+	WriteXML(w2, 200, data)
+
+	assert.Equal(t, w, w2)
+	assert.NoError(t, err)
+	assert.Equal(t, w.Code, 200)
+	assert.Equal(t, w.Body.String(), "<map><foo>bar</foo></map>")
+	assert.Equal(t, w.Header().Get("Content-Type"), "application/xml; charset=utf-8")
+}
+
+func TestRenderRedirect(t *testing.T) {
+	// TODO
+}
+
+func TestRenderData(t *testing.T) {
+	w := httptest.NewRecorder()
+	w2 := httptest.NewRecorder()
+	data := []byte("#!PNG some raw data")
+
+	err := Data.Render(w, 400, "image/png", data)
+	WriteData(w2, 400, "image/png", data)
+
+	assert.Equal(t, w, w2)
+	assert.NoError(t, err)
+	assert.Equal(t, w.Code, 400)
+	assert.Equal(t, w.Body.String(), "#!PNG some raw data")
+	assert.Equal(t, w.Header().Get("Content-Type"), "image/png")
+}
+
 func TestRenderPlain(t *testing.T) {
 	w := httptest.NewRecorder()
-	err := Plain.Render(w, 400, "hola %s %d", []interface{}{"manu", 2})
+	w2 := httptest.NewRecorder()
 
+	err := Plain.Render(w, 400, "hola %s %d", []interface{}{"manu", 2})
+	WritePlainText(w2, 400, "hola %s %d", []interface{}{"manu", 2})
+
+	assert.Equal(t, w, w2)
 	assert.NoError(t, err)
 	assert.Equal(t, w.Code, 400)
 	assert.Equal(t, w.Body.String(), "hola manu 2")
