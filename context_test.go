@@ -16,10 +16,11 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// Unit tes TODO
+// Unit tests TODO
 // func (c *Context) File(filepath string) {
 // func (c *Context) Negotiate(code int, config Negotiate) {
 // BAD case: func (c *Context) Render(code int, render render.Render, obj ...interface{}) {
+// test that information is not leaked when reusing Contexts (using the Pool)
 
 func createTestContext() (c *Context, w *httptest.ResponseRecorder, r *Engine) {
 	w = httptest.NewRecorder()
@@ -67,6 +68,23 @@ func TestContextSetGet(t *testing.T) {
 
 	assert.Equal(t, c.MustGet("foo"), "bar")
 	assert.Panics(t, func() { c.MustGet("no_exist") })
+}
+
+func TestContextSetGetValues(t *testing.T) {
+	c, _, _ := createTestContext()
+	c.Set("string", "this is a string")
+	c.Set("int32", int32(-42))
+	c.Set("int64", int64(42424242424242))
+	c.Set("uint64", uint64(42))
+	c.Set("float32", float32(4.2))
+	c.Set("float64", 4.2)
+
+	assert.Exactly(t, c.MustGet("string").(string), "this is a string")
+	assert.Exactly(t, c.MustGet("int32").(int32), int32(-42))
+	assert.Exactly(t, c.MustGet("int64").(int64), int64(42424242424242))
+	assert.Exactly(t, c.MustGet("uint64").(uint64), uint64(42))
+	assert.Exactly(t, c.MustGet("float32").(float32), float32(4.2))
+	assert.Exactly(t, c.MustGet("float64").(float64), 4.2)
 }
 
 func TestContextCopy(t *testing.T) {
