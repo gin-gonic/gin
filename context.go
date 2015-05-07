@@ -356,11 +356,10 @@ func (c *Context) HTMLString(code int, format string, values ...interface{}) {
 
 // Returns a HTTP redirect to the specific location.
 func (c *Context) Redirect(code int, location string) {
-	if code >= 300 && code <= 308 {
-		c.Render(code, render.Redirect, c.Request, location)
-	} else {
+	if code < 300 || code > 308 {
 		panic(fmt.Sprintf("Cannot redirect with status code %d", code))
 	}
+	c.Render(code, render.Redirect, c.Request, location)
 }
 
 // Writes some data into the body stream and updates the HTTP code.
