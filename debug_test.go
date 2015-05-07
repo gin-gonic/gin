@@ -11,7 +11,7 @@ import (
 )
 
 // TODO
-// func debugRoute(httpMethod, absolutePath string, handlers []HandlerFunc) {
+// func debugRoute(httpMethod, absolutePath string, handlers HandlersChain) {
 // func debugPrint(format string, values ...interface{}) {
 
 func TestIsDebugging(t *testing.T) {

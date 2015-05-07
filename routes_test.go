@@ -27,7 +27,7 @@ func testRouteOK(method string, t *testing.T) {
 	// SETUP
 	passed := false
 	r := New()
-	r.Handle(method, "/test", []HandlerFunc{func(c *Context) {
+	r.Handle(method, "/test", HandlersChain{func(c *Context) {
 		passed = true
 	}})
 	// RUN
@@ -43,7 +43,7 @@ func testRouteNotOK(method string, t *testing.T) {
 	// SETUP
 	passed := false
 	router := New()
-	router.Handle(method, "/test_2", []HandlerFunc{func(c *Context) {
+	router.Handle(method, "/test_2", HandlersChain{func(c *Context) {
 		passed = true
 	}})
 
@@ -66,7 +66,7 @@ func testRouteNotOK2(method string, t *testing.T) {
 	} else {
 		methodRoute = "POST"
 	}
-	router.Handle(methodRoute, "/test", []HandlerFunc{func(c *Context) {
+	router.Handle(methodRoute, "/test", HandlersChain{func(c *Context) {
 		passed = true
 	}})
 

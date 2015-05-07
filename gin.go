@@ -17,17 +17,18 @@ var default404Body = []byte("404 page not found")
 var default405Body = []byte("405 method not allowed")
 
 type (
-	HandlerFunc func(*Context)
+	HandlerFunc   func(*Context)
+	HandlersChain []HandlerFunc
 
 	// Represents the web framework, it wraps the blazing fast httprouter multiplexer and a list of global middlewares.
 	Engine struct {
 		RouterGroup
 		HTMLRender  render.Render
 		pool        sync.Pool
-		allNoRoute  []HandlerFunc
-		allNoMethod []HandlerFunc
-		noRoute     []HandlerFunc
-		noMethod    []HandlerFunc
+		allNoRoute  HandlersChain
+		allNoMethod HandlersChain
+		noRoute     HandlersChain
+		noMethod    HandlersChain
 		trees       map[string]*node
 
 		// Enables automatic redirection if the current route can't be matched but a
@@ -136,7 +137,7 @@ func (engine *Engine) rebuild405Handlers() {
 	engine.allNoMethod = engine.combineHandlers(engine.noMethod)
 }
 
-func (engine *Engine) handle(method, path string, handlers []HandlerFunc) {
+func (engine *Engine) handle(method, path string, handlers HandlersChain) {
 	if path[0] != '/' {
 		panic("path must begin with '/'")
 	}

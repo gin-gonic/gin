@@ -59,7 +59,7 @@ type Context struct {
 	Writer    ResponseWriter
 
 	Params   Params
-	handlers []HandlerFunc
+	handlers HandlersChain
 	index    int8
 
 	Engine   *Engine

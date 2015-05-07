@@ -12,7 +12,7 @@ import (
 // Used internally to configure router, a RouterGroup is associated with a prefix
 // and an array of handlers (middlewares)
 type RouterGroup struct {
-	Handlers     []HandlerFunc
+	Handlers     HandlersChain
 	absolutePath string
 	engine       *Engine
 }
@@ -42,7 +42,7 @@ func (group *RouterGroup) Group(relativePath string, handlers ...HandlerFunc) *R
 // This function is intended for bulk loading and to allow the usage of less
 // frequently used, non-standardized or custom methods (e.g. for internal
 // communication with a proxy).
-func (group *RouterGroup) Handle(httpMethod, relativePath string, handlers []HandlerFunc) {
+func (group *RouterGroup) Handle(httpMethod, relativePath string, handlers HandlersChain) {
 	absolutePath := group.calculateAbsolutePath(relativePath)
 	handlers = group.combineHandlers(handlers)
 	debugRoute(httpMethod, absolutePath, handlers)
@@ -117,9 +117,9 @@ func (group *RouterGroup) createStaticHandler(absolutePath, root string) func(*C
 	}
 }
 
-func (group *RouterGroup) combineHandlers(handlers []HandlerFunc) []HandlerFunc {
+func (group *RouterGroup) combineHandlers(handlers HandlersChain) HandlersChain {
 	finalSize := len(group.Handlers) + len(handlers)
-	mergedHandlers := make([]HandlerFunc, finalSize)
+	mergedHandlers := make(HandlersChain, finalSize)
 	copy(mergedHandlers, group.Handlers)
 	copy(mergedHandlers[len(group.Handlers):], handlers)
 	return mergedHandlers

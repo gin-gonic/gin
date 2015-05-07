@@ -286,7 +286,7 @@ func TestGithubAPI(t *testing.T) {
 	router := New()
 
 	for _, route := range githubAPI {
-		router.Handle(route.method, route.path, []HandlerFunc{func(c *Context) {
+		router.Handle(route.method, route.path, HandlersChain{func(c *Context) {
 			output := H{"status": "good"}
 			for _, param := range c.Params {
 				output[param.Key] = param.Value

@@ -15,7 +15,7 @@ func IsDebugging() bool {
 	return ginMode == debugCode
 }
 
-func debugRoute(httpMethod, absolutePath string, handlers []HandlerFunc) {
+func debugRoute(httpMethod, absolutePath string, handlers HandlersChain) {
 	if IsDebugging() {
 		nuHandlers := len(handlers)
 		handlerName := nameOfFunction(handlers[nuHandlers-1])

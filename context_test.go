@@ -73,7 +73,7 @@ func TestContextCopy(t *testing.T) {
 	c, _, _ := createTestContext()
 	c.index = 2
 	c.Request, _ = http.NewRequest("POST", "/hola", nil)
-	c.handlers = []HandlerFunc{func(c *Context) {}}
+	c.handlers = HandlersChain{func(c *Context) {}}
 	c.Params = Params{Param{Key: "foo", Value: "bar"}}
 	c.Set("foo", "bar")
 
