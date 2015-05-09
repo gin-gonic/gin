@@ -62,6 +62,7 @@ type (
 // Returns a new blank Engine instance without any middleware attached.
 // The most basic configuration
 func New() *Engine {
+	debugPrintWARNING()
 	engine := &Engine{
 		RouterGroup: RouterGroup{
 			Handlers:     nil,
@@ -156,16 +157,20 @@ func (engine *Engine) handle(method, path string, handlers HandlersChain) {
 	root.addRoute(path, handlers)
 }
 
-func (engine *Engine) Run(addr string) error {
-	debugPrint("[WARNING] Running in DEBUG mode! Disable it before going production")
+func (engine *Engine) Run(addr string) (err error) {
 	debugPrint("Listening and serving HTTP on %s\n", addr)
-	return http.ListenAndServe(addr, engine)
+	defer debugPrintError(err)
+
+	err = http.ListenAndServe(addr, engine)
+	return
 }
 
-func (engine *Engine) RunTLS(addr string, cert string, key string) error {
-	debugPrint("[WARNING] Running in DEBUG mode! Disable it before going production")
+func (engine *Engine) RunTLS(addr string, cert string, key string) (err error) {
 	debugPrint("Listening and serving HTTPS on %s\n", addr)
-	return http.ListenAndServeTLS(addr, cert, key, engine)
+	defer debugPrintError(err)
+
+	err = http.ListenAndServe(addr, engine)
+	return
 }
 
 // ServeHTTP makes the router implement the http.Handler interface.

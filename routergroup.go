@@ -45,7 +45,7 @@ func (group *RouterGroup) Group(relativePath string, handlers ...HandlerFunc) *R
 func (group *RouterGroup) Handle(httpMethod, relativePath string, handlers HandlersChain) {
 	absolutePath := group.calculateAbsolutePath(relativePath)
 	handlers = group.combineHandlers(handlers)
-	debugRoute(httpMethod, absolutePath, handlers)
+	debugPrintRoute(httpMethod, absolutePath, handlers)
 	group.engine.handle(httpMethod, absolutePath, handlers)
 }
 

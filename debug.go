@@ -15,7 +15,7 @@ func IsDebugging() bool {
 	return ginMode == debugCode
 }
 
-func debugRoute(httpMethod, absolutePath string, handlers HandlersChain) {
+func debugPrintRoute(httpMethod, absolutePath string, handlers HandlersChain) {
 	if IsDebugging() {
 		nuHandlers := len(handlers)
 		handlerName := nameOfFunction(handlers[nuHandlers-1])
@@ -26,5 +26,15 @@ func debugRoute(httpMethod, absolutePath string, handlers HandlersChain) {
 func debugPrint(format string, values ...interface{}) {
 	if IsDebugging() {
 		debugLogger.Printf(format, values...)
+	}
+}
+
+func debugPrintWARNING() {
+	debugPrint("[WARNING] Running in DEBUG mode! Disable it before going production\n")
+}
+
+func debugPrintError(err error) {
+	if err != nil {
+		debugPrint("[ERROR] %v\n", err)
 	}
 }
