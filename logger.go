@@ -75,11 +75,11 @@ func LoggerWithFile(out io.Writer) HandlerFunc {
 
 func colorForStatus(code int) string {
 	switch {
-	case code >= 200 && code <= 299:
+	case code >= 200 && code < 300:
 		return green
-	case code >= 300 && code <= 399:
+	case code >= 300 && code < 400:
 		return white
-	case code >= 400 && code <= 499:
+	case code >= 400 && code < 500:
 		return yellow
 	default:
 		return red
@@ -87,20 +87,20 @@ func colorForStatus(code int) string {
 }
 
 func colorForMethod(method string) string {
-	switch {
-	case method == "GET":
+	switch method {
+	case "GET":
 		return blue
-	case method == "POST":
+	case "POST":
 		return cyan
-	case method == "PUT":
+	case "PUT":
 		return yellow
-	case method == "DELETE":
+	case "DELETE":
 		return red
-	case method == "PATCH":
+	case "PATCH":
 		return green
-	case method == "HEAD":
+	case "HEAD":
 		return magenta
-	case method == "OPTIONS":
+	case "OPTIONS":
 		return white
 	default:
 		return reset

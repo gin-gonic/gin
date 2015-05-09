@@ -184,25 +184,22 @@ func (c *Context) ParamValue(key string) (va string) {
 func (c *Context) DefaultPostFormValue(key, defaultValue string) string {
 	if va, ok := c.postFormValue(key); ok {
 		return va
-	} else {
-		return defaultValue
 	}
+	return defaultValue
 }
 
 func (c *Context) DefaultFormValue(key, defaultValue string) string {
 	if va, ok := c.formValue(key); ok {
 		return va
-	} else {
-		return defaultValue
 	}
+	return defaultValue
 }
 
 func (c *Context) DefaultParamValue(key, defaultValue string) string {
 	if va, ok := c.paramValue(key); ok {
 		return va
-	} else {
-		return defaultValue
 	}
+	return defaultValue
 }
 
 func (c *Context) paramValue(key string) (string, bool) {

@@ -13,6 +13,9 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+// TODO unit tests
+// test errors
+
 func TestRenderJSON(t *testing.T) {
 	w := httptest.NewRecorder()
 	w2 := httptest.NewRecorder()
