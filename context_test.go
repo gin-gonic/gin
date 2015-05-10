@@ -78,6 +78,8 @@ func TestContextSetGetValues(t *testing.T) {
 	c.Set("uint64", uint64(42))
 	c.Set("float32", float32(4.2))
 	c.Set("float64", 4.2)
+	var a interface{} = 1
+	c.Set("intInterface", a)
 
 	assert.Exactly(t, c.MustGet("string").(string), "this is a string")
 	assert.Exactly(t, c.MustGet("int32").(int32), int32(-42))
@@ -85,6 +87,8 @@ func TestContextSetGetValues(t *testing.T) {
 	assert.Exactly(t, c.MustGet("uint64").(uint64), uint64(42))
 	assert.Exactly(t, c.MustGet("float32").(float32), float32(4.2))
 	assert.Exactly(t, c.MustGet("float64").(float64), 4.2)
+	assert.Exactly(t, c.MustGet("intInterface").(int), 1)
+
 }
 
 func TestContextCopy(t *testing.T) {
@@ -157,6 +161,17 @@ func TestContextRenderJSON(t *testing.T) {
 
 	assert.Equal(t, w.Code, 201)
 	assert.Equal(t, w.Body.String(), "{\"foo\":\"bar\"}\n")
+	assert.Equal(t, w.HeaderMap.Get("Content-Type"), "application/json; charset=utf-8")
+}
+
+// Tests that the response is serialized as JSON
+// and Content-Type is set to application/json
+func TestContextRenderIndentedJSON(t *testing.T) {
+	c, w, _ := createTestContext()
+	c.IndentedJSON(201, H{"foo": "bar", "bar": "foo", "nested": H{"foo": "bar"}})
+
+	assert.Equal(t, w.Code, 201)
+	assert.Equal(t, w.Body.String(), "{\n    \"bar\": \"foo\",\n    \"foo\": \"bar\",\n    \"nested\": {\n        \"foo\": \"bar\"\n    }\n}")
 	assert.Equal(t, w.HeaderMap.Get("Content-Type"), "application/json; charset=utf-8")
 }
 

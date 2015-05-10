@@ -329,7 +329,9 @@ func (c *Context) HTML(code int, name string, obj interface{}) {
 }
 
 func (c *Context) IndentedJSON(code int, obj interface{}) {
-	c.Render(code, render.IndentedJSON, obj)
+	if err := render.WriteIndentedJSON(c.Writer, code, obj); err != nil {
+		c.renderingError(err, obj)
+	}
 }
 
 // Serializes the given struct as JSON into the response body in a fast and efficient way.
