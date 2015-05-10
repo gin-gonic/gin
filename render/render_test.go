@@ -145,9 +145,3 @@ func TestRenderHTMLTemplate(t *testing.T) {
 	assert.Equal(t, w.Body.String(), "Hello alexandernyquist")
 	assert.Equal(t, w.Header().Get("Content-Type"), "text/html; charset=utf-8")
 }
-
-func TestRenderJoinStrings(t *testing.T) {
-	assert.Equal(t, joinStrings("a", "BB", "c"), "aBBc")
-	assert.Equal(t, joinStrings("a", "", "c"), "ac")
-	assert.Equal(t, joinStrings("text/html", "; charset=utf-8"), "text/html; charset=utf-8")
-}

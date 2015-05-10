@@ -22,28 +22,7 @@ var (
 	_            Render = &HTMLDebugRender{}
 )
 
-func WriteHeader(w http.ResponseWriter, code int, contentType string) {
-	contentType = joinStrings(contentType, "; charset=utf-8")
+func writeHeader(w http.ResponseWriter, code int, contentType string) {
 	w.Header().Set("Content-Type", contentType)
 	w.WriteHeader(code)
-}
-
-func joinStrings(a ...string) string {
-	if len(a) == 0 {
-		return ""
-	}
-	if len(a) == 1 {
-		return a[0]
-	}
-	n := 0
-	for i := 0; i < len(a); i++ {
-		n += len(a[i])
-	}
-
-	b := make([]byte, n)
-	n = 0
-	for _, s := range a {
-		n += copy(b[n:], s)
-	}
-	return string(b)
 }

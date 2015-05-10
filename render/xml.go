@@ -12,6 +12,6 @@ func (_ xmlRender) Render(w http.ResponseWriter, code int, data ...interface{}) 
 }
 
 func WriteXML(w http.ResponseWriter, code int, data interface{}) error {
-	WriteHeader(w, code, "application/xml")
+	writeHeader(w, code, "application/xml; charset=utf-8")
 	return xml.NewEncoder(w).Encode(data)
 }

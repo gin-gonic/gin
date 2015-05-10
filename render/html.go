@@ -21,14 +21,14 @@ type (
 )
 
 func (html HTMLRender) Render(w http.ResponseWriter, code int, data ...interface{}) error {
-	WriteHeader(w, code, "text/html")
+	writeHeader(w, code, "text/html; charset=utf-8")
 	file := data[0].(string)
 	args := data[1]
 	return html.Template.ExecuteTemplate(w, file, args)
 }
 
 func (r *HTMLDebugRender) Render(w http.ResponseWriter, code int, data ...interface{}) error {
-	WriteHeader(w, code, "text/html")
+	writeHeader(w, code, "text/html; charset=utf-8")
 	file := data[0].(string)
 	obj := data[1]
 
@@ -57,7 +57,7 @@ func (_ htmlPlainRender) Render(w http.ResponseWriter, code int, data ...interfa
 }
 
 func WriteHTMLString(w http.ResponseWriter, code int, format string, values []interface{}) {
-	WriteHeader(w, code, "text/html")
+	writeHeader(w, code, "text/html; charset=utf-8")
 	if len(values) > 0 {
 		fmt.Fprintf(w, format, values...)
 	} else {
