@@ -1,11 +1,41 @@
 #Changelog
 
+###Gin 1.0 (...)
+
+- [PERFORMANCE] Zero allocation router
+- [PERFORMANCE] Faster JSON, XML and text rendering
+- [PERFORMANCE] Custom hand optimized HttpRouter for Gin
+- [PERFORMANCE] Misc code optimizations. Inlining, tail call optimizations
+- [NEW] IndentedJSON() prints pretty JSON
+- [NEW] Added gin.DefaultWriter
+- [NEW] JSON validation using go-validate-yourself (very powerful options)
+- [NEW] Completed suite of unit tests
+- [NEW] Added LoggerWithWriter() middleware
+- [NEW] Added RecoveryWithWriter() middleware
+- [NEW] Added DefaultPostFormValue()
+- [NEW] Added DefaultFormValue()
+- [NEW] Added DefaultParamValue()
+- [FIX] Bug when serving static files in nested routing group
+- [FIX] Redirect using built-in http.Redirect()
+- [FIX] Logger when printing the requested path
+- [FIX] Documentation typos
+- [FIX] Better debugging messages
+- [FIX] ErrorLogger
+- [FIX] Debug HTTP render
+- [FIX] Refactored binding and render modules 
+- [FIX] Refactored Context initialization
+- [FIX] Refactored BasicAuth()
+- [FIX] NoMethod/NoRoute handlers
+- [FIX] Hijacking http
+- [FIX] Better support for Google App Engine (using log instead of fmt)
+
+
 ###Gin 0.6 (Mar 9, 2015)
 
-- [ADD] Support multipart/form-data
-- [ADD] NoMethod handler
-- [ADD] Validate sub structures
-- [ADD] Support for HTTP Realm Auth
+- [NEW] Support multipart/form-data
+- [NEW] NoMethod handler
+- [NEW] Validate sub structures
+- [NEW] Support for HTTP Realm Auth
 - [FIX] Unsigned integers in binding
 - [FIX] Improve color logger
 
