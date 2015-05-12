@@ -23,10 +23,10 @@ var (
 // Recovery returns a middleware that recovers from any panics and writes a 500 if there was one.
 // While Gin is in development mode, Recovery will also output the panic as HTML.
 func Recovery() HandlerFunc {
-	return RecoveryWithFile(DefaultWriter)
+	return RecoveryWithWriter(DefaultWriter)
 }
 
-func RecoveryWithFile(out io.Writer) HandlerFunc {
+func RecoveryWithWriter(out io.Writer) HandlerFunc {
 	var logger *log.Logger
 	if out != nil {
 		logger = log.New(out, "", log.LstdFlags)

@@ -10,18 +10,15 @@ import (
 )
 
 const (
-	ErrorTypePrivate = 1 << iota
-	ErrorTypePublic  = 1 << iota
-)
-
-const (
-	ErrorMaskAny = 0xffffffff
+	ErrorTypeInternal = 1 << iota
+	ErrorTypeExternal = 1 << iota
+	ErrorTypeAny      = 0xffffffff
 )
 
 // Used internally to collect errors that occurred during an http request.
 type errorMsg struct {
 	Error error       `json:"error"`
-	Type  int         `json:"-"`
+	Flags int         `json:"-"`
 	Meta  interface{} `json:"meta"`
 }
 
@@ -33,7 +30,7 @@ func (a errorMsgs) ByType(typ int) errorMsgs {
 	}
 	result := make(errorMsgs, 0, len(a))
 	for _, msg := range a {
-		if msg.Type&typ > 0 {
+		if msg.Flags&typ > 0 {
 			result = append(result, msg)
 		}
 	}
@@ -44,11 +41,11 @@ func (a errorMsgs) Errors() []string {
 	if len(a) == 0 {
 		return []string{}
 	}
-	errors := make([]string, len(a))
+	errorStrings := make([]string, len(a))
 	for i, err := range a {
-		errors[i] = err.Error.Error()
+		errorStrings[i] = err.Error.Error()
 	}
-	return errors
+	return errorStrings
 }
 
 func (a errorMsgs) String() string {

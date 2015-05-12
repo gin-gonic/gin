@@ -22,7 +22,7 @@ var (
 )
 
 func ErrorLogger() HandlerFunc {
-	return ErrorLoggerT(ErrorTypeAll)
+	return ErrorLoggerT(ErrorTypeAny)
 }
 
 func ErrorLoggerT(typ int) HandlerFunc {
@@ -31,17 +31,17 @@ func ErrorLoggerT(typ int) HandlerFunc {
 
 		if !c.Writer.Written() {
 			if errs := c.Errors.ByType(typ); len(errs) > 0 {
-				c.JSON(-1, errs)
+				c.JSON(-1, errs.Errors())
 			}
 		}
 	}
 }
 
 func Logger() HandlerFunc {
-	return LoggerWithFile(DefaultWriter)
+	return LoggerWithWriter(DefaultWriter)
 }
 
-func LoggerWithFile(out io.Writer) HandlerFunc {
+func LoggerWithWriter(out io.Writer) HandlerFunc {
 	return func(c *Context) {
 		// Start timer
 		start := time.Now()

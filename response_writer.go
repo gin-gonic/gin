@@ -6,7 +6,6 @@ package gin
 
 import (
 	"bufio"
-	"log"
 	"net"
 	"net/http"
 )
@@ -46,7 +45,7 @@ func (w *responseWriter) WriteHeader(code int) {
 	if code > 0 {
 		w.status = code
 		if w.Written() {
-			log.Println("[GIN] WARNING. Headers were already written!")
+			debugPrint("[WARNING] Headers were already written")
 		}
 	}
 }

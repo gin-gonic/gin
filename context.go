@@ -40,13 +40,18 @@ type Params []Param
 
 // ByName returns the value of the first Param which key matches the given name.
 // If no matching Param is found, an empty string is returned.
-func (ps Params) ByName(name string) string {
+func (ps Params) Get(name string) (string, bool) {
 	for _, entry := range ps {
 		if entry.Key == name {
-			return entry.Value
+			return entry.Value, true
 		}
 	}
-	return ""
+	return "", false
+}
+
+func (ps Params) ByName(name string) (va string) {
+	va, _ = ps.Get(name)
+	return
 }
 
 // Context is the most important part of gin. It allows us to pass variables between middleware,
@@ -138,9 +143,9 @@ func (c *Context) Fail(code int, err error) {
 
 func (c *Context) ErrorTyped(err error, typ int, meta interface{}) {
 	c.Errors = append(c.Errors, errorMsg{
-		Err:  err.Error(),
-		Type: typ,
-		Meta: meta,
+		Error: err,
+		Flags: typ,
+		Meta:  meta,
 	})
 }
 
@@ -154,7 +159,7 @@ func (c *Context) Error(err error, meta interface{}) {
 func (c *Context) LastError() error {
 	nuErrors := len(c.Errors)
 	if nuErrors > 0 {
-		return errors.New(c.Errors[nuErrors-1].Err)
+		return c.Errors[nuErrors-1].Error
 	}
 	return nil
 }
@@ -203,8 +208,7 @@ func (c *Context) DefaultParamValue(key, defaultValue string) string {
 }
 
 func (c *Context) paramValue(key string) (string, bool) {
-	va := c.Params.ByName(key)
-	return va, len(va) > 0
+	return c.Params.Get(key)
 }
 
 func (c *Context) formValue(key string) (string, bool) {
@@ -231,17 +235,17 @@ func (c *Context) postFormValue(key string) (string, bool) {
 
 // Sets a new pair key/value just for the specified context.
 // It also lazy initializes the hashmap.
-func (c *Context) Set(key string, item interface{}) {
+func (c *Context) Set(key string, value interface{}) {
 	if c.Keys == nil {
 		c.Keys = make(map[string]interface{})
 	}
-	c.Keys[key] = item
+	c.Keys[key] = value
 }
 
 // Get returns the value for the given key or an error if the key does not exist.
-func (c *Context) Get(key string) (value interface{}, ok bool) {
+func (c *Context) Get(key string) (value interface{}, exists bool) {
 	if c.Keys != nil {
-		value, ok = c.Keys[key]
+		value, exists = c.Keys[key]
 	}
 	return
 }

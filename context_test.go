@@ -318,13 +318,13 @@ func TestContextError(t *testing.T) {
 	assert.Equal(t, c.Errors.String(), "Error #01: first error\n     Meta: some data\n"+
 		"Error #02: second error\n     Meta: some data 2\n")
 
-	assert.Equal(t, c.Errors[0].Err, "first error")
+	assert.Equal(t, c.Errors[0].Error, errors.New("first error"))
 	assert.Equal(t, c.Errors[0].Meta, "some data")
-	assert.Equal(t, c.Errors[0].Type, ErrorTypeExternal)
+	assert.Equal(t, c.Errors[0].Flags, ErrorTypeExternal)
 
-	assert.Equal(t, c.Errors[1].Err, "second error")
+	assert.Equal(t, c.Errors[1].Error, errors.New("second error"))
 	assert.Equal(t, c.Errors[1].Meta, "some data 2")
-	assert.Equal(t, c.Errors[1].Type, ErrorTypeExternal)
+	assert.Equal(t, c.Errors[1].Flags, ErrorTypeExternal)
 }
 
 func TestContextTypedError(t *testing.T) {
@@ -337,11 +337,11 @@ func TestContextTypedError(t *testing.T) {
 	c.ErrorTyped(errors.New("interno 2"), ErrorTypeInternal, nil)
 
 	for _, err := range c.Errors.ByType(ErrorTypeExternal) {
-		assert.Equal(t, err.Type, ErrorTypeExternal)
+		assert.Equal(t, err.Flags, ErrorTypeExternal)
 	}
 
 	for _, err := range c.Errors.ByType(ErrorTypeInternal) {
-		assert.Equal(t, err.Type, ErrorTypeInternal)
+		assert.Equal(t, err.Flags, ErrorTypeInternal)
 	}
 }
 

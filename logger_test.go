@@ -24,7 +24,7 @@ func init() {
 func TestLogger(t *testing.T) {
 	buffer := new(bytes.Buffer)
 	router := New()
-	router.Use(LoggerWithFile(buffer))
+	router.Use(LoggerWithWriter(buffer))
 	router.GET("/example", func(c *Context) {})
 
 	performRequest(router, "GET", "/example")

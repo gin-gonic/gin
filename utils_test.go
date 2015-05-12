@@ -50,7 +50,7 @@ func TestFunctionName(t *testing.T) {
 }
 
 func somefunction() {
-
+	// this empty function is used by TestFunctionName()
 }
 
 func TestJoinPaths(t *testing.T) {

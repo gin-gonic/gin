@@ -15,7 +15,7 @@ import (
 func TestPanicInHandler(t *testing.T) {
 	buffer := new(bytes.Buffer)
 	router := New()
-	router.Use(RecoveryWithFile(buffer))
+	router.Use(RecoveryWithWriter(buffer))
 	router.GET("/recovery", func(_ *Context) {
 		panic("Oupps, Houston, we have a problem")
 	})
@@ -30,7 +30,7 @@ func TestPanicInHandler(t *testing.T) {
 // TestPanicWithAbort assert that panic has been recovered even if context.Abort was used.
 func TestPanicWithAbort(t *testing.T) {
 	router := New()
-	router.Use(RecoveryWithFile(nil))
+	router.Use(RecoveryWithWriter(nil))
 	router.GET("/recovery", func(c *Context) {
 		c.AbortWithStatus(400)
 		panic("Oupps, Houston, we have a problem")
