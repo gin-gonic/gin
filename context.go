@@ -375,6 +375,20 @@ func (c *Context) File(filepath string) {
 	http.ServeFile(c.Writer, c.Request, filepath)
 }
 
+func (c *Context) Stream(step func(w http.ResponseWriter)) {
+	w := c.Writer
+	clientGone := w.CloseNotify()
+	for {
+		select {
+		case <-clientGone:
+			return
+		default:
+			step(w)
+			w.Flush()
+		}
+	}
+}
+
 /************************************/
 /******** CONTENT NEGOTIATION *******/
 /************************************/
