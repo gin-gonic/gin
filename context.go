@@ -6,6 +6,7 @@ package gin
 
 import (
 	"errors"
+	"io"
 	"math"
 	"net/http"
 	"strings"
@@ -379,7 +380,21 @@ func (c *Context) File(filepath string) {
 	http.ServeFile(c.Writer, c.Request, filepath)
 }
 
-func (c *Context) Stream(step func(w http.ResponseWriter)) {
+func (c *Context) SSEvent(name string, message interface{}) {
+	render.WriteSSEvent(c.Writer, name, message)
+}
+
+func (c *Context) Header(code int, headers map[string]string) {
+	if len(headers) > 0 {
+		header := c.Writer.Header()
+		for key, value := range headers {
+			header.Set(key, value)
+		}
+	}
+	c.Writer.WriteHeader(code)
+}
+
+func (c *Context) Stream(step func(w io.Writer) bool) {
 	w := c.Writer
 	clientGone := w.CloseNotify()
 	for {
@@ -387,8 +402,11 @@ func (c *Context) Stream(step func(w http.ResponseWriter)) {
 		case <-clientGone:
 			return
 		default:
-			step(w)
+			keepopen := step(w)
 			w.Flush()
+			if !keepopen {
+				return
+			}
 		}
 	}
 }
