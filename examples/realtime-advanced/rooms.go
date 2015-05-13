@@ -15,14 +15,6 @@ func closeListener(roomid string, listener chan interface{}) {
 	close(listener)
 }
 
-func deleteBroadcast(roomid string) {
-	b, ok := roomChannels[roomid]
-	if ok {
-		b.Close()
-		delete(roomChannels, roomid)
-	}
-}
-
 func room(roomid string) broadcast.Broadcaster {
 	b, ok := roomChannels[roomid]
 	if !ok {

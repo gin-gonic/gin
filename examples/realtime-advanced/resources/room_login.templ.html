@@ -4,7 +4,7 @@
         <meta charset="utf-8">
         <meta http-equiv="X-UA-Compatible" content="IE=edge">
         <meta name="viewport" content="width=device-width, initial-scale=1">
-        <title>Login in Room "{{.roomid}}"</title>
+        <title>Server-Sent Events. Room "{{.roomid}}"</title>
         <!-- jQuery -->
         <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>
         <script src="http://malsup.github.com/jquery.form.js"></script> 
@@ -32,6 +32,15 @@
         </style>
     </head>
     <body>
+    <script>
+        (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+        (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+        m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+        })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+        ga('create', 'UA-62943585-1', 'auto');
+        ga('send', 'pageview');
+    </script>
     <nav class="navbar navbar-fixed-top navbar-inverse">
       <div class="container">
         <div class="navbar-header">
@@ -58,7 +67,7 @@
         <div class="jumbotron">
             <div class="container">
                 <h1>Server-Sent Events in Go</h1>
-                <p><a href="http://www.html5rocks.com/en/tutorials/eventsource/basics/">Server-sent events (SSE)</a> is a technology where a browser receives automatic updates from a server via HTTP connection.</p>
+                <p>Server-sent events (SSE) is a technology where a browser receives automatic updates from a server via HTTP connection. It is not websockets. <a href="http://www.html5rocks.com/en/tutorials/eventsource/basics/">Learn more.</a></p>
                 <p>The chat and the charts data is provided in realtime using the SSE implemention of <a href="https://github.com/gin-gonic/gin/blob/15b0c49da556d58a3d934b86e3aa552ff224026d/examples/realtime-chat/main.go#L23-L32">Gin Framework</a>.</p>
                 <div class="row">
                     <div class="col-md-8">
@@ -95,7 +104,7 @@
                             <legend>Join the SSE real-time chat</legend>
                             <div class="form-group">
                                 <label for="nick">Your Name</label>
-                                <input value='' name="nick" id="nick" placeholder="Your name" type="text" class="form-control" />
+                                <input value='' name="nick" id="nick" placeholder="John" type="text" class="form-control" />
                             </div>
                             <div class="form-group text-center">
                                 <input type="submit" class="btn btn-success btn-login-submit" value="Join" />
@@ -129,7 +138,12 @@
                 </div>
             </div>
             <div class="row">
-            <h2>Source code</h2>
+                <h2>MIT Open Sourced</h2>
+                <ul>
+                    <li><a href="https://github.com/gin-gonic/gin/tree/develop/examples/realtime-advanced">This demo website (JS and Go)</a></li>
+                    <li><a href="https://github.com/manucorporat/sse">The SSE implementation in Go</a></li>
+                    <li><a href="https://github.com/gin-gonic/gin">The Web Framework (Gin)</a></li>
+                </ul>
                 <div class="col-md-6">
                 <script src="/static/prismjs.min.js"></script>
                     <h3>Server-side (Go)</h3>
@@ -158,6 +172,37 @@
     source.addEventListener('message', newChatMessage, false);
     source.addEventListener('stats', stats, false);
 }</code></pre>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-12">
+                    <h3>SSE package</h3>
+                    <pre><code class="language-go">import &quot;github.com/manucorporat/sse&quot;
+
+func httpHandler(w http.ResponseWriter, req *http.Request) {
+    // data can be a primitive like a string, an integer or a float
+    sse.Encode(w, sse.Event{
+        Event: &quot;message&quot;,
+        Data:  &quot;some data\nmore data&quot;,
+    })
+
+    // also a complex type, like a map, a struct or a slice
+    sse.Encode(w, sse.Event{
+        Id:    &quot;124&quot;,
+        Event: &quot;message&quot;,
+        Data: map[string]interface{}{
+            &quot;user&quot;:    &quot;manu&quot;,
+            &quot;date&quot;:    time.Now().Unix(),
+            &quot;content&quot;: &quot;hi!&quot;,
+        },
+    })
+}</code></pre>
+<pre>event: message
+data: some data\\nmore data
+
+id: 124
+event: message
+data: {&quot;content&quot;:&quot;hi!&quot;,&quot;date&quot;:1431540810,&quot;user&quot;:&quot;manu&quot;}</pre>
                 </div>
             </div>
             <hr>
