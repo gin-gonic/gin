@@ -24,18 +24,18 @@ func WriteSSEvent(w http.ResponseWriter, eventName string, data interface{}) err
 	}
 	var stringData string
 	switch typeOfData(data) {
-	case reflect.Struct, reflect.Slice:
+	case reflect.Struct, reflect.Slice, reflect.Map:
 		if jsonBytes, err := json.Marshal(data); err == nil {
 			stringData = string(jsonBytes)
 		} else {
 			return err
 		}
 	case reflect.Ptr:
-		stringData = escape(fmt.Sprintf("%v", &data)) + "\n"
+		stringData = escape(fmt.Sprintf("%v", &data))
 	default:
-		stringData = escape(fmt.Sprintf("%v", data)) + "\n"
+		stringData = escape(fmt.Sprintf("%v", data))
 	}
-	_, err := fmt.Fprintf(w, "event: %s\ndata: %s\n", escape(eventName), stringData)
+	_, err := fmt.Fprintf(w, "event: %s\ndata: %s\n\n", escape(eventName), stringData)
 	return err
 }
 
@@ -44,7 +44,10 @@ func typeOfData(data interface{}) reflect.Kind {
 	valueType := value.Kind()
 	if valueType == reflect.Ptr {
 		newValue := value.Elem().Kind()
-		if newValue == reflect.Struct || newValue == reflect.Slice {
+		fmt.Println(newValue)
+		if newValue == reflect.Struct ||
+			newValue == reflect.Slice ||
+			newValue == reflect.Map {
 			return newValue
 		} else {
 			return valueType
