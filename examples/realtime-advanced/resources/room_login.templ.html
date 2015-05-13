@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>Login in Room "{{.roomid}}"</title>
+        <!-- jQuery -->
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>
+        <script src="http://malsup.github.com/jquery.form.js"></script> 
+        <!-- EPOCH -->
+        <script src="http://d3js.org/d3.v3.min.js"></script>
+        <script src="/static/epoch.min.js"></script>
+        <link rel="stylesheet" href="/static/epoch.min.css">
+        <script src="/static/realtime.js"></script>
+        <!-- Latest compiled and minified CSS -->
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap.min.css">
+        <!-- Optional theme -->
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap-theme.min.css">
+        <!-- Latest compiled and minified JavaScript -->
+        <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/js/bootstrap.min.js"></script>
+        <script type="text/javascript">
+            $(document).ready(function() { 
+              StartRealtime({{.roomid}}, {{.timestamp}});
+            });
+        </script>
+    </head>
+    <body>
+        <!-- Main jumbotron for a primary marketing message or call to action -->
+        <div class="jumbotron">
+            <div class="container">
+                <h1>Server-Sent Events in Go</h1>
+                <p><a href="http://www.html5rocks.com/en/tutorials/eventsource/basics/">Server-sent events (SSE)</a> is a technology where a browser receives automatic updates from a server via HTTP connection.</p>
+                <p>The chat and the charts data is provided in realtime using the SSE implemention of <a href="https://github.com/gin-gonic/gin/blob/15b0c49da556d58a3d934b86e3aa552ff224026d/examples/realtime-chat/main.go#L23-L32">Gin Framework</a>.</p>
+                <div class="row">
+                    {{if not .nick}}
+                    <div class="col-md-8">
+                        {{end}}
+                        <div id="chat-scroll" style="overflow-y:scroll; overflow-x:scroll; height:200px">
+                            <table id="table-style" class="table">
+                                <thead>
+                                    <tr>
+                                        <th data-field="id" class="col-md-2">Nick</th>
+                                        <th data-field="name" class="col-md-8">Message</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="chat"></tbody>
+                            </table>
+                        </div>
+                        {{if .nick}}
+                        <form class="form-inline" id="chat-form" action="/room/{{.roomid}}?nick={{.nick}}" method="post">
+                            <div class="form-group col-md-6">
+                                <input name="message" id="chat-message" placeholder="a message" type="text" class="form-control" style="width:100%" />
+                            </div>
+                            <div class="form-group col-md-2">
+                                <input type="submit" class="btn btn-primary" value="Send" />
+                            </div>
+                        </form>
+                        {{end}}
+                        {{if not .nick}}
+                    </div>
+                    <div class="col-md-4">
+                        <form action="" method="get">
+                            <legend>Join the SSE real-time chat</legend>
+                            <div class="form-group">
+                                <label for="nick">Your Name</label>
+                                <input value='' name="nick" id="nick" placeholder="Your name" type="text" class="form-control" />
+                            </div>
+                            <div class="form-group text-center">
+                                <input type="submit" class="btn btn-success btn-login-submit" value="Join" />
+                            </div>
+                        </form>
+                    </div>
+                    {{end}}
+                </div>
+            </div>
+        </div>
+        <div class="container">
+            <div class="row">
+                <div class="col-md-4">
+                    <h3>Number of Goroutines</h3>
+                    <p>
+                    <div id="goroutinesChart" class="epoch category20c"></div>
+                    </p>
+                </div>
+                <div class="col-md-4">
+                    <h3>HEAP/Stack bytes</h3>
+                    <p>
+                    <div id="heapChart" class="epoch category20b"></div>
+                    </p>
+                </div>
+                <div class="col-md-4">
+                    <h3>Mallocs/Frees</h3>
+                    <p>
+                    <div id="mallocsChart" class="epoch category10"></div>
+                    </p>
+                </div>
+            </div>
+            <hr>
+            <footer>
+                <p>&copy; Company 2014</p>
+            </footer>
+        </div>
+    </body>
+</html>
