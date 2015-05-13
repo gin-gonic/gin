@@ -1,13 +1,24 @@
 package main
 
 import (
+	"fmt"
 	"io"
+	"runtime"
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/manucorporat/stats"
 )
 
+var messages = stats.New()
+
 func main() {
+	nuCPU := runtime.NumCPU()
+	runtime.GOMAXPROCS(nuCPU)
+	fmt.Printf("Running with %d CPUs\n", nuCPU)
+
+	gin.SetMode(gin.ReleaseMode)
+
 	router := gin.New()
 	router.Use(ratelimit, gin.Recovery(), gin.Logger())
 
@@ -19,7 +30,7 @@ func main() {
 	//router.DELETE("/room/:roomid", roomDELETE)
 	router.GET("/stream/:roomid", streamRoom)
 
-	router.Run(":8080")
+	router.Run("127.0.0.1:8080")
 }
 
 func index(c *gin.Context) {
@@ -29,6 +40,9 @@ func index(c *gin.Context) {
 func roomGET(c *gin.Context) {
 	roomid := c.ParamValue("roomid")
 	userid := c.FormValue("nick")
+	if len(userid) > 13 {
+		userid = userid[0:12] + "..."
+	}
 	c.HTML(200, "room_login.templ.html", gin.H{
 		"roomid":    roomid,
 		"nick":      userid,
@@ -42,7 +56,7 @@ func roomPOST(c *gin.Context) {
 	nick := c.FormValue("nick")
 	message := c.PostFormValue("message")
 
-	if len(message) > 200 || len(nick) > 20 {
+	if len(message) > 200 || len(nick) > 13 {
 		c.JSON(400, gin.H{
 			"status": "failed",
 			"error":  "the message or nickname is too long",
@@ -54,6 +68,7 @@ func roomPOST(c *gin.Context) {
 		"nick":    nick,
 		"message": message,
 	}
+	messages.Add("inbound", 1)
 	room(roomid).Submit(post)
 	c.JSON(200, post)
 }
@@ -73,6 +88,7 @@ func streamRoom(c *gin.Context) {
 	c.Stream(func(w io.Writer) bool {
 		select {
 		case msg := <-listener:
+			messages.Add("outbound", 1)
 			c.SSEvent("message", msg)
 		case <-ticker.C:
 			c.SSEvent("stats", Stats())

@@ -46,6 +46,18 @@ function StartEpoch(timestamp) {
             {values: defaultData}
         ]
     });
+
+    if($('#messagesChart').length ) {
+        window.messagesChart = $('#messagesChart').epoch({
+            type: 'time.area',
+            axes: ['bottom', 'left'],
+            height: 250,
+            data: [
+                {values: defaultData},
+                {values: defaultData}
+            ]
+        });
+    }
 }
 
 function StartSSE(roomid) {
@@ -63,6 +75,9 @@ function stats(e) {
     heapChart.push(data.heap)
     mallocsChart.push(data.mallocs)
     goroutinesChart.push(data.goroutines)
+    if(messagesChart) {
+        messagesChart.push(data.messages)
+    }
 }
 
 function parseJSONStats(e) {
@@ -78,13 +93,18 @@ function parseJSONStats(e) {
         {time: timestamp, y: data.Mallocs},
         {time: timestamp, y: data.Frees}
     ];
+    var messages = [
+        {time: timestamp, y: data.Inbound},
+        {time: timestamp, y: data.Outbound}
+    ];
     var goroutines = [
         {time: timestamp, y: data.NuGoroutines},
     ]
     return {
         heap: heap,
         mallocs: mallocs,
-        goroutines: goroutines
+        goroutines: goroutines,
+        messages: messages
     }
 }
 

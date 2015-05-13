@@ -14,12 +14,9 @@ func Stats() map[string]uint64 {
 		"HeapInuse":    stats.HeapInuse,
 		"StackInuse":   stats.StackInuse,
 		"NuGoroutines": uint64(runtime.NumGoroutine()),
-		//"Latency":      latency,
-		"Mallocs": stats.Mallocs,
-		"Frees":   stats.Mallocs,
-		// "HeapIdle":     stats.HeapIdle,
-		// "HeapInuse":    stats.HeapInuse,
-		// "HeapReleased": stats.HeapReleased,
-		// "HeapObjects":  stats.HeapObjects,
+		"Mallocs":      stats.Mallocs,
+		"Frees":        stats.Mallocs,
+		"Inbound":      uint64(messages.Get("inbound")),
+		"Outbound":     uint64(messages.Get("outbound")),
 	}
 }
