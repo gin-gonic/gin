@@ -19,7 +19,7 @@ function StartEpoch(timestamp) {
     var height = 200;
     var defaultData = histogram(windowSize, timestamp);
     window.goroutinesChart = $('#goroutinesChart').epoch({
-        type: 'time.area',
+        type: 'time.bar',
         axes: ['bottom', 'left'],
         height: height,
         data: [
