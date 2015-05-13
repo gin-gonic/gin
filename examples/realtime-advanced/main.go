@@ -8,7 +8,9 @@ import (
 )
 
 func main() {
-	router := gin.Default()
+	router := gin.New()
+	router.Use(ratelimit, gin.Recovery(), gin.Logger())
+
 	router.LoadHTMLGlob("resources/*.templ.html")
 	router.Static("/static", "resources/static")
 	router.GET("/", index)
