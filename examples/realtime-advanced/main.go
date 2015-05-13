@@ -26,7 +26,7 @@ func main() {
 	router.Static("/static", "resources/static")
 	router.GET("/", index)
 	router.GET("/room/:roomid", roomGET)
-	router.POST("/room/:roomid", roomPOST)
+	router.POST("/room-post/:roomid", roomPOST)
 	//router.DELETE("/room/:roomid", roomDELETE)
 	router.GET("/stream/:roomid", streamRoom)
 

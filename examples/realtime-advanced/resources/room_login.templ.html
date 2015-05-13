@@ -74,7 +74,7 @@
                             </table>
                         </div>
                         {{if .nick}}
-                        <form class="form-inline" id="chat-form" action="/room/{{.roomid}}?nick={{.nick}}" method="post">
+                        <form class="form-inline" id="chat-form" action="/room-post/{{.roomid}}?nick={{.nick}}" method="post">
                             <div class="form-group">
                                 <label class="sr-only" for="chat-message">Message</label>
                                 <div class="input-group">

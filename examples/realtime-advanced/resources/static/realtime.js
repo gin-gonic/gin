@@ -75,7 +75,7 @@ function stats(e) {
     heapChart.push(data.heap)
     mallocsChart.push(data.mallocs)
     goroutinesChart.push(data.goroutines)
-    if(messagesChart) {
+    if (typeof messagesChart !== 'undefined') {
         messagesChart.push(data.messages)
     }
 }
