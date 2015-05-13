@@ -19,7 +19,7 @@ func (_ sseRender) Render(w http.ResponseWriter, code int, data ...interface{}) 
 func WriteSSEvent(w http.ResponseWriter, eventName string, data interface{}) error {
 	header := w.Header()
 	if len(header.Get("Content-Type")) == 0 {
-		header.Set("Content-Type", "text/event-stream")
+		header.Set("Content-Type", sse.ContentType)
 	}
 	return sse.Encode(w, sse.Event{
 		Event: eventName,
