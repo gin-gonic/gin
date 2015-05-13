@@ -9,7 +9,7 @@ var ips = stats.New()
 func ratelimit(c *gin.Context) {
 	ip := c.ClientIP()
 	value := ips.Add(ip, 1)
-	if value > 1000 {
+	if value > 400 {
 		c.AbortWithStatus(401)
 	}
 }
