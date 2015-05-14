@@ -26,7 +26,8 @@ func StartWorkers() {
 func StartGin() {
 	gin.SetMode(gin.ReleaseMode)
 
-	router := gin.Default()
+	router := gin.New()
+	router.Use(rateLimit, gin.Recovery(), gin.Logger())
 	router.LoadHTMLGlob("resources/*.templ.html")
 	router.Static("/static", "resources/static")
 	router.GET("/", index)

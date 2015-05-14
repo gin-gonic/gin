@@ -3,11 +3,23 @@ package main
 import (
 	"html"
 	"io"
+	"log"
 	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
 )
+
+func rateLimit(c *gin.Context) {
+	ip := c.ClientIP()
+	value := ips.Add(ip, 1)
+	if value > 800 {
+		if int(value)%700 == 0 {
+			log.Printf("ip block: %s, count: %f\n", ip, value)
+		}
+		c.AbortWithStatus(503)
+	}
+}
 
 func index(c *gin.Context) {
 	c.Redirect(301, "/room/hn")

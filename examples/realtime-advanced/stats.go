@@ -8,6 +8,7 @@ import (
 	"github.com/manucorporat/stats"
 )
 
+var ips = stats.New()
 var messages = stats.New()
 var users = stats.New()
 var mutexStats sync.RWMutex
