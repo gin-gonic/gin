@@ -5,10 +5,7 @@ import (
 	"runtime"
 
 	"github.com/gin-gonic/gin"
-	"github.com/manucorporat/stats"
 )
-
-var messages = stats.New()
 
 func main() {
 	ConfigRuntime()

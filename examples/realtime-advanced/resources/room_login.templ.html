@@ -62,7 +62,7 @@
                 <p>The chat and the charts data is provided in realtime using the SSE implemention of <a href="https://github.com/gin-gonic/gin/blob/15b0c49da556d58a3d934b86e3aa552ff224026d/examples/realtime-chat/main.go#L23-L32">Gin Framework</a>.</p>
                 <div class="row">
                     <div class="col-md-8">
-                        <div id="chat-scroll" style="overflow-y:scroll; overflow-x:scroll; height:270px">
+                        <div id="chat-scroll" style="overflow-y:scroll; overflow-x:scroll; height:290px">
                             <table id="table-style" class="table" data-show-header="false">
                                 <thead>
                                     <tr>
@@ -97,8 +97,12 @@
                         {{end}}
                     </div>
                     <div class="col-md-4">
-                        <h3>Inbound/Outbound</h3>
-                        <div id="messagesChart" class="epoch category20c"></div>
+                        <div id="messagesChart" class="epoch category10"></div>
+                        <p>
+                        <span style="font-size:20px; color:#1f77b4">◼︎</span> Users<br>
+                        <span style="font-size:20px; color:#ff7f0e">◼︎</span> Inbound messages / sec<br>
+                        <span style="font-size:20px; color:#2ca02c">◼︎</span> Outbound messages / sec<br>
+                        </p>
                     </div>
                 </div>
             </div>
@@ -106,22 +110,24 @@
         <div class="container">
             <div class="row">
                 <h2>Realtime server Go stats</h2>
-                <div class="col-md-4">
-                    <h3>Number of Goroutines</h3>
+                <div class="col-md-6">
+                    <h3>Memory usage</h3>
                     <p>
-                    <div id="goroutinesChart" class="epoch category20c"></div>
+                    <div id="heapChart" class="epoch category20c"></div>
+                    </p>
+                    <p>
+                    <span style="font-size:20px; color:#1f77b4">◼︎</span> Heap bytes<br>
+                    <span style="font-size:20px; color:#aec7e8">◼︎</span> Stack bytes<br>
                     </p>
                 </div>
-                <div class="col-md-4">
-                    <h3>HEAP/Stack bytes</h3>
+                <div class="col-md-6">
+                    <h3>Allocations per second</h3>
                     <p>
-                    <div id="heapChart" class="epoch category20b"></div>
+                    <div id="mallocsChart" class="epoch category20b"></div>
                     </p>
-                </div>
-                <div class="col-md-4">
-                    <h3>Mallocs/Frees</h3>
                     <p>
-                    <div id="mallocsChart" class="epoch category10"></div>
+                    <span style="font-size:20px; color:#393b79">◼︎</span> Mallocs / sec<br>
+                    <span style="font-size:20px; color:#5254a3">◼︎</span> Frees / sec<br>
                     </p>
                 </div>
             </div>

@@ -18,19 +18,12 @@ function StartEpoch(timestamp) {
     var windowSize = 60;
     var height = 200;
     var defaultData = histogram(windowSize, timestamp);
-    window.goroutinesChart = $('#goroutinesChart').epoch({
-        type: 'time.bar',
-        axes: ['bottom', 'left'],
-        height: height,
-        data: [
-            {values: defaultData}
-        ]
-    });
 
     window.heapChart = $('#heapChart').epoch({
         type: 'time.area',
         axes: ['bottom', 'left'],
         height: height,
+        historySize: 10,
         data: [
             {values: defaultData},
             {values: defaultData}
@@ -41,6 +34,7 @@ function StartEpoch(timestamp) {
         type: 'time.area',
         axes: ['bottom', 'left'],
         height: height,
+        historySize: 10,
         data: [
             {values: defaultData},
             {values: defaultData}
@@ -48,10 +42,12 @@ function StartEpoch(timestamp) {
     });
 
     window.messagesChart = $('#messagesChart').epoch({
-        type: 'time.area',
+        type: 'time.line',
         axes: ['bottom', 'left'],
-        height: 250,
+        height: 240,
+        historySize: 10,
         data: [
+            {values: defaultData},
             {values: defaultData},
             {values: defaultData}
         ]
@@ -69,11 +65,10 @@ function StartSSE(roomid) {
 }
 
 function stats(e) {
-    var data = parseJSONStats(e.data)
-    heapChart.push(data.heap)
-    mallocsChart.push(data.mallocs)
-    goroutinesChart.push(data.goroutines)
-    messagesChart.push(data.messages)
+    var data = parseJSONStats(e.data);
+    heapChart.push(data.heap);
+    mallocsChart.push(data.mallocs);
+    messagesChart.push(data.messages);
 }
 
 function parseJSONStats(e) {
@@ -90,16 +85,14 @@ function parseJSONStats(e) {
         {time: timestamp, y: data.Frees}
     ];
     var messages = [
+        {time: timestamp, y: data.Connected},
         {time: timestamp, y: data.Inbound},
         {time: timestamp, y: data.Outbound}
     ];
-    var goroutines = [
-        {time: timestamp, y: data.NuGoroutines},
-    ]
+
     return {
         heap: heap,
         mallocs: mallocs,
-        goroutines: goroutines,
         messages: messages
     }
 }
