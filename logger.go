@@ -61,7 +61,7 @@ func LoggerWithWriter(out io.Writer) HandlerFunc {
 		methodColor := colorForMethod(method)
 		comment := c.Errors.String()
 
-		fmt.Fprintf(out, "[GIN] %v |%s %3d %s| %12v | %s |%s  %s %-7s %s\n%s",
+		fmt.Fprintf(out, "[GIN] %v |%s %3d %s| %13v | %s |%s  %s %-7s %s\n%s",
 			end.Format("2006/01/02 - 15:04:05"),
 			statusColor, statusCode, reset,
 			latency,
