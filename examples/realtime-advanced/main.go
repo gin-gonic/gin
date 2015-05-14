@@ -37,5 +37,5 @@ func StartGin() {
 	router.POST("/room-post/:roomid", roomPOST)
 	router.GET("/stream/:roomid", streamRoom)
 
-	router.Run("127.0.0.1:8080")
+	router.Run(":80")
 }
