@@ -32,15 +32,6 @@
         </style>
     </head>
     <body>
-    <script>
-        (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
-        (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
-        m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
-        })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
-
-        ga('create', 'UA-62943585-1', 'auto');
-        ga('send', 'pageview');
-    </script>
     <nav class="navbar navbar-fixed-top navbar-inverse">
       <div class="container">
         <div class="navbar-header">
@@ -72,23 +63,23 @@
                 <div class="row">
                     <div class="col-md-8">
                         <div id="chat-scroll" style="overflow-y:scroll; overflow-x:scroll; height:270px">
-                            <table id="table-style" class="table">
+                            <table id="table-style" class="table" data-show-header="false">
                                 <thead>
                                     <tr>
-                                        <th data-field="id" class="col-md-2">Nick</th>
-                                        <th data-field="name" class="col-md-8">Message</th>
+                                        <th data-field="nick" class="col-md-2">Nick</th>
+                                        <th data-field="message" class="col-md-8">Message</th>
                                     </tr>
                                 </thead>
                                 <tbody id="chat"></tbody>
                             </table>
                         </div>
                         {{if .nick}}
-                        <form class="form-inline" id="chat-form" action="/room-post/{{.roomid}}?nick={{.nick}}" method="post">
+                        <form autocomplete="off" class="form-inline" id="chat-form" action="/room-post/{{.roomid}}?nick={{.nick}}" method="post">
                             <div class="form-group">
                                 <label class="sr-only" for="chat-message">Message</label>
                                 <div class="input-group">
                                     <div class="input-group-addon">{{.nick}}</div>
-                                    <input name="message" id="chat-message" placeholder="a message" type="text" class="form-control" />
+                                    <input type="text" name="message" id="chat-message" class="form-control" placeholder="a message" value="" />
                                 </div>
                             </div>
                             <input type="submit" class="btn btn-primary" value="Send" />

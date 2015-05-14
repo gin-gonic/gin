@@ -110,10 +110,10 @@ function parseJSONStats(e) {
 
 function newChatMessage(e) {
     var data = jQuery.parseJSON(e.data);
-    var nick = escapeHtml(data.nick);
-    var message = escapeHtml(data.message);
-
-    var html = "<tr><td>"+nick+"</td><td>"+message+"</td></tr>";
+    var nick = data.nick;
+    var message = data.message;
+    var style = rowStyle(nick);
+    var html = "<tr class=\""+style+"\"><td>"+nick+"</td><td>"+message+"</td></tr>";
     $('#chat').append(html);
 
     $("#chat-scroll").scrollTop($("#chat-scroll")[0].scrollHeight);
@@ -136,6 +136,15 @@ var entityMap = {
     "/": '&#x2F;'
 };
 
+function rowStyle(nick) {
+    var classes = ['active', 'success', 'info', 'warning', 'danger'];
+    var index = hashCode(nick)%5;
+    return classes[index];
+}
+
+function hashCode(s){
+  return Math.abs(s.split("").reduce(function(a,b){a=((a<<5)-a)+b.charCodeAt(0);return a&a},0));             
+}
 
 function escapeHtml(string) {
     return String(string).replace(/[&<>"'\/]/g, function (s) {
