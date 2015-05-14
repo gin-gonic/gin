@@ -13,12 +13,10 @@ import (
 func rateLimit(c *gin.Context) {
 	ip := c.ClientIP()
 	value := ips.Add(ip, 1)
-	if int(value)%200 == 0 {
-		log.Printf("ip: %s, count: %f\n", ip, value)
-	}
+	log.Printf("ip: %s, count: %f\n", ip, value)
 	if value > 300 {
 		if int(value)%200 == 0 {
-			log.Printf("ip blocked", ip, value)
+			log.Println("ip blocked")
 		}
 		c.AbortWithStatus(503)
 	}
