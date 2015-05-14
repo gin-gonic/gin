@@ -3,6 +3,7 @@ package main
 import (
 	"html"
 	"io"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -33,6 +34,7 @@ func roomPOST(c *gin.Context) {
 	roomid := c.ParamValue("roomid")
 	nick := c.FormValue("nick")
 	message := c.PostFormValue("message")
+	message = strings.TrimSpace(message)
 
 	validMessage := len(message) > 1 && len(message) < 200
 	validNick := len(nick) > 1 && len(nick) < 14

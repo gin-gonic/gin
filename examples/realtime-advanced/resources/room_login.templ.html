@@ -84,24 +84,21 @@
                             </div>
                             <input type="submit" class="btn btn-primary" value="Send" />
                         </form>
-                        {{end}}
-                    </div>
-                    <div class="col-md-4">
-                        {{if .nick}}
-                        <h3>Inbound/Outbound</h3>
-                        <div id="messagesChart" class="epoch category20c"></div>
                         {{else}}
-                        <form action="" method="get">
+                        <form action="" method="get" class="form-inline">
                             <legend>Join the SSE real-time chat</legend>
                             <div class="form-group">
-                                <label for="nick">Your Name</label>
-                                <input value='' name="nick" id="nick" placeholder="John" type="text" class="form-control" />
+                                <input value='' name="nick" id="nick" placeholder="Your Name" type="text" class="form-control" />
                             </div>
                             <div class="form-group text-center">
                                 <input type="submit" class="btn btn-success btn-login-submit" value="Join" />
                             </div>
                         </form>
                         {{end}}
+                    </div>
+                    <div class="col-md-4">
+                        <h3>Inbound/Outbound</h3>
+                        <div id="messagesChart" class="epoch category20c"></div>
                     </div>
                 </div>
             </div>

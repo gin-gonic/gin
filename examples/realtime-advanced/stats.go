@@ -26,6 +26,7 @@ func statsWorker() {
 			"Inbound":      uint64(messages.Get("inbound")),
 			"Outbound":     uint64(messages.Get("outbound")),
 		}
+		messages.Reset()
 		mutexStats.Unlock()
 	}
 }

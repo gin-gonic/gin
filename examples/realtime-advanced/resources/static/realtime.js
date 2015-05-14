@@ -47,17 +47,15 @@ function StartEpoch(timestamp) {
         ]
     });
 
-    if($('#messagesChart').length ) {
-        window.messagesChart = $('#messagesChart').epoch({
-            type: 'time.area',
-            axes: ['bottom', 'left'],
-            height: 250,
-            data: [
-                {values: defaultData},
-                {values: defaultData}
-            ]
-        });
-    }
+    window.messagesChart = $('#messagesChart').epoch({
+        type: 'time.area',
+        axes: ['bottom', 'left'],
+        height: 250,
+        data: [
+            {values: defaultData},
+            {values: defaultData}
+        ]
+    });
 }
 
 function StartSSE(roomid) {
@@ -75,9 +73,7 @@ function stats(e) {
     heapChart.push(data.heap)
     mallocsChart.push(data.mallocs)
     goroutinesChart.push(data.goroutines)
-    if (typeof messagesChart !== 'undefined') {
-        messagesChart.push(data.messages)
-    }
+    messagesChart.push(data.messages)
 }
 
 function parseJSONStats(e) {
