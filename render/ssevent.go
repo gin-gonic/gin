@@ -21,6 +21,9 @@ func WriteSSEvent(w http.ResponseWriter, eventName string, data interface{}) err
 	if len(header.Get("Content-Type")) == 0 {
 		header.Set("Content-Type", sse.ContentType)
 	}
+	if len(header.Get("Cache-Control")) == 0 {
+		header.Set("Cache-Control", "no-cache")
+	}
 	return sse.Encode(w, sse.Event{
 		Event: eventName,
 		Data:  data,
