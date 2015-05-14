@@ -11,16 +11,18 @@ import (
 )
 
 func rateLimit(c *gin.Context) {
+
 	ip := c.ClientIP()
-	value := ips.Add(ip, 1)
-	if int(value)%50 == 0 {
-		fmt.Printf("ip: %s, count: %d\n", ip, int(value))
+	value := int(ips.Add(ip, 1))
+	if value%10 == 0 {
+		fmt.Printf("ip: %s, count: %d\n", ip, value)
 	}
-	if value >= 200 {
-		if int(value)%200 == 0 {
+	if value >= 100 {
+		if value%100 == 0 {
 			fmt.Println("ip blocked")
 		}
-		c.AbortWithStatus(503)
+		c.Abort()
+		c.String(503, "you were automatically banned :)")
 	}
 }
 
