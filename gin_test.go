@@ -22,7 +22,7 @@ func init() {
 
 func TestCreateEngine(t *testing.T) {
 	router := New()
-	assert.Equal(t, "/", router.absolutePath)
+	assert.Equal(t, "/", router.BasePath)
 	assert.Equal(t, router.engine, router)
 	assert.Empty(t, router.Handlers)
 	assert.True(t, router.RedirectTrailingSlash)

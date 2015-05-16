@@ -65,8 +65,8 @@ func New() *Engine {
 	debugPrintWARNING()
 	engine := &Engine{
 		RouterGroup: RouterGroup{
-			Handlers:     nil,
-			absolutePath: "/",
+			Handlers: nil,
+			BasePath: "/",
 		},
 		RedirectTrailingSlash:  true,
 		RedirectFixedPath:      true,

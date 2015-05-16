@@ -12,9 +12,9 @@ import (
 // Used internally to configure router, a RouterGroup is associated with a prefix
 // and an array of handlers (middlewares)
 type RouterGroup struct {
-	Handlers     HandlersChain
-	absolutePath string
-	engine       *Engine
+	Handlers HandlersChain
+	BasePath string
+	engine   *Engine
 }
 
 // Adds middlewares to the group, see example code in github.
@@ -26,9 +26,9 @@ func (group *RouterGroup) Use(middlewares ...HandlerFunc) {
 // For example, all the routes that use a common middlware for authorization could be grouped.
 func (group *RouterGroup) Group(relativePath string, handlers ...HandlerFunc) *RouterGroup {
 	return &RouterGroup{
-		Handlers:     group.combineHandlers(handlers),
-		absolutePath: group.calculateAbsolutePath(relativePath),
-		engine:       group.engine,
+		Handlers: group.combineHandlers(handlers),
+		BasePath: group.calculateAbsolutePath(relativePath),
+		engine:   group.engine,
 	}
 }
 
@@ -101,8 +101,7 @@ func (group *RouterGroup) UNLINK(relativePath string, handlers ...HandlerFunc) {
 // use :
 //     router.Static("/static", "/var/www")
 func (group *RouterGroup) Static(relativePath, root string) {
-	absolutePath := group.calculateAbsolutePath(relativePath)
-	handler := group.createStaticHandler(absolutePath, root)
+	handler := group.createStaticHandler(relativePath, root)
 	relativePath = path.Join(relativePath, "/*filepath")
 
 	// Register GET and HEAD handlers
@@ -110,7 +109,8 @@ func (group *RouterGroup) Static(relativePath, root string) {
 	group.HEAD(relativePath, handler)
 }
 
-func (group *RouterGroup) createStaticHandler(absolutePath, root string) func(*Context) {
+func (group *RouterGroup) createStaticHandler(relativePath, root string) func(*Context) {
+	absolutePath := group.calculateAbsolutePath(relativePath)
 	fileServer := http.StripPrefix(absolutePath, http.FileServer(http.Dir(root)))
 	return func(c *Context) {
 		fileServer.ServeHTTP(c.Writer, c.Request)
@@ -126,5 +126,5 @@ func (group *RouterGroup) combineHandlers(handlers HandlersChain) HandlersChain 
 }
 
 func (group *RouterGroup) calculateAbsolutePath(relativePath string) string {
-	return joinPaths(group.absolutePath, relativePath)
+	return joinPaths(group.BasePath, relativePath)
 }
