@@ -69,6 +69,7 @@ type Context struct {
 
 	Engine   *Engine
 	Keys     map[string]interface{}
+	Queue     []interface{}
 	Errors   errorMsgs
 	Accepted []string
 }
@@ -269,6 +270,25 @@ func (c *Context) Value(key interface{}) interface{} {
 		return val
 	}
 	return c.Context.Value(key)
+}
+
+//Enqueue new item
+func (c *Context) Enqueue(item interface{}) {
+	if c.Queue == nil {
+		c.Queue = []interface{}{}
+	}
+	c.Queue = append(c.Queue, item)
+}
+
+//Dequeue returns the value from top of the queue
+func (c *Context) Dequeue () (interface{}, error) {
+	size := len(c.Queue)
+	if c.Queue == nil || size == 0 {
+		return nil, errors.New("Queue is empty")
+	}
+	result := c.Queue[size-1]
+	c.Queue = c.Queue[0:size-1]
+	return result, nil
 }
 
 /************************************/

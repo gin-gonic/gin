@@ -91,6 +91,16 @@ func TestContextSetGetValues(t *testing.T) {
 
 }
 
+func TestContextQueue(t *testing.T) {
+	c, _, _ := createTestContext()
+	c.Enqueue("value")
+	c.Enqueue("data")
+	v, _ := c.Dequeue()
+	assert.Exactly(t, v, "data")
+	v2, _ := c.Dequeue()
+	assert.Exactly(t, v2, "value")
+}
+
 func TestContextCopy(t *testing.T) {
 	c, _, _ := createTestContext()
 	c.index = 2
