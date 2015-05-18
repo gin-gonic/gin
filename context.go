@@ -420,7 +420,7 @@ func (c *Context) Stream(step func(w io.Writer) bool) {
 
 type Negotiate struct {
 	Offered  []string
-	HTMLPath string
+	HTMLName string
 	HTMLData interface{}
 	JSONData interface{}
 	XMLData  interface{}
@@ -434,11 +434,8 @@ func (c *Context) Negotiate(code int, config Negotiate) {
 		c.JSON(code, data)
 
 	case binding.MIMEHTML:
-		if len(config.HTMLPath) == 0 {
-			panic("negotiate config is wrong. html path is needed")
-		}
 		data := chooseData(config.HTMLData, config.Data)
-		c.HTML(code, config.HTMLPath, data)
+		c.HTML(code, config.HTMLName, data)
 
 	case binding.MIMEXML:
 		data := chooseData(config.XMLData, config.Data)
