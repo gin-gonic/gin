@@ -173,7 +173,24 @@ func TestRouteHeadToDir(t *testing.T) {
 	assert.Contains(t, w.Body.String(), "gin.go")
 	assert.Equal(t, w.HeaderMap.Get("Content-Type"), "text/html; charset=utf-8")
 }
+
+func TestRouterMiddlewareAndStatic(t *testing.T) {
+	router := New()
+	static := router.Group("/", func(c *Context) {
+		c.Writer.Header().Add("Last-Modified", "Mon, 02 Jan 2006 15:04:05 MST")
+		c.Writer.Header().Add("Expires", "Mon, 02 Jan 2006 15:04:05 MST")
+		c.Writer.Header().Add("X-GIN", "Gin Framework")
+	})
+	static.Static("/", "./")
+
+	w := performRequest(router, "GET", "/")
+
+	assert.Equal(t, w.Code, 200)
+	assert.Contains(t, w.Body.String(), "gin.go")
 	assert.Equal(t, w.HeaderMap.Get("Content-Type"), "text/html; charset=utf-8")
+	assert.NotEqual(t, w.HeaderMap.Get("Last-Modified"), "Mon, 02 Jan 2006 15:04:05 MST")
+	assert.Equal(t, w.HeaderMap.Get("Expires"), "Mon, 02 Jan 2006 15:04:05 MST")
+	assert.Equal(t, w.HeaderMap.Get("x-GIN"), "Gin Framework")
 }
 
 func TestRouteNotAllowed(t *testing.T) {
