@@ -1,6 +1,6 @@
-#Gin Web Framework [![GoDoc](https://godoc.org/github.com/gin-gonic/gin?status.svg)](https://godoc.org/github.com/gin-gonic/gin) [![Build Status](https://travis-ci.org/gin-gonic/gin.svg)](https://travis-ci.org/gin-gonic/gin)
+#Gin Web Framework [![Build Status](https://travis-ci.org/gin-gonic/gin.svg)](https://travis-ci.org/gin-gonic/gin) [![Coverage Status](https://coveralls.io/repos/gin-gonic/gin/badge.svg?branch=develop)](https://coveralls.io/r/gin-gonic/gin?branch=develop)
 
-[![Join the chat at https://gitter.im/gin-gonic/gin](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/gin-gonic/gin?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+ [![GoDoc](https://godoc.org/github.com/gin-gonic/gin?status.svg)](https://godoc.org/github.com/gin-gonic/gin)  [![Join the chat at https://gitter.im/gin-gonic/gin](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/gin-gonic/gin?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
 Gin is a web framework written in Golang. It features a martini-like API with much better performance, up to 40 times faster thanks to [httprouter](https://github.com/julienschmidt/httprouter). If you need performance and good productivity, you will love Gin. 
 
@@ -71,18 +71,6 @@ Then import it in your Go code:
 ```
 import "github.com/gin-gonic/gin"
 ```
-
-
-##Community
-If you'd like to help out with the project, there's a mailing list and IRC channel where Gin discussions normally happen.
-
-* IRC
- * [irc.freenode.net #getgin](irc://irc.freenode.net:6667/getgin)
- * [Webchat](http://webchat.freenode.net?randomnick=1&channels=%23getgin)
-* Mailing List
- * Subscribe: [getgin@librelist.org](mailto:getgin@librelist.org)
- * [Archives](http://librelist.com/browser/getgin/)
-
 
 ##API Examples
 
