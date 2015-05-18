@@ -13,6 +13,7 @@ import (
 
 	"github.com/gin-gonic/gin/binding"
 	"github.com/gin-gonic/gin/render"
+	"github.com/manucorporat/sse"
 	"golang.org/x/net/context"
 )
 
@@ -315,83 +316,87 @@ func (c *Context) BindWith(obj interface{}, b binding.Binding) bool {
 /******** RESPONSE RENDERING ********/
 /************************************/
 
-func (c *Context) renderingError(err error, meta ...interface{}) {
-	c.ErrorTyped(err, ErrorTypeInternal, meta)
-	c.AbortWithStatus(500)
+func (c *Context) Header(key, value string) {
+	if len(value) == 0 {
+		c.Writer.Header().Del(key)
+	} else {
+		c.Writer.Header().Set(key, value)
+	}
 }
 
-func (c *Context) Render(code int, render render.Render, obj ...interface{}) {
-	if err := render.Render(c.Writer, code, obj...); err != nil {
-		c.renderingError(err, obj)
+func (c *Context) Render(code int, r render.Render) {
+	w := c.Writer
+	w.WriteHeader(code)
+	if err := r.Write(w); err != nil {
+		debugPrintError(err)
+		c.ErrorTyped(err, ErrorTypeInternal, nil)
+		c.AbortWithStatus(500)
 	}
+	//c.Abort()
 }
 
 // Renders the HTTP template specified by its file name.
 // It also updates the HTTP code and sets the Content-Type as "text/html".
 // See http://golang.org/doc/articles/wiki/
 func (c *Context) HTML(code int, name string, obj interface{}) {
-	c.Render(code, c.Engine.HTMLRender, name, obj)
+	instance := c.Engine.HTMLRender.Instance(name, obj)
+	c.Render(code, instance)
 }
 
 func (c *Context) IndentedJSON(code int, obj interface{}) {
-	if err := render.WriteIndentedJSON(c.Writer, code, obj); err != nil {
-		c.renderingError(err, obj)
-	}
+	c.Render(code, render.IndentedJSON{Data: obj})
 }
 
 // Serializes the given struct as JSON into the response body in a fast and efficient way.
 // It also sets the Content-Type as "application/json".
 func (c *Context) JSON(code int, obj interface{}) {
-	if err := render.WriteJSON(c.Writer, code, obj); err != nil {
-		c.renderingError(err, obj)
-	}
+	c.Render(code, render.JSON{Data: obj})
 }
 
 // Serializes the given struct as XML into the response body in a fast and efficient way.
 // It also sets the Content-Type as "application/xml".
 func (c *Context) XML(code int, obj interface{}) {
-	if err := render.WriteXML(c.Writer, code, obj); err != nil {
-		c.renderingError(err, obj)
-	}
+	c.Render(code, render.XML{Data: obj})
 }
 
 // Writes the given string into the response body and sets the Content-Type to "text/plain".
 func (c *Context) String(code int, format string, values ...interface{}) {
-	render.WritePlainText(c.Writer, code, format, values)
-}
-
-// Writes the given string into the response body and sets the Content-Type to "text/html" without template.
-func (c *Context) HTMLString(code int, format string, values ...interface{}) {
-	render.WriteHTMLString(c.Writer, code, format, values)
+	c.Render(code, render.String{
+		Format: format,
+		Data:   values},
+	)
 }
 
 // Returns a HTTP redirect to the specific location.
 func (c *Context) Redirect(code int, location string) {
-	render.WriteRedirect(c.Writer, code, c.Request, location)
+	c.Render(-1, render.Redirect{
+		Code:     code,
+		Location: location,
+		Request:  c.Request,
+	})
 }
 
 // Writes some data into the body stream and updates the HTTP code.
 func (c *Context) Data(code int, contentType string, data []byte) {
-	render.WriteData(c.Writer, code, contentType, data)
+	c.Render(code, render.Data{
+		ContentType: contentType,
+		Data:        data,
+	})
 }
 
 // Writes the specified file into the body stream
 func (c *Context) File(filepath string) {
-	http.ServeFile(c.Writer, c.Request, filepath)
+	c.Render(-1, render.File{
+		Path:    filepath,
+		Request: c.Request,
+	})
 }
 
 func (c *Context) SSEvent(name string, message interface{}) {
-	render.WriteSSEvent(c.Writer, name, message)
-}
-
-func (c *Context) Header(code int, headers map[string]string) {
-	if len(headers) > 0 {
-		header := c.Writer.Header()
-		for key, value := range headers {
-			header.Set(key, value)
-		}
-	}
-	c.Writer.WriteHeader(code)
+	c.Render(-1, sse.Event{
+		Event: name,
+		Data:  message,
+	})
 }
 
 func (c *Context) Stream(step func(w io.Writer) bool) {

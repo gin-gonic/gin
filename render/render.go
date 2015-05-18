@@ -7,22 +7,18 @@ package render
 import "net/http"
 
 type Render interface {
-	Render(http.ResponseWriter, int, ...interface{}) error
+	Write(http.ResponseWriter) error
 }
 
 var (
-	JSON         Render = jsonRender{}
-	IndentedJSON Render = indentedJSON{}
-	XML          Render = xmlRender{}
-	HTMLPlain    Render = htmlPlainRender{}
-	Plain        Render = plainTextRender{}
-	Redirect     Render = redirectRender{}
-	Data         Render = dataRender{}
-	_            Render = HTMLRender{}
-	_            Render = &HTMLDebugRender{}
+	_ Render     = JSON{}
+	_ Render     = IndentedJSON{}
+	_ Render     = XML{}
+	_ Render     = String{}
+	_ Render     = Redirect{}
+	_ Render     = Data{}
+	_ Render     = HTML{}
+	_ Render     = File{}
+	_ HTMLRender = HTMLDebug{}
+	_ HTMLRender = HTMLProduction{}
 )
-
-func writeHeader(w http.ResponseWriter, code int, contentType string) {
-	w.Header().Set("Content-Type", contentType)
-	w.WriteHeader(code)
-}

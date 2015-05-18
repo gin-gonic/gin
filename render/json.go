@@ -6,30 +6,26 @@ import (
 )
 
 type (
-	jsonRender struct{}
+	JSON struct {
+		Data interface{}
+	}
 
-	indentedJSON struct{}
+	IndentedJSON struct {
+		Data interface{}
+	}
 )
 
-func (_ jsonRender) Render(w http.ResponseWriter, code int, data ...interface{}) error {
-	return WriteJSON(w, code, data[0])
+func (r JSON) Write(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	return json.NewEncoder(w).Encode(r.Data)
 }
 
-func (_ indentedJSON) Render(w http.ResponseWriter, code int, data ...interface{}) error {
-	return WriteIndentedJSON(w, code, data[0])
-}
-
-func WriteJSON(w http.ResponseWriter, code int, data interface{}) error {
-	writeHeader(w, code, "application/json; charset=utf-8")
-	return json.NewEncoder(w).Encode(data)
-}
-
-func WriteIndentedJSON(w http.ResponseWriter, code int, data interface{}) error {
-	writeHeader(w, code, "application/json; charset=utf-8")
-	jsonData, err := json.MarshalIndent(data, "", "    ")
+func (r IndentedJSON) Write(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	jsonBytes, err := json.MarshalIndent(r.Data, "", "    ")
 	if err != nil {
 		return err
 	}
-	_, err = w.Write(jsonData)
-	return err
+	w.Write(jsonBytes)
+	return nil
 }

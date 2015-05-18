@@ -23,7 +23,7 @@ type (
 	// Represents the web framework, it wraps the blazing fast httprouter multiplexer and a list of global middlewares.
 	Engine struct {
 		RouterGroup
-		HTMLRender  render.Render
+		HTMLRender  render.HTMLRender
 		pool        sync.Pool
 		allNoRoute  HandlersChain
 		allNoMethod HandlersChain
@@ -93,7 +93,7 @@ func (engine *Engine) allocateContext() (context *Context) {
 
 func (engine *Engine) LoadHTMLGlob(pattern string) {
 	if IsDebugging() {
-		engine.HTMLRender = &render.HTMLDebugRender{Glob: pattern}
+		engine.HTMLRender = render.HTMLDebug{Glob: pattern}
 	} else {
 		templ := template.Must(template.ParseGlob(pattern))
 		engine.SetHTMLTemplate(templ)
@@ -102,7 +102,7 @@ func (engine *Engine) LoadHTMLGlob(pattern string) {
 
 func (engine *Engine) LoadHTMLFiles(files ...string) {
 	if IsDebugging() {
-		engine.HTMLRender = &render.HTMLDebugRender{Files: files}
+		engine.HTMLRender = render.HTMLDebug{Files: files}
 	} else {
 		templ := template.Must(template.ParseFiles(files...))
 		engine.SetHTMLTemplate(templ)
@@ -110,7 +110,7 @@ func (engine *Engine) LoadHTMLFiles(files ...string) {
 }
 
 func (engine *Engine) SetHTMLTemplate(templ *template.Template) {
-	engine.HTMLRender = render.HTMLRender{Template: templ}
+	engine.HTMLRender = render.HTMLProduction{Template: templ}
 }
 
 // Adds handlers for NoRoute. It return a 404 code by default.

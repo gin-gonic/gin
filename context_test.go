@@ -215,7 +215,8 @@ func TestContextRenderString(t *testing.T) {
 // with Content-Type set to text/html
 func TestContextRenderHTMLString(t *testing.T) {
 	c, w, _ := createTestContext()
-	c.HTMLString(201, "<html>%s %d</html>", "string", 3)
+	c.Header("Content-Type", "text/html; charset=utf-8")
+	c.String(201, "<html>%s %d</html>", "string", 3)
 
 	assert.Equal(t, w.Code, 201)
 	assert.Equal(t, w.Body.String(), "<html>string 3</html>")
@@ -231,6 +232,22 @@ func TestContextRenderData(t *testing.T) {
 	assert.Equal(t, w.Code, 201)
 	assert.Equal(t, w.Body.String(), "foo,bar")
 	assert.Equal(t, w.HeaderMap.Get("Content-Type"), "text/csv")
+}
+
+func TestContextHeaders(t *testing.T) {
+	c, _, _ := createTestContext()
+	c.Header("Content-Type", "text/plain")
+	c.Header("X-Custom", "value")
+
+	assert.Equal(t, c.Writer.Header().Get("Content-Type"), "text/plain")
+	assert.Equal(t, c.Writer.Header().Get("X-Custom"), "value")
+
+	c.Header("Content-Type", "text/html")
+	c.Header("X-Custom", "")
+
+	assert.Equal(t, c.Writer.Header().Get("Content-Type"), "text/html")
+	_, exist := c.Writer.Header()["X-Custom"]
+	assert.False(t, exist)
 }
 
 // TODO
