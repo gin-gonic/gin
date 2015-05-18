@@ -180,8 +180,7 @@ func (engine *Engine) RunUnix(file string) (err error) {
 	defer func() { debugPrintError(err) }()
 
 	os.Remove(file)
-	listener, err2 := net.Listen("unix", file)
-	err = err2
+	listener, err := net.Listen("unix", file)
 	if err != nil {
 		return
 	}
