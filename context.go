@@ -324,13 +324,8 @@ func (c *Context) Header(key, value string) {
 	}
 }
 
-func (c *Context) Return(code int, r render.Render) {
+func (c *Context) Render(code int, r render.Render) {
 	c.Writer.WriteHeader(code)
-	c.Render(r)
-	c.Abort()
-}
-
-func (c *Context) Render(r render.Render) {
 	if err := r.Write(c.Writer); err != nil {
 		debugPrintError(err)
 		c.ErrorTyped(err, ErrorTypeInternal, nil)
@@ -343,28 +338,28 @@ func (c *Context) Render(r render.Render) {
 // See http://golang.org/doc/articles/wiki/
 func (c *Context) HTML(code int, name string, obj interface{}) {
 	instance := c.Engine.HTMLRender.Instance(name, obj)
-	c.Return(code, instance)
+	c.Render(code, instance)
 }
 
 func (c *Context) IndentedJSON(code int, obj interface{}) {
-	c.Return(code, render.IndentedJSON{Data: obj})
+	c.Render(code, render.IndentedJSON{Data: obj})
 }
 
 // Serializes the given struct as JSON into the response body in a fast and efficient way.
 // It also sets the Content-Type as "application/json".
 func (c *Context) JSON(code int, obj interface{}) {
-	c.Return(code, render.JSON{Data: obj})
+	c.Render(code, render.JSON{Data: obj})
 }
 
 // Serializes the given struct as XML into the response body in a fast and efficient way.
 // It also sets the Content-Type as "application/xml".
 func (c *Context) XML(code int, obj interface{}) {
-	c.Return(code, render.XML{Data: obj})
+	c.Render(code, render.XML{Data: obj})
 }
 
 // Writes the given string into the response body and sets the Content-Type to "text/plain".
 func (c *Context) String(code int, format string, values ...interface{}) {
-	c.Return(code, render.String{
+	c.Render(code, render.String{
 		Format: format,
 		Data:   values},
 	)
@@ -372,7 +367,7 @@ func (c *Context) String(code int, format string, values ...interface{}) {
 
 // Returns a HTTP redirect to the specific location.
 func (c *Context) Redirect(code int, location string) {
-	c.Render(render.Redirect{
+	c.Render(-1, render.Redirect{
 		Code:     code,
 		Location: location,
 		Request:  c.Request,
@@ -381,7 +376,7 @@ func (c *Context) Redirect(code int, location string) {
 
 // Writes some data into the body stream and updates the HTTP code.
 func (c *Context) Data(code int, contentType string, data []byte) {
-	c.Return(code, render.Data{
+	c.Render(code, render.Data{
 		ContentType: contentType,
 		Data:        data,
 	})
@@ -389,14 +384,14 @@ func (c *Context) Data(code int, contentType string, data []byte) {
 
 // Writes the specified file into the body stream
 func (c *Context) File(filepath string) {
-	c.Return(-1, render.File{
+	c.Render(-1, render.File{
 		Path:    filepath,
 		Request: c.Request,
 	})
 }
 
 func (c *Context) SSEvent(name string, message interface{}) {
-	c.Render(sse.Event{
+	c.Render(-1, sse.Event{
 		Event: name,
 		Data:  message,
 	})
