@@ -47,6 +47,8 @@ func TestContextReset(t *testing.T) {
 	assert.Nil(t, c.Keys)
 	assert.Nil(t, c.Accepted)
 	assert.Len(t, c.Errors, 0)
+	assert.Empty(t, c.Errors.Errors())
+	assert.Empty(t, c.Errors.ByType(ErrorTypeAny))
 	assert.Len(t, c.Params, 0)
 	assert.Equal(t, c.index, -1)
 	assert.Equal(t, c.Writer.(*responseWriter), &c.writermem)
@@ -125,7 +127,6 @@ func TestContextFormParse(t *testing.T) {
 	assert.Equal(t, c.DefaultFormValue("NoKey", "nada"), "nada")
 	assert.Empty(t, c.FormValue("NoKey"))
 	assert.Empty(t, c.PostFormValue("NoKey"))
-
 }
 
 func TestContextPostFormParse(t *testing.T) {
@@ -360,6 +361,8 @@ func TestContextTypedError(t *testing.T) {
 	for _, err := range c.Errors.ByType(ErrorTypeInternal) {
 		assert.Equal(t, err.Flags, ErrorTypeInternal)
 	}
+
+	assert.Equal(t, c.Errors.Errors(), []string{"externo 0", "externo 1", "interno 0", "externo 2", "interno 1", "interno 2"})
 }
 
 func TestContextFail(t *testing.T) {
