@@ -10,6 +10,7 @@ import (
 	"math"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin/binding"
 	"github.com/gin-gonic/gin/render"
@@ -28,6 +29,8 @@ const (
 )
 
 const AbortIndex = math.MaxInt8 / 2
+
+var _ context.Context = &Context{}
 
 // Param is a single URL parameter, consisting of a key and a value.
 type Param struct {
@@ -59,7 +62,6 @@ func (ps Params) ByName(name string) (va string) {
 // Context is the most important part of gin. It allows us to pass variables between middleware,
 // manage the flow, validate the JSON of a request and render a JSON response for example.
 type Context struct {
-	context.Context
 	writermem responseWriter
 	Request   *http.Request
 	Writer    ResponseWriter
@@ -261,17 +263,6 @@ func (c *Context) MustGet(key string) interface{} {
 	}
 }
 
-func (c *Context) Value(key interface{}) interface{} {
-	if key == 0 {
-		return c.Request
-	}
-	if keyAsString, ok := key.(string); ok {
-		val, _ := c.Get(keyAsString)
-		return val
-	}
-	return c.Context.Value(key)
-}
-
 /************************************/
 /********* PARSING REQUEST **********/
 /************************************/
@@ -468,4 +459,27 @@ func (c *Context) NegotiateFormat(offered ...string) string {
 
 func (c *Context) SetAccepted(formats ...string) {
 	c.Accepted = formats
+}
+
+func (c *Context) Deadline() (deadline time.Time, ok bool) {
+	return
+}
+
+func (c *Context) Done() <-chan struct{} {
+	return nil
+}
+
+func (c *Context) Err() error {
+	return nil
+}
+
+func (c *Context) Value(key interface{}) interface{} {
+	if key == 0 {
+		return c.Request
+	}
+	if keyAsString, ok := key.(string); ok {
+		val, _ := c.Get(keyAsString)
+		return val
+	}
+	return nil
 }
