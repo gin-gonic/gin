@@ -24,40 +24,34 @@ func performRequest(r http.Handler, method, path string) *httptest.ResponseRecor
 }
 
 func testRouteOK(method string, t *testing.T) {
-	// SETUP
 	passed := false
 	r := New()
 	r.Handle(method, "/test", HandlersChain{func(c *Context) {
 		passed = true
 	}})
-	// RUN
+
 	w := performRequest(r, method, "/test")
 
-	// TEST
 	assert.True(t, passed)
 	assert.Equal(t, w.Code, http.StatusOK)
 }
 
 // TestSingleRouteOK tests that POST route is correctly invoked.
 func testRouteNotOK(method string, t *testing.T) {
-	// SETUP
 	passed := false
 	router := New()
 	router.Handle(method, "/test_2", HandlersChain{func(c *Context) {
 		passed = true
 	}})
 
-	// RUN
 	w := performRequest(router, method, "/test")
 
-	// TEST
 	assert.False(t, passed)
 	assert.Equal(t, w.Code, http.StatusNotFound)
 }
 
 // TestSingleRouteOK tests that POST route is correctly invoked.
 func testRouteNotOK2(method string, t *testing.T) {
-	// SETUP
 	passed := false
 	router := New()
 	var methodRoute string
@@ -70,10 +64,8 @@ func testRouteNotOK2(method string, t *testing.T) {
 		passed = true
 	}})
 
-	// RUN
 	w := performRequest(router, method, "/test")
 
-	// TEST
 	assert.False(t, passed)
 	assert.Equal(t, w.Code, http.StatusMethodNotAllowed)
 }
@@ -125,10 +117,9 @@ func TestRouteParamsByName(t *testing.T) {
 		assert.Equal(t, lastName, c.DefaultParamValue("last_name", "nothing"))
 		assert.Equal(t, c.DefaultParamValue("noKey", "default"), "default")
 	})
-	// RUN
+
 	w := performRequest(router, "GET", "/test/john/smith/is/super/great")
 
-	// TEST
 	assert.Equal(t, w.Code, 200)
 	assert.Equal(t, name, "john")
 	assert.Equal(t, lastName, "smith")
@@ -149,13 +140,11 @@ func TestRouteStaticFile(t *testing.T) {
 	f.Close()
 
 	// SETUP gin
-	r := New()
-	r.Static("./", testRoot)
+	router := New()
+	router.Static("./", testRoot)
 
-	// RUN
-	w := performRequest(r, "GET", filePath)
+	w := performRequest(router, "GET", filePath)
 
-	// TEST
 	assert.Equal(t, w.Code, 200)
 	assert.Equal(t, w.Body.String(), "Gin Web Framework")
 	assert.Equal(t, w.HeaderMap.Get("Content-Type"), "text/plain; charset=utf-8")
@@ -163,35 +152,27 @@ func TestRouteStaticFile(t *testing.T) {
 
 // TestHandleStaticDir - ensure the root/sub dir handles properly
 func TestRouteStaticDir(t *testing.T) {
-	// SETUP
-	r := New()
-	r.Static("/", "./")
+	router := New()
+	router.Static("/", "./")
 
-	// RUN
-	w := performRequest(r, "GET", "/")
+	w := performRequest(router, "GET", "/")
 
-	// TEST
-	bodyAsString := w.Body.String()
 	assert.Equal(t, w.Code, 200)
-	assert.NotEmpty(t, bodyAsString)
-	assert.Contains(t, bodyAsString, "gin.go")
+	assert.Contains(t, w.Body.String(), "gin.go")
 	assert.Equal(t, w.HeaderMap.Get("Content-Type"), "text/html; charset=utf-8")
 }
 
 // TestHandleHeadToDir - ensure the root/sub dir handles properly
 func TestRouteHeadToDir(t *testing.T) {
-	// SETUP
 	router := New()
 	router.Static("/", "./")
 
-	// RUN
 	w := performRequest(router, "HEAD", "/")
 
-	// TEST
-	bodyAsString := w.Body.String()
 	assert.Equal(t, w.Code, 200)
-	assert.NotEmpty(t, bodyAsString)
-	assert.Contains(t, bodyAsString, "gin.go")
+	assert.Contains(t, w.Body.String(), "gin.go")
+	assert.Equal(t, w.HeaderMap.Get("Content-Type"), "text/html; charset=utf-8")
+}
 	assert.Equal(t, w.HeaderMap.Get("Content-Type"), "text/html; charset=utf-8")
 }
 
