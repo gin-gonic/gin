@@ -6,7 +6,9 @@ package gin
 
 import (
 	"html/template"
+	"net"
 	"net/http"
+	"os"
 	"sync"
 
 	"github.com/gin-gonic/gin/binding"
@@ -159,7 +161,7 @@ func (engine *Engine) handle(method, path string, handlers HandlersChain) {
 
 func (engine *Engine) Run(addr string) (err error) {
 	debugPrint("Listening and serving HTTP on %s\n", addr)
-	defer debugPrintError(err)
+	defer func() { debugPrintError(err) }()
 
 	err = http.ListenAndServe(addr, engine)
 	return
@@ -167,9 +169,24 @@ func (engine *Engine) Run(addr string) (err error) {
 
 func (engine *Engine) RunTLS(addr string, cert string, key string) (err error) {
 	debugPrint("Listening and serving HTTPS on %s\n", addr)
-	defer debugPrintError(err)
+	defer func() { debugPrintError(err) }()
 
 	err = http.ListenAndServe(addr, engine)
+	return
+}
+
+func (engine *Engine) RunUnix(file string) (err error) {
+	debugPrint("Listening and serving HTTP on unix:/%s", file)
+	defer func() { debugPrintError(err) }()
+
+	os.Remove(file)
+	listener, err2 := net.Listen("unix", file)
+	err = err2
+	if err != nil {
+		return
+	}
+	defer listener.Close()
+	err = http.Serve(listener, engine)
 	return
 }
 
