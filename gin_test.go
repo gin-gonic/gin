@@ -29,9 +29,9 @@ func TestCreateEngine(t *testing.T) {
 	assert.True(t, router.RedirectFixedPath)
 	assert.True(t, router.HandleMethodNotAllowed)
 
-	assert.Panics(t, func() { router.handle("", "/", HandlersChain{func(_ *Context) {}}) })
-	assert.Panics(t, func() { router.handle("GET", "a", HandlersChain{func(_ *Context) {}}) })
-	assert.Panics(t, func() { router.handle("GET", "/", HandlersChain{}) })
+	assert.Panics(t, func() { router.addRoute("", "/", HandlersChain{func(_ *Context) {}}) })
+	assert.Panics(t, func() { router.addRoute("GET", "a", HandlersChain{func(_ *Context) {}}) })
+	assert.Panics(t, func() { router.addRoute("GET", "/", HandlersChain{}) })
 }
 
 func TestCreateDefaultRouter(t *testing.T) {

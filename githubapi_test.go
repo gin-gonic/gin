@@ -286,13 +286,13 @@ func TestGithubAPI(t *testing.T) {
 	router := New()
 
 	for _, route := range githubAPI {
-		router.Handle(route.method, route.path, HandlersChain{func(c *Context) {
+		router.Handle(route.method, route.path, func(c *Context) {
 			output := H{"status": "good"}
 			for _, param := range c.Params {
 				output[param.Key] = param.Value
 			}
 			c.JSON(200, output)
-		}})
+		})
 	}
 
 	for _, route := range githubAPI {

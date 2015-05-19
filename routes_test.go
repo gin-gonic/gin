@@ -30,9 +30,9 @@ func testRouteOK(method string, t *testing.T) {
 	r.Any("/test2", func(c *Context) {
 		passedAny = true
 	})
-	r.Handle(method, "/test", HandlersChain{func(c *Context) {
+	r.Handle(method, "/test", func(c *Context) {
 		passed = true
-	}})
+	})
 
 	w := performRequest(r, method, "/test")
 	assert.True(t, passed)
@@ -47,9 +47,9 @@ func testRouteOK(method string, t *testing.T) {
 func testRouteNotOK(method string, t *testing.T) {
 	passed := false
 	router := New()
-	router.Handle(method, "/test_2", HandlersChain{func(c *Context) {
+	router.Handle(method, "/test_2", func(c *Context) {
 		passed = true
-	}})
+	})
 
 	w := performRequest(router, method, "/test")
 
@@ -67,9 +67,9 @@ func testRouteNotOK2(method string, t *testing.T) {
 	} else {
 		methodRoute = "POST"
 	}
-	router.Handle(methodRoute, "/test", HandlersChain{func(c *Context) {
+	router.Handle(methodRoute, "/test", func(c *Context) {
 		passed = true
-	}})
+	})
 
 	w := performRequest(router, method, "/test")
 

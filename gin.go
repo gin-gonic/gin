@@ -140,7 +140,7 @@ func (engine *Engine) rebuild405Handlers() {
 	engine.allNoMethod = engine.combineHandlers(engine.noMethod)
 }
 
-func (engine *Engine) handle(method, path string, handlers HandlersChain) {
+func (engine *Engine) addRoute(method, path string, handlers HandlersChain) {
 	if path[0] != '/' {
 		panic("path must begin with '/'")
 	}

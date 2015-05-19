@@ -42,72 +42,76 @@ func (group *RouterGroup) Group(relativePath string, handlers ...HandlerFunc) *R
 // This function is intended for bulk loading and to allow the usage of less
 // frequently used, non-standardized or custom methods (e.g. for internal
 // communication with a proxy).
-func (group *RouterGroup) Handle(httpMethod, relativePath string, handlers HandlersChain) {
+func (group *RouterGroup) handle(httpMethod, relativePath string, handlers HandlersChain) {
 	absolutePath := group.calculateAbsolutePath(relativePath)
 	handlers = group.combineHandlers(handlers)
 	debugPrintRoute(httpMethod, absolutePath, handlers)
-	group.engine.handle(httpMethod, absolutePath, handlers)
+	group.engine.addRoute(httpMethod, absolutePath, handlers)
+}
+
+func (group *RouterGroup) Handle(httpMethod, relativePath string, handlers ...HandlerFunc) {
+	group.handle(httpMethod, relativePath, handlers)
 }
 
 // POST is a shortcut for router.Handle("POST", path, handle)
 func (group *RouterGroup) POST(relativePath string, handlers ...HandlerFunc) {
-	group.Handle("POST", relativePath, handlers)
+	group.handle("POST", relativePath, handlers)
 }
 
 // GET is a shortcut for router.Handle("GET", path, handle)
 func (group *RouterGroup) GET(relativePath string, handlers ...HandlerFunc) {
-	group.Handle("GET", relativePath, handlers)
+	group.handle("GET", relativePath, handlers)
 }
 
 // DELETE is a shortcut for router.Handle("DELETE", path, handle)
 func (group *RouterGroup) DELETE(relativePath string, handlers ...HandlerFunc) {
-	group.Handle("DELETE", relativePath, handlers)
+	group.handle("DELETE", relativePath, handlers)
 }
 
 // PATCH is a shortcut for router.Handle("PATCH", path, handle)
 func (group *RouterGroup) PATCH(relativePath string, handlers ...HandlerFunc) {
-	group.Handle("PATCH", relativePath, handlers)
+	group.handle("PATCH", relativePath, handlers)
 }
 
 // PUT is a shortcut for router.Handle("PUT", path, handle)
 func (group *RouterGroup) PUT(relativePath string, handlers ...HandlerFunc) {
-	group.Handle("PUT", relativePath, handlers)
+	group.handle("PUT", relativePath, handlers)
 }
 
 // OPTIONS is a shortcut for router.Handle("OPTIONS", path, handle)
 func (group *RouterGroup) OPTIONS(relativePath string, handlers ...HandlerFunc) {
-	group.Handle("OPTIONS", relativePath, handlers)
+	group.handle("OPTIONS", relativePath, handlers)
 }
 
 // HEAD is a shortcut for router.Handle("HEAD", path, handle)
 func (group *RouterGroup) HEAD(relativePath string, handlers ...HandlerFunc) {
-	group.Handle("HEAD", relativePath, handlers)
+	group.handle("HEAD", relativePath, handlers)
 }
 
 // LINK is a shortcut for router.Handle("LINK", path, handle)
 func (group *RouterGroup) LINK(relativePath string, handlers ...HandlerFunc) {
-	group.Handle("LINK", relativePath, handlers)
+	group.handle("LINK", relativePath, handlers)
 }
 
 // UNLINK is a shortcut for router.Handle("UNLINK", path, handle)
 func (group *RouterGroup) UNLINK(relativePath string, handlers ...HandlerFunc) {
-	group.Handle("UNLINK", relativePath, handlers)
+	group.handle("UNLINK", relativePath, handlers)
 }
 
 func (group *RouterGroup) Any(relativePath string, handlers ...HandlerFunc) {
 	// GET, POST, PUT, PATCH, HEAD, OPTIONS, DELETE, CONNECT, WS, LINK, UNLINK, TRACE
-	group.Handle("GET", relativePath, handlers)
-	group.Handle("POST", relativePath, handlers)
-	group.Handle("PUT", relativePath, handlers)
-	group.Handle("PATCH", relativePath, handlers)
-	group.Handle("HEAD", relativePath, handlers)
-	group.Handle("OPTIONS", relativePath, handlers)
-	group.Handle("DELETE", relativePath, handlers)
-	group.Handle("CONNECT", relativePath, handlers)
-	group.Handle("WS", relativePath, handlers)
-	group.Handle("LINK", relativePath, handlers)
-	group.Handle("UNLINK", relativePath, handlers)
-	group.Handle("TRACE", relativePath, handlers)
+	group.handle("GET", relativePath, handlers)
+	group.handle("POST", relativePath, handlers)
+	group.handle("PUT", relativePath, handlers)
+	group.handle("PATCH", relativePath, handlers)
+	group.handle("HEAD", relativePath, handlers)
+	group.handle("OPTIONS", relativePath, handlers)
+	group.handle("DELETE", relativePath, handlers)
+	group.handle("CONNECT", relativePath, handlers)
+	group.handle("WS", relativePath, handlers)
+	group.handle("LINK", relativePath, handlers)
+	group.handle("UNLINK", relativePath, handlers)
+	group.handle("TRACE", relativePath, handlers)
 }
 
 // Static serves files from the given file system root.
