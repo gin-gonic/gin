@@ -30,7 +30,7 @@ func TestCreateEngine(t *testing.T) {
 	assert.True(t, router.HandleMethodNotAllowed)
 
 	assert.Panics(t, func() { router.handle("", "/", HandlersChain{func(_ *Context) {}}) })
-	assert.Panics(t, func() { router.handle("GET", "", HandlersChain{func(_ *Context) {}}) })
+	assert.Panics(t, func() { router.handle("GET", "a", HandlersChain{func(_ *Context) {}}) })
 	assert.Panics(t, func() { router.handle("GET", "/", HandlersChain{}) })
 }
 

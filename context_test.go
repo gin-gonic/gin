@@ -11,8 +11,10 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/gin-gonic/gin/binding"
+	"github.com/manucorporat/sse"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -132,7 +134,7 @@ func TestContextFormParse(t *testing.T) {
 func TestContextPostFormParse(t *testing.T) {
 	c, _, _ := createTestContext()
 	body := bytes.NewBufferString("foo=bar&page=11&both=POST")
-	c.Request, _ = http.NewRequest("POST", "http://example.com/?both=GET&id=main", body)
+	c.Request, _ = http.NewRequest("POST", "/?both=GET&id=main", body)
 	c.Request.Header.Add("Content-Type", MIMEPOSTForm)
 
 	assert.Equal(t, c.DefaultPostFormValue("foo", "none"), "bar")
@@ -235,6 +237,31 @@ func TestContextRenderData(t *testing.T) {
 	assert.Equal(t, w.HeaderMap.Get("Content-Type"), "text/csv")
 }
 
+func TestContextRenderSSE(t *testing.T) {
+	c, w, _ := createTestContext()
+	c.SSEvent("float", 1.5)
+	c.Render(-1, sse.Event{
+		Id:   "123",
+		Data: "text",
+	})
+	c.SSEvent("chat", H{
+		"foo": "bar",
+		"bar": "foo",
+	})
+
+	assert.Equal(t, w.Body.String(), "event: float\ndata: 1.5\n\nid: 123\ndata: text\n\nevent: chat\ndata: {\"bar\":\"foo\",\"foo\":\"bar\"}\n\n")
+}
+
+func TestContextRenderFile(t *testing.T) {
+	c, w, _ := createTestContext()
+	c.Request, _ = http.NewRequest("GET", "/", nil)
+	c.File("./gin.go")
+
+	assert.Equal(t, w.Code, 200)
+	assert.Contains(t, w.Body.String(), "func New() *Engine {")
+	assert.Equal(t, w.HeaderMap.Get("Content-Type"), "text/plain; charset=utf-8")
+}
+
 func TestContextHeaders(t *testing.T) {
 	c, _, _ := createTestContext()
 	c.Header("Content-Type", "text/plain")
@@ -285,7 +312,7 @@ func TestContextNegotiationFormat(t *testing.T) {
 
 func TestContextNegotiationFormatWithAccept(t *testing.T) {
 	c, _, _ := createTestContext()
-	c.Request, _ = http.NewRequest("POST", "", nil)
+	c.Request, _ = http.NewRequest("POST", "/", nil)
 	c.Request.Header.Add("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8")
 
 	assert.Equal(t, c.NegotiateFormat(MIMEJSON, MIMEXML), MIMEXML)
@@ -295,7 +322,7 @@ func TestContextNegotiationFormatWithAccept(t *testing.T) {
 
 func TestContextNegotiationFormatCustum(t *testing.T) {
 	c, _, _ := createTestContext()
-	c.Request, _ = http.NewRequest("POST", "", nil)
+	c.Request, _ = http.NewRequest("POST", "/", nil)
 	c.Request.Header.Add("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8")
 
 	c.Accepted = nil
@@ -378,7 +405,7 @@ func TestContextFail(t *testing.T) {
 
 func TestContextClientIP(t *testing.T) {
 	c, _, _ := createTestContext()
-	c.Request, _ = http.NewRequest("POST", "", nil)
+	c.Request, _ = http.NewRequest("POST", "/", nil)
 
 	c.Request.Header.Set("X-Real-IP", "10.10.10.10")
 	c.Request.Header.Set("X-Forwarded-For", "20.20.20.20 , 30.30.30.30")
@@ -393,7 +420,7 @@ func TestContextClientIP(t *testing.T) {
 
 func TestContextContentType(t *testing.T) {
 	c, _, _ := createTestContext()
-	c.Request, _ = http.NewRequest("POST", "", nil)
+	c.Request, _ = http.NewRequest("POST", "/", nil)
 	c.Request.Header.Set("Content-Type", "application/json; charset=utf-8")
 
 	assert.Equal(t, c.ContentType(), "application/json")
@@ -401,7 +428,7 @@ func TestContextContentType(t *testing.T) {
 
 func TestContextAutoBind(t *testing.T) {
 	c, w, _ := createTestContext()
-	c.Request, _ = http.NewRequest("POST", "http://example.com", bytes.NewBufferString("{\"foo\":\"bar\", \"bar\":\"foo\"}"))
+	c.Request, _ = http.NewRequest("POST", "/", bytes.NewBufferString("{\"foo\":\"bar\", \"bar\":\"foo\"}"))
 	c.Request.Header.Add("Content-Type", MIMEJSON)
 	var obj struct {
 		Foo string `json:"foo"`
@@ -434,7 +461,7 @@ func TestContextBadAutoBind(t *testing.T) {
 
 func TestContextBindWith(t *testing.T) {
 	c, w, _ := createTestContext()
-	c.Request, _ = http.NewRequest("POST", "http://example.com", bytes.NewBufferString("{\"foo\":\"bar\", \"bar\":\"foo\"}"))
+	c.Request, _ = http.NewRequest("POST", "/", bytes.NewBufferString("{\"foo\":\"bar\", \"bar\":\"foo\"}"))
 	c.Request.Header.Add("Content-Type", MIMEXML)
 	var obj struct {
 		Foo string `json:"foo"`
@@ -444,4 +471,20 @@ func TestContextBindWith(t *testing.T) {
 	assert.Equal(t, obj.Bar, "foo")
 	assert.Equal(t, obj.Foo, "bar")
 	assert.Equal(t, w.Body.Len(), 0)
+}
+
+func TestContextGolangContext(t *testing.T) {
+	c, _, _ := createTestContext()
+	c.Request, _ = http.NewRequest("POST", "/", bytes.NewBufferString("{\"foo\":\"bar\", \"bar\":\"foo\"}"))
+	assert.NoError(t, c.Err())
+	assert.Nil(t, c.Done())
+	ti, ok := c.Deadline()
+	assert.Equal(t, ti, time.Time{})
+	assert.False(t, ok)
+	assert.Equal(t, c.Value(0), c.Request)
+	assert.Nil(t, c.Value("foo"))
+
+	c.Set("foo", "bar")
+	assert.Equal(t, c.Value("foo"), "bar")
+	assert.Nil(t, c.Value(1))
 }

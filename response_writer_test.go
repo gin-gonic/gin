@@ -95,3 +95,21 @@ func TestResponseWriterWrite(t *testing.T) {
 	assert.Equal(t, testWritter.Body.String(), "hola adios")
 	assert.NoError(t, err)
 }
+
+func TestResponseWriterHijack(t *testing.T) {
+	testWritter := httptest.NewRecorder()
+	writer := &responseWriter{}
+	writer.reset(testWritter)
+	w := ResponseWriter(writer)
+
+	assert.Panics(t, func() {
+		w.Hijack()
+	})
+	assert.True(t, w.Written())
+
+	assert.Panics(t, func() {
+		w.CloseNotify()
+	})
+
+	w.Flush()
+}
