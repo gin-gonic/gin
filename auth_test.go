@@ -14,27 +14,25 @@ import (
 )
 
 func TestBasicAuth(t *testing.T) {
-	accounts := Accounts{
+	pairs := processAccounts(Accounts{
 		"admin": "password",
 		"foo":   "bar",
 		"bar":   "foo",
-	}
-	expectedPairs := authPairs{
-		authPair{
-			User:  "admin",
-			Value: "Basic YWRtaW46cGFzc3dvcmQ=",
-		},
-		authPair{
-			User:  "foo",
-			Value: "Basic Zm9vOmJhcg==",
-		},
-		authPair{
-			User:  "bar",
-			Value: "Basic YmFyOmZvbw==",
-		},
-	}
-	pairs := processAccounts(accounts)
-	assert.Equal(t, pairs, expectedPairs)
+	})
+
+	assert.Len(t, pairs, 3)
+	assert.Contains(t, pairs, authPair{
+		User:  "bar",
+		Value: "Basic YmFyOmZvbw==",
+	})
+	assert.Contains(t, pairs, authPair{
+		User:  "foo",
+		Value: "Basic Zm9vOmJhcg==",
+	})
+	assert.Contains(t, pairs, authPair{
+		User:  "admin",
+		Value: "Basic YWRtaW46cGFzc3dvcmQ=",
+	})
 }
 
 func TestBasicAuthFails(t *testing.T) {
