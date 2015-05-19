@@ -52,14 +52,14 @@ func BasicAuthForRealm(accounts Accounts, realm string) HandlerFunc {
 	pairs := processAccounts(accounts)
 	return func(c *Context) {
 		// Search user in the slice of allowed credentials
-		user, ok := pairs.searchCredential(c.Request.Header.Get("Authorization"))
-		if !ok {
-			// Credentials doesn't match, we return 401 Unauthorized and abort request.
+		user, found := pairs.searchCredential(c.Request.Header.Get("Authorization"))
+		if !found {
+			// Credentials doesn't match, we return 401 and abort handlers chain.
 			c.Header("WWW-Authenticate", realm)
 			c.AbortWithStatus(401)
 		} else {
-			// user is allowed, set UserId to key "user" in this context, the userId can be read later using
-			// c.Get(gin.AuthUserKey)
+			// The user credentials was found, set user's id to key AuthUserKey in this context, the userId can be read later using
+			// c.MustGet(gin.AuthUserKey)
 			c.Set(AuthUserKey, user)
 		}
 	}
