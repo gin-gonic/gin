@@ -39,9 +39,6 @@ func TestRouterGroupBasicHandle(t *testing.T) {
 	performRequestInGroup(t, "DELETE")
 	performRequestInGroup(t, "HEAD")
 	performRequestInGroup(t, "OPTIONS")
-	performRequestInGroup(t, "LINK")
-	performRequestInGroup(t, "UNLINK")
-
 }
 
 func performRequestInGroup(t *testing.T, method string) {
@@ -78,12 +75,6 @@ func performRequestInGroup(t *testing.T, method string) {
 	case "OPTIONS":
 		v1.OPTIONS("/test", handler)
 		login.OPTIONS("/test", handler)
-	case "LINK":
-		v1.LINK("/test", handler)
-		login.LINK("/test", handler)
-	case "UNLINK":
-		v1.UNLINK("/test", handler)
-		login.UNLINK("/test", handler)
 	default:
 		panic("unknown method")
 	}

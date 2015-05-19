@@ -88,18 +88,8 @@ func (group *RouterGroup) HEAD(relativePath string, handlers ...HandlerFunc) {
 	group.handle("HEAD", relativePath, handlers)
 }
 
-// LINK is a shortcut for router.Handle("LINK", path, handle)
-func (group *RouterGroup) LINK(relativePath string, handlers ...HandlerFunc) {
-	group.handle("LINK", relativePath, handlers)
-}
-
-// UNLINK is a shortcut for router.Handle("UNLINK", path, handle)
-func (group *RouterGroup) UNLINK(relativePath string, handlers ...HandlerFunc) {
-	group.handle("UNLINK", relativePath, handlers)
-}
-
 func (group *RouterGroup) Any(relativePath string, handlers ...HandlerFunc) {
-	// GET, POST, PUT, PATCH, HEAD, OPTIONS, DELETE, CONNECT, WS, LINK, UNLINK, TRACE
+	// GET, POST, PUT, PATCH, HEAD, OPTIONS, DELETE, CONNECT, TRACE
 	group.handle("GET", relativePath, handlers)
 	group.handle("POST", relativePath, handlers)
 	group.handle("PUT", relativePath, handlers)
@@ -108,9 +98,6 @@ func (group *RouterGroup) Any(relativePath string, handlers ...HandlerFunc) {
 	group.handle("OPTIONS", relativePath, handlers)
 	group.handle("DELETE", relativePath, handlers)
 	group.handle("CONNECT", relativePath, handlers)
-	group.handle("WS", relativePath, handlers)
-	group.handle("LINK", relativePath, handlers)
-	group.handle("UNLINK", relativePath, handlers)
 	group.handle("TRACE", relativePath, handlers)
 }
 
