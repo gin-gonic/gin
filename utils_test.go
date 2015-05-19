@@ -16,19 +16,38 @@ func init() {
 	SetMode(TestMode)
 }
 
+type testStruct struct {
+	T *testing.T
+}
+
+func (t *testStruct) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	assert.Equal(t.T, req.Method, "POST")
+	assert.Equal(t.T, req.URL.Path, "/path")
+	w.WriteHeader(500)
+	fmt.Fprint(w, "hello")
+}
+
 func TestWrap(t *testing.T) {
 	router := New()
-	router.GET("/path", Wrap(func(w http.ResponseWriter, req *http.Request) {
+	router.POST("/path", WrapH(&testStruct{t}))
+	router.GET("/path2", WrapF(func(w http.ResponseWriter, req *http.Request) {
 		assert.Equal(t, req.Method, "GET")
-		assert.Equal(t, req.URL.Path, "/path")
+		assert.Equal(t, req.URL.Path, "/path2")
 		w.WriteHeader(400)
 		fmt.Fprint(w, "hola!")
 	}))
 
-	w := performRequest(router, "GET", "/path")
+	w := performRequest(router, "POST", "/path")
+	assert.Equal(t, w.Code, 500)
+	assert.Equal(t, w.Body.String(), "hello")
 
+	w = performRequest(router, "GET", "/path2")
 	assert.Equal(t, w.Code, 400)
 	assert.Equal(t, w.Body.String(), "hola!")
+}
+
+func TestWrapH(t *testing.T) {
+
 }
 
 func TestLastChar(t *testing.T) {
