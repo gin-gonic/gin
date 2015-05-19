@@ -25,12 +25,12 @@ func TestBasicAuth(t *testing.T) {
 			Value: "Basic YWRtaW46cGFzc3dvcmQ=",
 		},
 		authPair{
-			User:  "bar",
-			Value: "Basic YmFyOmZvbw==",
-		},
-		authPair{
 			User:  "foo",
 			Value: "Basic Zm9vOmJhcg==",
+		},
+		authPair{
+			User:  "bar",
+			Value: "Basic YmFyOmZvbw==",
 		},
 	}
 	pairs := processAccounts(accounts)

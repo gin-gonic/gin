@@ -7,7 +7,6 @@ package gin
 import (
 	"crypto/subtle"
 	"encoding/base64"
-	"sort"
 	"strconv"
 )
 
@@ -24,21 +23,16 @@ type (
 	authPairs []authPair
 )
 
-func (a authPairs) Len() int           { return len(a) }
-func (a authPairs) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
-func (a authPairs) Less(i, j int) bool { return a[i].Value < a[j].Value }
-
-func (a authPairs) searchCredential(auth string) (string, bool) {
-	if len(auth) == 0 {
+func (a authPairs) searchCredential(authValue string) (string, bool) {
+	if len(authValue) == 0 {
 		return "", false
 	}
-	// Search user in the slice of allowed credentials
-	r := sort.Search(len(a), func(i int) bool { return a[i].Value >= auth })
-	if r < len(a) && secureCompare(a[r].Value, auth) {
-		return a[r].User, true
-	} else {
-		return "", false
+	for _, pair := range a {
+		if pair.Value == authValue {
+			return pair.User, true
+		}
 	}
+	return "", false
 }
 
 // Implements a basic Basic HTTP Authorization. It takes as arguments a map[string]string where
@@ -86,8 +80,6 @@ func processAccounts(accounts Accounts) authPairs {
 			User:  user,
 		})
 	}
-	// We have to sort the credentials in order to use bsearch later.
-	sort.Sort(pairs)
 	return pairs
 }
 
