@@ -6,11 +6,18 @@ package gin
 
 import (
 	"encoding/xml"
+	"net/http"
 	"path"
 	"reflect"
 	"runtime"
 	"strings"
 )
+
+func Wrap(f http.HandlerFunc) HandlerFunc {
+	return func(c *Context) {
+		f(c.Writer, c.Request)
+	}
+}
 
 type H map[string]interface{}
 

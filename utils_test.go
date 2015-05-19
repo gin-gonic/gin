@@ -5,6 +5,8 @@
 package gin
 
 import (
+	"fmt"
+	"net/http"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -12,6 +14,21 @@ import (
 
 func init() {
 	SetMode(TestMode)
+}
+
+func TestWrap(t *testing.T) {
+	router := New()
+	router.GET("/path", Wrap(func(w http.ResponseWriter, req *http.Request) {
+		assert.Equal(t, req.Method, "GET")
+		assert.Equal(t, req.URL.Path, "/path")
+		w.WriteHeader(400)
+		fmt.Fprint(w, "hola!")
+	}))
+
+	w := performRequest(router, "GET", "/path")
+
+	assert.Equal(t, w.Code, 400)
+	assert.Equal(t, w.Body.String(), "hola!")
 }
 
 func TestLastChar(t *testing.T) {
