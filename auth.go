@@ -7,9 +7,8 @@ package gin
 import (
 	"crypto/subtle"
 	"encoding/base64"
-	"errors"
-	"fmt"
 	"sort"
+	"strconv"
 )
 
 const (
@@ -49,15 +48,15 @@ func BasicAuthForRealm(accounts Accounts, realm string) HandlerFunc {
 	if realm == "" {
 		realm = "Authorization Required"
 	}
-	realm = fmt.Sprintf("Basic realm=\"%s\"", realm)
+	realm = "Basic realm=" + strconv.Quote(realm)
 	pairs := processAccounts(accounts)
 	return func(c *Context) {
 		// Search user in the slice of allowed credentials
 		user, ok := pairs.searchCredential(c.Request.Header.Get("Authorization"))
 		if !ok {
 			// Credentials doesn't match, we return 401 Unauthorized and abort request.
-			c.Writer.Header().Set("WWW-Authenticate", realm)
-			c.Fail(401, errors.New("Unauthorized"))
+			c.Header("WWW-Authenticate", realm)
+			c.AbortWithStatus(401)
 		} else {
 			// user is allowed, set UserId to key "user" in this context, the userId can be read later using
 			// c.Get(gin.AuthUserKey)
