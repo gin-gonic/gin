@@ -25,15 +25,22 @@ func performRequest(r http.Handler, method, path string) *httptest.ResponseRecor
 
 func testRouteOK(method string, t *testing.T) {
 	passed := false
+	passedAny := false
 	r := New()
+	r.Any("/test2", func(c *Context) {
+		passedAny = true
+	})
 	r.Handle(method, "/test", HandlersChain{func(c *Context) {
 		passed = true
 	}})
 
 	w := performRequest(r, method, "/test")
-
 	assert.True(t, passed)
 	assert.Equal(t, w.Code, http.StatusOK)
+
+	performRequest(r, method, "/test2")
+	assert.True(t, passedAny)
+
 }
 
 // TestSingleRouteOK tests that POST route is correctly invoked.

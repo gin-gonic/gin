@@ -94,6 +94,22 @@ func (group *RouterGroup) UNLINK(relativePath string, handlers ...HandlerFunc) {
 	group.Handle("UNLINK", relativePath, handlers)
 }
 
+func (group *RouterGroup) Any(relativePath string, handlers ...HandlerFunc) {
+	// GET, POST, PUT, PATCH, HEAD, OPTIONS, DELETE, CONNECT, WS, LINK, UNLINK, TRACE
+	group.Handle("GET", relativePath, handlers)
+	group.Handle("POST", relativePath, handlers)
+	group.Handle("PUT", relativePath, handlers)
+	group.Handle("PATCH", relativePath, handlers)
+	group.Handle("HEAD", relativePath, handlers)
+	group.Handle("OPTIONS", relativePath, handlers)
+	group.Handle("DELETE", relativePath, handlers)
+	group.Handle("CONNECT", relativePath, handlers)
+	group.Handle("WS", relativePath, handlers)
+	group.Handle("LINK", relativePath, handlers)
+	group.Handle("UNLINK", relativePath, handlers)
+	group.Handle("TRACE", relativePath, handlers)
+}
+
 // Static serves files from the given file system root.
 // Internally a http.FileServer is used, therefore http.NotFound is used instead
 // of the Router's NotFound handler.
