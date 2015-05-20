@@ -6,15 +6,24 @@
 - [PERFORMANCE] Faster JSON, XML and text rendering
 - [PERFORMANCE] Custom hand optimized HttpRouter for Gin
 - [PERFORMANCE] Misc code optimizations. Inlining, tail call optimizations
+- [NEW] Any(path, handler). Create a route that matches any path
+- [NEW] Refactored rendering pipeline (faster and static typeded)
 - [NEW] IndentedJSON() prints pretty JSON
 - [NEW] Added gin.DefaultWriter
+- [NEW] UNIX socket support
+- [NEW] RouterGroup.BasePath is exposed
 - [NEW] JSON validation using go-validate-yourself (very powerful options)
 - [NEW] Completed suite of unit tests
+- [NEW] HTTP streaming with c.Stream()
+- [NEW] StaticFS() for serving static files through virtual filesystems
+- [NEW] Server-Sent Events native support
+- [NEW] WrapF() and WrapH() helpers for wrapping http.HandlerFunc and http.Handler
 - [NEW] Added LoggerWithWriter() middleware
 - [NEW] Added RecoveryWithWriter() middleware
 - [NEW] Added DefaultPostFormValue()
 - [NEW] Added DefaultFormValue()
 - [NEW] Added DefaultParamValue()
+- [FIX] BasicAuth() when using custom realm
 - [FIX] Bug when serving static files in nested routing group
 - [FIX] Redirect using built-in http.Redirect()
 - [FIX] Logger when printing the requested path
