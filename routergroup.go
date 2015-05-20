@@ -108,7 +108,11 @@ func (group *RouterGroup) Any(relativePath string, handlers ...HandlerFunc) {
 // use :
 //     router.Static("/static", "/var/www")
 func (group *RouterGroup) Static(relativePath, root string) {
-	handler := group.createStaticHandler(relativePath, root)
+	group.StaticFS(relativePath, http.Dir(root))
+}
+
+func (group *RouterGroup) StaticFS(relativePath string, fs http.FileSystem) {
+	handler := group.createStaticHandler(relativePath, fs)
 	relativePath = path.Join(relativePath, "/*filepath")
 
 	// Register GET and HEAD handlers
@@ -116,9 +120,9 @@ func (group *RouterGroup) Static(relativePath, root string) {
 	group.HEAD(relativePath, handler)
 }
 
-func (group *RouterGroup) createStaticHandler(relativePath, root string) func(*Context) {
+func (group *RouterGroup) createStaticHandler(relativePath string, fs http.FileSystem) func(*Context) {
 	absolutePath := group.calculateAbsolutePath(relativePath)
-	fileServer := http.StripPrefix(absolutePath, http.FileServer(http.Dir(root)))
+	fileServer := http.StripPrefix(absolutePath, http.FileServer(fs))
 	return func(c *Context) {
 		fileServer.ServeHTTP(c.Writer, c.Request)
 	}
