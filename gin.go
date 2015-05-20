@@ -141,6 +141,8 @@ func (engine *Engine) rebuild405Handlers() {
 }
 
 func (engine *Engine) addRoute(method, path string, handlers HandlersChain) {
+	debugPrintRoute(method, path, handlers)
+
 	if path[0] != '/' {
 		panic("path must begin with '/'")
 	}
