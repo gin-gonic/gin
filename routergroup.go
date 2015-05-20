@@ -123,9 +123,7 @@ func (group *RouterGroup) StaticFS(relativePath string, fs http.FileSystem) {
 func (group *RouterGroup) createStaticHandler(relativePath string, fs http.FileSystem) func(*Context) {
 	absolutePath := group.calculateAbsolutePath(relativePath)
 	fileServer := http.StripPrefix(absolutePath, http.FileServer(fs))
-	return func(c *Context) {
-		fileServer.ServeHTTP(c.Writer, c.Request)
-	}
+	return WrapH(fileServer)
 }
 
 func (group *RouterGroup) combineHandlers(handlers HandlersChain) HandlersChain {

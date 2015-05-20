@@ -46,10 +46,6 @@ func TestWrap(t *testing.T) {
 	assert.Equal(t, w.Body.String(), "hola!")
 }
 
-func TestWrapH(t *testing.T) {
-
-}
-
 func TestLastChar(t *testing.T) {
 	assert.Equal(t, lastChar("hola"), uint8('a'))
 	assert.Equal(t, lastChar("adios"), uint8('s'))
