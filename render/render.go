@@ -18,7 +18,6 @@ var (
 	_ Render     = Redirect{}
 	_ Render     = Data{}
 	_ Render     = HTML{}
-	_ Render     = File{}
 	_ HTMLRender = HTMLDebug{}
 	_ HTMLRender = HTMLProduction{}
 )

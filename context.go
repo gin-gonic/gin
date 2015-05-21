@@ -375,10 +375,7 @@ func (c *Context) Data(code int, contentType string, data []byte) {
 
 // Writes the specified file into the body stream
 func (c *Context) File(filepath string) {
-	c.Render(-1, render.File{
-		Path:    filepath,
-		Request: c.Request,
-	})
+	http.ServeFile(c.Writer, c.Request, filepath)
 }
 
 func (c *Context) SSEvent(name string, message interface{}) {
