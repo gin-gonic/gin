@@ -119,11 +119,14 @@ func (group *RouterGroup) StaticFile(relativePath, filepath string) {
 // use :
 //     router.Static("/static", "/var/www")
 func (group *RouterGroup) Static(relativePath, root string) {
-	group.StaticFS(relativePath, http.Dir(root))
+	group.StaticFS(relativePath, http.Dir(root), false)
 }
 
-func (group *RouterGroup) StaticFS(relativePath string, fs http.FileSystem) {
-	handler := group.createStaticHandler(relativePath, fs)
+func (group *RouterGroup) StaticFS(relativePath string, fs http.FileSystem, listDirectory bool) {
+	if strings.Contains(relativePath, ":") || strings.Contains(relativePath, "*") {
+		panic("URL parameters can not be used when serving a static folder")
+	}
+	handler := group.createStaticHandler(relativePath, fs, listDirectory)
 	relativePath = path.Join(relativePath, "/*filepath")
 
 	// Register GET and HEAD handlers
@@ -131,10 +134,16 @@ func (group *RouterGroup) StaticFS(relativePath string, fs http.FileSystem) {
 	group.HEAD(relativePath, handler)
 }
 
-func (group *RouterGroup) createStaticHandler(relativePath string, fs http.FileSystem) func(*Context) {
+func (group *RouterGroup) createStaticHandler(relativePath string, fs http.FileSystem, listDirectory bool) HandlerFunc {
 	absolutePath := group.calculateAbsolutePath(relativePath)
 	fileServer := http.StripPrefix(absolutePath, http.FileServer(fs))
-	return WrapH(fileServer)
+	return func(c *Context) {
+		if !listDirectory && lastChar(c.Request.URL.Path) == '/' {
+			http.NotFound(c.Writer, c.Request)
+			return
+		}
+		fileServer.ServeHTTP(c.Writer, c.Request)
+	}
 }
 
 func (group *RouterGroup) combineHandlers(handlers HandlersChain) HandlersChain {

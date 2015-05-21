@@ -9,6 +9,7 @@ import (
 
 	"testing"
 
+	"github.com/manucorporat/sse"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -27,10 +28,10 @@ func TestMiddlewareGeneralCase(t *testing.T) {
 		signature += "D"
 	})
 	router.NoRoute(func(c *Context) {
-		signature += "X"
+		signature += " X "
 	})
 	router.NoMethod(func(c *Context) {
-		signature += "X"
+		signature += " XX "
 	})
 	// RUN
 	w := performRequest(router, "GET", "/")
@@ -40,8 +41,7 @@ func TestMiddlewareGeneralCase(t *testing.T) {
 	assert.Equal(t, signature, "ACDB")
 }
 
-// TestBadAbortHandlersChain - ensure that Abort after switch context will not interrupt pending handlers
-func TestMiddlewareNextOrder(t *testing.T) {
+func TestMiddlewareNoRoute(t *testing.T) {
 	signature := ""
 	router := New()
 	router.Use(func(c *Context) {
@@ -51,6 +51,9 @@ func TestMiddlewareNextOrder(t *testing.T) {
 	})
 	router.Use(func(c *Context) {
 		signature += "C"
+		c.Next()
+		c.Next()
+		c.Next()
 		c.Next()
 		signature += "D"
 	})
@@ -63,6 +66,9 @@ func TestMiddlewareNextOrder(t *testing.T) {
 		c.Next()
 		signature += "H"
 	})
+	router.NoMethod(func(c *Context) {
+		signature += " X "
+	})
 	// RUN
 	w := performRequest(router, "GET", "/")
 
@@ -71,8 +77,43 @@ func TestMiddlewareNextOrder(t *testing.T) {
 	assert.Equal(t, signature, "ACEGHFDB")
 }
 
-// TestAbortHandlersChain - ensure that Abort interrupt used middlewares in fifo order
-func TestMiddlewareAbortHandlersChain(t *testing.T) {
+func TestMiddlewareNoMethod(t *testing.T) {
+	signature := ""
+	router := New()
+	router.Use(func(c *Context) {
+		signature += "A"
+		c.Next()
+		signature += "B"
+	})
+	router.Use(func(c *Context) {
+		signature += "C"
+		c.Next()
+		signature += "D"
+	})
+	router.NoMethod(func(c *Context) {
+		signature += "E"
+		c.Next()
+		signature += "F"
+	}, func(c *Context) {
+		signature += "G"
+		c.Next()
+		signature += "H"
+	})
+	router.NoRoute(func(c *Context) {
+		signature += " X "
+	})
+	router.POST("/", func(c *Context) {
+		signature += " XX "
+	})
+	// RUN
+	w := performRequest(router, "GET", "/")
+
+	// TEST
+	assert.Equal(t, w.Code, 405)
+	assert.Equal(t, signature, "ACEGHFDB")
+}
+
+func TestMiddlewareAbort(t *testing.T) {
 	signature := ""
 	router := New()
 	router.Use(func(c *Context) {
@@ -80,21 +121,21 @@ func TestMiddlewareAbortHandlersChain(t *testing.T) {
 	})
 	router.Use(func(c *Context) {
 		signature += "C"
-		c.AbortWithStatus(409)
+		c.AbortWithStatus(401)
 		c.Next()
 		signature += "D"
 	})
 	router.GET("/", func(c *Context) {
-		signature += "D"
+		signature += " X "
 		c.Next()
-		signature += "E"
+		signature += " XX "
 	})
 
 	// RUN
 	w := performRequest(router, "GET", "/")
 
 	// TEST
-	assert.Equal(t, w.Code, 409)
+	assert.Equal(t, w.Code, 401)
 	assert.Equal(t, signature, "ACD")
 }
 
@@ -103,8 +144,8 @@ func TestMiddlewareAbortHandlersChainAndNext(t *testing.T) {
 	router := New()
 	router.Use(func(c *Context) {
 		signature += "A"
-		c.AbortWithStatus(410)
 		c.Next()
+		c.AbortWithStatus(410)
 		signature += "B"
 
 	})
@@ -117,7 +158,7 @@ func TestMiddlewareAbortHandlersChainAndNext(t *testing.T) {
 
 	// TEST
 	assert.Equal(t, w.Code, 410)
-	assert.Equal(t, signature, "AB")
+	assert.Equal(t, signature, "ACB")
 }
 
 // TestFailHandlersChain - ensure that Fail interrupt used middlewares in fifo order as
@@ -141,4 +182,36 @@ func TestMiddlewareFailHandlersChain(t *testing.T) {
 	// TEST
 	assert.Equal(t, w.Code, 500)
 	assert.Equal(t, signature, "A")
+}
+
+func TestMiddlewareWrite(t *testing.T) {
+	router := New()
+	router.Use(func(c *Context) {
+		c.String(400, "hola\n")
+	})
+	router.Use(func(c *Context) {
+		c.XML(400, H{"foo": "bar"})
+	})
+	router.Use(func(c *Context) {
+		c.JSON(400, H{"foo": "bar"})
+	})
+	router.GET("/", func(c *Context) {
+		c.JSON(400, H{"foo": "bar"})
+	}, func(c *Context) {
+		c.Render(400, sse.Event{
+			Event: "test",
+			Data:  "message",
+		})
+	})
+
+	w := performRequest(router, "GET", "/")
+
+	assert.Equal(t, w.Code, 400)
+	assert.Equal(t, w.Body.String(), `hola
+<map><foo>bar</foo></map>{"foo":"bar"}
+{"foo":"bar"}
+event: test
+data: message
+
+`)
 }

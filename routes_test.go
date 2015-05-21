@@ -78,32 +78,41 @@ func testRouteNotOK2(method string, t *testing.T) {
 }
 
 func TestRouterGroupRouteOK(t *testing.T) {
+	testRouteOK("GET", t)
 	testRouteOK("POST", t)
-	testRouteOK("DELETE", t)
-	testRouteOK("PATCH", t)
 	testRouteOK("PUT", t)
-	testRouteOK("OPTIONS", t)
+	testRouteOK("PATCH", t)
 	testRouteOK("HEAD", t)
+	testRouteOK("OPTIONS", t)
+	testRouteOK("DELETE", t)
+	testRouteOK("CONNECT", t)
+	testRouteOK("TRACE", t)
 }
 
 // TestSingleRouteOK tests that POST route is correctly invoked.
 func TestRouteNotOK(t *testing.T) {
+	testRouteNotOK("GET", t)
 	testRouteNotOK("POST", t)
-	testRouteNotOK("DELETE", t)
-	testRouteNotOK("PATCH", t)
 	testRouteNotOK("PUT", t)
-	testRouteNotOK("OPTIONS", t)
+	testRouteNotOK("PATCH", t)
 	testRouteNotOK("HEAD", t)
+	testRouteNotOK("OPTIONS", t)
+	testRouteNotOK("DELETE", t)
+	testRouteNotOK("CONNECT", t)
+	testRouteNotOK("TRACE", t)
 }
 
 // TestSingleRouteOK tests that POST route is correctly invoked.
 func TestRouteNotOK2(t *testing.T) {
+	testRouteNotOK2("GET", t)
 	testRouteNotOK2("POST", t)
-	testRouteNotOK2("DELETE", t)
-	testRouteNotOK2("PATCH", t)
 	testRouteNotOK2("PUT", t)
-	testRouteNotOK2("OPTIONS", t)
+	testRouteNotOK2("PATCH", t)
 	testRouteNotOK2("HEAD", t)
+	testRouteNotOK2("OPTIONS", t)
+	testRouteNotOK2("DELETE", t)
+	testRouteNotOK2("CONNECT", t)
+	testRouteNotOK2("TRACE", t)
 }
 
 // TestContextParamsGet tests that a parameter can be parsed from the URL.
@@ -142,25 +151,35 @@ func TestRouteStaticFile(t *testing.T) {
 		t.Error(err)
 	}
 	defer os.Remove(f.Name())
-	filePath := path.Join("/", path.Base(f.Name()))
 	f.WriteString("Gin Web Framework")
 	f.Close()
 
+	dir, filename := path.Split(f.Name())
+
 	// SETUP gin
 	router := New()
-	router.Static("./", testRoot)
+	router.Static("/using_static", dir)
+	router.StaticFile("/result", f.Name())
 
-	w := performRequest(router, "GET", filePath)
+	w := performRequest(router, "GET", "/using_static/"+filename)
+	w2 := performRequest(router, "GET", "/result")
 
+	assert.Equal(t, w, w2)
 	assert.Equal(t, w.Code, 200)
 	assert.Equal(t, w.Body.String(), "Gin Web Framework")
 	assert.Equal(t, w.HeaderMap.Get("Content-Type"), "text/plain; charset=utf-8")
+
+	w3 := performRequest(router, "HEAD", "/using_static/"+filename)
+	w4 := performRequest(router, "HEAD", "/result")
+
+	assert.Equal(t, w3, w4)
+	assert.Equal(t, w3.Code, 200)
 }
 
 // TestHandleStaticDir - ensure the root/sub dir handles properly
-func TestRouteStaticDir(t *testing.T) {
+func TestRouteStaticListingDir(t *testing.T) {
 	router := New()
-	router.Static("/", "./")
+	router.StaticFS("/", http.Dir("./"), true)
 
 	w := performRequest(router, "GET", "/")
 
@@ -170,15 +189,14 @@ func TestRouteStaticDir(t *testing.T) {
 }
 
 // TestHandleHeadToDir - ensure the root/sub dir handles properly
-func TestRouteHeadToDir(t *testing.T) {
+func TestRouteStaticNoListing(t *testing.T) {
 	router := New()
 	router.Static("/", "./")
 
-	w := performRequest(router, "HEAD", "/")
+	w := performRequest(router, "GET", "/")
 
-	assert.Equal(t, w.Code, 200)
-	assert.Contains(t, w.Body.String(), "gin.go")
-	assert.Equal(t, w.HeaderMap.Get("Content-Type"), "text/html; charset=utf-8")
+	assert.Equal(t, w.Code, 404)
+	assert.NotContains(t, w.Body.String(), "gin.go")
 }
 
 func TestRouterMiddlewareAndStatic(t *testing.T) {
@@ -190,11 +208,11 @@ func TestRouterMiddlewareAndStatic(t *testing.T) {
 	})
 	static.Static("/", "./")
 
-	w := performRequest(router, "GET", "/")
+	w := performRequest(router, "GET", "/gin.go")
 
 	assert.Equal(t, w.Code, 200)
-	assert.Contains(t, w.Body.String(), "gin.go")
-	assert.Equal(t, w.HeaderMap.Get("Content-Type"), "text/html; charset=utf-8")
+	assert.Contains(t, w.Body.String(), "package gin")
+	assert.Equal(t, w.HeaderMap.Get("Content-Type"), "text/plain; charset=utf-8")
 	assert.NotEqual(t, w.HeaderMap.Get("Last-Modified"), "Mon, 02 Jan 2006 15:04:05 MST")
 	assert.Equal(t, w.HeaderMap.Get("Expires"), "Mon, 02 Jan 2006 15:04:05 MST")
 	assert.Equal(t, w.HeaderMap.Get("x-GIN"), "Gin Framework")
