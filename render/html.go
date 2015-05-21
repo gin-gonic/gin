@@ -46,7 +46,7 @@ func (r HTMLDebug) loadTemplate() *template.Template {
 		return template.Must(template.ParseFiles(r.Files...))
 	}
 	if len(r.Glob) > 0 {
-		return template.Must(template.ParseFiles(r.Files...))
+		return template.Must(template.ParseGlob(r.Glob))
 	}
 	panic("the HTML debug render was created without files or glob pattern")
 }
