@@ -87,3 +87,14 @@ func performRequestInGroup(t *testing.T, method string) {
 	assert.Equal(t, w.Code, 400)
 	assert.Equal(t, w.Body.String(), "the method was "+method+" and index 1")
 }
+
+func TestRouterGroupInvalidStaticFile(t *testing.T) {
+	router := New()
+	assert.Panics(t, func() {
+		router.StaticFile("/path/:param", "favicon.ico")
+	})
+
+	assert.Panics(t, func() {
+		router.StaticFile("/path/*param", "favicon.ico")
+	})
+}

@@ -7,6 +7,7 @@ package gin
 import (
 	"net/http"
 	"path"
+	"strings"
 )
 
 // Used internally to configure router, a RouterGroup is associated with a prefix
@@ -98,6 +99,17 @@ func (group *RouterGroup) Any(relativePath string, handlers ...HandlerFunc) {
 	group.handle("DELETE", relativePath, handlers)
 	group.handle("CONNECT", relativePath, handlers)
 	group.handle("TRACE", relativePath, handlers)
+}
+
+func (group *RouterGroup) StaticFile(relativePath, filepath string) {
+	if strings.Contains(relativePath, ":") || strings.Contains(relativePath, "*") {
+		panic("URL parameters can not be used when serving a static file")
+	}
+	handler := func(c *Context) {
+		c.File(filepath)
+	}
+	group.GET(relativePath, handler)
+	group.HEAD(relativePath, handler)
 }
 
 // Static serves files from the given file system root.
