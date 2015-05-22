@@ -21,12 +21,15 @@ const (
 	ErrorTypeNu  = 2
 )
 
-// Used internally to collect errors that occurred during an http request.
-type Error struct {
-	Err  error       `json:"error"`
-	Type int         `json:"-"`
-	Meta interface{} `json:"meta"`
-}
+type (
+	Error struct {
+		Err  error       `json:"error"`
+		Type int         `json:"-"`
+		Meta interface{} `json:"meta"`
+	}
+
+	errorMsgs []*Error
+)
 
 var _ error = &Error{}
 
@@ -68,8 +71,6 @@ func (msg *Error) MarshalJSON() ([]byte, error) {
 func (msg *Error) Error() string {
 	return msg.Err.Error()
 }
-
-type errorMsgs []*Error
 
 func (a errorMsgs) ByType(typ int) errorMsgs {
 	if len(a) == 0 {
