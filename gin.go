@@ -90,7 +90,7 @@ func Default() *Engine {
 }
 
 func (engine *Engine) allocateContext() (context *Context) {
-	return &Context{Engine: engine}
+	return &Context{engine: engine}
 }
 
 func (engine *Engine) LoadHTMLGlob(pattern string) {

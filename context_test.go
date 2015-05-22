@@ -36,7 +36,7 @@ func createTestContext() (c *Context, w *httptest.ResponseRecorder, r *Engine) {
 func TestContextReset(t *testing.T) {
 	router := New()
 	c := router.allocateContext()
-	assert.Equal(t, c.Engine, router)
+	assert.Equal(t, c.engine, router)
 
 	c.index = 2
 	c.Writer = &responseWriter{ResponseWriter: httptest.NewRecorder()}
@@ -110,7 +110,7 @@ func TestContextCopy(t *testing.T) {
 	assert.Equal(t, cp.Request, c.Request)
 	assert.Equal(t, cp.index, AbortIndex)
 	assert.Equal(t, cp.Keys, c.Keys)
-	assert.Equal(t, cp.Engine, c.Engine)
+	assert.Equal(t, cp.engine, c.engine)
 	assert.Equal(t, cp.Params, c.Params)
 }
 

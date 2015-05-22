@@ -70,7 +70,7 @@ type Context struct {
 	handlers HandlersChain
 	index    int8
 
-	Engine   *Engine
+	engine   *Engine
 	Keys     map[string]interface{}
 	Errors   errorMsgs
 	Accepted []string
@@ -328,7 +328,7 @@ func (c *Context) Render(code int, r render.Render) {
 // It also updates the HTTP code and sets the Content-Type as "text/html".
 // See http://golang.org/doc/articles/wiki/
 func (c *Context) HTML(code int, name string, obj interface{}) {
-	instance := c.Engine.HTMLRender.Instance(name, obj)
+	instance := c.engine.HTMLRender.Instance(name, obj)
 	c.Render(code, instance)
 }
 
