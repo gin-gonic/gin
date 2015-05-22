@@ -12,12 +12,12 @@ import (
 )
 
 const (
-	ErrorTypeBind    = 1 << 31
-	ErrorTypeRender  = 1 << 30
+	ErrorTypeBind    = 1 << 30
+	ErrorTypeRender  = 1 << 29
 	ErrorTypePrivate = 1 << 0
 	ErrorTypePublic  = 1 << 1
 
-	ErrorTypeAny = 0xffffffff
+	ErrorTypeAny = 0xfffffff
 	ErrorTypeNu  = 2
 )
 
