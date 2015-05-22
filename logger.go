@@ -30,8 +30,9 @@ func ErrorLoggerT(typ int) HandlerFunc {
 		c.Next()
 
 		if !c.Writer.Written() {
-			if errs := c.Errors.ByType(typ); len(errs) > 0 {
-				c.JSON(-1, errs.Errors())
+			json := c.Errors.ByType(typ).JSON()
+			if json != nil {
+				c.JSON(-1, json)
 			}
 		}
 	}

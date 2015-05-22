@@ -7,6 +7,7 @@ package gin
 import (
 	"bytes"
 	"fmt"
+	"reflect"
 )
 
 const (
@@ -34,6 +35,25 @@ func (msg *errorMsg) Type(flags int) *errorMsg {
 func (msg *errorMsg) Meta(data interface{}) *errorMsg {
 	msg.Metadata = data
 	return msg
+}
+
+func (msg *errorMsg) JSON() interface{} {
+	json := H{}
+	if msg.Metadata != nil {
+		value := reflect.ValueOf(msg.Metadata)
+		switch value.Kind() {
+		case reflect.Struct:
+			return msg.Metadata
+		case reflect.Map:
+			for _, key := range value.MapKeys() {
+				json[key.String()] = value.MapIndex(key).Interface()
+			}
+		}
+	}
+	if _, ok := json["error"]; !ok {
+		json["error"] = msg.Error()
+	}
+	return json
 }
 
 func (msg *errorMsg) Error() string {
@@ -72,6 +92,21 @@ func (a errorMsgs) Errors() []string {
 		errorStrings[i] = err.Error()
 	}
 	return errorStrings
+}
+
+func (a errorMsgs) JSON() interface{} {
+	switch len(a) {
+	case 0:
+		return nil
+	case 1:
+		return a.Last().JSON()
+	default:
+		json := make([]interface{}, len(a))
+		for i, err := range a {
+			json[i] = err.JSON()
+		}
+		return json
+	}
 }
 
 func (a errorMsgs) String() string {
