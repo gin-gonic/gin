@@ -363,11 +363,11 @@ func TestContextError(t *testing.T) {
 	assert.Equal(t, c.Errors.String(), "Error #01: first error\n     Meta: some data\n"+
 		"Error #02: second error\n     Meta: some data 2\n")
 
-	assert.Equal(t, c.Errors[0].Error, errors.New("first error"))
+	assert.Equal(t, c.Errors[0].Err, errors.New("first error"))
 	assert.Equal(t, c.Errors[0].Metadata, "some data")
 	assert.Equal(t, c.Errors[0].Flags, ErrorTypePrivate)
 
-	assert.Equal(t, c.Errors[1].Error, errors.New("second error"))
+	assert.Equal(t, c.Errors[1].Err, errors.New("second error"))
 	assert.Equal(t, c.Errors[1].Metadata, "some data 2")
 	assert.Equal(t, c.Errors[1].Flags, ErrorTypePrivate)
 }

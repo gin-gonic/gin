@@ -144,7 +144,7 @@ func (c *Context) IsAborted() bool {
 // A middleware can be used to collect all the errors and push them to a database together, print a log, or append it in the HTTP response.
 func (c *Context) Error(err error) *errorMsg {
 	newError := &errorMsg{
-		Error: err,
+		Err:   err,
 		Flags: ErrorTypePrivate,
 	}
 	c.Errors = append(c.Errors, newError)
@@ -154,7 +154,7 @@ func (c *Context) Error(err error) *errorMsg {
 func (c *Context) LastError() error {
 	nuErrors := len(c.Errors)
 	if nuErrors > 0 {
-		return c.Errors[nuErrors-1].Error
+		return c.Errors[nuErrors-1].Err
 	}
 	return nil
 }

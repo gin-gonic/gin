@@ -21,7 +21,7 @@ const (
 
 // Used internally to collect errors that occurred during an http request.
 type errorMsg struct {
-	Error    error       `json:"error"`
+	Err      error       `json:"error"`
 	Flags    int         `json:"-"`
 	Metadata interface{} `json:"meta"`
 }
@@ -34,6 +34,10 @@ func (msg *errorMsg) Type(flags int) *errorMsg {
 func (msg *errorMsg) Meta(data interface{}) *errorMsg {
 	msg.Metadata = data
 	return msg
+}
+
+func (msg *errorMsg) Error() string {
+	return msg.Err.Error()
 }
 
 type errorMsgs []*errorMsg
@@ -51,13 +55,21 @@ func (a errorMsgs) ByType(typ int) errorMsgs {
 	return result
 }
 
+func (a errorMsgs) Last() *errorMsg {
+	length := len(a)
+	if length == 0 {
+		return nil
+	}
+	return a[length-1]
+}
+
 func (a errorMsgs) Errors() []string {
 	if len(a) == 0 {
 		return []string{}
 	}
 	errorStrings := make([]string, len(a))
 	for i, err := range a {
-		errorStrings[i] = err.Error.Error()
+		errorStrings[i] = err.Error()
 	}
 	return errorStrings
 }
@@ -68,7 +80,7 @@ func (a errorMsgs) String() string {
 	}
 	var buffer bytes.Buffer
 	for i, msg := range a {
-		fmt.Fprintf(&buffer, "Error #%02d: %s\n     Meta: %v\n", (i + 1), msg.Error, msg.Metadata)
+		fmt.Fprintf(&buffer, "Error #%02d: %s\n     Meta: %v\n", (i + 1), msg.Err, msg.Metadata)
 	}
 	return buffer.String()
 }
