@@ -126,7 +126,7 @@ func (c *Context) AbortWithStatus(code int) {
 	c.Abort()
 }
 
-func (c *Context) AbortWithError(code int, err error) *errorMsg {
+func (c *Context) AbortWithError(code int, err error) *Error {
 	c.AbortWithStatus(code)
 	return c.Error(err)
 }
@@ -142,21 +142,19 @@ func (c *Context) IsAborted() bool {
 // Attaches an error to the current context. The error is pushed to a list of errors.
 // It's a good idea to call Error for each error that occurred during the resolution of a request.
 // A middleware can be used to collect all the errors and push them to a database together, print a log, or append it in the HTTP response.
-func (c *Context) Error(err error) *errorMsg {
-	newError := &errorMsg{
-		Err:   err,
-		Flags: ErrorTypePrivate,
+func (c *Context) Error(err error) *Error {
+	var parsedError *Error
+	switch err.(type) {
+	case *Error:
+		parsedError = err.(*Error)
+	default:
+		parsedError = &Error{
+			Err:  err,
+			Type: ErrorTypePrivate,
+		}
 	}
-	c.Errors = append(c.Errors, newError)
-	return newError
-}
-
-func (c *Context) LastError() error {
-	nuErrors := len(c.Errors)
-	if nuErrors > 0 {
-		return c.Errors[nuErrors-1].Err
-	}
-	return nil
+	c.Errors = append(c.Errors, parsedError)
+	return parsedError
 }
 
 /************************************/
@@ -270,7 +268,7 @@ func (c *Context) BindJSON(obj interface{}) error {
 
 func (c *Context) BindWith(obj interface{}, b binding.Binding) error {
 	if err := b.Bind(c.Request, obj); err != nil {
-		c.AbortWithError(400, err).Type(ErrorTypeBind)
+		c.AbortWithError(400, err).SetType(ErrorTypeBind)
 		return err
 	}
 	return nil
@@ -309,7 +307,7 @@ func (c *Context) Render(code int, r render.Render) {
 	c.Writer.WriteHeader(code)
 	if err := r.Write(c.Writer); err != nil {
 		debugPrintError(err)
-		c.AbortWithError(500, err).Type(ErrorTypeRender)
+		c.AbortWithError(500, err).SetType(ErrorTypeRender)
 	}
 }
 

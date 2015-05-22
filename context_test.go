@@ -349,56 +349,50 @@ func TestContextAbortWithStatus(t *testing.T) {
 
 func TestContextError(t *testing.T) {
 	c, _, _ := createTestContext()
-	assert.Nil(t, c.LastError())
-	assert.Empty(t, c.Errors.String())
+	assert.Empty(t, c.Errors)
 
-	c.Error(errors.New("first error")).Meta("some data")
-	assert.Equal(t, c.LastError().Error(), "first error")
+	c.Error(errors.New("first error"))
 	assert.Len(t, c.Errors, 1)
-	assert.Equal(t, c.Errors.String(), "Error #01: first error\n     Meta: some data\n")
+	assert.Equal(t, c.Errors.String(), "Error #01: first error\n")
 
-	c.Error(errors.New("second error")).Meta("some data 2")
-	assert.Equal(t, c.LastError().Error(), "second error")
+	c.Error(&Error{
+		Err:  errors.New("second error"),
+		Meta: "some data 2",
+		Type: ErrorTypePublic,
+	})
 	assert.Len(t, c.Errors, 2)
-	assert.Equal(t, c.Errors.String(), "Error #01: first error\n     Meta: some data\n"+
-		"Error #02: second error\n     Meta: some data 2\n")
 
 	assert.Equal(t, c.Errors[0].Err, errors.New("first error"))
-	assert.Equal(t, c.Errors[0].Metadata, "some data")
-	assert.Equal(t, c.Errors[0].Flags, ErrorTypePrivate)
+	assert.Nil(t, c.Errors[0].Meta)
+	assert.Equal(t, c.Errors[0].Type, ErrorTypePrivate)
 
 	assert.Equal(t, c.Errors[1].Err, errors.New("second error"))
-	assert.Equal(t, c.Errors[1].Metadata, "some data 2")
-	assert.Equal(t, c.Errors[1].Flags, ErrorTypePrivate)
+	assert.Equal(t, c.Errors[1].Meta, "some data 2")
+	assert.Equal(t, c.Errors[1].Type, ErrorTypePublic)
+
+	assert.Equal(t, c.Errors.Last(), c.Errors[1])
 }
 
 func TestContextTypedError(t *testing.T) {
 	c, _, _ := createTestContext()
-	c.Error(errors.New("externo 0")).Type(ErrorTypePublic)
-	c.Error(errors.New("externo 1")).Type(ErrorTypePublic)
-	c.Error(errors.New("interno 0")).Type(ErrorTypePrivate)
-	c.Error(errors.New("externo 2")).Type(ErrorTypePublic)
-	c.Error(errors.New("interno 1")).Type(ErrorTypePrivate)
-	c.Error(errors.New("interno 2")).Type(ErrorTypePrivate)
+	c.Error(errors.New("externo 0")).SetType(ErrorTypePublic)
+	c.Error(errors.New("interno 0")).SetType(ErrorTypePrivate)
 
 	for _, err := range c.Errors.ByType(ErrorTypePublic) {
-		assert.Equal(t, err.Flags, ErrorTypePublic)
+		assert.Equal(t, err.Type, ErrorTypePublic)
 	}
-
 	for _, err := range c.Errors.ByType(ErrorTypePrivate) {
-		assert.Equal(t, err.Flags, ErrorTypePrivate)
+		assert.Equal(t, err.Type, ErrorTypePrivate)
 	}
-
-	assert.Equal(t, c.Errors.Errors(), []string{"externo 0", "externo 1", "interno 0", "externo 2", "interno 1", "interno 2"})
+	assert.Equal(t, c.Errors.Errors(), []string{"externo 0", "interno 0"})
 }
 
-func TestContextFail(t *testing.T) {
+func TestContextAbortWithError(t *testing.T) {
 	c, w, _ := createTestContext()
-	c.AbortWithError(401, errors.New("bad input"))
+	c.AbortWithError(401, errors.New("bad input")).SetMeta("some input")
 	c.Writer.WriteHeaderNow()
 
 	assert.Equal(t, w.Code, 401)
-	assert.Equal(t, c.LastError().Error(), "bad input")
 	assert.Equal(t, c.index, AbortIndex)
 	assert.True(t, c.IsAborted())
 }

@@ -21,33 +21,37 @@ const (
 )
 
 // Used internally to collect errors that occurred during an http request.
-type errorMsg struct {
-	Err      error       `json:"error"`
-	Flags    int         `json:"-"`
-	Metadata interface{} `json:"meta"`
+type Error struct {
+	Err  error       `json:"error"`
+	Type int         `json:"-"`
+	Meta interface{} `json:"meta"`
 }
 
-func (msg *errorMsg) Type(flags int) *errorMsg {
-	msg.Flags = flags
+var _ error = &Error{}
+
+func (msg *Error) SetType(flags int) *Error {
+	msg.Type = flags
 	return msg
 }
 
-func (msg *errorMsg) Meta(data interface{}) *errorMsg {
-	msg.Metadata = data
+func (msg *Error) SetMeta(data interface{}) *Error {
+	msg.Meta = data
 	return msg
 }
 
-func (msg *errorMsg) JSON() interface{} {
+func (msg *Error) JSON() interface{} {
 	json := H{}
-	if msg.Metadata != nil {
-		value := reflect.ValueOf(msg.Metadata)
+	if msg.Meta != nil {
+		value := reflect.ValueOf(msg.Meta)
 		switch value.Kind() {
 		case reflect.Struct:
-			return msg.Metadata
+			return msg.Meta
 		case reflect.Map:
 			for _, key := range value.MapKeys() {
 				json[key.String()] = value.MapIndex(key).Interface()
 			}
+		default:
+			json["meta"] = msg.Meta
 		}
 	}
 	if _, ok := json["error"]; !ok {
@@ -56,11 +60,11 @@ func (msg *errorMsg) JSON() interface{} {
 	return json
 }
 
-func (msg *errorMsg) Error() string {
+func (msg *Error) Error() string {
 	return msg.Err.Error()
 }
 
-type errorMsgs []*errorMsg
+type errorMsgs []*Error
 
 func (a errorMsgs) ByType(typ int) errorMsgs {
 	if len(a) == 0 {
@@ -68,14 +72,14 @@ func (a errorMsgs) ByType(typ int) errorMsgs {
 	}
 	result := make(errorMsgs, 0, len(a))
 	for _, msg := range a {
-		if msg.Flags&typ > 0 {
+		if msg.Type&typ > 0 {
 			result = append(result, msg)
 		}
 	}
 	return result
 }
 
-func (a errorMsgs) Last() *errorMsg {
+func (a errorMsgs) Last() *Error {
 	length := len(a)
 	if length == 0 {
 		return nil
@@ -115,7 +119,10 @@ func (a errorMsgs) String() string {
 	}
 	var buffer bytes.Buffer
 	for i, msg := range a {
-		fmt.Fprintf(&buffer, "Error #%02d: %s\n     Meta: %v\n", (i + 1), msg.Err, msg.Metadata)
+		fmt.Fprintf(&buffer, "Error #%02d: %s\n", (i + 1), msg.Err)
+		if msg.Meta != nil {
+			fmt.Fprintf(&buffer, "     Meta: %v\n", msg.Meta)
+		}
 	}
 	return buffer.String()
 }
