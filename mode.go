@@ -5,12 +5,13 @@
 package gin
 
 import (
+	"io"
 	"os"
 
 	"github.com/mattn/go-colorable"
 )
 
-const GIN_MODE = "GIN_MODE"
+const ENV_GIN_MODE = "GIN_MODE"
 
 const (
 	DebugMode   string = "debug"
@@ -23,16 +24,16 @@ const (
 	testCode    = iota
 )
 
-var DefaultWriter = colorable.NewColorableStdout()
+var DefaultWriter io.Writer = colorable.NewColorableStdout()
 var ginMode int = debugCode
 var modeName string = DebugMode
 
 func init() {
-	value := os.Getenv(GIN_MODE)
-	if len(value) == 0 {
+	mode := os.Getenv(ENV_GIN_MODE)
+	if len(mode) == 0 {
 		SetMode(DebugMode)
 	} else {
-		SetMode(value)
+		SetMode(mode)
 	}
 }
 

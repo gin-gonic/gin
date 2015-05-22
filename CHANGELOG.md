@@ -1,13 +1,15 @@
 #Changelog
 
-###Gin 1.0 (...)
+###Gin 1.0rc1 (May 22, 2015)
 
 - [PERFORMANCE] Zero allocation router
 - [PERFORMANCE] Faster JSON, XML and text rendering
 - [PERFORMANCE] Custom hand optimized HttpRouter for Gin
 - [PERFORMANCE] Misc code optimizations. Inlining, tail call optimizations
+- [NEW] Built-in support for golang.org/x/net/context
 - [NEW] Any(path, handler). Create a route that matches any path
 - [NEW] Refactored rendering pipeline (faster and static typeded)
+- [NEW] Refactored errors API
 - [NEW] IndentedJSON() prints pretty JSON
 - [NEW] Added gin.DefaultWriter
 - [NEW] UNIX socket support
@@ -15,6 +17,8 @@
 - [NEW] JSON validation using go-validate-yourself (very powerful options)
 - [NEW] Completed suite of unit tests
 - [NEW] HTTP streaming with c.Stream()
+- [NEW] StaticFile() creates a router for serving just one file.
+- [NEW] StaticFS() has an option to disable directory listing.
 - [NEW] StaticFS() for serving static files through virtual filesystems
 - [NEW] Server-Sent Events native support
 - [NEW] WrapF() and WrapH() helpers for wrapping http.HandlerFunc and http.Handler
@@ -28,6 +32,7 @@
 - [FIX] Redirect using built-in http.Redirect()
 - [FIX] Logger when printing the requested path
 - [FIX] Documentation typos
+- [FIX] Context.Engine renamed to Context.engine
 - [FIX] Better debugging messages
 - [FIX] ErrorLogger
 - [FIX] Debug HTTP render
