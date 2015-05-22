@@ -25,7 +25,7 @@ func ErrorLogger() HandlerFunc {
 	return ErrorLoggerT(ErrorTypeAny)
 }
 
-func ErrorLoggerT(typ int) HandlerFunc {
+func ErrorLoggerT(typ ErrorType) HandlerFunc {
 	return func(c *Context) {
 		c.Next()
 

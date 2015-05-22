@@ -11,20 +11,22 @@ import (
 	"reflect"
 )
 
-const (
-	ErrorTypeBind    = 1 << 30
-	ErrorTypeRender  = 1 << 29
-	ErrorTypePrivate = 1 << 0
-	ErrorTypePublic  = 1 << 1
+type ErrorType uint64
 
-	ErrorTypeAny = 0xfffffff
-	ErrorTypeNu  = 2
+const (
+	ErrorTypeBind    ErrorType = 1 << 63 // used when c.Bind() fails
+	ErrorTypeRender  ErrorType = 1 << 62 // used when c.Render() fails
+	ErrorTypePrivate ErrorType = 1 << 0
+	ErrorTypePublic  ErrorType = 1 << 1
+
+	ErrorTypeAny ErrorType = 1<<64 - 1
+	ErrorTypeNu            = 2
 )
 
 type (
 	Error struct {
 		Err  error       `json:"error"`
-		Type int         `json:"-"`
+		Type ErrorType   `json:"-"`
 		Meta interface{} `json:"meta"`
 	}
 
@@ -33,7 +35,7 @@ type (
 
 var _ error = &Error{}
 
-func (msg *Error) SetType(flags int) *Error {
+func (msg *Error) SetType(flags ErrorType) *Error {
 	msg.Type = flags
 	return msg
 }
@@ -72,7 +74,7 @@ func (msg *Error) Error() string {
 	return msg.Err.Error()
 }
 
-func (a errorMsgs) ByType(typ int) errorMsgs {
+func (a errorMsgs) ByType(typ ErrorType) errorMsgs {
 	if len(a) == 0 {
 		return a
 	}
