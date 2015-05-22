@@ -5,6 +5,7 @@
 package gin
 
 import (
+	"encoding/json"
 	"errors"
 	"testing"
 
@@ -29,6 +30,9 @@ func TestError(t *testing.T) {
 		"error": baseError.Error(),
 		"meta":  "some data",
 	})
+
+	jsonBytes, _ := json.Marshal(err)
+	assert.Equal(t, string(jsonBytes), "{\"error\":\"test error\",\"meta\":\"some data\"}")
 
 	err.SetMeta(H{
 		"status": "200",
@@ -77,11 +81,14 @@ Error #03: third
 		H{"error": "second", "meta": "some data"},
 		H{"error": "third", "status": "400"},
 	})
-
+	jsonBytes, _ := json.Marshal(errs)
+	assert.Equal(t, string(jsonBytes), "[{\"error\":\"first\"},{\"error\":\"second\",\"meta\":\"some data\"},{\"error\":\"third\",\"status\":\"400\"}]")
 	errs = errorMsgs{
 		{Err: errors.New("first"), Type: ErrorTypePrivate},
 	}
 	assert.Equal(t, errs.JSON(), H{"error": "first"})
+	jsonBytes, _ = json.Marshal(errs)
+	assert.Equal(t, string(jsonBytes), "{\"error\":\"first\"}")
 
 	errs = errorMsgs{}
 	assert.Nil(t, errs.Last())

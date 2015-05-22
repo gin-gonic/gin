@@ -6,6 +6,7 @@ package gin
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"reflect"
 )
@@ -60,6 +61,10 @@ func (msg *Error) JSON() interface{} {
 	return json
 }
 
+func (msg *Error) MarshalJSON() ([]byte, error) {
+	return json.Marshal(msg.JSON())
+}
+
 func (msg *Error) Error() string {
 	return msg.Err.Error()
 }
@@ -111,6 +116,10 @@ func (a errorMsgs) JSON() interface{} {
 		}
 		return json
 	}
+}
+
+func (a errorMsgs) MarshalJSON() ([]byte, error) {
+	return json.Marshal(a.JSON())
 }
 
 func (a errorMsgs) String() string {
