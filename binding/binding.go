@@ -7,7 +7,7 @@ package binding
 import (
 	"net/http"
 
-	"gopkg.in/joeybloggs/go-validate-yourself.v4"
+	"gopkg.in/bluesuncorp/validator.v5"
 )
 
 const (
@@ -25,7 +25,7 @@ type Binding interface {
 	Bind(*http.Request, interface{}) error
 }
 
-var _validator = validator.NewValidator("binding", validator.BakedInValidators)
+var validate = validator.New("binding", validator.BakedInValidators)
 
 var (
 	JSON = jsonBinding{}
@@ -48,8 +48,15 @@ func Default(method, contentType string) Binding {
 	}
 }
 
+func ValidateField(f interface{}, tag string) error {
+	if err := validate.Field(f, tag); err != nil {
+		return error(err)
+	}
+	return nil
+}
+
 func Validate(obj interface{}) error {
-	if err := _validator.ValidateStruct(obj); err != nil {
+	if err := validate.Struct(obj); err != nil {
 		return error(err)
 	}
 	return nil
