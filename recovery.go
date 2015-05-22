@@ -7,9 +7,9 @@ package gin
 import (
 	"bytes"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"log"
-	"net/http"
 	"runtime"
 )
 
@@ -19,6 +19,30 @@ var (
 	dot       = []byte(".")
 	slash     = []byte("/")
 )
+
+// Recovery returns a middleware that recovers from any panics and writes a 500 if there was one.
+func Recovery() HandlerFunc {
+	return RecoveryWithWriter(DefaultWriter)
+}
+
+func RecoveryWithWriter(out io.Writer) HandlerFunc {
+	var logger *log.Logger
+	if out != nil {
+		logger = log.New(out, "", log.LstdFlags)
+	}
+	return func(c *Context) {
+		defer func() {
+			if err := recover(); err != nil {
+				if logger != nil {
+					stack := stack(3)
+					logger.Printf("Panic recovery -> %s\n%s\n", err, stack)
+				}
+				c.AbortWithStatus(500)
+			}
+		}()
+		c.Next()
+	}
+}
 
 // stack returns a nicely formated stack frame, skipping skip frames
 func stack(skip int) []byte {
@@ -79,20 +103,4 @@ func function(pc uintptr) []byte {
 	}
 	name = bytes.Replace(name, centerDot, dot, -1)
 	return name
-}
-
-// Recovery returns a middleware that recovers from any panics and writes a 500 if there was one.
-// While Gin is in development mode, Recovery will also output the panic as HTML.
-func Recovery() HandlerFunc {
-	return func(c *Context) {
-		defer func() {
-			if err := recover(); err != nil {
-				stack := stack(3)
-				log.Printf("PANIC: %s\n%s", err, stack)
-				c.Writer.WriteHeader(http.StatusInternalServerError)
-			}
-		}()
-
-		c.Next()
-	}
 }

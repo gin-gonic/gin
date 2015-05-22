@@ -5,202 +5,146 @@
 package gin
 
 import (
-	"io/ioutil"
-	"net/http"
-	"net/http/httptest"
-	"os"
-	"path"
-	"strings"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
+
+//TODO
+// func (engine *Engine) LoadHTMLGlob(pattern string) {
+// func (engine *Engine) LoadHTMLFiles(files ...string) {
+// func (engine *Engine) Run(addr string) error {
+// func (engine *Engine) RunTLS(addr string, cert string, key string) error {
 
 func init() {
 	SetMode(TestMode)
 }
 
-func PerformRequest(r http.Handler, method, path string) *httptest.ResponseRecorder {
-	req, _ := http.NewRequest(method, path, nil)
-	w := httptest.NewRecorder()
-	r.ServeHTTP(w, req)
-	return w
+func TestCreateEngine(t *testing.T) {
+	router := New()
+	assert.Equal(t, "/", router.BasePath)
+	assert.Equal(t, router.engine, router)
+	assert.Empty(t, router.Handlers)
+	assert.True(t, router.RedirectTrailingSlash)
+	assert.True(t, router.RedirectFixedPath)
+	assert.True(t, router.HandleMethodNotAllowed)
+
+	assert.Panics(t, func() { router.addRoute("", "/", HandlersChain{func(_ *Context) {}}) })
+	assert.Panics(t, func() { router.addRoute("GET", "a", HandlersChain{func(_ *Context) {}}) })
+	assert.Panics(t, func() { router.addRoute("GET", "/", HandlersChain{}) })
 }
 
-// TestSingleRouteOK tests that POST route is correctly invoked.
-func testRouteOK(method string, t *testing.T) {
-	// SETUP
-	passed := false
-	r := New()
-	r.Handle(method, "/test", []HandlerFunc{func(c *Context) {
-		passed = true
-	}})
-
-	// RUN
-	w := PerformRequest(r, method, "/test")
-
-	// TEST
-	if passed == false {
-		t.Errorf(method + " route handler was not invoked.")
-	}
-	if w.Code != http.StatusOK {
-		t.Errorf("Status code should be %v, was %d", http.StatusOK, w.Code)
-	}
-}
-func TestRouterGroupRouteOK(t *testing.T) {
-	testRouteOK("POST", t)
-	testRouteOK("DELETE", t)
-	testRouteOK("PATCH", t)
-	testRouteOK("PUT", t)
-	testRouteOK("OPTIONS", t)
-	testRouteOK("HEAD", t)
+func TestCreateDefaultRouter(t *testing.T) {
+	router := Default()
+	assert.Len(t, router.Handlers, 2)
 }
 
-// TestSingleRouteOK tests that POST route is correctly invoked.
-func testRouteNotOK(method string, t *testing.T) {
-	// SETUP
-	passed := false
-	r := New()
-	r.Handle(method, "/test_2", []HandlerFunc{func(c *Context) {
-		passed = true
-	}})
+func TestNoRouteWithoutGlobalHandlers(t *testing.T) {
+	middleware0 := func(c *Context) {}
+	middleware1 := func(c *Context) {}
 
-	// RUN
-	w := PerformRequest(r, method, "/test")
+	router := New()
 
-	// TEST
-	if passed == true {
-		t.Errorf(method + " route handler was invoked, when it should not")
-	}
-	if w.Code != http.StatusNotFound {
-		// If this fails, it's because httprouter needs to be updated to at least f78f58a0db
-		t.Errorf("Status code should be %v, was %d. Location: %s", http.StatusNotFound, w.Code, w.HeaderMap.Get("Location"))
-	}
+	router.NoRoute(middleware0)
+	assert.Nil(t, router.Handlers)
+	assert.Len(t, router.noRoute, 1)
+	assert.Len(t, router.allNoRoute, 1)
+	assert.Equal(t, router.noRoute[0], middleware0)
+	assert.Equal(t, router.allNoRoute[0], middleware0)
+
+	router.NoRoute(middleware1, middleware0)
+	assert.Len(t, router.noRoute, 2)
+	assert.Len(t, router.allNoRoute, 2)
+	assert.Equal(t, router.noRoute[0], middleware1)
+	assert.Equal(t, router.allNoRoute[0], middleware1)
+	assert.Equal(t, router.noRoute[1], middleware0)
+	assert.Equal(t, router.allNoRoute[1], middleware0)
 }
 
-// TestSingleRouteOK tests that POST route is correctly invoked.
-func TestRouteNotOK(t *testing.T) {
-	testRouteNotOK("POST", t)
-	testRouteNotOK("DELETE", t)
-	testRouteNotOK("PATCH", t)
-	testRouteNotOK("PUT", t)
-	testRouteNotOK("OPTIONS", t)
-	testRouteNotOK("HEAD", t)
+func TestNoRouteWithGlobalHandlers(t *testing.T) {
+	middleware0 := func(c *Context) {}
+	middleware1 := func(c *Context) {}
+	middleware2 := func(c *Context) {}
+
+	router := New()
+	router.Use(middleware2)
+
+	router.NoRoute(middleware0)
+	assert.Len(t, router.allNoRoute, 2)
+	assert.Len(t, router.Handlers, 1)
+	assert.Len(t, router.noRoute, 1)
+
+	assert.Equal(t, router.Handlers[0], middleware2)
+	assert.Equal(t, router.noRoute[0], middleware0)
+	assert.Equal(t, router.allNoRoute[0], middleware2)
+	assert.Equal(t, router.allNoRoute[1], middleware0)
+
+	router.Use(middleware1)
+	assert.Len(t, router.allNoRoute, 3)
+	assert.Len(t, router.Handlers, 2)
+	assert.Len(t, router.noRoute, 1)
+
+	assert.Equal(t, router.Handlers[0], middleware2)
+	assert.Equal(t, router.Handlers[1], middleware1)
+	assert.Equal(t, router.noRoute[0], middleware0)
+	assert.Equal(t, router.allNoRoute[0], middleware2)
+	assert.Equal(t, router.allNoRoute[1], middleware1)
+	assert.Equal(t, router.allNoRoute[2], middleware0)
 }
 
-// TestSingleRouteOK tests that POST route is correctly invoked.
-func testRouteNotOK2(method string, t *testing.T) {
-	// SETUP
-	passed := false
-	r := New()
-	var methodRoute string
-	if method == "POST" {
-		methodRoute = "GET"
-	} else {
-		methodRoute = "POST"
-	}
-	r.Handle(methodRoute, "/test", []HandlerFunc{func(c *Context) {
-		passed = true
-	}})
+func TestNoMethodWithoutGlobalHandlers(t *testing.T) {
+	middleware0 := func(c *Context) {}
+	middleware1 := func(c *Context) {}
 
-	// RUN
-	w := PerformRequest(r, method, "/test")
+	router := New()
 
-	// TEST
-	if passed == true {
-		t.Errorf(method + " route handler was invoked, when it should not")
-	}
-	if w.Code != http.StatusMethodNotAllowed {
-		t.Errorf("Status code should be %v, was %d. Location: %s", http.StatusMethodNotAllowed, w.Code, w.HeaderMap.Get("Location"))
-	}
+	router.NoMethod(middleware0)
+	assert.Empty(t, router.Handlers)
+	assert.Len(t, router.noMethod, 1)
+	assert.Len(t, router.allNoMethod, 1)
+	assert.Equal(t, router.noMethod[0], middleware0)
+	assert.Equal(t, router.allNoMethod[0], middleware0)
+
+	router.NoMethod(middleware1, middleware0)
+	assert.Len(t, router.noMethod, 2)
+	assert.Len(t, router.allNoMethod, 2)
+	assert.Equal(t, router.noMethod[0], middleware1)
+	assert.Equal(t, router.allNoMethod[0], middleware1)
+	assert.Equal(t, router.noMethod[1], middleware0)
+	assert.Equal(t, router.allNoMethod[1], middleware0)
 }
 
-// TestSingleRouteOK tests that POST route is correctly invoked.
-func TestRouteNotOK2(t *testing.T) {
-	testRouteNotOK2("POST", t)
-	testRouteNotOK2("DELETE", t)
-	testRouteNotOK2("PATCH", t)
-	testRouteNotOK2("PUT", t)
-	testRouteNotOK2("OPTIONS", t)
-	testRouteNotOK2("HEAD", t)
+func TestRebuild404Handlers(t *testing.T) {
+
 }
 
-// TestHandleStaticFile - ensure the static file handles properly
-func TestHandleStaticFile(t *testing.T) {
-	// SETUP file
-	testRoot, _ := os.Getwd()
-	f, err := ioutil.TempFile(testRoot, "")
-	if err != nil {
-		t.Error(err)
-	}
-	defer os.Remove(f.Name())
-	filePath := path.Join("/", path.Base(f.Name()))
-	f.WriteString("Gin Web Framework")
-	f.Close()
+func TestNoMethodWithGlobalHandlers(t *testing.T) {
+	middleware0 := func(c *Context) {}
+	middleware1 := func(c *Context) {}
+	middleware2 := func(c *Context) {}
 
-	// SETUP gin
-	r := New()
-	r.Static("./", testRoot)
+	router := New()
+	router.Use(middleware2)
 
-	// RUN
-	w := PerformRequest(r, "GET", filePath)
+	router.NoMethod(middleware0)
+	assert.Len(t, router.allNoMethod, 2)
+	assert.Len(t, router.Handlers, 1)
+	assert.Len(t, router.noMethod, 1)
 
-	// TEST
-	if w.Code != 200 {
-		t.Errorf("Response code should be 200, was: %d", w.Code)
-	}
-	if w.Body.String() != "Gin Web Framework" {
-		t.Errorf("Response should be test, was: %s", w.Body.String())
-	}
-	if w.HeaderMap.Get("Content-Type") != "text/plain; charset=utf-8" {
-		t.Errorf("Content-Type should be text/plain, was %s", w.HeaderMap.Get("Content-Type"))
-	}
-}
+	assert.Equal(t, router.Handlers[0], middleware2)
+	assert.Equal(t, router.noMethod[0], middleware0)
+	assert.Equal(t, router.allNoMethod[0], middleware2)
+	assert.Equal(t, router.allNoMethod[1], middleware0)
 
-// TestHandleStaticDir - ensure the root/sub dir handles properly
-func TestHandleStaticDir(t *testing.T) {
-	// SETUP
-	r := New()
-	r.Static("/", "./")
+	router.Use(middleware1)
+	assert.Len(t, router.allNoMethod, 3)
+	assert.Len(t, router.Handlers, 2)
+	assert.Len(t, router.noMethod, 1)
 
-	// RUN
-	w := PerformRequest(r, "GET", "/")
-
-	// TEST
-	bodyAsString := w.Body.String()
-	if w.Code != 200 {
-		t.Errorf("Response code should be 200, was: %d", w.Code)
-	}
-	if len(bodyAsString) == 0 {
-		t.Errorf("Got empty body instead of file tree")
-	}
-	if !strings.Contains(bodyAsString, "gin.go") {
-		t.Errorf("Can't find:`gin.go` in file tree: %s", bodyAsString)
-	}
-	if w.HeaderMap.Get("Content-Type") != "text/html; charset=utf-8" {
-		t.Errorf("Content-Type should be text/plain, was %s", w.HeaderMap.Get("Content-Type"))
-	}
-}
-
-// TestHandleHeadToDir - ensure the root/sub dir handles properly
-func TestHandleHeadToDir(t *testing.T) {
-	// SETUP
-	r := New()
-	r.Static("/", "./")
-
-	// RUN
-	w := PerformRequest(r, "HEAD", "/")
-
-	// TEST
-	bodyAsString := w.Body.String()
-	if w.Code != 200 {
-		t.Errorf("Response code should be Ok, was: %s", w.Code)
-	}
-	if len(bodyAsString) == 0 {
-		t.Errorf("Got empty body instead of file tree")
-	}
-	if !strings.Contains(bodyAsString, "gin.go") {
-		t.Errorf("Can't find:`gin.go` in file tree: %s", bodyAsString)
-	}
-	if w.HeaderMap.Get("Content-Type") != "text/html; charset=utf-8" {
-		t.Errorf("Content-Type should be text/plain, was %s", w.HeaderMap.Get("Content-Type"))
-	}
+	assert.Equal(t, router.Handlers[0], middleware2)
+	assert.Equal(t, router.Handlers[1], middleware1)
+	assert.Equal(t, router.noMethod[0], middleware0)
+	assert.Equal(t, router.allNoMethod[0], middleware2)
+	assert.Equal(t, router.allNoMethod[1], middleware1)
+	assert.Equal(t, router.allNoMethod[2], middleware0)
 }

@@ -5,8 +5,8 @@
 package gin
 
 import (
-	"github.com/mattn/go-colorable"
-	"log"
+	"fmt"
+	"io"
 	"time"
 )
 
@@ -22,28 +22,31 @@ var (
 )
 
 func ErrorLogger() HandlerFunc {
-	return ErrorLoggerT(ErrorTypeAll)
+	return ErrorLoggerT(ErrorTypeAny)
 }
 
-func ErrorLoggerT(typ uint32) HandlerFunc {
+func ErrorLoggerT(typ int) HandlerFunc {
 	return func(c *Context) {
 		c.Next()
 
-		errs := c.Errors.ByType(typ)
-		if len(errs) > 0 {
-			// -1 status code = do not change current one
-			c.JSON(-1, c.Errors)
+		if !c.Writer.Written() {
+			json := c.Errors.ByType(typ).JSON()
+			if json != nil {
+				c.JSON(-1, json)
+			}
 		}
 	}
 }
 
 func Logger() HandlerFunc {
-	stdlogger := log.New(colorable.NewColorableStdout(), "", 0)
-	//errlogger := log.New(os.Stderr, "", 0)
+	return LoggerWithWriter(DefaultWriter)
+}
 
+func LoggerWithWriter(out io.Writer) HandlerFunc {
 	return func(c *Context) {
 		// Start timer
 		start := time.Now()
+		path := c.Request.URL.Path
 
 		// Process request
 		c.Next()
@@ -57,26 +60,27 @@ func Logger() HandlerFunc {
 		statusCode := c.Writer.Status()
 		statusColor := colorForStatus(statusCode)
 		methodColor := colorForMethod(method)
+		comment := c.Errors.String()
 
-		stdlogger.Printf("[GIN] %v |%s %3d %s| %12v | %s |%s  %s %-7s %s\n%s",
+		fmt.Fprintf(out, "[GIN] %v |%s %3d %s| %13v | %s |%s  %s %-7s %s\n%s",
 			end.Format("2006/01/02 - 15:04:05"),
 			statusColor, statusCode, reset,
 			latency,
 			clientIP,
 			methodColor, reset, method,
-			c.Request.URL.Path,
-			c.Errors.String(),
+			path,
+			comment,
 		)
 	}
 }
 
 func colorForStatus(code int) string {
 	switch {
-	case code >= 200 && code <= 299:
+	case code >= 200 && code < 300:
 		return green
-	case code >= 300 && code <= 399:
+	case code >= 300 && code < 400:
 		return white
-	case code >= 400 && code <= 499:
+	case code >= 400 && code < 500:
 		return yellow
 	default:
 		return red
@@ -84,20 +88,20 @@ func colorForStatus(code int) string {
 }
 
 func colorForMethod(method string) string {
-	switch {
-	case method == "GET":
+	switch method {
+	case "GET":
 		return blue
-	case method == "POST":
+	case "POST":
 		return cyan
-	case method == "PUT":
+	case "PUT":
 		return yellow
-	case method == "DELETE":
+	case "DELETE":
 		return red
-	case method == "PATCH":
+	case "PATCH":
 		return green
-	case method == "HEAD":
+	case "HEAD":
 		return magenta
-	case method == "OPTIONS":
+	case "OPTIONS":
 		return white
 	default:
 		return reset

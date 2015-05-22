@@ -5,17 +5,17 @@
 package gin
 
 import (
-	"github.com/julienschmidt/httprouter"
 	"net/http"
 	"path"
+	"strings"
 )
 
 // Used internally to configure router, a RouterGroup is associated with a prefix
 // and an array of handlers (middlewares)
 type RouterGroup struct {
-	Handlers     []HandlerFunc
-	absolutePath string
-	engine       *Engine
+	Handlers HandlersChain
+	BasePath string
+	engine   *Engine
 }
 
 // Adds middlewares to the group, see example code in github.
@@ -27,9 +27,9 @@ func (group *RouterGroup) Use(middlewares ...HandlerFunc) {
 // For example, all the routes that use a common middlware for authorization could be grouped.
 func (group *RouterGroup) Group(relativePath string, handlers ...HandlerFunc) *RouterGroup {
 	return &RouterGroup{
-		Handlers:     group.combineHandlers(handlers),
-		absolutePath: group.calculateAbsolutePath(relativePath),
-		engine:       group.engine,
+		Handlers: group.combineHandlers(handlers),
+		BasePath: group.calculateAbsolutePath(relativePath),
+		engine:   group.engine,
 	}
 }
 
@@ -43,66 +43,73 @@ func (group *RouterGroup) Group(relativePath string, handlers ...HandlerFunc) *R
 // This function is intended for bulk loading and to allow the usage of less
 // frequently used, non-standardized or custom methods (e.g. for internal
 // communication with a proxy).
-func (group *RouterGroup) Handle(httpMethod, relativePath string, handlers []HandlerFunc) {
+func (group *RouterGroup) handle(httpMethod, relativePath string, handlers HandlersChain) {
 	absolutePath := group.calculateAbsolutePath(relativePath)
 	handlers = group.combineHandlers(handlers)
-	if IsDebugging() {
-		nuHandlers := len(handlers)
-		handlerName := nameOfFunction(handlers[nuHandlers-1])
-		debugPrint("%-5s %-25s --> %s (%d handlers)\n", httpMethod, absolutePath, handlerName, nuHandlers)
-	}
+	group.engine.addRoute(httpMethod, absolutePath, handlers)
+}
 
-	group.engine.router.Handle(httpMethod, absolutePath, func(w http.ResponseWriter, req *http.Request, params httprouter.Params) {
-		context := group.engine.createContext(w, req, params, handlers)
-		context.Next()
-		context.Writer.WriteHeaderNow()
-		group.engine.reuseContext(context)
-	})
+func (group *RouterGroup) Handle(httpMethod, relativePath string, handlers ...HandlerFunc) {
+	group.handle(httpMethod, relativePath, handlers)
 }
 
 // POST is a shortcut for router.Handle("POST", path, handle)
 func (group *RouterGroup) POST(relativePath string, handlers ...HandlerFunc) {
-	group.Handle("POST", relativePath, handlers)
+	group.handle("POST", relativePath, handlers)
 }
 
 // GET is a shortcut for router.Handle("GET", path, handle)
 func (group *RouterGroup) GET(relativePath string, handlers ...HandlerFunc) {
-	group.Handle("GET", relativePath, handlers)
+	group.handle("GET", relativePath, handlers)
 }
 
 // DELETE is a shortcut for router.Handle("DELETE", path, handle)
 func (group *RouterGroup) DELETE(relativePath string, handlers ...HandlerFunc) {
-	group.Handle("DELETE", relativePath, handlers)
+	group.handle("DELETE", relativePath, handlers)
 }
 
 // PATCH is a shortcut for router.Handle("PATCH", path, handle)
 func (group *RouterGroup) PATCH(relativePath string, handlers ...HandlerFunc) {
-	group.Handle("PATCH", relativePath, handlers)
+	group.handle("PATCH", relativePath, handlers)
 }
 
 // PUT is a shortcut for router.Handle("PUT", path, handle)
 func (group *RouterGroup) PUT(relativePath string, handlers ...HandlerFunc) {
-	group.Handle("PUT", relativePath, handlers)
+	group.handle("PUT", relativePath, handlers)
 }
 
 // OPTIONS is a shortcut for router.Handle("OPTIONS", path, handle)
 func (group *RouterGroup) OPTIONS(relativePath string, handlers ...HandlerFunc) {
-	group.Handle("OPTIONS", relativePath, handlers)
+	group.handle("OPTIONS", relativePath, handlers)
 }
 
 // HEAD is a shortcut for router.Handle("HEAD", path, handle)
 func (group *RouterGroup) HEAD(relativePath string, handlers ...HandlerFunc) {
-	group.Handle("HEAD", relativePath, handlers)
+	group.handle("HEAD", relativePath, handlers)
 }
 
-// LINK is a shortcut for router.Handle("LINK", path, handle)
-func (group *RouterGroup) LINK(relativePath string, handlers ...HandlerFunc) {
-	group.Handle("LINK", relativePath, handlers)
+func (group *RouterGroup) Any(relativePath string, handlers ...HandlerFunc) {
+	// GET, POST, PUT, PATCH, HEAD, OPTIONS, DELETE, CONNECT, TRACE
+	group.handle("GET", relativePath, handlers)
+	group.handle("POST", relativePath, handlers)
+	group.handle("PUT", relativePath, handlers)
+	group.handle("PATCH", relativePath, handlers)
+	group.handle("HEAD", relativePath, handlers)
+	group.handle("OPTIONS", relativePath, handlers)
+	group.handle("DELETE", relativePath, handlers)
+	group.handle("CONNECT", relativePath, handlers)
+	group.handle("TRACE", relativePath, handlers)
 }
 
-// UNLINK is a shortcut for router.Handle("UNLINK", path, handle)
-func (group *RouterGroup) UNLINK(relativePath string, handlers ...HandlerFunc) {
-	group.Handle("UNLINK", relativePath, handlers)
+func (group *RouterGroup) StaticFile(relativePath, filepath string) {
+	if strings.Contains(relativePath, ":") || strings.Contains(relativePath, "*") {
+		panic("URL parameters can not be used when serving a static file")
+	}
+	handler := func(c *Context) {
+		c.File(filepath)
+	}
+	group.GET(relativePath, handler)
+	group.HEAD(relativePath, handler)
 }
 
 // Static serves files from the given file system root.
@@ -112,37 +119,41 @@ func (group *RouterGroup) UNLINK(relativePath string, handlers ...HandlerFunc) {
 // use :
 //     router.Static("/static", "/var/www")
 func (group *RouterGroup) Static(relativePath, root string) {
-	absolutePath := group.calculateAbsolutePath(relativePath)
-	handler := group.createStaticHandler(absolutePath, root)
-	absolutePath = path.Join(absolutePath, "/*filepath")
-
-	// Register GET and HEAD handlers
-	group.GET(absolutePath, handler)
-	group.HEAD(absolutePath, handler)
+	group.StaticFS(relativePath, http.Dir(root), false)
 }
 
-func (group *RouterGroup) createStaticHandler(absolutePath, root string) func(*Context) {
-	fileServer := http.StripPrefix(absolutePath, http.FileServer(http.Dir(root)))
+func (group *RouterGroup) StaticFS(relativePath string, fs http.FileSystem, listDirectory bool) {
+	if strings.Contains(relativePath, ":") || strings.Contains(relativePath, "*") {
+		panic("URL parameters can not be used when serving a static folder")
+	}
+	handler := group.createStaticHandler(relativePath, fs, listDirectory)
+	relativePath = path.Join(relativePath, "/*filepath")
+
+	// Register GET and HEAD handlers
+	group.GET(relativePath, handler)
+	group.HEAD(relativePath, handler)
+}
+
+func (group *RouterGroup) createStaticHandler(relativePath string, fs http.FileSystem, listDirectory bool) HandlerFunc {
+	absolutePath := group.calculateAbsolutePath(relativePath)
+	fileServer := http.StripPrefix(absolutePath, http.FileServer(fs))
 	return func(c *Context) {
+		if !listDirectory && lastChar(c.Request.URL.Path) == '/' {
+			http.NotFound(c.Writer, c.Request)
+			return
+		}
 		fileServer.ServeHTTP(c.Writer, c.Request)
 	}
 }
 
-func (group *RouterGroup) combineHandlers(handlers []HandlerFunc) []HandlerFunc {
+func (group *RouterGroup) combineHandlers(handlers HandlersChain) HandlersChain {
 	finalSize := len(group.Handlers) + len(handlers)
-	mergedHandlers := make([]HandlerFunc, 0, finalSize)
-	mergedHandlers = append(mergedHandlers, group.Handlers...)
-	return append(mergedHandlers, handlers...)
+	mergedHandlers := make(HandlersChain, finalSize)
+	copy(mergedHandlers, group.Handlers)
+	copy(mergedHandlers[len(group.Handlers):], handlers)
+	return mergedHandlers
 }
 
 func (group *RouterGroup) calculateAbsolutePath(relativePath string) string {
-	if len(relativePath) == 0 {
-		return group.absolutePath
-	}
-	absolutePath := path.Join(group.absolutePath, relativePath)
-	appendSlash := lastChar(relativePath) == '/' && lastChar(absolutePath) != '/'
-	if appendSlash {
-		return absolutePath + "/"
-	}
-	return absolutePath
+	return joinPaths(group.BasePath, relativePath)
 }

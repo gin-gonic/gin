@@ -6,10 +6,24 @@ package gin
 
 import (
 	"encoding/xml"
+	"net/http"
+	"path"
 	"reflect"
 	"runtime"
 	"strings"
 )
+
+func WrapF(f http.HandlerFunc) HandlerFunc {
+	return func(c *Context) {
+		f(c.Writer, c.Request)
+	}
+}
+
+func WrapH(h http.Handler) HandlerFunc {
+	return func(c *Context) {
+		h.ServeHTTP(c.Writer, c.Request)
+	}
+}
 
 type H map[string]interface{}
 
@@ -56,17 +70,20 @@ func chooseData(custom, wildcard interface{}) interface{} {
 	return custom
 }
 
-func parseAccept(accept string) []string {
-	parts := strings.Split(accept, ",")
-	for i, part := range parts {
+func parseAccept(acceptHeader string) []string {
+	parts := strings.Split(acceptHeader, ",")
+	out := make([]string, 0, len(parts))
+	for _, part := range parts {
 		index := strings.IndexByte(part, ';')
 		if index >= 0 {
 			part = part[0:index]
 		}
 		part = strings.TrimSpace(part)
-		parts[i] = part
+		if len(part) > 0 {
+			out = append(out, part)
+		}
 	}
-	return parts
+	return out
 }
 
 func lastChar(str string) uint8 {
@@ -79,4 +96,17 @@ func lastChar(str string) uint8 {
 
 func nameOfFunction(f interface{}) string {
 	return runtime.FuncForPC(reflect.ValueOf(f).Pointer()).Name()
+}
+
+func joinPaths(absolutePath, relativePath string) string {
+	if len(relativePath) == 0 {
+		return absolutePath
+	}
+
+	finalPath := path.Join(absolutePath, relativePath)
+	appendSlash := lastChar(relativePath) == '/' && lastChar(finalPath) != '/'
+	if appendSlash {
+		return finalPath + "/"
+	}
+	return finalPath
 }

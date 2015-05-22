@@ -1,10 +1,27 @@
 {
 	"ImportPath": "github.com/gin-gonic/gin",
-	"GoVersion": "go1.3",
+	"GoVersion": "go1.4.2",
 	"Deps": [
 		{
-			"ImportPath": "github.com/julienschmidt/httprouter",
-			"Rev": "b428fda53bb0a764fea9c76c9413512eda291dec"
+			"ImportPath": "github.com/manucorporat/sse",
+			"Rev": "c574f6c50c8594f93d28b03a1bbd87b4a3899093"
+		},
+		{
+			"ImportPath": "github.com/mattn/go-colorable",
+			"Rev": "043ae16291351db8465272edf465c9f388161627"
+		},
+		{
+			"ImportPath": "github.com/stretchr/testify/assert",
+			"Rev": "de7fcff264cd05cc0c90c509ea789a436a0dd206"
+		},
+		{
+			"ImportPath": "golang.org/x/net/context",
+			"Rev": "84ba27dd5b2d8135e9da1395277f2c9333a2ffda"
+		},
+		{
+			"ImportPath": "gopkg.in/joeybloggs/go-validate-yourself.v4",
+			"Comment": "v4.0",
+			"Rev": "a3cb430fa1e43b15e72d7bec5b20d0bdff4c2bb8"
 		}
 	]
 }

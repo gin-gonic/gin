@@ -1,11 +1,55 @@
 #Changelog
 
+###Gin 1.0rc1 (May 22, 2015)
+
+- [PERFORMANCE] Zero allocation router
+- [PERFORMANCE] Faster JSON, XML and text rendering
+- [PERFORMANCE] Custom hand optimized HttpRouter for Gin
+- [PERFORMANCE] Misc code optimizations. Inlining, tail call optimizations
+- [NEW] Built-in support for golang.org/x/net/context
+- [NEW] Any(path, handler). Create a route that matches any path
+- [NEW] Refactored rendering pipeline (faster and static typeded)
+- [NEW] Refactored errors API
+- [NEW] IndentedJSON() prints pretty JSON
+- [NEW] Added gin.DefaultWriter
+- [NEW] UNIX socket support
+- [NEW] RouterGroup.BasePath is exposed
+- [NEW] JSON validation using go-validate-yourself (very powerful options)
+- [NEW] Completed suite of unit tests
+- [NEW] HTTP streaming with c.Stream()
+- [NEW] StaticFile() creates a router for serving just one file.
+- [NEW] StaticFS() has an option to disable directory listing.
+- [NEW] StaticFS() for serving static files through virtual filesystems
+- [NEW] Server-Sent Events native support
+- [NEW] WrapF() and WrapH() helpers for wrapping http.HandlerFunc and http.Handler
+- [NEW] Added LoggerWithWriter() middleware
+- [NEW] Added RecoveryWithWriter() middleware
+- [NEW] Added DefaultPostFormValue()
+- [NEW] Added DefaultFormValue()
+- [NEW] Added DefaultParamValue()
+- [FIX] BasicAuth() when using custom realm
+- [FIX] Bug when serving static files in nested routing group
+- [FIX] Redirect using built-in http.Redirect()
+- [FIX] Logger when printing the requested path
+- [FIX] Documentation typos
+- [FIX] Context.Engine renamed to Context.engine
+- [FIX] Better debugging messages
+- [FIX] ErrorLogger
+- [FIX] Debug HTTP render
+- [FIX] Refactored binding and render modules 
+- [FIX] Refactored Context initialization
+- [FIX] Refactored BasicAuth()
+- [FIX] NoMethod/NoRoute handlers
+- [FIX] Hijacking http
+- [FIX] Better support for Google App Engine (using log instead of fmt)
+
+
 ###Gin 0.6 (Mar 9, 2015)
 
-- [ADD] Support multipart/form-data
-- [ADD] NoMethod handler
-- [ADD] Validate sub structures
-- [ADD] Support for HTTP Realm Auth
+- [NEW] Support multipart/form-data
+- [NEW] NoMethod handler
+- [NEW] Validate sub structures
+- [NEW] Support for HTTP Realm Auth
 - [FIX] Unsigned integers in binding
 - [FIX] Improve color logger
 
