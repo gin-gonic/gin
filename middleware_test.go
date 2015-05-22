@@ -169,7 +169,7 @@ func TestMiddlewareFailHandlersChain(t *testing.T) {
 	router := New()
 	router.Use(func(context *Context) {
 		signature += "A"
-		context.Fail(500, errors.New("foo"))
+		context.AbortWithError(500, errors.New("foo"))
 	})
 	router.Use(func(context *Context) {
 		signature += "B"

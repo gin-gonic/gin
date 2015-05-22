@@ -41,7 +41,7 @@ func TestContextReset(t *testing.T) {
 	c.index = 2
 	c.Writer = &responseWriter{ResponseWriter: httptest.NewRecorder()}
 	c.Params = Params{Param{}}
-	c.Error(errors.New("test"), nil)
+	c.Error(errors.New("test"))
 	c.Set("foo", "bar")
 	c.reset()
 
@@ -352,41 +352,41 @@ func TestContextError(t *testing.T) {
 	assert.Nil(t, c.LastError())
 	assert.Empty(t, c.Errors.String())
 
-	c.Error(errors.New("first error"), "some data")
+	c.Error(errors.New("first error")).Meta("some data")
 	assert.Equal(t, c.LastError().Error(), "first error")
 	assert.Len(t, c.Errors, 1)
 	assert.Equal(t, c.Errors.String(), "Error #01: first error\n     Meta: some data\n")
 
-	c.Error(errors.New("second error"), "some data 2")
+	c.Error(errors.New("second error")).Meta("some data 2")
 	assert.Equal(t, c.LastError().Error(), "second error")
 	assert.Len(t, c.Errors, 2)
 	assert.Equal(t, c.Errors.String(), "Error #01: first error\n     Meta: some data\n"+
 		"Error #02: second error\n     Meta: some data 2\n")
 
 	assert.Equal(t, c.Errors[0].Error, errors.New("first error"))
-	assert.Equal(t, c.Errors[0].Meta, "some data")
-	assert.Equal(t, c.Errors[0].Flags, ErrorTypeExternal)
+	assert.Equal(t, c.Errors[0].Metadata, "some data")
+	assert.Equal(t, c.Errors[0].Flags, ErrorTypePrivate)
 
 	assert.Equal(t, c.Errors[1].Error, errors.New("second error"))
-	assert.Equal(t, c.Errors[1].Meta, "some data 2")
-	assert.Equal(t, c.Errors[1].Flags, ErrorTypeExternal)
+	assert.Equal(t, c.Errors[1].Metadata, "some data 2")
+	assert.Equal(t, c.Errors[1].Flags, ErrorTypePrivate)
 }
 
 func TestContextTypedError(t *testing.T) {
 	c, _, _ := createTestContext()
-	c.ErrorTyped(errors.New("externo 0"), ErrorTypeExternal, nil)
-	c.ErrorTyped(errors.New("externo 1"), ErrorTypeExternal, nil)
-	c.ErrorTyped(errors.New("interno 0"), ErrorTypeInternal, nil)
-	c.ErrorTyped(errors.New("externo 2"), ErrorTypeExternal, nil)
-	c.ErrorTyped(errors.New("interno 1"), ErrorTypeInternal, nil)
-	c.ErrorTyped(errors.New("interno 2"), ErrorTypeInternal, nil)
+	c.Error(errors.New("externo 0")).Type(ErrorTypePublic)
+	c.Error(errors.New("externo 1")).Type(ErrorTypePublic)
+	c.Error(errors.New("interno 0")).Type(ErrorTypePrivate)
+	c.Error(errors.New("externo 2")).Type(ErrorTypePublic)
+	c.Error(errors.New("interno 1")).Type(ErrorTypePrivate)
+	c.Error(errors.New("interno 2")).Type(ErrorTypePrivate)
 
-	for _, err := range c.Errors.ByType(ErrorTypeExternal) {
-		assert.Equal(t, err.Flags, ErrorTypeExternal)
+	for _, err := range c.Errors.ByType(ErrorTypePublic) {
+		assert.Equal(t, err.Flags, ErrorTypePublic)
 	}
 
-	for _, err := range c.Errors.ByType(ErrorTypeInternal) {
-		assert.Equal(t, err.Flags, ErrorTypeInternal)
+	for _, err := range c.Errors.ByType(ErrorTypePrivate) {
+		assert.Equal(t, err.Flags, ErrorTypePrivate)
 	}
 
 	assert.Equal(t, c.Errors.Errors(), []string{"externo 0", "externo 1", "interno 0", "externo 2", "interno 1", "interno 2"})
@@ -394,7 +394,7 @@ func TestContextTypedError(t *testing.T) {
 
 func TestContextFail(t *testing.T) {
 	c, w, _ := createTestContext()
-	c.Fail(401, errors.New("bad input"))
+	c.AbortWithError(401, errors.New("bad input"))
 	c.Writer.WriteHeaderNow()
 
 	assert.Equal(t, w.Code, 401)
@@ -434,7 +434,7 @@ func TestContextAutoBind(t *testing.T) {
 		Foo string `json:"foo"`
 		Bar string `json:"bar"`
 	}
-	assert.True(t, c.Bind(&obj))
+	assert.NoError(t, c.Bind(&obj))
 	assert.Equal(t, obj.Bar, "foo")
 	assert.Equal(t, obj.Foo, "bar")
 	assert.Equal(t, w.Body.Len(), 0)
@@ -450,7 +450,7 @@ func TestContextBadAutoBind(t *testing.T) {
 	}
 
 	assert.False(t, c.IsAborted())
-	assert.False(t, c.Bind(&obj))
+	assert.Error(t, c.Bind(&obj))
 	c.Writer.WriteHeaderNow()
 
 	assert.Empty(t, obj.Bar)
@@ -467,7 +467,7 @@ func TestContextBindWith(t *testing.T) {
 		Foo string `json:"foo"`
 		Bar string `json:"bar"`
 	}
-	assert.True(t, c.BindWith(&obj, binding.JSON))
+	assert.NoError(t, c.BindWith(&obj, binding.JSON))
 	assert.Equal(t, obj.Bar, "foo")
 	assert.Equal(t, obj.Foo, "bar")
 	assert.Equal(t, w.Body.Len(), 0)

@@ -126,6 +126,11 @@ func (c *Context) AbortWithStatus(code int) {
 	c.Abort()
 }
 
+func (c *Context) AbortWithError(code int, err error) *errorMsg {
+	c.AbortWithStatus(code)
+	return c.Error(err)
+}
+
 func (c *Context) IsAborted() bool {
 	return c.index == AbortIndex
 }
@@ -134,30 +139,16 @@ func (c *Context) IsAborted() bool {
 /********* ERROR MANAGEMENT *********/
 /************************************/
 
-// Fail is the same as Abort plus an error message.
-// Calling `context.Fail(500, err)` is equivalent to:
-// ```
-// context.Error("Operation aborted", err)
-// context.AbortWithStatus(500)
-// ```
-func (c *Context) Fail(code int, err error) {
-	c.Error(err, "Operation aborted")
-	c.AbortWithStatus(code)
-}
-
-func (c *Context) ErrorTyped(err error, typ int, meta interface{}) {
-	c.Errors = append(c.Errors, errorMsg{
-		Error: err,
-		Flags: typ,
-		Meta:  meta,
-	})
-}
-
 // Attaches an error to the current context. The error is pushed to a list of errors.
 // It's a good idea to call Error for each error that occurred during the resolution of a request.
 // A middleware can be used to collect all the errors and push them to a database together, print a log, or append it in the HTTP response.
-func (c *Context) Error(err error, meta interface{}) {
-	c.ErrorTyped(err, ErrorTypeExternal, meta)
+func (c *Context) Error(err error) *errorMsg {
+	newError := &errorMsg{
+		Error: err,
+		Flags: ErrorTypePrivate,
+	}
+	c.Errors = append(c.Errors, newError)
+	return newError
 }
 
 func (c *Context) LastError() error {
@@ -166,6 +157,35 @@ func (c *Context) LastError() error {
 		return c.Errors[nuErrors-1].Error
 	}
 	return nil
+}
+
+/************************************/
+/******** METADATA MANAGEMENT********/
+/************************************/
+
+// Sets a new pair key/value just for the specified context.
+// It also lazy initializes the hashmap.
+func (c *Context) Set(key string, value interface{}) {
+	if c.Keys == nil {
+		c.Keys = make(map[string]interface{})
+	}
+	c.Keys[key] = value
+}
+
+// Get returns the value for the given key or an error if the key does not exist.
+func (c *Context) Get(key string) (value interface{}, exists bool) {
+	if c.Keys != nil {
+		value, exists = c.Keys[key]
+	}
+	return
+}
+
+// MustGet returns the value for the given key or panics if the value doesn't exist.
+func (c *Context) MustGet(key string) interface{} {
+	if value, exists := c.Get(key); exists {
+		return value
+	}
+	panic("Key \"" + key + "\" does not exist")
 }
 
 /************************************/
@@ -233,39 +253,28 @@ func (c *Context) postFormValue(key string) (string, bool) {
 	return "", false
 }
 
-/************************************/
-/******** METADATA MANAGEMENT********/
-/************************************/
-
-// Sets a new pair key/value just for the specified context.
-// It also lazy initializes the hashmap.
-func (c *Context) Set(key string, value interface{}) {
-	if c.Keys == nil {
-		c.Keys = make(map[string]interface{})
-	}
-	c.Keys[key] = value
+// This function checks the Content-Type to select a binding engine automatically,
+// Depending the "Content-Type" header different bindings are used:
+// "application/json" --> JSON binding
+// "application/xml"  --> XML binding
+// else --> returns an error
+// if Parses the request's body as JSON if Content-Type == "application/json"  using JSON or XML  as a JSON input. It decodes the json payload into the struct specified as a pointer.Like ParseBody() but this method also writes a 400 error if the json is not valid.
+func (c *Context) Bind(obj interface{}) error {
+	b := binding.Default(c.Request.Method, c.ContentType())
+	return c.BindWith(obj, b)
 }
 
-// Get returns the value for the given key or an error if the key does not exist.
-func (c *Context) Get(key string) (value interface{}, exists bool) {
-	if c.Keys != nil {
-		value, exists = c.Keys[key]
-	}
-	return
+func (c *Context) BindJSON(obj interface{}) error {
+	return c.BindWith(obj, binding.JSON)
 }
 
-// MustGet returns the value for the given key or panics if the value doesn't exist.
-func (c *Context) MustGet(key string) interface{} {
-	if value, exists := c.Get(key); exists {
-		return value
-	} else {
-		panic("Key \"" + key + "\" does not exist")
+func (c *Context) BindWith(obj interface{}, b binding.Binding) error {
+	if err := b.Bind(c.Request, obj); err != nil {
+		c.AbortWithError(400, err).Type(ErrorTypeBind)
+		return err
 	}
+	return nil
 }
-
-/************************************/
-/********* PARSING REQUEST **********/
-/************************************/
 
 func (c *Context) ClientIP() string {
 	clientIP := c.Request.Header.Get("X-Real-IP")
@@ -284,25 +293,6 @@ func (c *Context) ContentType() string {
 	return filterFlags(c.Request.Header.Get("Content-Type"))
 }
 
-// This function checks the Content-Type to select a binding engine automatically,
-// Depending the "Content-Type" header different bindings are used:
-// "application/json" --> JSON binding
-// "application/xml"  --> XML binding
-// else --> returns an error
-// if Parses the request's body as JSON if Content-Type == "application/json"  using JSON or XML  as a JSON input. It decodes the json payload into the struct specified as a pointer.Like ParseBody() but this method also writes a 400 error if the json is not valid.
-func (c *Context) Bind(obj interface{}) bool {
-	b := binding.Default(c.Request.Method, c.ContentType())
-	return c.BindWith(obj, b)
-}
-
-func (c *Context) BindWith(obj interface{}, b binding.Binding) bool {
-	if err := b.Bind(c.Request, obj); err != nil {
-		c.Fail(400, err)
-		return false
-	}
-	return true
-}
-
 /************************************/
 /******** RESPONSE RENDERING ********/
 /************************************/
@@ -319,8 +309,7 @@ func (c *Context) Render(code int, r render.Render) {
 	c.Writer.WriteHeader(code)
 	if err := r.Write(c.Writer); err != nil {
 		debugPrintError(err)
-		c.ErrorTyped(err, ErrorTypeInternal, nil)
-		c.AbortWithStatus(500)
+		c.AbortWithError(500, err).Type(ErrorTypeRender)
 	}
 }
 
@@ -430,7 +419,7 @@ func (c *Context) Negotiate(code int, config Negotiate) {
 		c.XML(code, data)
 
 	default:
-		c.Fail(http.StatusNotAcceptable, errors.New("the accepted formats are not offered by the server"))
+		c.AbortWithError(http.StatusNotAcceptable, errors.New("the accepted formats are not offered by the server"))
 	}
 }
 
@@ -457,6 +446,10 @@ func (c *Context) NegotiateFormat(offered ...string) string {
 func (c *Context) SetAccepted(formats ...string) {
 	c.Accepted = formats
 }
+
+/************************************/
+/******** CONTENT NEGOTIATION *******/
+/************************************/
 
 func (c *Context) Deadline() (deadline time.Time, ok bool) {
 	return
