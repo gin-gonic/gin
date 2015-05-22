@@ -26,6 +26,8 @@ type (
 	}
 )
 
+const htmlContentType = "text/html; charset=utf-8"
+
 func (r HTMLProduction) Instance(name string, data interface{}) Render {
 	return HTML{
 		Template: r.Template,
@@ -52,6 +54,6 @@ func (r HTMLDebug) loadTemplate() *template.Template {
 }
 
 func (r HTML) Write(w http.ResponseWriter) error {
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	w.Header().Set("Content-Type", htmlContentType)
 	return r.Template.ExecuteTemplate(w, r.Name, r.Data)
 }
