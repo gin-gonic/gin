@@ -31,7 +31,7 @@ var (
 	XML           = xmlBinding{}
 	JSON          = jsonBinding{}
 	Form          = formBinding{}
-	MultipartForm = MultipartFormBinding{}
+	MultipartForm = multipartFormBinding{}
 )
 
 func Default(method, contentType string) Binding {
