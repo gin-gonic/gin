@@ -25,9 +25,9 @@ const (
 
 type (
 	Error struct {
-		Err  error       `json:"error"`
-		Type ErrorType   `json:"-"`
-		Meta interface{} `json:"meta"`
+		Err  error
+		Type ErrorType
+		Meta interface{}
 	}
 
 	errorMsgs []*Error
