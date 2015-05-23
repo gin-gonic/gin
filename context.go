@@ -268,6 +268,7 @@ func (c *Context) BindJSON(obj interface{}) error {
 
 func (c *Context) BindWith(obj interface{}, b binding.Binding) error {
 	if err := b.Bind(c.Request, obj); err != nil {
+		err = parseBindError(err)
 		c.AbortWithError(400, err).SetType(ErrorTypeBind)
 		return err
 	}

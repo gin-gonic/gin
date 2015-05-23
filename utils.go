@@ -5,12 +5,15 @@
 package gin
 
 import (
+	"bytes"
 	"encoding/xml"
 	"net/http"
 	"path"
 	"reflect"
 	"runtime"
 	"strings"
+
+	"gopkg.in/bluesuncorp/validator.v5"
 )
 
 func WrapF(f http.HandlerFunc) HandlerFunc {
@@ -49,6 +52,50 @@ func (h H) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
 		return err
 	}
 	return nil
+}
+
+func parseBindError(err error) error {
+	switch err.(type) {
+	case *validator.StructErrors:
+		unwrapped := err.(*validator.StructErrors)
+		fields := listOfField(unwrapped.Errors)
+		humanError := tohuman(fields)
+		return &Error{
+			Err:  unwrapped,
+			Type: ErrorTypeBind,
+			Meta: H{
+				"message": humanError,
+				"fields":  fields,
+			},
+		}
+	default:
+		return err
+	}
+}
+
+func listOfField(errors map[string]*validator.FieldError) []string {
+	fields := make([]string, 0, len(errors))
+	for key := range errors {
+		fields = append(fields, strings.ToLower(key))
+	}
+	return fields
+}
+
+func tohuman(fields []string) string {
+	length := len(fields)
+	var buf bytes.Buffer
+	if length > 1 {
+		buf.WriteString(strings.Join(fields[:length-1], ", "))
+		buf.WriteString(" and ")
+	}
+	buf.WriteString(fields[length-1])
+	if len(fields) == 1 {
+		buf.WriteString(" is ")
+	} else {
+		buf.WriteString(" are ")
+	}
+	buf.WriteString("required.")
+	return buf.String()
 }
 
 func filterFlags(content string) string {
