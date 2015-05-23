@@ -28,7 +28,11 @@ func debugPrint(format string, values ...interface{}) {
 }
 
 func debugPrintWARNING() {
-	debugPrint("[WARNING] Running in DEBUG mode! Disable it before going production\n")
+	debugPrint(`[WARNING] Running in "debug" mode. Switch to "release" mode in production.
+ - using env:	export GIN_MODE=release
+ - using code:	gin.SetMode(gin.ReleaseMode)
+
+`)
 }
 
 func debugPrintError(err error) {
