@@ -4,13 +4,11 @@
 
 package gin
 
-import (
-	"log"
-	"os"
-)
+import "log"
 
-var debugLogger = log.New(os.Stdout, "[GIN-debug] ", 0)
-
+func init() {
+	log.SetFlags(0)
+}
 func IsDebugging() bool {
 	return ginMode == debugCode
 }
@@ -25,7 +23,7 @@ func debugPrintRoute(httpMethod, absolutePath string, handlers HandlersChain) {
 
 func debugPrint(format string, values ...interface{}) {
 	if IsDebugging() {
-		debugLogger.Printf(format, values...)
+		log.Printf("[GIN-debug] "+format, values...)
 	}
 }
 

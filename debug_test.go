@@ -9,12 +9,11 @@ import (
 	"errors"
 	"io"
 	"log"
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
-
-var cachedDebugLogger *log.Logger = nil
 
 // TODO
 // func debugRoute(httpMethod, absolutePath string, handlers HandlersChain) {
@@ -60,20 +59,10 @@ func TestDebugPrintError(t *testing.T) {
 
 func setup(w io.Writer) {
 	SetMode(DebugMode)
-	if cachedDebugLogger == nil {
-		cachedDebugLogger = debugLogger
-		debugLogger = log.New(w, debugLogger.Prefix(), 0)
-	} else {
-		panic("setup failed")
-	}
+	log.SetOutput(w)
 }
 
 func teardown() {
 	SetMode(TestMode)
-	if cachedDebugLogger != nil {
-		debugLogger = cachedDebugLogger
-		cachedDebugLogger = nil
-	} else {
-		panic("teardown failed")
-	}
+	log.SetOutput(os.Stdout)
 }
