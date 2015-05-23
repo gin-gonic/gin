@@ -19,15 +19,15 @@ type (
 	}
 )
 
-const jsonContentType = "application/json; charset=utf-8"
+var jsonContentType = []string{"application/json; charset=utf-8"}
 
 func (r JSON) Write(w http.ResponseWriter) error {
-	w.Header().Set("Content-Type", jsonContentType)
+	w.Header()["Content-Type"] = jsonContentType
 	return json.NewEncoder(w).Encode(r.Data)
 }
 
 func (r IndentedJSON) Write(w http.ResponseWriter) error {
-	w.Header().Set("Content-Type", jsonContentType)
+	w.Header()["Content-Type"] = jsonContentType
 	jsonBytes, err := json.MarshalIndent(r.Data, "", "    ")
 	if err != nil {
 		return err
