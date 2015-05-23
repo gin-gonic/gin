@@ -73,6 +73,7 @@ func TestPathClean(t *testing.T) {
 }
 
 func TestPathCleanMallocs(t *testing.T) {
+	t.Skip()
 	if testing.Short() {
 		t.Skip("skipping malloc count in short mode")
 	}
