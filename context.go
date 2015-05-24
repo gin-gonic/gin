@@ -280,8 +280,10 @@ func (c *Context) ClientIP() string {
 		return clientIP
 	}
 	clientIP = c.Request.Header.Get("X-Forwarded-For")
-	clientIP = strings.Split(clientIP, ",")[0]
 	if len(clientIP) > 0 {
+		if strings.Contains(clientIP, ",") {
+			clientIP = strings.Split(clientIP, ",")[0]
+		}
 		return strings.TrimSpace(clientIP)
 	}
 	return c.Request.RemoteAddr
