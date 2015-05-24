@@ -401,15 +401,18 @@ func TestContextClientIP(t *testing.T) {
 	c, _, _ := createTestContext()
 	c.Request, _ = http.NewRequest("POST", "/", nil)
 
-	c.Request.Header.Set("X-Real-IP", "10.10.10.10")
-	c.Request.Header.Set("X-Forwarded-For", "20.20.20.20 , 30.30.30.30")
-	c.Request.RemoteAddr = "40.40.40.40"
+	c.Request.Header.Set("X-Real-IP", " 10.10.10.10  ")
+	c.Request.Header.Set("X-Forwarded-For", "  20.20.20.20 , 30.30.30.30")
+	c.Request.RemoteAddr = "  40.40.40.40 "
 
 	assert.Equal(t, c.ClientIP(), "10.10.10.10")
+
 	c.Request.Header.Del("X-Real-IP")
 	assert.Equal(t, c.ClientIP(), "20.20.20.20")
+
 	c.Request.Header.Set("X-Forwarded-For", "30.30.30.30")
 	assert.Equal(t, c.ClientIP(), "30.30.30.30")
+
 	c.Request.Header.Del("X-Forwarded-For")
 	assert.Equal(t, c.ClientIP(), "40.40.40.40")
 }

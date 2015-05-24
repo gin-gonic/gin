@@ -275,16 +275,16 @@ func (c *Context) BindWith(obj interface{}, b binding.Binding) error {
 }
 
 func (c *Context) ClientIP() string {
-	clientIP := c.Request.Header.Get("X-Real-IP")
+	clientIP := strings.TrimSpace(c.Request.Header.Get("X-Real-IP"))
 	if len(clientIP) > 0 {
 		return clientIP
 	}
 	clientIP = c.Request.Header.Get("X-Forwarded-For")
-	clientIP = strings.Split(clientIP, ",")[0]
+	clientIP = strings.TrimSpace(strings.Split(clientIP, ",")[0])
 	if len(clientIP) > 0 {
-		return strings.TrimSpace(clientIP)
+		return clientIP
 	}
-	return c.Request.RemoteAddr
+	return strings.TrimSpace(c.Request.RemoteAddr)
 }
 
 func (c *Context) ContentType() string {
