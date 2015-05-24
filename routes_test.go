@@ -179,7 +179,7 @@ func TestRouteStaticFile(t *testing.T) {
 // TestHandleStaticDir - ensure the root/sub dir handles properly
 func TestRouteStaticListingDir(t *testing.T) {
 	router := New()
-	router.StaticFS("/", http.Dir("./"), true)
+	router.StaticFS("/", Dir("./", true))
 
 	w := performRequest(router, "GET", "/")
 
@@ -195,7 +195,6 @@ func TestRouteStaticNoListing(t *testing.T) {
 
 	w := performRequest(router, "GET", "/")
 
-	assert.Equal(t, w.Code, 404)
 	assert.NotContains(t, w.Body.String(), "gin.go")
 }
 
