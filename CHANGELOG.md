@@ -1,4 +1,16 @@
-#Changelog
+#CHANGELOG
+
+###Gin 1.0rc2 (...)
+
+- [PERFORMANCE] Fast path for writting Content-Type.
+- [FIX] Better approach to avoid directory listing in StaticFS()
+- [FIX] Context.ClientIP() always returns the IP with trimmed spaces.
+- [FIX] Better warning when running in debug mode.
+- [FIX] Google App Engine integration. debugPrint does not use os.Stdout
+- [FIX] Fixes integer overflow in error type
+- [FIX] Error implements the json.Marshaller interface
+- [FIX] MIT license in every file
+
 
 ###Gin 1.0rc1 (May 22, 2015)
 
