@@ -16,6 +16,11 @@ type FooStruct struct {
 	Foo string `json:"foo" form:"foo" xml:"foo" binding:"required"`
 }
 
+type FooBarStruct struct {
+	FooStruct
+	Bar string `json:"bar" form:"bar" xml:"bar" binding:"required"`
+}
+
 func TestBindingDefault(t *testing.T) {
 	assert.Equal(t, Default("GET", ""), Form)
 	assert.Equal(t, Default("GET", MIMEJSON), Form)
@@ -40,12 +45,12 @@ func TestBindingJSON(t *testing.T) {
 func TestBindingForm(t *testing.T) {
 	testFormBinding(t, "POST",
 		"/", "/",
-		"foo=bar", "bar=foo")
+		"foo=bar&bar=foo", "bar2=foo")
 }
 
 func TestBindingForm2(t *testing.T) {
 	testFormBinding(t, "GET",
-		"/?foo=bar", "/?bar=foo",
+		"/?foo=bar&bar=foo", "/?bar2=foo",
 		"", "")
 }
 
@@ -60,7 +65,7 @@ func testFormBinding(t *testing.T, method, path, badPath, body, badBody string) 
 	b := Form
 	assert.Equal(t, b.Name(), "query")
 
-	obj := FooStruct{}
+	obj := FooBarStruct{}
 	req := requestWithBody(method, path, body)
 	if method == "POST" {
 		req.Header.Add("Content-Type", MIMEPOSTForm)
@@ -68,8 +73,9 @@ func testFormBinding(t *testing.T, method, path, badPath, body, badBody string) 
 	err := b.Bind(req, &obj)
 	assert.NoError(t, err)
 	assert.Equal(t, obj.Foo, "bar")
+	assert.Equal(t, obj.Bar, "foo")
 
-	obj = FooStruct{}
+	obj = FooBarStruct{}
 	req = requestWithBody(method, badPath, badBody)
 	err = JSON.Bind(req, &obj)
 	assert.Error(t, err)

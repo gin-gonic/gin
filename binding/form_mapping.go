@@ -20,6 +20,15 @@ func mapForm(ptr interface{}, form map[string][]string) error {
 			continue
 		}
 
+		// support for embeded fields
+		if structField.Kind() == reflect.Struct {
+			err := mapForm(structField.Addr().Interface(), form)
+			if err != nil {
+				return err
+			}
+			continue
+		}
+
 		inputFieldName := typeField.Tag.Get("form")
 		if inputFieldName == "" {
 			inputFieldName = typeField.Name
