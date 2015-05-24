@@ -412,6 +412,10 @@ func TestContextClientIP(t *testing.T) {
 	assert.Equal(t, c.ClientIP(), "30.30.30.30")
 	c.Request.Header.Del("X-Forwarded-For")
 	assert.Equal(t, c.ClientIP(), "40.40.40.40")
+
+	c.Request.Header.Set("X-Forwarded-For", "30.30.30.30")
+	assert.Equal(t, c.ClientIP(), "30.30.30.30")
+	c.Request.Header.Del("X-Forwarded-For")
 }
 
 func TestContextContentType(t *testing.T) {
