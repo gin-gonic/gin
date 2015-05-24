@@ -195,6 +195,7 @@ func TestRouteStaticNoListing(t *testing.T) {
 
 	w := performRequest(router, "GET", "/")
 
+	assert.Equal(t, w.Code, 404)
 	assert.NotContains(t, w.Body.String(), "gin.go")
 }
 
