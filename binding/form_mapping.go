@@ -20,18 +20,21 @@ func mapForm(ptr interface{}, form map[string][]string) error {
 			continue
 		}
 
-		// support for embeded fields
-		if structField.Kind() == reflect.Struct {
-			err := mapForm(structField.Addr().Interface(), form)
-			if err != nil {
-				return err
-			}
-			continue
-		}
-
+		structFieldKind := structField.Kind()
 		inputFieldName := typeField.Tag.Get("form")
 		if inputFieldName == "" {
 			inputFieldName = typeField.Name
+
+			// if "form" tag is nil, we inspect if the field is a struct.
+			// this would not make sense for JSON parsing but it does for a form
+			// since data is flatten
+			if structFieldKind == reflect.Struct {
+				err := mapForm(structField.Addr().Interface(), form)
+				if err != nil {
+					return err
+				}
+				continue
+			}
 		}
 		inputValue, exists := form[inputFieldName]
 		if !exists {
@@ -39,7 +42,7 @@ func mapForm(ptr interface{}, form map[string][]string) error {
 		}
 
 		numElems := len(inputValue)
-		if structField.Kind() == reflect.Slice && numElems > 0 {
+		if structFieldKind == reflect.Slice && numElems > 0 {
 			sliceOf := structField.Type().Elem().Kind()
 			slice := reflect.MakeSlice(structField.Type(), numElems, numElems)
 			for i := 0; i < numElems; i++ {
