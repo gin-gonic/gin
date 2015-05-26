@@ -30,8 +30,6 @@ const (
 
 const AbortIndex = math.MaxInt8 / 2
 
-var _ context.Context = &Context{}
-
 // Param is a single URL parameter, consisting of a key and a value.
 type Param struct {
 	Key   string
@@ -75,6 +73,8 @@ type Context struct {
 	Errors   errorMsgs
 	Accepted []string
 }
+
+var _ context.Context = &Context{}
 
 /************************************/
 /********** CONTEXT CREATION ********/
@@ -231,8 +231,11 @@ func (c *Context) query(key string) (string, bool) {
 
 func (c *Context) postForm(key string) (string, bool) {
 	req := c.Request
-	req.ParseForm()
+	req.ParseMultipartForm(32 << 20) // 32 MB
 	if values, ok := req.PostForm[key]; ok && len(values) > 0 {
+		return values[0], true
+	}
+	if values, ok := req.MultipartForm.Value[key]; ok && len(values) > 0 {
 		return values[0], true
 	}
 	return "", false
