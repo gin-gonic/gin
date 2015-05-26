@@ -126,8 +126,8 @@ func TestRouteParamsByName(t *testing.T) {
 		lastName = c.Params.ByName("last_name")
 		wild = c.Params.ByName("wild")
 
-		assert.Equal(t, name, c.ParamValue("name"))
-		assert.Equal(t, lastName, c.ParamValue("last_name"))
+		assert.Equal(t, name, c.Param("name"))
+		assert.Equal(t, lastName, c.Param("last_name"))
 	})
 
 	w := performRequest(router, "GET", "/test/john/smith/is/super/great")

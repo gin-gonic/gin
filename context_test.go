@@ -118,17 +118,17 @@ func TestContextFormParse(t *testing.T) {
 	c, _, _ := createTestContext()
 	c.Request, _ = http.NewRequest("GET", "http://example.com/?foo=bar&page=10", nil)
 
-	assert.Equal(t, c.DefaultFormValue("foo", "none"), "bar")
-	assert.Equal(t, c.FormValue("foo"), "bar")
-	assert.Empty(t, c.PostFormValue("foo"))
+	assert.Equal(t, c.DefaultQuery("foo", "none"), "bar")
+	assert.Equal(t, c.Query("foo"), "bar")
+	assert.Empty(t, c.PostForm("foo"))
 
-	assert.Equal(t, c.DefaultFormValue("page", "0"), "10")
-	assert.Equal(t, c.FormValue("page"), "10")
-	assert.Empty(t, c.PostFormValue("page"))
+	assert.Equal(t, c.DefaultQuery("page", "0"), "10")
+	assert.Equal(t, c.Query("page"), "10")
+	assert.Empty(t, c.PostForm("page"))
 
-	assert.Equal(t, c.DefaultFormValue("NoKey", "nada"), "nada")
-	assert.Empty(t, c.FormValue("NoKey"))
-	assert.Empty(t, c.PostFormValue("NoKey"))
+	assert.Equal(t, c.DefaultQuery("NoKey", "nada"), "nada")
+	assert.Empty(t, c.Query("NoKey"))
+	assert.Empty(t, c.PostForm("NoKey"))
 }
 
 func TestContextPostFormParse(t *testing.T) {
@@ -137,23 +137,23 @@ func TestContextPostFormParse(t *testing.T) {
 	c.Request, _ = http.NewRequest("POST", "/?both=GET&id=main", body)
 	c.Request.Header.Add("Content-Type", MIMEPOSTForm)
 
-	assert.Equal(t, c.DefaultPostFormValue("foo", "none"), "bar")
-	assert.Equal(t, c.PostFormValue("foo"), "bar")
-	assert.Empty(t, c.FormValue("foo"))
+	assert.Equal(t, c.DefaultPostForm("foo", "none"), "bar")
+	assert.Equal(t, c.PostForm("foo"), "bar")
+	assert.Empty(t, c.Query("foo"))
 
 	assert.Equal(t, c.DefaultPostForm("page", "0"), "11")
 	assert.Equal(t, c.PostForm("page"), "11")
-	assert.Equal(t, c.InputQuery("page"), "")
+	assert.Equal(t, c.Query("page"), "")
 
-	assert.Equal(t, c.PostFormValue("both"), "POST")
-	assert.Equal(t, c.FormValue("both"), "GET")
+	assert.Equal(t, c.PostForm("both"), "POST")
+	assert.Equal(t, c.Query("both"), "GET")
 
-	assert.Equal(t, c.FormValue("id"), "main")
-	assert.Empty(t, c.PostFormValue("id"))
+	assert.Equal(t, c.Query("id"), "main")
+	assert.Empty(t, c.PostForm("id"))
 
-	assert.Equal(t, c.DefaultPostFormValue("NoKey", "nada"), "nada")
-	assert.Empty(t, c.PostFormValue("NoKey"))
-	assert.Empty(t, c.FormValue("NoKey"))
+	assert.Equal(t, c.DefaultPostForm("NoKey", "nada"), "nada")
+	assert.Empty(t, c.PostForm("NoKey"))
+	assert.Empty(t, c.Query("NoKey"))
 
 	c.Param("page")
 	c.Query("page")
