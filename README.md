@@ -149,8 +149,8 @@ func main() {
 	// Query string parameters are parsed used the existing underlying request object.  
 	// The request responds to a url matching:  /search?firstname=Jane&lastname=Doe
 	r.GET("/search", func(c *gin.Context) {
-		firstname := c.Request.URL.Query().Get("latitude")
-		lastname := c.Request.URL.Quert().Get("longitude")
+		firstname := c.Request.URL.Query().Get("firstname")
+		lastname := c.Request.URL.Quert().Get("lastname")
 		message := "Hello " + firstname + lastname
 		c.String(http.StatusOK, message)
 	})
