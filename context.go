@@ -190,7 +190,7 @@ func (c *Context) MustGet(key string) interface{} {
 /************ INPUT DATA ************/
 /************************************/
 
-/** Shortcut for c.Request.FormValue(key) */
+/** Shortcut for c.Request.URL.Query().Get(key) */
 func (c *Context) Query(key string) (va string) {
 	va, _ = c.query(key)
 	return
