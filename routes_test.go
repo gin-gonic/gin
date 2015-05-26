@@ -128,10 +128,6 @@ func TestRouteParamsByName(t *testing.T) {
 
 		assert.Equal(t, name, c.ParamValue("name"))
 		assert.Equal(t, lastName, c.ParamValue("last_name"))
-
-		assert.Equal(t, name, c.DefaultParamValue("name", "nothing"))
-		assert.Equal(t, lastName, c.DefaultParamValue("last_name", "nothing"))
-		assert.Equal(t, c.DefaultParamValue("noKey", "default"), "default")
 	})
 
 	w := performRequest(router, "GET", "/test/john/smith/is/super/great")

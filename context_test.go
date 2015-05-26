@@ -139,14 +139,14 @@ func TestContextPostFormParse(t *testing.T) {
 
 	assert.Equal(t, c.DefaultPostFormValue("foo", "none"), "bar")
 	assert.Equal(t, c.PostFormValue("foo"), "bar")
-	assert.Equal(t, c.FormValue("foo"), "bar")
+	assert.Empty(t, c.FormValue("foo"))
 
-	assert.Equal(t, c.DefaultPostFormValue("page", "0"), "11")
-	assert.Equal(t, c.PostFormValue("page"), "11")
-	assert.Equal(t, c.FormValue("page"), "11")
+	assert.Equal(t, c.DefaultPostForm("page", "0"), "11")
+	assert.Equal(t, c.PostForm("page"), "11")
+	assert.Equal(t, c.InputQuery("page"), "")
 
 	assert.Equal(t, c.PostFormValue("both"), "POST")
-	assert.Equal(t, c.FormValue("both"), "POST")
+	assert.Equal(t, c.FormValue("both"), "GET")
 
 	assert.Equal(t, c.FormValue("id"), "main")
 	assert.Empty(t, c.PostFormValue("id"))
@@ -154,6 +154,11 @@ func TestContextPostFormParse(t *testing.T) {
 	assert.Equal(t, c.DefaultPostFormValue("NoKey", "nada"), "nada")
 	assert.Empty(t, c.PostFormValue("NoKey"))
 	assert.Empty(t, c.FormValue("NoKey"))
+
+	c.Param("page")
+	c.Query("page")
+	c.PostForm("page")
+
 }
 
 // Tests that the response is serialized as JSON

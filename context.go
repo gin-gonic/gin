@@ -191,58 +191,46 @@ func (c *Context) MustGet(key string) interface{} {
 /************************************/
 
 /** Shortcut for c.Request.FormValue(key) */
-func (c *Context) FormValue(key string) (va string) {
-	va, _ = c.formValue(key)
+func (c *Context) Query(key string) (va string) {
+	va, _ = c.query(key)
 	return
 }
 
 /** Shortcut for c.Request.PostFormValue(key) */
-func (c *Context) PostFormValue(key string) (va string) {
-	va, _ = c.postFormValue(key)
+func (c *Context) PostForm(key string) (va string) {
+	va, _ = c.postForm(key)
 	return
 }
 
 /** Shortcut for c.Params.ByName(key) */
-func (c *Context) ParamValue(key string) (va string) {
-	va, _ = c.paramValue(key)
+func (c *Context) Param(key string) (va string) {
+	va, _ = c.Params.Get(key)
 	return
 }
 
-func (c *Context) DefaultPostFormValue(key, defaultValue string) string {
-	if va, ok := c.postFormValue(key); ok {
+func (c *Context) DefaultPostForm(key, defaultValue string) string {
+	if va, ok := c.postForm(key); ok {
 		return va
 	}
 	return defaultValue
 }
 
-func (c *Context) DefaultFormValue(key, defaultValue string) string {
-	if va, ok := c.formValue(key); ok {
+func (c *Context) DefaultQuery(key, defaultValue string) string {
+	if va, ok := c.query(key); ok {
 		return va
 	}
 	return defaultValue
 }
 
-func (c *Context) DefaultParamValue(key, defaultValue string) string {
-	if va, ok := c.paramValue(key); ok {
-		return va
-	}
-	return defaultValue
-}
-
-func (c *Context) paramValue(key string) (string, bool) {
-	return c.Params.Get(key)
-}
-
-func (c *Context) formValue(key string) (string, bool) {
+func (c *Context) query(key string) (string, bool) {
 	req := c.Request
-	req.ParseForm()
-	if values, ok := req.Form[key]; ok && len(values) > 0 {
+	if values, ok := req.URL.Query()[key]; ok && len(values) > 0 {
 		return values[0], true
 	}
 	return "", false
 }
 
-func (c *Context) postFormValue(key string) (string, bool) {
+func (c *Context) postForm(key string) (string, bool) {
 	req := c.Request
 	req.ParseForm()
 	if values, ok := req.PostForm[key]; ok && len(values) > 0 {
