@@ -144,17 +144,17 @@ func main() {
 #### Querystring parameters
 ```go
 func main() {
-	r := gin.Default()
-	
-	// Query string parameters are parsed using the existing underlying request object.  
-	// The request responds to a url matching:  /search?firstname=Jane&lastname=Doe
-	r.GET("/search", func(c *gin.Context) {
-		firstname := c.Request.URL.Query().Get("firstname")
-		lastname := c.Request.URL.Quert().Get("lastname")
-		message := "Hello " + firstname + lastname
-		c.String(http.StatusOK, message)
-	})
-	r.Run(":8080")
+    router := gin.Default()
+
+    // Query string parameters are parsed using the existing underlying request object.  
+    // The request responds to a url matching:  /welcome?firstname=Jane&lastname=Doe
+    router.GET("/welcome", func(c *gin.Context) {
+        firstname := c.DefaultQuery("firstname", "Guest")
+        lastname := c.Query("lastname") // shortcut for c.Request.URL.Query().Get("lastname")
+
+        c.String(http.StatusOK, "Hello %s %s", firstname, lastname)
+    })
+    router.Run(":8080")
 }
 ```
 
