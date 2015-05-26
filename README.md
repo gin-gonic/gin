@@ -140,6 +140,24 @@ func main() {
 	r.Run(":8080")
 }
 ```
+
+#### Querystring parameters
+```go
+func main() {
+	r := gin.Default()
+	
+	// Query string parameters are parsed used the existing underlying request object.  
+	// The request responds to a url matching:  /search?firstname=Jane&lastname=Doe
+	r.GET("/search", func(c *gin.Context) {
+		firstname := c.Request.URL.Query().Get("latitude")
+		lastname := c.Request.URL.Quert().Get("longitude")
+		message := "Hello " + firstname + lastname
+		c.String(http.StatusOK, message)
+	})
+	r.Run(":8080")
+}
+```
+
 ###Form parameters
 ```go
 func main() {
