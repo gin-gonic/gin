@@ -124,10 +124,20 @@ func TestRouteParamsByName(t *testing.T) {
 	router.GET("/test/:name/:last_name/*wild", func(c *Context) {
 		name = c.Params.ByName("name")
 		lastName = c.Params.ByName("last_name")
-		wild = c.Params.ByName("wild")
+		var ok bool
+		wild, ok = c.Params.Get("wild")
 
+		assert.True(t, ok)
+		assert.Equal(t, name, c.Param("name"))
 		assert.Equal(t, name, c.Param("name"))
 		assert.Equal(t, lastName, c.Param("last_name"))
+
+		assert.Empty(t, c.Param("wtf"))
+		assert.Empty(t, c.Params.ByName("wtf"))
+
+		wtf, ok := c.Params.Get("wtf")
+		assert.Empty(t, wtf)
+		assert.False(t, ok)
 	})
 
 	w := performRequest(router, "GET", "/test/john/smith/is/super/great")
