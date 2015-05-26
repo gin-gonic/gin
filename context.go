@@ -203,9 +203,8 @@ func (c *Context) PostForm(key string) (va string) {
 }
 
 /** Shortcut for c.Params.ByName(key) */
-func (c *Context) Param(key string) (va string) {
-	va, _ = c.Params.Get(key)
-	return
+func (c *Context) Param(key string) string {
+	return c.Params.ByName(key)
 }
 
 func (c *Context) DefaultPostForm(key, defaultValue string) string {
@@ -434,7 +433,7 @@ func (c *Context) SetAccepted(formats ...string) {
 }
 
 /************************************/
-/******** CONTENT NEGOTIATION *******/
+/***** GOLANG.ORG/X/NET/CONTEXT *****/
 /************************************/
 
 func (c *Context) Deadline() (deadline time.Time, ok bool) {
