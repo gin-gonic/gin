@@ -28,9 +28,10 @@ type Binding interface {
 var validate = validator.New("binding", validator.BakedInValidators)
 
 var (
-	JSON = jsonBinding{}
-	XML  = xmlBinding{}
-	Form = formBinding{}
+	XML           = xmlBinding{}
+	JSON          = jsonBinding{}
+	Form          = formBinding{}
+	MultipartForm = multipartFormBinding{}
 )
 
 func Default(method, contentType string) Binding {
@@ -42,6 +43,8 @@ func Default(method, contentType string) Binding {
 			return JSON
 		case MIMEXML, MIMEXML2:
 			return XML
+		case MIMEMultipartPOSTForm:
+			return MultipartForm
 		default:
 			return Form
 		}

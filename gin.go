@@ -11,8 +11,8 @@ import (
 	"os"
 	"sync"
 
-	"github.com/gin-gonic/gin/binding"
-	"github.com/gin-gonic/gin/render"
+	"./binding"
+	"./render"
 )
 
 const Version = "v1.0rc1"

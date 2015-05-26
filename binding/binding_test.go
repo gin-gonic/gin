@@ -33,6 +33,9 @@ func TestBindingDefault(t *testing.T) {
 
 	assert.Equal(t, Default("POST", MIMEPOSTForm), Form)
 	assert.Equal(t, Default("DELETE", MIMEPOSTForm), Form)
+
+	assert.Equal(t, Default("POST", MIMEMultipartPOSTForm), MultipartForm)
+	assert.Equal(t, Default("DELETE", MIMEMultipartPOSTForm), MultipartForm)
 }
 
 func TestBindingJSON(t *testing.T) {
