@@ -14,7 +14,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/gin-gonic/gin/binding"
 	"github.com/manucorporat/sse"
 	"github.com/stretchr/testify/assert"
 )
@@ -34,24 +33,25 @@ func createTestContext() (c *Context, w *httptest.ResponseRecorder, r *Engine) {
 	return
 }
 
-func createMultipartForm() (body *bytes.Buffer, header string, err error) {
+func createMultipartRequest() *http.Request {
 	boundary := "--testboundary"
-	header = MIMEMultipartPOSTForm + "; boundary=" + boundary
-	body = &bytes.Buffer{}
-
+	body := new(bytes.Buffer)
 	mw := multipart.NewWriter(body)
 	defer mw.Close()
 
-	if err = mw.SetBoundary(boundary); err != nil {
-		return
+	must(mw.SetBoundary(boundary))
+	must(mw.WriteField("foo", "bar"))
+	must(mw.WriteField("bar", "foo"))
+	req, err := http.NewRequest("POST", "/", body)
+	must(err)
+	req.Header.Set("Content-Type", MIMEMultipartPOSTForm+"; boundary="+boundary)
+	return req
+}
+
+func must(err error) {
+	if err != nil {
+		panic(err.Error())
 	}
-	if err = mw.WriteField("foo", "bar"); err != nil {
-		return
-	}
-	if err = mw.WriteField("bar", "foo"); err != nil {
-		return
-	}
-	return
 }
 
 func TestContextReset(t *testing.T) {
@@ -135,7 +135,7 @@ func TestContextCopy(t *testing.T) {
 	assert.Equal(t, cp.Params, c.Params)
 }
 
-func TestContextFormParse(t *testing.T) {
+func TestContextQuery(t *testing.T) {
 	c, _, _ := createTestContext()
 	c.Request, _ = http.NewRequest("GET", "http://example.com/?foo=bar&page=10", nil)
 
@@ -152,7 +152,7 @@ func TestContextFormParse(t *testing.T) {
 	assert.Empty(t, c.PostForm("NoKey"))
 }
 
-func TestContextPostFormParse(t *testing.T) {
+func TestContextQueryAndPostForm(t *testing.T) {
 	c, _, _ := createTestContext()
 	body := bytes.NewBufferString("foo=bar&page=11&both=POST")
 	c.Request, _ = http.NewRequest("POST", "/?both=GET&id=main", body)
@@ -169,6 +169,7 @@ func TestContextPostFormParse(t *testing.T) {
 	assert.Equal(t, c.PostForm("both"), "POST")
 	assert.Equal(t, c.Query("both"), "GET")
 
+	assert.Equal(t, c.DefaultPostForm("id", "000"), "000")
 	assert.Equal(t, c.Query("id"), "main")
 	assert.Empty(t, c.PostForm("id"))
 
@@ -176,10 +177,35 @@ func TestContextPostFormParse(t *testing.T) {
 	assert.Empty(t, c.PostForm("NoKey"))
 	assert.Empty(t, c.Query("NoKey"))
 
-	c.Param("page")
-	c.Query("page")
-	c.PostForm("page")
+	var obj struct {
+		Foo  string `form:"foo"`
+		Id   string `form:"id"`
+		Page string `form:"page"`
+		Both string `form:"both"`
+	}
+	assert.NoError(t, c.Bind(&obj))
+	assert.Equal(t, obj.Foo, "bar")
+	assert.Equal(t, obj.Id, "main")
+	assert.Equal(t, obj.Page, "11")
+	assert.Equal(t, obj.Both, "POST")
+}
 
+func TestContextPostFormMultipart(t *testing.T) {
+	c, _, _ := createTestContext()
+	c.Request = createMultipartRequest()
+
+	var obj struct {
+		Foo string `form:"foo"`
+		Bar string `form:"bar"`
+	}
+	assert.NoError(t, c.Bind(&obj))
+	assert.Equal(t, obj.Bar, "foo")
+	assert.Equal(t, obj.Foo, "bar")
+
+	assert.Empty(t, c.Query("foo"))
+	assert.Empty(t, c.Query("bar"))
+	assert.Equal(t, c.PostForm("foo"), "bar")
+	assert.Equal(t, c.PostForm("bar"), "foo")
 }
 
 // Tests that the response is serialized as JSON
@@ -451,10 +477,11 @@ func TestContextContentType(t *testing.T) {
 	assert.Equal(t, c.ContentType(), "application/json")
 }
 
-func TestContextAutoBind(t *testing.T) {
-	c, w, _ := createTestContext()
+func TestContextAutoBindJSON(t *testing.T) {
+	c, _, _ := createTestContext()
 	c.Request, _ = http.NewRequest("POST", "/", bytes.NewBufferString("{\"foo\":\"bar\", \"bar\":\"foo\"}"))
 	c.Request.Header.Add("Content-Type", MIMEJSON)
+
 	var obj struct {
 		Foo string `json:"foo"`
 		Bar string `json:"bar"`
@@ -462,26 +489,19 @@ func TestContextAutoBind(t *testing.T) {
 	assert.NoError(t, c.Bind(&obj))
 	assert.Equal(t, obj.Bar, "foo")
 	assert.Equal(t, obj.Foo, "bar")
-	assert.Equal(t, w.Body.Len(), 0)
+	assert.Empty(t, c.Errors)
 }
 
-func TestContextMultipartPostFormAutoBind(t *testing.T) {
+func TestContextBindWithJSON(t *testing.T) {
 	c, w, _ := createTestContext()
+	c.Request, _ = http.NewRequest("POST", "/", bytes.NewBufferString("{\"foo\":\"bar\", \"bar\":\"foo\"}"))
+	c.Request.Header.Add("Content-Type", MIMEXML) // set fake content-type
 
 	var obj struct {
-		Foo string `form:"foo"`
-		Bar string `form:"bar"`
+		Foo string `json:"foo"`
+		Bar string `json:"bar"`
 	}
-
-	body, header, err := createMultipartForm()
-	if err != nil {
-		t.Error(err)
-	}
-
-	c.Request, _ = http.NewRequest("POST", "/", body)
-	c.Request.Header.Add("Content-Type", header)
-
-	assert.NoError(t, c.Bind(&obj))
+	assert.NoError(t, c.BindJSON(&obj))
 	assert.Equal(t, obj.Bar, "foo")
 	assert.Equal(t, obj.Foo, "bar")
 	assert.Equal(t, w.Body.Len(), 0)
@@ -504,42 +524,6 @@ func TestContextBadAutoBind(t *testing.T) {
 	assert.Empty(t, obj.Foo)
 	assert.Equal(t, w.Code, 400)
 	assert.True(t, c.IsAborted())
-}
-
-func TestContextBindWith(t *testing.T) {
-	c, w, _ := createTestContext()
-	c.Request, _ = http.NewRequest("POST", "/", bytes.NewBufferString("{\"foo\":\"bar\", \"bar\":\"foo\"}"))
-	c.Request.Header.Add("Content-Type", MIMEXML)
-	var obj struct {
-		Foo string `json:"foo"`
-		Bar string `json:"bar"`
-	}
-	assert.NoError(t, c.BindWith(&obj, binding.JSON))
-	assert.Equal(t, obj.Bar, "foo")
-	assert.Equal(t, obj.Foo, "bar")
-	assert.Equal(t, w.Body.Len(), 0)
-}
-
-func TestContextMultipartBindWith(t *testing.T) {
-	c, w, _ := createTestContext()
-
-	var obj struct {
-		Foo string `form:"foo"`
-		Bar string `form:"bar"`
-	}
-
-	body, header, err := createMultipartForm()
-	if err != nil {
-		t.Error(err)
-	}
-
-	c.Request, _ = http.NewRequest("POST", "/", body)
-	c.Request.Header.Add("Content-Type", header)
-
-	assert.NoError(t, c.BindWith(&obj, binding.Form))
-	assert.Equal(t, obj.Bar, "foo")
-	assert.Equal(t, obj.Foo, "bar")
-	assert.Equal(t, w.Body.Len(), 0)
 }
 
 func TestContextGolangContext(t *testing.T) {
