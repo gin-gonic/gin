@@ -21,7 +21,7 @@ func main() {
 }
 
 func stream(c *gin.Context) {
-	roomid := c.ParamValue("roomid")
+	roomid := c.Param("roomid")
 	listener := openListener(roomid)
 	defer closeListener(roomid, listener)
 
@@ -32,7 +32,7 @@ func stream(c *gin.Context) {
 }
 
 func roomGET(c *gin.Context) {
-	roomid := c.ParamValue("roomid")
+	roomid := c.Param("roomid")
 	userid := fmt.Sprint(rand.Int31())
 	c.HTML(200, "chat_room", gin.H{
 		"roomid": roomid,
@@ -41,9 +41,9 @@ func roomGET(c *gin.Context) {
 }
 
 func roomPOST(c *gin.Context) {
-	roomid := c.ParamValue("roomid")
-	userid := c.PostFormValue("user")
-	message := c.PostFormValue("message")
+	roomid := c.Param("roomid")
+	userid := c.PostForm("user")
+	message := c.PostForm("message")
 	room(roomid).Submit(userid + ": " + message)
 
 	c.JSON(200, gin.H{
@@ -53,6 +53,6 @@ func roomPOST(c *gin.Context) {
 }
 
 func roomDELETE(c *gin.Context) {
-	roomid := c.ParamValue("roomid")
+	roomid := c.Param("roomid")
 	deleteBroadcast(roomid)
 }

@@ -31,8 +31,8 @@ func index(c *gin.Context) {
 }
 
 func roomGET(c *gin.Context) {
-	roomid := c.ParamValue("roomid")
-	nick := c.FormValue("nick")
+	roomid := c.Param("roomid")
+	nick := c.Query("nick")
 	if len(nick) < 2 {
 		nick = ""
 	}
@@ -48,9 +48,9 @@ func roomGET(c *gin.Context) {
 }
 
 func roomPOST(c *gin.Context) {
-	roomid := c.ParamValue("roomid")
-	nick := c.FormValue("nick")
-	message := c.PostFormValue("message")
+	roomid := c.Param("roomid")
+	nick := c.Query("nick")
+	message := c.PostForm("message")
 	message = strings.TrimSpace(message)
 
 	validMessage := len(message) > 1 && len(message) < 200
@@ -73,7 +73,7 @@ func roomPOST(c *gin.Context) {
 }
 
 func streamRoom(c *gin.Context) {
-	roomid := c.ParamValue("roomid")
+	roomid := c.Param("roomid")
 	listener := openListener(roomid)
 	ticker := time.NewTicker(1 * time.Second)
 	users.Add("connected", 1)
