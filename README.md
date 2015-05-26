@@ -146,7 +146,7 @@ func main() {
 func main() {
 	r := gin.Default()
 	
-	// Query string parameters are parsed used the existing underlying request object.  
+	// Query string parameters are parsed using the existing underlying request object.  
 	// The request responds to a url matching:  /search?firstname=Jane&lastname=Doe
 	r.GET("/search", func(c *gin.Context) {
 		firstname := c.Request.URL.Query().Get("firstname")
