@@ -42,7 +42,7 @@ func Default(method, contentType string) Binding {
 			return JSON
 		case MIMEXML, MIMEXML2:
 			return XML
-		default:
+		default: //case MIMEPOSTForm, MIMEMultipartPOSTForm:
 			return Form
 		}
 	}

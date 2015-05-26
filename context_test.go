@@ -8,6 +8,7 @@ import (
 	"bytes"
 	"errors"
 	"html/template"
+	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -30,6 +31,26 @@ func createTestContext() (c *Context, w *httptest.ResponseRecorder, r *Engine) {
 	c = r.allocateContext()
 	c.reset()
 	c.writermem.reset(w)
+	return
+}
+
+func createMultipartForm() (body *bytes.Buffer, header string, err error) {
+	boundary := "--testboundary"
+	header = MIMEMultipartPOSTForm + "; boundary=" + boundary
+	body = &bytes.Buffer{}
+
+	mw := multipart.NewWriter(body)
+	defer mw.Close()
+
+	if err = mw.SetBoundary(boundary); err != nil {
+		return
+	}
+	if err = mw.WriteField("foo", "bar"); err != nil {
+		return
+	}
+	if err = mw.WriteField("bar", "foo"); err != nil {
+		return
+	}
 	return
 }
 
@@ -444,6 +465,28 @@ func TestContextAutoBind(t *testing.T) {
 	assert.Equal(t, w.Body.Len(), 0)
 }
 
+func TestContextMultipartPostFormAutoBind(t *testing.T) {
+	c, w, _ := createTestContext()
+
+	var obj struct {
+		Foo string `form:"foo"`
+		Bar string `form:"bar"`
+	}
+
+	body, header, err := createMultipartForm()
+	if err != nil {
+		t.Error(err)
+	}
+
+	c.Request, _ = http.NewRequest("POST", "/", body)
+	c.Request.Header.Add("Content-Type", header)
+
+	assert.NoError(t, c.Bind(&obj))
+	assert.Equal(t, obj.Bar, "foo")
+	assert.Equal(t, obj.Foo, "bar")
+	assert.Equal(t, w.Body.Len(), 0)
+}
+
 func TestContextBadAutoBind(t *testing.T) {
 	c, w, _ := createTestContext()
 	c.Request, _ = http.NewRequest("POST", "http://example.com", bytes.NewBufferString("\"foo\":\"bar\", \"bar\":\"foo\"}"))
@@ -472,6 +515,28 @@ func TestContextBindWith(t *testing.T) {
 		Bar string `json:"bar"`
 	}
 	assert.NoError(t, c.BindWith(&obj, binding.JSON))
+	assert.Equal(t, obj.Bar, "foo")
+	assert.Equal(t, obj.Foo, "bar")
+	assert.Equal(t, w.Body.Len(), 0)
+}
+
+func TestContextMultipartBindWith(t *testing.T) {
+	c, w, _ := createTestContext()
+
+	var obj struct {
+		Foo string `form:"foo"`
+		Bar string `form:"bar"`
+	}
+
+	body, header, err := createMultipartForm()
+	if err != nil {
+		t.Error(err)
+	}
+
+	c.Request, _ = http.NewRequest("POST", "/", body)
+	c.Request.Header.Add("Content-Type", header)
+
+	assert.NoError(t, c.BindWith(&obj, binding.Form))
 	assert.Equal(t, obj.Bar, "foo")
 	assert.Equal(t, obj.Foo, "bar")
 	assert.Equal(t, w.Body.Len(), 0)

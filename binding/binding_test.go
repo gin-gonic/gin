@@ -32,7 +32,10 @@ func TestBindingDefault(t *testing.T) {
 	assert.Equal(t, Default("PUT", MIMEXML2), XML)
 
 	assert.Equal(t, Default("POST", MIMEPOSTForm), Form)
-	assert.Equal(t, Default("DELETE", MIMEPOSTForm), Form)
+	assert.Equal(t, Default("PUT", MIMEPOSTForm), Form)
+
+	assert.Equal(t, Default("POST", MIMEMultipartPOSTForm), Form)
+	assert.Equal(t, Default("PUT", MIMEMultipartPOSTForm), Form)
 }
 
 func TestBindingJSON(t *testing.T) {
@@ -63,7 +66,7 @@ func TestBindingXML(t *testing.T) {
 
 func testFormBinding(t *testing.T, method, path, badPath, body, badBody string) {
 	b := Form
-	assert.Equal(t, b.Name(), "query")
+	assert.Equal(t, b.Name(), "form")
 
 	obj := FooBarStruct{}
 	req := requestWithBody(method, path, body)
