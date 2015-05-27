@@ -181,7 +181,12 @@ func main() {
 	r.POST("/login", func(c *gin.Context) {
 
 		var form LoginForm
-		c.BindWith(&form, binding.MultipartForm)
+
+		// you can bind multipart form with explicit binding declaration:
+		// c.BindWith(&form, binding.Form)
+		// or you can simply use autobinding with Bind method:
+
+		c.Bind(&form) // in this case proper binding will be automatically selected
 
 		if form.User == "user" && form.Password == "password" {
 			c.JSON(200, gin.H{"status": "you are logged in"})
