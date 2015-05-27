@@ -185,7 +185,6 @@ func main() {
 		// you can bind multipart form with explicit binding declaration:
 		// c.BindWith(&form, binding.Form)
 		// or you can simply use autobinding with Bind method:
-
 		c.Bind(&form) // in this case proper binding will be automatically selected
 
 		if form.User == "user" && form.Password == "password" {
