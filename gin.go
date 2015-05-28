@@ -171,11 +171,11 @@ func (engine *Engine) Run(addr string) (err error) {
 	return
 }
 
-func (engine *Engine) RunTLS(addr string, cert string, key string) (err error) {
+func (engine *Engine) RunTLS(addr string, certFile string, keyFile string) (err error) {
 	debugPrint("Listening and serving HTTPS on %s\n", addr)
 	defer func() { debugPrintError(err) }()
 
-	err = http.ListenAndServe(addr, engine)
+	err = http.ListenAndServeTLS(addr, certFile, keyFile, engine)
 	return
 }
 
