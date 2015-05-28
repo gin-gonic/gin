@@ -195,20 +195,13 @@ func (engine *Engine) RunUnix(file string) (err error) {
 
 // ServeHTTP makes the router implement the http.Handler interface.
 func (engine *Engine) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	c := engine.getcontext(w, req)
-	engine.handleHTTPRequest(c)
-	engine.putcontext(c)
-}
-
-func (engine *Engine) getcontext(w http.ResponseWriter, req *http.Request) *Context {
 	c := engine.pool.Get().(*Context)
 	c.writermem.reset(w)
 	c.Request = req
 	c.reset()
-	return c
-}
 
-func (engine *Engine) putcontext(c *Context) {
+	engine.handleHTTPRequest(c)
+
 	engine.pool.Put(c)
 }
 
