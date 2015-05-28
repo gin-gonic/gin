@@ -87,6 +87,7 @@ func TestColorForMethod(t *testing.T) {
 	assert.Equal(t, colorForMethod("PATCH"), string([]byte{27, 91, 57, 55, 59, 52, 50, 109}), "patch should be green")
 	assert.Equal(t, colorForMethod("HEAD"), string([]byte{27, 91, 57, 55, 59, 52, 53, 109}), "head should be magenta")
 	assert.Equal(t, colorForMethod("OPTIONS"), string([]byte{27, 91, 57, 48, 59, 52, 55, 109}), "options should be white")
+	assert.Equal(t, colorForMethod("TRACE"), string([]byte{27, 91, 48, 109}), "trace is not defined and should be the reset color")
 }
 
 func TestColorForStatus(t *testing.T) {
