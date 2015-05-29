@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
+	"io/ioutil"
 	"net"
 	"net/http"
 	"testing"
@@ -11,6 +12,31 @@ import (
 
 	"github.com/stretchr/testify/assert"
 )
+
+func TestRun(t *testing.T) {
+	buffer := new(bytes.Buffer)
+	router := New()
+	go func() {
+		router.Use(LoggerWithWriter(buffer))
+		router.GET("/example", func(c *Context) { c.String(http.StatusOK, "it worked") })
+		router.Run(":5150")
+	}()
+	// have to wait for the goroutine to start and run the server
+	// otherwise the main thread will complete
+	time.Sleep(5 * time.Millisecond)
+
+	resp, err := http.Get("http://localhost:5150/example")
+	if err != nil {
+		t.FailNow()
+	}
+	defer resp.Body.Close()
+	body, ioerr := ioutil.ReadAll(resp.Body)
+	if ioerr != nil {
+		t.FailNow()
+	}
+	assert.Equal(t, "it worked", body, "resp body should match")
+	assert.Equal(t, "200 OK", resp.Status, "should get a 200")
+}
 
 func TestUnixSocket(t *testing.T) {
 	buffer := new(bytes.Buffer)
