@@ -66,14 +66,18 @@ func (msg *Error) JSON() interface{} {
 	return json
 }
 
+// Implements the json.Marshaller interface
 func (msg *Error) MarshalJSON() ([]byte, error) {
 	return json.Marshal(msg.JSON())
 }
 
+// Implements the error interface
 func (msg *Error) Error() string {
 	return msg.Err.Error()
 }
 
+// Returns a readonly copy filterd the byte.
+// ie ByType(gin.ErrorTypePublic) returns a slice of errors with type=ErrorTypePublic
 func (a errorMsgs) ByType(typ ErrorType) errorMsgs {
 	if len(a) == 0 {
 		return a
@@ -87,6 +91,8 @@ func (a errorMsgs) ByType(typ ErrorType) errorMsgs {
 	return result
 }
 
+// Returns the last error in the slice. It returns nil if the array is empty.
+// Shortcut for errors[len(errors)-1]
 func (a errorMsgs) Last() *Error {
 	length := len(a)
 	if length == 0 {
@@ -95,6 +101,14 @@ func (a errorMsgs) Last() *Error {
 	return a[length-1]
 }
 
+// Returns an array will all the error messages.
+// Example
+// ```
+// c.Error(errors.New("first"))
+// c.Error(errors.New("second"))
+// c.Error(errors.New("third"))
+// c.Errors.Errors() // == []string{"first", "second", "third"}
+// ``
 func (a errorMsgs) Errors() []string {
 	if len(a) == 0 {
 		return []string{}

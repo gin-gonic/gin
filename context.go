@@ -171,19 +171,19 @@ func (c *Context) MustGet(key string) interface{} {
 /************ INPUT DATA ************/
 /************************************/
 
-/** Shortcut for c.Request.URL.Query().Get(key) */
+// Shortcut for c.Request.URL.Query().Get(key)
 func (c *Context) Query(key string) (va string) {
 	va, _ = c.query(key)
 	return
 }
 
-/** Shortcut for c.Request.PostFormValue(key) */
+// Shortcut for c.Request.PostFormValue(key)
 func (c *Context) PostForm(key string) (va string) {
 	va, _ = c.postForm(key)
 	return
 }
 
-/** Shortcut for c.Params.ByName(key) */
+// Shortcut for c.Params.ByName(key)
 func (c *Context) Param(key string) string {
 	return c.Params.ByName(key)
 }

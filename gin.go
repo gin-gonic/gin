@@ -123,11 +123,15 @@ func (engine *Engine) NoRoute(handlers ...HandlerFunc) {
 	engine.rebuild404Handlers()
 }
 
+// Sets the handlers called when... TODO
 func (engine *Engine) NoMethod(handlers ...HandlerFunc) {
 	engine.noMethod = handlers
 	engine.rebuild405Handlers()
 }
 
+// Attachs a global middleware to the router. ie. the middlewares attached though Use() will be
+// included in the handlers chain for every single request. Even 404, 405, static files...
+// For example, this is the right place for a logger or error management middleware.
 func (engine *Engine) Use(middlewares ...HandlerFunc) {
 	engine.RouterGroup.Use(middlewares...)
 	engine.rebuild404Handlers()
@@ -166,6 +170,9 @@ func (engine *Engine) addRoute(method, path string, handlers HandlersChain) {
 	root.addRoute(path, handlers)
 }
 
+// The router is attached to a http.Server and starts listening and serving HTTP requests.
+// It is a shortcut for http.ListenAndServe(addr, router)
+// Note: this method will block the calling goroutine undefinitelly unless an error happens.
 func (engine *Engine) Run(addr string) (err error) {
 	debugPrint("Listening and serving HTTP on %s\n", addr)
 	defer func() { debugPrintError(err) }()
@@ -174,6 +181,9 @@ func (engine *Engine) Run(addr string) (err error) {
 	return
 }
 
+// The router is attached to a http.Server and starts listening and serving HTTPS requests.
+// It is a shortcut for http.ListenAndServeTLS(addr, certFile, keyFile, router)
+// Note: this method will block the calling goroutine undefinitelly unless an error happens.
 func (engine *Engine) RunTLS(addr string, certFile string, keyFile string) (err error) {
 	debugPrint("Listening and serving HTTPS on %s\n", addr)
 	defer func() { debugPrintError(err) }()
@@ -182,6 +192,9 @@ func (engine *Engine) RunTLS(addr string, certFile string, keyFile string) (err 
 	return
 }
 
+// The router is attached to a http.Server and starts listening and serving HTTP requests
+// through the specified unix socket (ie. a file)
+// Note: this method will block the calling goroutine undefinitelly unless an error happens.
 func (engine *Engine) RunUnix(file string) (err error) {
 	debugPrint("Listening and serving HTTP on unix:/%s", file)
 	defer func() { debugPrintError(err) }()
@@ -196,7 +209,7 @@ func (engine *Engine) RunUnix(file string) (err error) {
 	return
 }
 
-// ServeHTTP makes the router implement the http.Handler interface.
+// Conforms to the http.Handler interface.
 func (engine *Engine) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	c := engine.pool.Get().(*Context)
 	c.writermem.reset(w)
