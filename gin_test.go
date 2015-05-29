@@ -148,3 +148,13 @@ func TestNoMethodWithGlobalHandlers(t *testing.T) {
 	assert.Equal(t, router.allNoMethod[1], middleware1)
 	assert.Equal(t, router.allNoMethod[2], middleware0)
 }
+
+func TestRunTLS(t *testing.T) {
+	certFile := ""
+	keyFile := ""
+	addr := ":5443"
+	router := New()
+
+	err := router.RunTLS(addr, certFile, keyFile)
+	assert.NotNil(t, err)
+}
