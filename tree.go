@@ -36,6 +36,22 @@ func (ps Params) ByName(name string) (va string) {
 	return
 }
 
+type methodTree struct {
+	method string
+	root   *node
+}
+
+type methodTrees []methodTree
+
+func (trees methodTrees) get(method string) *node {
+	for _, tree := range trees {
+		if tree.method == method {
+			return tree.root
+		}
+	}
+	return nil
+}
+
 func min(a, b int) int {
 	if a <= b {
 		return a

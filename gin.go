@@ -28,12 +28,12 @@ type (
 	Engine struct {
 		RouterGroup
 		HTMLRender  render.HTMLRender
-		pool        sync.Pool
 		allNoRoute  HandlersChain
 		allNoMethod HandlersChain
 		noRoute     HandlersChain
 		noMethod    HandlersChain
-		trees       map[string]*node
+		pool        sync.Pool
+		trees       methodTrees
 
 		// Enables automatic redirection if the current route can't be matched but a
 		// handler for the path with (without) the trailing slash exists.
@@ -75,7 +75,7 @@ func New() *Engine {
 		RedirectTrailingSlash:  true,
 		RedirectFixedPath:      true,
 		HandleMethodNotAllowed: true,
-		trees: make(map[string]*node),
+		trees: make(methodTrees, 0, 6),
 	}
 	engine.RouterGroup.engine = engine
 	engine.pool.New = func() interface{} {
@@ -155,10 +155,13 @@ func (engine *Engine) addRoute(method, path string, handlers HandlersChain) {
 		panic("there must be at least one handler")
 	}
 
-	root := engine.trees[method]
+	root := engine.trees.get("method")
 	if root == nil {
 		root = new(node)
-		engine.trees[method] = root
+		engine.trees = append(engine.trees, methodTree{
+			method: method,
+			root:   root,
+		})
 	}
 	root.addRoute(path, handlers)
 }
@@ -210,27 +213,31 @@ func (engine *Engine) handleHTTPRequest(context *Context) {
 	path := context.Request.URL.Path
 
 	// Find root of the tree for the given HTTP method
-	if root := engine.trees[httpMethod]; root != nil {
-		// Find route in tree
-		handlers, params, tsr := root.getValue(path, context.Params)
-		if handlers != nil {
-			context.handlers = handlers
-			context.Params = params
-			context.Next()
-			context.writermem.WriteHeaderNow()
-			return
-
-		} else if httpMethod != "CONNECT" && path != "/" {
-			if engine.serveAutoRedirect(context, root, tsr) {
+	t := engine.trees
+	for i, tl := 0, len(t); i < tl; i++ {
+		if t[i].method == httpMethod {
+			// Find route in tree
+			handlers, params, tsr := t[i].root.getValue(path, context.Params)
+			if handlers != nil {
+				context.handlers = handlers
+				context.Params = params
+				context.Next()
+				context.writermem.WriteHeaderNow()
 				return
+
+			} else if httpMethod != "CONNECT" && path != "/" {
+				if engine.serveAutoRedirect(context, t[i].root, tsr) {
+					return
+				}
 			}
 		}
 	}
 
+	// TODO: unit test
 	if engine.HandleMethodNotAllowed {
-		for method, root := range engine.trees {
-			if method != httpMethod {
-				if handlers, _, _ := root.getValue(path, nil); handlers != nil {
+		for _, tree := range engine.trees {
+			if tree.method != httpMethod {
+				if handlers, _, _ := tree.root.getValue(path, nil); handlers != nil {
 					context.handlers = engine.allNoMethod
 					serveError(context, 405, default405Body)
 					return
