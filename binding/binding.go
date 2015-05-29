@@ -6,6 +6,7 @@ package binding
 
 import (
 	"net/http"
+	"reflect"
 
 	"gopkg.in/bluesuncorp/validator.v5"
 )
@@ -56,8 +57,20 @@ func ValidateField(f interface{}, tag string) error {
 }
 
 func Validate(obj interface{}) error {
+	if kindOfData(obj) != reflect.Struct {
+		return nil
+	}
 	if err := validate.Struct(obj); err != nil {
 		return error(err)
 	}
 	return nil
+}
+
+func kindOfData(data interface{}) reflect.Kind {
+	value := reflect.ValueOf(data)
+	valueType := value.Kind()
+	if valueType == reflect.Ptr {
+		valueType = value.Elem().Kind()
+	}
+	return valueType
 }

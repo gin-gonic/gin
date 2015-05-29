@@ -51,3 +51,19 @@ func TestValidateGoodObject(t *testing.T) {
 	test := createStruct()
 	assert.Nil(t, Validate(&test))
 }
+
+type Object map[string]interface{}
+type MyObjects []Object
+
+func TestValidateSlice(t *testing.T) {
+	var obj MyObjects
+	var obj2 Object
+	var nu = 10
+
+	assert.NoError(t, Validate(obj))
+	assert.NoError(t, Validate(&obj))
+	assert.NoError(t, Validate(obj2))
+	assert.NoError(t, Validate(&obj2))
+	assert.NoError(t, Validate(nu))
+	assert.NoError(t, Validate(&nu))
+}
