@@ -228,8 +228,9 @@ func (engine *Engine) handleHTTPRequest(context *Context) {
 	t := engine.trees
 	for i, tl := 0, len(t); i < tl; i++ {
 		if t[i].method == httpMethod {
+			root := t[i].root
 			// Find route in tree
-			handlers, params, tsr := t[i].root.getValue(path, context.Params)
+			handlers, params, tsr := root.getValue(path, context.Params)
 			if handlers != nil {
 				context.handlers = handlers
 				context.Params = params
@@ -238,7 +239,11 @@ func (engine *Engine) handleHTTPRequest(context *Context) {
 				return
 
 			} else if httpMethod != "CONNECT" && path != "/" {
-				if engine.serveAutoRedirect(context, t[i].root, tsr) {
+				if tsr && engine.RedirectFixedPath {
+					redirectTrailingSlash(context)
+					return
+				}
+				if engine.RedirectFixedPath && redirectFixedPath(context, root, engine.RedirectFixedPath) {
 					return
 				}
 			}
@@ -261,43 +266,6 @@ func (engine *Engine) handleHTTPRequest(context *Context) {
 	serveError(context, 404, default404Body)
 }
 
-func (engine *Engine) serveAutoRedirect(c *Context, root *node, tsr bool) bool {
-	req := c.Request
-	path := req.URL.Path
-	code := 301 // Permanent redirect, request with GET method
-	if req.Method != "GET" {
-		code = 307
-	}
-
-	if tsr && engine.RedirectTrailingSlash {
-		if len(path) > 1 && path[len(path)-1] == '/' {
-			req.URL.Path = path[:len(path)-1]
-		} else {
-			req.URL.Path = path + "/"
-		}
-		debugPrint("redirecting request %d: %s --> %s", code, path, req.URL.String())
-		http.Redirect(c.Writer, req, req.URL.String(), code)
-		c.writermem.WriteHeaderNow()
-		return true
-	}
-
-	// Try to fix the request path
-	if engine.RedirectFixedPath {
-		fixedPath, found := root.findCaseInsensitivePath(
-			cleanPath(path),
-			engine.RedirectTrailingSlash,
-		)
-		if found {
-			req.URL.Path = string(fixedPath)
-			debugPrint("redirecting request %d: %s --> %s", code, path, req.URL.String())
-			http.Redirect(c.Writer, req, req.URL.String(), code)
-			c.writermem.WriteHeaderNow()
-			return true
-		}
-	}
-	return false
-}
-
 var mimePlain = []string{MIMEPlain}
 
 func serveError(c *Context, code int, defaultMessage []byte) {
@@ -311,4 +279,44 @@ func serveError(c *Context, code int, defaultMessage []byte) {
 			c.writermem.WriteHeaderNow()
 		}
 	}
+}
+
+func redirectTrailingSlash(c *Context) {
+	req := c.Request
+	path := req.URL.Path
+	code := 301 // Permanent redirect, request with GET method
+	if req.Method != "GET" {
+		code = 307
+	}
+
+	if len(path) > 1 && path[len(path)-1] == '/' {
+		req.URL.Path = path[:len(path)-1]
+	} else {
+		req.URL.Path = path + "/"
+	}
+	debugPrint("redirecting request %d: %s --> %s", code, path, req.URL.String())
+	http.Redirect(c.Writer, req, req.URL.String(), code)
+	c.writermem.WriteHeaderNow()
+}
+
+func redirectFixedPath(c *Context, root *node, trailingSlash bool) bool {
+	req := c.Request
+	path := req.URL.Path
+
+	fixedPath, found := root.findCaseInsensitivePath(
+		cleanPath(path),
+		trailingSlash,
+	)
+	if found {
+		code := 301 // Permanent redirect, request with GET method
+		if req.Method != "GET" {
+			code = 307
+		}
+		req.URL.Path = string(fixedPath)
+		debugPrint("redirecting request %d: %s --> %s", code, path, req.URL.String())
+		http.Redirect(c.Writer, req, req.URL.String(), code)
+		c.writermem.WriteHeaderNow()
+		return true
+	}
+	return false
 }
