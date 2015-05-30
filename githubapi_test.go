@@ -8,6 +8,8 @@ import (
 	"bytes"
 	"fmt"
 	"math/rand"
+	"net/http"
+	"net/http/httptest"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -282,18 +284,23 @@ var githubAPI = []route{
 	{"DELETE", "/user/keys/:id"},
 }
 
-func TestGithubAPI(t *testing.T) {
-	router := New()
-
+func githubConfigRouter(router *Engine) {
 	for _, route := range githubAPI {
 		router.Handle(route.method, route.path, func(c *Context) {
-			output := H{"status": "good"}
+			output := make(map[string]string, len(c.Params)+1)
+			output["status"] = "good"
 			for _, param := range c.Params {
 				output[param.Key] = param.Value
 			}
 			c.JSON(200, output)
 		})
 	}
+}
+
+func TestGithubAPI(t *testing.T) {
+	DefaultWriter = FakeWriter{}
+	router := Default()
+	githubConfigRouter(router)
 
 	for _, route := range githubAPI {
 		path, values := exampleFromPath(route.path)
@@ -341,4 +348,42 @@ func exampleFromPath(path string) (string, Params) {
 	}
 
 	return output.String(), params
+}
+
+func BenchmarkGithub(b *testing.B) {
+	router := New()
+	githubConfigRouter(router)
+	runRequest(b, router, "GET", "/legacy/issues/search/:owner/:repository/:state/:keyword")
+}
+
+func BenchmarkParallelGithub(b *testing.B) {
+	DefaultWriter = FakeWriter{}
+	router := New()
+	githubConfigRouter(router)
+
+	req, _ := http.NewRequest("POST", "/repos/manucorporat/sse/git/blobs", nil)
+
+	b.RunParallel(func(pb *testing.PB) {
+		// Each goroutine has its own bytes.Buffer.
+		for pb.Next() {
+			w := httptest.NewRecorder()
+			router.ServeHTTP(w, req)
+		}
+	})
+}
+
+func BenchmarkParallelGithubDefault(b *testing.B) {
+	DefaultWriter = FakeWriter{}
+	router := Default()
+	githubConfigRouter(router)
+
+	req, _ := http.NewRequest("POST", "/repos/manucorporat/sse/git/blobs", nil)
+
+	b.RunParallel(func(pb *testing.PB) {
+		// Each goroutine has its own bytes.Buffer.
+		for pb.Next() {
+			w := httptest.NewRecorder()
+			router.ServeHTTP(w, req)
+		}
+	})
 }
