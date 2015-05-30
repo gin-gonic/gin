@@ -61,6 +61,7 @@ func testRouteNotOK(method string, t *testing.T) {
 func testRouteNotOK2(method string, t *testing.T) {
 	passed := false
 	router := New()
+	router.HandleMethodNotAllowed = true
 	var methodRoute string
 	if method == "POST" {
 		methodRoute = "GET"
@@ -224,9 +225,9 @@ func TestRouterMiddlewareAndStatic(t *testing.T) {
 	assert.Equal(t, w.HeaderMap.Get("x-GIN"), "Gin Framework")
 }
 
-func TestRouteNotAllowed(t *testing.T) {
+func TestRouteNotAllowedEnabled(t *testing.T) {
 	router := New()
-
+	router.HandleMethodNotAllowed = true
 	router.POST("/path", func(c *Context) {})
 	w := performRequest(router, "GET", "/path")
 	assert.Equal(t, w.Code, http.StatusMethodNotAllowed)
@@ -239,8 +240,24 @@ func TestRouteNotAllowed(t *testing.T) {
 	assert.Equal(t, w.Code, http.StatusTeapot)
 }
 
+func TestRouteNotAllowedDisabled(t *testing.T) {
+	router := New()
+	router.HandleMethodNotAllowed = false
+	router.POST("/path", func(c *Context) {})
+	w := performRequest(router, "GET", "/path")
+	assert.Equal(t, w.Code, 404)
+
+	router.NoMethod(func(c *Context) {
+		c.String(http.StatusTeapot, "responseText")
+	})
+	w = performRequest(router, "GET", "/path")
+	assert.Equal(t, w.Body.String(), "404 page not found")
+	assert.Equal(t, w.Code, 404)
+}
+
 func TestRouterNotFound(t *testing.T) {
 	router := New()
+	router.RedirectFixedPath = true
 	router.GET("/path", func(c *Context) {})
 	router.GET("/dir/", func(c *Context) {})
 	router.GET("/", func(c *Context) {})

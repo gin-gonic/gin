@@ -6,6 +6,7 @@ package gin
 
 import (
 	"bufio"
+	"io"
 	"net"
 	"net/http"
 )
@@ -24,6 +25,7 @@ type (
 
 		Status() int
 		Size() int
+		WriteString(string) (int, error)
 		Written() bool
 		WriteHeaderNow()
 	}
@@ -34,6 +36,8 @@ type (
 		status int
 	}
 )
+
+var _ ResponseWriter = &responseWriter{}
 
 func (w *responseWriter) reset(writer http.ResponseWriter) {
 	w.ResponseWriter = writer
@@ -60,6 +64,13 @@ func (w *responseWriter) WriteHeaderNow() {
 func (w *responseWriter) Write(data []byte) (n int, err error) {
 	w.WriteHeaderNow()
 	n, err = w.ResponseWriter.Write(data)
+	w.size += n
+	return
+}
+
+func (w *responseWriter) WriteString(s string) (n int, err error) {
+	w.WriteHeaderNow()
+	n, err = io.WriteString(w.ResponseWriter, s)
 	w.size += n
 	return
 }

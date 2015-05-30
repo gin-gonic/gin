@@ -11,7 +11,6 @@ import (
 	"os"
 	"sync"
 
-	"github.com/gin-gonic/gin/binding"
 	"github.com/gin-gonic/gin/render"
 )
 
@@ -73,8 +72,8 @@ func New() *Engine {
 			BasePath: "/",
 		},
 		RedirectTrailingSlash:  true,
-		RedirectFixedPath:      true,
-		HandleMethodNotAllowed: true,
+		RedirectFixedPath:      false,
+		HandleMethodNotAllowed: false,
 		trees: make(methodTrees, 0, 6),
 	}
 	engine.RouterGroup.engine = engine
@@ -285,7 +284,7 @@ func (engine *Engine) serveAutoRedirect(c *Context, root *node, tsr bool) bool {
 	// Try to fix the request path
 	if engine.RedirectFixedPath {
 		fixedPath, found := root.findCaseInsensitivePath(
-			CleanPath(path),
+			cleanPath(path),
 			engine.RedirectTrailingSlash,
 		)
 		if found {
@@ -299,14 +298,17 @@ func (engine *Engine) serveAutoRedirect(c *Context, root *node, tsr bool) bool {
 	return false
 }
 
+var mimePlain = []string{MIMEPlain}
+
 func serveError(c *Context, code int, defaultMessage []byte) {
 	c.writermem.status = code
 	c.Next()
-	if !c.Writer.Written() {
-		if c.Writer.Status() == code {
-			c.Data(-1, binding.MIMEPlain, defaultMessage)
+	if !c.writermem.Written() {
+		if c.writermem.Status() == code {
+			c.writermem.Header()["Content-Type"] = mimePlain
+			c.Writer.Write(defaultMessage)
 		} else {
-			c.Writer.WriteHeaderNow()
+			c.writermem.WriteHeaderNow()
 		}
 	}
 }

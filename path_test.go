@@ -67,8 +67,8 @@ var cleanTests = []struct {
 
 func TestPathClean(t *testing.T) {
 	for _, test := range cleanTests {
-		assert.Equal(t, CleanPath(test.path), test.result)
-		assert.Equal(t, CleanPath(test.result), test.result)
+		assert.Equal(t, cleanPath(test.path), test.result)
+		assert.Equal(t, cleanPath(test.result), test.result)
 	}
 }
 
@@ -82,7 +82,7 @@ func TestPathCleanMallocs(t *testing.T) {
 	}
 
 	for _, test := range cleanTests {
-		allocs := testing.AllocsPerRun(100, func() { CleanPath(test.result) })
+		allocs := testing.AllocsPerRun(100, func() { cleanPath(test.result) })
 		assert.Equal(t, allocs, 0)
 	}
 }

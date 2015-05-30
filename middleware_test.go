@@ -77,9 +77,10 @@ func TestMiddlewareNoRoute(t *testing.T) {
 	assert.Equal(t, signature, "ACEGHFDB")
 }
 
-func TestMiddlewareNoMethod(t *testing.T) {
+func TestMiddlewareNoMethodEnabled(t *testing.T) {
 	signature := ""
 	router := New()
+	router.HandleMethodNotAllowed = true
 	router.Use(func(c *Context) {
 		signature += "A"
 		c.Next()
@@ -111,6 +112,43 @@ func TestMiddlewareNoMethod(t *testing.T) {
 	// TEST
 	assert.Equal(t, w.Code, 405)
 	assert.Equal(t, signature, "ACEGHFDB")
+}
+
+func TestMiddlewareNoMethodDisabled(t *testing.T) {
+	signature := ""
+	router := New()
+	router.HandleMethodNotAllowed = false
+	router.Use(func(c *Context) {
+		signature += "A"
+		c.Next()
+		signature += "B"
+	})
+	router.Use(func(c *Context) {
+		signature += "C"
+		c.Next()
+		signature += "D"
+	})
+	router.NoMethod(func(c *Context) {
+		signature += "E"
+		c.Next()
+		signature += "F"
+	}, func(c *Context) {
+		signature += "G"
+		c.Next()
+		signature += "H"
+	})
+	router.NoRoute(func(c *Context) {
+		signature += " X "
+	})
+	router.POST("/", func(c *Context) {
+		signature += " XX "
+	})
+	// RUN
+	w := performRequest(router, "GET", "/")
+
+	// TEST
+	assert.Equal(t, w.Code, 404)
+	assert.Equal(t, signature, "AC X DB")
 }
 
 func TestMiddlewareAbort(t *testing.T) {

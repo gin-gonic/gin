@@ -6,6 +6,7 @@ package render
 
 import (
 	"fmt"
+	"io"
 	"net/http"
 )
 
@@ -24,7 +25,7 @@ func (r String) Write(w http.ResponseWriter) error {
 	if len(r.Data) > 0 {
 		fmt.Fprintf(w, r.Format, r.Data...)
 	} else {
-		w.Write([]byte(r.Format))
+		io.WriteString(w, r.Format)
 	}
 	return nil
 }

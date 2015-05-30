@@ -111,7 +111,7 @@ func (a errorMsgs) Last() *Error {
 // ``
 func (a errorMsgs) Errors() []string {
 	if len(a) == 0 {
-		return []string{}
+		return nil
 	}
 	errorStrings := make([]string, len(a))
 	for i, err := range a {
