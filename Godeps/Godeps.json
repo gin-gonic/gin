@@ -19,9 +19,9 @@
 			"Rev": "84ba27dd5b2d8135e9da1395277f2c9333a2ffda"
 		},
 		{
-			"ImportPath": "gopkg.in/joeybloggs/go-validate-yourself.v4",
-			"Comment": "v4.0",
-			"Rev": "a3cb430fa1e43b15e72d7bec5b20d0bdff4c2bb8"
+			"ImportPath": "gopkg.in/bluesuncorp/validator.v5",
+			"Comment": "v5.4",
+			"Rev": "07cbdd2e6dfd947b002e83c13b775c7580fab2d5"
 		}
 	]
 }
