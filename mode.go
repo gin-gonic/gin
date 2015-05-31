@@ -8,6 +8,7 @@ import (
 	"io"
 	"os"
 
+	"github.com/gin-gonic/gin/binding"
 	"github.com/mattn/go-colorable"
 )
 
@@ -49,6 +50,10 @@ func SetMode(value string) {
 		panic("gin mode unknown: " + value)
 	}
 	modeName = value
+}
+
+func DisableBindValidation() {
+	binding.Validator = nil
 }
 
 func Mode() string {
