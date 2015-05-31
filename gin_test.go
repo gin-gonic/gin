@@ -5,6 +5,7 @@
 package gin
 
 import (
+	"reflect"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -37,8 +38,8 @@ func TestCreateDefaultRouter(t *testing.T) {
 }
 
 func TestNoRouteWithoutGlobalHandlers(t *testing.T) {
-	middleware0 := func(c *Context) {}
-	middleware1 := func(c *Context) {}
+	var middleware0 HandlerFunc = func(c *Context) {}
+	var middleware1 HandlerFunc = func(c *Context) {}
 
 	router := New()
 
@@ -46,22 +47,22 @@ func TestNoRouteWithoutGlobalHandlers(t *testing.T) {
 	assert.Nil(t, router.Handlers)
 	assert.Len(t, router.noRoute, 1)
 	assert.Len(t, router.allNoRoute, 1)
-	assert.Equal(t, router.noRoute[0], middleware0)
-	assert.Equal(t, router.allNoRoute[0], middleware0)
+	compareFunc(t, router.noRoute[0], middleware0)
+	compareFunc(t, router.allNoRoute[0], middleware0)
 
 	router.NoRoute(middleware1, middleware0)
 	assert.Len(t, router.noRoute, 2)
 	assert.Len(t, router.allNoRoute, 2)
-	assert.Equal(t, router.noRoute[0], middleware1)
-	assert.Equal(t, router.allNoRoute[0], middleware1)
-	assert.Equal(t, router.noRoute[1], middleware0)
-	assert.Equal(t, router.allNoRoute[1], middleware0)
+	compareFunc(t, router.noRoute[0], middleware1)
+	compareFunc(t, router.allNoRoute[0], middleware1)
+	compareFunc(t, router.noRoute[1], middleware0)
+	compareFunc(t, router.allNoRoute[1], middleware0)
 }
 
 func TestNoRouteWithGlobalHandlers(t *testing.T) {
-	middleware0 := func(c *Context) {}
-	middleware1 := func(c *Context) {}
-	middleware2 := func(c *Context) {}
+	var middleware0 HandlerFunc = func(c *Context) {}
+	var middleware1 HandlerFunc = func(c *Context) {}
+	var middleware2 HandlerFunc = func(c *Context) {}
 
 	router := New()
 	router.Use(middleware2)
@@ -71,27 +72,27 @@ func TestNoRouteWithGlobalHandlers(t *testing.T) {
 	assert.Len(t, router.Handlers, 1)
 	assert.Len(t, router.noRoute, 1)
 
-	assert.Equal(t, router.Handlers[0], middleware2)
-	assert.Equal(t, router.noRoute[0], middleware0)
-	assert.Equal(t, router.allNoRoute[0], middleware2)
-	assert.Equal(t, router.allNoRoute[1], middleware0)
+	compareFunc(t, router.Handlers[0], middleware2)
+	compareFunc(t, router.noRoute[0], middleware0)
+	compareFunc(t, router.allNoRoute[0], middleware2)
+	compareFunc(t, router.allNoRoute[1], middleware0)
 
 	router.Use(middleware1)
 	assert.Len(t, router.allNoRoute, 3)
 	assert.Len(t, router.Handlers, 2)
 	assert.Len(t, router.noRoute, 1)
 
-	assert.Equal(t, router.Handlers[0], middleware2)
-	assert.Equal(t, router.Handlers[1], middleware1)
-	assert.Equal(t, router.noRoute[0], middleware0)
-	assert.Equal(t, router.allNoRoute[0], middleware2)
-	assert.Equal(t, router.allNoRoute[1], middleware1)
-	assert.Equal(t, router.allNoRoute[2], middleware0)
+	compareFunc(t, router.Handlers[0], middleware2)
+	compareFunc(t, router.Handlers[1], middleware1)
+	compareFunc(t, router.noRoute[0], middleware0)
+	compareFunc(t, router.allNoRoute[0], middleware2)
+	compareFunc(t, router.allNoRoute[1], middleware1)
+	compareFunc(t, router.allNoRoute[2], middleware0)
 }
 
 func TestNoMethodWithoutGlobalHandlers(t *testing.T) {
-	middleware0 := func(c *Context) {}
-	middleware1 := func(c *Context) {}
+	var middleware0 HandlerFunc = func(c *Context) {}
+	var middleware1 HandlerFunc = func(c *Context) {}
 
 	router := New()
 
@@ -99,16 +100,16 @@ func TestNoMethodWithoutGlobalHandlers(t *testing.T) {
 	assert.Empty(t, router.Handlers)
 	assert.Len(t, router.noMethod, 1)
 	assert.Len(t, router.allNoMethod, 1)
-	assert.Equal(t, router.noMethod[0], middleware0)
-	assert.Equal(t, router.allNoMethod[0], middleware0)
+	compareFunc(t, router.noMethod[0], middleware0)
+	compareFunc(t, router.allNoMethod[0], middleware0)
 
 	router.NoMethod(middleware1, middleware0)
 	assert.Len(t, router.noMethod, 2)
 	assert.Len(t, router.allNoMethod, 2)
-	assert.Equal(t, router.noMethod[0], middleware1)
-	assert.Equal(t, router.allNoMethod[0], middleware1)
-	assert.Equal(t, router.noMethod[1], middleware0)
-	assert.Equal(t, router.allNoMethod[1], middleware0)
+	compareFunc(t, router.noMethod[0], middleware1)
+	compareFunc(t, router.allNoMethod[0], middleware1)
+	compareFunc(t, router.noMethod[1], middleware0)
+	compareFunc(t, router.allNoMethod[1], middleware0)
 }
 
 func TestRebuild404Handlers(t *testing.T) {
@@ -116,9 +117,9 @@ func TestRebuild404Handlers(t *testing.T) {
 }
 
 func TestNoMethodWithGlobalHandlers(t *testing.T) {
-	middleware0 := func(c *Context) {}
-	middleware1 := func(c *Context) {}
-	middleware2 := func(c *Context) {}
+	var middleware0 HandlerFunc = func(c *Context) {}
+	var middleware1 HandlerFunc = func(c *Context) {}
+	var middleware2 HandlerFunc = func(c *Context) {}
 
 	router := New()
 	router.Use(middleware2)
@@ -128,20 +129,28 @@ func TestNoMethodWithGlobalHandlers(t *testing.T) {
 	assert.Len(t, router.Handlers, 1)
 	assert.Len(t, router.noMethod, 1)
 
-	assert.Equal(t, router.Handlers[0], middleware2)
-	assert.Equal(t, router.noMethod[0], middleware0)
-	assert.Equal(t, router.allNoMethod[0], middleware2)
-	assert.Equal(t, router.allNoMethod[1], middleware0)
+	compareFunc(t, router.Handlers[0], middleware2)
+	compareFunc(t, router.noMethod[0], middleware0)
+	compareFunc(t, router.allNoMethod[0], middleware2)
+	compareFunc(t, router.allNoMethod[1], middleware0)
 
 	router.Use(middleware1)
 	assert.Len(t, router.allNoMethod, 3)
 	assert.Len(t, router.Handlers, 2)
 	assert.Len(t, router.noMethod, 1)
 
-	assert.Equal(t, router.Handlers[0], middleware2)
-	assert.Equal(t, router.Handlers[1], middleware1)
-	assert.Equal(t, router.noMethod[0], middleware0)
-	assert.Equal(t, router.allNoMethod[0], middleware2)
-	assert.Equal(t, router.allNoMethod[1], middleware1)
-	assert.Equal(t, router.allNoMethod[2], middleware0)
+	compareFunc(t, router.Handlers[0], middleware2)
+	compareFunc(t, router.Handlers[1], middleware1)
+	compareFunc(t, router.noMethod[0], middleware0)
+	compareFunc(t, router.allNoMethod[0], middleware2)
+	compareFunc(t, router.allNoMethod[1], middleware1)
+	compareFunc(t, router.allNoMethod[2], middleware0)
+}
+
+func compareFunc(t *testing.T, a, b interface{}) {
+	sf1 := reflect.ValueOf(a)
+	sf2 := reflect.ValueOf(b)
+	if sf1.Pointer() != sf2.Pointer() {
+		t.Error("different functions")
+	}
 }

@@ -73,7 +73,7 @@ func TestContextReset(t *testing.T) {
 	assert.Empty(t, c.Errors.Errors())
 	assert.Empty(t, c.Errors.ByType(ErrorTypeAny))
 	assert.Len(t, c.Params, 0)
-	assert.Equal(t, c.index, -1)
+	assert.EqualValues(t, c.index, -1)
 	assert.Equal(t, c.Writer.(*responseWriter), &c.writermem)
 }
 
