@@ -235,7 +235,7 @@ func (c *Context) Bind(obj interface{}) error {
 	return c.BindWith(obj, b)
 }
 
-// Shortcut for c.Bind(obj, binding.JSON)
+// Shortcut for c.BindWith(obj, binding.JSON)
 func (c *Context) BindJSON(obj interface{}) error {
 	return c.BindWith(obj, binding.JSON)
 }
