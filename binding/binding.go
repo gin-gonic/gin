@@ -4,12 +4,7 @@
 
 package binding
 
-import (
-	"net/http"
-	"reflect"
-
-	"gopkg.in/bluesuncorp/validator.v5"
-)
+import "net/http"
 
 const (
 	MIMEJSON              = "application/json"
@@ -26,7 +21,16 @@ type Binding interface {
 	Bind(*http.Request, interface{}) error
 }
 
-var validate = validator.New("binding", validator.BakedInValidators)
+type StructValidator interface {
+	// ValidateStruct can receive any kind of type and it should never panic, even if the configuration is not right.
+	// If the received type is not a struct, any validation should be skipped and nil must be returned.
+	// If the received type is a struct or pointer to a struct, the validation should be performed.
+	// If the struct is not valid or the validation itself fails, a descriptive error should be returned.
+	// Otherwise nil must be returned.
+	ValidateStruct(interface{}) error
+}
+
+var Validator StructValidator = &defaultValidator{}
 
 var (
 	JSON = jsonBinding{}
@@ -49,28 +53,9 @@ func Default(method, contentType string) Binding {
 	}
 }
 
-func ValidateField(f interface{}, tag string) error {
-	if err := validate.Field(f, tag); err != nil {
-		return error(err)
-	}
-	return nil
-}
-
 func Validate(obj interface{}) error {
-	if kindOfData(obj) != reflect.Struct {
+	if Validator == nil {
 		return nil
 	}
-	if err := validate.Struct(obj); err != nil {
-		return error(err)
-	}
-	return nil
-}
-
-func kindOfData(data interface{}) reflect.Kind {
-	value := reflect.ValueOf(data)
-	valueType := value.Kind()
-	if valueType == reflect.Ptr {
-		valueType = value.Elem().Kind()
-	}
-	return valueType
+	return Validator.ValidateStruct(obj)
 }

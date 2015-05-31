@@ -64,6 +64,24 @@ func TestBindingXML(t *testing.T) {
 		"<map><foo>bar</foo></map>", "<map><bar>foo</bar></map>")
 }
 
+func TestValidationFails(t *testing.T) {
+	var obj FooStruct
+	req := requestWithBody("POST", "/", `{"bar": "foo"}`)
+	err := JSON.Bind(req, &obj)
+	assert.Error(t, err)
+}
+
+func TestValidationDisabled(t *testing.T) {
+	backup := Validator
+	Validator = nil
+	defer func() { Validator = backup }()
+
+	var obj FooStruct
+	req := requestWithBody("POST", "/", `{"bar": "foo"}`)
+	err := JSON.Bind(req, &obj)
+	assert.NoError(t, err)
+}
+
 func testFormBinding(t *testing.T, method, path, badPath, body, badBody string) {
 	b := Form
 	assert.Equal(t, b.Name(), "form")
