@@ -53,7 +53,7 @@ func Default(method, contentType string) Binding {
 	}
 }
 
-func Validate(obj interface{}) error {
+func validate(obj interface{}) error {
 	if Validator == nil {
 		return nil
 	}

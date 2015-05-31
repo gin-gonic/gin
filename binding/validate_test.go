@@ -49,7 +49,7 @@ func createStruct() struct3 {
 
 func TestValidateGoodObject(t *testing.T) {
 	test := createStruct()
-	assert.Nil(t, Validate(&test))
+	assert.Nil(t, validate(&test))
 }
 
 type Object map[string]interface{}
@@ -60,10 +60,10 @@ func TestValidateSlice(t *testing.T) {
 	var obj2 Object
 	var nu = 10
 
-	assert.NoError(t, Validate(obj))
-	assert.NoError(t, Validate(&obj))
-	assert.NoError(t, Validate(obj2))
-	assert.NoError(t, Validate(&obj2))
-	assert.NoError(t, Validate(nu))
-	assert.NoError(t, Validate(&nu))
+	assert.NoError(t, validate(obj))
+	assert.NoError(t, validate(&obj))
+	assert.NoError(t, validate(obj2))
+	assert.NoError(t, validate(&obj2))
+	assert.NoError(t, validate(nu))
+	assert.NoError(t, validate(&nu))
 }
