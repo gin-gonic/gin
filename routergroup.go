@@ -127,11 +127,11 @@ func (group *RouterGroup) StaticFS(relativePath string, fs http.FileSystem) {
 		panic("URL parameters can not be used when serving a static folder")
 	}
 	handler := group.createStaticHandler(relativePath, fs)
-	relativePath = path.Join(relativePath, "/*filepath")
+	urlPattern := path.Join(relativePath, "/*filepath")
 
 	// Register GET and HEAD handlers
-	group.GET(relativePath, handler)
-	group.HEAD(relativePath, handler)
+	group.GET(urlPattern, handler)
+	group.HEAD(urlPattern, handler)
 }
 
 func (group *RouterGroup) createStaticHandler(relativePath string, fs http.FileSystem) HandlerFunc {
