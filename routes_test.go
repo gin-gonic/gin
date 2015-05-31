@@ -10,7 +10,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
-	"path"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -161,7 +161,7 @@ func TestRouteStaticFile(t *testing.T) {
 	f.WriteString("Gin Web Framework")
 	f.Close()
 
-	dir, filename := path.Split(f.Name())
+	dir, filename := filepath.Split(f.Name())
 
 	// SETUP gin
 	router := New()
