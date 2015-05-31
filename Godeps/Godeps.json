@@ -1,10 +1,21 @@
 {
 	"ImportPath": "github.com/gin-gonic/gin",
 	"GoVersion": "go1.4.2",
+	"Packages": [
+		"./..."
+	],
 	"Deps": [
+		{
+			"ImportPath": "github.com/dustin/go-broadcast",
+			"Rev": "3bdf6d4a7164a50bc19d5f230e2981d87d2584f1"
+		},
 		{
 			"ImportPath": "github.com/manucorporat/sse",
 			"Rev": "c574f6c50c8594f93d28b03a1bbd87b4a3899093"
+		},
+		{
+			"ImportPath": "github.com/manucorporat/stats",
+			"Rev": "8f2d6ace262eba462e9beb552382c98be51d807b"
 		},
 		{
 			"ImportPath": "github.com/mattn/go-colorable",
@@ -12,7 +23,8 @@
 		},
 		{
 			"ImportPath": "github.com/stretchr/testify/assert",
-			"Rev": "de7fcff264cd05cc0c90c509ea789a436a0dd206"
+			"Comment": "v1.0",
+			"Rev": "232e8563676cd15c3a36ba5e675ad4312ac4cb11"
 		},
 		{
 			"ImportPath": "golang.org/x/net/context",
