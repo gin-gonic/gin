@@ -148,7 +148,7 @@ func (group *RouterGroup) createStaticHandler(relativePath string, fs http.FileS
 
 func (group *RouterGroup) combineHandlers(handlers HandlersChain) HandlersChain {
 	finalSize := len(group.Handlers) + len(handlers)
-	if finalSize >= AbortIndex {
+	if finalSize >= int(AbortIndex) {
 		panic("too many handlers")
 	}
 	mergedHandlers := make(HandlersChain, finalSize)
