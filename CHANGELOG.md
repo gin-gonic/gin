@@ -6,7 +6,9 @@
 - [PERFORMANCE] Much faster 404 routing
 - [PERFORMANCE] Allocation optimizations
 - [PERFORMANCE] Faster root tree lookup
+- [PERFORMANCE] Much faster SSE implementation
 - [NEW] Benchmarks suite
+- [NEW] Bind validation can be disabled and replaced with custom validators.
 - [FIX] Binding multipart form
 - [FIX] Crash when binding non struct object in Context.
 - [FIX] RunTLS() implementation
