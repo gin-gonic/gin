@@ -3,6 +3,14 @@
 ###Gin 1.0rc2 (...)
 
 - [PERFORMANCE] Fast path for writting Content-Type.
+- [PERFORMANCE] Much faster 404 routing
+- [PERFORMANCE] Allocation optimizations
+- [PERFORMANCE] Faster root tree lookup
+- [NEW] Benchmarks suite
+- [FIX] Binding multipart form
+- [FIX] Crash when binding non struct object in Context.
+- [FIX] RunTLS() implementation
+- [FIX] Logger() unit tests
 - [FIX] Better approach to avoid directory listing in StaticFS()
 - [FIX] Context.ClientIP() always returns the IP with trimmed spaces.
 - [FIX] Better warning when running in debug mode.

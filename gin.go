@@ -74,7 +74,7 @@ func New() *Engine {
 		RedirectTrailingSlash:  true,
 		RedirectFixedPath:      false,
 		HandleMethodNotAllowed: false,
-		trees: make(methodTrees, 0, 6),
+		trees: make(methodTrees, 0, 5),
 	}
 	engine.RouterGroup.engine = engine
 	engine.pool.New = func() interface{} {
