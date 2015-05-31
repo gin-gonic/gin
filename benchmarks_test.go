@@ -43,7 +43,7 @@ func BenchmarkManyHandlers(B *testing.B) {
 	DefaultWriter = FakeWriter{}
 	//router := Default()
 	router := New()
-	router.Use(Recovery(), Logger2())
+	router.Use(Recovery(), Logger())
 	router.Use(func(c *Context) {})
 	router.GET("/ping", func(c *Context) {})
 	runRequest(B, router, "GET", "/ping")
