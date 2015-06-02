@@ -401,11 +401,52 @@ func main() {
 	router.Run(":8080")
 }
 ```
+templates/index.tmpl
 ```html
 <html><h1>
 	{{ .title }}
 </h1>
 </html>
+```
+
+Using templates with same name in different directories
+
+```go
+func main() {
+	router := gin.Default()
+	router.LoadHTMLGlob("templates/**/*")
+	router.GET("/post/index", func(c *gin.Context) {
+		c.HTML(http.StatusOK, "post/index.tmpl", gin.H{
+			"title": "Posts",
+		})
+	})
+	router.GET("/user/index", func(c *gin.Context) {
+		c.HTML(http.StatusOK, "user/index.tmpl", gin.H{
+			"title": "Users",
+		})
+	})
+	router.Run(":8080")
+}
+```
+templates/post/index.tmpl
+```html
+{{ define "post/index.tmpl" }}
+<html><h1>
+	{{ .title }}
+</h1>
+<p>Using post/index.tmpl</p>
+</html>
+{{ end }}
+```
+templates/user/index.tmpl
+```html
+{{ define "user/index.tmpl" }}
+<html><h1>
+	{{ .title }}
+</h1>
+<p>Using user/index.tmpl</p>
+</html>
+{{ end }}
 ```
 
 You can also use your own html template render
