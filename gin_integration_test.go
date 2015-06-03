@@ -25,15 +25,14 @@ func TestRun(t *testing.T) {
 	// otherwise the main thread will complete
 	time.Sleep(5 * time.Millisecond)
 
+	assert.Error(t, router.Run(":5150"))
+
 	resp, err := http.Get("http://localhost:5150/example")
-	if err != nil {
-		t.FailNow()
-	}
 	defer resp.Body.Close()
+	assert.NoError(t, err)
+
 	body, ioerr := ioutil.ReadAll(resp.Body)
-	if ioerr != nil {
-		t.FailNow()
-	}
+	assert.NoError(t, ioerr)
 	assert.Equal(t, "it worked", string(body[:]), "resp body should match")
 	assert.Equal(t, "200 OK", resp.Status, "should get a 200")
 }
@@ -41,6 +40,7 @@ func TestRun(t *testing.T) {
 func TestUnixSocket(t *testing.T) {
 	buffer := new(bytes.Buffer)
 	router := New()
+
 	go func() {
 		router.Use(LoggerWithWriter(buffer))
 		router.GET("/example", func(c *Context) { c.String(http.StatusOK, "it worked") })
@@ -51,10 +51,8 @@ func TestUnixSocket(t *testing.T) {
 	time.Sleep(5 * time.Millisecond)
 
 	c, err := net.Dial("unix", "/tmp/unix_unit_test")
-	if err != nil {
-		println(err)
-		t.FailNow()
-	}
+	assert.NoError(t, err)
+
 	fmt.Fprintf(c, "GET /example HTTP/1.0\r\n\r\n")
 	scanner := bufio.NewScanner(c)
 	var response string
@@ -63,4 +61,9 @@ func TestUnixSocket(t *testing.T) {
 	}
 	assert.Contains(t, response, "HTTP/1.0 200", "should get a 200")
 	assert.Contains(t, response, "it worked", "resp body should match")
+}
+
+func TestBadUnixSocket(t *testing.T) {
+	router := New()
+	assert.Error(t, router.RunUnix("#/tmp/unix_unit_test"))
 }
