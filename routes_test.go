@@ -78,6 +78,26 @@ func testRouteNotOK2(method string, t *testing.T) {
 	assert.Equal(t, w.Code, http.StatusMethodNotAllowed)
 }
 
+func TestRouterMethod(t *testing.T) {
+	router := New()
+	router.PUT("/hey2", func(c *Context) {
+		c.String(200, "sup2")
+	})
+
+	router.PUT("/hey", func(c *Context) {
+		c.String(200, "called")
+	})
+
+	router.PUT("/hey3", func(c *Context) {
+		c.String(200, "sup3")
+	})
+
+	w := performRequest(router, "PUT", "/hey")
+
+	assert.Equal(t, w.Code, 200)
+	assert.Equal(t, w.Body.String(), "called")
+}
+
 func TestRouterGroupRouteOK(t *testing.T) {
 	testRouteOK("GET", t)
 	testRouteOK("POST", t)

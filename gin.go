@@ -158,7 +158,7 @@ func (engine *Engine) addRoute(method, path string, handlers HandlersChain) {
 		panic("there must be at least one handler")
 	}
 
-	root := engine.trees.get("method")
+	root := engine.trees.get(method)
 	if root == nil {
 		root = new(node)
 		engine.trees = append(engine.trees, methodTree{
@@ -247,6 +247,7 @@ func (engine *Engine) handleHTTPRequest(context *Context) {
 					return
 				}
 			}
+			break
 		}
 	}
 
