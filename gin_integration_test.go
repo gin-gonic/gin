@@ -34,7 +34,7 @@ func TestRun(t *testing.T) {
 	if ioerr != nil {
 		t.FailNow()
 	}
-	assert.Equal(t, "it worked", body, "resp body should match")
+	assert.Equal(t, "it worked", string(body[:]), "resp body should match")
 	assert.Equal(t, "200 OK", resp.Status, "should get a 200")
 }
 
