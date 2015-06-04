@@ -285,9 +285,13 @@ func (c *Context) Header(key, value string) {
 func (c *Context) Render(code int, r render.Render) {
 	c.writermem.WriteHeader(code)
 	if err := r.Render(c.Writer); err != nil {
-		debugPrintError(err)
-		c.AbortWithError(500, err).SetType(ErrorTypeRender)
+		c.renderError(err)
 	}
+}
+
+func (c *Context) renderError(err error) {
+	debugPrintError(err)
+	c.AbortWithError(500, err).SetType(ErrorTypeRender)
 }
 
 // Renders the HTTP template specified by its file name.
@@ -309,7 +313,10 @@ func (c *Context) IndentedJSON(code int, obj interface{}) {
 // Serializes the given struct as JSON into the response body.
 // It also sets the Content-Type as "application/json".
 func (c *Context) JSON(code int, obj interface{}) {
-	c.Render(code, render.JSON{Data: obj})
+	c.writermem.WriteHeader(code)
+	if err := render.WriteJSON(c.Writer, obj); err != nil {
+		c.renderError(err)
+	}
 }
 
 // Serializes the given struct as XML into the response body.
