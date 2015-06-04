@@ -320,10 +320,8 @@ func (c *Context) XML(code int, obj interface{}) {
 
 // Writes the given string into the response body.
 func (c *Context) String(code int, format string, values ...interface{}) {
-	c.Render(code, render.String{
-		Format: format,
-		Data:   values},
-	)
+	c.writermem.WriteHeader(code)
+	render.WriteString(c.Writer, format, values)
 }
 
 // Returns a HTTP redirect to the specific location.
