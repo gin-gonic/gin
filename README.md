@@ -32,38 +32,33 @@ Gin uses a custom version of [HttpRouter](https://github.com/julienschmidt/httpr
 
 
 ```
-BenchmarkEcho_Param 10000000           129 ns/op           0 B/op          0 allocs/op
-BenchmarkGin_Param  10000000           130 ns/op           0 B/op          0 allocs/op
-BenchmarkEcho_Param5     5000000           258 ns/op           0 B/op          0 allocs/op
-BenchmarkGin_Param5  5000000           221 ns/op           0 B/op          0 allocs/op
-BenchmarkEcho_Param20    2000000           690 ns/op           0 B/op          0 allocs/op
-BenchmarkGin_Param20     3000000           542 ns/op           0 B/op          0 allocs/op
-BenchmarkEcho_ParamWrite     5000000           243 ns/op           8 B/op          1 allocs/op
-BenchmarkGin_ParamWrite  5000000           324 ns/op           0 B/op          0 allocs/op
-BenchmarkEcho_GithubStatic  10000000           170 ns/op           0 B/op          0 allocs/op
-BenchmarkGin_GithubStatic   10000000           157 ns/op           0 B/op          0 allocs/op
-BenchmarkEcho_GithubParam    5000000           296 ns/op           0 B/op          0 allocs/op
-BenchmarkGin_GithubParam     5000000           250 ns/op           0 B/op          0 allocs/op
-BenchmarkEcho_GithubAll    30000         59623 ns/op           0 B/op          0 allocs/op
-BenchmarkGin_GithubAll     30000         51971 ns/op           0 B/op          0 allocs/op
-BenchmarkEcho_GPlusStatic   10000000           127 ns/op           0 B/op          0 allocs/op
-BenchmarkGin_GPlusStatic    20000000           123 ns/op           0 B/op          0 allocs/op
-BenchmarkEcho_GPlusParam    10000000           173 ns/op           0 B/op          0 allocs/op
-BenchmarkGin_GPlusParam 10000000           168 ns/op           0 B/op          0 allocs/op
-BenchmarkEcho_GPlus2Params   5000000           238 ns/op           0 B/op          0 allocs/op
-BenchmarkGin_GPlus2Params   10000000           209 ns/op           0 B/op          0 allocs/op
-BenchmarkEcho_GPlusAll    500000          2934 ns/op           0 B/op          0 allocs/op
-BenchmarkGin_GPlusAll     500000          2564 ns/op           0 B/op          0 allocs/op
-BenchmarkEcho_ParseStatic   10000000           131 ns/op           0 B/op          0 allocs/op
-BenchmarkGin_ParseStatic    10000000           128 ns/op           0 B/op          0 allocs/op
-BenchmarkEcho_ParseParam    10000000           143 ns/op           0 B/op          0 allocs/op
-BenchmarkGin_ParseParam 10000000           138 ns/op           0 B/op          0 allocs/op
-BenchmarkEcho_Parse2Params  10000000           181 ns/op           0 B/op          0 allocs/op
-BenchmarkGin_Parse2Params   10000000           164 ns/op           0 B/op          0 allocs/op
-BenchmarkEcho_ParseAll    300000          5227 ns/op           0 B/op          0 allocs/op
-BenchmarkGin_ParseAll     300000          4734 ns/op           0 B/op          0 allocs/op
-BenchmarkEcho_StaticAll    50000         40169 ns/op           0 B/op          0 allocs/op
-BenchmarkGin_StaticAll     50000         33080 ns/op           0 B/op          0 allocs/op
+BenchmarkAce_GithubAll     10000        109482 ns/op       13792 B/op        167 allocs/op
+BenchmarkBear_GithubAll    10000        287490 ns/op       79952 B/op        943 allocs/op
+BenchmarkBeego_GithubAll        3000        562184 ns/op      146272 B/op       2092 allocs/op
+BenchmarkBone_GithubAll      500       2578716 ns/op      648016 B/op       8119 allocs/op
+BenchmarkDenco_GithubAll       20000         94955 ns/op       20224 B/op        167 allocs/op
+BenchmarkEcho_GithubAll    30000         58705 ns/op           0 B/op          0 allocs/op
+BenchmarkGin_GithubAll     30000         50991 ns/op           0 B/op          0 allocs/op
+BenchmarkGocraftWeb_GithubAll       5000        449648 ns/op      133280 B/op       1889 allocs/op
+BenchmarkGoji_GithubAll     2000        689748 ns/op       56113 B/op        334 allocs/op
+BenchmarkGoJsonRest_GithubAll       5000        537769 ns/op      135995 B/op       2940 allocs/op
+BenchmarkGoRestful_GithubAll         100      18410628 ns/op      797236 B/op       7725 allocs/op
+BenchmarkGorillaMux_GithubAll        200       8036360 ns/op      153137 B/op       1791 allocs/op
+BenchmarkHttpRouter_GithubAll      20000         63506 ns/op       13792 B/op        167 allocs/op
+BenchmarkHttpTreeMux_GithubAll     10000        165927 ns/op       56112 B/op        334 allocs/op
+BenchmarkKocha_GithubAll       10000        171362 ns/op       23304 B/op        843 allocs/op
+BenchmarkMacaron_GithubAll      2000        817008 ns/op      224960 B/op       2315 allocs/op
+BenchmarkMartini_GithubAll       100      12609209 ns/op      237952 B/op       2686 allocs/op
+BenchmarkPat_GithubAll       300       4830398 ns/op     1504101 B/op      32222 allocs/op
+BenchmarkPossum_GithubAll      10000        301716 ns/op       97440 B/op        812 allocs/op
+BenchmarkR2router_GithubAll    10000        270691 ns/op       77328 B/op       1182 allocs/op
+BenchmarkRevel_GithubAll        1000       1491919 ns/op      345553 B/op       5918 allocs/op
+BenchmarkRivet_GithubAll       10000        283860 ns/op       84272 B/op       1079 allocs/op
+BenchmarkTango_GithubAll        5000        473821 ns/op       87078 B/op       2470 allocs/op
+BenchmarkTigerTonic_GithubAll       2000       1120131 ns/op      241088 B/op       6052 allocs/op
+BenchmarkTraffic_GithubAll       200       8708979 ns/op     2664762 B/op      22390 allocs/op
+BenchmarkVulcan_GithubAll       5000        353392 ns/op       19894 B/op        609 allocs/op
+BenchmarkZeus_GithubAll     2000        944234 ns/op      300688 B/op       2648 allocs/op
 ```
 
 
