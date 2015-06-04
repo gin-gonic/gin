@@ -298,7 +298,7 @@ func githubConfigRouter(router *Engine) {
 }
 
 func TestGithubAPI(t *testing.T) {
-	DefaultWriter = FakeWriter{}
+	DefaultWriter = newMockWriter()
 	router := Default()
 	githubConfigRouter(router)
 
@@ -357,7 +357,7 @@ func BenchmarkGithub(b *testing.B) {
 }
 
 func BenchmarkParallelGithub(b *testing.B) {
-	DefaultWriter = FakeWriter{}
+	DefaultWriter = newMockWriter()
 	router := New()
 	githubConfigRouter(router)
 
@@ -373,7 +373,7 @@ func BenchmarkParallelGithub(b *testing.B) {
 }
 
 func BenchmarkParallelGithubDefault(b *testing.B) {
-	DefaultWriter = FakeWriter{}
+	DefaultWriter = newMockWriter()
 	router := Default()
 	githubConfigRouter(router)
 

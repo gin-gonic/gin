@@ -1,22 +1,34 @@
 package gin
 
 import (
-	"bytes"
 	"html/template"
 	"net/http"
-	"net/http/httptest"
 	"testing"
 )
 
-type FakeWriter struct{}
-
-func (_ FakeWriter) Write(d []byte) (int, error) {
-	return 0, nil
+func newMockWriter() *mockWriter {
+	return &mockWriter{
+		http.Header{},
+	}
 }
 
-func (_ FakeWriter) WriteString(d string) (int, error) {
-	return 0, nil
+type mockWriter struct {
+	headers http.Header
 }
+
+func (m *mockWriter) Header() (h http.Header) {
+	return m.headers
+}
+
+func (m *mockWriter) Write(p []byte) (n int, err error) {
+	return len(p), nil
+}
+
+func (m *mockWriter) WriteString(s string) (n int, err error) {
+	return len(s), nil
+}
+
+func (m *mockWriter) WriteHeader(int) {}
 
 func runRequest(B *testing.B, r *Engine, method, path string) {
 	// create fake request
@@ -24,8 +36,7 @@ func runRequest(B *testing.B, r *Engine, method, path string) {
 	if err != nil {
 		panic(err)
 	}
-	w := httptest.NewRecorder()
-
+	w := newMockWriter()
 	B.ReportAllocs()
 	B.ResetTimer()
 	for i := 0; i < B.N; i++ {
@@ -40,7 +51,7 @@ func BenchmarkOneRoute(B *testing.B) {
 }
 
 func BenchmarkManyHandlers(B *testing.B) {
-	DefaultWriter = FakeWriter{}
+	DefaultWriter = newMockWriter()
 	//router := Default()
 	router := New()
 	router.Use(Recovery(), Logger())
@@ -50,7 +61,7 @@ func BenchmarkManyHandlers(B *testing.B) {
 }
 
 func Benchmark5Params(B *testing.B) {
-	DefaultWriter = new(bytes.Buffer)
+	DefaultWriter = newMockWriter()
 	router := New()
 	router.Use(func(c *Context) {})
 	router.GET("/param/:param1/:params2/:param3/:param4/:param5", func(c *Context) {})
@@ -59,9 +70,9 @@ func Benchmark5Params(B *testing.B) {
 
 func BenchmarkOneRouteJSON(B *testing.B) {
 	router := New()
-	data := H{
-		"status": "ok",
-	}
+	data := struct {
+		Status string `json:"status"`
+	}{"ok"}
 	router.GET("/json", func(c *Context) {
 		c.JSON(200, data)
 	})
@@ -77,9 +88,6 @@ func BenchmarkOneRouteHTML(B *testing.B) {
 	router.SetHTMLTemplate(t)
 
 	router.GET("/html", func(c *Context) {
-		//c.Writer.Header()["Content-Type"] = htmlContentType
-		//t.ExecuteTemplate(c.Writer, "index", "hola")
-
 		c.HTML(200, "index", "hola")
 	})
 	runRequest(B, router, "GET", "/html")
@@ -93,10 +101,16 @@ func BenchmarkOneRouteString(B *testing.B) {
 	runRequest(B, router, "GET", "/text")
 }
 
-func BenchmarkManyRoutes(B *testing.B) {
+func BenchmarkManyRoutesFist(B *testing.B) {
 	router := New()
 	router.Any("/ping", func(c *Context) {})
-	runRequest(B, router, "PUT", "/ping")
+	runRequest(B, router, "GET", "/ping")
+}
+
+func BenchmarkManyRoutesLast(B *testing.B) {
+	router := New()
+	router.Any("/ping", func(c *Context) {})
+	runRequest(B, router, "OPTIONS", "/ping")
 }
 
 func Benchmark404(B *testing.B) {
