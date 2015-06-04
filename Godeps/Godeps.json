@@ -11,7 +11,7 @@
 		},
 		{
 			"ImportPath": "github.com/manucorporat/sse",
-			"Rev": "c574f6c50c8594f93d28b03a1bbd87b4a3899093"
+			"Rev": "c142f0f1baea5cef7f98a8a6c222f6134368c1f5"
 		},
 		{
 			"ImportPath": "github.com/manucorporat/stats",
@@ -19,7 +19,7 @@
 		},
 		{
 			"ImportPath": "github.com/mattn/go-colorable",
-			"Rev": "043ae16291351db8465272edf465c9f388161627"
+			"Rev": "d67e0b7d1797975196499f79bcc322c08b9f218b"
 		},
 		{
 			"ImportPath": "github.com/stretchr/testify/assert",
@@ -28,7 +28,7 @@
 		},
 		{
 			"ImportPath": "golang.org/x/net/context",
-			"Rev": "84ba27dd5b2d8135e9da1395277f2c9333a2ffda"
+			"Rev": "621fff363a1d9ad7fdd0bfa9d80a42881267deb4"
 		},
 		{
 			"ImportPath": "gopkg.in/bluesuncorp/validator.v5",
