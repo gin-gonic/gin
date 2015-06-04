@@ -251,12 +251,15 @@ func (c *Context) BindWith(obj interface{}, b binding.Binding) error {
 // Best effort algoritm to return the real client IP, it parses
 // X-Real-IP and X-Forwarded-For in order to work properly with reverse-proxies such us: nginx or haproxy.
 func (c *Context) ClientIP() string {
-	clientIP := strings.TrimSpace(c.Request.Header.Get("X-Real-IP"))
+	clientIP := strings.TrimSpace(c.requestHeader("X-Real-Ip"))
 	if len(clientIP) > 0 {
 		return clientIP
 	}
-	clientIP = c.Request.Header.Get("X-Forwarded-For")
-	clientIP = strings.TrimSpace(strings.Split(clientIP, ",")[0])
+	clientIP = c.requestHeader("X-Forwarded-For")
+	if index := strings.IndexByte(clientIP, ','); index >= 0 {
+		clientIP = clientIP[0:index]
+	}
+	clientIP = strings.TrimSpace(clientIP)
 	if len(clientIP) > 0 {
 		return clientIP
 	}
@@ -264,7 +267,14 @@ func (c *Context) ClientIP() string {
 }
 
 func (c *Context) ContentType() string {
-	return filterFlags(c.Request.Header.Get("Content-Type"))
+	return filterFlags(c.requestHeader("Content-Type"))
+}
+
+func (c *Context) requestHeader(key string) string {
+	if values, _ := c.Request.Header[key]; len(values) > 0 {
+		return values[0]
+	}
+	return ""
 }
 
 /************************************/
@@ -414,7 +424,7 @@ func (c *Context) NegotiateFormat(offered ...string) string {
 		panic("you must provide at least one offer")
 	}
 	if c.Accepted == nil {
-		c.Accepted = parseAccept(c.Request.Header.Get("Accept"))
+		c.Accepted = parseAccept(c.requestHeader("Accept"))
 	}
 	if len(c.Accepted) == 0 {
 		return offered[0]
