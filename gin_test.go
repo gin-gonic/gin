@@ -26,10 +26,36 @@ func TestCreateEngine(t *testing.T) {
 	assert.Equal(t, "/", router.BasePath)
 	assert.Equal(t, router.engine, router)
 	assert.Empty(t, router.Handlers)
+}
 
+func TestAddRoute(t *testing.T) {
+	router := New()
+	router.addRoute("GET", "/", HandlersChain{func(_ *Context) {}})
+
+	assert.Len(t, router.trees, 1)
+	assert.NotNil(t, router.trees.get("GET"))
+	assert.Nil(t, router.trees.get("POST"))
+
+	router.addRoute("POST", "/", HandlersChain{func(_ *Context) {}})
+
+	assert.Len(t, router.trees, 2)
+	assert.NotNil(t, router.trees.get("GET"))
+	assert.NotNil(t, router.trees.get("POST"))
+
+	router.addRoute("POST", "/post", HandlersChain{func(_ *Context) {}})
+	assert.Len(t, router.trees, 2)
+}
+
+func TestAddRouteFails(t *testing.T) {
+	router := New()
 	assert.Panics(t, func() { router.addRoute("", "/", HandlersChain{func(_ *Context) {}}) })
 	assert.Panics(t, func() { router.addRoute("GET", "a", HandlersChain{func(_ *Context) {}}) })
 	assert.Panics(t, func() { router.addRoute("GET", "/", HandlersChain{}) })
+
+	router.addRoute("POST", "/post", HandlersChain{func(_ *Context) {}})
+	assert.Panics(t, func() {
+		router.addRoute("POST", "/post", HandlersChain{func(_ *Context) {}})
+	})
 }
 
 func TestCreateDefaultRouter(t *testing.T) {

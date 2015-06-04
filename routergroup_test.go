@@ -109,3 +109,17 @@ func TestRouterGroupInvalidStaticFile(t *testing.T) {
 		router.StaticFile("/path/*param", "favicon.ico")
 	})
 }
+
+func TestRouterGroupTooManyHandlers(t *testing.T) {
+	router := New()
+	handlers1 := make([]HandlerFunc, 40)
+	router.Use(handlers1...)
+
+	handlers2 := make([]HandlerFunc, 26)
+	assert.Panics(t, func() {
+		router.Use(handlers2...)
+	})
+	assert.Panics(t, func() {
+		router.GET("/", handlers2...)
+	})
+}
