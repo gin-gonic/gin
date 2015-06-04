@@ -17,7 +17,7 @@ type String struct {
 
 var plainContentType = []string{"text/plain; charset=utf-8"}
 
-func (r String) Write(w http.ResponseWriter) error {
+func (r String) Render(w http.ResponseWriter) error {
 	header := w.Header()
 	if _, exist := header["Content-Type"]; !exist {
 		header["Content-Type"] = plainContentType

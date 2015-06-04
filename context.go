@@ -284,7 +284,7 @@ func (c *Context) Header(key, value string) {
 
 func (c *Context) Render(code int, r render.Render) {
 	c.writermem.WriteHeader(code)
-	if err := r.Write(c.Writer); err != nil {
+	if err := r.Render(c.Writer); err != nil {
 		debugPrintError(err)
 		c.AbortWithError(500, err).SetType(ErrorTypeRender)
 	}

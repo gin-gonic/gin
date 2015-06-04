@@ -57,7 +57,7 @@ func (r HTMLDebug) loadTemplate() *template.Template {
 	panic("the HTML debug render was created without files or glob pattern")
 }
 
-func (r HTML) Write(w http.ResponseWriter) error {
+func (r HTML) Render(w http.ResponseWriter) error {
 	w.Header()["Content-Type"] = htmlContentType
 	if len(r.Name) == 0 {
 		return r.Template.Execute(w, r.Data)

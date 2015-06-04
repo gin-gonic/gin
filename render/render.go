@@ -7,7 +7,7 @@ package render
 import "net/http"
 
 type Render interface {
-	Write(http.ResponseWriter) error
+	Render(http.ResponseWriter) error
 }
 
 var (

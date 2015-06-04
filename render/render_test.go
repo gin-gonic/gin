@@ -22,7 +22,7 @@ func TestRenderJSON(t *testing.T) {
 		"foo": "bar",
 	}
 
-	err := (JSON{data}).Write(w)
+	err := (JSON{data}).Render(w)
 
 	assert.NoError(t, err)
 	assert.Equal(t, w.Body.String(), "{\"foo\":\"bar\"}\n")
@@ -36,7 +36,7 @@ func TestRenderIndentedJSON(t *testing.T) {
 		"bar": "foo",
 	}
 
-	err := (IndentedJSON{data}).Write(w)
+	err := (IndentedJSON{data}).Render(w)
 
 	assert.NoError(t, err)
 	assert.Equal(t, w.Body.String(), "{\n    \"bar\": \"foo\",\n    \"foo\": \"bar\"\n}")
@@ -75,7 +75,7 @@ func TestRenderXML(t *testing.T) {
 		"foo": "bar",
 	}
 
-	err := (XML{data}).Write(w)
+	err := (XML{data}).Render(w)
 
 	assert.NoError(t, err)
 	assert.Equal(t, w.Body.String(), "<map><foo>bar</foo></map>")
@@ -93,7 +93,7 @@ func TestRenderData(t *testing.T) {
 	err := (Data{
 		ContentType: "image/png",
 		Data:        data,
-	}).Write(w)
+	}).Render(w)
 
 	assert.NoError(t, err)
 	assert.Equal(t, w.Body.String(), "#!PNG some raw data")
@@ -106,7 +106,7 @@ func TestRenderString(t *testing.T) {
 	err := (String{
 		Format: "hola %s %d",
 		Data:   []interface{}{"manu", 2},
-	}).Write(w)
+	}).Render(w)
 
 	assert.NoError(t, err)
 	assert.Equal(t, w.Body.String(), "hola manu 2")
@@ -122,7 +122,7 @@ func TestRenderHTMLTemplate(t *testing.T) {
 		"name": "alexandernyquist",
 	})
 
-	err := instance.Write(w)
+	err := instance.Render(w)
 
 	assert.NoError(t, err)
 	assert.Equal(t, w.Body.String(), "Hello alexandernyquist")
