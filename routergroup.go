@@ -7,6 +7,7 @@ package gin
 import (
 	"net/http"
 	"path"
+	"regexp"
 	"strings"
 )
 
@@ -50,6 +51,9 @@ func (group *RouterGroup) handle(httpMethod, relativePath string, handlers Handl
 }
 
 func (group *RouterGroup) Handle(httpMethod, relativePath string, handlers ...HandlerFunc) {
+	if matches, err := regexp.MatchString("^[A-Z]+$", httpMethod); !matches || err != nil {
+		panic("http method " + httpMethod + " is not valid")
+	}
 	group.handle(httpMethod, relativePath, handlers)
 }
 
