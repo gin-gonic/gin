@@ -80,9 +80,9 @@ func (msg *Error) Error() string {
 // ie ByType(gin.ErrorTypePublic) returns a slice of errors with type=ErrorTypePublic
 func (a errorMsgs) ByType(typ ErrorType) errorMsgs {
 	if len(a) == 0 {
-		return a
+		return nil
 	}
-	result := make(errorMsgs, 0, len(a))
+	var result errorMsgs = nil
 	for _, msg := range a {
 		if msg.Type&typ > 0 {
 			result = append(result, msg)

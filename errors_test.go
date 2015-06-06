@@ -69,6 +69,7 @@ func TestErrorSlice(t *testing.T) {
 	assert.Equal(t, errs.ByType(ErrorTypePrivate).Errors(), []string{"first", "second"})
 	assert.Equal(t, errs.ByType(ErrorTypePublic|ErrorTypePrivate).Errors(), []string{"first", "second", "third"})
 	assert.Empty(t, errs.ByType(ErrorTypeBind))
+	assert.Empty(t, errs.ByType(ErrorTypeBind).String())
 
 	assert.Equal(t, errs.String(), `Error #01: first
 Error #02: second
