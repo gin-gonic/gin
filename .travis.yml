@@ -9,6 +9,8 @@ script:
   - go get golang.org/x/tools/cmd/cover
   - go get github.com/mattn/goveralls
   - go test -v -covermode=count -coverprofile=coverage.out
+
+after_success:
   - goveralls -coverprofile=coverage.out -service=travis-ci -repotoken yFj7FrCeddvBzUaaCyG33jCLfWXeb93eA
 
 notifications:
