@@ -14,7 +14,7 @@ import (
 	"github.com/gin-gonic/gin/render"
 )
 
-const Version = "v1.0rc1"
+const Version = "v1.0rc2"
 
 var default404Body = []byte("404 page not found")
 var default405Body = []byte("405 method not allowed")
@@ -59,6 +59,7 @@ type (
 		// If no other Method is allowed, the request is delegated to the NotFound
 		// handler.
 		HandleMethodNotAllowed bool
+		ForwardedByClientIP    bool
 	}
 )
 
@@ -74,7 +75,8 @@ func New() *Engine {
 		RedirectTrailingSlash:  true,
 		RedirectFixedPath:      false,
 		HandleMethodNotAllowed: false,
-		trees: make(methodTrees, 0, 5),
+		ForwardedByClientIP:    true,
+		trees:                  make(methodTrees, 0, 9),
 	}
 	engine.RouterGroup.engine = engine
 	engine.pool.New = func() interface{} {
@@ -90,7 +92,7 @@ func Default() *Engine {
 	return engine
 }
 
-func (engine *Engine) allocateContext() (context *Context) {
+func (engine *Engine) allocateContext() *Context {
 	return &Context{engine: engine}
 }
 

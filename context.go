@@ -251,17 +251,19 @@ func (c *Context) BindWith(obj interface{}, b binding.Binding) error {
 // Best effort algoritm to return the real client IP, it parses
 // X-Real-IP and X-Forwarded-For in order to work properly with reverse-proxies such us: nginx or haproxy.
 func (c *Context) ClientIP() string {
-	clientIP := strings.TrimSpace(c.requestHeader("X-Real-Ip"))
-	if len(clientIP) > 0 {
-		return clientIP
-	}
-	clientIP = c.requestHeader("X-Forwarded-For")
-	if index := strings.IndexByte(clientIP, ','); index >= 0 {
-		clientIP = clientIP[0:index]
-	}
-	clientIP = strings.TrimSpace(clientIP)
-	if len(clientIP) > 0 {
-		return clientIP
+	if c.engine.ForwardedByClientIP {
+		clientIP := strings.TrimSpace(c.requestHeader("X-Real-Ip"))
+		if len(clientIP) > 0 {
+			return clientIP
+		}
+		clientIP = c.requestHeader("X-Forwarded-For")
+		if index := strings.IndexByte(clientIP, ','); index >= 0 {
+			clientIP = clientIP[0:index]
+		}
+		clientIP = strings.TrimSpace(clientIP)
+		if len(clientIP) > 0 {
+			return clientIP
+		}
 	}
 	return strings.TrimSpace(c.Request.RemoteAddr)
 }
