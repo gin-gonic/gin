@@ -62,10 +62,19 @@ type (
 	}
 
 	RouteInfo struct {
-		Method string
-		Path   string
+		Method  string
+		Path    string
+		Handler string
 	}
 )
+
+func (c HandlersChain) Last() HandlerFunc {
+	length := len(c)
+	if length > 0 {
+		return c[length-1]
+	}
+	return nil
+}
 
 // Returns a new blank Engine instance without any middleware attached.
 // The most basic configuration
@@ -176,23 +185,22 @@ func (engine *Engine) addRoute(method, path string, handlers HandlersChain) {
 
 func (engine *Engine) Routes() (routes []RouteInfo) {
 	for _, tree := range engine.trees {
-		for _, path := range iterate("", nil, tree.root) {
-			routes = append(routes, RouteInfo{
-				Method: tree.method,
-				Path: path,
-			})
-		}
+		routes = iterate("", tree.method, routes, tree.root)
 	}
 	return routes
 }
 
-func iterate(path string, routes []string, root *node) []string {
+func iterate(path, method string, routes []RouteInfo, root *node) []RouteInfo {
 	path += root.path
-	if root.handlers != nil {
-		routes = append(routes, path)
+	if len(root.handlers) > 0 {
+		routes = append(routes, RouteInfo{
+			Method:  method,
+			Path:    path,
+			Handler: nameOfFunction(root.handlers.Last()),
+		})
 	}
 	for _, node := range root.children {
-		routes = iterate(path, routes, node)
+		routes = iterate(path, method, routes, node)
 	}
 	return routes
 }
