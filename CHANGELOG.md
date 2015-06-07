@@ -6,10 +6,14 @@
 - [PERFORMANCE] Much faster 404 routing
 - [PERFORMANCE] Allocation optimizations
 - [PERFORMANCE] Faster root tree lookup
+- [PERFORMANCE] Zero overhead, String() and JSON() rendering.
+- [PERFORMANCE] Faster ClientIP parsing
 - [PERFORMANCE] Much faster SSE implementation
 - [NEW] Benchmarks suite
 - [NEW] Bind validation can be disabled and replaced with custom validators.
+- [NEW] More flexible HTML render
 - [FIX] Binding multipart form
+- [FIX] Integration tests
 - [FIX] Crash when binding non struct object in Context.
 - [FIX] RunTLS() implementation
 - [FIX] Logger() unit tests
