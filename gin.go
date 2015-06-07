@@ -60,6 +60,11 @@ type (
 		// handler.
 		HandleMethodNotAllowed bool
 	}
+
+	RouteInfo struct {
+		Method string
+		Path string
+	}
 )
 
 // Returns a new blank Engine instance without any middleware attached.
@@ -167,6 +172,29 @@ func (engine *Engine) addRoute(method, path string, handlers HandlersChain) {
 		})
 	}
 	root.addRoute(path, handlers)
+}
+
+func (engine *Engine) Routes() (routes []RouteInfo) {
+	for _, tree := range engine.trees {
+		for _, path := range iterate("", nil, tree.root) {
+			routes = append(routes, RouteInfo{
+				Method: tree.method,
+				Path: path,
+			})
+		}
+	}
+	return routes
+}
+
+func iterate(path string, routes []string, root *node) []string {
+	path += root.path
+	if root.handlers != nil {
+		routes = append(routes, path)
+	}
+	for _, node := range root.children {
+		routes = iterate(path, routes, node)
+	}
+	return routes
 }
 
 // The router is attached to a http.Server and starts listening and serving HTTP requests.
