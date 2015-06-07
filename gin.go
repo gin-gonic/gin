@@ -63,7 +63,7 @@ type (
 
 	RouteInfo struct {
 		Method string
-		Path string
+		Path   string
 	}
 )
 

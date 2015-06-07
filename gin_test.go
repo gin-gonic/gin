@@ -181,7 +181,7 @@ func compareFunc(t *testing.T, a, b interface{}) {
 }
 
 func TestListOfRoutes(t *testing.T) {
-	handler := func(c *Context){}
+	handler := func(c *Context) {}
 	router := New()
 	router.GET("/favicon.ico", handler)
 	router.GET("/", handler)
@@ -198,31 +198,31 @@ func TestListOfRoutes(t *testing.T) {
 	assert.Len(t, list, 7)
 	assert.Contains(t, list, RouteInfo{
 		Method: "GET",
-		Path: "/favicon.ico",
+		Path:   "/favicon.ico",
 	})
 	assert.Contains(t, list, RouteInfo{
 		Method: "GET",
-		Path: "/",
+		Path:   "/",
 	})
 	assert.Contains(t, list, RouteInfo{
 		Method: "GET",
-		Path: "/users/",
+		Path:   "/users/",
 	})
 	assert.Contains(t, list, RouteInfo{
 		Method: "GET",
-		Path: "/users/:id",
+		Path:   "/users/:id",
 	})
 	assert.Contains(t, list, RouteInfo{
 		Method: "POST",
-		Path: "/users/:id",
+		Path:   "/users/:id",
 	})
 	assert.Contains(t, list, RouteInfo{
 		Method: "GET",
-		Path: "/static/*filepath",
+		Path:   "/static/*filepath",
 	})
 	assert.Contains(t, list, RouteInfo{
 		Method: "HEAD",
-		Path: "/static/*filepath",
+		Path:   "/static/*filepath",
 	})
 
 }
