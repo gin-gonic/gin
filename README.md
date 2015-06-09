@@ -25,7 +25,6 @@ func main() {
 
 ## Benchmarks
 
-Comparision with the second fastest mutex: echo.
 Gin uses a custom version of [HttpRouter](https://github.com/julienschmidt/httprouter)  
 
 [See all benchmarks](/BENCHMARKS.md)
