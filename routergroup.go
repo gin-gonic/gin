@@ -50,49 +50,58 @@ func (group *RouterGroup) handle(httpMethod, relativePath string, handlers Handl
 	group.engine.addRoute(httpMethod, absolutePath, handlers)
 }
 
-func (group *RouterGroup) Handle(httpMethod, relativePath string, handlers ...HandlerFunc) {
+func (group *RouterGroup) Handle(httpMethod, relativePath string, handlers ...HandlerFunc) *RouterGroup {
 	if matches, err := regexp.MatchString("^[A-Z]+$", httpMethod); !matches || err != nil {
 		panic("http method " + httpMethod + " is not valid")
 	}
 	group.handle(httpMethod, relativePath, handlers)
+	return group
+
 }
 
 // POST is a shortcut for router.Handle("POST", path, handle)
-func (group *RouterGroup) POST(relativePath string, handlers ...HandlerFunc) {
+func (group *RouterGroup) POST(relativePath string, handlers ...HandlerFunc) *RouterGroup {
 	group.handle("POST", relativePath, handlers)
+	return group
 }
 
 // GET is a shortcut for router.Handle("GET", path, handle)
-func (group *RouterGroup) GET(relativePath string, handlers ...HandlerFunc) {
+func (group *RouterGroup) GET(relativePath string, handlers ...HandlerFunc) *RouterGroup {
 	group.handle("GET", relativePath, handlers)
+	return group
 }
 
 // DELETE is a shortcut for router.Handle("DELETE", path, handle)
-func (group *RouterGroup) DELETE(relativePath string, handlers ...HandlerFunc) {
+func (group *RouterGroup) DELETE(relativePath string, handlers ...HandlerFunc) *RouterGroup {
 	group.handle("DELETE", relativePath, handlers)
+	return group
 }
 
 // PATCH is a shortcut for router.Handle("PATCH", path, handle)
-func (group *RouterGroup) PATCH(relativePath string, handlers ...HandlerFunc) {
+func (group *RouterGroup) PATCH(relativePath string, handlers ...HandlerFunc) *RouterGroup {
 	group.handle("PATCH", relativePath, handlers)
+	return group
 }
 
 // PUT is a shortcut for router.Handle("PUT", path, handle)
-func (group *RouterGroup) PUT(relativePath string, handlers ...HandlerFunc) {
+func (group *RouterGroup) PUT(relativePath string, handlers ...HandlerFunc) *RouterGroup {
 	group.handle("PUT", relativePath, handlers)
+	return group
 }
 
 // OPTIONS is a shortcut for router.Handle("OPTIONS", path, handle)
-func (group *RouterGroup) OPTIONS(relativePath string, handlers ...HandlerFunc) {
+func (group *RouterGroup) OPTIONS(relativePath string, handlers ...HandlerFunc) *RouterGroup {
 	group.handle("OPTIONS", relativePath, handlers)
+	return group
 }
 
 // HEAD is a shortcut for router.Handle("HEAD", path, handle)
-func (group *RouterGroup) HEAD(relativePath string, handlers ...HandlerFunc) {
+func (group *RouterGroup) HEAD(relativePath string, handlers ...HandlerFunc) *RouterGroup {
 	group.handle("HEAD", relativePath, handlers)
+	return group
 }
 
-func (group *RouterGroup) Any(relativePath string, handlers ...HandlerFunc) {
+func (group *RouterGroup) Any(relativePath string, handlers ...HandlerFunc) *RouterGroup {
 	// GET, POST, PUT, PATCH, HEAD, OPTIONS, DELETE, CONNECT, TRACE
 	group.handle("GET", relativePath, handlers)
 	group.handle("POST", relativePath, handlers)
@@ -103,9 +112,10 @@ func (group *RouterGroup) Any(relativePath string, handlers ...HandlerFunc) {
 	group.handle("DELETE", relativePath, handlers)
 	group.handle("CONNECT", relativePath, handlers)
 	group.handle("TRACE", relativePath, handlers)
+	return group
 }
 
-func (group *RouterGroup) StaticFile(relativePath, filepath string) {
+func (group *RouterGroup) StaticFile(relativePath, filepath string) *RouterGroup {
 	if strings.Contains(relativePath, ":") || strings.Contains(relativePath, "*") {
 		panic("URL parameters can not be used when serving a static file")
 	}
@@ -114,6 +124,7 @@ func (group *RouterGroup) StaticFile(relativePath, filepath string) {
 	}
 	group.GET(relativePath, handler)
 	group.HEAD(relativePath, handler)
+	return group
 }
 
 // Static serves files from the given file system root.
@@ -122,11 +133,11 @@ func (group *RouterGroup) StaticFile(relativePath, filepath string) {
 // To use the operating system's file system implementation,
 // use :
 //     router.Static("/static", "/var/www")
-func (group *RouterGroup) Static(relativePath, root string) {
-	group.StaticFS(relativePath, Dir(root, false))
+func (group *RouterGroup) Static(relativePath, root string) *RouterGroup {
+	return group.StaticFS(relativePath, Dir(root, false))
 }
 
-func (group *RouterGroup) StaticFS(relativePath string, fs http.FileSystem) {
+func (group *RouterGroup) StaticFS(relativePath string, fs http.FileSystem) *RouterGroup {
 	if strings.Contains(relativePath, ":") || strings.Contains(relativePath, "*") {
 		panic("URL parameters can not be used when serving a static folder")
 	}
@@ -136,6 +147,7 @@ func (group *RouterGroup) StaticFS(relativePath string, fs http.FileSystem) {
 	// Register GET and HEAD handlers
 	group.GET(urlPattern, handler)
 	group.HEAD(urlPattern, handler)
+	return group
 }
 
 func (group *RouterGroup) createStaticHandler(relativePath string, fs http.FileSystem) HandlerFunc {
