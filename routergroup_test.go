@@ -148,3 +148,30 @@ func TestRouterGroupBadMethod(t *testing.T) {
 		router.Handle("PATCh", "/")
 	})
 }
+
+func TestRouterGroupPipeline(t *testing.T) {
+	router := New()
+	testRoutesInterface(t, router)
+
+	v1 := router.Group("/v1")
+	testRoutesInterface(t, v1)
+}
+
+func testRoutesInterface(t *testing.T, r routesInterface) {
+	handler := func(c *Context) {}
+	assert.Equal(t, r, r.Use(handler))
+
+	assert.Equal(t, r, r.Handle("GET", "/handler", handler))
+	assert.Equal(t, r, r.Any("/any", handler))
+	assert.Equal(t, r, r.GET("/", handler))
+	assert.Equal(t, r, r.POST("/", handler))
+	assert.Equal(t, r, r.DELETE("/", handler))
+	assert.Equal(t, r, r.PATCH("/", handler))
+	assert.Equal(t, r, r.PUT("/", handler))
+	assert.Equal(t, r, r.OPTIONS("/", handler))
+	assert.Equal(t, r, r.HEAD("/", handler))
+
+	assert.Equal(t, r, r.StaticFile("/file", "."))
+	assert.Equal(t, r, r.Static("/static", "."))
+	assert.Equal(t, r, r.StaticFS("/static2", Dir(".", false)))
+}
