@@ -86,9 +86,12 @@ func (a errorMsgs) ByType(typ ErrorType) errorMsgs {
 	if len(a) == 0 {
 		return nil
 	}
+	if typ == ErrorTypeAny {
+		return a
+	}
 	var result errorMsgs = nil
 	for _, msg := range a {
-		if msg.Type&typ > 0 {
+		if msg.IsType(typ) {
 			result = append(result, msg)
 		}
 	}
