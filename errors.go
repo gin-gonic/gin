@@ -76,6 +76,10 @@ func (msg *Error) Error() string {
 	return msg.Err.Error()
 }
 
+func (msg *Error) IsType(flags ErrorType) bool {
+	return (msg.Type & flags) > 0
+}
+
 // Returns a readonly copy filterd the byte.
 // ie ByType(gin.ErrorTypePublic) returns a slice of errors with type=ErrorTypePublic
 func (a errorMsgs) ByType(typ ErrorType) errorMsgs {
