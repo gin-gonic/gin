@@ -16,7 +16,14 @@ import (
 const BindKey = "_gin-gonic/gin/bindkey"
 
 func Bind(val interface{}) HandlerFunc {
-	typ := reflect.ValueOf(val).Type()
+	value := reflect.ValueOf(val)
+	if value.Kind() == reflect.Ptr {
+		panic(`Bind struct can not be a pointer. Example:
+	Use: gin.Bind(Struct{}) instead of gin.Bind(&Struct{})
+`)
+	}
+	typ := value.Type()
+
 	return func(c *Context) {
 		obj := reflect.New(typ).Interface()
 		if c.Bind(obj) == nil {
