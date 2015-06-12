@@ -116,6 +116,14 @@ func (engine *Engine) LoadHTMLFiles(files ...string) {
 }
 
 func (engine *Engine) SetHTMLTemplate(templ *template.Template) {
+	if len(engine.trees) > 0 {
+		debugPrint(`[WARNING] Since SetHTMLTemplate() is NOT thread-safe. It should only be called
+at initialization. ie. before any route is registered or the router is listening in a socket:
+
+	router := gin.Default()
+	router.SetHTMLTemplate(template) // << good place
+`)
+	}
 	engine.HTMLRender = render.HTMLProduction{Template: templ}
 }
 
