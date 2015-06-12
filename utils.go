@@ -13,6 +13,18 @@ import (
 	"strings"
 )
 
+const BindKey = "_gin-gonic/gin/bindkey"
+
+func Bind(val interface{}) HandlerFunc {
+	typ := reflect.ValueOf(val).Type()
+	return func(c *Context) {
+		obj := reflect.New(typ).Interface()
+		if c.Bind(obj) == nil {
+			c.Set(BindKey, obj)
+		}
+	}
+}
+
 func WrapF(f http.HandlerFunc) HandlerFunc {
 	return func(c *Context) {
 		f(c.Writer, c.Request)
