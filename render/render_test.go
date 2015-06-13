@@ -29,6 +29,19 @@ func TestRenderJSON(t *testing.T) {
 	assert.Equal(t, w.Header().Get("Content-Type"), "application/json; charset=utf-8")
 }
 
+func TestRenderJSONAPI(t *testing.T) {
+	w := httptest.NewRecorder()
+	data := map[string]interface{}{
+		"foo": "bar",
+	}
+
+	err := (JSONAPI{data}).Render(w)
+
+	assert.NoError(t, err)
+	assert.Equal(t, w.Body.String(), "{\"foo\":\"bar\"}\n")
+	assert.Equal(t, w.Header().Get("Content-Type"), "application/vnd.api+json")
+}
+
 func TestRenderIndentedJSON(t *testing.T) {
 	w := httptest.NewRecorder()
 	data := map[string]interface{}{
