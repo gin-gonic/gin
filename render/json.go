@@ -13,16 +13,27 @@ type (
 	JSON struct {
 		Data interface{}
 	}
+	
+	JSONAPI struct {
+		Data interface{}
+	}
 
 	IndentedJSON struct {
 		Data interface{}
 	}
 )
 
-var jsonContentType = []string{"application/json; charset=utf-8"}
+var (
+	jsonContentType = []string{"application/json; charset=utf-8"}
+	jsonAPIContentType = []string{"application/vnd.api+json"}
+)
 
 func (r JSON) Render(w http.ResponseWriter) error {
 	return WriteJSON(w, r.Data)
+}
+
+func (r JSONAPI) Render(w http.ResponseWriter) error {
+	return WriteJSONAPI(w, r.Data)
 }
 
 func (r IndentedJSON) Render(w http.ResponseWriter) error {
@@ -37,5 +48,10 @@ func (r IndentedJSON) Render(w http.ResponseWriter) error {
 
 func WriteJSON(w http.ResponseWriter, obj interface{}) error {
 	w.Header()["Content-Type"] = jsonContentType
+	return json.NewEncoder(w).Encode(obj)
+}
+
+func WriteJSONAPI(w http.ResponseWriter, obj interface{}) error {
+	w.Header()["Content-Type"] = jsonAPIContentType
 	return json.NewEncoder(w).Encode(obj)
 }
