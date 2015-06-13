@@ -16,6 +16,6 @@ type XML struct {
 var xmlContentType = []string{"application/xml; charset=utf-8"}
 
 func (r XML) Render(w http.ResponseWriter) error {
-	w.Header()["Content-Type"] = xmlContentType
+	writeContentType(w, xmlContentType)
 	return xml.NewEncoder(w).Encode(r.Data)
 }

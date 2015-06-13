@@ -58,7 +58,7 @@ func (r HTMLDebug) loadTemplate() *template.Template {
 }
 
 func (r HTML) Render(w http.ResponseWriter) error {
-	w.Header()["Content-Type"] = htmlContentType
+	writeContentType(w, htmlContentType)
 	if len(r.Name) == 0 {
 		return r.Template.Execute(w, r.Data)
 	} else {
