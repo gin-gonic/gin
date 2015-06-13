@@ -331,6 +331,15 @@ func (c *Context) JSON(code int, obj interface{}) {
 	}
 }
 
+// Serializes the given struct as JSON into the response body.
+// It also sets the Content-Type as "application/vnd.api+json".
+func (c *Context) JSONAPI(code int, obj interface{}) {
+	c.writermem.WriteHeader(code)
+	if err := render.WriteJSONAPI(c.Writer, obj); err != nil {
+		c.renderError(err)
+	}
+}
+
 // Serializes the given struct as XML into the response body.
 // It also sets the Content-Type as "application/xml".
 func (c *Context) XML(code int, obj interface{}) {
