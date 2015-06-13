@@ -51,7 +51,7 @@ func WriteJSON(w http.ResponseWriter, obj interface{}) error {
 	return json.NewEncoder(w).Encode(obj)
 }
 
-func WriteJSONAPI(w http.ResponseWrite, obj interface{}) error {
+func WriteJSONAPI(w http.ResponseWriter, obj interface{}) error {
 	w.Header()["Content-Type"] = jsonAPIContentType
-	return json.NewEncode(w).Encode(obj)
+	return json.NewEncoder(w).Encode(obj)
 }
