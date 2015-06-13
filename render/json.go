@@ -26,7 +26,7 @@ func (r JSON) Render(w http.ResponseWriter) error {
 }
 
 func (r IndentedJSON) Render(w http.ResponseWriter) error {
-	w.Header()["Content-Type"] = jsonContentType
+	writeContentType(w, jsonContentType)
 	jsonBytes, err := json.MarshalIndent(r.Data, "", "    ")
 	if err != nil {
 		return err
@@ -36,6 +36,6 @@ func (r IndentedJSON) Render(w http.ResponseWriter) error {
 }
 
 func WriteJSON(w http.ResponseWriter, obj interface{}) error {
-	w.Header()["Content-Type"] = jsonContentType
+	writeContentType(w, jsonContentType)
 	return json.NewEncoder(w).Encode(obj)
 }

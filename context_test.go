@@ -220,6 +220,18 @@ func TestContextRenderJSON(t *testing.T) {
 }
 
 // Tests that the response is serialized as JSON
+// we change the content-type before
+func TestContextRenderAPIJSON(t *testing.T) {
+	c, w, _ := createTestContext()
+	c.Header("Content-Type", "application/vnd.api+json")
+	c.JSON(201, H{"foo": "bar"})
+
+	assert.Equal(t, w.Code, 201)
+	assert.Equal(t, w.Body.String(), "{\"foo\":\"bar\"}\n")
+	assert.Equal(t, w.HeaderMap.Get("Content-Type"), "application/vnd.api+json")
+}
+
+// Tests that the response is serialized as JSON
 // and Content-Type is set to application/json
 func TestContextRenderIndentedJSON(t *testing.T) {
 	c, w, _ := createTestContext()

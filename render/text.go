@@ -23,10 +23,8 @@ func (r String) Render(w http.ResponseWriter) error {
 }
 
 func WriteString(w http.ResponseWriter, format string, data []interface{}) {
-	header := w.Header()
-	if _, exist := header["Content-Type"]; !exist {
-		header["Content-Type"] = plainContentType
-	}
+	writeContentType(w, plainContentType)
+
 	if len(data) > 0 {
 		fmt.Fprintf(w, format, data...)
 	} else {
