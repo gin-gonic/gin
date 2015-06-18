@@ -181,15 +181,14 @@ func compareFunc(t *testing.T, a, b interface{}) {
 }
 
 func TestListOfRoutes(t *testing.T) {
-	handler := func(c *Context) {}
 	router := New()
-	router.GET("/favicon.ico", handler)
-	router.GET("/", handler)
+	router.GET("/favicon.ico", handler_test1)
+	router.GET("/", handler_test1)
 	group := router.Group("/users")
 	{
-		group.GET("/", handler)
-		group.GET("/:id", handler)
-		group.POST("/:id", handler)
+		group.GET("/", handler_test2)
+		group.GET("/:id", handler_test1)
+		group.POST("/:id", handler_test2)
 	}
 	router.Static("/static", ".")
 
@@ -197,32 +196,31 @@ func TestListOfRoutes(t *testing.T) {
 
 	assert.Len(t, list, 7)
 	assert.Contains(t, list, RouteInfo{
-		Method: "GET",
-		Path:   "/favicon.ico",
+		Method:  "GET",
+		Path:    "/favicon.ico",
+		Handler: "github.com/gin-gonic/gin.handler_test1",
 	})
 	assert.Contains(t, list, RouteInfo{
-		Method: "GET",
-		Path:   "/",
+		Method:  "GET",
+		Path:    "/",
+		Handler: "github.com/gin-gonic/gin.handler_test1",
 	})
 	assert.Contains(t, list, RouteInfo{
-		Method: "GET",
-		Path:   "/users/",
+		Method:  "GET",
+		Path:    "/users/",
+		Handler: "github.com/gin-gonic/gin.handler_test2",
 	})
 	assert.Contains(t, list, RouteInfo{
-		Method: "GET",
-		Path:   "/users/:id",
+		Method:  "GET",
+		Path:    "/users/:id",
+		Handler: "github.com/gin-gonic/gin.handler_test1",
 	})
 	assert.Contains(t, list, RouteInfo{
-		Method: "POST",
-		Path:   "/users/:id",
+		Method:  "POST",
+		Path:    "/users/:id",
+		Handler: "github.com/gin-gonic/gin.handler_test2",
 	})
-	assert.Contains(t, list, RouteInfo{
-		Method: "GET",
-		Path:   "/static/*filepath",
-	})
-	assert.Contains(t, list, RouteInfo{
-		Method: "HEAD",
-		Path:   "/static/*filepath",
-	})
-
 }
+
+func handler_test1(c *Context) {}
+func handler_test2(c *Context) {}

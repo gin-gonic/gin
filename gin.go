@@ -62,7 +62,8 @@ type (
 		ForwardedByClientIP    bool
 	}
 
-	RouteInfo struct {
+	RoutesInfo []RouteInfo
+	RouteInfo  struct {
 		Method  string
 		Path    string
 		Handler string
@@ -195,14 +196,14 @@ func (engine *Engine) addRoute(method, path string, handlers HandlersChain) {
 	root.addRoute(path, handlers)
 }
 
-func (engine *Engine) Routes() (routes []RouteInfo) {
+func (engine *Engine) Routes() (routes RoutesInfo) {
 	for _, tree := range engine.trees {
 		routes = iterate("", tree.method, routes, tree.root)
 	}
 	return routes
 }
 
-func iterate(path, method string, routes []RouteInfo, root *node) []RouteInfo {
+func iterate(path, method string, routes RoutesInfo, root *node) RoutesInfo {
 	path += root.path
 	if len(root.handlers) > 0 {
 		routes = append(routes, RouteInfo{
