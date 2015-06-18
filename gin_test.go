@@ -14,7 +14,6 @@ import (
 //TODO
 // func (engine *Engine) LoadHTMLGlob(pattern string) {
 // func (engine *Engine) LoadHTMLFiles(files ...string) {
-// func (engine *Engine) Run(addr string) error {
 // func (engine *Engine) RunTLS(addr string, cert string, key string) error {
 
 func init() {
@@ -179,4 +178,51 @@ func compareFunc(t *testing.T, a, b interface{}) {
 	if sf1.Pointer() != sf2.Pointer() {
 		t.Error("different functions")
 	}
+}
+
+func TestListOfRoutes(t *testing.T) {
+	handler := func(c *Context) {}
+	router := New()
+	router.GET("/favicon.ico", handler)
+	router.GET("/", handler)
+	group := router.Group("/users")
+	{
+		group.GET("/", handler)
+		group.GET("/:id", handler)
+		group.POST("/:id", handler)
+	}
+	router.Static("/static", ".")
+
+	list := router.Routes()
+
+	assert.Len(t, list, 7)
+	assert.Contains(t, list, RouteInfo{
+		Method: "GET",
+		Path:   "/favicon.ico",
+	})
+	assert.Contains(t, list, RouteInfo{
+		Method: "GET",
+		Path:   "/",
+	})
+	assert.Contains(t, list, RouteInfo{
+		Method: "GET",
+		Path:   "/users/",
+	})
+	assert.Contains(t, list, RouteInfo{
+		Method: "GET",
+		Path:   "/users/:id",
+	})
+	assert.Contains(t, list, RouteInfo{
+		Method: "POST",
+		Path:   "/users/:id",
+	})
+	assert.Contains(t, list, RouteInfo{
+		Method: "GET",
+		Path:   "/static/*filepath",
+	})
+	assert.Contains(t, list, RouteInfo{
+		Method: "HEAD",
+		Path:   "/static/*filepath",
+	})
+
 }
