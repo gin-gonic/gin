@@ -11,22 +11,22 @@ import (
 	"strings"
 )
 
-type routesInterface interface {
-	Use(...HandlerFunc) routesInterface
+type RoutesInterface interface {
+	Use(...HandlerFunc) RoutesInterface
 
-	Handle(string, string, ...HandlerFunc) routesInterface
-	Any(string, ...HandlerFunc) routesInterface
-	GET(string, ...HandlerFunc) routesInterface
-	POST(string, ...HandlerFunc) routesInterface
-	DELETE(string, ...HandlerFunc) routesInterface
-	PATCH(string, ...HandlerFunc) routesInterface
-	PUT(string, ...HandlerFunc) routesInterface
-	OPTIONS(string, ...HandlerFunc) routesInterface
-	HEAD(string, ...HandlerFunc) routesInterface
+	Handle(string, string, ...HandlerFunc) RoutesInterface
+	Any(string, ...HandlerFunc) RoutesInterface
+	GET(string, ...HandlerFunc) RoutesInterface
+	POST(string, ...HandlerFunc) RoutesInterface
+	DELETE(string, ...HandlerFunc) RoutesInterface
+	PATCH(string, ...HandlerFunc) RoutesInterface
+	PUT(string, ...HandlerFunc) RoutesInterface
+	OPTIONS(string, ...HandlerFunc) RoutesInterface
+	HEAD(string, ...HandlerFunc) RoutesInterface
 
-	StaticFile(string, string) routesInterface
-	Static(string, string) routesInterface
-	StaticFS(string, http.FileSystem) routesInterface
+	StaticFile(string, string) RoutesInterface
+	Static(string, string) RoutesInterface
+	StaticFS(string, http.FileSystem) RoutesInterface
 }
 
 // Used internally to configure router, a RouterGroup is associated with a prefix
@@ -39,7 +39,7 @@ type RouterGroup struct {
 }
 
 // Adds middlewares to the group, see example code in github.
-func (group *RouterGroup) Use(middlewares ...HandlerFunc) routesInterface {
+func (group *RouterGroup) Use(middlewares ...HandlerFunc) RoutesInterface {
 	group.Handlers = append(group.Handlers, middlewares...)
 	return group.returnObj()
 }
@@ -64,14 +64,14 @@ func (group *RouterGroup) Group(relativePath string, handlers ...HandlerFunc) *R
 // This function is intended for bulk loading and to allow the usage of less
 // frequently used, non-standardized or custom methods (e.g. for internal
 // communication with a proxy).
-func (group *RouterGroup) handle(httpMethod, relativePath string, handlers HandlersChain) routesInterface {
+func (group *RouterGroup) handle(httpMethod, relativePath string, handlers HandlersChain) RoutesInterface {
 	absolutePath := group.calculateAbsolutePath(relativePath)
 	handlers = group.combineHandlers(handlers)
 	group.engine.addRoute(httpMethod, absolutePath, handlers)
 	return group.returnObj()
 }
 
-func (group *RouterGroup) Handle(httpMethod, relativePath string, handlers ...HandlerFunc) routesInterface {
+func (group *RouterGroup) Handle(httpMethod, relativePath string, handlers ...HandlerFunc) RoutesInterface {
 	if matches, err := regexp.MatchString("^[A-Z]+$", httpMethod); !matches || err != nil {
 		panic("http method " + httpMethod + " is not valid")
 	}
@@ -79,41 +79,41 @@ func (group *RouterGroup) Handle(httpMethod, relativePath string, handlers ...Ha
 }
 
 // POST is a shortcut for router.Handle("POST", path, handle)
-func (group *RouterGroup) POST(relativePath string, handlers ...HandlerFunc) routesInterface {
+func (group *RouterGroup) POST(relativePath string, handlers ...HandlerFunc) RoutesInterface {
 	return group.handle("POST", relativePath, handlers)
 }
 
 // GET is a shortcut for router.Handle("GET", path, handle)
-func (group *RouterGroup) GET(relativePath string, handlers ...HandlerFunc) routesInterface {
+func (group *RouterGroup) GET(relativePath string, handlers ...HandlerFunc) RoutesInterface {
 	return group.handle("GET", relativePath, handlers)
 }
 
 // DELETE is a shortcut for router.Handle("DELETE", path, handle)
-func (group *RouterGroup) DELETE(relativePath string, handlers ...HandlerFunc) routesInterface {
+func (group *RouterGroup) DELETE(relativePath string, handlers ...HandlerFunc) RoutesInterface {
 	return group.handle("DELETE", relativePath, handlers)
 }
 
 // PATCH is a shortcut for router.Handle("PATCH", path, handle)
-func (group *RouterGroup) PATCH(relativePath string, handlers ...HandlerFunc) routesInterface {
+func (group *RouterGroup) PATCH(relativePath string, handlers ...HandlerFunc) RoutesInterface {
 	return group.handle("PATCH", relativePath, handlers)
 }
 
 // PUT is a shortcut for router.Handle("PUT", path, handle)
-func (group *RouterGroup) PUT(relativePath string, handlers ...HandlerFunc) routesInterface {
+func (group *RouterGroup) PUT(relativePath string, handlers ...HandlerFunc) RoutesInterface {
 	return group.handle("PUT", relativePath, handlers)
 }
 
 // OPTIONS is a shortcut for router.Handle("OPTIONS", path, handle)
-func (group *RouterGroup) OPTIONS(relativePath string, handlers ...HandlerFunc) routesInterface {
+func (group *RouterGroup) OPTIONS(relativePath string, handlers ...HandlerFunc) RoutesInterface {
 	return group.handle("OPTIONS", relativePath, handlers)
 }
 
 // HEAD is a shortcut for router.Handle("HEAD", path, handle)
-func (group *RouterGroup) HEAD(relativePath string, handlers ...HandlerFunc) routesInterface {
+func (group *RouterGroup) HEAD(relativePath string, handlers ...HandlerFunc) RoutesInterface {
 	return group.handle("HEAD", relativePath, handlers)
 }
 
-func (group *RouterGroup) Any(relativePath string, handlers ...HandlerFunc) routesInterface {
+func (group *RouterGroup) Any(relativePath string, handlers ...HandlerFunc) RoutesInterface {
 	// GET, POST, PUT, PATCH, HEAD, OPTIONS, DELETE, CONNECT, TRACE
 	group.handle("GET", relativePath, handlers)
 	group.handle("POST", relativePath, handlers)
@@ -127,7 +127,7 @@ func (group *RouterGroup) Any(relativePath string, handlers ...HandlerFunc) rout
 	return group.returnObj()
 }
 
-func (group *RouterGroup) StaticFile(relativePath, filepath string) routesInterface {
+func (group *RouterGroup) StaticFile(relativePath, filepath string) RoutesInterface {
 	if strings.Contains(relativePath, ":") || strings.Contains(relativePath, "*") {
 		panic("URL parameters can not be used when serving a static file")
 	}
@@ -145,11 +145,11 @@ func (group *RouterGroup) StaticFile(relativePath, filepath string) routesInterf
 // To use the operating system's file system implementation,
 // use :
 //     router.Static("/static", "/var/www")
-func (group *RouterGroup) Static(relativePath, root string) routesInterface {
+func (group *RouterGroup) Static(relativePath, root string) RoutesInterface {
 	return group.StaticFS(relativePath, Dir(root, false))
 }
 
-func (group *RouterGroup) StaticFS(relativePath string, fs http.FileSystem) routesInterface {
+func (group *RouterGroup) StaticFS(relativePath string, fs http.FileSystem) RoutesInterface {
 	if strings.Contains(relativePath, ":") || strings.Contains(relativePath, "*") {
 		panic("URL parameters can not be used when serving a static folder")
 	}
@@ -189,7 +189,7 @@ func (group *RouterGroup) calculateAbsolutePath(relativePath string) string {
 	return joinPaths(group.BasePath, relativePath)
 }
 
-func (group *RouterGroup) returnObj() routesInterface {
+func (group *RouterGroup) returnObj() RoutesInterface {
 	if group.root {
 		return group.engine
 	} else {
