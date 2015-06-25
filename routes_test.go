@@ -40,7 +40,6 @@ func testRouteOK(method string, t *testing.T) {
 
 	performRequest(r, method, "/test2")
 	assert.True(t, passedAny)
-
 }
 
 // TestSingleRouteOK tests that POST route is correctly invoked.

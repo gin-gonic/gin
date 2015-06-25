@@ -72,6 +72,10 @@ func (c *Context) Copy() *Context {
 	return &cp
 }
 
+func (c *Context) HandlerName() string {
+	return nameOfFunction(c.handlers.Last())
+}
+
 /************************************/
 /*********** FLOW CONTROL ***********/
 /************************************/

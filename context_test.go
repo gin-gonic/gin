@@ -135,6 +135,17 @@ func TestContextCopy(t *testing.T) {
 	assert.Equal(t, cp.Params, c.Params)
 }
 
+func TestContextHandlerName(t *testing.T) {
+	c, _, _ := createTestContext()
+	c.handlers = HandlersChain{func(c *Context) {}, handlerNameTest}
+
+	assert.Equal(t, c.HandlerName(), "github.com/gin-gonic/gin.handlerNameTest")
+}
+
+func handlerNameTest(c *Context) {
+
+}
+
 func TestContextQuery(t *testing.T) {
 	c, _, _ := createTestContext()
 	c.Request, _ = http.NewRequest("GET", "http://example.com/?foo=bar&page=10", nil)
