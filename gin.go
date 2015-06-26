@@ -83,7 +83,7 @@ var _ RoutesInterface = &Engine{}
 // Returns a new blank Engine instance without any middleware attached.
 // The most basic configuration
 func New() *Engine {
-	debugPrintWARNING()
+	debugPrintWARNING_New()
 	engine := &Engine{
 		RouterGroup: RouterGroup{
 			Handlers: nil,
@@ -134,12 +134,7 @@ func (engine *Engine) LoadHTMLFiles(files ...string) {
 
 func (engine *Engine) SetHTMLTemplate(templ *template.Template) {
 	if len(engine.trees) > 0 {
-		debugPrint(`[WARNING] Since SetHTMLTemplate() is NOT thread-safe. It should only be called
-at initialization. ie. before any route is registered or the router is listening in a socket:
-
-	router := gin.Default()
-	router.SetHTMLTemplate(template) // << good place
-`)
+		debugPrintWARNING_SetHTMLTemplate()
 	}
 	engine.HTMLRender = render.HTMLProduction{Template: templ}
 }
