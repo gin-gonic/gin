@@ -19,9 +19,24 @@ const Version = "v1.0rc2"
 var default404Body = []byte("404 page not found")
 var default405Body = []byte("405 method not allowed")
 
+type HandlerFunc func(*Context)
+type HandlersChain []HandlerFunc
+
+func (c HandlersChain) Last() HandlerFunc {
+	length := len(c)
+	if length > 0 {
+		return c[length-1]
+	}
+	return nil
+}
+
 type (
-	HandlerFunc   func(*Context)
-	HandlersChain []HandlerFunc
+	RoutesInfo []RouteInfo
+	RouteInfo  struct {
+		Method  string
+		Path    string
+		Handler string
+	}
 
 	// Represents the web framework, it wraps the blazing fast httprouter multiplexer and a list of global middlewares.
 	Engine struct {
@@ -61,24 +76,9 @@ type (
 		HandleMethodNotAllowed bool
 		ForwardedByClientIP    bool
 	}
-
-	RoutesInfo []RouteInfo
-	RouteInfo  struct {
-		Method  string
-		Path    string
-		Handler string
-	}
 )
 
 var _ RoutesInterface = &Engine{}
-
-func (c HandlersChain) Last() HandlerFunc {
-	length := len(c)
-	if length > 0 {
-		return c[length-1]
-	}
-	return nil
-}
 
 // Returns a new blank Engine instance without any middleware attached.
 // The most basic configuration

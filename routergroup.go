@@ -11,37 +11,39 @@ import (
 	"strings"
 )
 
-type RoutesInterface interface {
-	routesInterface
-	Group(string, ...HandlerFunc) *RouterGroup
-}
+type (
+	RoutesInterface interface {
+		routesInterface
+		Group(string, ...HandlerFunc) *RouterGroup
+	}
 
-type routesInterface interface {
-	Use(...HandlerFunc) routesInterface
+	routesInterface interface {
+		Use(...HandlerFunc) routesInterface
 
-	Handle(string, string, ...HandlerFunc) routesInterface
-	Any(string, ...HandlerFunc) routesInterface
-	GET(string, ...HandlerFunc) routesInterface
-	POST(string, ...HandlerFunc) routesInterface
-	DELETE(string, ...HandlerFunc) routesInterface
-	PATCH(string, ...HandlerFunc) routesInterface
-	PUT(string, ...HandlerFunc) routesInterface
-	OPTIONS(string, ...HandlerFunc) routesInterface
-	HEAD(string, ...HandlerFunc) routesInterface
+		Handle(string, string, ...HandlerFunc) routesInterface
+		Any(string, ...HandlerFunc) routesInterface
+		GET(string, ...HandlerFunc) routesInterface
+		POST(string, ...HandlerFunc) routesInterface
+		DELETE(string, ...HandlerFunc) routesInterface
+		PATCH(string, ...HandlerFunc) routesInterface
+		PUT(string, ...HandlerFunc) routesInterface
+		OPTIONS(string, ...HandlerFunc) routesInterface
+		HEAD(string, ...HandlerFunc) routesInterface
 
-	StaticFile(string, string) routesInterface
-	Static(string, string) routesInterface
-	StaticFS(string, http.FileSystem) routesInterface
-}
+		StaticFile(string, string) routesInterface
+		Static(string, string) routesInterface
+		StaticFS(string, http.FileSystem) routesInterface
+	}
 
-// Used internally to configure router, a RouterGroup is associated with a prefix
-// and an array of handlers (middlewares)
-type RouterGroup struct {
-	Handlers HandlersChain
-	BasePath string
-	engine   *Engine
-	root     bool
-}
+	// Used internally to configure router, a RouterGroup is associated with a prefix
+	// and an array of handlers (middlewares)
+	RouterGroup struct {
+		Handlers HandlersChain
+		BasePath string
+		engine   *Engine
+		root     bool
+	}
+)
 
 var _ RoutesInterface = &RouterGroup{}
 
