@@ -157,7 +157,7 @@ func TestRouterGroupPipeline(t *testing.T) {
 	testRoutesInterface(t, v1)
 }
 
-func testRoutesInterface(t *testing.T, r routesInterface) {
+func testRoutesInterface(t *testing.T, r RoutesInterface) {
 	handler := func(c *Context) {}
 	assert.Equal(t, r, r.Use(handler))
 
