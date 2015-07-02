@@ -102,10 +102,10 @@ func (a errorMsgs) ByType(typ ErrorType) errorMsgs {
 // Shortcut for errors[len(errors)-1]
 func (a errorMsgs) Last() *Error {
 	length := len(a)
-	if length == 0 {
-		return nil
+	if length > 0 {
+		return a[length-1]
 	}
-	return a[length-1]
+	return nil
 }
 
 // Returns an array will all the error messages.

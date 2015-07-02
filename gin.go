@@ -209,8 +209,8 @@ func iterate(path, method string, routes RoutesInfo, root *node) RoutesInfo {
 			Handler: nameOfFunction(root.handlers.Last()),
 		})
 	}
-	for _, node := range root.children {
-		routes = iterate(path, method, routes, node)
+	for _, child := range root.children {
+		routes = iterate(path, method, routes, child)
 	}
 	return routes
 }
