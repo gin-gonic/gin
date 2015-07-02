@@ -9,6 +9,9 @@ import "log"
 func init() {
 	log.SetFlags(0)
 }
+
+// IsDebugging returns true if the framework is running in debug mode.
+// Use SetMode(gin.Release) to switch to disable the debug mode.
 func IsDebugging() bool {
 	return ginMode == debugCode
 }
@@ -27,7 +30,7 @@ func debugPrint(format string, values ...interface{}) {
 	}
 }
 
-func debugPrintWARNING_New() {
+func debugPrintWARNINGNew() {
 	debugPrint(`[WARNING] Running in "debug" mode. Switch to "release" mode in production.
  - using env:	export GIN_MODE=release
  - using code:	gin.SetMode(gin.ReleaseMode)
@@ -35,7 +38,7 @@ func debugPrintWARNING_New() {
 `)
 }
 
-func debugPrintWARNING_SetHTMLTemplate() {
+func debugPrintWARNINGSetHTMLTemplate() {
 	debugPrint(`[WARNING] Since SetHTMLTemplate() is NOT thread-safe. It should only be called
 at initialization. ie. before any route is registered or the router is listening in a socket:
 

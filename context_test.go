@@ -129,7 +129,7 @@ func TestContextCopy(t *testing.T) {
 	assert.Nil(t, cp.writermem.ResponseWriter)
 	assert.Equal(t, &cp.writermem, cp.Writer.(*responseWriter))
 	assert.Equal(t, cp.Request, c.Request)
-	assert.Equal(t, cp.index, AbortIndex)
+	assert.Equal(t, cp.index, abortIndex)
 	assert.Equal(t, cp.Keys, c.Keys)
 	assert.Equal(t, cp.engine, c.engine)
 	assert.Equal(t, cp.Params, c.Params)
@@ -418,7 +418,7 @@ func TestContextIsAborted(t *testing.T) {
 	c.Next()
 	assert.True(t, c.IsAborted())
 
-	c.Next()
+	c.index++
 	assert.True(t, c.IsAborted())
 }
 
@@ -430,7 +430,7 @@ func TestContextAbortWithStatus(t *testing.T) {
 	c.AbortWithStatus(401)
 	c.Writer.WriteHeaderNow()
 
-	assert.Equal(t, c.index, AbortIndex)
+	assert.Equal(t, c.index, abortIndex)
 	assert.Equal(t, c.Writer.Status(), 401)
 	assert.Equal(t, w.Code, 401)
 	assert.True(t, c.IsAborted())
@@ -482,7 +482,7 @@ func TestContextAbortWithError(t *testing.T) {
 	c.Writer.WriteHeaderNow()
 
 	assert.Equal(t, w.Code, 401)
-	assert.Equal(t, c.index, AbortIndex)
+	assert.Equal(t, c.index, abortIndex)
 	assert.True(t, c.IsAborted())
 }
 

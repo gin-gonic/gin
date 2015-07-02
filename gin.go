@@ -14,6 +14,7 @@ import (
 	"github.com/gin-gonic/gin/render"
 )
 
+// Framework's version
 const Version = "v1.0rc2"
 
 var default404Body = []byte("404 page not found")
@@ -22,6 +23,7 @@ var default405Body = []byte("405 method not allowed")
 type HandlerFunc func(*Context)
 type HandlersChain []HandlerFunc
 
+// Last returns the last handler in the chain. ie. the last handler is the main own.
 func (c HandlersChain) Last() HandlerFunc {
 	length := len(c)
 	if length > 0 {
@@ -38,7 +40,8 @@ type (
 		Handler string
 	}
 
-	// Represents the web framework, it wraps the blazing fast httprouter multiplexer and a list of global middlewares.
+	// Engine is the framework's instance, it contains the muxer, middlewares and configuration settings.
+	// Create an instance of Engine, by using New() or Default()
 	Engine struct {
 		RouterGroup
 		HTMLRender  render.HTMLRender
@@ -78,12 +81,16 @@ type (
 	}
 )
 
-var _ RoutesInterface = &Engine{}
+var _ IRouter = &Engine{}
 
-// Returns a new blank Engine instance without any middleware attached.
-// The most basic configuration
+// New returns a new blank Engine instance without any middleware attached.
+// By default the configuration is:
+// - RedirectTrailingSlash:  true
+// - RedirectFixedPath:      false
+// - HandleMethodNotAllowed: false
+// - ForwardedByClientIP:    true
 func New() *Engine {
-	debugPrintWARNING_New()
+	debugPrintWARNINGNew()
 	engine := &Engine{
 		RouterGroup: RouterGroup{
 			Handlers: nil,
@@ -103,7 +110,7 @@ func New() *Engine {
 	return engine
 }
 
-// Returns a Engine instance with the Logger and Recovery already attached.
+// Default returns an Engine instance with the Logger and Recovery middleware already attached.
 func Default() *Engine {
 	engine := New()
 	engine.Use(Recovery(), Logger())
@@ -134,7 +141,7 @@ func (engine *Engine) LoadHTMLFiles(files ...string) {
 
 func (engine *Engine) SetHTMLTemplate(templ *template.Template) {
 	if len(engine.trees) > 0 {
-		debugPrintWARNING_SetHTMLTemplate()
+		debugPrintWARNINGSetHTMLTemplate()
 	}
 	engine.HTMLRender = render.HTMLProduction{Template: templ}
 }
@@ -154,7 +161,7 @@ func (engine *Engine) NoMethod(handlers ...HandlerFunc) {
 // Attachs a global middleware to the router. ie. the middlewares attached though Use() will be
 // included in the handlers chain for every single request. Even 404, 405, static files...
 // For example, this is the right place for a logger or error management middleware.
-func (engine *Engine) Use(middlewares ...HandlerFunc) routesInterface {
+func (engine *Engine) Use(middlewares ...HandlerFunc) IRoutes {
 	engine.RouterGroup.Use(middlewares...)
 	engine.rebuild404Handlers()
 	engine.rebuild405Handlers()
@@ -193,6 +200,8 @@ func (engine *Engine) addRoute(method, path string, handlers HandlersChain) {
 	root.addRoute(path, handlers)
 }
 
+// Routes returns a slice of registered routes, including some useful information, such as:
+// the http method, path and the handler name.
 func (engine *Engine) Routes() (routes RoutesInfo) {
 	for _, tree := range engine.trees {
 		routes = iterate("", tree.method, routes, tree.root)
@@ -215,7 +224,7 @@ func iterate(path, method string, routes RoutesInfo, root *node) RoutesInfo {
 	return routes
 }
 
-// The router is attached to a http.Server and starts listening and serving HTTP requests.
+// Run attaches the router to a http.Server and starts listening and serving HTTP requests.
 // It is a shortcut for http.ListenAndServe(addr, router)
 // Note: this method will block the calling goroutine undefinitelly unless an error happens.
 func (engine *Engine) Run(addr string) (err error) {
@@ -226,7 +235,7 @@ func (engine *Engine) Run(addr string) (err error) {
 	return
 }
 
-// The router is attached to a http.Server and starts listening and serving HTTPS requests.
+// RunTLS attaches the router to a http.Server and starts listening and serving HTTPS (secure) requests.
 // It is a shortcut for http.ListenAndServeTLS(addr, certFile, keyFile, router)
 // Note: this method will block the calling goroutine undefinitelly unless an error happens.
 func (engine *Engine) RunTLS(addr string, certFile string, keyFile string) (err error) {
@@ -237,8 +246,8 @@ func (engine *Engine) RunTLS(addr string, certFile string, keyFile string) (err 
 	return
 }
 
-// The router is attached to a http.Server and starts listening and serving HTTP requests
-// through the specified unix socket (ie. a file)
+// RunUnix attaches the router to a http.Server and starts listening and serving HTTP requests
+// through the specified unix socket (ie. a file).
 // Note: this method will block the calling goroutine undefinitelly unless an error happens.
 func (engine *Engine) RunUnix(file string) (err error) {
 	debugPrint("Listening and serving HTTP on unix:/%s", file)
