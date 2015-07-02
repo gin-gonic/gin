@@ -410,15 +410,15 @@ func TestContextNegotiationFormatCustum(t *testing.T) {
 
 func TestContextIsAborted(t *testing.T) {
 	c, _, _ := createTestContext()
-
 	assert.False(t, c.IsAborted())
 
 	c.Abort()
-
 	assert.True(t, c.IsAborted())
 
 	c.Next()
+	assert.True(t, c.IsAborted())
 
+	c.Next()
 	assert.True(t, c.IsAborted())
 }
 
