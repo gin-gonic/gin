@@ -417,7 +417,7 @@ func TestContextIsAborted(t *testing.T) {
 
 	assert.True(t, c.IsAborted())
 
-	c.index += 1
+	c.Next()
 
 	assert.True(t, c.IsAborted())
 }
