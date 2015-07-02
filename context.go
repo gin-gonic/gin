@@ -95,7 +95,7 @@ func (c *Context) Next() {
 
 // Returns if the currect context was aborted.
 func (c *Context) IsAborted() bool {
-	return c.index == AbortIndex
+	return c.index >= AbortIndex
 }
 
 // Stops the system to continue calling the pending handlers in the chain.

@@ -408,6 +408,20 @@ func TestContextNegotiationFormatCustum(t *testing.T) {
 	assert.Equal(t, c.NegotiateFormat(MIMEJSON), MIMEJSON)
 }
 
+func TestContextIsAborted(t *testing.T) {
+	c, _, _ := createTestContext()
+
+	assert.False(t, c.IsAborted())
+
+	c.Abort()
+
+	assert.True(t, c.IsAborted())
+
+	c.Next()
+
+	assert.True(t, c.IsAborted())
+}
+
 // TestContextData tests that the response can be written from `bytesting`
 // with specified MIME type
 func TestContextAbortWithStatus(t *testing.T) {
