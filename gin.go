@@ -5,12 +5,16 @@
 package gin
 
 import (
+	"crypto/tls"
+	"crypto/x509"
 	"html/template"
 	"net"
 	"net/http"
 	"os"
 	"sync"
+	"time"
 
+	"github.com/bradfitz/http2"
 	"github.com/gin-gonic/gin/render"
 )
 
@@ -238,11 +242,24 @@ func (engine *Engine) Run(addr string) (err error) {
 // RunTLS attaches the router to a http.Server and starts listening and serving HTTPS (secure) requests.
 // It is a shortcut for http.ListenAndServeTLS(addr, certFile, keyFile, router)
 // Note: this method will block the calling goroutine undefinitelly unless an error happens.
-func (engine *Engine) RunTLS(addr string, certFile string, keyFile string) (err error) {
+func (engine *Engine) RunTLS(addr, certFile, keyFile string) (err error) {
 	debugPrint("Listening and serving HTTPS on %s\n", addr)
 	defer func() { debugPrintError(err) }()
 
-	err = http.ListenAndServeTLS(addr, certFile, keyFile, engine)
+	cfg := tls.Config{InsecureSkipVerify: false, RootCAs: x509.NewCertPool()}
+	cfg.BuildNameToCertificate()
+
+	srv := http.Server{
+		Addr:           addr,
+		Handler:        engine,
+		ReadTimeout:    5 * time.Second,
+		WriteTimeout:   5 * time.Second,
+		MaxHeaderBytes: 16384,
+		TLSConfig:      &cfg,
+	}
+
+	http2.ConfigureServer(&srv, &http2.Server{})
+	err = srv.ListenAndServeTLS(certFile, keyFile)
 	return
 }
 
