@@ -7,6 +7,8 @@ package binding
 import "net/http"
 
 type formBinding struct{}
+type formPostBinding struct{}
+type formMultipartBinding struct{}
 
 func (_ formBinding) Name() string {
 	return "form"
@@ -18,6 +20,34 @@ func (_ formBinding) Bind(req *http.Request, obj interface{}) error {
 	}
 	req.ParseMultipartForm(32 << 10) // 32 MB
 	if err := mapForm(obj, req.Form); err != nil {
+		return err
+	}
+	return validate(obj)
+}
+
+func (_ formPostBinding) Name() string {
+	return "form-urlencoded"
+}
+
+func (_ formPostBinding) Bind(req *http.Request, obj interface{}) error {
+	if err := req.ParseForm(); err != nil {
+		return err
+	}
+	if err := mapForm(obj, req.PostForm); err != nil {
+		return err
+	}
+	return validate(obj)
+}
+
+func (_ formMultipartBinding) Name() string {
+	return "multipart/form-data"
+}
+
+func (_ formMultipartBinding) Bind(req *http.Request, obj interface{}) error {
+	if err := req.ParseMultipartForm(32 << 10); err != nil {
+		return err
+	}
+	if err := mapForm(obj, req.MultipartForm.Value); err != nil {
 		return err
 	}
 	return validate(obj)

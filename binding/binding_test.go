@@ -6,6 +6,7 @@ package binding
 
 import (
 	"bytes"
+	"mime/multipart"
 	"net/http"
 	"testing"
 
@@ -62,6 +63,44 @@ func TestBindingXML(t *testing.T) {
 		XML, "xml",
 		"/", "/",
 		"<map><foo>bar</foo></map>", "<map><bar>foo</bar></map>")
+}
+
+func createFormPostRequest() *http.Request {
+	req, _ := http.NewRequest("POST", "/?foo=getfoo&bar=getbar", bytes.NewBufferString("foo=bar&bar=foo"))
+	req.Header.Set("Content-Type", MIMEPOSTForm)
+	return req
+}
+
+func createFormMultipartRequest() *http.Request {
+	boundary := "--testboundary"
+	body := new(bytes.Buffer)
+	mw := multipart.NewWriter(body)
+	defer mw.Close()
+
+	mw.SetBoundary(boundary)
+	mw.WriteField("foo", "bar")
+	mw.WriteField("bar", "foo")
+	req, _ := http.NewRequest("POST", "/?foo=getfoo&bar=getbar", body)
+	req.Header.Set("Content-Type", MIMEMultipartPOSTForm+"; boundary="+boundary)
+	return req
+}
+
+func TestBindingFormPost(t *testing.T) {
+	req := createFormPostRequest()
+	var obj FooBarStruct
+	FormPost.Bind(req, &obj)
+
+	assert.Equal(t, obj.Foo, "bar")
+	assert.Equal(t, obj.Bar, "foo")
+}
+
+func TestBindingFormMultipart(t *testing.T) {
+	req := createFormMultipartRequest()
+	var obj FooBarStruct
+	FormMultipart.Bind(req, &obj)
+
+	assert.Equal(t, obj.Foo, "bar")
+	assert.Equal(t, obj.Bar, "foo")
 }
 
 func TestValidationFails(t *testing.T) {

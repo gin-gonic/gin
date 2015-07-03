@@ -33,9 +33,11 @@ type StructValidator interface {
 var Validator StructValidator = &defaultValidator{}
 
 var (
-	JSON = jsonBinding{}
-	XML  = xmlBinding{}
-	Form = formBinding{}
+	JSON          = jsonBinding{}
+	XML           = xmlBinding{}
+	Form          = formBinding{}
+	FormPost      = formPostBinding{}
+	FormMultipart = formMultipartBinding{}
 )
 
 func Default(method, contentType string) Binding {
