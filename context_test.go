@@ -77,6 +77,25 @@ func TestContextReset(t *testing.T) {
 	assert.Equal(t, c.Writer.(*responseWriter), &c.writermem)
 }
 
+func TestContextHandlers(t *testing.T) {
+	c, _, _ := createTestContext()
+	assert.Nil(t, c.handlers)
+	assert.Nil(t, c.handlers.Last())
+
+	c.handlers = HandlersChain{}
+	assert.NotNil(t, c.handlers)
+	assert.Nil(t, c.handlers.Last())
+
+	f := func(c *Context) {}
+	g := func(c *Context) {}
+
+	c.handlers = HandlersChain{f}
+	compareFunc(t, f, c.handlers.Last())
+
+	c.handlers = HandlersChain{f, g}
+	compareFunc(t, g, c.handlers.Last())
+}
+
 // TestContextSetGet tests that a parameter is set correctly on the
 // current context and can be retrieved using Get.
 func TestContextSetGet(t *testing.T) {
@@ -190,13 +209,13 @@ func TestContextQueryAndPostForm(t *testing.T) {
 
 	var obj struct {
 		Foo  string `form:"foo"`
-		Id   string `form:"id"`
+		ID   string `form:"id"`
 		Page string `form:"page"`
 		Both string `form:"both"`
 	}
 	assert.NoError(t, c.Bind(&obj))
 	assert.Equal(t, obj.Foo, "bar")
-	assert.Equal(t, obj.Id, "main")
+	assert.Equal(t, obj.ID, "main")
 	assert.Equal(t, obj.Page, "11")
 	assert.Equal(t, obj.Both, "POST")
 }
