@@ -294,7 +294,7 @@ func (engine *Engine) handleHTTPRequest(context *Context) {
 				return
 
 			} else if httpMethod != "CONNECT" && path != "/" {
-				if tsr && engine.RedirectFixedPath {
+				if tsr && engine.RedirectTrailingSlash {
 					redirectTrailingSlash(context)
 					return
 				}
