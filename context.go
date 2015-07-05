@@ -182,6 +182,11 @@ func (c *Context) MustGet(key string) interface{} {
 /************************************/
 
 // Query is a shortcut for c.Request.URL.Query().Get(key)
+// It is used to return the url query values.
+// ?id=1234&name=Manu
+// c.Query("id") == "1234"
+// c.Query("name") == "Manu"
+// c.Query("wtf") == ""
 func (c *Context) Query(key string) (va string) {
 	va, _ = c.query(key)
 	return

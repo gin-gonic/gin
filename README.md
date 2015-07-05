@@ -2,14 +2,14 @@
 
  [![GoDoc](https://godoc.org/github.com/gin-gonic/gin?status.svg)](https://godoc.org/github.com/gin-gonic/gin)  [![Join the chat at https://gitter.im/gin-gonic/gin](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/gin-gonic/gin?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
-Gin is a web framework written in Golang. It features a martini-like API with much better performance, up to 40 times faster thanks to [httprouter](https://github.com/julienschmidt/httprouter). If you need performance and good productivity, you will love Gin. 
+Gin is a web framework written in Golang. It features a martini-like API with much better performance, up to 40 times faster thanks to [httprouter](https://github.com/julienschmidt/httprouter). If you need performance and good productivity, you will love Gin.
 
 ![Gin console logger](https://gin-gonic.github.io/gin/other/console.png)
 
 ```
 $ cat test.go
 ```
-```go 
+```go
 package main
 
 import "github.com/gin-gonic/gin"
@@ -110,7 +110,7 @@ func main() {
 ```go
 func main() {
 	router := gin.Default()
-	
+
 	// This handler will match /user/john but will not match neither /user/ or /user
 	router.GET("/user/:name", func(c *gin.Context) {
 		name := c.Param("name")
@@ -125,7 +125,7 @@ func main() {
 		message := name + " is " + action
 		c.String(http.StatusOK, message)
 	})
-	
+
 	router.Run(":8080")
 }
 ```
@@ -147,7 +147,7 @@ func main() {
 }
 ```
 
-### Multipart/Urlencoded Form 
+### Multipart/Urlencoded Form
 
 ```go
 func main() {
@@ -156,7 +156,7 @@ func main() {
     router.POST("/form_post", func(c *gin.Context) {
         message := c.PostForm("message")
         nick := c.DefaultPostForm("nick", "anonymous")
-                
+
         c.JSON(200, gin.H{
             "status": "posted",
             "message": message,
@@ -165,6 +165,36 @@ func main() {
     router.Run(":8080")
 }
 ```
+
+### Another example: query + post form
+
+```
+POST /post?id=1234&page=1 HTTP/1.1
+Content-Type: application/x-www-form-urlencoded
+
+name=manu&message=this_is_great
+```
+
+```go
+func main() {
+	router := gin.Default()
+
+	router.POST("/post", func(c *gin.Context) {
+        id := c.Query("id")
+        page := c.DefaultQuery("id", "0")
+        name := c.PostForm("name")
+        message := c.PostForm("message")
+
+        fmt.Println("id: %s; page: %s; name: %s; message: %s", id, page, name, message)
+	})
+	router.Run(":8080")
+}
+```
+
+```
+id: 1234; page: 0; name: manu; message: this_is_great
+```
+
 
 #### Grouping routes
 ```go
@@ -247,57 +277,52 @@ To bind a request body into a type, use model binding. We currently support bind
 
 Note that you need to set the corresponding binding tag on all fields you want to bind. For example, when binding from JSON, set `json:"fieldname"`.
 
-When using the Bind-method, Gin tries to infer the binder depending on the Content-Type header. If you are sure what you are binding, you can use BindWith. 
+When using the Bind-method, Gin tries to infer the binder depending on the Content-Type header. If you are sure what you are binding, you can use BindWith.
 
 You can also specify that specific fields are required. If a field is decorated with `binding:"required"` and has a empty value when binding, the current request will fail with an error.
 
 ```go
 // Binding from JSON
-type LoginJSON struct {
-	User     string `json:"user" binding:"required"`
-	Password string `json:"password" binding:"required"`
-}
-
-// Binding from form values
-type LoginForm struct {
-    User     string `form:"user" binding:"required"`
-    Password string `form:"password" binding:"required"`   
+type Login struct {
+	User     string `form:"user" json:"user" binding:"required"`
+	Password string `form:"password" json:"password" binding:"required"`
 }
 
 func main() {
-	r := gin.Default()
+	router := gin.Default()
 
     // Example for binding JSON ({"user": "manu", "password": "123"})
-	r.POST("/loginJSON", func(c *gin.Context) {
-		var json LoginJSON
-
-        c.Bind(&json) // This will infer what binder to use depending on the content-type header.
-        if json.User == "manu" && json.Password == "123" {
-            c.JSON(http.StatusOK, gin.H{"status": "you are logged in"})
-        } else {
-            c.JSON(http.StatusUnauthorized, gin.H{"status": "unauthorized"})
+	router.POST("/loginJSON", func(c *gin.Context) {
+		var json Login
+        if c.BindJSON(&json) == nil {
+            if json.User == "manu" && json.Password == "123" {
+                c.JSON(http.StatusOK, gin.H{"status": "you are logged in"})
+            } else {
+                c.JSON(http.StatusUnauthorized, gin.H{"status": "unauthorized"})
+            }
         }
 	})
 
     // Example for binding a HTML form (user=manu&password=123)
-    r.POST("/loginHTML", func(c *gin.Context) {
-        var form LoginForm
-
-        c.BindWith(&form, binding.Form) // You can also specify which binder to use. We support binding.Form, binding.JSON and binding.XML.
-        if form.User == "manu" && form.Password == "123" {
-            c.JSON(http.StatusOK, gin.H{"status": "you are logged in"})
-        } else {
-            c.JSON(http.StatusUnauthorized, gin.H{"status": "unauthorized"})
+    router.POST("/loginForm", func(c *gin.Context) {
+        var form Login
+        // This will infer what binder to use depending on the content-type header.
+        if c.Bind(&form) == nil {
+            if form.User == "manu" && form.Password == "123" {
+                c.JSON(http.StatusOK, gin.H{"status": "you are logged in"})
+            } else {
+                c.JSON(http.StatusUnauthorized, gin.H{"status": "unauthorized"})
+            }
         }
     })
 
 	// Listen and server on 0.0.0.0:8080
-	r.Run(":8080")
+	router.Run(":8080")
 }
 ```
 
 
-###Multipart/Urlencoded binding 
+###Multipart/Urlencoded binding
 ```go
 package main
 
@@ -312,25 +337,22 @@ type LoginForm struct {
 }
 
 func main() {
-
 	router := gin.Default()
-
 	router.POST("/login", func(c *gin.Context) {
 		// you can bind multipart form with explicit binding declaration:
 		// c.BindWith(&form, binding.Form)
 		// or you can simply use autobinding with Bind method:
 		var form LoginForm
-		c.Bind(&form) // in this case proper binding will be automatically selected
-
-		if form.User == "user" && form.Password == "password" {
-			c.JSON(200, gin.H{"status": "you are logged in"})
-		} else {
-			c.JSON(401, gin.H{"status": "unauthorized"})
-		}
+        // in this case proper binding will be automatically selected
+		if c.Bind(&form) == nil {
+            if form.User == "user" && form.Password == "password" {
+			    c.JSON(200, gin.H{"status": "you are logged in"})
+            } else {
+			    c.JSON(401, gin.H{"status": "unauthorized"})
+            }
+        }
 	})
-
 	router.Run(":8080")
-
 }
 ```
 
