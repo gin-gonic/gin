@@ -30,7 +30,7 @@ type routesInterface interface {
 }
 
 // Used internally to configure router, a RouterGroup is associated with a prefix
-// and an array of handlers (middlewares)
+// and an array of handlers (middleware)
 type RouterGroup struct {
 	Handlers HandlersChain
 	BasePath string
@@ -38,9 +38,9 @@ type RouterGroup struct {
 	root     bool
 }
 
-// Adds middlewares to the group, see example code in github.
-func (group *RouterGroup) Use(middlewares ...HandlerFunc) routesInterface {
-	group.Handlers = append(group.Handlers, middlewares...)
+// Adds middleware to the group, see example code in github.
+func (group *RouterGroup) Use(middleware ...HandlerFunc) routesInterface {
+	group.Handlers = append(group.Handlers, middleware...)
 	return group.returnObj()
 }
 
@@ -54,8 +54,8 @@ func (group *RouterGroup) Group(relativePath string, handlers ...HandlerFunc) *R
 	}
 }
 
-// Handle registers a new request handle and middlewares with the given path and method.
-// The last handler should be the real handler, the other ones should be middlewares that can and should be shared among different routes.
+// Handle registers a new request handle and middleware with the given path and method.
+// The last handler should be the real handler, the other ones should be middleware that can and should be shared among different routes.
 // See the example code in github.
 //
 // For GET, POST, PUT, PATCH and DELETE requests the respective shortcut

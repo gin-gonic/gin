@@ -2,14 +2,14 @@
 
  [![GoDoc](https://godoc.org/github.com/gin-gonic/gin?status.svg)](https://godoc.org/github.com/gin-gonic/gin)  [![Join the chat at https://gitter.im/gin-gonic/gin](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/gin-gonic/gin?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
-Gin is a web framework written in Golang. It features a martini-like API with much better performance, up to 40 times faster thanks to [httprouter](https://github.com/julienschmidt/httprouter). If you need performance and good productivity, you will love Gin. 
+Gin is a web framework written in Golang. It features a martini-like API with much better performance, up to 40 times faster thanks to [httprouter](https://github.com/julienschmidt/httprouter). If you need performance and good productivity, you will love Gin.
 
 ![Gin console logger](https://gin-gonic.github.io/gin/other/console.png)
 
 ```
 $ cat test.go
 ```
-```go 
+```go
 package main
 
 import "github.com/gin-gonic/gin"
@@ -88,8 +88,8 @@ import "github.com/gin-gonic/gin"
 
 ```go
 func main() {
-	// Creates a gin router with default middlewares:
-	// logger and recovery (crash-free) middlewares
+	// Creates a gin router with default middleware:
+	// logger and recovery (crash-free) middleware
 	router := gin.Default()
 
 	router.GET("/someGet", getting)
@@ -110,7 +110,7 @@ func main() {
 ```go
 func main() {
 	router := gin.Default()
-	
+
 	// This handler will match /user/john but will not match neither /user/ or /user
 	router.GET("/user/:name", func(c *gin.Context) {
 		name := c.Param("name")
@@ -125,7 +125,7 @@ func main() {
 		message := name + " is " + action
 		c.String(http.StatusOK, message)
 	})
-	
+
 	router.Run(":8080")
 }
 ```
@@ -147,7 +147,7 @@ func main() {
 }
 ```
 
-### Multipart/Urlencoded Form 
+### Multipart/Urlencoded Form
 
 ```go
 func main() {
@@ -156,7 +156,7 @@ func main() {
     router.POST("/form_post", func(c *gin.Context) {
         message := c.PostForm("message")
         nick := c.DefaultPostForm("nick", "anonymous")
-                
+
         c.JSON(200, gin.H{
             "status": "posted",
             "message": message,
@@ -192,7 +192,7 @@ func main() {
 ```
 
 
-#### Blank Gin without middlewares by default
+#### Blank Gin without middleware by default
 
 Use
 
@@ -206,24 +206,24 @@ r := gin.Default()
 ```
 
 
-#### Using middlewares
+#### Using middleware
 ```go
 func main() {
 	// Creates a router without any middleware by default
 	r := gin.New()
 
-	// Global middlewares
+	// Global middleware
 	r.Use(gin.Logger())
 	r.Use(gin.Recovery())
 
-	// Per route middlewares, you can add as many as you desire.
+	// Per route middleware, you can add as many as you desire.
 	r.GET("/benchmark", MyBenchLogger(), benchEndpoint)
 
 	// Authorization group
 	// authorized := r.Group("/", AuthRequired())
 	// exactly the same than:
 	authorized := r.Group("/")
-	// per group middlewares! in this case we use the custom created
+	// per group middleware! in this case we use the custom created
 	// AuthRequired() middleware just in the "authorized" group.
 	authorized.Use(AuthRequired())
 	{
@@ -247,7 +247,7 @@ To bind a request body into a type, use model binding. We currently support bind
 
 Note that you need to set the corresponding binding tag on all fields you want to bind. For example, when binding from JSON, set `json:"fieldname"`.
 
-When using the Bind-method, Gin tries to infer the binder depending on the Content-Type header. If you are sure what you are binding, you can use BindWith. 
+When using the Bind-method, Gin tries to infer the binder depending on the Content-Type header. If you are sure what you are binding, you can use BindWith.
 
 You can also specify that specific fields are required. If a field is decorated with `binding:"required"` and has a empty value when binding, the current request will fail with an error.
 
@@ -261,7 +261,7 @@ type LoginJSON struct {
 // Binding from form values
 type LoginForm struct {
     User     string `form:"user" binding:"required"`
-    Password string `form:"password" binding:"required"`   
+    Password string `form:"password" binding:"required"`
 }
 
 func main() {
@@ -297,7 +297,7 @@ func main() {
 ```
 
 
-###Multipart/Urlencoded binding 
+###Multipart/Urlencoded binding
 ```go
 package main
 
@@ -439,7 +439,7 @@ r.GET("/test", func(c *gin.Context) {
 Both internal and external locations are supported.
 
 
-#### Custom Middlewares
+#### Custom Middleware
 
 ```go
 func Logger() gin.HandlerFunc {

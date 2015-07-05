@@ -199,7 +199,7 @@ func TestMiddlewareAbortHandlersChainAndNext(t *testing.T) {
 	assert.Equal(t, signature, "ACB")
 }
 
-// TestFailHandlersChain - ensure that Fail interrupt used middlewares in fifo order as
+// TestFailHandlersChain - ensure that Fail interrupt used middleware in fifo order as
 // as well as Abort
 func TestMiddlewareFailHandlersChain(t *testing.T) {
 	// SETUP

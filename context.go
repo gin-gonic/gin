@@ -76,7 +76,7 @@ func (c *Context) Copy() *Context {
 /*********** FLOW CONTROL ***********/
 /************************************/
 
-// Next should be used only in the middlewares.
+// Next should be used only inside middleware.
 // It executes the pending handlers in the chain inside the calling handler.
 // See example in github.
 func (c *Context) Next() {
