@@ -42,6 +42,9 @@ func createMultipartRequest() *http.Request {
 	must(mw.SetBoundary(boundary))
 	must(mw.WriteField("foo", "bar"))
 	must(mw.WriteField("bar", "foo"))
+	must(mw.WriteField("bar", "foo2"))
+	must(mw.WriteField("array", "first"))
+	must(mw.WriteField("array", "second"))
 	req, err := http.NewRequest("POST", "/", body)
 	must(err)
 	req.Header.Set("Content-Type", MIMEMultipartPOSTForm+"; boundary="+boundary)
@@ -184,8 +187,8 @@ func TestContextQuery(t *testing.T) {
 
 func TestContextQueryAndPostForm(t *testing.T) {
 	c, _, _ := createTestContext()
-	body := bytes.NewBufferString("foo=bar&page=11&both=POST")
-	c.Request, _ = http.NewRequest("POST", "/?both=GET&id=main", body)
+	body := bytes.NewBufferString("foo=bar&page=11&both=POST&foo=second")
+	c.Request, _ = http.NewRequest("POST", "/?both=GET&id=main&id=omit&array[]=first&array[]=second", body)
 	c.Request.Header.Add("Content-Type", MIMEPOSTForm)
 
 	assert.Equal(t, c.DefaultPostForm("foo", "none"), "bar")
@@ -208,16 +211,18 @@ func TestContextQueryAndPostForm(t *testing.T) {
 	assert.Empty(t, c.Query("NoKey"))
 
 	var obj struct {
-		Foo  string `form:"foo"`
-		ID   string `form:"id"`
-		Page string `form:"page"`
-		Both string `form:"both"`
+		Foo   string   `form:"foo"`
+		ID    string   `form:"id"`
+		Page  string   `form:"page"`
+		Both  string   `form:"both"`
+		Array []string `form:"array[]"`
 	}
 	assert.NoError(t, c.Bind(&obj))
 	assert.Equal(t, obj.Foo, "bar")
 	assert.Equal(t, obj.ID, "main")
 	assert.Equal(t, obj.Page, "11")
 	assert.Equal(t, obj.Both, "POST")
+	assert.Equal(t, obj.Array, []string{"first", "second"})
 }
 
 func TestContextPostFormMultipart(t *testing.T) {
@@ -225,16 +230,19 @@ func TestContextPostFormMultipart(t *testing.T) {
 	c.Request = createMultipartRequest()
 
 	var obj struct {
-		Foo string `form:"foo"`
-		Bar string `form:"bar"`
+		Foo   string   `form:"foo"`
+		Bar   string   `form:"bar"`
+		Array []string `form:"array"`
 	}
 	assert.NoError(t, c.Bind(&obj))
 	assert.Equal(t, obj.Bar, "foo")
 	assert.Equal(t, obj.Foo, "bar")
+	assert.Equal(t, obj.Array, []string{"first", "second"})
 
 	assert.Empty(t, c.Query("foo"))
 	assert.Empty(t, c.Query("bar"))
 	assert.Equal(t, c.PostForm("foo"), "bar")
+	assert.Equal(t, c.PostForm("array"), "first")
 	assert.Equal(t, c.PostForm("bar"), "foo")
 }
 
