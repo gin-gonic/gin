@@ -94,7 +94,7 @@ func New() *Engine {
 	engine := &Engine{
 		RouterGroup: RouterGroup{
 			Handlers: nil,
-			BasePath: "/",
+			basePath: "/",
 			root:     true,
 		},
 		RedirectTrailingSlash:  true,

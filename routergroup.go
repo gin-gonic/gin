@@ -39,7 +39,7 @@ type (
 	// and an array of handlers (middlewares)
 	RouterGroup struct {
 		Handlers HandlersChain
-		BasePath string
+		basePath string
 		engine   *Engine
 		root     bool
 	}
@@ -58,9 +58,13 @@ func (group *RouterGroup) Use(middlewares ...HandlerFunc) IRoutes {
 func (group *RouterGroup) Group(relativePath string, handlers ...HandlerFunc) *RouterGroup {
 	return &RouterGroup{
 		Handlers: group.combineHandlers(handlers),
-		BasePath: group.calculateAbsolutePath(relativePath),
+		basePath: group.calculateAbsolutePath(relativePath),
 		engine:   group.engine,
 	}
+}
+
+func (group *RouterGroup) BasePath() string {
+	return group.basePath
 }
 
 func (group *RouterGroup) handle(httpMethod, relativePath string, handlers HandlersChain) IRoutes {
@@ -200,7 +204,7 @@ func (group *RouterGroup) combineHandlers(handlers HandlersChain) HandlersChain 
 }
 
 func (group *RouterGroup) calculateAbsolutePath(relativePath string) string {
-	return joinPaths(group.BasePath, relativePath)
+	return joinPaths(group.basePath, relativePath)
 }
 
 func (group *RouterGroup) returnObj() IRoutes {
