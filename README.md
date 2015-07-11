@@ -1,4 +1,4 @@
-<img align="right" src="https://s3.amazonaws.com/uploads.hipchat.com/36744/1498287/JVR32LgyEGCiy01/path4201%20copy%202.png">
+<img align="left" style="margin-right:15px" src="https://s3.amazonaws.com/uploads.hipchat.com/36744/1498287/JVR32LgyEGCiy01/path4201%20copy%202.png">
 
 #Gin Web Framework
 
