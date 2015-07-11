@@ -34,36 +34,40 @@ Gin uses a custom version of [HttpRouter](https://github.com/julienschmidt/httpr
 [See all benchmarks](/BENCHMARKS.md)
 
 
-```
-BenchmarkAce_GithubAll     10000        109482 ns/op       13792 B/op        167 allocs/op
-BenchmarkBear_GithubAll    10000        287490 ns/op       79952 B/op        943 allocs/op
-BenchmarkBeego_GithubAll        3000        562184 ns/op      146272 B/op       2092 allocs/op
-BenchmarkBone_GithubAll      500       2578716 ns/op      648016 B/op       8119 allocs/op
-BenchmarkDenco_GithubAll       20000         94955 ns/op       20224 B/op        167 allocs/op
-BenchmarkEcho_GithubAll    30000         58705 ns/op           0 B/op          0 allocs/op
-BenchmarkGin_GithubAll     30000         50991 ns/op           0 B/op          0 allocs/op
-BenchmarkGocraftWeb_GithubAll       5000        449648 ns/op      133280 B/op       1889 allocs/op
-BenchmarkGoji_GithubAll     2000        689748 ns/op       56113 B/op        334 allocs/op
-BenchmarkGoJsonRest_GithubAll       5000        537769 ns/op      135995 B/op       2940 allocs/op
-BenchmarkGoRestful_GithubAll         100      18410628 ns/op      797236 B/op       7725 allocs/op
-BenchmarkGorillaMux_GithubAll        200       8036360 ns/op      153137 B/op       1791 allocs/op
-BenchmarkHttpRouter_GithubAll      20000         63506 ns/op       13792 B/op        167 allocs/op
-BenchmarkHttpTreeMux_GithubAll     10000        165927 ns/op       56112 B/op        334 allocs/op
-BenchmarkKocha_GithubAll       10000        171362 ns/op       23304 B/op        843 allocs/op
-BenchmarkMacaron_GithubAll      2000        817008 ns/op      224960 B/op       2315 allocs/op
-BenchmarkMartini_GithubAll       100      12609209 ns/op      237952 B/op       2686 allocs/op
-BenchmarkPat_GithubAll       300       4830398 ns/op     1504101 B/op      32222 allocs/op
-BenchmarkPossum_GithubAll      10000        301716 ns/op       97440 B/op        812 allocs/op
-BenchmarkR2router_GithubAll    10000        270691 ns/op       77328 B/op       1182 allocs/op
-BenchmarkRevel_GithubAll        1000       1491919 ns/op      345553 B/op       5918 allocs/op
-BenchmarkRivet_GithubAll       10000        283860 ns/op       84272 B/op       1079 allocs/op
-BenchmarkTango_GithubAll        5000        473821 ns/op       87078 B/op       2470 allocs/op
-BenchmarkTigerTonic_GithubAll       2000       1120131 ns/op      241088 B/op       6052 allocs/op
-BenchmarkTraffic_GithubAll       200       8708979 ns/op     2664762 B/op      22390 allocs/op
-BenchmarkVulcan_GithubAll       5000        353392 ns/op       19894 B/op        609 allocs/op
-BenchmarkZeus_GithubAll     2000        944234 ns/op      300688 B/op       2648 allocs/op
-```
+Benchmark name 					| (1) 		| (2) 		| (3) 		| (4)
+--------------------------------|----------:|----------:|----------:|------:
+BenchmarkAce_GithubAll 			| 10000 	| 109482 	| 13792 	| 167
+BenchmarkBear_GithubAll 		| 10000 	| 287490 	| 79952 	| 943
+BenchmarkBeego_GithubAll 		| 3000 		| 562184 	| 146272 	| 2092
+BenchmarkBone_GithubAll 		| 500 		| 2578716 	| 648016 	| 8119
+BenchmarkDenco_GithubAll 		| 20000 	| 94955 	| 20224 	| 167
+BenchmarkEcho_GithubAll 		| 30000 	| 58705 	| 0 		| 0
+**BenchmarkGin_GithubAll** 		| **30000** | **50991** | **0** 	| **0**
+BenchmarkGocraftWeb_GithubAll 	| 5000 		| 449648 	| 133280 	| 1889
+BenchmarkGoji_GithubAll 		| 2000 		| 689748 	| 56113 	| 334
+BenchmarkGoJsonRest_GithubAll 	| 5000 		| 537769 	| 135995 	| 2940
+BenchmarkGoRestful_GithubAll 	| 100 		| 18410628 	| 797236 	| 7725
+BenchmarkGorillaMux_GithubAll 	| 200 		| 8036360 	| 153137 	| 1791
+BenchmarkHttpRouter_GithubAll 	| 20000 	| 63506 	| 13792 	| 167
+BenchmarkHttpTreeMux_GithubAll 	| 10000 	| 165927 	| 56112 	| 334
+BenchmarkKocha_GithubAll 		| 10000 	| 171362 	| 23304 	| 843
+BenchmarkMacaron_GithubAll 		| 2000 		| 817008 	| 224960 	| 2315
+BenchmarkMartini_GithubAll 		| 100 		| 12609209 	| 237952 	| 2686
+BenchmarkPat_GithubAll 			| 300 		| 4830398 	| 1504101 	| 32222
+BenchmarkPossum_GithubAll 		| 10000 	| 301716 	| 97440 	| 812
+BenchmarkR2router_GithubAll 	| 10000 	| 270691 	| 77328 	| 1182
+BenchmarkRevel_GithubAll 		| 1000 		| 1491919 	| 345553 	| 5918
+BenchmarkRivet_GithubAll 		| 10000 	| 283860 	| 84272 	| 1079
+BenchmarkTango_GithubAll 		| 5000 		| 473821 	| 87078 	| 2470
+BenchmarkTigerTonic_GithubAll 	| 2000 		| 1120131 	| 241088 	| 6052
+BenchmarkTraffic_GithubAll 		| 200 		| 8708979 	| 2664762 	| 22390
+BenchmarkVulcan_GithubAll 		| 5000 		| 353392 	| 19894 	| 609
+BenchmarkZeus_GithubAll 		| 2000 		| 944234 	| 300688 	| 2648
 
+(1): Total Repetitions  
+(2): Single Repetition Duration (ns/op)  
+(3): Heap Memory (B/op)  
+(4): Average Allocations per Repetition (allocs/op)  
 
 ##Gin v1. stable
 
