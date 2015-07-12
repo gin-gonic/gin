@@ -57,6 +57,15 @@ func TestDebugPrintError(t *testing.T) {
 	assert.Equal(t, w.String(), "[GIN-debug] [ERROR] this is an error\n")
 }
 
+func TestDebugPrintRoutes(t *testing.T) {
+	var w bytes.Buffer
+	setup(&w)
+	defer teardown()
+
+	debugPrintRoute("GET", "/path/to/route/:param", HandlersChain{func(c *Context) {}, handlerNameTest})
+	assert.Equal(t, w.String(), "[GIN-debug] GET   /path/to/route/:param     --> github.com/gin-gonic/gin.handlerNameTest (2 handlers)\n")
+}
+
 func setup(w io.Writer) {
 	SetMode(DebugMode)
 	log.SetOutput(w)
