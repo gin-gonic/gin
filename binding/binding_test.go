@@ -6,6 +6,8 @@ package binding
 
 import (
 	"bytes"
+	"github.com/gin-gonic/gin/binding/example"
+	"github.com/golang/protobuf/proto"
 	"net/http"
 	"testing"
 
@@ -36,6 +38,9 @@ func TestBindingDefault(t *testing.T) {
 
 	assert.Equal(t, Default("POST", MIMEMultipartPOSTForm), Form)
 	assert.Equal(t, Default("PUT", MIMEMultipartPOSTForm), Form)
+
+	assert.Equal(t, Default("POST", MIMEPROTOBUF), ProtoBuf)
+	assert.Equal(t, Default("PUT", MIMEPROTOBUF), ProtoBuf)
 }
 
 func TestBindingJSON(t *testing.T) {
@@ -62,6 +67,18 @@ func TestBindingXML(t *testing.T) {
 		XML, "xml",
 		"/", "/",
 		"<map><foo>bar</foo></map>", "<map><bar>foo</bar></map>")
+}
+
+func TestBindingProtoBuf(t *testing.T) {
+	test := &example.Test{
+		Label: proto.String("yes"),
+	}
+	data, _ := proto.Marshal(test)
+
+	testProtoBodyBinding(t,
+		ProtoBuf, "protobuf",
+		"/", "/",
+		string(data), string(data[1:]))
 }
 
 func TestValidationFails(t *testing.T) {
@@ -114,6 +131,23 @@ func testBodyBinding(t *testing.T, b Binding, name, path, badPath, body, badBody
 	obj = FooStruct{}
 	req = requestWithBody("POST", badPath, badBody)
 	err = JSON.Bind(req, &obj)
+	assert.Error(t, err)
+}
+
+func testProtoBodyBinding(t *testing.T, b Binding, name, path, badPath, body, badBody string) {
+	assert.Equal(t, b.Name(), name)
+
+	obj := example.Test{}
+	req := requestWithBody("POST", path, body)
+	req.Header.Add("Content-Type", MIMEPROTOBUF)
+	err := b.Bind(req, &obj)
+	assert.NoError(t, err)
+	assert.Equal(t, *obj.Label, "yes")
+
+	obj = example.Test{}
+	req = requestWithBody("POST", badPath, badBody)
+	req.Header.Add("Content-Type", MIMEPROTOBUF)
+	err = ProtoBuf.Bind(req, &obj)
 	assert.Error(t, err)
 }
 
