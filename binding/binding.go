@@ -14,7 +14,7 @@ const (
 	MIMEPlain             = "text/plain"
 	MIMEPOSTForm          = "application/x-www-form-urlencoded"
 	MIMEMultipartPOSTForm = "multipart/form-data"
-	MIMEPROTOBUF          = "application/octet-stream"
+	MIMEPROTOBUF          = "application/x-protobuf"
 )
 
 type Binding interface {
