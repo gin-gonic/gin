@@ -25,9 +25,15 @@ func stream(c *gin.Context) {
 	listener := openListener(roomid)
 	defer closeListener(roomid, listener)
 
+	clientGone := c.Writer.CloseNotify()
 	c.Stream(func(w io.Writer) bool {
-		c.SSEvent("message", <-listener)
-		return true
+		select {
+		case <-clientGone:
+			return false
+		case message := <-listener:
+			c.SSEvent("message", message)
+			return true
+		}
 	})
 }
 
