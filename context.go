@@ -8,6 +8,7 @@ import (
 	"errors"
 	"io"
 	"math"
+	"net"
 	"net/http"
 	"strings"
 	"time"
@@ -291,7 +292,13 @@ func (c *Context) ClientIP() string {
 			return clientIP
 		}
 	}
-	return strings.TrimSpace(c.Request.RemoteAddr)
+
+	// http.Request.RemoteAddr also contains the connection's port number; only return the client's ip
+	host, _, err := net.SplitHostPort(c.Request.RemoteAddr)
+	if err != nil {
+		host = c.Request.RemoteAddr
+	}
+	return strings.TrimSpace(host)
 }
 
 // ContentType returns the Content-Type header of the request.
