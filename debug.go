@@ -4,7 +4,11 @@
 
 package gin
 
-import "log"
+import (
+	"bytes"
+	"html/template"
+	"log"
+)
 
 func init() {
 	log.SetFlags(0)
@@ -21,6 +25,18 @@ func debugPrintRoute(httpMethod, absolutePath string, handlers HandlersChain) {
 		nuHandlers := len(handlers)
 		handlerName := nameOfFunction(handlers.Last())
 		debugPrint("%-5s %-25s --> %s (%d handlers)\n", httpMethod, absolutePath, handlerName, nuHandlers)
+	}
+}
+
+func debugPrintLoadTemplate(tmpl *template.Template) {
+	if IsDebugging() {
+		var buf bytes.Buffer
+		for _, tmpl := range tmpl.Templates() {
+			buf.WriteString("\t- ")
+			buf.WriteString(tmpl.Name())
+			buf.WriteString("\n")
+		}
+		debugPrint("Loaded HTML Templates (%d): \n%s\n", len(tmpl.Templates()), buf.String())
 	}
 }
 

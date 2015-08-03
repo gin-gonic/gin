@@ -123,6 +123,7 @@ func (engine *Engine) allocateContext() *Context {
 
 func (engine *Engine) LoadHTMLGlob(pattern string) {
 	if IsDebugging() {
+		debugPrintLoadTemplate(template.Must(template.ParseGlob(pattern)))
 		engine.HTMLRender = render.HTMLDebug{Glob: pattern}
 	} else {
 		templ := template.Must(template.ParseGlob(pattern))
