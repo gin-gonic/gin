@@ -5,55 +5,30 @@
 package gin
 
 import (
-	"bytes"
 	"errors"
-	"fmt"
+	"io"
+	"math"
+	"net/http"
+	"strings"
+	"time"
+
 	"github.com/gin-gonic/gin/binding"
 	"github.com/gin-gonic/gin/render"
-	"github.com/julienschmidt/httprouter"
-	"log"
-	"net/http"
+	"github.com/manucorporat/sse"
+	"golang.org/x/net/context"
 )
 
 const (
-	ErrorTypeInternal = 1 << iota
-	ErrorTypeExternal = 1 << iota
-	ErrorTypeAll      = 0xffffffff
+	MIMEJSON              = binding.MIMEJSON
+	MIMEHTML              = binding.MIMEHTML
+	MIMEXML               = binding.MIMEXML
+	MIMEXML2              = binding.MIMEXML2
+	MIMEPlain             = binding.MIMEPlain
+	MIMEPOSTForm          = binding.MIMEPOSTForm
+	MIMEMultipartPOSTForm = binding.MIMEMultipartPOSTForm
 )
 
-// Used internally to collect errors that occurred during an http request.
-type errorMsg struct {
-	Err  string      `json:"error"`
-	Type uint32      `json:"-"`
-	Meta interface{} `json:"meta"`
-}
-
-type errorMsgs []errorMsg
-
-func (a errorMsgs) ByType(typ uint32) errorMsgs {
-	if len(a) == 0 {
-		return a
-	}
-	result := make(errorMsgs, 0, len(a))
-	for _, msg := range a {
-		if msg.Type&typ > 0 {
-			result = append(result, msg)
-		}
-	}
-	return result
-}
-
-func (a errorMsgs) String() string {
-	if len(a) == 0 {
-		return ""
-	}
-	var buffer bytes.Buffer
-	for i, msg := range a {
-		text := fmt.Sprintf("Error #%02d: %s \n     Meta: %v\n", (i + 1), msg.Err, msg.Meta)
-		buffer.WriteString(text)
-	}
-	return buffer.String()
-}
+const AbortIndex int8 = math.MaxInt8 / 2
 
 // Context is the most important part of gin. It allows us to pass variables between middleware,
 // manage the flow, validate the JSON of a request and render a JSON response for example.
@@ -61,48 +36,47 @@ type Context struct {
 	writermem responseWriter
 	Request   *http.Request
 	Writer    ResponseWriter
-	Keys      map[string]interface{}
-	Errors    errorMsgs
-	Params    httprouter.Params
-	Engine    *Engine
-	handlers  []HandlerFunc
-	index     int8
-	accepted  []string
+
+	Params   Params
+	handlers HandlersChain
+	index    int8
+
+	engine   *Engine
+	Keys     map[string]interface{}
+	Errors   errorMsgs
+	Accepted []string
 }
+
+var _ context.Context = &Context{}
 
 /************************************/
 /********** CONTEXT CREATION ********/
 /************************************/
 
-func (engine *Engine) createContext(w http.ResponseWriter, req *http.Request, params httprouter.Params, handlers []HandlerFunc) *Context {
-	c := engine.pool.Get().(*Context)
-	c.writermem.reset(w)
-	c.Request = req
-	c.Params = params
-	c.handlers = handlers
-	c.Keys = nil
+func (c *Context) reset() {
+	c.Writer = &c.writermem
+	c.Params = c.Params[0:0]
+	c.handlers = nil
 	c.index = -1
-	c.accepted = nil
+	c.Keys = nil
 	c.Errors = c.Errors[0:0]
-	return c
-}
-
-func (engine *Engine) reuseContext(c *Context) {
-	engine.pool.Put(c)
+	c.Accepted = nil
 }
 
 func (c *Context) Copy() *Context {
 	var cp Context = *c
+	cp.writermem.ResponseWriter = nil
+	cp.Writer = &cp.writermem
 	cp.index = AbortIndex
 	cp.handlers = nil
 	return &cp
 }
 
 /************************************/
-/*************** FLOW ***************/
+/*********** FLOW CONTROL ***********/
 /************************************/
 
-// Next should be used only in the middlewares.
+// Next should be used only inside middleware.
 // It executes the pending handlers in the chain inside the calling handler.
 // See example in github.
 func (c *Context) Next() {
@@ -113,104 +87,142 @@ func (c *Context) Next() {
 	}
 }
 
-// Forces the system to do not continue calling the pending handlers in the chain.
+// Returns if the currect context was aborted.
+func (c *Context) IsAborted() bool {
+	return c.index == AbortIndex
+}
+
+// Stops the system to continue calling the pending handlers in the chain.
+// Let's say you have an authorization middleware that validates if the request is authorized
+// if the authorization fails (the password does not match). This method (Abort()) should be called
+// in order to stop the execution of the actual handler.
 func (c *Context) Abort() {
 	c.index = AbortIndex
 }
 
-// Same than AbortWithStatus() but also writes the specified response status code.
-// For example, the first handler checks if the request is authorized. If it's not, context.AbortWithStatus(401) should be called.
+// It calls Abort() and writes the headers with the specified status code.
+// For example, a failed attempt to authentificate a request could use: context.AbortWithStatus(401).
 func (c *Context) AbortWithStatus(code int) {
 	c.Writer.WriteHeader(code)
 	c.Abort()
+}
+
+// It calls AbortWithStatus() and Error() internally. This method stops the chain, writes the status code and
+// pushes the specified error to `c.Errors`.
+// See Context.Error() for more details.
+func (c *Context) AbortWithError(code int, err error) *Error {
+	c.AbortWithStatus(code)
+	return c.Error(err)
 }
 
 /************************************/
 /********* ERROR MANAGEMENT *********/
 /************************************/
 
-// Fail is the same as Abort plus an error message.
-// Calling `context.Fail(500, err)` is equivalent to:
-// ```
-// context.Error("Operation aborted", err)
-// context.AbortWithStatus(500)
-// ```
-func (c *Context) Fail(code int, err error) {
-	c.Error(err, "Operation aborted")
-	c.AbortWithStatus(code)
-}
-
-func (c *Context) ErrorTyped(err error, typ uint32, meta interface{}) {
-	c.Errors = append(c.Errors, errorMsg{
-		Err:  err.Error(),
-		Type: typ,
-		Meta: meta,
-	})
-}
-
 // Attaches an error to the current context. The error is pushed to a list of errors.
 // It's a good idea to call Error for each error that occurred during the resolution of a request.
 // A middleware can be used to collect all the errors and push them to a database together, print a log, or append it in the HTTP response.
-func (c *Context) Error(err error, meta interface{}) {
-	c.ErrorTyped(err, ErrorTypeExternal, meta)
-}
-
-func (c *Context) LastError() error {
-	nuErrors := len(c.Errors)
-	if nuErrors > 0 {
-		return errors.New(c.Errors[nuErrors-1].Err)
-	} else {
-		return nil
+func (c *Context) Error(err error) *Error {
+	var parsedError *Error
+	switch err.(type) {
+	case *Error:
+		parsedError = err.(*Error)
+	default:
+		parsedError = &Error{
+			Err:  err,
+			Type: ErrorTypePrivate,
+		}
 	}
+	c.Errors = append(c.Errors, parsedError)
+	return parsedError
 }
 
 /************************************/
 /******** METADATA MANAGEMENT********/
 /************************************/
 
-// Sets a new pair key/value just for the specified context.
-// It also lazy initializes the hashmap.
-func (c *Context) Set(key string, item interface{}) {
+// Sets a new pair key/value just for this context.
+// It also lazy initializes the hashmap if it was not used previously.
+func (c *Context) Set(key string, value interface{}) {
 	if c.Keys == nil {
 		c.Keys = make(map[string]interface{})
 	}
-	c.Keys[key] = item
+	c.Keys[key] = value
 }
 
-// Get returns the value for the given key or an error if the key does not exist.
-func (c *Context) Get(key string) (interface{}, error) {
+// Returns the value for the given key, ie: (value, true).
+// If the value does not exists it returns (nil, false)
+func (c *Context) Get(key string) (value interface{}, exists bool) {
 	if c.Keys != nil {
-		value, ok := c.Keys[key]
-		if ok {
-			return value, nil
+		value, exists = c.Keys[key]
+	}
+	return
+}
+
+// Returns the value for the given key if it exists, otherwise it panics.
+func (c *Context) MustGet(key string) interface{} {
+	if value, exists := c.Get(key); exists {
+		return value
+	}
+	panic("Key \"" + key + "\" does not exist")
+}
+
+/************************************/
+/************ INPUT DATA ************/
+/************************************/
+
+// Shortcut for c.Request.URL.Query().Get(key)
+func (c *Context) Query(key string) (va string) {
+	va, _ = c.query(key)
+	return
+}
+
+// Shortcut for c.Request.PostFormValue(key)
+func (c *Context) PostForm(key string) (va string) {
+	va, _ = c.postForm(key)
+	return
+}
+
+// Shortcut for c.Params.ByName(key)
+func (c *Context) Param(key string) string {
+	return c.Params.ByName(key)
+}
+
+func (c *Context) DefaultPostForm(key, defaultValue string) string {
+	if va, ok := c.postForm(key); ok {
+		return va
+	}
+	return defaultValue
+}
+
+func (c *Context) DefaultQuery(key, defaultValue string) string {
+	if va, ok := c.query(key); ok {
+		return va
+	}
+	return defaultValue
+}
+
+func (c *Context) query(key string) (string, bool) {
+	req := c.Request
+	if values, ok := req.URL.Query()[key]; ok && len(values) > 0 {
+		return values[0], true
+	}
+	return "", false
+}
+
+func (c *Context) postForm(key string) (string, bool) {
+	req := c.Request
+	req.ParseMultipartForm(32 << 20) // 32 MB
+	if values := req.PostForm[key]; len(values) > 0 {
+		return values[0], true
+	}
+	if req.MultipartForm != nil && req.MultipartForm.File != nil {
+		if values := req.MultipartForm.Value[key]; len(values) > 0 {
+			return values[0], true
 		}
 	}
-	return nil, errors.New("Key does not exist.")
+	return "", false
 }
-
-// MustGet returns the value for the given key or panics if the value doesn't exist.
-func (c *Context) MustGet(key string) interface{} {
-	value, err := c.Get(key)
-	if err != nil || value == nil {
-		log.Panicf("Key %s doesn't exist", value)
-	}
-	return value
-}
-
-func (c *Context) ClientIP() string {
-	clientIP := c.Request.Header.Get("X-Real-IP")
-	if len(clientIP) == 0 {
-		clientIP = c.Request.Header.Get("X-Forwarded-For")
-	}
-	if len(clientIP) == 0 {
-		clientIP = c.Request.RemoteAddr
-	}
-	return clientIP
-}
-
-/************************************/
-/********* PARSING REQUEST **********/
-/************************************/
 
 // This function checks the Content-Type to select a binding engine automatically,
 // Depending the "Content-Type" header different bindings are used:
@@ -218,87 +230,163 @@ func (c *Context) ClientIP() string {
 // "application/xml"  --> XML binding
 // else --> returns an error
 // if Parses the request's body as JSON if Content-Type == "application/json"  using JSON or XML  as a JSON input. It decodes the json payload into the struct specified as a pointer.Like ParseBody() but this method also writes a 400 error if the json is not valid.
-func (c *Context) Bind(obj interface{}) bool {
-	var b binding.Binding
-	ctype := filterFlags(c.Request.Header.Get("Content-Type"))
-	switch {
-	case c.Request.Method == "GET" || ctype == MIMEPOSTForm:
-		b = binding.Form
-	case ctype == MIMEJSON:
-		b = binding.JSON
-	case ctype == MIMEXML || ctype == MIMEXML2:
-		b = binding.XML
-	default:
-		c.Fail(400, errors.New("unknown content-type: "+ctype))
-		return false
-	}
+func (c *Context) Bind(obj interface{}) error {
+	b := binding.Default(c.Request.Method, c.ContentType())
 	return c.BindWith(obj, b)
 }
 
-func (c *Context) BindWith(obj interface{}, b binding.Binding) bool {
+// Shortcut for c.BindWith(obj, binding.JSON)
+func (c *Context) BindJSON(obj interface{}) error {
+	return c.BindWith(obj, binding.JSON)
+}
+
+func (c *Context) BindWith(obj interface{}, b binding.Binding) error {
 	if err := b.Bind(c.Request, obj); err != nil {
-		c.Fail(400, err)
-		return false
+		c.AbortWithError(400, err).SetType(ErrorTypeBind)
+		return err
 	}
-	return true
+	return nil
+}
+
+// Best effort algoritm to return the real client IP, it parses
+// X-Real-IP and X-Forwarded-For in order to work properly with reverse-proxies such us: nginx or haproxy.
+func (c *Context) ClientIP() string {
+	if c.engine.ForwardedByClientIP {
+		clientIP := strings.TrimSpace(c.requestHeader("X-Real-Ip"))
+		if len(clientIP) > 0 {
+			return clientIP
+		}
+		clientIP = c.requestHeader("X-Forwarded-For")
+		if index := strings.IndexByte(clientIP, ','); index >= 0 {
+			clientIP = clientIP[0:index]
+		}
+		clientIP = strings.TrimSpace(clientIP)
+		if len(clientIP) > 0 {
+			return clientIP
+		}
+	}
+	return strings.TrimSpace(c.Request.RemoteAddr)
+}
+
+func (c *Context) ContentType() string {
+	return filterFlags(c.requestHeader("Content-Type"))
+}
+
+func (c *Context) requestHeader(key string) string {
+	if values, _ := c.Request.Header[key]; len(values) > 0 {
+		return values[0]
+	}
+	return ""
 }
 
 /************************************/
 /******** RESPONSE RENDERING ********/
 /************************************/
 
-func (c *Context) Render(code int, render render.Render, obj ...interface{}) {
-	if err := render.Render(c.Writer, code, obj...); err != nil {
-		c.ErrorTyped(err, ErrorTypeInternal, obj)
-		c.AbortWithStatus(500)
+// Intelligent shortcut for c.Writer.Header().Set(key, value)
+// it writes a header in the response.
+// If value == "", this method removes the header `c.Writer.Header().Del(key)`
+func (c *Context) Header(key, value string) {
+	if len(value) == 0 {
+		c.Writer.Header().Del(key)
+	} else {
+		c.Writer.Header().Set(key, value)
 	}
 }
 
-// Serializes the given struct as JSON into the response body in a fast and efficient way.
-// It also sets the Content-Type as "application/json".
-func (c *Context) JSON(code int, obj interface{}) {
-	c.Render(code, render.JSON, obj)
+func (c *Context) Render(code int, r render.Render) {
+	c.writermem.WriteHeader(code)
+	if err := r.Render(c.Writer); err != nil {
+		c.renderError(err)
+	}
 }
 
-// Serializes the given struct as XML into the response body in a fast and efficient way.
-// It also sets the Content-Type as "application/xml".
-func (c *Context) XML(code int, obj interface{}) {
-	c.Render(code, render.XML, obj)
+func (c *Context) renderError(err error) {
+	debugPrintError(err)
+	c.AbortWithError(500, err).SetType(ErrorTypeRender)
 }
 
 // Renders the HTTP template specified by its file name.
 // It also updates the HTTP code and sets the Content-Type as "text/html".
 // See http://golang.org/doc/articles/wiki/
 func (c *Context) HTML(code int, name string, obj interface{}) {
-	c.Render(code, c.Engine.HTMLRender, name, obj)
+	instance := c.engine.HTMLRender.Instance(name, obj)
+	c.Render(code, instance)
 }
 
-// Writes the given string into the response body and sets the Content-Type to "text/plain".
+// Serializes the given struct as pretty JSON (indented + endlines) into the response body.
+// It also sets the Content-Type as "application/json".
+// WARNING: we recommend to use this only for development propuses since printing pretty JSON is
+// more CPU and bandwidth consuming. Use Context.JSON() instead.
+func (c *Context) IndentedJSON(code int, obj interface{}) {
+	c.Render(code, render.IndentedJSON{Data: obj})
+}
+
+// Serializes the given struct as JSON into the response body.
+// It also sets the Content-Type as "application/json".
+func (c *Context) JSON(code int, obj interface{}) {
+	c.writermem.WriteHeader(code)
+	if err := render.WriteJSON(c.Writer, obj); err != nil {
+		c.renderError(err)
+	}
+}
+
+// Serializes the given struct as XML into the response body.
+// It also sets the Content-Type as "application/xml".
+func (c *Context) XML(code int, obj interface{}) {
+	c.Render(code, render.XML{Data: obj})
+}
+
+// Writes the given string into the response body.
 func (c *Context) String(code int, format string, values ...interface{}) {
-	c.Render(code, render.Plain, format, values)
+	c.writermem.WriteHeader(code)
+	render.WriteString(c.Writer, format, values)
 }
 
 // Returns a HTTP redirect to the specific location.
 func (c *Context) Redirect(code int, location string) {
-	if code >= 300 && code <= 308 {
-		c.Render(code, render.Redirect, location)
-	} else {
-		panic(fmt.Sprintf("Cannot send a redirect with status code %d", code))
-	}
+	c.Render(-1, render.Redirect{
+		Code:     code,
+		Location: location,
+		Request:  c.Request,
+	})
 }
 
 // Writes some data into the body stream and updates the HTTP code.
 func (c *Context) Data(code int, contentType string, data []byte) {
-	if len(contentType) > 0 {
-		c.Writer.Header().Set("Content-Type", contentType)
-	}
-	c.Writer.WriteHeader(code)
-	c.Writer.Write(data)
+	c.Render(code, render.Data{
+		ContentType: contentType,
+		Data:        data,
+	})
 }
 
-// Writes the specified file into the body stream
+// Writes the specified file into the body stream in a efficient way.
 func (c *Context) File(filepath string) {
 	http.ServeFile(c.Writer, c.Request, filepath)
+}
+
+func (c *Context) SSEvent(name string, message interface{}) {
+	c.Render(-1, sse.Event{
+		Event: name,
+		Data:  message,
+	})
+}
+
+func (c *Context) Stream(step func(w io.Writer) bool) {
+	w := c.Writer
+	clientGone := w.CloseNotify()
+	for {
+		select {
+		case <-clientGone:
+			return
+		default:
+			keepopen := step(w)
+			w.Flush()
+			if !keepopen {
+				return
+			}
+		}
+	}
 }
 
 /************************************/
@@ -307,7 +395,7 @@ func (c *Context) File(filepath string) {
 
 type Negotiate struct {
 	Offered  []string
-	HTMLPath string
+	HTMLName string
 	HTMLData interface{}
 	JSONData interface{}
 	XMLData  interface{}
@@ -316,23 +404,20 @@ type Negotiate struct {
 
 func (c *Context) Negotiate(code int, config Negotiate) {
 	switch c.NegotiateFormat(config.Offered...) {
-	case MIMEJSON:
+	case binding.MIMEJSON:
 		data := chooseData(config.JSONData, config.Data)
 		c.JSON(code, data)
 
-	case MIMEHTML:
+	case binding.MIMEHTML:
 		data := chooseData(config.HTMLData, config.Data)
-		if len(config.HTMLPath) == 0 {
-			panic("negotiate config is wrong. html path is needed")
-		}
-		c.HTML(code, config.HTMLPath, data)
+		c.HTML(code, config.HTMLName, data)
 
-	case MIMEXML:
+	case binding.MIMEXML:
 		data := chooseData(config.XMLData, config.Data)
 		c.XML(code, data)
 
 	default:
-		c.Fail(http.StatusNotAcceptable, errors.New("the accepted formats are not offered by the server"))
+		c.AbortWithError(http.StatusNotAcceptable, errors.New("the accepted formats are not offered by the server"))
 	}
 }
 
@@ -340,24 +425,49 @@ func (c *Context) NegotiateFormat(offered ...string) string {
 	if len(offered) == 0 {
 		panic("you must provide at least one offer")
 	}
-	if c.accepted == nil {
-		c.accepted = parseAccept(c.Request.Header.Get("Accept"))
+	if c.Accepted == nil {
+		c.Accepted = parseAccept(c.requestHeader("Accept"))
 	}
-	if len(c.accepted) == 0 {
+	if len(c.Accepted) == 0 {
 		return offered[0]
-
-	} else {
-		for _, accepted := range c.accepted {
-			for _, offert := range offered {
-				if accepted == offert {
-					return offert
-				}
+	}
+	for _, accepted := range c.Accepted {
+		for _, offert := range offered {
+			if accepted == offert {
+				return offert
 			}
 		}
-		return ""
 	}
+	return ""
 }
 
 func (c *Context) SetAccepted(formats ...string) {
-	c.accepted = formats
+	c.Accepted = formats
+}
+
+/************************************/
+/***** GOLANG.ORG/X/NET/CONTEXT *****/
+/************************************/
+
+func (c *Context) Deadline() (deadline time.Time, ok bool) {
+	return
+}
+
+func (c *Context) Done() <-chan struct{} {
+	return nil
+}
+
+func (c *Context) Err() error {
+	return nil
+}
+
+func (c *Context) Value(key interface{}) interface{} {
+	if key == 0 {
+		return c.Request
+	}
+	if keyAsString, ok := key.(string); ok {
+		val, _ := c.Get(keyAsString)
+		return val
+	}
+	return nil
 }

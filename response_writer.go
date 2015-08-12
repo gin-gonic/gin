@@ -6,14 +6,14 @@ package gin
 
 import (
 	"bufio"
-	"errors"
-	"log"
+	"io"
 	"net"
 	"net/http"
 )
 
 const (
-	NoWritten = -1
+	noWritten     = -1
+	defaultStatus = 200
 )
 
 type (
@@ -25,29 +25,32 @@ type (
 
 		Status() int
 		Size() int
+		WriteString(string) (int, error)
 		Written() bool
 		WriteHeaderNow()
 	}
 
 	responseWriter struct {
 		http.ResponseWriter
-		status int
 		size   int
+		status int
 	}
 )
 
+var _ ResponseWriter = &responseWriter{}
+
 func (w *responseWriter) reset(writer http.ResponseWriter) {
 	w.ResponseWriter = writer
-	w.status = 200
-	w.size = NoWritten
+	w.size = noWritten
+	w.status = defaultStatus
 }
 
 func (w *responseWriter) WriteHeader(code int) {
-	if code > 0 {
-		w.status = code
+	if code > 0 && w.status != code {
 		if w.Written() {
-			log.Println("[GIN] WARNING. Headers were already written!")
+			debugPrint("[WARNING] Headers were already written. Wanted to override status code %d with %d", w.status, code)
 		}
+		w.status = code
 	}
 }
 
@@ -65,6 +68,13 @@ func (w *responseWriter) Write(data []byte) (n int, err error) {
 	return
 }
 
+func (w *responseWriter) WriteString(s string) (n int, err error) {
+	w.WriteHeaderNow()
+	n, err = io.WriteString(w.ResponseWriter, s)
+	w.size += n
+	return
+}
+
 func (w *responseWriter) Status() int {
 	return w.status
 }
@@ -74,16 +84,15 @@ func (w *responseWriter) Size() int {
 }
 
 func (w *responseWriter) Written() bool {
-	return w.size != NoWritten
+	return w.size != noWritten
 }
 
 // Implements the http.Hijacker interface
 func (w *responseWriter) Hijack() (net.Conn, *bufio.ReadWriter, error) {
-	hijacker, ok := w.ResponseWriter.(http.Hijacker)
-	if !ok {
-		return nil, nil, errors.New("the ResponseWriter doesn't support the Hijacker interface")
+	if w.size < 0 {
+		w.size = 0
 	}
-	return hijacker.Hijack()
+	return w.ResponseWriter.(http.Hijacker).Hijack()
 }
 
 // Implements the http.CloseNotify interface
@@ -93,8 +102,5 @@ func (w *responseWriter) CloseNotify() <-chan bool {
 
 // Implements the http.Flush interface
 func (w *responseWriter) Flush() {
-	flusher, ok := w.ResponseWriter.(http.Flusher)
-	if ok {
-		flusher.Flush()
-	}
+	w.ResponseWriter.(http.Flusher).Flush()
 }

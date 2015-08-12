@@ -1,10 +1,39 @@
 {
 	"ImportPath": "github.com/gin-gonic/gin",
-	"GoVersion": "go1.3",
+	"GoVersion": "go1.4.2",
+	"Packages": [
+		"./..."
+	],
 	"Deps": [
 		{
-			"ImportPath": "github.com/julienschmidt/httprouter",
-			"Rev": "7deadb6844d2c6ff1dfb812eaa439b87cdaedf20"
+			"ImportPath": "github.com/dustin/go-broadcast",
+			"Rev": "3bdf6d4a7164a50bc19d5f230e2981d87d2584f1"
+		},
+		{
+			"ImportPath": "github.com/manucorporat/sse",
+			"Rev": "c142f0f1baea5cef7f98a8a6c222f6134368c1f5"
+		},
+		{
+			"ImportPath": "github.com/manucorporat/stats",
+			"Rev": "8f2d6ace262eba462e9beb552382c98be51d807b"
+		},
+		{
+			"ImportPath": "github.com/mattn/go-colorable",
+			"Rev": "d67e0b7d1797975196499f79bcc322c08b9f218b"
+		},
+		{
+			"ImportPath": "github.com/stretchr/testify/assert",
+			"Comment": "v1.0",
+			"Rev": "232e8563676cd15c3a36ba5e675ad4312ac4cb11"
+		},
+		{
+			"ImportPath": "golang.org/x/net/context",
+			"Rev": "621fff363a1d9ad7fdd0bfa9d80a42881267deb4"
+		},
+		{
+			"ImportPath": "gopkg.in/bluesuncorp/validator.v5",
+			"Comment": "v5.4",
+			"Rev": "07cbdd2e6dfd947b002e83c13b775c7580fab2d5"
 		}
 	]
 }
