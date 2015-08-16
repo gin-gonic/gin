@@ -18,6 +18,7 @@ import (
 	"golang.org/x/net/context"
 )
 
+// Content-Type MIME of the most common data formats
 const (
 	MIMEJSON              = binding.MIMEJSON
 	MIMEHTML              = binding.MIMEHTML
@@ -28,7 +29,7 @@ const (
 	MIMEMultipartPOSTForm = binding.MIMEMultipartPOSTForm
 )
 
-const AbortIndex int8 = math.MaxInt8 / 2
+const abortIndex int8 = math.MaxInt8 / 2
 
 // Context is the most important part of gin. It allows us to pass variables between middleware,
 // manage the flow, validate the JSON of a request and render a JSON response for example.
@@ -63,13 +64,21 @@ func (c *Context) reset() {
 	c.Accepted = nil
 }
 
+// Copy returns a copy of the current context that can be safely used outside the request's scope.
+// This have to be used then the context has to be passed to a goroutine.
 func (c *Context) Copy() *Context {
 	var cp Context = *c
 	cp.writermem.ResponseWriter = nil
 	cp.Writer = &cp.writermem
-	cp.index = AbortIndex
+	cp.index = abortIndex
 	cp.handlers = nil
 	return &cp
+}
+
+// HandlerName returns the main handle's name. For example if the handler is "handleGetUsers()", this
+// function will return "main.handleGetUsers"
+func (c *Context) HandlerName() string {
+	return nameOfFunction(c.handlers.Last())
 }
 
 /************************************/
@@ -87,27 +96,27 @@ func (c *Context) Next() {
 	}
 }
 
-// Returns if the currect context was aborted.
+// IsAborted returns true if the currect context was aborted.
 func (c *Context) IsAborted() bool {
-	return c.index == AbortIndex
+	return c.index >= abortIndex
 }
 
-// Stops the system to continue calling the pending handlers in the chain.
+// Abort stops the system to continue calling the pending handlers in the chain.
 // Let's say you have an authorization middleware that validates if the request is authorized
 // if the authorization fails (the password does not match). This method (Abort()) should be called
 // in order to stop the execution of the actual handler.
 func (c *Context) Abort() {
-	c.index = AbortIndex
+	c.index = abortIndex
 }
 
-// It calls Abort() and writes the headers with the specified status code.
+// AbortWithStatus calls `Abort()` and writes the headers with the specified status code.
 // For example, a failed attempt to authentificate a request could use: context.AbortWithStatus(401).
 func (c *Context) AbortWithStatus(code int) {
 	c.Writer.WriteHeader(code)
 	c.Abort()
 }
 
-// It calls AbortWithStatus() and Error() internally. This method stops the chain, writes the status code and
+// AbortWithError calls `AbortWithStatus()` and `Error()` internally. This method stops the chain, writes the status code and
 // pushes the specified error to `c.Errors`.
 // See Context.Error() for more details.
 func (c *Context) AbortWithError(code int, err error) *Error {
@@ -121,7 +130,8 @@ func (c *Context) AbortWithError(code int, err error) *Error {
 
 // Attaches an error to the current context. The error is pushed to a list of errors.
 // It's a good idea to call Error for each error that occurred during the resolution of a request.
-// A middleware can be used to collect all the errors and push them to a database together, print a log, or append it in the HTTP response.
+// A middleware can be used to collect all the errors
+// and push them to a database together, print a log, or append it in the HTTP response.
 func (c *Context) Error(err error) *Error {
 	var parsedError *Error
 	switch err.(type) {
@@ -141,8 +151,8 @@ func (c *Context) Error(err error) *Error {
 /******** METADATA MANAGEMENT********/
 /************************************/
 
-// Sets a new pair key/value just for this context.
-// It also lazy initializes the hashmap if it was not used previously.
+// Set is used to store a new key/value pair exclusivelly for this context.
+// It also lazy initializes  c.Keys if it was not used previously.
 func (c *Context) Set(key string, value interface{}) {
 	if c.Keys == nil {
 		c.Keys = make(map[string]interface{})
@@ -150,7 +160,7 @@ func (c *Context) Set(key string, value interface{}) {
 	c.Keys[key] = value
 }
 
-// Returns the value for the given key, ie: (value, true).
+// Get returns the value for the given key, ie: (value, true).
 // If the value does not exists it returns (nil, false)
 func (c *Context) Get(key string) (value interface{}, exists bool) {
 	if c.Keys != nil {
@@ -171,19 +181,24 @@ func (c *Context) MustGet(key string) interface{} {
 /************ INPUT DATA ************/
 /************************************/
 
-// Shortcut for c.Request.URL.Query().Get(key)
+// Query is a shortcut for c.Request.URL.Query().Get(key)
+// It is used to return the url query values.
+// ?id=1234&name=Manu
+// c.Query("id") == "1234"
+// c.Query("name") == "Manu"
+// c.Query("wtf") == ""
 func (c *Context) Query(key string) (va string) {
 	va, _ = c.query(key)
 	return
 }
 
-// Shortcut for c.Request.PostFormValue(key)
+// PostForm is a shortcut for c.Request.PostFormValue(key)
 func (c *Context) PostForm(key string) (va string) {
 	va, _ = c.postForm(key)
 	return
 }
 
-// Shortcut for c.Params.ByName(key)
+// Param is a shortcut for c.Params.ByName(key)
 func (c *Context) Param(key string) string {
 	return c.Params.ByName(key)
 }
@@ -195,6 +210,13 @@ func (c *Context) DefaultPostForm(key, defaultValue string) string {
 	return defaultValue
 }
 
+// DefaultQuery returns the keyed url query value if it exists, othewise it returns the
+// specified defaultValue.
+// ```
+// /?name=Manu
+// c.DefaultQuery("name", "unknown") == "Manu"
+// c.DefaultQuery("id", "none") == "none"
+// ```
 func (c *Context) DefaultQuery(key, defaultValue string) string {
 	if va, ok := c.query(key); ok {
 		return va
@@ -224,22 +246,26 @@ func (c *Context) postForm(key string) (string, bool) {
 	return "", false
 }
 
-// This function checks the Content-Type to select a binding engine automatically,
+// Bind checks the Content-Type to select a binding engine automatically,
 // Depending the "Content-Type" header different bindings are used:
 // "application/json" --> JSON binding
 // "application/xml"  --> XML binding
-// else --> returns an error
-// if Parses the request's body as JSON if Content-Type == "application/json"  using JSON or XML  as a JSON input. It decodes the json payload into the struct specified as a pointer.Like ParseBody() but this method also writes a 400 error if the json is not valid.
+// otherwise --> returns an error
+// If Parses the request's body as JSON if Content-Type == "application/json" using JSON or XML  as a JSON input.
+// It decodes the json payload into the struct specified as a pointer.
+// Like ParseBody() but this method also writes a 400 error if the json is not valid.
 func (c *Context) Bind(obj interface{}) error {
 	b := binding.Default(c.Request.Method, c.ContentType())
 	return c.BindWith(obj, b)
 }
 
-// Shortcut for c.BindWith(obj, binding.JSON)
+// BindJSON is a shortcut for c.BindWith(obj, binding.JSON)
 func (c *Context) BindJSON(obj interface{}) error {
 	return c.BindWith(obj, binding.JSON)
 }
 
+// BindWith binds the passed struct pointer using the specified binding engine.
+// See the binding package.
 func (c *Context) BindWith(obj interface{}, b binding.Binding) error {
 	if err := b.Bind(c.Request, obj); err != nil {
 		c.AbortWithError(400, err).SetType(ErrorTypeBind)
@@ -248,7 +274,7 @@ func (c *Context) BindWith(obj interface{}, b binding.Binding) error {
 	return nil
 }
 
-// Best effort algoritm to return the real client IP, it parses
+// ClientIP implements a best effort algorithm to return the real client IP, it parses
 // X-Real-IP and X-Forwarded-For in order to work properly with reverse-proxies such us: nginx or haproxy.
 func (c *Context) ClientIP() string {
 	if c.engine.ForwardedByClientIP {
@@ -268,6 +294,7 @@ func (c *Context) ClientIP() string {
 	return strings.TrimSpace(c.Request.RemoteAddr)
 }
 
+// ContentType returns the Content-Type header of the request.
 func (c *Context) ContentType() string {
 	return filterFlags(c.requestHeader("Content-Type"))
 }
@@ -283,8 +310,8 @@ func (c *Context) requestHeader(key string) string {
 /******** RESPONSE RENDERING ********/
 /************************************/
 
-// Intelligent shortcut for c.Writer.Header().Set(key, value)
-// it writes a header in the response.
+// Header is a intelligent shortcut for c.Writer.Header().Set(key, value)
+// It writes a header in the response.
 // If value == "", this method removes the header `c.Writer.Header().Del(key)`
 func (c *Context) Header(key, value string) {
 	if len(value) == 0 {
@@ -306,7 +333,7 @@ func (c *Context) renderError(err error) {
 	c.AbortWithError(500, err).SetType(ErrorTypeRender)
 }
 
-// Renders the HTTP template specified by its file name.
+// HTML renders the HTTP template specified by its file name.
 // It also updates the HTTP code and sets the Content-Type as "text/html".
 // See http://golang.org/doc/articles/wiki/
 func (c *Context) HTML(code int, name string, obj interface{}) {
@@ -314,7 +341,7 @@ func (c *Context) HTML(code int, name string, obj interface{}) {
 	c.Render(code, instance)
 }
 
-// Serializes the given struct as pretty JSON (indented + endlines) into the response body.
+// IndentedJSON serializes the given struct as pretty JSON (indented + endlines) into the response body.
 // It also sets the Content-Type as "application/json".
 // WARNING: we recommend to use this only for development propuses since printing pretty JSON is
 // more CPU and bandwidth consuming. Use Context.JSON() instead.
@@ -322,7 +349,7 @@ func (c *Context) IndentedJSON(code int, obj interface{}) {
 	c.Render(code, render.IndentedJSON{Data: obj})
 }
 
-// Serializes the given struct as JSON into the response body.
+// JSON serializes the given struct as JSON into the response body.
 // It also sets the Content-Type as "application/json".
 func (c *Context) JSON(code int, obj interface{}) {
 	c.writermem.WriteHeader(code)
@@ -331,19 +358,19 @@ func (c *Context) JSON(code int, obj interface{}) {
 	}
 }
 
-// Serializes the given struct as XML into the response body.
+// XML serializes the given struct as XML into the response body.
 // It also sets the Content-Type as "application/xml".
 func (c *Context) XML(code int, obj interface{}) {
 	c.Render(code, render.XML{Data: obj})
 }
 
-// Writes the given string into the response body.
+// String writes the given string into the response body.
 func (c *Context) String(code int, format string, values ...interface{}) {
 	c.writermem.WriteHeader(code)
 	render.WriteString(c.Writer, format, values)
 }
 
-// Returns a HTTP redirect to the specific location.
+// Redirect returns a HTTP redirect to the specific location.
 func (c *Context) Redirect(code int, location string) {
 	c.Render(-1, render.Redirect{
 		Code:     code,
@@ -352,7 +379,7 @@ func (c *Context) Redirect(code int, location string) {
 	})
 }
 
-// Writes some data into the body stream and updates the HTTP code.
+// Data writes some data into the body stream and updates the HTTP code.
 func (c *Context) Data(code int, contentType string, data []byte) {
 	c.Render(code, render.Data{
 		ContentType: contentType,
@@ -360,11 +387,12 @@ func (c *Context) Data(code int, contentType string, data []byte) {
 	})
 }
 
-// Writes the specified file into the body stream in a efficient way.
+// File writes the specified file into the body stream in a efficient way.
 func (c *Context) File(filepath string) {
 	http.ServeFile(c.Writer, c.Request, filepath)
 }
 
+// SSEvent writes a Server-Sent Event into the body stream.
 func (c *Context) SSEvent(name string, message interface{}) {
 	c.Render(-1, sse.Event{
 		Event: name,

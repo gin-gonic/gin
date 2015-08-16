@@ -20,14 +20,14 @@ func TestRouterGroupBasic(t *testing.T) {
 	group.Use(func(c *Context) {})
 
 	assert.Len(t, group.Handlers, 2)
-	assert.Equal(t, group.BasePath, "/hola")
+	assert.Equal(t, group.BasePath(), "/hola")
 	assert.Equal(t, group.engine, router)
 
 	group2 := group.Group("manu")
 	group2.Use(func(c *Context) {}, func(c *Context) {})
 
 	assert.Len(t, group2.Handlers, 4)
-	assert.Equal(t, group2.BasePath, "/hola/manu")
+	assert.Equal(t, group2.BasePath(), "/hola/manu")
 	assert.Equal(t, group2.engine, router)
 }
 
@@ -44,10 +44,10 @@ func TestRouterGroupBasicHandle(t *testing.T) {
 func performRequestInGroup(t *testing.T, method string) {
 	router := New()
 	v1 := router.Group("v1", func(c *Context) {})
-	assert.Equal(t, v1.BasePath, "/v1")
+	assert.Equal(t, v1.BasePath(), "/v1")
 
 	login := v1.Group("/login/", func(c *Context) {}, func(c *Context) {})
-	assert.Equal(t, login.BasePath, "/v1/login/")
+	assert.Equal(t, login.BasePath(), "/v1/login/")
 
 	handler := func(c *Context) {
 		c.String(400, "the method was %s and index %d", c.Request.Method, c.index)
@@ -157,7 +157,7 @@ func TestRouterGroupPipeline(t *testing.T) {
 	testRoutesInterface(t, v1)
 }
 
-func testRoutesInterface(t *testing.T, r routesInterface) {
+func testRoutesInterface(t *testing.T, r IRoutes) {
 	handler := func(c *Context) {}
 	assert.Equal(t, r, r.Use(handler))
 

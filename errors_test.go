@@ -63,6 +63,7 @@ func TestErrorSlice(t *testing.T) {
 		{Err: errors.New("third"), Type: ErrorTypePublic, Meta: H{"status": "400"}},
 	}
 
+	assert.Equal(t, errs, errs.ByType(ErrorTypeAny))
 	assert.Equal(t, errs.Last().Error(), "third")
 	assert.Equal(t, errs.Errors(), []string{"first", "second", "third"})
 	assert.Equal(t, errs.ByType(ErrorTypePublic).Errors(), []string{"third"})

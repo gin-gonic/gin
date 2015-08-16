@@ -1,8 +1,14 @@
-#Gin Web Framework [![Build Status](https://travis-ci.org/gin-gonic/gin.svg)](https://travis-ci.org/gin-gonic/gin) [![Coverage Status](https://coveralls.io/repos/gin-gonic/gin/badge.svg?branch=master)](https://coveralls.io/r/gin-gonic/gin?branch=master)  
 
- [![GoDoc](https://godoc.org/github.com/gin-gonic/gin?status.svg)](https://godoc.org/github.com/gin-gonic/gin)  [![Join the chat at https://gitter.im/gin-gonic/gin](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/gin-gonic/gin?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+#Gin Web Framework
+<img align="right" src="https://s3.amazonaws.com/uploads.hipchat.com/36744/1498287/JVR32LgyEGCiy01/path4201%20copy%202.png">
+[![Build Status](https://travis-ci.org/gin-gonic/gin.svg)](https://travis-ci.org/gin-gonic/gin)
+[![Coverage Status](https://coveralls.io/repos/gin-gonic/gin/badge.svg?branch=master)](https://coveralls.io/r/gin-gonic/gin?branch=master)
+[![GoDoc](https://godoc.org/github.com/gin-gonic/gin?status.svg)](https://godoc.org/github.com/gin-gonic/gin)
+[![Join the chat at https://gitter.im/gin-gonic/gin](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/gin-gonic/gin?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
 Gin is a web framework written in Golang. It features a martini-like API with much better performance, up to 40 times faster thanks to [httprouter](https://github.com/julienschmidt/httprouter). If you need performance and good productivity, you will love Gin.
+
+
 
 ![Gin console logger](https://gin-gonic.github.io/gin/other/console.png)
 
@@ -30,36 +36,40 @@ Gin uses a custom version of [HttpRouter](https://github.com/julienschmidt/httpr
 [See all benchmarks](/BENCHMARKS.md)
 
 
-```
-BenchmarkAce_GithubAll     10000        109482 ns/op       13792 B/op        167 allocs/op
-BenchmarkBear_GithubAll    10000        287490 ns/op       79952 B/op        943 allocs/op
-BenchmarkBeego_GithubAll        3000        562184 ns/op      146272 B/op       2092 allocs/op
-BenchmarkBone_GithubAll      500       2578716 ns/op      648016 B/op       8119 allocs/op
-BenchmarkDenco_GithubAll       20000         94955 ns/op       20224 B/op        167 allocs/op
-BenchmarkEcho_GithubAll    30000         58705 ns/op           0 B/op          0 allocs/op
-BenchmarkGin_GithubAll     30000         50991 ns/op           0 B/op          0 allocs/op
-BenchmarkGocraftWeb_GithubAll       5000        449648 ns/op      133280 B/op       1889 allocs/op
-BenchmarkGoji_GithubAll     2000        689748 ns/op       56113 B/op        334 allocs/op
-BenchmarkGoJsonRest_GithubAll       5000        537769 ns/op      135995 B/op       2940 allocs/op
-BenchmarkGoRestful_GithubAll         100      18410628 ns/op      797236 B/op       7725 allocs/op
-BenchmarkGorillaMux_GithubAll        200       8036360 ns/op      153137 B/op       1791 allocs/op
-BenchmarkHttpRouter_GithubAll      20000         63506 ns/op       13792 B/op        167 allocs/op
-BenchmarkHttpTreeMux_GithubAll     10000        165927 ns/op       56112 B/op        334 allocs/op
-BenchmarkKocha_GithubAll       10000        171362 ns/op       23304 B/op        843 allocs/op
-BenchmarkMacaron_GithubAll      2000        817008 ns/op      224960 B/op       2315 allocs/op
-BenchmarkMartini_GithubAll       100      12609209 ns/op      237952 B/op       2686 allocs/op
-BenchmarkPat_GithubAll       300       4830398 ns/op     1504101 B/op      32222 allocs/op
-BenchmarkPossum_GithubAll      10000        301716 ns/op       97440 B/op        812 allocs/op
-BenchmarkR2router_GithubAll    10000        270691 ns/op       77328 B/op       1182 allocs/op
-BenchmarkRevel_GithubAll        1000       1491919 ns/op      345553 B/op       5918 allocs/op
-BenchmarkRivet_GithubAll       10000        283860 ns/op       84272 B/op       1079 allocs/op
-BenchmarkTango_GithubAll        5000        473821 ns/op       87078 B/op       2470 allocs/op
-BenchmarkTigerTonic_GithubAll       2000       1120131 ns/op      241088 B/op       6052 allocs/op
-BenchmarkTraffic_GithubAll       200       8708979 ns/op     2664762 B/op      22390 allocs/op
-BenchmarkVulcan_GithubAll       5000        353392 ns/op       19894 B/op        609 allocs/op
-BenchmarkZeus_GithubAll     2000        944234 ns/op      300688 B/op       2648 allocs/op
-```
+Benchmark name 					| (1) 		| (2) 		| (3) 		| (4)
+--------------------------------|----------:|----------:|----------:|------:
+BenchmarkAce_GithubAll 			| 10000 	| 109482 	| 13792 	| 167
+BenchmarkBear_GithubAll 		| 10000 	| 287490 	| 79952 	| 943
+BenchmarkBeego_GithubAll 		| 3000 		| 562184 	| 146272 	| 2092
+BenchmarkBone_GithubAll 		| 500 		| 2578716 	| 648016 	| 8119
+BenchmarkDenco_GithubAll 		| 20000 	| 94955 	| 20224 	| 167
+BenchmarkEcho_GithubAll 		| 30000 	| 58705 	| 0 		| 0
+**BenchmarkGin_GithubAll** 		| **30000** | **50991** | **0** 	| **0**
+BenchmarkGocraftWeb_GithubAll 	| 5000 		| 449648 	| 133280 	| 1889
+BenchmarkGoji_GithubAll 		| 2000 		| 689748 	| 56113 	| 334
+BenchmarkGoJsonRest_GithubAll 	| 5000 		| 537769 	| 135995 	| 2940
+BenchmarkGoRestful_GithubAll 	| 100 		| 18410628 	| 797236 	| 7725
+BenchmarkGorillaMux_GithubAll 	| 200 		| 8036360 	| 153137 	| 1791
+BenchmarkHttpRouter_GithubAll 	| 20000 	| 63506 	| 13792 	| 167
+BenchmarkHttpTreeMux_GithubAll 	| 10000 	| 165927 	| 56112 	| 334
+BenchmarkKocha_GithubAll 		| 10000 	| 171362 	| 23304 	| 843
+BenchmarkMacaron_GithubAll 		| 2000 		| 817008 	| 224960 	| 2315
+BenchmarkMartini_GithubAll 		| 100 		| 12609209 	| 237952 	| 2686
+BenchmarkPat_GithubAll 			| 300 		| 4830398 	| 1504101 	| 32222
+BenchmarkPossum_GithubAll 		| 10000 	| 301716 	| 97440 	| 812
+BenchmarkR2router_GithubAll 	| 10000 	| 270691 	| 77328 	| 1182
+BenchmarkRevel_GithubAll 		| 1000 		| 1491919 	| 345553 	| 5918
+BenchmarkRivet_GithubAll 		| 10000 	| 283860 	| 84272 	| 1079
+BenchmarkTango_GithubAll 		| 5000 		| 473821 	| 87078 	| 2470
+BenchmarkTigerTonic_GithubAll 	| 2000 		| 1120131 	| 241088 	| 6052
+BenchmarkTraffic_GithubAll 		| 200 		| 8708979 	| 2664762 	| 22390
+BenchmarkVulcan_GithubAll 		| 5000 		| 353392 	| 19894 	| 609
+BenchmarkZeus_GithubAll 		| 2000 		| 944234 	| 300688 	| 2648
 
+(1): Total Repetitions  
+(2): Single Repetition Duration (ns/op)  
+(3): Heap Memory (B/op)  
+(4): Average Allocations per Repetition (allocs/op)  
 
 ##Gin v1. stable
 
@@ -166,6 +176,36 @@ func main() {
 }
 ```
 
+### Another example: query + post form
+
+```
+POST /post?id=1234&page=1 HTTP/1.1
+Content-Type: application/x-www-form-urlencoded
+
+name=manu&message=this_is_great
+```
+
+```go
+func main() {
+	router := gin.Default()
+
+	router.POST("/post", func(c *gin.Context) {
+        id := c.Query("id")
+        page := c.DefaultQuery("id", "0")
+        name := c.PostForm("name")
+        message := c.PostForm("message")
+
+        fmt.Println("id: %s; page: %s; name: %s; message: %s", id, page, name, message)
+	})
+	router.Run(":8080")
+}
+```
+
+```
+id: 1234; page: 0; name: manu; message: this_is_great
+```
+
+
 #### Grouping routes
 ```go
 func main() {
@@ -253,46 +293,41 @@ You can also specify that specific fields are required. If a field is decorated 
 
 ```go
 // Binding from JSON
-type LoginJSON struct {
-	User     string `json:"user" binding:"required"`
-	Password string `json:"password" binding:"required"`
-}
-
-// Binding from form values
-type LoginForm struct {
-    User     string `form:"user" binding:"required"`
-    Password string `form:"password" binding:"required"`
+type Login struct {
+	User     string `form:"user" json:"user" binding:"required"`
+	Password string `form:"password" json:"password" binding:"required"`
 }
 
 func main() {
-	r := gin.Default()
+	router := gin.Default()
 
     // Example for binding JSON ({"user": "manu", "password": "123"})
-	r.POST("/loginJSON", func(c *gin.Context) {
-		var json LoginJSON
-
-        c.Bind(&json) // This will infer what binder to use depending on the content-type header.
-        if json.User == "manu" && json.Password == "123" {
-            c.JSON(http.StatusOK, gin.H{"status": "you are logged in"})
-        } else {
-            c.JSON(http.StatusUnauthorized, gin.H{"status": "unauthorized"})
+	router.POST("/loginJSON", func(c *gin.Context) {
+		var json Login
+        if c.BindJSON(&json) == nil {
+            if json.User == "manu" && json.Password == "123" {
+                c.JSON(http.StatusOK, gin.H{"status": "you are logged in"})
+            } else {
+                c.JSON(http.StatusUnauthorized, gin.H{"status": "unauthorized"})
+            }
         }
 	})
 
     // Example for binding a HTML form (user=manu&password=123)
-    r.POST("/loginHTML", func(c *gin.Context) {
-        var form LoginForm
-
-        c.BindWith(&form, binding.Form) // You can also specify which binder to use. We support binding.Form, binding.JSON and binding.XML.
-        if form.User == "manu" && form.Password == "123" {
-            c.JSON(http.StatusOK, gin.H{"status": "you are logged in"})
-        } else {
-            c.JSON(http.StatusUnauthorized, gin.H{"status": "unauthorized"})
+    router.POST("/loginForm", func(c *gin.Context) {
+        var form Login
+        // This will infer what binder to use depending on the content-type header.
+        if c.Bind(&form) == nil {
+            if form.User == "manu" && form.Password == "123" {
+                c.JSON(http.StatusOK, gin.H{"status": "you are logged in"})
+            } else {
+                c.JSON(http.StatusUnauthorized, gin.H{"status": "unauthorized"})
+            }
         }
     })
 
 	// Listen and server on 0.0.0.0:8080
-	r.Run(":8080")
+	router.Run(":8080")
 }
 ```
 
@@ -312,25 +347,22 @@ type LoginForm struct {
 }
 
 func main() {
-
 	router := gin.Default()
-
 	router.POST("/login", func(c *gin.Context) {
 		// you can bind multipart form with explicit binding declaration:
 		// c.BindWith(&form, binding.Form)
 		// or you can simply use autobinding with Bind method:
 		var form LoginForm
-		c.Bind(&form) // in this case proper binding will be automatically selected
-
-		if form.User == "user" && form.Password == "password" {
-			c.JSON(200, gin.H{"status": "you are logged in"})
-		} else {
-			c.JSON(401, gin.H{"status": "unauthorized"})
-		}
+        // in this case proper binding will be automatically selected
+		if c.Bind(&form) == nil {
+            if form.User == "user" && form.Password == "password" {
+			    c.JSON(200, gin.H{"status": "you are logged in"})
+            } else {
+			    c.JSON(401, gin.H{"status": "unauthorized"})
+            }
+        }
 	})
-
 	router.Run(":8080")
-
 }
 ```
 

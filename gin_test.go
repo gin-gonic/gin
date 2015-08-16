@@ -14,7 +14,6 @@ import (
 //TODO
 // func (engine *Engine) LoadHTMLGlob(pattern string) {
 // func (engine *Engine) LoadHTMLFiles(files ...string) {
-// func (engine *Engine) Run(addr string) error {
 // func (engine *Engine) RunTLS(addr string, cert string, key string) error {
 
 func init() {
@@ -23,9 +22,28 @@ func init() {
 
 func TestCreateEngine(t *testing.T) {
 	router := New()
-	assert.Equal(t, "/", router.BasePath)
+	assert.Equal(t, "/", router.basePath)
 	assert.Equal(t, router.engine, router)
 	assert.Empty(t, router.Handlers)
+}
+
+// func TestLoadHTMLDebugMode(t *testing.T) {
+// 	router := New()
+// 	SetMode(DebugMode)
+// 	router.LoadHTMLGlob("*.testtmpl")
+// 	r := router.HTMLRender.(render.HTMLDebug)
+// 	assert.Empty(t, r.Files)
+// 	assert.Equal(t, r.Glob, "*.testtmpl")
+//
+// 	router.LoadHTMLFiles("index.html.testtmpl", "login.html.testtmpl")
+// 	r = router.HTMLRender.(render.HTMLDebug)
+// 	assert.Empty(t, r.Glob)
+// 	assert.Equal(t, r.Files, []string{"index.html", "login.html"})
+// 	SetMode(TestMode)
+// }
+
+func TestLoadHTMLReleaseMode(t *testing.T) {
+
 }
 
 func TestAddRoute(t *testing.T) {
@@ -180,3 +198,48 @@ func compareFunc(t *testing.T, a, b interface{}) {
 		t.Error("different functions")
 	}
 }
+
+func TestListOfRoutes(t *testing.T) {
+	router := New()
+	router.GET("/favicon.ico", handler_test1)
+	router.GET("/", handler_test1)
+	group := router.Group("/users")
+	{
+		group.GET("/", handler_test2)
+		group.GET("/:id", handler_test1)
+		group.POST("/:id", handler_test2)
+	}
+	router.Static("/static", ".")
+
+	list := router.Routes()
+
+	assert.Len(t, list, 7)
+	assert.Contains(t, list, RouteInfo{
+		Method:  "GET",
+		Path:    "/favicon.ico",
+		Handler: "github.com/gin-gonic/gin.handler_test1",
+	})
+	assert.Contains(t, list, RouteInfo{
+		Method:  "GET",
+		Path:    "/",
+		Handler: "github.com/gin-gonic/gin.handler_test1",
+	})
+	assert.Contains(t, list, RouteInfo{
+		Method:  "GET",
+		Path:    "/users/",
+		Handler: "github.com/gin-gonic/gin.handler_test2",
+	})
+	assert.Contains(t, list, RouteInfo{
+		Method:  "GET",
+		Path:    "/users/:id",
+		Handler: "github.com/gin-gonic/gin.handler_test1",
+	})
+	assert.Contains(t, list, RouteInfo{
+		Method:  "POST",
+		Path:    "/users/:id",
+		Handler: "github.com/gin-gonic/gin.handler_test2",
+	})
+}
+
+func handler_test1(c *Context) {}
+func handler_test2(c *Context) {}

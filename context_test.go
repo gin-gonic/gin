@@ -42,6 +42,9 @@ func createMultipartRequest() *http.Request {
 	must(mw.SetBoundary(boundary))
 	must(mw.WriteField("foo", "bar"))
 	must(mw.WriteField("bar", "foo"))
+	must(mw.WriteField("bar", "foo2"))
+	must(mw.WriteField("array", "first"))
+	must(mw.WriteField("array", "second"))
 	req, err := http.NewRequest("POST", "/", body)
 	must(err)
 	req.Header.Set("Content-Type", MIMEMultipartPOSTForm+"; boundary="+boundary)
@@ -75,6 +78,25 @@ func TestContextReset(t *testing.T) {
 	assert.Len(t, c.Params, 0)
 	assert.EqualValues(t, c.index, -1)
 	assert.Equal(t, c.Writer.(*responseWriter), &c.writermem)
+}
+
+func TestContextHandlers(t *testing.T) {
+	c, _, _ := createTestContext()
+	assert.Nil(t, c.handlers)
+	assert.Nil(t, c.handlers.Last())
+
+	c.handlers = HandlersChain{}
+	assert.NotNil(t, c.handlers)
+	assert.Nil(t, c.handlers.Last())
+
+	f := func(c *Context) {}
+	g := func(c *Context) {}
+
+	c.handlers = HandlersChain{f}
+	compareFunc(t, f, c.handlers.Last())
+
+	c.handlers = HandlersChain{f, g}
+	compareFunc(t, g, c.handlers.Last())
 }
 
 // TestContextSetGet tests that a parameter is set correctly on the
@@ -129,10 +151,21 @@ func TestContextCopy(t *testing.T) {
 	assert.Nil(t, cp.writermem.ResponseWriter)
 	assert.Equal(t, &cp.writermem, cp.Writer.(*responseWriter))
 	assert.Equal(t, cp.Request, c.Request)
-	assert.Equal(t, cp.index, AbortIndex)
+	assert.Equal(t, cp.index, abortIndex)
 	assert.Equal(t, cp.Keys, c.Keys)
 	assert.Equal(t, cp.engine, c.engine)
 	assert.Equal(t, cp.Params, c.Params)
+}
+
+func TestContextHandlerName(t *testing.T) {
+	c, _, _ := createTestContext()
+	c.handlers = HandlersChain{func(c *Context) {}, handlerNameTest}
+
+	assert.Equal(t, c.HandlerName(), "github.com/gin-gonic/gin.handlerNameTest")
+}
+
+func handlerNameTest(c *Context) {
+
 }
 
 func TestContextQuery(t *testing.T) {
@@ -154,8 +187,8 @@ func TestContextQuery(t *testing.T) {
 
 func TestContextQueryAndPostForm(t *testing.T) {
 	c, _, _ := createTestContext()
-	body := bytes.NewBufferString("foo=bar&page=11&both=POST")
-	c.Request, _ = http.NewRequest("POST", "/?both=GET&id=main", body)
+	body := bytes.NewBufferString("foo=bar&page=11&both=POST&foo=second")
+	c.Request, _ = http.NewRequest("POST", "/?both=GET&id=main&id=omit&array[]=first&array[]=second", body)
 	c.Request.Header.Add("Content-Type", MIMEPOSTForm)
 
 	assert.Equal(t, c.DefaultPostForm("foo", "none"), "bar")
@@ -178,16 +211,18 @@ func TestContextQueryAndPostForm(t *testing.T) {
 	assert.Empty(t, c.Query("NoKey"))
 
 	var obj struct {
-		Foo  string `form:"foo"`
-		Id   string `form:"id"`
-		Page string `form:"page"`
-		Both string `form:"both"`
+		Foo   string   `form:"foo"`
+		ID    string   `form:"id"`
+		Page  string   `form:"page"`
+		Both  string   `form:"both"`
+		Array []string `form:"array[]"`
 	}
 	assert.NoError(t, c.Bind(&obj))
 	assert.Equal(t, obj.Foo, "bar")
-	assert.Equal(t, obj.Id, "main")
+	assert.Equal(t, obj.ID, "main")
 	assert.Equal(t, obj.Page, "11")
 	assert.Equal(t, obj.Both, "POST")
+	assert.Equal(t, obj.Array, []string{"first", "second"})
 }
 
 func TestContextPostFormMultipart(t *testing.T) {
@@ -195,16 +230,19 @@ func TestContextPostFormMultipart(t *testing.T) {
 	c.Request = createMultipartRequest()
 
 	var obj struct {
-		Foo string `form:"foo"`
-		Bar string `form:"bar"`
+		Foo   string   `form:"foo"`
+		Bar   string   `form:"bar"`
+		Array []string `form:"array"`
 	}
 	assert.NoError(t, c.Bind(&obj))
 	assert.Equal(t, obj.Bar, "foo")
 	assert.Equal(t, obj.Foo, "bar")
+	assert.Equal(t, obj.Array, []string{"first", "second"})
 
 	assert.Empty(t, c.Query("foo"))
 	assert.Empty(t, c.Query("bar"))
 	assert.Equal(t, c.PostForm("foo"), "bar")
+	assert.Equal(t, c.PostForm("array"), "first")
 	assert.Equal(t, c.PostForm("bar"), "foo")
 }
 
@@ -313,7 +351,7 @@ func TestContextRenderSSE(t *testing.T) {
 		"bar": "foo",
 	})
 
-	assert.Equal(t, w.Body.String(), "event: float\ndata: 1.5\n\nid: 123\ndata: text\n\nevent: chat\ndata: {\"bar\":\"foo\",\"foo\":\"bar\"}\n\n")
+	assert.Equal(t, w.Body.String(), "event:float\ndata:1.5\n\nid:123\ndata:text\n\nevent:chat\ndata:{\"bar\":\"foo\",\"foo\":\"bar\"}\n\n")
 }
 
 func TestContextRenderFile(t *testing.T) {
@@ -397,6 +435,20 @@ func TestContextNegotiationFormatCustum(t *testing.T) {
 	assert.Equal(t, c.NegotiateFormat(MIMEJSON), MIMEJSON)
 }
 
+func TestContextIsAborted(t *testing.T) {
+	c, _, _ := createTestContext()
+	assert.False(t, c.IsAborted())
+
+	c.Abort()
+	assert.True(t, c.IsAborted())
+
+	c.Next()
+	assert.True(t, c.IsAborted())
+
+	c.index++
+	assert.True(t, c.IsAborted())
+}
+
 // TestContextData tests that the response can be written from `bytesting`
 // with specified MIME type
 func TestContextAbortWithStatus(t *testing.T) {
@@ -405,7 +457,7 @@ func TestContextAbortWithStatus(t *testing.T) {
 	c.AbortWithStatus(401)
 	c.Writer.WriteHeaderNow()
 
-	assert.Equal(t, c.index, AbortIndex)
+	assert.Equal(t, c.index, abortIndex)
 	assert.Equal(t, c.Writer.Status(), 401)
 	assert.Equal(t, w.Code, 401)
 	assert.True(t, c.IsAborted())
@@ -457,7 +509,7 @@ func TestContextAbortWithError(t *testing.T) {
 	c.Writer.WriteHeaderNow()
 
 	assert.Equal(t, w.Code, 401)
-	assert.Equal(t, c.index, AbortIndex)
+	assert.Equal(t, c.index, abortIndex)
 	assert.True(t, c.IsAborted())
 }
 

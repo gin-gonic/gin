@@ -40,7 +40,6 @@ func testRouteOK(method string, t *testing.T) {
 
 	performRequest(r, method, "/test2")
 	assert.True(t, passedAny)
-
 }
 
 // TestSingleRouteOK tests that POST route is correctly invoked.
@@ -110,7 +109,6 @@ func TestRouterGroupRouteOK(t *testing.T) {
 	testRouteOK("TRACE", t)
 }
 
-// TestSingleRouteOK tests that POST route is correctly invoked.
 func TestRouteNotOK(t *testing.T) {
 	testRouteNotOK("GET", t)
 	testRouteNotOK("POST", t)
@@ -123,7 +121,6 @@ func TestRouteNotOK(t *testing.T) {
 	testRouteNotOK("TRACE", t)
 }
 
-// TestSingleRouteOK tests that POST route is correctly invoked.
 func TestRouteNotOK2(t *testing.T) {
 	testRouteNotOK2("GET", t)
 	testRouteNotOK2("POST", t)
@@ -134,6 +131,82 @@ func TestRouteNotOK2(t *testing.T) {
 	testRouteNotOK2("DELETE", t)
 	testRouteNotOK2("CONNECT", t)
 	testRouteNotOK2("TRACE", t)
+}
+
+func TestRouteRedirectTrailingSlash(t *testing.T) {
+	router := New()
+	router.RedirectFixedPath = false
+	router.RedirectTrailingSlash = true
+	router.GET("/path", func(c *Context) {})
+	router.GET("/path2/", func(c *Context) {})
+	router.POST("/path3", func(c *Context) {})
+	router.PUT("/path4/", func(c *Context) {})
+
+	w := performRequest(router, "GET", "/path/")
+	assert.Equal(t, w.Header().Get("Location"), "/path")
+	assert.Equal(t, w.Code, 301)
+
+	w = performRequest(router, "GET", "/path2")
+	assert.Equal(t, w.Header().Get("Location"), "/path2/")
+	assert.Equal(t, w.Code, 301)
+
+	w = performRequest(router, "POST", "/path3/")
+	assert.Equal(t, w.Header().Get("Location"), "/path3")
+	assert.Equal(t, w.Code, 307)
+
+	w = performRequest(router, "PUT", "/path4")
+	assert.Equal(t, w.Header().Get("Location"), "/path4/")
+	assert.Equal(t, w.Code, 307)
+
+	w = performRequest(router, "GET", "/path")
+	assert.Equal(t, w.Code, 200)
+
+	w = performRequest(router, "GET", "/path2/")
+	assert.Equal(t, w.Code, 200)
+
+	w = performRequest(router, "POST", "/path3")
+	assert.Equal(t, w.Code, 200)
+
+	w = performRequest(router, "PUT", "/path4/")
+	assert.Equal(t, w.Code, 200)
+
+	router.RedirectTrailingSlash = false
+
+	w = performRequest(router, "GET", "/path/")
+	assert.Equal(t, w.Code, 404)
+	w = performRequest(router, "GET", "/path2")
+	assert.Equal(t, w.Code, 404)
+	w = performRequest(router, "POST", "/path3/")
+	assert.Equal(t, w.Code, 404)
+	w = performRequest(router, "PUT", "/path4")
+	assert.Equal(t, w.Code, 404)
+}
+
+func TestRouteRedirectFixedPath(t *testing.T) {
+	router := New()
+	router.RedirectFixedPath = true
+	router.RedirectTrailingSlash = false
+
+	router.GET("/path", func(c *Context) {})
+	router.GET("/Path2", func(c *Context) {})
+	router.POST("/PATH3", func(c *Context) {})
+	router.POST("/Path4/", func(c *Context) {})
+
+	w := performRequest(router, "GET", "/PATH")
+	assert.Equal(t, w.Header().Get("Location"), "/path")
+	assert.Equal(t, w.Code, 301)
+
+	w = performRequest(router, "GET", "/path2")
+	assert.Equal(t, w.Header().Get("Location"), "/Path2")
+	assert.Equal(t, w.Code, 301)
+
+	w = performRequest(router, "POST", "/path3")
+	assert.Equal(t, w.Header().Get("Location"), "/PATH3")
+	assert.Equal(t, w.Code, 307)
+
+	w = performRequest(router, "POST", "/path4")
+	assert.Equal(t, w.Header().Get("Location"), "/Path4/")
+	assert.Equal(t, w.Code, 307)
 }
 
 // TestContextParamsGet tests that a parameter can be parsed from the URL.

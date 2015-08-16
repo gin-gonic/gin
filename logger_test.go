@@ -6,6 +6,7 @@ package gin
 
 import (
 	"bytes"
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -95,4 +96,31 @@ func TestColorForStatus(t *testing.T) {
 	assert.Equal(t, colorForStatus(301), string([]byte{27, 91, 57, 48, 59, 52, 55, 109}), "3xx should be white")
 	assert.Equal(t, colorForStatus(404), string([]byte{27, 91, 57, 55, 59, 52, 51, 109}), "4xx should be yellow")
 	assert.Equal(t, colorForStatus(2), string([]byte{27, 91, 57, 55, 59, 52, 49, 109}), "other things should be red")
+}
+
+func TestErrorLogger(t *testing.T) {
+	router := New()
+	router.Use(ErrorLogger())
+	router.GET("/error", func(c *Context) {
+		c.Error(errors.New("this is an error"))
+	})
+	router.GET("/abort", func(c *Context) {
+		c.AbortWithError(401, errors.New("no authorized"))
+	})
+	router.GET("/print", func(c *Context) {
+		c.Error(errors.New("this is an error"))
+		c.String(500, "hola!")
+	})
+
+	w := performRequest(router, "GET", "/error")
+	assert.Equal(t, w.Code, 200)
+	assert.Equal(t, w.Body.String(), "{\"error\":\"this is an error\"}\n")
+
+	w = performRequest(router, "GET", "/abort")
+	assert.Equal(t, w.Code, 401)
+	assert.Equal(t, w.Body.String(), "{\"error\":\"no authorized\"}\n")
+
+	w = performRequest(router, "GET", "/print")
+	assert.Equal(t, w.Code, 500)
+	assert.Equal(t, w.Body.String(), "hola!")
 }

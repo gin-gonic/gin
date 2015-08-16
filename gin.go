@@ -14,16 +14,34 @@ import (
 	"github.com/gin-gonic/gin/render"
 )
 
+// Framework's version
 const Version = "v1.0rc2"
 
 var default404Body = []byte("404 page not found")
 var default405Body = []byte("405 method not allowed")
 
-type (
-	HandlerFunc   func(*Context)
-	HandlersChain []HandlerFunc
+type HandlerFunc func(*Context)
+type HandlersChain []HandlerFunc
 
-	// Represents the web framework, it wraps the blazing fast httprouter multiplexer and a list of global middleware.
+// Last returns the last handler in the chain. ie. the last handler is the main own.
+func (c HandlersChain) Last() HandlerFunc {
+	length := len(c)
+	if length > 0 {
+		return c[length-1]
+	}
+	return nil
+}
+
+type (
+	RoutesInfo []RouteInfo
+	RouteInfo  struct {
+		Method  string
+		Path    string
+		Handler string
+	}
+
+	// Engine is the framework's instance, it contains the muxer, middleware and configuration settings.
+	// Create an instance of Engine, by using New() or Default()
 	Engine struct {
 		RouterGroup
 		HTMLRender  render.HTMLRender
@@ -63,14 +81,20 @@ type (
 	}
 )
 
-// Returns a new blank Engine instance without any middleware attached.
-// The most basic configuration
+var _ IRouter = &Engine{}
+
+// New returns a new blank Engine instance without any middleware attached.
+// By default the configuration is:
+// - RedirectTrailingSlash:  true
+// - RedirectFixedPath:      false
+// - HandleMethodNotAllowed: false
+// - ForwardedByClientIP:    true
 func New() *Engine {
-	debugPrintWARNING()
+	debugPrintWARNINGNew()
 	engine := &Engine{
 		RouterGroup: RouterGroup{
 			Handlers: nil,
-			BasePath: "/",
+			basePath: "/",
 			root:     true,
 		},
 		RedirectTrailingSlash:  true,
@@ -86,7 +110,7 @@ func New() *Engine {
 	return engine
 }
 
-// Returns a Engine instance with the Logger and Recovery already attached.
+// Default returns an Engine instance with the Logger and Recovery middleware already attached.
 func Default() *Engine {
 	engine := New()
 	engine.Use(Recovery(), Logger())
@@ -99,6 +123,7 @@ func (engine *Engine) allocateContext() *Context {
 
 func (engine *Engine) LoadHTMLGlob(pattern string) {
 	if IsDebugging() {
+		debugPrintLoadTemplate(template.Must(template.ParseGlob(pattern)))
 		engine.HTMLRender = render.HTMLDebug{Glob: pattern}
 	} else {
 		templ := template.Must(template.ParseGlob(pattern))
@@ -117,12 +142,7 @@ func (engine *Engine) LoadHTMLFiles(files ...string) {
 
 func (engine *Engine) SetHTMLTemplate(templ *template.Template) {
 	if len(engine.trees) > 0 {
-		debugPrint(`[WARNING] Since SetHTMLTemplate() is NOT thread-safe. It should only be called
-at initialization. ie. before any route is registered or the router is listening in a socket:
-
-	router := gin.Default()
-	router.SetHTMLTemplate(template) // << good place
-`)
+		debugPrintWARNINGSetHTMLTemplate()
 	}
 	engine.HTMLRender = render.HTMLProduction{Template: templ}
 }
@@ -142,7 +162,7 @@ func (engine *Engine) NoMethod(handlers ...HandlerFunc) {
 // Attachs a global middleware to the router. ie. the middleware attached though Use() will be
 // included in the handlers chain for every single request. Even 404, 405, static files...
 // For example, this is the right place for a logger or error management middleware.
-func (engine *Engine) Use(middleware ...HandlerFunc) routesInterface {
+func (engine *Engine) Use(middleware ...HandlerFunc) IRoutes {
 	engine.RouterGroup.Use(middleware...)
 	engine.rebuild404Handlers()
 	engine.rebuild405Handlers()
@@ -181,18 +201,43 @@ func (engine *Engine) addRoute(method, path string, handlers HandlersChain) {
 	root.addRoute(path, handlers)
 }
 
-// The router is attached to a http.Server and starts listening and serving HTTP requests.
+// Routes returns a slice of registered routes, including some useful information, such as:
+// the http method, path and the handler name.
+func (engine *Engine) Routes() (routes RoutesInfo) {
+	for _, tree := range engine.trees {
+		routes = iterate("", tree.method, routes, tree.root)
+	}
+	return routes
+}
+
+func iterate(path, method string, routes RoutesInfo, root *node) RoutesInfo {
+	path += root.path
+	if len(root.handlers) > 0 {
+		routes = append(routes, RouteInfo{
+			Method:  method,
+			Path:    path,
+			Handler: nameOfFunction(root.handlers.Last()),
+		})
+	}
+	for _, child := range root.children {
+		routes = iterate(path, method, routes, child)
+	}
+	return routes
+}
+
+// Run attaches the router to a http.Server and starts listening and serving HTTP requests.
 // It is a shortcut for http.ListenAndServe(addr, router)
 // Note: this method will block the calling goroutine undefinitelly unless an error happens.
-func (engine *Engine) Run(addr string) (err error) {
-	debugPrint("Listening and serving HTTP on %s\n", addr)
+func (engine *Engine) Run(addr ...string) (err error) {
 	defer func() { debugPrintError(err) }()
 
-	err = http.ListenAndServe(addr, engine)
+	address := resolveAddress(addr)
+	debugPrint("Listening and serving HTTP on %s\n", address)
+	err = http.ListenAndServe(address, engine)
 	return
 }
 
-// The router is attached to a http.Server and starts listening and serving HTTPS requests.
+// RunTLS attaches the router to a http.Server and starts listening and serving HTTPS (secure) requests.
 // It is a shortcut for http.ListenAndServeTLS(addr, certFile, keyFile, router)
 // Note: this method will block the calling goroutine undefinitelly unless an error happens.
 func (engine *Engine) RunTLS(addr string, certFile string, keyFile string) (err error) {
@@ -203,8 +248,8 @@ func (engine *Engine) RunTLS(addr string, certFile string, keyFile string) (err 
 	return
 }
 
-// The router is attached to a http.Server and starts listening and serving HTTP requests
-// through the specified unix socket (ie. a file)
+// RunUnix attaches the router to a http.Server and starts listening and serving HTTP requests
+// through the specified unix socket (ie. a file).
 // Note: this method will block the calling goroutine undefinitelly unless an error happens.
 func (engine *Engine) RunUnix(file string) (err error) {
 	debugPrint("Listening and serving HTTP on unix:/%s", file)
@@ -251,7 +296,7 @@ func (engine *Engine) handleHTTPRequest(context *Context) {
 				return
 
 			} else if httpMethod != "CONNECT" && path != "/" {
-				if tsr && engine.RedirectFixedPath {
+				if tsr && engine.RedirectTrailingSlash {
 					redirectTrailingSlash(context)
 					return
 				}

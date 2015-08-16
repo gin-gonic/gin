@@ -248,8 +248,8 @@ func TestMiddlewareWrite(t *testing.T) {
 	assert.Equal(t, w.Body.String(), `hola
 <map><foo>bar</foo></map>{"foo":"bar"}
 {"foo":"bar"}
-event: test
-data: message
+event:test
+data:message
 
 `)
 }
