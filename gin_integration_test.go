@@ -2,49 +2,86 @@ package gin
 
 import (
 	"bufio"
-	"bytes"
 	"fmt"
 	"io/ioutil"
 	"net"
 	"net/http"
+	"os"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 )
 
-func TestRun(t *testing.T) {
-	buffer := new(bytes.Buffer)
+func testRequest(t *testing.T, url string) {
+	resp, err := http.Get(url)
+	defer resp.Body.Close()
+	assert.NoError(t, err)
+
+	body, ioerr := ioutil.ReadAll(resp.Body)
+	assert.NoError(t, ioerr)
+	assert.Equal(t, "it worked", string(body), "resp body should match")
+	assert.Equal(t, "200 OK", resp.Status, "should get a 200")
+}
+
+func TestRunEmpty(t *testing.T) {
+	SetMode(DebugMode)
+	os.Setenv("PORT", "")
 	router := New()
 	go func() {
-		router.Use(LoggerWithWriter(buffer))
 		router.GET("/example", func(c *Context) { c.String(http.StatusOK, "it worked") })
-		router.Run(":5150")
+		assert.NoError(t, router.Run())
+	}()
+	// have to wait for the goroutine to start and run the server
+	// otherwise the main thread will complete
+	time.Sleep(5 * time.Millisecond)
+
+	assert.Error(t, router.Run(":8080"))
+	testRequest(t, "http://localhost:8080/example")
+}
+
+func TestRunEmptyWithEnv(t *testing.T) {
+	os.Setenv("PORT", "3123")
+	router := New()
+	go func() {
+		router.GET("/example", func(c *Context) { c.String(http.StatusOK, "it worked") })
+		assert.NoError(t, router.Run())
+	}()
+	// have to wait for the goroutine to start and run the server
+	// otherwise the main thread will complete
+	time.Sleep(5 * time.Millisecond)
+
+	assert.Error(t, router.Run(":3123"))
+	testRequest(t, "http://localhost:3123/example")
+}
+
+func TestRunTooMuchParams(t *testing.T) {
+	router := New()
+	assert.Panics(t, func() {
+		router.Run("2", "2")
+	})
+}
+
+func TestRunWithPort(t *testing.T) {
+	router := New()
+	go func() {
+		router.GET("/example", func(c *Context) { c.String(http.StatusOK, "it worked") })
+		assert.NoError(t, router.Run(":5150"))
 	}()
 	// have to wait for the goroutine to start and run the server
 	// otherwise the main thread will complete
 	time.Sleep(5 * time.Millisecond)
 
 	assert.Error(t, router.Run(":5150"))
-
-	resp, err := http.Get("http://localhost:5150/example")
-	defer resp.Body.Close()
-	assert.NoError(t, err)
-
-	body, ioerr := ioutil.ReadAll(resp.Body)
-	assert.NoError(t, ioerr)
-	assert.Equal(t, "it worked", string(body[:]), "resp body should match")
-	assert.Equal(t, "200 OK", resp.Status, "should get a 200")
+	testRequest(t, "http://localhost:5150/example")
 }
 
 func TestUnixSocket(t *testing.T) {
-	buffer := new(bytes.Buffer)
 	router := New()
 
 	go func() {
-		router.Use(LoggerWithWriter(buffer))
 		router.GET("/example", func(c *Context) { c.String(http.StatusOK, "it worked") })
-		router.RunUnix("/tmp/unix_unit_test")
+		assert.NoError(t, router.RunUnix("/tmp/unix_unit_test"))
 	}()
 	// have to wait for the goroutine to start and run the server
 	// otherwise the main thread will complete
