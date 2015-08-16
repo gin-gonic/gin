@@ -25,7 +25,6 @@ func testRequest(t *testing.T, url string) {
 }
 
 func TestRunEmpty(t *testing.T) {
-	SetMode(DebugMode)
 	os.Setenv("PORT", "")
 	router := New()
 	go func() {
