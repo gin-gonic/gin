@@ -351,7 +351,7 @@ func TestContextRenderSSE(t *testing.T) {
 		"bar": "foo",
 	})
 
-	assert.Equal(t, w.Body.String(), "event: float\ndata: 1.5\n\nid: 123\ndata: text\n\nevent: chat\ndata: {\"bar\":\"foo\",\"foo\":\"bar\"}\n\n")
+	assert.Equal(t, w.Body.String(), "event:float\ndata:1.5\n\nid:123\ndata:text\n\nevent:chat\ndata:{\"bar\":\"foo\",\"foo\":\"bar\"}\n\n")
 }
 
 func TestContextRenderFile(t *testing.T) {
