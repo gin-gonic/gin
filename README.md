@@ -191,18 +191,18 @@ func main() {
 
 	router.POST("/post", func(c *gin.Context) {
         id := c.Query("id")
-        page := c.DefaultQuery("id", "0")
+        page := c.DefaultQuery("page", "0")
         name := c.PostForm("name")
         message := c.PostForm("message")
 
-        fmt.Println("id: %s; page: %s; name: %s; message: %s", id, page, name, message)
+        fmt.Print("id: %s; page: %s; name: %s; message: %s", id, page, name, message)
 	})
 	router.Run(":8080")
 }
 ```
 
 ```
-id: 1234; page: 0; name: manu; message: this_is_great
+id: 1234; page: 1; name: manu; message: this_is_great
 ```
 
 
