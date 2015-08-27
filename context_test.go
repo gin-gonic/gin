@@ -260,7 +260,7 @@ func TestContextGetCookie(t *testing.T) {
 	c, w, _ := createTestContext()
 	c.Request, _ = http.NewRequest("GET", "/get", nil)
 	c.Request.Header.Set("Cookie", "user=gin")
-	assert.Equal(t, w.Body.String(), "gin")
+	assert.Equal(t, c.GetCookie("Cookie"), "gin")
 }
 
 // Tests that the response is serialized as JSON
