@@ -9,6 +9,7 @@ import (
 	"io"
 	"math"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 
@@ -319,6 +320,64 @@ func (c *Context) Header(key, value string) {
 	} else {
 		c.Writer.Header().Set(key, value)
 	}
+}
+
+func (c *Context) SetCookie(name string, value string, options ...interface{}) {
+	cookie := http.Cookie{}
+	cookie.Name = name
+	cookie.Value = url.QueryEscape(value)
+
+	if len(options) > 0 {
+		switch v := options[0].(type) {
+		case int:
+			cookie.MaxAge = v
+		case int64:
+			cookie.MaxAge = int(v)
+		case int32:
+			cookie.MaxAge = int(v)
+		}
+	}
+
+	cookie.Path = "/"
+	if len(options) > 1 {
+		if v, ok := options[1].(string); ok && len(v) > 0 {
+			cookie.Path = v
+		}
+	}
+
+	if len(options) > 2 {
+		if v, ok := options[2].(string); ok && len(v) > 0 {
+			cookie.Domain = v
+		}
+	}
+
+	if len(options) > 3 {
+		switch v := options[3].(type) {
+		case bool:
+			cookie.Secure = v
+		default:
+			if options[3] != nil {
+				cookie.Secure = true
+			}
+		}
+	}
+
+	if len(options) > 4 {
+		if v, ok := options[4].(bool); ok && v {
+			cookie.HttpOnly = true
+		}
+	}
+
+	c.Writer.Header().Add("Set-Cookie", cookie.String())
+}
+
+func (c *Context) GetCookie(name string) string {
+	cookie, err := c.Request.Cookie(name)
+	if err != nil {
+		return ""
+	}
+	val, _ := url.QueryUnescape(cookie.Value)
+	return val
 }
 
 func (c *Context) Render(code int, r render.Render) {
