@@ -38,6 +38,8 @@ type (
 		Method  string
 		Path    string
 		Handler string
+		File    string
+		Line    int
 	}
 
 	// Engine is the framework's instance, it contains the muxer, middleware and configuration settings.
@@ -213,10 +215,13 @@ func (engine *Engine) Routes() (routes RoutesInfo) {
 func iterate(path, method string, routes RoutesInfo, root *node) RoutesInfo {
 	path += root.path
 	if len(root.handlers) > 0 {
+		funcInfo := parseFunction(root.handlers.Last())
 		routes = append(routes, RouteInfo{
 			Method:  method,
 			Path:    path,
-			Handler: nameOfFunction(root.handlers.Last()),
+			Handler: funcInfo.Name,
+			File:    funcInfo.File,
+			Line:    funcInfo.Line,
 		})
 	}
 	for _, child := range root.children {

@@ -10,7 +10,6 @@ import (
 	"os"
 	"path"
 	"reflect"
-	"runtime"
 	"strings"
 )
 
@@ -112,10 +111,6 @@ func lastChar(str string) uint8 {
 		panic("The length of the string can't be 0")
 	}
 	return str[size-1]
-}
-
-func nameOfFunction(f interface{}) string {
-	return runtime.FuncForPC(reflect.ValueOf(f).Pointer()).Name()
 }
 
 func joinPaths(absolutePath, relativePath string) string {
