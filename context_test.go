@@ -257,6 +257,21 @@ func TestContextRenderJSON(t *testing.T) {
 	assert.Equal(t, w.HeaderMap.Get("Content-Type"), "application/json; charset=utf-8")
 }
 
+// Tests that the response is JSON writen out from bytes
+// and Content-Type is set to application/json
+func TestContextRenderRawJSON(t *testing.T) {
+	c, w, _ := createTestContext()
+
+	var buffer bytes.Buffer
+	buffer.WriteString("{\"foo\": \"bar\"}")
+
+	c.RawJSON(201, &buffer)
+
+	assert.Equal(t, w.Code, 201)
+	assert.Equal(t, w.Body.String(), "{\"foo\": \"bar\"}")
+	assert.Equal(t, w.HeaderMap.Get("Content-Type"), "application/json; charset=utf-8")
+}
+
 // Tests that the response is serialized as JSON
 // we change the content-type before
 func TestContextRenderAPIJSON(t *testing.T) {
