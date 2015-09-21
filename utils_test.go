@@ -78,7 +78,7 @@ func TestFilterFlags(t *testing.T) {
 }
 
 func TestFunctionName(t *testing.T) {
-	assert.Equal(t, nameOfFunction(somefunction), "github.com/gin-gonic/gin.somefunction")
+	assert.Equal(t, nameOfFunction(somefunction), TestPath+"/gin.somefunction")
 }
 
 func somefunction() {

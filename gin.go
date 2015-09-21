@@ -9,6 +9,8 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"path"
+	"runtime"
 	"sync"
 
 	"github.com/gin-gonic/gin/render"
@@ -19,6 +21,13 @@ const Version = "v1.0rc2"
 
 var default404Body = []byte("404 page not found")
 var default405Body = []byte("405 method not allowed")
+
+// replace hardcoded paths in assertions within tests to
+// make it easier for contributors to run tests
+var _, CurrentFile, _, _ = runtime.Caller(1)
+var TestPath = path.Dir(path.Dir(path.Dir(CurrentFile)))
+
+//TestPath,_ := os.Open(path.Join(path.Dir(TestFile), "gin.go"))
 
 type HandlerFunc func(*Context)
 type HandlersChain []HandlerFunc
