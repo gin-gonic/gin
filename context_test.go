@@ -7,6 +7,7 @@ package gin
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"html/template"
 	"mime/multipart"
 	"net/http"
@@ -351,7 +352,7 @@ func TestContextRenderSSE(t *testing.T) {
 		"bar": "foo",
 	})
 
-	assert.Equal(t, w.Body.String(), "event:float\ndata:1.5\n\nid:123\ndata:text\n\nevent:chat\ndata:{\"bar\":\"foo\",\"foo\":\"bar\"}\n\n")
+	assert.Equal(t, fmt.Sprintf("%v", w.Body), "event:float\ndata:1.5\n\nid:123\ndata:text\n\nevent:chat\ndata:{\"bar\":\"foo\",\"foo\":\"bar\"}\n\n")
 }
 
 func TestContextRenderFile(t *testing.T) {
