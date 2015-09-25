@@ -353,7 +353,6 @@ func TestContextRenderSSE(t *testing.T) {
 	})
 
 	assert.Equal(t, strings.Replace(w.Body.String(), " ", "", -1), strings.Replace("event:float\ndata:1.5\n\nid:123\ndata:text\n\nevent:chat\ndata:{\"bar\":\"foo\",\"foo\":\"bar\"}\n\n", " ", "", -1))
-	//assert.Equal(t, fmt.Sprintf("%v", w.Body), "event:float\ndata:1.5\n\nid:123\ndata:text\n\nevent:chat\ndata:{\"bar\":\"foo\",\"foo\":\"bar\"}\n\n")
 }
 
 func TestContextRenderFile(t *testing.T) {
