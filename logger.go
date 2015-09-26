@@ -46,7 +46,17 @@ func Logger() HandlerFunc {
 
 // Instance a Logger middleware with the specified writter buffer.
 // Example: os.Stdout, a file opened in write mode, a socket...
-func LoggerWithWriter(out io.Writer) HandlerFunc {
+func LoggerWithWriter(out io.Writer, notlogged ...string) HandlerFunc {
+	var skip map[string]struct{}
+
+	if length := len(notlogged); length > 0 {
+		skip = make(map[string]struct{}, length)
+
+		for _, path := range notlogged {
+			skip[path] = struct{}{}
+		}
+	}
+
 	return func(c *Context) {
 		// Start timer
 		start := time.Now()
@@ -55,26 +65,29 @@ func LoggerWithWriter(out io.Writer) HandlerFunc {
 		// Process request
 		c.Next()
 
-		// Stop timer
-		end := time.Now()
-		latency := end.Sub(start)
+		// Log only when path is not being skipped
+		if _, ok := skip[path]; !ok {
+			// Stop timer
+			end := time.Now()
+			latency := end.Sub(start)
 
-		clientIP := c.ClientIP()
-		method := c.Request.Method
-		statusCode := c.Writer.Status()
-		statusColor := colorForStatus(statusCode)
-		methodColor := colorForMethod(method)
-		comment := c.Errors.ByType(ErrorTypePrivate).String()
+			clientIP := c.ClientIP()
+			method := c.Request.Method
+			statusCode := c.Writer.Status()
+			statusColor := colorForStatus(statusCode)
+			methodColor := colorForMethod(method)
+			comment := c.Errors.ByType(ErrorTypePrivate).String()
 
-		fmt.Fprintf(out, "[GIN] %v |%s %3d %s| %13v | %s |%s  %s %-7s %s\n%s",
-			end.Format("2006/01/02 - 15:04:05"),
-			statusColor, statusCode, reset,
-			latency,
-			clientIP,
-			methodColor, reset, method,
-			path,
-			comment,
-		)
+			fmt.Fprintf(out, "[GIN] %v |%s %3d %s| %13v | %s |%s  %s %-7s %s\n%s",
+				end.Format("2006/01/02 - 15:04:05"),
+				statusColor, statusCode, reset,
+				latency,
+				clientIP,
+				methodColor, reset, method,
+				path,
+				comment,
+			)
+		}
 	}
 }
 
