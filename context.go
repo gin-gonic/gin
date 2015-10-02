@@ -349,13 +349,13 @@ func (c *Context) SetCookie(
 	c.Writer.Header().Add("Set-Cookie", cookie.String())
 }
 
-func (c *Context) GetCookie(name string) string {
+func (c *Context) GetCookie(name string) (string, error) {
 	cookie, err := c.Request.Cookie(name)
 	if err != nil {
-		return ""
+		return "", err
 	}
 	val, _ := url.QueryUnescape(cookie.Value)
-	return val
+	return val, nil
 }
 
 func (c *Context) Render(code int, r render.Render) {

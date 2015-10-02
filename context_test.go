@@ -248,20 +248,18 @@ func TestContextPostFormMultipart(t *testing.T) {
 }
 
 func TestContextSetCookie(t *testing.T) {
-	c, w, _ := createTestContext()
+	c, _, _ := createTestContext()
 	c.SetCookie("user", "gin", 1, "/", "localhost", true, true)
-	c.SetCookie("user", "gin", int32(1), "/", "localhost", 1)
-	c.SetCookie("user", "gin", int64(1))
-
 	c.Request, _ = http.NewRequest("GET", "/set", nil)
-	assert.Equal(t, c.GetCookie("Set-Cookie"), "user=gin; Path=/; Domain=localhost; Max-Age=1; HttpOnly; Secure")
+	assert.Equal(t, c.Writer.Header().Get("Set-Cookie"), "user=gin; Path=/; Domain=localhost; Max-Age=1; HttpOnly; Secure")
 }
 
 func TestContextGetCookie(t *testing.T) {
-	c, w, _ := createTestContext()
+	c, _, _ := createTestContext()
 	c.Request, _ = http.NewRequest("GET", "/get", nil)
 	c.Request.Header.Set("Cookie", "user=gin")
-	assert.Equal(t, c.GetCookie("Cookie"), "gin")
+	cookie, _ := c.GetCookie("user")
+	assert.Equal(t, cookie, "gin")
 }
 
 // Tests that the response is serialized as JSON
