@@ -520,7 +520,7 @@ func TestContextClientIP(t *testing.T) {
 
 	c.Request.Header.Set("X-Real-IP", " 10.10.10.10  ")
 	c.Request.Header.Set("X-Forwarded-For", "  20.20.20.20, 30.30.30.30")
-	c.Request.RemoteAddr = "  40.40.40.40 "
+	c.Request.RemoteAddr = "  40.40.40.40:42123 "
 
 	assert.Equal(t, c.ClientIP(), "10.10.10.10")
 
