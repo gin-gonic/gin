@@ -124,3 +124,17 @@ func TestErrorLogger(t *testing.T) {
 	assert.Equal(t, w.Code, 500)
 	assert.Equal(t, w.Body.String(), "hola!")
 }
+
+func TestSkippingPaths(t *testing.T) {
+	buffer := new(bytes.Buffer)
+	router := New()
+	router.Use(LoggerWithWriter(buffer, "/skipped"))
+	router.GET("/logged", func(c *Context) {})
+	router.GET("/skipped", func(c *Context) {})
+
+	performRequest(router, "GET", "/logged")
+	assert.Contains(t, buffer.String(), "200")
+
+	performRequest(router, "GET", "/skipped")
+	assert.Contains(t, buffer.String(), "")
+}
