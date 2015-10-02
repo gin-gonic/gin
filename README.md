@@ -191,6 +191,7 @@ func main() {
 	router := gin.Default()
 
 	router.POST("/post", func(c *gin.Context) {
+
 		id := c.Query("id")
 		page := c.DefaultQuery("page", "0")
 		name := c.PostForm("name")
