@@ -12,12 +12,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-//TODO
-// func (engine *Engine) LoadHTMLGlob(pattern string) {
-// func (engine *Engine) LoadHTMLFiles(files ...string) {
-// func (engine *Engine) Run(addr string) error {
-// func (engine *Engine) RunTLS(addr string, cert string, key string) error {
-
 func init() {
 	SetMode(TestMode)
 }
@@ -123,4 +117,18 @@ func TestErrorLogger(t *testing.T) {
 	w = performRequest(router, "GET", "/print")
 	assert.Equal(t, w.Code, 500)
 	assert.Equal(t, w.Body.String(), "hola!")
+}
+
+func TestSkippingPaths(t *testing.T) {
+	buffer := new(bytes.Buffer)
+	router := New()
+	router.Use(LoggerWithWriter(buffer, "/skipped"))
+	router.GET("/logged", func(c *Context) {})
+	router.GET("/skipped", func(c *Context) {})
+
+	performRequest(router, "GET", "/logged")
+	assert.Contains(t, buffer.String(), "200")
+
+	performRequest(router, "GET", "/skipped")
+	assert.Contains(t, buffer.String(), "")
 }

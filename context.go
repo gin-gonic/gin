@@ -8,7 +8,9 @@ import (
 	"errors"
 	"io"
 	"math"
+	"net"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 
@@ -291,7 +293,10 @@ func (c *Context) ClientIP() string {
 			return clientIP
 		}
 	}
-	return strings.TrimSpace(c.Request.RemoteAddr)
+	if ip, _, err := net.SplitHostPort(strings.TrimSpace(c.Request.RemoteAddr)); err == nil {
+		return ip
+	}
+	return ""
 }
 
 // ContentType returns the Content-Type header of the request.
@@ -319,6 +324,42 @@ func (c *Context) Header(key, value string) {
 	} else {
 		c.Writer.Header().Set(key, value)
 	}
+}
+
+func (c *Context) SetCookie(
+	name string,
+	value string,
+	maxAge int,
+	path string,
+	domain string,
+	secure bool,
+	httpOnly bool,
+) {
+	cookie := http.Cookie{}
+	cookie.Name = name
+	cookie.Value = url.QueryEscape(value)
+
+	cookie.MaxAge = maxAge
+
+	cookie.Path = "/"
+	if path != "" {
+		cookie.Path = path
+	}
+
+	cookie.Domain = domain
+	cookie.Secure = secure
+	cookie.HttpOnly = httpOnly
+
+	c.Writer.Header().Add("Set-Cookie", cookie.String())
+}
+
+func (c *Context) GetCookie(name string) (string, error) {
+	cookie, err := c.Request.Cookie(name)
+	if err != nil {
+		return "", err
+	}
+	val, _ := url.QueryUnescape(cookie.Value)
+	return val, nil
 }
 
 func (c *Context) Render(code int, r render.Render) {

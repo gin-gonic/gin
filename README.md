@@ -12,7 +12,7 @@ Gin is a web framework written in Golang. It features a martini-like API with mu
 
 ![Gin console logger](https://gin-gonic.github.io/gin/other/console.png)
 
-```
+```sh
 $ cat test.go
 ```
 ```go
@@ -84,7 +84,7 @@ BenchmarkZeus_GithubAll 		| 2000 		| 944234 	| 300688 	| 2648
 1. Download and install it:
 
 ```sh
-go get github.com/gin-gonic/gin
+$ go get github.com/gin-gonic/gin
 ```
 2. Import it in your code:
 
@@ -143,17 +143,17 @@ func main() {
 #### Querystring parameters
 ```go
 func main() {
-    router := gin.Default()
+	router := gin.Default()
 
-    // Query string parameters are parsed using the existing underlying request object.  
-    // The request responds to a url matching:  /welcome?firstname=Jane&lastname=Doe
-    router.GET("/welcome", func(c *gin.Context) {
-        firstname := c.DefaultQuery("firstname", "Guest")
-        lastname := c.Query("lastname") // shortcut for c.Request.URL.Query().Get("lastname")
+	// Query string parameters are parsed using the existing underlying request object.
+	// The request responds to a url matching:  /welcome?firstname=Jane&lastname=Doe
+	router.GET("/welcome", func(c *gin.Context) {
+		firstname := c.DefaultQuery("firstname", "Guest")
+		lastname := c.Query("lastname") // shortcut for c.Request.URL.Query().Get("lastname")
 
-        c.String(http.StatusOK, "Hello %s %s", firstname, lastname)
-    })
-    router.Run(":8080")
+		c.String(http.StatusOK, "Hello %s %s", firstname, lastname)
+	})
+	router.Run(":8080")
 }
 ```
 
@@ -161,18 +161,19 @@ func main() {
 
 ```go
 func main() {
-    router := gin.Default()
+	router := gin.Default()
 
-    router.POST("/form_post", func(c *gin.Context) {
-        message := c.PostForm("message")
-        nick := c.DefaultPostForm("nick", "anonymous")
+	router.POST("/form_post", func(c *gin.Context) {
+		message := c.PostForm("message")
+		nick := c.DefaultPostForm("nick", "anonymous")
 
-        c.JSON(200, gin.H{
-            "status": "posted",
-            "message": message,
-        })
-    })
-    router.Run(":8080")
+		c.JSON(200, gin.H{
+			"status":  "posted",
+			"message": message,
+			"nick":    nick,
+		})
+	})
+	router.Run(":8080")
 }
 ```
 
@@ -190,19 +191,20 @@ func main() {
 	router := gin.Default()
 
 	router.POST("/post", func(c *gin.Context) {
-        id := c.Query("id")
-        page := c.DefaultQuery("id", "0")
-        name := c.PostForm("name")
-        message := c.PostForm("message")
 
-        fmt.Println("id: %s; page: %s; name: %s; message: %s", id, page, name, message)
+		id := c.Query("id")
+		page := c.DefaultQuery("page", "0")
+		name := c.PostForm("name")
+		message := c.PostForm("message")
+
+		fmt.Printf("id: %s; page: %s; name: %s; message: %s", id, page, name, message)
 	})
 	router.Run(":8080")
 }
 ```
 
 ```
-id: 1234; page: 0; name: manu; message: this_is_great
+id: 1234; page: 1; name: manu; message: this_is_great
 ```
 
 
@@ -301,30 +303,30 @@ type Login struct {
 func main() {
 	router := gin.Default()
 
-    // Example for binding JSON ({"user": "manu", "password": "123"})
+	// Example for binding JSON ({"user": "manu", "password": "123"})
 	router.POST("/loginJSON", func(c *gin.Context) {
 		var json Login
-        if c.BindJSON(&json) == nil {
-            if json.User == "manu" && json.Password == "123" {
-                c.JSON(http.StatusOK, gin.H{"status": "you are logged in"})
-            } else {
-                c.JSON(http.StatusUnauthorized, gin.H{"status": "unauthorized"})
-            }
-        }
+		if c.BindJSON(&json) == nil {
+			if json.User == "manu" && json.Password == "123" {
+				c.JSON(http.StatusOK, gin.H{"status": "you are logged in"})
+			} else {
+				c.JSON(http.StatusUnauthorized, gin.H{"status": "unauthorized"})
+			}
+		}
 	})
 
-    // Example for binding a HTML form (user=manu&password=123)
-    router.POST("/loginForm", func(c *gin.Context) {
-        var form Login
-        // This will infer what binder to use depending on the content-type header.
-        if c.Bind(&form) == nil {
-            if form.User == "manu" && form.Password == "123" {
-                c.JSON(http.StatusOK, gin.H{"status": "you are logged in"})
-            } else {
-                c.JSON(http.StatusUnauthorized, gin.H{"status": "unauthorized"})
-            }
-        }
-    })
+	// Example for binding a HTML form (user=manu&password=123)
+	router.POST("/loginForm", func(c *gin.Context) {
+		var form Login
+		// This will infer what binder to use depending on the content-type header.
+		if c.Bind(&form) == nil {
+			if form.User == "manu" && form.Password == "123" {
+				c.JSON(http.StatusOK, gin.H{"status": "you are logged in"})
+			} else {
+				c.JSON(http.StatusUnauthorized, gin.H{"status": "unauthorized"})
+			}
+		}
+	})
 
 	// Listen and server on 0.0.0.0:8080
 	router.Run(":8080")
@@ -353,21 +355,21 @@ func main() {
 		// c.BindWith(&form, binding.Form)
 		// or you can simply use autobinding with Bind method:
 		var form LoginForm
-        // in this case proper binding will be automatically selected
+		// in this case proper binding will be automatically selected
 		if c.Bind(&form) == nil {
-            if form.User == "user" && form.Password == "password" {
-			    c.JSON(200, gin.H{"status": "you are logged in"})
-            } else {
-			    c.JSON(401, gin.H{"status": "unauthorized"})
-            }
-        }
+			if form.User == "user" && form.Password == "password" {
+				c.JSON(200, gin.H{"status": "you are logged in"})
+			} else {
+				c.JSON(401, gin.H{"status": "unauthorized"})
+			}
+		}
 	})
 	router.Run(":8080")
 }
 ```
 
 Test it with:
-```bash
+```sh
 $ curl -v --form user=user --form password=password http://localhost:8080/login
 ```
 
@@ -411,13 +413,13 @@ func main() {
 
 ```go
 func main() {
-    router := gin.Default()
-    router.Static("/assets", "./assets")
-    router.StaticFS("/more_static", http.Dir("my_file_system"))
-    router.StaticFile("/favicon.ico", "./resources/favicon.ico")
+	router := gin.Default()
+	router.Static("/assets", "./assets")
+	router.StaticFS("/more_static", http.Dir("my_file_system"))
+	router.StaticFile("/favicon.ico", "./resources/favicon.ico")
 
-    // Listen and server on 0.0.0.0:8080
-    router.Run(":8080")
+	// Listen and server on 0.0.0.0:8080
+	router.Run(":8080")
 }
 ```
 
@@ -438,11 +440,53 @@ func main() {
 	router.Run(":8080")
 }
 ```
+templates/index.tmpl
 ```html
+<html>
+	<h1>
+		{{ .title }}
+	</h1>
+</html>
+```
+
+Using templates with same name in different directories
+
+```go
+func main() {
+	router := gin.Default()
+	router.LoadHTMLGlob("templates/**/*")
+	router.GET("/posts/index", func(c *gin.Context) {
+		c.HTML(http.StatusOK, "posts/index.tmpl", gin.H{
+			"title": "Posts",
+		})
+	})
+	router.GET("/users/index", func(c *gin.Context) {
+		c.HTML(http.StatusOK, "users/index.tmpl", gin.H{
+			"title": "Users",
+		})
+	})
+	router.Run(":8080")
+}
+```
+templates/posts/index.tmpl
+```html
+{{ define "posts/index.tmpl" }}
 <html><h1>
 	{{ .title }}
 </h1>
+<p>Using posts/index.tmpl</p>
 </html>
+{{ end }}
+```
+templates/users/index.tmpl
+```html
+{{ define "users/index.tmpl" }}
+<html><h1>
+	{{ .title }}
+</h1>
+<p>Using users/index.tmpl</p>
+</html>
+{{ end }}
 ```
 
 You can also use your own html template render
@@ -559,16 +603,15 @@ func main() {
 
 	r.GET("/long_async", func(c *gin.Context) {
 		// create copy to be used inside the goroutine
-		c_cp := c.Copy()
+		cCp := c.Copy()
 		go func() {
 			// simulate a long task with time.Sleep(). 5 seconds
 			time.Sleep(5 * time.Second)
 
 			// note than you are using the copied context "c_cp", IMPORTANT
-			log.Println("Done! in path " + c_cp.Request.URL.Path)
+			log.Println("Done! in path " + cCp.Request.URL.Path)
 		}()
 	})
-
 
 	r.GET("/long_sync", func(c *gin.Context) {
 		// simulate a long task with time.Sleep(). 5 seconds
@@ -578,8 +621,8 @@ func main() {
 		log.Println("Done! in path " + c.Request.URL.Path)
 	})
 
-    // Listen and server on 0.0.0.0:8080
-    r.Run(":8080")
+	// Listen and server on 0.0.0.0:8080
+	r.Run(":8080")
 }
 ```
 
