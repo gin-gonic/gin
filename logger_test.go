@@ -12,12 +12,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-//TODO
-// func (engine *Engine) LoadHTMLGlob(pattern string) {
-// func (engine *Engine) LoadHTMLFiles(files ...string) {
-// func (engine *Engine) Run(addr string) error {
-// func (engine *Engine) RunTLS(addr string, cert string, key string) error {
-
 func init() {
 	SetMode(TestMode)
 }
