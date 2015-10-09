@@ -198,6 +198,13 @@ func (c *Context) PostForm(key string) (va string) {
 	return
 }
 
+// PostFormExists returns `true` if field with given name exists in the form
+func (c *Context) PostFormExists(key string) (exists bool) {
+	_, exists = c.postForm(key)
+
+	return exists
+}
+
 // Param is a shortcut for c.Params.ByName(key)
 func (c *Context) Param(key string) string {
 	return c.Params.ByName(key)
