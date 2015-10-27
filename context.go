@@ -101,10 +101,10 @@ func (c *Context) IsAborted() bool {
 	return c.index >= abortIndex
 }
 
-// Abort stops the system to continue calling the pending handlers in the chain.
-// Let's say you have an authorization middleware that validates if the request is authorized
-// if the authorization fails (the password does not match). This method (Abort()) should be called
-// in order to stop the execution of the actual handler.
+// Abort prevents pending handlers from being called. Note that this will not stop the current execution context.
+// Let's say you have an authorization middleware that validates that the current request is authorized. If the
+// authorization fails (ex: the password does not match), call Abort to ensure the remaining handlers
+// for this request are not called.
 func (c *Context) Abort() {
 	c.index = abortIndex
 }
