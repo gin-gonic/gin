@@ -4,7 +4,7 @@ import (
 	"reflect"
 	"sync"
 
-	"gopkg.in/bluesuncorp/validator.v5"
+	"gopkg.in/go-playground/validator.v5"
 )
 
 type defaultValidator struct {
