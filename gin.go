@@ -227,7 +227,7 @@ func iterate(path, method string, routes RoutesInfo, root *node) RoutesInfo {
 
 // Run attaches the router to a http.Server and starts listening and serving HTTP requests.
 // It is a shortcut for http.ListenAndServe(addr, router)
-// Note: this method will block the calling goroutine undefinitelly unless an error happens.
+// Note: this method will block the calling goroutine indefinitely unless an error happens.
 func (engine *Engine) Run(addr ...string) (err error) {
 	defer func() { debugPrintError(err) }()
 
@@ -239,7 +239,7 @@ func (engine *Engine) Run(addr ...string) (err error) {
 
 // RunTLS attaches the router to a http.Server and starts listening and serving HTTPS (secure) requests.
 // It is a shortcut for http.ListenAndServeTLS(addr, certFile, keyFile, router)
-// Note: this method will block the calling goroutine undefinitelly unless an error happens.
+// Note: this method will block the calling goroutine indefinitely unless an error happens.
 func (engine *Engine) RunTLS(addr string, certFile string, keyFile string) (err error) {
 	debugPrint("Listening and serving HTTPS on %s\n", addr)
 	defer func() { debugPrintError(err) }()
@@ -250,7 +250,7 @@ func (engine *Engine) RunTLS(addr string, certFile string, keyFile string) (err 
 
 // RunUnix attaches the router to a http.Server and starts listening and serving HTTP requests
 // through the specified unix socket (ie. a file).
-// Note: this method will block the calling goroutine undefinitelly unless an error happens.
+// Note: this method will block the calling goroutine indefinitely unless an error happens.
 func (engine *Engine) RunUnix(file string) (err error) {
 	debugPrint("Listening and serving HTTP on unix:/%s", file)
 	defer func() { debugPrintError(err) }()
