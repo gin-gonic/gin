@@ -128,3 +128,7 @@ func TestRenderHTMLTemplate(t *testing.T) {
 	assert.Equal(t, w.Body.String(), "Hello alexandernyquist")
 	assert.Equal(t, w.Header().Get("Content-Type"), "text/html; charset=utf-8")
 }
+
+func TestRenderCustom(t *testing.T) {
+	// TODO
+}
