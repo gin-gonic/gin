@@ -609,3 +609,22 @@ func main() {
 	s.ListenAndServe()
 }
 ```
+
+#### Graceful restart or stop
+
+Do you want to graceful restart or stop your web server?
+There be some ways.
+
+We can using fvbock/endless to replace the default ListenAndServe
+
+Refer the issue for more details: 
+
+https://github.com/gin-gonic/gin/issues/296
+
+```go
+router := gin.Default()
+router.GET("/", handler)
+// [...]
+endless.ListenAndServe(":4242", router)
+
+```
