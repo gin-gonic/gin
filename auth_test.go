@@ -20,18 +20,10 @@ func TestBasicAuth(t *testing.T) {
 		"bar":   "foo",
 	})
 
-	assert.Len(t, pairs, 3)
-	assert.Contains(t, pairs, authPair{
-		User:  "bar",
-		Value: "Basic YmFyOmZvbw==",
-	})
-	assert.Contains(t, pairs, authPair{
-		User:  "foo",
-		Value: "Basic Zm9vOmJhcg==",
-	})
-	assert.Contains(t, pairs, authPair{
-		User:  "admin",
-		Value: "Basic YWRtaW46cGFzc3dvcmQ=",
+	assert.Exactly(t, pairs, authPairs{
+		"Basic YmFyOmZvbw==":         "bar",
+		"Basic Zm9vOmJhcg==":         "foo",
+		"Basic YWRtaW46cGFzc3dvcmQ=": "admin",
 	})
 }
 

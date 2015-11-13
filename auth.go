@@ -14,21 +14,14 @@ const AuthUserKey = "user"
 
 type (
 	Accounts map[string]string
-	authPair struct {
-		Value string
-		User  string
-	}
-	authPairs []authPair
+
+	// "Basic "+base64(<user>:<password) => <user>
+	authPairs map[string]string
 )
 
 func (a authPairs) searchCredential(authValue string) (string, bool) {
-	if len(authValue) == 0 {
-		return "", false
-	}
-	for _, pair := range a {
-		if pair.Value == authValue {
-			return pair.User, true
-		}
+	if user, ok := a[authValue]; ok {
+		return user, true
 	}
 	return "", false
 }
@@ -68,16 +61,12 @@ func processAccounts(accounts Accounts) authPairs {
 	if len(accounts) == 0 {
 		panic("Empty list of authorized credentials")
 	}
-	pairs := make(authPairs, 0, len(accounts))
+	pairs := make(authPairs, len(accounts))
 	for user, password := range accounts {
 		if len(user) == 0 {
 			panic("User can not be empty")
 		}
-		value := authorizationHeader(user, password)
-		pairs = append(pairs, authPair{
-			Value: value,
-			User:  user,
-		})
+		pairs[authorizationHeader(user, password)] = user
 	}
 	return pairs
 }
