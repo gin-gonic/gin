@@ -11,7 +11,7 @@ import (
 	"os"
 	"sync"
 
-	"./render"
+	"github.com/SCys/gin/render"
 )
 
 // Framework's version
