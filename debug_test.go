@@ -63,7 +63,7 @@ func TestDebugPrintRoutes(t *testing.T) {
 	defer teardown()
 
 	debugPrintRoute("GET", "/path/to/route/:param", HandlersChain{func(c *Context) {}, handlerNameTest})
-	assert.Equal(t, w.String(), "[GIN-debug] GET   /path/to/route/:param     --> github.com/gin-gonic/gin.handlerNameTest (2 handlers)\n")
+	assert.Equal(t, w.String(), "[GIN-debug] GET    /path/to/route/:param     --> github.com/gin-gonic/gin.handlerNameTest (2 handlers)\n")
 }
 
 func setup(w io.Writer) {

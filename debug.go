@@ -24,7 +24,7 @@ func debugPrintRoute(httpMethod, absolutePath string, handlers HandlersChain) {
 	if IsDebugging() {
 		nuHandlers := len(handlers)
 		handlerName := nameOfFunction(handlers.Last())
-		debugPrint("%-5s %-25s --> %s (%d handlers)\n", httpMethod, absolutePath, handlerName, nuHandlers)
+		debugPrint("%-6s %-25s --> %s (%d handlers)\n", httpMethod, absolutePath, handlerName, nuHandlers)
 	}
 }
 
