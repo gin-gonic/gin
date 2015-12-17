@@ -183,10 +183,10 @@ func (c *Context) MustGet(key string) interface{} {
 
 // Query is a shortcut for c.Request.URL.Query().Get(key)
 // It is used to return the url query values.
-// ?id=1234&name=Manu
-// c.Query("id") == "1234"
-// c.Query("name") == "Manu"
-// c.Query("wtf") == ""
+//	?id=1234&name=Manu
+//	c.Query("id") == "1234"
+//	c.Query("name") == "Manu"
+//	c.Query("wtf") == ""
 func (c *Context) Query(key string) (va string) {
 	va, _ = c.query(key)
 	return
@@ -212,11 +212,9 @@ func (c *Context) DefaultPostForm(key, defaultValue string) string {
 
 // DefaultQuery returns the keyed url query value if it exists, othewise it returns the
 // specified defaultValue.
-// ```
-// /?name=Manu
-// c.DefaultQuery("name", "unknown") == "Manu"
-// c.DefaultQuery("id", "none") == "none"
-// ```
+//	/?name=Manu
+//	c.DefaultQuery("name", "unknown") == "Manu"
+//	c.DefaultQuery("id", "none") == "none"
 func (c *Context) DefaultQuery(key, defaultValue string) string {
 	if va, ok := c.query(key); ok {
 		return va
@@ -248,9 +246,9 @@ func (c *Context) postForm(key string) (string, bool) {
 
 // Bind checks the Content-Type to select a binding engine automatically,
 // Depending the "Content-Type" header different bindings are used:
-// "application/json" --> JSON binding
-// "application/xml"  --> XML binding
-// otherwise --> returns an error
+//	"application/json" --> JSON binding
+//	"application/xml"  --> XML binding
+//	otherwise --> returns an error
 // If Parses the request's body as JSON if Content-Type == "application/json" using JSON or XML  as a JSON input.
 // It decodes the json payload into the struct specified as a pointer.
 // Like ParseBody() but this method also writes a 400 error if the json is not valid.
