@@ -5,6 +5,8 @@ go:
   - 1.4.2
   - tip
 
+go_import_path: github.com/gin-gonic/gin
+
 script:
   - go get golang.org/x/tools/cmd/cover
   - go get github.com/mattn/goveralls
