@@ -1,6 +1,6 @@
 {
 	"ImportPath": "github.com/gin-gonic/gin",
-	"GoVersion": "go1.4.2",
+	"GoVersion": "go1.4",
 	"Packages": [
 		"./..."
 	],
@@ -22,6 +22,10 @@
 			"Rev": "d67e0b7d1797975196499f79bcc322c08b9f218b"
 		},
 		{
+			"ImportPath": "github.com/mattn/go-isatty",
+			"Rev": "56b76bdf51f7708750eac80fa38b952bb9f32639"
+		},
+		{
 			"ImportPath": "github.com/stretchr/testify/assert",
 			"Comment": "v1.0",
 			"Rev": "232e8563676cd15c3a36ba5e675ad4312ac4cb11"
@@ -29,6 +33,10 @@
 		{
 			"ImportPath": "golang.org/x/net/context",
 			"Rev": "621fff363a1d9ad7fdd0bfa9d80a42881267deb4"
+		},
+		{
+			"ImportPath": "golang.org/x/sys/unix",
+			"Rev": "833a04a10549a95dc34458c195cbad61bbb6cb4d"
 		},
 		{
 			"ImportPath": "gopkg.in/bluesuncorp/validator.v5",
