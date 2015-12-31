@@ -121,6 +121,28 @@ func TestValidationDisabled(t *testing.T) {
 	assert.NoError(t, err)
 }
 
+func TestExistsSucceeds(t *testing.T) {
+	type HogeStruct struct {
+		Hoge *int `json:"hoge" binding:"exists"`
+	}
+
+	var obj HogeStruct
+	req := requestWithBody("POST", "/", `{"hoge": 0}`)
+	err := JSON.Bind(req, &obj)
+	assert.NoError(t, err)
+}
+
+func TestExistsFails(t *testing.T) {
+	type HogeStruct struct {
+		Hoge *int `json:"foo" binding:"exists"`
+	}
+
+	var obj HogeStruct
+	req := requestWithBody("POST", "/", `{"boen": 0}`)
+	err := JSON.Bind(req, &obj)
+	assert.Error(t, err)
+}
+
 func testFormBinding(t *testing.T, method, path, badPath, body, badBody string) {
 	b := Form
 	assert.Equal(t, b.Name(), "form")
