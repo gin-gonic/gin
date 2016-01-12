@@ -5,13 +5,14 @@
 package gin
 
 import (
-	"html/template"
+	"bytes"
 	"net"
 	"net/http"
 	"os"
 	"sync"
 
 	"github.com/gin-gonic/gin/render"
+	"github.com/gin-gonic/gin/template"
 )
 
 // Framework's version
@@ -107,6 +108,22 @@ func New() *Engine {
 	engine.pool.New = func() interface{} {
 		return engine.allocateContext()
 	}
+
+	// @modified by henry, 2016.1.12
+	// Supports nested template
+	render.HTMLTemplate.Funcs(template.FuncMap{
+		"template": func(tname string, data ...interface{}) string {
+			r := engine.HTMLRender.Instance(tname, data).(render.HTML)
+			buf := bytes.NewBuffer(nil)
+			if len(r.Name) == 0 {
+				r.Template.Execute(buf, r.Data)
+			} else {
+				r.Template.ExecuteTemplate(buf, r.Name, r.Data)
+			}
+			return buf.String()
+		},
+	})
+
 	return engine
 }
 
@@ -121,21 +138,23 @@ func (engine *Engine) allocateContext() *Context {
 	return &Context{engine: engine}
 }
 
+// @modified by henry, 2016.1.12
 func (engine *Engine) LoadHTMLGlob(pattern string) {
+	templ := template.Must(template.Must(render.HTMLTemplate.Clone()).ParseGlob(pattern))
 	if IsDebugging() {
-		debugPrintLoadTemplate(template.Must(template.ParseGlob(pattern)))
+		debugPrintLoadTemplate(templ)
 		engine.HTMLRender = render.HTMLDebug{Glob: pattern}
 	} else {
-		templ := template.Must(template.ParseGlob(pattern))
 		engine.SetHTMLTemplate(templ)
 	}
 }
 
+// @modified by henry, 2016.1.12
 func (engine *Engine) LoadHTMLFiles(files ...string) {
 	if IsDebugging() {
 		engine.HTMLRender = render.HTMLDebug{Files: files}
 	} else {
-		templ := template.Must(template.ParseFiles(files...))
+		templ := template.Must(template.Must(render.HTMLTemplate.Clone()).ParseFiles(files...))
 		engine.SetHTMLTemplate(templ)
 	}
 }
@@ -145,6 +164,23 @@ func (engine *Engine) SetHTMLTemplate(templ *template.Template) {
 		debugPrintWARNINGSetHTMLTemplate()
 	}
 	engine.HTMLRender = render.HTMLProduction{Template: templ}
+}
+
+// @modified by henry, 2016.1.12
+// Set the action delimiters to the specified strings, to be used in
+// subsequent calls to Parse, ParseFiles, or ParseGlob. Nested template
+// definitions will inherit the settings. An empty delimiter stands for the
+// corresponding default: {{ or }}.
+func (engine *Engine) HTMLTemplateDelims(left, right string) *Engine {
+	render.HTMLTemplate.Delims(left, right)
+	return engine
+}
+
+// @modified by henry, 2016.1.12
+// Adds the elements of the argument map to the HTML template's function map.
+func (engine *Engine) HTMLTemplateFuncs(funcMap template.FuncMap) *Engine {
+	render.HTMLTemplate.Funcs(funcMap)
+	return engine
 }
 
 // Adds handlers for NoRoute. It return a 404 code by default.
