@@ -5,9 +5,13 @@
 package render
 
 import (
-	"html/template"
 	"net/http"
+
+	"github.com/gin-gonic/gin/template"
 )
+
+// @modified by henry, 2016.1.12
+var HTMLTemplate = template.New("gin")
 
 type (
 	HTMLRender interface {
@@ -47,12 +51,14 @@ func (r HTMLDebug) Instance(name string, data interface{}) Render {
 		Data:     data,
 	}
 }
+
+// @modified by henry, 2016.1.12
 func (r HTMLDebug) loadTemplate() *template.Template {
 	if len(r.Files) > 0 {
-		return template.Must(template.ParseFiles(r.Files...))
+		return template.Must(template.Must(HTMLTemplate.Clone()).ParseFiles(r.Files...))
 	}
 	if len(r.Glob) > 0 {
-		return template.Must(template.ParseGlob(r.Glob))
+		return template.Must(template.Must(HTMLTemplate.Clone()).ParseGlob(r.Glob))
 	}
 	panic("the HTML debug render was created without files or glob pattern")
 }
