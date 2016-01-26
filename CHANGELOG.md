@@ -2,7 +2,7 @@
 
 ###Gin 1.0rc2 (...)
 
-- [PERFORMANCE] Fast path for writting Content-Type.
+- [PERFORMANCE] Fast path for writing Content-Type.
 - [PERFORMANCE] Much faster 404 routing
 - [PERFORMANCE] Allocation optimizations
 - [PERFORMANCE] Faster root tree lookup
