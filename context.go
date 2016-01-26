@@ -369,13 +369,8 @@ func (c *Context) GetCookie(name string) (string, error) {
 func (c *Context) Render(code int, r render.Render) {
 	c.Status(code)
 	if err := r.Render(c.Writer); err != nil {
-		c.renderError(err)
+		panic(err)
 	}
-}
-
-func (c *Context) renderError(err error) {
-	debugPrintError(err)
-	c.AbortWithError(500, err).SetType(ErrorTypeRender)
 }
 
 // HTML renders the HTTP template specified by its file name.
@@ -399,7 +394,7 @@ func (c *Context) IndentedJSON(code int, obj interface{}) {
 func (c *Context) JSON(code int, obj interface{}) {
 	c.Status(code)
 	if err := render.WriteJSON(c.Writer, obj); err != nil {
-		c.renderError(err)
+		panic(err)
 	}
 }
 
