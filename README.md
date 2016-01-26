@@ -128,7 +128,7 @@ func main() {
 	})
 
 	// However, this one will match /user/john/ and also /user/john/send
-	// If no other routers match /user/john, it will redirect to /user/join/
+	// If no other routers match /user/john, it will redirect to /user/john/
 	router.GET("/user/:name/*action", func(c *gin.Context) {
 		name := c.Param("name")
 		action := c.Param("action")
@@ -608,4 +608,23 @@ func main() {
 	}
 	s.ListenAndServe()
 }
+```
+
+#### Graceful restart or stop
+
+Do you want to graceful restart or stop your web server?
+There be some ways.
+
+We can using fvbock/endless to replace the default ListenAndServe
+
+Refer the issue for more details: 
+
+https://github.com/gin-gonic/gin/issues/296
+
+```go
+router := gin.Default()
+router.GET("/", handler)
+// [...]
+endless.ListenAndServe(":4242", router)
+
 ```
