@@ -3,3 +3,10 @@
 // license that can be found in the LICENSE file.
 
 package gin
+
+import "log"
+
+func (c *Context) GetCookie(name string) (string, error) {
+	log.Println("GetCookie() method is deprecated. Use Cookie() instead.")
+	return c.Cookie(name)
+}

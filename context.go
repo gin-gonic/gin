@@ -189,15 +189,15 @@ func (c *Context) MustGet(key string) interface{} {
 // c.Query("id") == "1234"
 // c.Query("name") == "Manu"
 // c.Query("wtf") == ""
-func (c *Context) Query(key string) (va string) {
-	va, _ = c.query(key)
-	return
+func (c *Context) Query(key string) string {
+	value, _ := c.query(key)
+	return value
 }
 
 // PostForm is a shortcut for c.Request.PostFormValue(key)
-func (c *Context) PostForm(key string) (va string) {
-	va, _ = c.postForm(key)
-	return
+func (c *Context) PostForm(key string) string {
+	value, _ := c.postForm(key)
+	return value
 }
 
 // Param is a shortcut for c.Params.ByName(key)
@@ -206,8 +206,8 @@ func (c *Context) Param(key string) string {
 }
 
 func (c *Context) DefaultPostForm(key, defaultValue string) string {
-	if va, ok := c.postForm(key); ok {
-		return va
+	if value, ok := c.postForm(key); ok {
+		return value
 	}
 	return defaultValue
 }
@@ -220,8 +220,8 @@ func (c *Context) DefaultPostForm(key, defaultValue string) string {
 // c.DefaultQuery("id", "none") == "none"
 // ```
 func (c *Context) DefaultQuery(key, defaultValue string) string {
-	if va, ok := c.query(key); ok {
-		return va
+	if value, ok := c.query(key); ok {
+		return value
 	}
 	return defaultValue
 }
@@ -339,25 +339,22 @@ func (c *Context) SetCookie(
 	secure bool,
 	httpOnly bool,
 ) {
-	cookie := http.Cookie{}
-	cookie.Name = name
-	cookie.Value = url.QueryEscape(value)
-
-	cookie.MaxAge = maxAge
-
-	cookie.Path = "/"
-	if path != "" {
-		cookie.Path = path
+	if path == "" {
+		path = "/"
 	}
-
-	cookie.Domain = domain
-	cookie.Secure = secure
-	cookie.HttpOnly = httpOnly
-
-	c.Writer.Header().Add("Set-Cookie", cookie.String())
+	cookie := http.Cookie{
+		Name:     name,
+		Value:    url.QueryEscape(value),
+		MaxAge:   maxAge,
+		Path:     path,
+		Domain:   domain,
+		Secure:   secure,
+		HttpOnly: httpOnly,
+	}
+	c.Header("Set-Cookie", cookie.String())
 }
 
-func (c *Context) GetCookie(name string) (string, error) {
+func (c *Context) Cookie(name string) (string, error) {
 	cookie, err := c.Request.Cookie(name)
 	if err != nil {
 		return "", err
