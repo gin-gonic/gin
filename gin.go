@@ -113,7 +113,7 @@ func New() *Engine {
 // Default returns an Engine instance with the Logger and Recovery middleware already attached.
 func Default() *Engine {
 	engine := New()
-	engine.Use(Recovery(), Logger())
+	engine.Use(Logger(), Recovery())
 	return engine
 }
 
