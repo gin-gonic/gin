@@ -112,7 +112,7 @@ func (c *Context) Abort() {
 // AbortWithStatus calls `Abort()` and writes the headers with the specified status code.
 // For example, a failed attempt to authentificate a request could use: context.AbortWithStatus(401).
 func (c *Context) AbortWithStatus(code int) {
-	c.Writer.WriteHeader(code)
+	c.Status(code)
 	c.Abort()
 }
 
@@ -310,6 +310,10 @@ func (c *Context) requestHeader(key string) string {
 /******** RESPONSE RENDERING ********/
 /************************************/
 
+func (c *Context) Status(code int) {
+	c.writermem.WriteHeader(code)
+}
+
 // Header is a intelligent shortcut for c.Writer.Header().Set(key, value)
 // It writes a header in the response.
 // If value == "", this method removes the header `c.Writer.Header().Del(key)`
@@ -322,7 +326,7 @@ func (c *Context) Header(key, value string) {
 }
 
 func (c *Context) Render(code int, r render.Render) {
-	c.writermem.WriteHeader(code)
+	c.Status(code)
 	if err := r.Render(c.Writer); err != nil {
 		c.renderError(err)
 	}
@@ -352,7 +356,7 @@ func (c *Context) IndentedJSON(code int, obj interface{}) {
 // JSON serializes the given struct as JSON into the response body.
 // It also sets the Content-Type as "application/json".
 func (c *Context) JSON(code int, obj interface{}) {
-	c.writermem.WriteHeader(code)
+	c.Status(code)
 	if err := render.WriteJSON(c.Writer, obj); err != nil {
 		c.renderError(err)
 	}
@@ -366,7 +370,7 @@ func (c *Context) XML(code int, obj interface{}) {
 
 // String writes the given string into the response body.
 func (c *Context) String(code int, format string, values ...interface{}) {
-	c.writermem.WriteHeader(code)
+	c.Status(code)
 	render.WriteString(c.Writer, format, values)
 }
 
