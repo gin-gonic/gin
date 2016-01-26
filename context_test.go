@@ -153,7 +153,7 @@ func TestContextHandlerName(t *testing.T) {
 	c, _, _ := CreateTestContext()
 	c.handlers = HandlersChain{func(c *Context) {}, handlerNameTest}
 
-	assert.Equal(t, c.HandlerName(), "github.com/gin-gonic/gin.handlerNameTest")
+	assert.Equal(t, c.HandlerName(), TestPath+"/gin.handlerNameTest")
 }
 
 func handlerNameTest(c *Context) {
@@ -261,6 +261,21 @@ func TestContextRenderJSON(t *testing.T) {
 
 	assert.Equal(t, w.Code, 201)
 	assert.Equal(t, w.Body.String(), "{\"foo\":\"bar\"}\n")
+	assert.Equal(t, w.HeaderMap.Get("Content-Type"), "application/json; charset=utf-8")
+}
+
+// Tests that the response is JSON writen out from bytes
+// and Content-Type is set to application/json
+func TestContextRenderRawJSON(t *testing.T) {
+	c, w, _ := createTestContext()
+
+	var buffer bytes.Buffer
+	buffer.WriteString("{\"foo\": \"bar\"}")
+
+	c.RawJSON(201, &buffer)
+
+	assert.Equal(t, w.Code, 201)
+	assert.Equal(t, w.Body.String(), "{\"foo\": \"bar\"}")
 	assert.Equal(t, w.HeaderMap.Get("Content-Type"), "application/json; charset=utf-8")
 }
 

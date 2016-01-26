@@ -217,27 +217,27 @@ func TestListOfRoutes(t *testing.T) {
 	assert.Contains(t, list, RouteInfo{
 		Method:  "GET",
 		Path:    "/favicon.ico",
-		Handler: "github.com/gin-gonic/gin.handler_test1",
+		Handler: TestPath + "/gin.handler_test1",
 	})
 	assert.Contains(t, list, RouteInfo{
 		Method:  "GET",
 		Path:    "/",
-		Handler: "github.com/gin-gonic/gin.handler_test1",
+		Handler: TestPath + "/gin.handler_test1",
 	})
 	assert.Contains(t, list, RouteInfo{
 		Method:  "GET",
 		Path:    "/users/",
-		Handler: "github.com/gin-gonic/gin.handler_test2",
+		Handler: TestPath + "/gin.handler_test2",
 	})
 	assert.Contains(t, list, RouteInfo{
 		Method:  "GET",
 		Path:    "/users/:id",
-		Handler: "github.com/gin-gonic/gin.handler_test1",
+		Handler: TestPath + "/gin.handler_test1",
 	})
 	assert.Contains(t, list, RouteInfo{
 		Method:  "POST",
 		Path:    "/users/:id",
-		Handler: "github.com/gin-gonic/gin.handler_test2",
+		Handler: TestPath + "/gin.handler_test2",
 	})
 }
 

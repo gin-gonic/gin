@@ -5,6 +5,7 @@
 package gin
 
 import (
+	"bytes"
 	"errors"
 	"io"
 	"math"
@@ -393,6 +394,14 @@ func (c *Context) JSON(code int, obj interface{}) {
 	if err := render.WriteJSON(c.Writer, obj); err != nil {
 		panic(err)
 	}
+}
+
+// RawJSON give a buffer of bytes representing JSON just write it out
+// this habdles cases where you get back JSON as bytes from redis or ffjson
+// and you do not want the extra marshall/demarshal overhead
+// It also sets the Content-Type as "application/json".
+func (c *Context) RawJSON(code int, obj interface{}) {
+	c.Render(code, render.RawJSON{Data: obj.(*bytes.Buffer)})
 }
 
 // XML serializes the given struct as XML into the response body.

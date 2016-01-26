@@ -5,6 +5,7 @@
 package render
 
 import (
+	"bytes"
 	"encoding/json"
 	"net/http"
 )
@@ -16,6 +17,9 @@ type (
 
 	IndentedJSON struct {
 		Data interface{}
+	}
+	RawJSON struct {
+		Data *bytes.Buffer
 	}
 )
 
@@ -38,4 +42,10 @@ func (r IndentedJSON) Render(w http.ResponseWriter) error {
 func WriteJSON(w http.ResponseWriter, obj interface{}) error {
 	writeContentType(w, jsonContentType)
 	return json.NewEncoder(w).Encode(obj)
+}
+
+func (r RawJSON) Render(w http.ResponseWriter) error {
+	writeContentType(w, jsonContentType)
+	w.Write(r.Data.Bytes())
+	return nil
 }
