@@ -412,9 +412,9 @@ func (c *Context) Stream(step func(w io.Writer) bool) {
 		case <-clientGone:
 			return
 		default:
-			keepopen := step(w)
+			keepOpen := step(w)
 			w.Flush()
-			if !keepopen {
+			if !keepOpen {
 				return
 			}
 		}
