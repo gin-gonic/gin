@@ -5,6 +5,7 @@
 package gin
 
 import (
+	"path/filepath"
 	"reflect"
 	"testing"
 
@@ -214,31 +215,20 @@ func TestListOfRoutes(t *testing.T) {
 	list := router.Routes()
 
 	assert.Len(t, list, 7)
-	assert.Contains(t, list, RouteInfo{
-		Method:  "GET",
-		Path:    "/favicon.ico",
-		Handler: "github.com/gin-gonic/gin.handler_test1",
-	})
-	assert.Contains(t, list, RouteInfo{
-		Method:  "GET",
-		Path:    "/",
-		Handler: "github.com/gin-gonic/gin.handler_test1",
-	})
-	assert.Contains(t, list, RouteInfo{
-		Method:  "GET",
-		Path:    "/users/",
-		Handler: "github.com/gin-gonic/gin.handler_test2",
-	})
-	assert.Contains(t, list, RouteInfo{
-		Method:  "GET",
-		Path:    "/users/:id",
-		Handler: "github.com/gin-gonic/gin.handler_test1",
-	})
-	assert.Contains(t, list, RouteInfo{
-		Method:  "POST",
-		Path:    "/users/:id",
-		Handler: "github.com/gin-gonic/gin.handler_test2",
-	})
+	assertRoute(t, list, "GET", "/favicon.ico", "github.com/gin-gonic/gin.handler_test1", "gin_test.go")
+	assertRoute(t, list, "GET", "/", "github.com/gin-gonic/gin.handler_test1", "gin_test.go")
+	assertRoute(t, list, "GET", "/users/", "github.com/gin-gonic/gin.handler_test2", "gin_test.go")
+	assertRoute(t, list, "GET", "/users/:id", "github.com/gin-gonic/gin.handler_test1", "gin_test.go")
+	assertRoute(t, list, "POST", "/users/:id", "github.com/gin-gonic/gin.handler_test2", "gin_test.go")
+}
+
+func assertRoute(t *testing.T, list RoutesInfo, method, path, handler, filename string) {
+	for _, r := range list {
+		if r.Method == method && r.Path == path && r.Handler == handler && filepath.Base(r.File) == filename {
+			return
+		}
+	}
+	t.Fatalf("Routes info doesn't include route information: [%s] %s: %s at %s\n%v", method, path, handler, filename, list)
 }
 
 func handler_test1(c *Context) {}
