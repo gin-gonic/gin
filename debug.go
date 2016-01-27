@@ -6,8 +6,9 @@ package gin
 
 import (
 	"bytes"
-	"html/template"
 	"log"
+
+	"github.com/gin-gonic/gin/template"
 )
 
 func init() {

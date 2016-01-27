@@ -71,6 +71,13 @@ func (h H) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
 	return nil
 }
 
+func (h H) TrySet(k string, v interface{}) H {
+	if _, ok := h[k]; !ok {
+		h[k] = v
+	}
+	return h
+}
+
 func filterFlags(content string) string {
 	for i, char := range content {
 		if char == ' ' || char == ';' {
