@@ -214,31 +214,41 @@ func TestListOfRoutes(t *testing.T) {
 	list := router.Routes()
 
 	assert.Len(t, list, 7)
-	assert.Contains(t, list, RouteInfo{
+	assertRoutePresent(t, list, RouteInfo{
 		Method:  "GET",
 		Path:    "/favicon.ico",
-		Handler: "github.com/gin-gonic/gin.handler_test1",
+		Handler: "^(.*/vendor/)?github.com/gin-gonic/gin.handler_test1$",
 	})
-	assert.Contains(t, list, RouteInfo{
+	assertRoutePresent(t, list, RouteInfo{
 		Method:  "GET",
 		Path:    "/",
-		Handler: "github.com/gin-gonic/gin.handler_test1",
+		Handler: "^(.*/vendor/)?github.com/gin-gonic/gin.handler_test1$",
 	})
-	assert.Contains(t, list, RouteInfo{
+	assertRoutePresent(t, list, RouteInfo{
 		Method:  "GET",
 		Path:    "/users/",
-		Handler: "github.com/gin-gonic/gin.handler_test2",
+		Handler: "^(.*/vendor/)?github.com/gin-gonic/gin.handler_test2$",
 	})
-	assert.Contains(t, list, RouteInfo{
+	assertRoutePresent(t, list, RouteInfo{
 		Method:  "GET",
 		Path:    "/users/:id",
-		Handler: "github.com/gin-gonic/gin.handler_test1",
+		Handler: "^(.*/vendor/)?github.com/gin-gonic/gin.handler_test1$",
 	})
-	assert.Contains(t, list, RouteInfo{
+	assertRoutePresent(t, list, RouteInfo{
 		Method:  "POST",
 		Path:    "/users/:id",
-		Handler: "github.com/gin-gonic/gin.handler_test2",
+		Handler: "^(.*/vendor/)?github.com/gin-gonic/gin.handler_test2$",
 	})
+}
+
+func assertRoutePresent(t *testing.T, gotRoutes RoutesInfo, wantRoute RouteInfo) {
+	for _, gotRoute := range gotRoutes {
+		if gotRoute.Path == wantRoute.Path && gotRoute.Method == wantRoute.Method {
+			assert.Regexp(t, wantRoute.Path, gotRoute.Path)
+			return
+		}
+	}
+	t.Errorf("route not found: %v", wantRoute)
 }
 
 func handler_test1(c *Context) {}
