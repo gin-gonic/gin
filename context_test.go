@@ -241,7 +241,6 @@ func TestContextPostFormMultipart(t *testing.T) {
 func TestContextSetCookie(t *testing.T) {
 	c, _, _ := CreateTestContext()
 	c.SetCookie("user", "gin", 1, "/", "localhost", true, true)
-	c.Request, _ = http.NewRequest("GET", "/set", nil)
 	assert.Equal(t, c.Writer.Header().Get("Set-Cookie"), "user=gin; Path=/; Domain=localhost; Max-Age=1; HttpOnly; Secure")
 }
 
@@ -249,7 +248,7 @@ func TestContextGetCookie(t *testing.T) {
 	c, _, _ := CreateTestContext()
 	c.Request, _ = http.NewRequest("GET", "/get", nil)
 	c.Request.Header.Set("Cookie", "user=gin")
-	cookie, _ := c.GetCookie("user")
+	cookie, _ := c.Cookie("user")
 	assert.Equal(t, cookie, "gin")
 }
 

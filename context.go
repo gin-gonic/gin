@@ -347,7 +347,7 @@ func (c *Context) SetCookie(
 	if path == "" {
 		path = "/"
 	}
-	cookie := http.Cookie{
+	http.SetCookie(c.Writer, &http.Cookie{
 		Name:     name,
 		Value:    url.QueryEscape(value),
 		MaxAge:   maxAge,
@@ -355,8 +355,7 @@ func (c *Context) SetCookie(
 		Domain:   domain,
 		Secure:   secure,
 		HttpOnly: httpOnly,
-	}
-	c.Header("Set-Cookie", cookie.String())
+	})
 }
 
 func (c *Context) Cookie(name string) (string, error) {
@@ -492,9 +491,8 @@ func (c *Context) Negotiate(code int, config Negotiate) {
 }
 
 func (c *Context) NegotiateFormat(offered ...string) string {
-	if len(offered) == 0 {
-		panic("you must provide at least one offer")
-	}
+	assert1(len(offered) > 0, "you must provide at least one offer")
+
 	if c.Accepted == nil {
 		c.Accepted = parseAccept(c.requestHeader("Accept"))
 	}

@@ -71,6 +71,12 @@ func (h H) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
 	return nil
 }
 
+func assert1(guard bool, text string) {
+	if !guard {
+		panic(text)
+	}
+}
+
 func filterFlags(content string) string {
 	for i, char := range content {
 		if char == ' ' || char == ';' {
