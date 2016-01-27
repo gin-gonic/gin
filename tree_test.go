@@ -466,7 +466,7 @@ func TestTreeRootTrailingSlashRedirect(t *testing.T) {
 		t.Fatalf("panic inserting test route: %v", recv)
 	}
 
-	handler, _, tsr := tree.getValue("/")
+	handler, _, tsr := tree.getValue("/", nil)
 	if handler != nil {
 		t.Fatalf("non-nil handler")
 	} else if tsr {
