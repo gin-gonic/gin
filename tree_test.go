@@ -88,7 +88,7 @@ func checkMaxParams(t *testing.T, n *node) uint8 {
 			maxParams = params
 		}
 	}
-	if n.nType != static && !n.wildChild {
+	if n.nType > root && !n.wildChild {
 		maxParams++
 	}
 
@@ -364,14 +364,13 @@ func TestTreeDoubleWildcard(t *testing.T) {
 }
 
 /*func TestTreeDuplicateWildcard(t *testing.T) {
-    tree := &node{}
-
-    routes := [...]string{
-        "/:id/:name/:id",
-    }
-    for _, route := range routes {
-        ...
-    }
+	tree := &node{}
+	routes := [...]string{
+		"/:id/:name/:id",
+	}
+	for _, route := range routes {
+		...
+	}
 }*/
 
 func TestTreeTrailingSlashRedirect(t *testing.T) {
@@ -393,6 +392,9 @@ func TestTreeTrailingSlashRedirect(t *testing.T) {
 		"/1/:id/2",
 		"/aa",
 		"/a/",
+		"/admin",
+		"/admin/:category",
+		"/admin/:category/:page",
 		"/doc",
 		"/doc/go_faq.html",
 		"/doc/go1.html",
@@ -422,6 +424,9 @@ func TestTreeTrailingSlashRedirect(t *testing.T) {
 		"/0/go/",
 		"/1/go",
 		"/a",
+		"/admin/",
+		"/admin/config/",
+		"/admin/config/permissions/",
 		"/doc/",
 	}
 	for _, route := range tsrRoutes {
@@ -448,6 +453,24 @@ func TestTreeTrailingSlashRedirect(t *testing.T) {
 		} else if tsr {
 			t.Errorf("expected no TSR recommendation for route '%s'", route)
 		}
+	}
+}
+
+func TestTreeRootTrailingSlashRedirect(t *testing.T) {
+	tree := &node{}
+
+	recv := catchPanic(func() {
+		tree.addRoute("/:test", fakeHandler("/:test"))
+	})
+	if recv != nil {
+		t.Fatalf("panic inserting test route: %v", recv)
+	}
+
+	handler, _, tsr := tree.getValue("/")
+	if handler != nil {
+		t.Fatalf("non-nil handler")
+	} else if tsr {
+		t.Errorf("expected no TSR recommendation")
 	}
 }
 
@@ -583,6 +606,8 @@ func TestTreeFindCaseInsensitivePath(t *testing.T) {
 }
 
 func TestTreeInvalidNodeType(t *testing.T) {
+	const panicMsg = "invalid node type"
+
 	tree := &node{}
 	tree.addRoute("/", fakeHandler("/"))
 	tree.addRoute("/:page", fakeHandler("/:page"))
@@ -594,15 +619,15 @@ func TestTreeInvalidNodeType(t *testing.T) {
 	recv := catchPanic(func() {
 		tree.getValue("/test", nil)
 	})
-	if rs, ok := recv.(string); !ok || rs != "invalid node type" {
-		t.Fatalf(`Expected panic "invalid node type", got "%v"`, recv)
+	if rs, ok := recv.(string); !ok || rs != panicMsg {
+		t.Fatalf("Expected panic '"+panicMsg+"', got '%v'", recv)
 	}
 
 	// case-insensitive lookup
 	recv = catchPanic(func() {
 		tree.findCaseInsensitivePath("/test", true)
 	})
-	if rs, ok := recv.(string); !ok || rs != "invalid node type" {
-		t.Fatalf(`Expected panic "invalid node type", got "%v"`, recv)
+	if rs, ok := recv.(string); !ok || rs != panicMsg {
+		t.Fatalf("Expected panic '"+panicMsg+"', got '%v'", recv)
 	}
 }
