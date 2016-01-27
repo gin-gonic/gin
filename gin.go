@@ -11,7 +11,7 @@ import (
 	"os"
 	"sync"
 
-	"github.com/gin-gonic/gin/render"
+	"github.com/SCys/gin/render"
 )
 
 // Framework's version
@@ -44,13 +44,14 @@ type (
 	// Create an instance of Engine, by using New() or Default()
 	Engine struct {
 		RouterGroup
-		HTMLRender  render.HTMLRender
-		allNoRoute  HandlersChain
-		allNoMethod HandlersChain
-		noRoute     HandlersChain
-		noMethod    HandlersChain
-		pool        sync.Pool
-		trees       methodTrees
+		HTMLRender   render.HTMLRender
+		CustomRender render.CustomRender
+		allNoRoute   HandlersChain
+		allNoMethod  HandlersChain
+		noRoute      HandlersChain
+		noMethod     HandlersChain
+		pool         sync.Pool
+		trees        methodTrees
 
 		// Enables automatic redirection if the current route can't be matched but a
 		// handler for the path with (without) the trailing slash exists.
@@ -145,6 +146,10 @@ func (engine *Engine) SetHTMLTemplate(templ *template.Template) {
 		debugPrintWARNINGSetHTMLTemplate()
 	}
 	engine.HTMLRender = render.HTMLProduction{Template: templ}
+}
+
+func (engine *Engine) SetCustomRenderFunc(f render.CustomRenderFunc) {
+	engine.CustomRender = render.CustomRenderProduction{f}
 }
 
 // Adds handlers for NoRoute. It return a 404 code by default.

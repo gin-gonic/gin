@@ -503,6 +503,86 @@ func main() {
 ```
 
 
+#### Custom rendering
+
+Custom your template engine use SetCustomRenderFunc()
+
+```go
+package main
+
+import (
+	"github.com/flosch/pongo2"
+	"github.com/gin-gonic/gin"
+	"net/http"
+	"errors"
+)
+
+func CustomRenderFunc(w http.ResponseWriter, name string, obj interface{}) error {
+	var err error
+	tpl, err := pongo2.FromFile(name)
+	if err != nil {
+		return err
+	}
+
+	if obj == nil {
+		err = tpl.ExecuteWriter(nil, w)
+	} else {
+
+		if data,ok := obj.(gin.H); ok {
+			err = tpl.ExecuteWriter(pongo2.Context(data), w)
+		} else if data,ok := obj.(pongo2.Context); ok {
+			err = tpl.ExecuteWriter(data, w)
+		} else {
+			return errors.New("invalid obj type")
+		}
+	}
+
+	return err
+}
+
+func main() {
+	router := gin.Default()
+
+	pongo2.DefaultLoader.SetBaseDir("templates")
+	router.SetCustomRenderFunc(CustomRenderFunc)
+
+	router.GET("/", func(c *gin.Context) {
+		c.CustomRender(200, "index.html", nil)
+	})
+
+	router.GET("/msg1", func(c *gin.Context) {
+		c.CustomRender(200, "message.html", pongo2.Context{
+			"message": c.Query("name"),
+		})
+	})
+
+	router.GET("/msg2", func(c *gin.Context) {
+		c.CustomRender(200, "message.html", gin.H{
+			"message": c.Query("name"),
+		})
+	})
+
+	router.Run("[::]:8888")
+}
+```
+
+templates/index.html
+```html
+<html><h1>
+    hi
+</h1>
+</html>
+```
+
+templates/message.html
+```html
+<html><h1>
+	hi {{ message }}
+</h1>
+</html>
+```
+
+
 #### Redirects
 
 Issuing a HTTP redirect is easy:

@@ -383,6 +383,11 @@ func (c *Context) HTML(code int, name string, obj interface{}) {
 	c.Render(code, instance)
 }
 
+func (c *Context) CustomRender(code int, name string, obj interface{}) {
+	instance := c.engine.CustomRender.Instance(name, obj)
+	c.Render(code, instance)
+}
+
 // IndentedJSON serializes the given struct as pretty JSON (indented + endlines) into the response body.
 // It also sets the Content-Type as "application/json".
 // WARNING: we recommend to use this only for development propuses since printing pretty JSON is
