@@ -1,6 +1,6 @@
 
 #Gin Web Framework
-<img align="right" src="https://s3.amazonaws.com/uploads.hipchat.com/36744/1498287/JVR32LgyEGCiy01/path4201%20copy%202.png">
+<img align="right" src="https://raw.githubusercontent.com/gin-gonic/gin/master/logo.jpg">
 [![Build Status](https://travis-ci.org/gin-gonic/gin.svg)](https://travis-ci.org/gin-gonic/gin)
 [![Coverage Status](https://coveralls.io/repos/gin-gonic/gin/badge.svg?branch=master)](https://coveralls.io/r/gin-gonic/gin?branch=master)
 [![GoDoc](https://godoc.org/github.com/gin-gonic/gin?status.svg)](https://godoc.org/github.com/gin-gonic/gin)
@@ -660,7 +660,7 @@ There be some ways.
 
 We can using fvbock/endless to replace the default ListenAndServe
 
-Refer the issue for more details: 
+Refer the issue for more details:
 
 https://github.com/gin-gonic/gin/issues/296
 

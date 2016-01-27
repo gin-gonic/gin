@@ -23,7 +23,7 @@ var (
 
 // Recovery returns a middleware that recovers from any panics and writes a 500 if there was one.
 func Recovery() HandlerFunc {
-	return RecoveryWithWriter(DefaultWriter)
+	return RecoveryWithWriter(DefaultErrorWriter)
 }
 
 func RecoveryWithWriter(out io.Writer) HandlerFunc {
