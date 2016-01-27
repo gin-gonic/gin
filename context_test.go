@@ -394,9 +394,9 @@ func TestContextRenderRedirectWithRelativePath(t *testing.T) {
 	assert.Panics(t, func() { c.Redirect(299, "/new_path") })
 	assert.Panics(t, func() { c.Redirect(309, "/new_path") })
 
-	c.Redirect(302, "/path")
+	c.Redirect(301, "/path")
 	c.Writer.WriteHeaderNow()
-	assert.Equal(t, w.Code, 302)
+	assert.Equal(t, w.Code, 301)
 	assert.Equal(t, w.Header().Get("Location"), "/path")
 }
 
@@ -408,6 +408,27 @@ func TestContextRenderRedirectWithAbsolutePath(t *testing.T) {
 
 	assert.Equal(t, w.Code, 302)
 	assert.Equal(t, w.Header().Get("Location"), "http://google.com")
+}
+
+func TestContextRenderRedirectWith201(t *testing.T) {
+	c, w, _ := CreateTestContext()
+	c.Request, _ = http.NewRequest("POST", "http://example.com", nil)
+	c.Redirect(201, "/resource")
+	c.Writer.WriteHeaderNow()
+
+	assert.Equal(t, w.Code, 201)
+	assert.Equal(t, w.Header().Get("Location"), "/resource")
+}
+
+func TestContextRenderRedirectAll(t *testing.T) {
+	c, _, _ := CreateTestContext()
+	c.Request, _ = http.NewRequest("POST", "http://example.com", nil)
+	assert.Panics(t, func() { c.Redirect(200, "/resource") })
+	assert.Panics(t, func() { c.Redirect(202, "/resource") })
+	assert.Panics(t, func() { c.Redirect(299, "/resource") })
+	assert.Panics(t, func() { c.Redirect(309, "/resource") })
+	assert.NotPanics(t, func() { c.Redirect(300, "/resource") })
+	assert.NotPanics(t, func() { c.Redirect(308, "/resource") })
 }
 
 func TestContextNegotiationFormat(t *testing.T) {
