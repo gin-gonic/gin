@@ -191,14 +191,14 @@ func (c *Context) MustGet(key string) interface{} {
 // c.Query("name") == "Manu"
 // c.Query("wtf") == ""
 func (c *Context) Query(key string) string {
-	value, _ := c.query(key)
+	value, _ := c.GetQuery(key)
 	return value
 }
 
 // PostForm is a shortcut for c.Request.PostFormValue(key)
 // It returns an empty string ("") when the value does not exist.
 func (c *Context) PostForm(key string) string {
-	value, _ := c.postForm(key)
+	value, _ := c.GetPostForm(key)
 	return value
 }
 
@@ -213,7 +213,7 @@ func (c *Context) Param(key string) string {
 }
 
 func (c *Context) DefaultPostForm(key, defaultValue string) string {
-	if value, ok := c.postForm(key); ok {
+	if value, ok := c.GetPostForm(key); ok {
 		return value
 	}
 	return defaultValue
@@ -225,13 +225,13 @@ func (c *Context) DefaultPostForm(key, defaultValue string) string {
 // 		c.DefaultQuery("name", "unknown") == "Manu"
 // 		c.DefaultQuery("id", "none") == "none"
 func (c *Context) DefaultQuery(key, defaultValue string) string {
-	if value, ok := c.query(key); ok {
+	if value, ok := c.GetQuery(key); ok {
 		return value
 	}
 	return defaultValue
 }
 
-func (c *Context) query(key string) (string, bool) {
+func (c *Context) GetQuery(key string) (string, bool) {
 	req := c.Request
 	if values, ok := req.URL.Query()[key]; ok && len(values) > 0 {
 		return values[0], true
@@ -239,7 +239,7 @@ func (c *Context) query(key string) (string, bool) {
 	return "", false
 }
 
-func (c *Context) postForm(key string) (string, bool) {
+func (c *Context) GetPostForm(key string) (string, bool) {
 	req := c.Request
 	req.ParseMultipartForm(32 << 20) // 32 MB
 	if values := req.PostForm[key]; len(values) > 0 {
