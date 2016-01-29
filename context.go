@@ -183,25 +183,6 @@ func (c *Context) MustGet(key string) interface{} {
 /************ INPUT DATA ************/
 /************************************/
 
-// Query is a shortcut for c.Request.URL.Query().Get(key)
-// It is used to return the url query values.
-// It returns an empty string ("") when the value does not exist.
-// /path?id=1234&name=Manu
-// c.Query("id") == "1234"
-// c.Query("name") == "Manu"
-// c.Query("wtf") == ""
-func (c *Context) Query(key string) string {
-	value, _ := c.GetQuery(key)
-	return value
-}
-
-// PostForm is a shortcut for c.Request.PostFormValue(key)
-// It returns an empty string ("") when the value does not exist.
-func (c *Context) PostForm(key string) string {
-	value, _ := c.GetPostForm(key)
-	return value
-}
-
 // Param returns the value of the URL param.
 // It is a shortcut for c.Params.ByName(key)
 //		router.GET("/user/:id", func(c *gin.Context) {
@@ -212,18 +193,26 @@ func (c *Context) Param(key string) string {
 	return c.Params.ByName(key)
 }
 
-func (c *Context) DefaultPostForm(key, defaultValue string) string {
-	if value, ok := c.GetPostForm(key); ok {
-		return value
-	}
-	return defaultValue
+// Query returns the keyed url query value if it exists,
+// othewise it returns an empty string `("")`.
+// It is shortcut for `c.Request.URL.Query().Get(key)`
+// 		GET /path?id=1234&name=Manu&value=
+// 		c.Query("id") == "1234"
+// 		c.Query("name") == "Manu"
+// 		c.Query("value") == ""
+// 		c.Query("wtf") == ""
+func (c *Context) Query(key string) string {
+	value, _ := c.GetQuery(key)
+	return value
 }
 
-// DefaultQuery returns the keyed url query value if it exists, othewise it returns the
-// specified defaultValue.
-// 		//?name=Manu
+// DefaultQuery returns the keyed url query value if it exists,
+// othewise it returns the specified defaultValue string.
+// See: Query() and GetQuery() for further information.
+// 		GET /?name=Manu&lastname=
 // 		c.DefaultQuery("name", "unknown") == "Manu"
 // 		c.DefaultQuery("id", "none") == "none"
+// 		c.DefaultQuery("lastname", "none") == ""
 func (c *Context) DefaultQuery(key, defaultValue string) string {
 	if value, ok := c.GetQuery(key); ok {
 		return value
@@ -231,6 +220,14 @@ func (c *Context) DefaultQuery(key, defaultValue string) string {
 	return defaultValue
 }
 
+// GetQuery is like Query(), it returns the keyed url query value
+// if it exists `(value, true)` (even when the value is an empty string),
+// othewise it returns `("", false)`.
+// It is shortcut for `c.Request.URL.Query().Get(key)`
+// 		GET /?name=Manu&lastname=
+// 		("Manu", true) == c.GetQuery("name")
+// 		("", false) == c.GetQuery("id")
+// 		("", true) == c.GetQuery("lastname")
 func (c *Context) GetQuery(key string) (string, bool) {
 	req := c.Request
 	if values, ok := req.URL.Query()[key]; ok && len(values) > 0 {
@@ -239,6 +236,30 @@ func (c *Context) GetQuery(key string) (string, bool) {
 	return "", false
 }
 
+// PostForm returns the specified key from a POST urlencoded form or multipart form
+// when it exists, otherwise it returns an empty string `("")`.
+func (c *Context) PostForm(key string) string {
+	value, _ := c.GetPostForm(key)
+	return value
+}
+
+// PostForm returns the specified key from a POST urlencoded form or multipart form
+// when it exists, otherwise it returns the specified defaultValue string.
+// See: PostForm() and GetPostForm() for further information.
+func (c *Context) DefaultPostForm(key, defaultValue string) string {
+	if value, ok := c.GetPostForm(key); ok {
+		return value
+	}
+	return defaultValue
+}
+
+// GetPostForm is like PostForm(key). It returns the specified key from a POST urlencoded
+// form or multipart form when it exists `(value, true)` (even when the value is an empty string),
+// otherwise it returns ("", false).
+// For example, during a PATCH request to update the user's email:
+// 		email=mail@example.com  -->  ("mail@example.com", true) := GetPostForm("email") // set email to "mail@example.com"
+// 		email=  			  	-->  ("", true) := GetPostForm("email") // set email to ""
+//							 	-->  ("", false) := GetPostForm("email") // do nothing with email
 func (c *Context) GetPostForm(key string) (string, bool) {
 	req := c.Request
 	req.ParseMultipartForm(32 << 20) // 32 MB
