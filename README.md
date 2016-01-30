@@ -23,9 +23,11 @@ import "github.com/gin-gonic/gin"
 func main() {
 	r := gin.Default()
 	r.GET("/ping", func(c *gin.Context) {
-		c.String(200, "pong")
+		c.JSON(200, gin.H{
+			"message": "hello world",
+		})
 	})
-	r.Run(":8080") // listen and serve on 0.0.0.0:8080
+	r.Run() // listen and server on 0.0.0.0:8080
 }
 ```
 
@@ -110,8 +112,10 @@ func main() {
 	router.HEAD("/someHead", head)
 	router.OPTIONS("/someOptions", options)
 
-	// Listen and server on 0.0.0.0:8080
-	router.Run(":8080")
+	// By default it serves on :8080 unless a
+	// PORT environment variable was defined.
+	router.Run()
+	// router.Run.Run(":3000") for a hard coded port
 }
 ```
 
