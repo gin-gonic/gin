@@ -306,11 +306,11 @@ func (c *Context) BindWith(obj interface{}, b binding.Binding) error {
 // X-Real-IP and X-Forwarded-For in order to work properly with reverse-proxies such us: nginx or haproxy.
 func (c *Context) ClientIP() string {
 	if c.engine.ForwardedByClientIP {
-		clientIP := strings.TrimSpace(c.requestHeader("X-Real-Ip"))
+		clientIP := strings.TrimSpace(c.RequestHeader("X-Real-Ip"))
 		if len(clientIP) > 0 {
 			return clientIP
 		}
-		clientIP = c.requestHeader("X-Forwarded-For")
+		clientIP = c.RequestHeader("X-Forwarded-For")
 		if index := strings.IndexByte(clientIP, ','); index >= 0 {
 			clientIP = clientIP[0:index]
 		}
@@ -327,14 +327,12 @@ func (c *Context) ClientIP() string {
 
 // ContentType returns the Content-Type header of the request.
 func (c *Context) ContentType() string {
-	return filterFlags(c.requestHeader("Content-Type"))
+	return filterFlags(c.RequestHeader("Content-Type"))
 }
 
-func (c *Context) requestHeader(key string) string {
-	if values, _ := c.Request.Header[key]; len(values) > 0 {
-		return values[0]
-	}
-	return ""
+// RequestHeader returns the value for the respective header key, or "" if not existent.
+func (c *Context) RequestHeader(key string) string {
+	return c.Request.Header.Get(key)
 }
 
 /************************************/
@@ -515,7 +513,7 @@ func (c *Context) NegotiateFormat(offered ...string) string {
 	assert1(len(offered) > 0, "you must provide at least one offer")
 
 	if c.Accepted == nil {
-		c.Accepted = parseAccept(c.requestHeader("Accept"))
+		c.Accepted = parseAccept(c.RequestHeader("Accept"))
 	}
 	if len(c.Accepted) == 0 {
 		return offered[0]
