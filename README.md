@@ -95,7 +95,7 @@ BenchmarkZeus_GithubAll 		| 2000 		| 944234 	| 300688 	| 2648
     import "github.com/gin-gonic/gin"
     ```
 
-3. Import net/http if required:
+3. (Optional) Import `net/http`. This is required for example if using constants such as `http.StatusOK`.
 
     ```go
     import "net/http"
