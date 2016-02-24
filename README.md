@@ -85,14 +85,21 @@ BenchmarkZeus_GithubAll 		| 2000 		| 944234 	| 300688 	| 2648
 ## Start using it
 1. Download and install it:
 
-```sh
-$ go get github.com/gin-gonic/gin
-```
+    ```sh
+    $ go get github.com/gin-gonic/gin
+    ```
+
 2. Import it in your code:
 
-```go
-import "github.com/gin-gonic/gin"
-```
+    ```go
+    import "github.com/gin-gonic/gin"
+    ```
+
+3. (Optional) Import `net/http`. This is required for example if using constants such as `http.StatusOK`.
+
+    ```go
+    import "net/http"
+    ```
 
 ##API Examples
 
