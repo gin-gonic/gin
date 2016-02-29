@@ -90,8 +90,10 @@ func setWithProperType(valueKind reflect.Kind, val string, structField reflect.V
 		return setFloatField(val, 64, structField)
 	case reflect.String:
 		structField.SetString(val)
+	case reflect.Ptr:
+		structField.Set(reflect.ValueOf(&val))
 	default:
-		return errors.New("Unknown type")
+		return fmt.Errorf("Unknown type: %s", valueKind)
 	}
 	return nil
 }
