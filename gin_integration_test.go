@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"net/http/httptest"
 )
 
 func testRequest(t *testing.T, url string) {
@@ -102,4 +103,29 @@ func TestUnixSocket(t *testing.T) {
 func TestBadUnixSocket(t *testing.T) {
 	router := New()
 	assert.Error(t, router.RunUnix("#/tmp/unix_unit_test"))
+}
+
+func TestWithHttptestWithAutoSelectedPort(t *testing.T) {
+	router := New()
+	router.GET("/example", func(c *Context) { c.String(http.StatusOK, "it worked") })
+
+	ts := httptest.NewServer(router)
+	defer ts.Close()
+
+	testRequest(t, ts.URL+"/example")
+}
+
+func TestWithHttptestWithSpecifiedPort(t *testing.T) {
+	router := New()
+	router.GET("/example", func(c *Context) { c.String(http.StatusOK, "it worked") })
+
+	l, _ := net.Listen("tcp", ":8033")
+	ts := httptest.Server{
+		Listener: l,
+		Config:   &http.Server{Handler: router},
+	}
+	ts.Start()
+	defer ts.Close()
+
+	testRequest(t, "http://localhost:8033/example")
 }
