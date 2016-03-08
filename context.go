@@ -98,7 +98,7 @@ func (c *Context) Next() {
 	}
 }
 
-// IsAborted returns true if the currect context was aborted.
+// IsAborted returns true if the current context was aborted.
 func (c *Context) IsAborted() bool {
 	return c.index >= abortIndex
 }
