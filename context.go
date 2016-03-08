@@ -77,7 +77,7 @@ func (c *Context) Copy() *Context {
 	return &cp
 }
 
-// HandlerName returns the main handle's name. For example if the handler is "handleGetUsers()", this
+// HandlerName returns the main handler's name. For example if the handler is "handleGetUsers()", this
 // function will return "main.handleGetUsers"
 func (c *Context) HandlerName() string {
 	return nameOfFunction(c.handlers.Last())
