@@ -680,5 +680,8 @@ router := gin.Default()
 router.GET("/", handler)
 // [...]
 endless.ListenAndServe(":4242", router)
-
 ```
+
+An alternative to endless:
+
+* [manners](https://github.com/braintree/manners): A polite Go HTTP server that shuts down gracefully.
