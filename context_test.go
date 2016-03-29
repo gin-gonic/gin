@@ -251,6 +251,22 @@ func TestContextQueryAndPostForm(t *testing.T) {
 	assert.Equal(t, obj.Page, 11)
 	assert.Equal(t, obj.Both, "")
 	assert.Equal(t, obj.Array, []string{"first", "second"})
+
+	values, ok := c.GetQueryArray("array[]")
+	assert.True(t, ok)
+	assert.Equal(t, "first", values[0])
+	assert.Equal(t, "second", values[1])
+
+	values = c.QueryArray("array[]")
+	assert.Equal(t, "first", values[0])
+	assert.Equal(t, "second", values[1])
+
+	values = c.QueryArray("nokey")
+	assert.Equal(t, 0, len(values))
+
+	values = c.QueryArray("both")
+	assert.Equal(t, 1, len(values))
+	assert.Equal(t, "GET", values[0])
 }
 
 func TestContextPostFormMultipart(t *testing.T) {
@@ -299,6 +315,22 @@ func TestContextPostFormMultipart(t *testing.T) {
 	assert.False(t, ok)
 	assert.Empty(t, value)
 	assert.Equal(t, c.DefaultPostForm("nokey", "nothing"), "nothing")
+
+	values, ok := c.GetPostFormArray("array")
+	assert.True(t, ok)
+	assert.Equal(t, "first", values[0])
+	assert.Equal(t, "second", values[1])
+
+	values = c.PostFormArray("array")
+	assert.Equal(t, "first", values[0])
+	assert.Equal(t, "second", values[1])
+
+	values = c.PostFormArray("nokey")
+	assert.Equal(t, 0, len(values))
+
+	values = c.PostFormArray("foo")
+	assert.Equal(t, 1, len(values))
+	assert.Equal(t, "bar", values[0])
 }
 
 func TestContextSetCookie(t *testing.T) {

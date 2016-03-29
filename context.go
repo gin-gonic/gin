@@ -236,6 +236,23 @@ func (c *Context) GetQuery(key string) (string, bool) {
 	return "", false
 }
 
+// QueryArray returns a slice of strings for a given query key.
+// The length of the slice depends on the number of params with the given key.
+func (c *Context) QueryArray(key string) []string {
+	values, _ := c.GetQueryArray(key)
+	return values
+}
+
+// GetQueryArray returns a slice of strings for a given query key, plus
+// a boolean value whether at least one value exists for the given key.
+func (c *Context) GetQueryArray(key string) ([]string, bool) {
+	req := c.Request
+	if values, ok := req.URL.Query()[key]; ok && len(values) > 0 {
+		return values, true
+	}
+	return []string{}, false
+}
+
 // PostForm returns the specified key from a POST urlencoded form or multipart form
 // when it exists, otherwise it returns an empty string `("")`.
 func (c *Context) PostForm(key string) string {
@@ -272,6 +289,30 @@ func (c *Context) GetPostForm(key string) (string, bool) {
 		}
 	}
 	return "", false
+}
+
+// PostFormArray returns a slice of strings for a given form key.
+// The length of the slice depends on the number of params with the given key.
+func (c *Context) PostFormArray(key string) []string {
+	values, _ := c.GetPostFormArray(key)
+	return values
+}
+
+// GetPostFormArray returns a slice of strings for a given form key, plus
+// a boolean value whether at least one value exists for the given key.
+func (c *Context) GetPostFormArray(key string) ([]string, bool) {
+	req := c.Request
+	req.ParseForm()
+	req.ParseMultipartForm(32 << 20) // 32 MB
+	if values := req.PostForm[key]; len(values) > 0 {
+		return values, true
+	}
+	if req.MultipartForm != nil && req.MultipartForm.File != nil {
+		if values := req.MultipartForm.Value[key]; len(values) > 0 {
+			return values, true
+		}
+	}
+	return []string{}, false
 }
 
 // Bind checks the Content-Type to select a binding engine automatically,
