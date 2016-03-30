@@ -229,9 +229,8 @@ func (c *Context) DefaultQuery(key, defaultValue string) string {
 // 		("", false) == c.GetQuery("id")
 // 		("", true) == c.GetQuery("lastname")
 func (c *Context) GetQuery(key string) (string, bool) {
-	req := c.Request
-	if values, ok := req.URL.Query()[key]; ok && len(values) > 0 {
-		return values[0], true
+	if values, ok := c.GetQueryArray(key); ok {
+		return values[0], ok
 	}
 	return "", false
 }
@@ -278,15 +277,8 @@ func (c *Context) DefaultPostForm(key, defaultValue string) string {
 // 		email=  			  	-->  ("", true) := GetPostForm("email") // set email to ""
 //							 	-->  ("", false) := GetPostForm("email") // do nothing with email
 func (c *Context) GetPostForm(key string) (string, bool) {
-	req := c.Request
-	req.ParseMultipartForm(32 << 20) // 32 MB
-	if values := req.PostForm[key]; len(values) > 0 {
-		return values[0], true
-	}
-	if req.MultipartForm != nil && req.MultipartForm.File != nil {
-		if values := req.MultipartForm.Value[key]; len(values) > 0 {
-			return values[0], true
-		}
+	if values, ok := c.GetPostFormArray(key); ok {
+		return values[0], ok
 	}
 	return "", false
 }
