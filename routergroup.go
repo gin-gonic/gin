@@ -187,6 +187,7 @@ func (group *RouterGroup) createStaticHandler(relativePath string, fs http.FileS
 	return func(c *Context) {
 		if nolisting {
 			c.Writer.WriteHeader(404)
+			return
 		}
 		fileServer.ServeHTTP(c.Writer, c.Request)
 	}
