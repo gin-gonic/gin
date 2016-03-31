@@ -258,7 +258,7 @@ func TestRouteStaticFile(t *testing.T) {
 
 	// SETUP gin
 	router := New()
-	router.Static("/using_static", dir)
+	router.StaticFS("/using_static", Dir(dir, true))
 	router.StaticFile("/result", f.Name())
 
 	w := performRequest(router, "GET", "/using_static/"+filename)
@@ -306,7 +306,7 @@ func TestRouterMiddlewareAndStatic(t *testing.T) {
 		c.Writer.Header().Add("Expires", "Mon, 02 Jan 2006 15:04:05 MST")
 		c.Writer.Header().Add("X-GIN", "Gin Framework")
 	})
-	static.Static("/", "./")
+	static.StaticFS("/", Dir("./", true))
 
 	w := performRequest(router, "GET", "/gin.go")
 
