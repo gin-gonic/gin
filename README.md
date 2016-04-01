@@ -220,7 +220,7 @@ id: 1234; page: 1; name: manu; message: this_is_great
 
 ### Another example: upload file
 
-Reference issue [#548](https://github.com/gin-gonic/gin/issues/548)
+References issue [#548](https://github.com/gin-gonic/gin/issues/548).
 
 ```go
 func main() {
@@ -300,7 +300,7 @@ func main() {
 
 	// Authorization group
 	// authorized := r.Group("/", AuthRequired())
-	// exactly the same than:
+	// exactly the same as:
 	authorized := r.Group("/")
 	// per group middleware! in this case we use the custom created
 	// AuthRequired() middleware just in the "authorized" group.
@@ -645,7 +645,7 @@ func main() {
 			// simulate a long task with time.Sleep(). 5 seconds
 			time.Sleep(5 * time.Second)
 
-			// note than you are using the copied context "c_cp", IMPORTANT
+			// note that you are using the copied context "cCp", IMPORTANT
 			log.Println("Done! in path " + cCp.Request.URL.Path)
 		}()
 	})
@@ -693,13 +693,9 @@ func main() {
 #### Graceful restart or stop
 
 Do you want to graceful restart or stop your web server?
-There be some ways.
+There are some ways this can be done.
 
-We can using fvbock/endless to replace the default ListenAndServe
-
-Refer the issue for more details:
-
-https://github.com/gin-gonic/gin/issues/296
+We can use [fvbock/endless](https://github.com/fvbock/endless) to replace the default `ListenAndServe`. Refer issue [#296](https://github.com/gin-gonic/gin/issues/296) for more details.
 
 ```go
 router := gin.Default()
