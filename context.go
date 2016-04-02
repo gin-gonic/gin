@@ -279,7 +279,7 @@ func (c *Context) GetPostForm(key string) (string, bool) {
 // 		"application/json" --> JSON binding
 // 		"application/xml"  --> XML binding
 // otherwise --> returns an error
-// If Parses the request's body as JSON if Content-Type == "application/json" using JSON or XML  as a JSON input.
+// It parses the request's body as JSON if Content-Type == "application/json" using JSON or XML as a JSON input.
 // It decodes the json payload into the struct specified as a pointer.
 // Like ParseBody() but this method also writes a 400 error if the json is not valid.
 func (c *Context) Bind(obj interface{}) error {
