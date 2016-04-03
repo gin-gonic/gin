@@ -1,3 +1,4 @@
+// This file' name ends with "_test" to avoid pushing "httptest" import on users.
 package gin
 
 import (
