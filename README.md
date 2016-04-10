@@ -6,7 +6,7 @@
 [![GoDoc](https://godoc.org/github.com/gin-gonic/gin?status.svg)](https://godoc.org/github.com/gin-gonic/gin)
 [![Join the chat at https://gitter.im/gin-gonic/gin](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/gin-gonic/gin?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
-Gin is a web framework written in Golang. It features a martini-like API with much better performance, up to 40 times faster thanks to [httprouter](https://github.com/julienschmidt/httprouter). If you need performance and good productivity, you will love Gin.
+Gin is a web framework written in Go (Golang). It features a martini-like API with much better performance, up to 40 times faster thanks to [httprouter](https://github.com/julienschmidt/httprouter). If you need performance and good productivity, you will love Gin.
 
 
 
@@ -24,7 +24,7 @@ func main() {
 	r := gin.Default()
 	r.GET("/ping", func(c *gin.Context) {
 		c.JSON(200, gin.H{
-			"message": "hello world",
+			"message": "pong",
 		})
 	})
 	r.Run() // listen and server on 0.0.0.0:8080
@@ -85,14 +85,21 @@ BenchmarkZeus_GithubAll 		| 2000 		| 944234 	| 300688 	| 2648
 ## Start using it
 1. Download and install it:
 
-```sh
-$ go get github.com/gin-gonic/gin
-```
+    ```sh
+    $ go get github.com/gin-gonic/gin
+    ```
+
 2. Import it in your code:
 
-```go
-import "github.com/gin-gonic/gin"
-```
+    ```go
+    import "github.com/gin-gonic/gin"
+    ```
+
+3. (Optional) Import `net/http`. This is required for example if using constants such as `http.StatusOK`.
+
+    ```go
+    import "net/http"
+    ```
 
 ##API Examples
 
@@ -115,7 +122,7 @@ func main() {
 	// By default it serves on :8080 unless a
 	// PORT environment variable was defined.
 	router.Run()
-	// router.Run.Run(":3000") for a hard coded port
+	// router.Run(":3000") for a hard coded port
 }
 ```
 
@@ -211,6 +218,32 @@ func main() {
 id: 1234; page: 1; name: manu; message: this_is_great
 ```
 
+### Another example: upload file
+
+References issue [#548](https://github.com/gin-gonic/gin/issues/548).
+
+```go
+func main() {
+	router := gin.Default()
+
+	router.POST("/upload", func(c *gin.Context) {
+
+	        file, header , err := c.Request.FormFile("upload")
+	        filename := header.Filename
+	        fmt.Println(header.Filename)
+	        out, err := os.Create("./tmp/"+filename+".png")
+	        if err != nil {
+	            log.Fatal(err)
+	        }
+	        defer out.Close()
+	        _, err = io.Copy(out, file)
+	        if err != nil {
+	            log.Fatal(err)
+	        }   
+	})
+	router.Run(":8080")
+}
+```
 
 #### Grouping routes
 ```go
@@ -267,7 +300,7 @@ func main() {
 
 	// Authorization group
 	// authorized := r.Group("/", AuthRequired())
-	// exactly the same than:
+	// exactly the same as:
 	authorized := r.Group("/")
 	// per group middleware! in this case we use the custom created
 	// AuthRequired() middleware just in the "authorized" group.
@@ -583,7 +616,7 @@ func main() {
 	// /admin/secrets endpoint
 	// hit "localhost:8080/admin/secrets
 	authorized.GET("/secrets", func(c *gin.Context) {
-		// get user, it was setted by the BasicAuth middleware
+		// get user, it was set by the BasicAuth middleware
 		user := c.MustGet(gin.AuthUserKey).(string)
 		if secret, ok := secrets[user]; ok {
 			c.JSON(http.StatusOK, gin.H{"user": user, "secret": secret})
@@ -612,7 +645,7 @@ func main() {
 			// simulate a long task with time.Sleep(). 5 seconds
 			time.Sleep(5 * time.Second)
 
-			// note than you are using the copied context "c_cp", IMPORTANT
+			// note that you are using the copied context "cCp", IMPORTANT
 			log.Println("Done! in path " + cCp.Request.URL.Path)
 		}()
 	})
@@ -660,18 +693,17 @@ func main() {
 #### Graceful restart or stop
 
 Do you want to graceful restart or stop your web server?
-There be some ways.
+There are some ways this can be done.
 
-We can using fvbock/endless to replace the default ListenAndServe
-
-Refer the issue for more details:
-
-https://github.com/gin-gonic/gin/issues/296
+We can use [fvbock/endless](https://github.com/fvbock/endless) to replace the default `ListenAndServe`. Refer issue [#296](https://github.com/gin-gonic/gin/issues/296) for more details.
 
 ```go
 router := gin.Default()
 router.GET("/", handler)
 // [...]
 endless.ListenAndServe(":4242", router)
-
 ```
+
+An alternative to endless:
+
+* [manners](https://github.com/braintree/manners): A polite Go HTTP server that shuts down gracefully.
