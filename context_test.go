@@ -15,6 +15,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/gin-gonic/gin/binding/example"
+	"github.com/golang/protobuf/proto"
 	"github.com/manucorporat/sse"
 	"github.com/stretchr/testify/assert"
 )
@@ -374,6 +376,16 @@ func TestContextRenderXML(t *testing.T) {
 	assert.Equal(t, w.HeaderMap.Get("Content-Type"), "application/xml; charset=utf-8")
 }
 
+// TestContextRenderProtobuf tests that the response is serialized as Protobuf binary-stream
+// and Content-Type is set to application/x-protobuf
+func TestContextRenderProtobuf(t *testing.T) {
+	c, w, _ := CreateTestContext()
+	c.Protobuf(201, &example.Test{Label: proto.String("test")})
+
+	assert.Equal(t, w.Code, 201)
+	assert.Equal(t, w.HeaderMap.Get("Content-Type"), "application/x-protobuf")
+}
+
 // TestContextString tests that the response is returned
 // with Content-Type set to text/plain
 func TestContextRenderString(t *testing.T) {
@@ -500,15 +512,17 @@ func TestContextNegotiationFormat(t *testing.T) {
 	assert.Panics(t, func() { c.NegotiateFormat() })
 	assert.Equal(t, c.NegotiateFormat(MIMEJSON, MIMEXML), MIMEJSON)
 	assert.Equal(t, c.NegotiateFormat(MIMEHTML, MIMEJSON), MIMEHTML)
+	assert.Equal(t, c.NegotiateFormat(MIMEPROTOBUF, MIMEPROTOBUF), MIMEPROTOBUF)
 }
 
 func TestContextNegotiationFormatWithAccept(t *testing.T) {
 	c, _, _ := CreateTestContext()
 	c.Request, _ = http.NewRequest("POST", "/", nil)
-	c.Request.Header.Add("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8")
+	c.Request.Header.Add("Accept", "text/html,application/xhtml+xml,application/xml,application/x-protobuf;q=0.9,*/*;q=0.8")
 
 	assert.Equal(t, c.NegotiateFormat(MIMEJSON, MIMEXML), MIMEXML)
 	assert.Equal(t, c.NegotiateFormat(MIMEXML, MIMEHTML), MIMEHTML)
+	assert.Equal(t, c.NegotiateFormat(MIMEPROTOBUF, MIMEPROTOBUF), MIMEPROTOBUF)
 	assert.Equal(t, c.NegotiateFormat(MIMEJSON), "")
 }
 

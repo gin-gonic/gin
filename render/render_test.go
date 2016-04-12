@@ -10,6 +10,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/gin-gonic/gin/binding/example"
+	"github.com/golang/protobuf/proto"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -80,6 +82,19 @@ func TestRenderXML(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, w.Body.String(), "<map><foo>bar</foo></map>")
 	assert.Equal(t, w.Header().Get("Content-Type"), "application/xml; charset=utf-8")
+}
+
+func TestRenderProtobuf(t *testing.T) {
+	w := httptest.NewRecorder()
+	data := &example.Test{
+		Label: proto.String("test"),
+	}
+
+	err := (Protobuf{data}).Render(w)
+
+	assert.NoError(t, err)
+	// assert.Equal(t, w.Body.String(), "<map><foo>bar</foo></map>")
+	// assert.Equal(t, w.Header().Get("Content-Type"), "application/xml; charset=utf-8")
 }
 
 func TestRenderRedirect(t *testing.T) {
