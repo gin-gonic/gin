@@ -14,20 +14,20 @@ type TemplateStorage struct {
 }
 
 func (t TemplateStorage) Instance(name string, data interface{}) Render {
-	return HTMLwithBlock{
+	return HTMLWithBlock{
 		Template: t.Storage[name],
 		Name:     name,
 		Data:     data,
 	}
 }
 
-type HTMLwithBlock struct {
+type HTMLWithBlock struct {
 	Template *template.Template
 	Name     string
 	Data     interface{}
 }
 
-func (r HTMLwithBlock) Render(w http.ResponseWriter) error {
+func (r HTMLWithBlock) Render(w http.ResponseWriter) error {
 	writeContentType(w, htmlContentType)
 	return r.Template.Execute(w, r.Data)
 }
