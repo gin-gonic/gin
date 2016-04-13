@@ -128,3 +128,41 @@ func TestRenderHTMLTemplate(t *testing.T) {
 	assert.Equal(t, w.Body.String(), "Hello alexandernyquist")
 	assert.Equal(t, w.Header().Get("Content-Type"), "text/html; charset=utf-8")
 }
+
+func TestRenderHTMLTemplateWithBlocks(t *testing.T) {
+	w := httptest.NewRecorder()
+
+	var indexTemplate = template.Must(template.New("").Parse(`{{block "first" .}}{{end}}{{block "second" .}}{{end}}`))
+
+	first := `{{define "first"}}{{.first}}{{end}}{{define "second"}}_{{.second}}{{end}}`
+	var firstT = template.Must(template.Must(indexTemplate.Clone()).Parse(first))
+	second := `{{define "first"}}{{.first}}{{end}}{{define "second"}}_{{.second}}{{end}}`
+	var secondT = template.Must(template.Must(indexTemplate.Clone()).Parse(second))
+
+	templateStorage := TemplateStorage{make(map[string]*template.Template)}
+	templateStorage.Storage["first"] = firstT
+	templateStorage.Storage["second"] = secondT
+
+	testMap := map[string]interface{}{
+		"second": "second",
+		"first": "first",
+	}
+
+	instance := templateStorage.Instance("first", testMap)
+
+	err := instance.Render(w)
+
+	assert.NoError(t, err)
+	assert.Equal(t, w.Body.String(), "first_second")
+	assert.Equal(t, w.Header().Get("Content-Type"), "text/html; charset=utf-8")
+
+	w = httptest.NewRecorder()
+
+	instance = templateStorage.Instance("second", testMap)
+
+	err = instance.Render(w)
+
+	assert.NoError(t, err)
+	assert.Equal(t, w.Body.String(), "first_second")
+	assert.Equal(t, w.Header().Get("Content-Type"), "text/html; charset=utf-8")
+}

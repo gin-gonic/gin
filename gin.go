@@ -147,6 +147,22 @@ func (engine *Engine) SetHTMLTemplate(templ *template.Template) {
 	engine.HTMLRender = render.HTMLProduction{Template: templ}
 }
 
+// AddHTMLTemplate allow to use "block" template feature from go1.6
+func (engine *Engine) AddHTMLTemplate(name string, paths... string) {
+	var templateStorage render.TemplateStorage
+	t, ok := engine.HTMLRender.(render.TemplateStorage)
+	if ok {
+		templateStorage = t
+	} else {
+		if len(engine.trees) > 0 {
+			debugPrintWARNINGSetHTMLTemplate()
+		}
+		templateStorage = render.TemplateStorage{make(map[string]*template.Template)}
+	}
+	templateStorage.Storage[name] = template.Must(template.ParseFiles(paths...))
+	engine.HTMLRender = templateStorage
+}
+
 // Adds handlers for NoRoute. It return a 404 code by default.
 func (engine *Engine) NoRoute(handlers ...HandlerFunc) {
 	engine.noRoute = handlers
