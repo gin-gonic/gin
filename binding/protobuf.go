@@ -13,11 +13,11 @@ import (
 
 type protobufBinding struct{}
 
-func (_ protobufBinding) Name() string {
+func (protobufBinding) Name() string {
 	return "protobuf"
 }
 
-func (_ protobufBinding) Bind(req *http.Request, obj interface{}) error {
+func (protobufBinding) Bind(req *http.Request, obj interface{}) error {
 
 	buf, err := ioutil.ReadAll(req.Body)
 	if err != nil {

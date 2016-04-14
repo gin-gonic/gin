@@ -35,13 +35,13 @@ func ErrorLoggerT(typ ErrorType) HandlerFunc {
 	}
 }
 
-// Instances a Logger middleware that will write the logs to gin.DefaultWriter
+// Logger instances a Logger middleware that will write the logs to gin.DefaultWriter
 // By default gin.DefaultWriter = os.Stdout
 func Logger() HandlerFunc {
 	return LoggerWithWriter(DefaultWriter)
 }
 
-// Instance a Logger middleware with the specified writter buffer.
+// LoggerWithWriter instance a Logger middleware with the specified writter buffer.
 // Example: os.Stdout, a file opened in write mode, a socket...
 func LoggerWithWriter(out io.Writer, notlogged ...string) HandlerFunc {
 	var skip map[string]struct{}

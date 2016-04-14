@@ -262,14 +262,14 @@ func TestContextPostFormMultipart(t *testing.T) {
 		Bar      string   `form:"bar"`
 		BarAsInt int      `form:"bar"`
 		Array    []string `form:"array"`
-		Id       string   `form:"id"`
+		ID       string   `form:"id"`
 	}
 	assert.NoError(t, c.Bind(&obj))
 	assert.Equal(t, obj.Foo, "bar")
 	assert.Equal(t, obj.Bar, "10")
 	assert.Equal(t, obj.BarAsInt, 10)
 	assert.Equal(t, obj.Array, []string{"first", "second"})
-	assert.Equal(t, obj.Id, "")
+	assert.Equal(t, obj.ID, "")
 
 	value, ok := c.GetQuery("foo")
 	assert.False(t, ok)

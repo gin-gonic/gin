@@ -69,7 +69,7 @@ func (c *Context) reset() {
 // Copy returns a copy of the current context that can be safely used outside the request's scope.
 // This have to be used then the context has to be passed to a goroutine.
 func (c *Context) Copy() *Context {
-	var cp Context = *c
+	var cp = *c
 	cp.writermem.ResponseWriter = nil
 	cp.Writer = &cp.writermem
 	cp.index = abortIndex
@@ -172,7 +172,7 @@ func (c *Context) Get(key string) (value interface{}, exists bool) {
 	return
 }
 
-// Returns the value for the given key if it exists, otherwise it panics.
+// MustGet returns the value for the given key if it exists, otherwise it panics.
 func (c *Context) MustGet(key string) interface{} {
 	if value, exists := c.Get(key); exists {
 		return value
@@ -244,7 +244,7 @@ func (c *Context) PostForm(key string) string {
 	return value
 }
 
-// PostForm returns the specified key from a POST urlencoded form or multipart form
+// DefaultPostForm returns the specified key from a POST urlencoded form or multipart form
 // when it exists, otherwise it returns the specified defaultValue string.
 // See: PostForm() and GetPostForm() for further information.
 func (c *Context) DefaultPostForm(key, defaultValue string) string {

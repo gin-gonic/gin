@@ -201,13 +201,13 @@ func compareFunc(t *testing.T, a, b interface{}) {
 
 func TestListOfRoutes(t *testing.T) {
 	router := New()
-	router.GET("/favicon.ico", handler_test1)
-	router.GET("/", handler_test1)
+	router.GET("/favicon.ico", handlerTest1)
+	router.GET("/", handlerTest1)
 	group := router.Group("/users")
 	{
-		group.GET("/", handler_test2)
-		group.GET("/:id", handler_test1)
-		group.POST("/:id", handler_test2)
+		group.GET("/", handlerTest2)
+		group.GET("/:id", handlerTest1)
+		group.POST("/:id", handlerTest2)
 	}
 	router.Static("/static", ".")
 
@@ -251,5 +251,5 @@ func assertRoutePresent(t *testing.T, gotRoutes RoutesInfo, wantRoute RouteInfo)
 	t.Errorf("route not found: %v", wantRoute)
 }
 
-func handler_test1(c *Context) {}
-func handler_test2(c *Context) {}
+func handlerTest1(c *Context) {}
+func handlerTest2(c *Context) {}

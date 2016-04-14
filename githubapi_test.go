@@ -341,7 +341,7 @@ func exampleFromPath(path string) (string, Params) {
 	if start >= 0 {
 		value := fmt.Sprint(rand.Intn(100000))
 		params = append(params, Param{
-			Key:   path[start:len(path)],
+			Key:   path[start:],
 			Value: value,
 		})
 		output.WriteString(value)
