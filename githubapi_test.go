@@ -10,6 +10,7 @@ import (
 	"math/rand"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -298,7 +299,7 @@ func githubConfigRouter(router *Engine) {
 }
 
 func TestGithubAPI(t *testing.T) {
-	DefaultWriter = newMockWriter()
+	DefaultWriter = os.Stdout
 	router := Default()
 	githubConfigRouter(router)
 
@@ -357,7 +358,7 @@ func BenchmarkGithub(b *testing.B) {
 }
 
 func BenchmarkParallelGithub(b *testing.B) {
-	DefaultWriter = newMockWriter()
+	DefaultWriter = os.Stdout
 	router := New()
 	githubConfigRouter(router)
 
@@ -373,7 +374,7 @@ func BenchmarkParallelGithub(b *testing.B) {
 }
 
 func BenchmarkParallelGithubDefault(b *testing.B) {
-	DefaultWriter = newMockWriter()
+	DefaultWriter = os.Stdout
 	router := Default()
 	githubConfigRouter(router)
 
