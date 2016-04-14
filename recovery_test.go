@@ -39,5 +39,5 @@ func TestPanicWithAbort(t *testing.T) {
 	// RUN
 	w := performRequest(router, "GET", "/recovery")
 	// TEST
-	assert.Equal(t, w.Code, 500) // NOT SURE
+	assert.Equal(t, w.Code, 400)
 }

@@ -116,7 +116,7 @@ func TestErrorLogger(t *testing.T) {
 
 	w = performRequest(router, "GET", "/print")
 	assert.Equal(t, w.Code, 500)
-	assert.Equal(t, w.Body.String(), "hola!")
+	assert.Equal(t, w.Body.String(), "hola!{\"error\":\"this is an error\"}\n")
 }
 
 func TestSkippingPaths(t *testing.T) {

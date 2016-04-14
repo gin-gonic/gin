@@ -262,14 +262,14 @@ func TestContextPostFormMultipart(t *testing.T) {
 		Bar      string   `form:"bar"`
 		BarAsInt int      `form:"bar"`
 		Array    []string `form:"array"`
-		Id       string   `form:"id"`
+		ID       string   `form:"id"`
 	}
 	assert.NoError(t, c.Bind(&obj))
 	assert.Equal(t, obj.Foo, "bar")
 	assert.Equal(t, obj.Bar, "10")
 	assert.Equal(t, obj.BarAsInt, 10)
 	assert.Equal(t, obj.Array, []string{"first", "second"})
-	assert.Equal(t, obj.Id, "")
+	assert.Equal(t, obj.ID, "")
 
 	value, ok := c.GetQuery("foo")
 	assert.False(t, ok)
@@ -433,6 +433,17 @@ func TestContextRenderFile(t *testing.T) {
 	assert.Equal(t, w.HeaderMap.Get("Content-Type"), "text/plain; charset=utf-8")
 }
 
+// TestContextRenderYAML tests that the response is serialized as YAML
+// and Content-Type is set to application/x-yaml
+func TestContextRenderYAML(t *testing.T) {
+	c, w, _ := CreateTestContext()
+	c.YAML(201, H{"foo": "bar"})
+
+	assert.Equal(t, w.Code, 201)
+	assert.Equal(t, w.Body.String(), "foo: bar\n")
+	assert.Equal(t, w.HeaderMap.Get("Content-Type"), "application/x-yaml; charset=utf-8")
+}
+
 func TestContextHeaders(t *testing.T) {
 	c, _, _ := CreateTestContext()
 	c.Header("Content-Type", "text/plain")
@@ -545,7 +556,6 @@ func TestContextAbortWithStatus(t *testing.T) {
 	c, w, _ := CreateTestContext()
 	c.index = 4
 	c.AbortWithStatus(401)
-	c.Writer.WriteHeaderNow()
 
 	assert.Equal(t, c.index, abortIndex)
 	assert.Equal(t, c.Writer.Status(), 401)
@@ -596,7 +606,6 @@ func TestContextTypedError(t *testing.T) {
 func TestContextAbortWithError(t *testing.T) {
 	c, w, _ := CreateTestContext()
 	c.AbortWithError(401, errors.New("bad input")).SetMeta("some input")
-	c.Writer.WriteHeaderNow()
 
 	assert.Equal(t, w.Code, 401)
 	assert.Equal(t, c.index, abortIndex)

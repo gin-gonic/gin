@@ -34,17 +34,17 @@ func SetHTMLTemplate(templ *template.Template) {
 	engine().SetHTMLTemplate(templ)
 }
 
-// Adds handlers for NoRoute. It return a 404 code by default.
+// NoRoute adds handlers for NoRoute. It return a 404 code by default.
 func NoRoute(handlers ...HandlerFunc) {
 	engine().NoRoute(handlers...)
 }
 
-// Sets the handlers called when... TODO
+// NoMethod sets the handlers called when... TODO
 func NoMethod(handlers ...HandlerFunc) {
 	engine().NoMethod(handlers...)
 }
 
-// Creates a new router group. You should add all the routes that have common middlwares or the same path prefix.
+// Group creates a new router group. You should add all the routes that have common middlwares or the same path prefix.
 // For example, all the routes that use a common middlware for authorization could be grouped.
 func Group(relativePath string, handlers ...HandlerFunc) *RouterGroup {
 	return engine().Group(relativePath, handlers...)
@@ -111,28 +111,28 @@ func StaticFS(relativePath string, fs http.FileSystem) IRoutes {
 	return engine().StaticFS(relativePath, fs)
 }
 
-// Attachs a global middleware to the router. ie. the middlewares attached though Use() will be
+// Use attachs a global middleware to the router. ie. the middlewares attached though Use() will be
 // included in the handlers chain for every single request. Even 404, 405, static files...
 // For example, this is the right place for a logger or error management middleware.
 func Use(middlewares ...HandlerFunc) IRoutes {
 	return engine().Use(middlewares...)
 }
 
-// The router is attached to a http.Server and starts listening and serving HTTP requests.
+// Run : The router is attached to a http.Server and starts listening and serving HTTP requests.
 // It is a shortcut for http.ListenAndServe(addr, router)
 // Note: this method will block the calling goroutine undefinitelly unless an error happens.
 func Run(addr ...string) (err error) {
 	return engine().Run(addr...)
 }
 
-// The router is attached to a http.Server and starts listening and serving HTTPS requests.
+// RunTLS : The router is attached to a http.Server and starts listening and serving HTTPS requests.
 // It is a shortcut for http.ListenAndServeTLS(addr, certFile, keyFile, router)
 // Note: this method will block the calling goroutine undefinitelly unless an error happens.
 func RunTLS(addr string, certFile string, keyFile string) (err error) {
 	return engine().RunTLS(addr, certFile, keyFile)
 }
 
-// The router is attached to a http.Server and starts listening and serving HTTP requests
+// RunUnix : The router is attached to a http.Server and starts listening and serving HTTP requests
 // through the specified unix socket (ie. a file)
 // Note: this method will block the calling goroutine undefinitelly unless an error happens.
 func RunUnix(file string) (err error) {

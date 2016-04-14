@@ -61,7 +61,6 @@ func (r HTML) Render(w http.ResponseWriter) error {
 	writeContentType(w, htmlContentType)
 	if len(r.Name) == 0 {
 		return r.Template.Execute(w, r.Data)
-	} else {
-		return r.Template.ExecuteTemplate(w, r.Name, r.Data)
 	}
+	return r.Template.ExecuteTemplate(w, r.Name, r.Data)
 }

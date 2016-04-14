@@ -69,7 +69,7 @@ func (c *Context) reset() {
 // Copy returns a copy of the current context that can be safely used outside the request's scope.
 // This have to be used then the context has to be passed to a goroutine.
 func (c *Context) Copy() *Context {
-	var cp Context = *c
+	var cp = *c
 	cp.writermem.ResponseWriter = nil
 	cp.Writer = &cp.writermem
 	cp.index = abortIndex
@@ -115,6 +115,7 @@ func (c *Context) Abort() {
 // For example, a failed attempt to authentificate a request could use: context.AbortWithStatus(401).
 func (c *Context) AbortWithStatus(code int) {
 	c.Status(code)
+	c.Writer.WriteHeaderNow()
 	c.Abort()
 }
 
@@ -171,7 +172,7 @@ func (c *Context) Get(key string) (value interface{}, exists bool) {
 	return
 }
 
-// Returns the value for the given key if it exists, otherwise it panics.
+// MustGet returns the value for the given key if it exists, otherwise it panics.
 func (c *Context) MustGet(key string) interface{} {
 	if value, exists := c.Get(key); exists {
 		return value
@@ -243,7 +244,7 @@ func (c *Context) PostForm(key string) string {
 	return value
 }
 
-// PostForm returns the specified key from a POST urlencoded form or multipart form
+// DefaultPostForm returns the specified key from a POST urlencoded form or multipart form
 // when it exists, otherwise it returns the specified defaultValue string.
 // See: PostForm() and GetPostForm() for further information.
 func (c *Context) DefaultPostForm(key, defaultValue string) string {
@@ -424,6 +425,11 @@ func (c *Context) JSON(code int, obj interface{}) {
 // It also sets the Content-Type as "application/xml".
 func (c *Context) XML(code int, obj interface{}) {
 	c.Render(code, render.XML{Data: obj})
+}
+
+// YAML serializes the given struct as YAML into the response body.
+func (c *Context) YAML(code int, obj interface{}) {
+	c.Render(code, render.YAML{Data: obj})
 }
 
 // String writes the given string into the response body.

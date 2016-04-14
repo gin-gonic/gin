@@ -14,7 +14,7 @@ import (
 	"github.com/gin-gonic/gin/render"
 )
 
-// Framework's version
+// Version is Framework's version
 const Version = "v1.0rc2"
 
 var default404Body = []byte("404 page not found")
@@ -147,19 +147,19 @@ func (engine *Engine) SetHTMLTemplate(templ *template.Template) {
 	engine.HTMLRender = render.HTMLProduction{Template: templ}
 }
 
-// Adds handlers for NoRoute. It return a 404 code by default.
+// NoRoute adds handlers for NoRoute. It return a 404 code by default.
 func (engine *Engine) NoRoute(handlers ...HandlerFunc) {
 	engine.noRoute = handlers
 	engine.rebuild404Handlers()
 }
 
-// Sets the handlers called when... TODO
+// NoMethod sets the handlers called when... TODO
 func (engine *Engine) NoMethod(handlers ...HandlerFunc) {
 	engine.noMethod = handlers
 	engine.rebuild405Handlers()
 }
 
-// Attachs a global middleware to the router. ie. the middleware attached though Use() will be
+// Use attachs a global middleware to the router. ie. the middleware attached though Use() will be
 // included in the handlers chain for every single request. Even 404, 405, static files...
 // For example, this is the right place for a logger or error management middleware.
 func (engine *Engine) Use(middleware ...HandlerFunc) IRoutes {
