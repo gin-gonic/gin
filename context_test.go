@@ -556,7 +556,6 @@ func TestContextAbortWithStatus(t *testing.T) {
 	c, w, _ := CreateTestContext()
 	c.index = 4
 	c.AbortWithStatus(401)
-	c.Writer.WriteHeaderNow()
 
 	assert.Equal(t, c.index, abortIndex)
 	assert.Equal(t, c.Writer.Status(), 401)
@@ -607,7 +606,6 @@ func TestContextTypedError(t *testing.T) {
 func TestContextAbortWithError(t *testing.T) {
 	c, w, _ := CreateTestContext()
 	c.AbortWithError(401, errors.New("bad input")).SetMeta("some input")
-	c.Writer.WriteHeaderNow()
 
 	assert.Equal(t, w.Code, 401)
 	assert.Equal(t, c.index, abortIndex)

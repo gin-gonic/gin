@@ -115,6 +115,7 @@ func (c *Context) Abort() {
 // For example, a failed attempt to authentificate a request could use: context.AbortWithStatus(401).
 func (c *Context) AbortWithStatus(code int) {
 	c.Status(code)
+	c.Writer.WriteHeaderNow()
 	c.Abort()
 }
 
