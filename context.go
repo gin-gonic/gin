@@ -426,6 +426,11 @@ func (c *Context) XML(code int, obj interface{}) {
 	c.Render(code, render.XML{Data: obj})
 }
 
+// YAML serializes the given struct as YAML into the response body.
+func (c *Context) YAML(code int, obj interface{}) {
+	c.Render(code, render.YAML{Data: obj})
+}
+
 // String writes the given string into the response body.
 func (c *Context) String(code int, format string, values ...interface{}) {
 	c.Status(code)
