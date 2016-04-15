@@ -5,6 +5,7 @@
 package gin
 
 import (
+	"io"
 	"os"
 
 	"github.com/gin-gonic/gin/binding"
@@ -30,8 +31,8 @@ const (
 // To support coloring in Windows use:
 // 		import "github.com/mattn/go-colorable"
 // 		gin.DefaultWriter = colorable.NewColorableStdout()
-var DefaultWriter = os.Stdout
-var DefaultErrorWriter = os.Stderr
+var DefaultWriter io.Writer = os.Stdout
+var DefaultErrorWriter io.Writer = os.Stderr
 
 var ginMode = debugCode
 var modeName = DebugMode
