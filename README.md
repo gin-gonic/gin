@@ -412,7 +412,7 @@ $ curl -v --form user=user --form password=password http://localhost:8080/login
 ```
 
 
-#### XML and JSON rendering
+#### XML, JSON and YAML rendering
 
 ```go
 func main() {
@@ -440,6 +440,10 @@ func main() {
 
 	r.GET("/someXML", func(c *gin.Context) {
 		c.XML(http.StatusOK, gin.H{"message": "hey", "status": http.StatusOK})
+	})
+
+	r.GET("/someYAML", func(c *gin.Context) {
+		c.YAML(http.StatusOK, gin.H{"message": "hey", "status": http.StatusOK})
 	})
 
 	// Listen and server on 0.0.0.0:8080
