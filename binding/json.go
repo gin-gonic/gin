@@ -6,6 +6,7 @@ package binding
 
 import (
 	"encoding/json"
+	"errors"
 
 	"net/http"
 )
@@ -17,6 +18,10 @@ func (jsonBinding) Name() string {
 }
 
 func (jsonBinding) Bind(req *http.Request, obj interface{}) error {
+	if req.Body == nil {
+		return errors.New("can not bind a request with a nil body")
+	}
+
 	decoder := json.NewDecoder(req.Body)
 	if err := decoder.Decode(obj); err != nil {
 		return err

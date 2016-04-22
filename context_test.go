@@ -670,6 +670,22 @@ func TestContextBindWithJSON(t *testing.T) {
 	assert.Equal(t, w.Body.Len(), 0)
 }
 
+func TestContextBindWithNilBody(t *testing.T) {
+	c, _, _ := CreateTestContext()
+	c.Request, _ = http.NewRequest("POST", "/", nil)
+	c.Request.Header.Add("Content-Type", MIMEXML) // set fake content-type
+
+	var obj struct {
+		Foo string `json:"foo"`
+		Bar string `json:"bar"`
+	}
+
+	assert.Error(t, c.BindJSON(&obj))
+	assert.NotPanics(t, func() {
+		c.BindJSON(&obj)
+	})
+}
+
 func TestContextBadAutoBind(t *testing.T) {
 	c, w, _ := CreateTestContext()
 	c.Request, _ = http.NewRequest("POST", "http://example.com", bytes.NewBufferString("\"foo\":\"bar\", \"bar\":\"foo\"}"))
