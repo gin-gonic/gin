@@ -444,6 +444,17 @@ func TestContextRenderYAML(t *testing.T) {
 	assert.Equal(t, w.HeaderMap.Get("Content-Type"), "application/x-yaml; charset=utf-8")
 }
 
+// TestContextRenderMsgpack tests that the response is serialized as Msgpack
+// and Content-Type is set to application/x-msgpack
+func TestContextRenderMsgpack(t *testing.T) {
+	c, w, _ := CreateTestContext()
+	c.Msgpack(201, H{"foo": "bar"})
+
+	assert.Equal(t, w.Code, 201)
+	assert.Equal(t, w.Body.Bytes(), []byte{129, 163, 102, 111, 111, 163, 98, 97, 114})
+	assert.Equal(t, w.HeaderMap.Get("Content-Type"), "application/x-msgpack; charset=utf-8")
+}
+
 func TestContextHeaders(t *testing.T) {
 	c, _, _ := CreateTestContext()
 	c.Header("Content-Type", "text/plain")

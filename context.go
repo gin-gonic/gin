@@ -421,6 +421,12 @@ func (c *Context) JSON(code int, obj interface{}) {
 	}
 }
 
+// Msgpack serializes the given struct as Msgpack into the response body.
+// It also sets the Content-Type as "application/msgpack"
+func (c *Context) Msgpack(code int, obj interface{}) {
+	c.Render(code, render.Msgpack{Data: obj})
+}
+
 // XML serializes the given struct as XML into the response body.
 // It also sets the Content-Type as "application/xml".
 func (c *Context) XML(code int, obj interface{}) {
