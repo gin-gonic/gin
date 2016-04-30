@@ -546,6 +546,11 @@ func main() {
 ```
 
 
+#### Multitemplate
+
+Gin allow by default use only one html.Template. Check [a multitemplate render](https://github.com/gin-gonic/contrib/tree/master/renders/multitemplate) for using features like go 1.6 "block" template.
+
+
 #### Redirects
 
 Issuing a HTTP redirect is easy:
