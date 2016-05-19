@@ -301,6 +301,21 @@ func TestAddRoute(t *testing.T) {
 	assert.Len(t, router.trees, 2)
 }
 
+func TestResetRoutes(t *testing.T) {
+	router := New()
+	router.addRoute("GET", "/", HandlersChain{func(_ *Context) {}})
+
+	assert.Len(t, router.trees, 1)
+	assert.NotNil(t, router.trees.get("GET"))
+	assert.Nil(t, router.trees.get("POST"))
+
+	router.ResetRoutes()
+
+	assert.Empty(t, router.trees)
+	assert.Nil(t, router.trees.get("GET"))
+	assert.Nil(t, router.trees.get("POST"))
+}
+
 func TestAddRouteFails(t *testing.T) {
 	router := New()
 	assert.Panics(t, func() { router.addRoute("", "/", HandlersChain{func(_ *Context) {}}) })
