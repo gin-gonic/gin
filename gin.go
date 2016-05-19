@@ -283,6 +283,11 @@ func iterate(path, method string, routes RoutesInfo, root *node) RoutesInfo {
 	return routes
 }
 
+// ResetRoutes reset routes in Engine, used when application need to change routes dynamically
+func (engine *Engine) ResetRoutes() {
+	engine.trees = make(methodTrees, 0, 9)
+}
+
 // Run attaches the router to a http.Server and starts listening and serving HTTP requests.
 // It is a shortcut for http.ListenAndServe(addr, router)
 // Note: this method will block the calling goroutine indefinitely unless an error happens.
