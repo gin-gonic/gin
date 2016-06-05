@@ -8,7 +8,6 @@ import (
 	"bytes"
 	"errors"
 	"io"
-	"log"
 	"os"
 	"testing"
 
@@ -68,10 +67,10 @@ func TestDebugPrintRoutes(t *testing.T) {
 
 func setup(w io.Writer) {
 	SetMode(DebugMode)
-	log.SetOutput(w)
+	debugLog.SetOutput(w)
 }
 
 func teardown() {
 	SetMode(TestMode)
-	log.SetOutput(os.Stdout)
+	debugLog.SetOutput(os.Stderr)
 }
