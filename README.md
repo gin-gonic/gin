@@ -468,7 +468,7 @@ func main() {
 
 ####HTML rendering
 
-Using LoadHTMLTemplates()
+Using LoadHTMLGlob() or LoadHTMLFiles()
 
 ```go
 func main() {
