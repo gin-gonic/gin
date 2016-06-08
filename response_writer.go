@@ -122,6 +122,6 @@ func (w *responseWriter) ReadFrom(r io.Reader) (n int64, err error) {
         w.size = 0
     }
     n, err = w.ResponseWriter.(io.ReaderFrom).ReadFrom(r)
-    w.size += n
+    w.size += int(n)
     return
 }
