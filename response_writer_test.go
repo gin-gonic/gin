@@ -29,38 +29,38 @@ func init() {
 }
 
 func TestResponseWriterReset(t *testing.T) {
-	testWritter := httptest.NewRecorder()
+	testWriter := httptest.NewRecorder()
 	writer := &responseWriter{}
 	var w ResponseWriter = writer
 
-	writer.reset(testWritter)
+	writer.reset(testWriter)
 	assert.Equal(t, writer.size, -1)
 	assert.Equal(t, writer.status, 200)
-	assert.Equal(t, writer.ResponseWriter, testWritter)
+	assert.Equal(t, writer.ResponseWriter, testWriter)
 	assert.Equal(t, w.Size(), -1)
 	assert.Equal(t, w.Status(), 200)
 	assert.False(t, w.Written())
 }
 
 func TestResponseWriterWriteHeader(t *testing.T) {
-	testWritter := httptest.NewRecorder()
+	testWriter := httptest.NewRecorder()
 	writer := &responseWriter{}
-	writer.reset(testWritter)
+	writer.reset(testWriter)
 	w := ResponseWriter(writer)
 
 	w.WriteHeader(300)
 	assert.False(t, w.Written())
 	assert.Equal(t, w.Status(), 300)
-	assert.NotEqual(t, testWritter.Code, 300)
+	assert.NotEqual(t, testWriter.Code, 300)
 
 	w.WriteHeader(-1)
 	assert.Equal(t, w.Status(), 300)
 }
 
 func TestResponseWriterWriteHeadersNow(t *testing.T) {
-	testWritter := httptest.NewRecorder()
+	testWriter := httptest.NewRecorder()
 	writer := &responseWriter{}
-	writer.reset(testWritter)
+	writer.reset(testWriter)
 	w := ResponseWriter(writer)
 
 	w.WriteHeader(300)
@@ -68,7 +68,7 @@ func TestResponseWriterWriteHeadersNow(t *testing.T) {
 
 	assert.True(t, w.Written())
 	assert.Equal(t, w.Size(), 0)
-	assert.Equal(t, testWritter.Code, 300)
+	assert.Equal(t, testWriter.Code, 300)
 
 	writer.size = 10
 	w.WriteHeaderNow()
@@ -76,30 +76,30 @@ func TestResponseWriterWriteHeadersNow(t *testing.T) {
 }
 
 func TestResponseWriterWrite(t *testing.T) {
-	testWritter := httptest.NewRecorder()
+	testWriter := httptest.NewRecorder()
 	writer := &responseWriter{}
-	writer.reset(testWritter)
+	writer.reset(testWriter)
 	w := ResponseWriter(writer)
 
 	n, err := w.Write([]byte("hola"))
 	assert.Equal(t, n, 4)
 	assert.Equal(t, w.Size(), 4)
 	assert.Equal(t, w.Status(), 200)
-	assert.Equal(t, testWritter.Code, 200)
-	assert.Equal(t, testWritter.Body.String(), "hola")
+	assert.Equal(t, testWriter.Code, 200)
+	assert.Equal(t, testWriter.Body.String(), "hola")
 	assert.NoError(t, err)
 
 	n, err = w.Write([]byte(" adios"))
 	assert.Equal(t, n, 6)
 	assert.Equal(t, w.Size(), 10)
-	assert.Equal(t, testWritter.Body.String(), "hola adios")
+	assert.Equal(t, testWriter.Body.String(), "hola adios")
 	assert.NoError(t, err)
 }
 
 func TestResponseWriterHijack(t *testing.T) {
-	testWritter := httptest.NewRecorder()
+	testWriter := httptest.NewRecorder()
 	writer := &responseWriter{}
-	writer.reset(testWritter)
+	writer.reset(testWriter)
 	w := ResponseWriter(writer)
 
 	assert.Panics(t, func() {
