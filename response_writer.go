@@ -22,6 +22,7 @@ type (
 		http.Hijacker
 		http.Flusher
 		http.CloseNotifier
+		io.ReaderFrom
 
 		// Returns the HTTP response status code of the current request.
 		Status() int
@@ -113,4 +114,12 @@ func (w *responseWriter) CloseNotify() <-chan bool {
 // Implements the http.Flush interface
 func (w *responseWriter) Flush() {
 	w.ResponseWriter.(http.Flusher).Flush()
+}
+
+// Implements the io.ReaderFrom interface
+func (w *responseWriter) ReadFrom(src io.Reader) (n int64, err error) {
+	w.WriteHeaderNow()
+	n, err = io.Copy(w.ResponseWriter, src)
+	w.size += int(n)
+	return
 }

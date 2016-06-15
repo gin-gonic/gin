@@ -5,8 +5,10 @@
 package gin
 
 import (
+	"io"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -23,6 +25,7 @@ var _ http.ResponseWriter = ResponseWriter(&responseWriter{})
 var _ http.Hijacker = ResponseWriter(&responseWriter{})
 var _ http.Flusher = ResponseWriter(&responseWriter{})
 var _ http.CloseNotifier = ResponseWriter(&responseWriter{})
+var _ io.ReaderFrom = ResponseWriter(&responseWriter{})
 
 func init() {
 	SetMode(TestMode)
@@ -112,4 +115,25 @@ func TestResponseWriterHijack(t *testing.T) {
 	})
 
 	w.Flush()
+}
+
+func TestResponseWriterReadFrom(t *testing.T) {
+	testWriter := httptest.NewRecorder()
+	writer := &responseWriter{}
+	writer.reset(testWriter)
+	w := ResponseWriter(writer) 
+	
+	n, err := io.Copy(w, strings.NewReader("hola"))
+	assert.Equal(t, n, int64(4))
+	assert.Equal(t, w.Size(), 4)
+	assert.Equal(t, w.Status(), 200)
+	assert.Equal(t, testWriter.Code, 200)
+	assert.Equal(t, testWriter.Body.String(), "hola")
+	assert.NoError(t, err)
+
+	n, err = writer.ReadFrom(strings.NewReader(" adios"))
+	assert.Equal(t, n, int64(6))
+	assert.Equal(t, w.Size(), 10)
+	assert.Equal(t, testWriter.Body.String(), "hola adios")
+	assert.NoError(t, err)
 }
