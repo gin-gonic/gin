@@ -106,12 +106,12 @@ func (w *responseWriter) Hijack() (net.Conn, *bufio.ReadWriter, error) {
 	return w.ResponseWriter.(http.Hijacker).Hijack()
 }
 
-// Implements the http.CloseNotify interface
+// Implements the http.CloseNotifier interface
 func (w *responseWriter) CloseNotify() <-chan bool {
 	return w.ResponseWriter.(http.CloseNotifier).CloseNotify()
 }
 
-// Implements the http.Flush interface
+// Implements the http.Flusher interface
 func (w *responseWriter) Flush() {
 	w.ResponseWriter.(http.Flusher).Flush()
 }
