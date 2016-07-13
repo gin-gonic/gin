@@ -29,6 +29,8 @@ func Bind(val interface{}) HandlerFunc {
 		obj := reflect.New(typ).Interface()
 		if c.Bind(obj) == nil {
 			c.Set(BindKey, obj)
+		} else {
+			c.Abort()
 		}
 	}
 }
