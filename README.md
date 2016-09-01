@@ -708,3 +708,14 @@ endless.ListenAndServe(":4242", router)
 An alternative to endless:
 
 * [manners](https://github.com/braintree/manners): A polite Go HTTP server that shuts down gracefully.
+
+#### Support HTML5 history API and pushstate
+
+```
+
+	r.NoRoute(func(c *gin.Context) {
+		c.File("./dist/index.html") //Path to your /index.html template
+	})
+```
+
+This will using your /index.html template replace 404, similar as nginx rewrite rules and apache rewrite rules.
