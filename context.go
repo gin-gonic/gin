@@ -166,9 +166,7 @@ func (c *Context) Set(key string, value interface{}) {
 // Get returns the value for the given key, ie: (value, true).
 // If the value does not exists it returns (nil, false)
 func (c *Context) Get(key string) (value interface{}, exists bool) {
-	if c.Keys != nil {
-		value, exists = c.Keys[key]
-	}
+	value, exists = c.Keys[key]
 	return
 }
 
