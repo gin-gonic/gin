@@ -45,11 +45,11 @@ type Context struct {
 	handlers HandlersChain
 	index    int8
 
-	engine   *Engine
-	Keys     map[string]interface{}
-	KeysLocker	sync.RWMutex
-	Errors   errorMsgs
-	Accepted []string
+	engine     *Engine
+	Keys       map[string]interface{}
+	KeysLocker sync.RWMutex
+	Errors     errorMsgs
+	Accepted   []string
 }
 
 var _ context.Context = &Context{}
