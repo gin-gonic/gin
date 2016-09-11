@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/gin-gonic/gin/binding"
@@ -46,6 +47,7 @@ type Context struct {
 
 	engine   *Engine
 	Keys     map[string]interface{}
+	KeysLocker	sync.RWMutex
 	Errors   errorMsgs
 	Accepted []string
 }
@@ -160,14 +162,18 @@ func (c *Context) Set(key string, value interface{}) {
 	if c.Keys == nil {
 		c.Keys = make(map[string]interface{})
 	}
+	c.KeysLocker.Lock()
 	c.Keys[key] = value
+	c.KeysLocker.Unlock()
 }
 
 // Get returns the value for the given key, ie: (value, true).
 // If the value does not exists it returns (nil, false)
 func (c *Context) Get(key string) (value interface{}, exists bool) {
 	if c.Keys != nil {
+		c.KeysLocker.RLock()
 		value, exists = c.Keys[key]
+		c.KeysLocker.RUnlock()
 	}
 	return
 }
