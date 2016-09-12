@@ -159,10 +159,10 @@ func (c *Context) Error(err error) *Error {
 // Set is used to store a new key/value pair exclusivelly for this context.
 // It also lazy initializes  c.Keys if it was not used previously.
 func (c *Context) Set(key string, value interface{}) {
+	c.KeysLocker.Lock()
 	if c.Keys == nil {
 		c.Keys = make(map[string]interface{})
 	}
-	c.KeysLocker.Lock()
 	c.Keys[key] = value
 	c.KeysLocker.Unlock()
 }
