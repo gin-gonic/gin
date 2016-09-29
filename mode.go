@@ -20,8 +20,8 @@ const (
 )
 const (
 	debugCode   = iota
-	releaseCode = iota
-	testCode    = iota
+	releaseCode 
+	testCode  
 )
 
 // DefaultWriter is the default io.Writer used the Gin for debug output and
