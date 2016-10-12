@@ -11,7 +11,7 @@ import (
 )
 
 func main() {
-	ginS.GET("/", func(c *gin.Context) { c.String("Hello World") })
+	ginS.GET("/", func(c *gin.Context) { c.String(200, "Hello World") })
 	ginS.Run()
 }
 ```
