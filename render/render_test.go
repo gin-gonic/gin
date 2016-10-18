@@ -8,6 +8,7 @@ import (
 	"encoding/xml"
 	"html/template"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -126,5 +127,24 @@ func TestRenderHTMLTemplate(t *testing.T) {
 
 	assert.NoError(t, err)
 	assert.Equal(t, w.Body.String(), "Hello alexandernyquist")
+	assert.Equal(t, w.Header().Get("Content-Type"), "text/html; charset=utf-8")
+}
+
+func TestRenderHTMLTemplateWithFuncs(t *testing.T) {
+	funcs := template.FuncMap{
+		"F": func(in string) string { return strings.ToLower(in) },
+	}
+	w := httptest.NewRecorder()
+	templ := template.Must(template.New("t").Funcs(funcs).Parse(`HELLO {{.name | F}}`))
+
+	htmlRender := HTMLProduction{Template: templ, Fmap: &funcs}
+	instance := htmlRender.Instance("t", map[string]interface{}{
+		"name": "ALEXANDERNYQUIST",
+	})
+
+	err := instance.Render(w)
+
+	assert.NoError(t, err)
+	assert.Equal(t, w.Body.String(), "HELLO alexandernyquist")
 	assert.Equal(t, w.Header().Get("Content-Type"), "text/html; charset=utf-8")
 }

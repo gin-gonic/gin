@@ -45,6 +45,7 @@ type (
 	Engine struct {
 		RouterGroup
 		HTMLRender  render.HTMLRender
+		HTMLFuncs   *template.FuncMap
 		allNoRoute  HandlersChain
 		allNoMethod HandlersChain
 		noRoute     HandlersChain
@@ -122,21 +123,27 @@ func (engine *Engine) allocateContext() *Context {
 }
 
 func (engine *Engine) LoadHTMLGlob(pattern string) {
+	if engine.HTMLFuncs == nil {
+		engine.HTMLFuncs = &template.FuncMap{}
+	}
+
 	if IsDebugging() {
-		debugPrintLoadTemplate(template.Must(template.ParseGlob(pattern)))
-		engine.HTMLRender = render.HTMLDebug{Glob: pattern}
+		debugPrintLoadTemplate(template.Must(template.New("main").Funcs(*engine.HTMLFuncs).ParseGlob(pattern)))
+		engine.HTMLRender = render.HTMLDebug{Glob: pattern, Fmap: engine.HTMLFuncs}
 	} else {
-		templ := template.Must(template.ParseGlob(pattern))
-		engine.SetHTMLTemplate(templ)
+		engine.SetHTMLTemplate(template.Must(template.New("main").Funcs(*engine.HTMLFuncs).ParseGlob(pattern)))
 	}
 }
 
 func (engine *Engine) LoadHTMLFiles(files ...string) {
+	if engine.HTMLFuncs == nil {
+		engine.HTMLFuncs = &template.FuncMap{}
+	}
+
 	if IsDebugging() {
-		engine.HTMLRender = render.HTMLDebug{Files: files}
+		engine.HTMLRender = render.HTMLDebug{Files: files, Fmap: engine.HTMLFuncs}
 	} else {
-		templ := template.Must(template.ParseFiles(files...))
-		engine.SetHTMLTemplate(templ)
+		engine.SetHTMLTemplate(template.Must(template.New("main").Funcs(*engine.HTMLFuncs).ParseFiles(files...)))
 	}
 }
 
