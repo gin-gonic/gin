@@ -17,7 +17,10 @@ import (
 
 	"github.com/manucorporat/sse"
 	"github.com/stretchr/testify/assert"
+	"golang.org/x/net/context"
 )
+
+var _ context.Context = &Context{}
 
 // Unit tests TODO
 // func (c *Context) File(filepath string) {
