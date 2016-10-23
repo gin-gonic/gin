@@ -46,7 +46,7 @@ func NoMethod(handlers ...HandlerFunc) {
 
 // Group creates a new router group. You should add all the routes that have common middlwares or the same path prefix.
 // For example, all the routes that use a common middlware for authorization could be grouped.
-func Group(relativePath string, handlers ...HandlerFunc) *RouterGroup {
+func Group(relativePath string, handlers ...HandlerFunc) IRouter {
 	return engine().Group(relativePath, handlers...)
 }
 

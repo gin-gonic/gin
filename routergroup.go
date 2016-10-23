@@ -14,7 +14,7 @@ import (
 type (
 	IRouter interface {
 		IRoutes
-		Group(string, ...HandlerFunc) *RouterGroup
+		Group(string, ...HandlerFunc) IRouter
 	}
 
 	IRoutes interface {
@@ -55,7 +55,7 @@ func (group *RouterGroup) Use(middleware ...HandlerFunc) IRoutes {
 
 // Group creates a new router group. You should add all the routes that have common middlwares or the same path prefix.
 // For example, all the routes that use a common middlware for authorization could be grouped.
-func (group *RouterGroup) Group(relativePath string, handlers ...HandlerFunc) *RouterGroup {
+func (group *RouterGroup) Group(relativePath string, handlers ...HandlerFunc) IRouter {
 	return &RouterGroup{
 		Handlers: group.combineHandlers(handlers),
 		basePath: group.calculateAbsolutePath(relativePath),
