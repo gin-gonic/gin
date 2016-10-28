@@ -28,7 +28,7 @@ func main() {
 			"message": "pong",
 		})
 	})
-	r.Run() // listen and server on 0.0.0.0:8080
+	r.Run() // listen and serve on 0.0.0.0:8080
 }
 ```
 
@@ -317,7 +317,7 @@ func main() {
 		testing.GET("/analytics", analyticsEndpoint)
 	}
 
-	// Listen and server on 0.0.0.0:8080
+	// Listen and serve on 0.0.0.0:8080
 	r.Run(":8080")
 }
 ```
@@ -367,7 +367,7 @@ func main() {
 		}
 	})
 
-	// Listen and server on 0.0.0.0:8080
+	// Listen and serve on 0.0.0.0:8080
 	router.Run(":8080")
 }
 ```
@@ -447,7 +447,7 @@ func main() {
 		c.YAML(http.StatusOK, gin.H{"message": "hey", "status": http.StatusOK})
 	})
 
-	// Listen and server on 0.0.0.0:8080
+	// Listen and serve on 0.0.0.0:8080
 	r.Run(":8080")
 }
 ```
@@ -461,7 +461,7 @@ func main() {
 	router.StaticFS("/more_static", http.Dir("my_file_system"))
 	router.StaticFile("/favicon.ico", "./resources/favicon.ico")
 
-	// Listen and server on 0.0.0.0:8080
+	// Listen and serve on 0.0.0.0:8080
 	router.Run(":8080")
 }
 ```
@@ -593,7 +593,7 @@ func main() {
 		log.Println(example)
 	})
 
-	// Listen and server on 0.0.0.0:8080
+	// Listen and serve on 0.0.0.0:8080
 	r.Run(":8080")
 }
 ```
@@ -631,7 +631,7 @@ func main() {
 		}
 	})
 
-	// Listen and server on 0.0.0.0:8080
+	// Listen and serve on 0.0.0.0:8080
 	r.Run(":8080")
 }
 ```
@@ -664,7 +664,7 @@ func main() {
 		log.Println("Done! in path " + c.Request.URL.Path)
 	})
 
-	// Listen and server on 0.0.0.0:8080
+	// Listen and serve on 0.0.0.0:8080
 	r.Run(":8080")
 }
 ```
