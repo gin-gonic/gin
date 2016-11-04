@@ -63,7 +63,7 @@ func TestDebugPrintRoutes(t *testing.T) {
 	defer teardown()
 
 	debugPrintRoute("GET", "/path/to/route/:param", HandlersChain{func(c *Context) {}, handlerNameTest})
-	assert.Regexp(t, `^\[GIN-debug\] GET    /path/to/route/:param     --> (.*/vendor/)?github.com/gin-gonic/gin.handlerNameTest \(2 handlers\)\n$`, w.String())
+	assert.Regexp(t, `^\[GIN-debug\] GET    /path/to/route/:param     --> (.*/vendor/)?github.com/.*?/gin.handlerNameTest \(2 handlers\)\n$`, w.String())
 }
 
 func setup(w io.Writer) {
