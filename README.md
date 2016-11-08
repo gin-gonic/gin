@@ -18,7 +18,7 @@ $ cat test.go
 ```go
 package main
 
-import "github.com/gin-gonic/gin"
+import "gopkg.in/gin-gonic/gin.v1"
 
 func main() {
 	r := gin.Default()
@@ -87,13 +87,13 @@ BenchmarkZeus_GithubAll 		| 2000 		| 944234 	| 300688 	| 2648
 1. Download and install it:
 
     ```sh
-    $ go get github.com/gin-gonic/gin
+    $ go get gopkg.in/gin-gonic/gin.v1
     ```
 
 2. Import it in your code:
 
     ```go
-    import "github.com/gin-gonic/gin"
+    import "gopkg.in/gin-gonic/gin.v1"
     ```
 
 3. (Optional) Import `net/http`. This is required for example if using constants such as `http.StatusOK`.
@@ -377,8 +377,7 @@ func main() {
 package main
 
 import (
-	"github.com/gin-gonic/gin"
-	"github.com/gin-gonic/gin/binding"
+	"gopkg.in/gin-gonic/gin.v1"
 )
 
 type LoginForm struct {
@@ -712,6 +711,19 @@ endless.ListenAndServe(":4242", router)
 An alternative to endless:
 
 * [manners](https://github.com/braintree/manners): A polite Go HTTP server that shuts down gracefully.
+
+## Contributing 
+
+- With issues:
+  - Use the search tool before opening a new issue.
+  - Please provide source code and commit sha if you found a bug.
+  - Review existing issues and provide feedback or react to them.
+- With pull requests:
+  - Open your pull request against develop
+  - Your pull request should have no more than two commits, if not you should squash them.
+  - It should pass all tests in the available continuous integrations systems such as TravisCI.
+  - You should add/modify tests to cover your proposed code changes.
+  - If your pull request contains a new feature, please document it on the README.
 
 ## Example
 
