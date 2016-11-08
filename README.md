@@ -379,7 +379,6 @@ package main
 
 import (
 	"gopkg.in/gin-gonic/gin.v1"
-	"gopkg.in/gin-gonic/gin.v1/binding"
 )
 
 type LoginForm struct {
