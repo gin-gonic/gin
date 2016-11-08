@@ -19,7 +19,7 @@ $ cat test.go
 ```go
 package main
 
-import "github.com/gin-gonic/gin"
+import "gopkg.in/gin-gonic/gin.v1"
 
 func main() {
 	r := gin.Default()
@@ -378,8 +378,8 @@ func main() {
 package main
 
 import (
-	"github.com/gin-gonic/gin"
-	"github.com/gin-gonic/gin/binding"
+	"gopkg.in/gin-gonic/gin.v1"
+	"gopkg.in/gin-gonic/gin.v1/binding"
 )
 
 type LoginForm struct {
