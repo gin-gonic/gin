@@ -280,8 +280,7 @@ func (n *node) insertChild(numParams uint8, path string, fullPath string, handle
 			panic("wildcards must be named with a non-empty name in path '" + fullPath + "'")
 		}
 
-		// any wildcard is param
-		if c == ':' || c == '*' { // param
+		if c == ':' { // param
 			// split path at the beginning of the wildcard
 			if i > 0 {
 				n.path = path[offset:i]
