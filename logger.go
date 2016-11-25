@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"time"
+	"net"
 )
 
 var (
@@ -40,9 +41,68 @@ func ErrorLoggerT(typ ErrorType) HandlerFunc {
 func Logger() HandlerFunc {
 	return LoggerWithWriter(DefaultWriter)
 }
+func LoggerDisk(LogFile io.Writer) HandlerFunc {
+	return LoggerWithDisk(DefaultWriter,LogFile)
+}
 
 // LoggerWithWriter instance a Logger middleware with the specified writter buffer.
 // Example: os.Stdout, a file opened in write mode, a socket...
+func LoggerWithDisk(out io.Writer, accesslog io.Writer, notlogged ...string) HandlerFunc {
+	var skip map[string]struct{}
+
+	if length := len(notlogged); length > 0 {
+		skip = make(map[string]struct{}, length)
+
+		for _, path := range notlogged {
+			skip[path] = struct{}{}
+		}
+	}
+
+	return func(c *Context) {
+		// Start timer
+		start := time.Now()
+		path := c.Request.URL.Path
+
+		// Process request
+		c.Next()
+
+		// Log only when path is not being skipped
+		if _, ok := skip[path]; !ok {
+			// Stop timer
+			end := time.Now()
+			latency := end.Sub(start)
+
+			clientIP := c.ClientIP()
+			clientHost,_ := net.LookupAddr(clientIP)
+			method := c.Request.Method
+			statusCode := c.Writer.Status()
+			statusColor := colorForStatus(statusCode)
+			methodColor := colorForMethod(method)
+			comment := c.Errors.ByType(ErrorTypePrivate).String()
+
+			fmt.Fprintf(accesslog, "[GIN] %v | %3d | %13v | %s | %s | %-6s %s\n%s",
+				end.Format("2006/01/02 - 15:04:05"),
+				statusCode,
+				latency,
+				clientIP,
+				clientHost[0],
+				method,
+				path,
+				comment,
+			)
+			fmt.Fprintf(out, "[GIN] %v |%s %3d %s| %13v | %s | %s |%s  %s %-6s %s\n%s",
+				end.Format("2006/01/02 - 15:04:05"),
+				statusColor, statusCode, reset,
+				latency,
+				clientIP,
+				clientHost[0],
+				methodColor, reset, method,
+				path,
+				comment,
+			)
+		}
+	}
+}
 func LoggerWithWriter(out io.Writer, notlogged ...string) HandlerFunc {
 	var skip map[string]struct{}
 
@@ -69,17 +129,19 @@ func LoggerWithWriter(out io.Writer, notlogged ...string) HandlerFunc {
 			latency := end.Sub(start)
 
 			clientIP := c.ClientIP()
+			clientHost,_ := net.LookupAddr(clientIP)
 			method := c.Request.Method
 			statusCode := c.Writer.Status()
 			statusColor := colorForStatus(statusCode)
 			methodColor := colorForMethod(method)
 			comment := c.Errors.ByType(ErrorTypePrivate).String()
 
-			fmt.Fprintf(out, "[GIN] %v |%s %3d %s| %13v | %s |%s  %s %-7s %s\n%s",
+			fmt.Fprintf(out, "[GIN] %v |%s %3d %s| %13v | %s | %s |%s  %s %-6s %s\n%s",
 				end.Format("2006/01/02 - 15:04:05"),
 				statusColor, statusCode, reset,
 				latency,
 				clientIP,
+				clientHost[0],
 				methodColor, reset, method,
 				path,
 				comment,
