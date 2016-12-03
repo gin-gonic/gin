@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"runtime"
 	"time"
 
 	"golang.org/x/crypto/ssh/terminal"
@@ -48,8 +49,11 @@ func Logger() HandlerFunc {
 // Example: os.Stdout, a file opened in write mode, a socket...
 func LoggerWithWriter(out io.Writer, notlogged ...string) HandlerFunc {
 	isTerm := true
-	if outFile, ok := out.(*os.File); ok {
-		isTerm = terminal.IsTerminal(int(outFile.Fd()))
+
+	if runtime.GOOS != "appengine" && runtime.GOOS != "netbsd" && runtime.GOOS != "openbsd" {
+		if outFile, ok := out.(*os.File); ok {
+			isTerm = terminal.IsTerminal(int(outFile.Fd()))
+		}
 	}
 
 	var skip map[string]struct{}
