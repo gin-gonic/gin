@@ -1,15 +1,14 @@
 
 #Gin Web Framework
+
 <img align="right" src="https://raw.githubusercontent.com/gin-gonic/gin/master/logo.jpg">
 [![Build Status](https://travis-ci.org/gin-gonic/gin.svg)](https://travis-ci.org/gin-gonic/gin)
-[![Coverage Status](https://coveralls.io/repos/gin-gonic/gin/badge.svg?branch=master)](https://coveralls.io/r/gin-gonic/gin?branch=master)
+[![codecov](https://codecov.io/gh/gin-gonic/gin/branch/master/graph/badge.svg)](https://codecov.io/gh/gin-gonic/gin)
 [![Go Report Card](https://goreportcard.com/badge/github.com/gin-gonic/gin)](https://goreportcard.com/report/github.com/gin-gonic/gin)
 [![GoDoc](https://godoc.org/github.com/gin-gonic/gin?status.svg)](https://godoc.org/github.com/gin-gonic/gin)
 [![Join the chat at https://gitter.im/gin-gonic/gin](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/gin-gonic/gin?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
 Gin is a web framework written in Go (Golang). It features a martini-like API with much better performance, up to 40 times faster thanks to [httprouter](https://github.com/julienschmidt/httprouter). If you need performance and good productivity, you will love Gin.
-
-
 
 ![Gin console logger](https://gin-gonic.github.io/gin/other/console.png)
 
@@ -19,7 +18,7 @@ $ cat test.go
 ```go
 package main
 
-import "github.com/gin-gonic/gin"
+import "gopkg.in/gin-gonic/gin.v1"
 
 func main() {
 	r := gin.Default()
@@ -28,7 +27,7 @@ func main() {
 			"message": "pong",
 		})
 	})
-	r.Run() // listen and server on 0.0.0.0:8080
+	r.Run() // listen and serve on 0.0.0.0:8080
 }
 ```
 
@@ -317,7 +316,7 @@ func main() {
 		testing.GET("/analytics", analyticsEndpoint)
 	}
 
-	// Listen and server on 0.0.0.0:8080
+	// Listen and serve on 0.0.0.0:8080
 	r.Run(":8080")
 }
 ```
@@ -367,7 +366,7 @@ func main() {
 		}
 	})
 
-	// Listen and server on 0.0.0.0:8080
+	// Listen and serve on 0.0.0.0:8080
 	router.Run(":8080")
 }
 ```
@@ -378,8 +377,7 @@ func main() {
 package main
 
 import (
-	"github.com/gin-gonic/gin"
-	"github.com/gin-gonic/gin/binding"
+	"gopkg.in/gin-gonic/gin.v1"
 )
 
 type LoginForm struct {
@@ -447,7 +445,7 @@ func main() {
 		c.YAML(http.StatusOK, gin.H{"message": "hey", "status": http.StatusOK})
 	})
 
-	// Listen and server on 0.0.0.0:8080
+	// Listen and serve on 0.0.0.0:8080
 	r.Run(":8080")
 }
 ```
@@ -461,7 +459,7 @@ func main() {
 	router.StaticFS("/more_static", http.Dir("my_file_system"))
 	router.StaticFile("/favicon.ico", "./resources/favicon.ico")
 
-	// Listen and server on 0.0.0.0:8080
+	// Listen and serve on 0.0.0.0:8080
 	router.Run(":8080")
 }
 ```
@@ -593,7 +591,7 @@ func main() {
 		log.Println(example)
 	})
 
-	// Listen and server on 0.0.0.0:8080
+	// Listen and serve on 0.0.0.0:8080
 	r.Run(":8080")
 }
 ```
@@ -631,7 +629,7 @@ func main() {
 		}
 	})
 
-	// Listen and server on 0.0.0.0:8080
+	// Listen and serve on 0.0.0.0:8080
 	r.Run(":8080")
 }
 ```
@@ -664,7 +662,7 @@ func main() {
 		log.Println("Done! in path " + c.Request.URL.Path)
 	})
 
-	// Listen and server on 0.0.0.0:8080
+	// Listen and serve on 0.0.0.0:8080
 	r.Run(":8080")
 }
 ```

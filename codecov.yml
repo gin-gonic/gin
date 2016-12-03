@@ -1,0 +1,5 @@
+coverage:
+  notify:
+    gitter:
+      default:
+        url: https://webhooks.gitter.im/e/d90dcdeeab2f1e357165
