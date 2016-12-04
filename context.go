@@ -329,11 +329,7 @@ func (c *Context) BindJSON(obj interface{}) error {
 // BindWith binds the passed struct pointer using the specified binding engine.
 // See the binding package.
 func (c *Context) BindWith(obj interface{}, b binding.Binding) error {
-	if err := b.Bind(c.Request, obj); err != nil {
-		c.AbortWithError(400, err).SetType(ErrorTypeBind)
-		return err
-	}
-	return nil
+	return b.Bind(c.Request, obj)
 }
 
 // ClientIP implements a best effort algorithm to return the real client IP, it parses

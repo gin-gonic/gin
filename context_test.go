@@ -703,7 +703,7 @@ func TestContextBindWithJSON(t *testing.T) {
 }
 
 func TestContextBadAutoBind(t *testing.T) {
-	c, w, _ := CreateTestContext()
+	c, _, _ := CreateTestContext()
 	c.Request, _ = http.NewRequest("POST", "http://example.com", bytes.NewBufferString("\"foo\":\"bar\", \"bar\":\"foo\"}"))
 	c.Request.Header.Add("Content-Type", MIMEJSON)
 	var obj struct {
@@ -711,14 +711,9 @@ func TestContextBadAutoBind(t *testing.T) {
 		Bar string `json:"bar"`
 	}
 
-	assert.False(t, c.IsAborted())
 	assert.Error(t, c.Bind(&obj))
-	c.Writer.WriteHeaderNow()
-
 	assert.Empty(t, obj.Bar)
 	assert.Empty(t, obj.Foo)
-	assert.Equal(t, w.Code, 400)
-	assert.True(t, c.IsAborted())
 }
 
 func TestContextGolangContext(t *testing.T) {
