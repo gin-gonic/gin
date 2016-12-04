@@ -8,10 +8,9 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"runtime"
 	"time"
 
-	"golang.org/x/crypto/ssh/terminal"
+	"github.com/mattn/go-isatty"
 )
 
 var (
@@ -50,10 +49,8 @@ func Logger() HandlerFunc {
 func LoggerWithWriter(out io.Writer, notlogged ...string) HandlerFunc {
 	isTerm := true
 
-	if runtime.GOOS != "appengine" && runtime.GOOS != "netbsd" && runtime.GOOS != "openbsd" {
-		if outFile, ok := out.(*os.File); ok {
-			isTerm = terminal.IsTerminal(int(outFile.Fd()))
-		}
+	if w, ok := out.(*os.File); !ok || !isatty.IsTerminal(w.Fd()) {
+		isTerm = false
 	}
 
 	var skip map[string]struct{}
