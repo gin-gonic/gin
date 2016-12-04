@@ -7,7 +7,10 @@ package gin
 import (
 	"fmt"
 	"io"
+	"os"
 	"time"
+
+	"github.com/mattn/go-isatty"
 )
 
 var (
@@ -44,6 +47,12 @@ func Logger() HandlerFunc {
 // LoggerWithWriter instance a Logger middleware with the specified writter buffer.
 // Example: os.Stdout, a file opened in write mode, a socket...
 func LoggerWithWriter(out io.Writer, notlogged ...string) HandlerFunc {
+	isTerm := true
+
+	if w, ok := out.(*os.File); !ok || !isatty.IsTerminal(w.Fd()) {
+		isTerm = false
+	}
+
 	var skip map[string]struct{}
 
 	if length := len(notlogged); length > 0 {
@@ -71,8 +80,11 @@ func LoggerWithWriter(out io.Writer, notlogged ...string) HandlerFunc {
 			clientIP := c.ClientIP()
 			method := c.Request.Method
 			statusCode := c.Writer.Status()
-			statusColor := colorForStatus(statusCode)
-			methodColor := colorForMethod(method)
+			var statusColor, methodColor string
+			if isTerm {
+				statusColor = colorForStatus(statusCode)
+				methodColor = colorForMethod(method)
+			}
 			comment := c.Errors.ByType(ErrorTypePrivate).String()
 
 			fmt.Fprintf(out, "[GIN] %v |%s %3d %s| %13v | %s |%s  %s %-7s %s\n%s",
