@@ -17,7 +17,6 @@ import (
 	"github.com/gin-gonic/gin/binding"
 	"github.com/gin-gonic/gin/render"
 	"github.com/manucorporat/sse"
-	"golang.org/x/net/context"
 )
 
 // Content-Type MIME of the most common data formats
@@ -49,8 +48,6 @@ type Context struct {
 	Errors   errorMsgs
 	Accepted []string
 }
-
-var _ context.Context = &Context{}
 
 /************************************/
 /********** CONTEXT CREATION ********/
