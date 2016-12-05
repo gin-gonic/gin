@@ -353,9 +353,17 @@ func (c *Context) ClientIP() string {
 			return clientIP
 		}
 	}
+
+	if c.engine.AppEngine {
+		if addr := c.Request.Header.Get("X-Appengine-Remote-Addr"); addr != "" {
+			return addr
+		}
+	}
+
 	if ip, _, err := net.SplitHostPort(strings.TrimSpace(c.Request.RemoteAddr)); err == nil {
 		return ip
 	}
+
 	return ""
 }
 
