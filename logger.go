@@ -92,7 +92,7 @@ func LoggerWithWriter(out io.Writer, notlogged ...string) HandlerFunc {
 				statusColor, statusCode, reset,
 				latency,
 				clientIP,
-				methodColor, reset, method,
+				methodColor, method, reset,
 				path,
 				comment,
 			)
