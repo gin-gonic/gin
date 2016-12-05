@@ -78,6 +78,9 @@ type (
 		// handler.
 		HandleMethodNotAllowed bool
 		ForwardedByClientIP    bool
+		// If enabled, the path using RawPath in net.url.URL.RawPath
+		// RawPath dose not decode path.
+		UseRawPath	       bool
 	}
 )
 
@@ -102,6 +105,7 @@ func New() *Engine {
 		HandleMethodNotAllowed: false,
 		ForwardedByClientIP:    true,
 		trees:                  make(methodTrees, 0, 9),
+		UseRawPath:		false,
 	}
 	engine.RouterGroup.engine = engine
 	engine.pool.New = func() interface{} {
@@ -270,6 +274,10 @@ func (engine *Engine) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 func (engine *Engine) handleHTTPRequest(context *Context) {
 	httpMethod := context.Request.Method
 	path := context.Request.URL.Path
+	if (engine.UseRawPath && len(context.Request.URL.RawPath) > 0 ) {
+		path = context.Request.URL.RawPath
+	}
+
 
 	// Find root of the tree for the given HTTP method
 	t := engine.trees
