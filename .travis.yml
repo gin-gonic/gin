@@ -1,11 +1,16 @@
 language: go
 sudo: false
 go:
-  - 1.4
-  - 1.5.4
   - 1.6.4
   - 1.7.4
   - tip
+
+git:
+  depth: 3
+
+install:
+  - go get -v github.com/kardianos/govendor
+  - govendor sync
 
 script:
   - go test -v -covermode=count -coverprofile=coverage.out
