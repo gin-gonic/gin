@@ -376,7 +376,7 @@ func (c *Context) requestHeader(key string) string {
 /************************************/
 
 func (c *Context) Status(code int) {
-	c.writermem.WriteHeader(code)
+	c.Writer.WriteHeader(code)
 }
 
 // Header is a intelligent shortcut for c.Writer.Header().Set(key, value)
