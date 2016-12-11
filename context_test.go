@@ -358,9 +358,9 @@ func TestContextRenderJSON(t *testing.T) {
 
 	c.JSON(201, H{"foo": "bar"})
 
-	assert.Equal(t, w.Code, 201)
-	assert.Equal(t, w.Body.String(), "{\"foo\":\"bar\"}\n")
-	assert.Equal(t, w.HeaderMap.Get("Content-Type"), "application/json; charset=utf-8")
+	assert.Equal(t, 201, w.Code)
+	assert.Equal(t, "{\"foo\":\"bar\"}", w.Body.String())
+	assert.Equal(t, "application/json; charset=utf-8", w.HeaderMap.Get("Content-Type"))
 }
 
 // Tests that the response is serialized as JSON
@@ -372,9 +372,9 @@ func TestContextRenderAPIJSON(t *testing.T) {
 	c.Header("Content-Type", "application/vnd.api+json")
 	c.JSON(201, H{"foo": "bar"})
 
-	assert.Equal(t, w.Code, 201)
-	assert.Equal(t, w.Body.String(), "{\"foo\":\"bar\"}\n")
-	assert.Equal(t, w.HeaderMap.Get("Content-Type"), "application/vnd.api+json")
+	assert.Equal(t, 201, w.Code)
+	assert.Equal(t, "{\"foo\":\"bar\"}", w.Body.String())
+	assert.Equal(t, "application/vnd.api+json", w.HeaderMap.Get("Content-Type"))
 }
 
 // Tests that the response is serialized as JSON
