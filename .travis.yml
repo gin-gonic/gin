@@ -8,6 +8,7 @@ go:
   - tip
 
 install:
+  - test -d ${GOPATH}/bin || mkdir -p ${GOPATH}/bin
   - wget https://raw.githubusercontent.com/appleboy/golang-testing/master/coverage.sh -O ${GOPATH}/bin/coverage
   - chmod +x ${GOPATH}/bin/coverage
   # install dependency tools
