@@ -13,6 +13,7 @@ install:
   - chmod +x ${GOPATH}/bin/coverage
   # install dependency tools
   - coverage tool
+  - go get -d -t -v ./...
 
 script:
   - coverage testing
