@@ -108,6 +108,9 @@ BenchmarkZeus_GithubAll 		| 2000 		| 944234 	| 300688 	| 2648
 
 ```go
 func main() {
+	// Disable Console Color
+	// gin.DisableConsoleColor()
+
 	// Creates a gin router with default middleware:
 	// logger and recovery (crash-free) middleware
 	router := gin.Default()

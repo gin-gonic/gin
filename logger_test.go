@@ -132,3 +132,10 @@ func TestSkippingPaths(t *testing.T) {
 	performRequest(router, "GET", "/skipped")
 	assert.Contains(t, buffer.String(), "")
 }
+
+func TestDisableConsoleColor(t *testing.T) {
+	New()
+	assert.False(t, disableColor)
+	DisableConsoleColor()
+	assert.True(t, disableColor)
+}
