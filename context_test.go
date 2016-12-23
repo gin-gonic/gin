@@ -347,6 +347,22 @@ func TestContextGetCookie(t *testing.T) {
 	assert.Equal(t, cookie, "gin")
 }
 
+type panicRender struct {
+	err error
+}
+
+func (r panicRender) Render(w http.ResponseWriter) error {
+	return r.err
+}
+
+// Tests that render fail and return a error
+func TestContextRenderWith(t *testing.T) {
+	c, _, _ := CreateTestContext()
+	excepted := errors.New("render fail")
+	actual := c.RenderWith(200, panicRender{err: excepted})
+	assert.Equal(t, actual, actual)
+}
+
 // Tests that the response is serialized as JSON
 // and Content-Type is set to application/json
 func TestContextRenderJSON(t *testing.T) {
