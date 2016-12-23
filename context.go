@@ -422,6 +422,11 @@ func (c *Context) Cookie(name string) (string, error) {
 	return val, nil
 }
 
+func (c *Context) RenderWith(code int, r render.Render) error {
+	c.Status(code)
+	return r.Render(c.Writer)
+}
+
 func (c *Context) Render(code int, r render.Render) {
 	c.Status(code)
 	if err := r.Render(c.Writer); err != nil {
