@@ -17,7 +17,10 @@ import (
 
 	"github.com/manucorporat/sse"
 	"github.com/stretchr/testify/assert"
+	"golang.org/x/net/context"
 )
+
+var _ context.Context = &Context{}
 
 // Unit tests TODO
 // func (c *Context) File(filepath string) {
@@ -50,6 +53,37 @@ func must(err error) {
 	}
 }
 
+func TestContextFormFile(t *testing.T) {
+	buf := new(bytes.Buffer)
+	mw := multipart.NewWriter(buf)
+	w, err := mw.CreateFormFile("file", "test")
+	if assert.NoError(t, err) {
+		w.Write([]byte("test"))
+	}
+	mw.Close()
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	c.Request, _ = http.NewRequest("POST", "/", buf)
+	c.Request.Header.Set("Content-Type", mw.FormDataContentType())
+	f, err := c.FormFile("file")
+	if assert.NoError(t, err) {
+		assert.Equal(t, "test", f.Filename)
+	}
+}
+
+func TestContextMultipartForm(t *testing.T) {
+	buf := new(bytes.Buffer)
+	mw := multipart.NewWriter(buf)
+	mw.WriteField("foo", "bar")
+	mw.Close()
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	c.Request, _ = http.NewRequest("POST", "/", buf)
+	c.Request.Header.Set("Content-Type", mw.FormDataContentType())
+	f, err := c.MultipartForm()
+	if assert.NoError(t, err) {
+		assert.NotNil(t, f)
+	}
+}
+
 func TestContextReset(t *testing.T) {
 	router := New()
 	c := router.allocateContext()
@@ -74,7 +108,7 @@ func TestContextReset(t *testing.T) {
 }
 
 func TestContextHandlers(t *testing.T) {
-	c, _, _ := CreateTestContext()
+	c, _ := CreateTestContext(httptest.NewRecorder())
 	assert.Nil(t, c.handlers)
 	assert.Nil(t, c.handlers.Last())
 
@@ -95,7 +129,7 @@ func TestContextHandlers(t *testing.T) {
 // TestContextSetGet tests that a parameter is set correctly on the
 // current context and can be retrieved using Get.
 func TestContextSetGet(t *testing.T) {
-	c, _, _ := CreateTestContext()
+	c, _ := CreateTestContext(httptest.NewRecorder())
 	c.Set("foo", "bar")
 
 	value, err := c.Get("foo")
@@ -111,7 +145,7 @@ func TestContextSetGet(t *testing.T) {
 }
 
 func TestContextSetGetValues(t *testing.T) {
-	c, _, _ := CreateTestContext()
+	c, _ := CreateTestContext(httptest.NewRecorder())
 	c.Set("string", "this is a string")
 	c.Set("int32", int32(-42))
 	c.Set("int64", int64(42424242424242))
@@ -132,7 +166,7 @@ func TestContextSetGetValues(t *testing.T) {
 }
 
 func TestContextCopy(t *testing.T) {
-	c, _, _ := CreateTestContext()
+	c, _ := CreateTestContext(httptest.NewRecorder())
 	c.index = 2
 	c.Request, _ = http.NewRequest("POST", "/hola", nil)
 	c.handlers = HandlersChain{func(c *Context) {}}
@@ -151,7 +185,7 @@ func TestContextCopy(t *testing.T) {
 }
 
 func TestContextHandlerName(t *testing.T) {
-	c, _, _ := CreateTestContext()
+	c, _ := CreateTestContext(httptest.NewRecorder())
 	c.handlers = HandlersChain{func(c *Context) {}, handlerNameTest}
 
 	assert.Regexp(t, "^(.*/vendor/)?github.com/gin-gonic/gin.handlerNameTest$", c.HandlerName())
@@ -162,7 +196,7 @@ func handlerNameTest(c *Context) {
 }
 
 func TestContextQuery(t *testing.T) {
-	c, _, _ := CreateTestContext()
+	c, _ := CreateTestContext(httptest.NewRecorder())
 	c.Request, _ = http.NewRequest("GET", "http://example.com/?foo=bar&page=10&id=", nil)
 
 	value, ok := c.GetQuery("foo")
@@ -197,7 +231,7 @@ func TestContextQuery(t *testing.T) {
 }
 
 func TestContextQueryAndPostForm(t *testing.T) {
-	c, _, _ := CreateTestContext()
+	c, _ := CreateTestContext(httptest.NewRecorder())
 	body := bytes.NewBufferString("foo=bar&page=11&both=&foo=second")
 	c.Request, _ = http.NewRequest("POST", "/?both=GET&id=main&id=omit&array[]=first&array[]=second", body)
 	c.Request.Header.Add("Content-Type", MIMEPOSTForm)
@@ -270,7 +304,7 @@ func TestContextQueryAndPostForm(t *testing.T) {
 }
 
 func TestContextPostFormMultipart(t *testing.T) {
-	c, _, _ := CreateTestContext()
+	c, _ := CreateTestContext(httptest.NewRecorder())
 	c.Request = createMultipartRequest()
 
 	var obj struct {
@@ -334,13 +368,13 @@ func TestContextPostFormMultipart(t *testing.T) {
 }
 
 func TestContextSetCookie(t *testing.T) {
-	c, _, _ := CreateTestContext()
+	c, _ := CreateTestContext(httptest.NewRecorder())
 	c.SetCookie("user", "gin", 1, "/", "localhost", true, true)
 	assert.Equal(t, c.Writer.Header().Get("Set-Cookie"), "user=gin; Path=/; Domain=localhost; Max-Age=1; HttpOnly; Secure")
 }
 
 func TestContextGetCookie(t *testing.T) {
-	c, _, _ := CreateTestContext()
+	c, _ := CreateTestContext(httptest.NewRecorder())
 	c.Request, _ = http.NewRequest("GET", "/get", nil)
 	c.Request.Header.Set("Cookie", "user=gin")
 	cookie, _ := c.Cookie("user")
@@ -350,30 +384,36 @@ func TestContextGetCookie(t *testing.T) {
 // Tests that the response is serialized as JSON
 // and Content-Type is set to application/json
 func TestContextRenderJSON(t *testing.T) {
-	c, w, _ := CreateTestContext()
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
+
 	c.JSON(201, H{"foo": "bar"})
 
-	assert.Equal(t, w.Code, 201)
-	assert.Equal(t, w.Body.String(), "{\"foo\":\"bar\"}\n")
-	assert.Equal(t, w.HeaderMap.Get("Content-Type"), "application/json; charset=utf-8")
+	assert.Equal(t, 201, w.Code)
+	assert.Equal(t, "{\"foo\":\"bar\"}", w.Body.String())
+	assert.Equal(t, "application/json; charset=utf-8", w.HeaderMap.Get("Content-Type"))
 }
 
 // Tests that the response is serialized as JSON
 // we change the content-type before
 func TestContextRenderAPIJSON(t *testing.T) {
-	c, w, _ := CreateTestContext()
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
+
 	c.Header("Content-Type", "application/vnd.api+json")
 	c.JSON(201, H{"foo": "bar"})
 
-	assert.Equal(t, w.Code, 201)
-	assert.Equal(t, w.Body.String(), "{\"foo\":\"bar\"}\n")
-	assert.Equal(t, w.HeaderMap.Get("Content-Type"), "application/vnd.api+json")
+	assert.Equal(t, 201, w.Code)
+	assert.Equal(t, "{\"foo\":\"bar\"}", w.Body.String())
+	assert.Equal(t, "application/vnd.api+json", w.HeaderMap.Get("Content-Type"))
 }
 
 // Tests that the response is serialized as JSON
 // and Content-Type is set to application/json
 func TestContextRenderIndentedJSON(t *testing.T) {
-	c, w, _ := CreateTestContext()
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
+
 	c.IndentedJSON(201, H{"foo": "bar", "bar": "foo", "nested": H{"foo": "bar"}})
 
 	assert.Equal(t, w.Code, 201)
@@ -384,7 +424,8 @@ func TestContextRenderIndentedJSON(t *testing.T) {
 // Tests that the response executes the templates
 // and responds with Content-Type set to text/html
 func TestContextRenderHTML(t *testing.T) {
-	c, w, router := CreateTestContext()
+	w := httptest.NewRecorder()
+	c, router := CreateTestContext(w)
 	templ := template.Must(template.New("t").Parse(`Hello {{.name}}`))
 	router.SetHTMLTemplate(templ)
 
@@ -398,7 +439,9 @@ func TestContextRenderHTML(t *testing.T) {
 // TestContextXML tests that the response is serialized as XML
 // and Content-Type is set to application/xml
 func TestContextRenderXML(t *testing.T) {
-	c, w, _ := CreateTestContext()
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
+
 	c.XML(201, H{"foo": "bar"})
 
 	assert.Equal(t, w.Code, 201)
@@ -409,7 +452,9 @@ func TestContextRenderXML(t *testing.T) {
 // TestContextString tests that the response is returned
 // with Content-Type set to text/plain
 func TestContextRenderString(t *testing.T) {
-	c, w, _ := CreateTestContext()
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
+
 	c.String(201, "test %s %d", "string", 2)
 
 	assert.Equal(t, w.Code, 201)
@@ -420,7 +465,9 @@ func TestContextRenderString(t *testing.T) {
 // TestContextString tests that the response is returned
 // with Content-Type set to text/html
 func TestContextRenderHTMLString(t *testing.T) {
-	c, w, _ := CreateTestContext()
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
+
 	c.Header("Content-Type", "text/html; charset=utf-8")
 	c.String(201, "<html>%s %d</html>", "string", 3)
 
@@ -432,7 +479,9 @@ func TestContextRenderHTMLString(t *testing.T) {
 // TestContextData tests that the response can be written from `bytesting`
 // with specified MIME type
 func TestContextRenderData(t *testing.T) {
-	c, w, _ := CreateTestContext()
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
+
 	c.Data(201, "text/csv", []byte(`foo,bar`))
 
 	assert.Equal(t, w.Code, 201)
@@ -441,7 +490,9 @@ func TestContextRenderData(t *testing.T) {
 }
 
 func TestContextRenderSSE(t *testing.T) {
-	c, w, _ := CreateTestContext()
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
+
 	c.SSEvent("float", 1.5)
 	c.Render(-1, sse.Event{
 		Id:   "123",
@@ -456,7 +507,9 @@ func TestContextRenderSSE(t *testing.T) {
 }
 
 func TestContextRenderFile(t *testing.T) {
-	c, w, _ := CreateTestContext()
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
+
 	c.Request, _ = http.NewRequest("GET", "/", nil)
 	c.File("./gin.go")
 
@@ -468,7 +521,9 @@ func TestContextRenderFile(t *testing.T) {
 // TestContextRenderYAML tests that the response is serialized as YAML
 // and Content-Type is set to application/x-yaml
 func TestContextRenderYAML(t *testing.T) {
-	c, w, _ := CreateTestContext()
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
+
 	c.YAML(201, H{"foo": "bar"})
 
 	assert.Equal(t, w.Code, 201)
@@ -477,7 +532,7 @@ func TestContextRenderYAML(t *testing.T) {
 }
 
 func TestContextHeaders(t *testing.T) {
-	c, _, _ := CreateTestContext()
+	c, _ := CreateTestContext(httptest.NewRecorder())
 	c.Header("Content-Type", "text/plain")
 	c.Header("X-Custom", "value")
 
@@ -494,7 +549,9 @@ func TestContextHeaders(t *testing.T) {
 
 // TODO
 func TestContextRenderRedirectWithRelativePath(t *testing.T) {
-	c, w, _ := CreateTestContext()
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
+
 	c.Request, _ = http.NewRequest("POST", "http://example.com", nil)
 	assert.Panics(t, func() { c.Redirect(299, "/new_path") })
 	assert.Panics(t, func() { c.Redirect(309, "/new_path") })
@@ -506,7 +563,9 @@ func TestContextRenderRedirectWithRelativePath(t *testing.T) {
 }
 
 func TestContextRenderRedirectWithAbsolutePath(t *testing.T) {
-	c, w, _ := CreateTestContext()
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
+
 	c.Request, _ = http.NewRequest("POST", "http://example.com", nil)
 	c.Redirect(302, "http://google.com")
 	c.Writer.WriteHeaderNow()
@@ -516,7 +575,9 @@ func TestContextRenderRedirectWithAbsolutePath(t *testing.T) {
 }
 
 func TestContextRenderRedirectWith201(t *testing.T) {
-	c, w, _ := CreateTestContext()
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
+
 	c.Request, _ = http.NewRequest("POST", "http://example.com", nil)
 	c.Redirect(201, "/resource")
 	c.Writer.WriteHeaderNow()
@@ -526,7 +587,7 @@ func TestContextRenderRedirectWith201(t *testing.T) {
 }
 
 func TestContextRenderRedirectAll(t *testing.T) {
-	c, _, _ := CreateTestContext()
+	c, _ := CreateTestContext(httptest.NewRecorder())
 	c.Request, _ = http.NewRequest("POST", "http://example.com", nil)
 	assert.Panics(t, func() { c.Redirect(200, "/resource") })
 	assert.Panics(t, func() { c.Redirect(202, "/resource") })
@@ -537,7 +598,7 @@ func TestContextRenderRedirectAll(t *testing.T) {
 }
 
 func TestContextNegotiationFormat(t *testing.T) {
-	c, _, _ := CreateTestContext()
+	c, _ := CreateTestContext(httptest.NewRecorder())
 	c.Request, _ = http.NewRequest("POST", "", nil)
 
 	assert.Panics(t, func() { c.NegotiateFormat() })
@@ -546,7 +607,7 @@ func TestContextNegotiationFormat(t *testing.T) {
 }
 
 func TestContextNegotiationFormatWithAccept(t *testing.T) {
-	c, _, _ := CreateTestContext()
+	c, _ := CreateTestContext(httptest.NewRecorder())
 	c.Request, _ = http.NewRequest("POST", "/", nil)
 	c.Request.Header.Add("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8")
 
@@ -556,7 +617,7 @@ func TestContextNegotiationFormatWithAccept(t *testing.T) {
 }
 
 func TestContextNegotiationFormatCustum(t *testing.T) {
-	c, _, _ := CreateTestContext()
+	c, _ := CreateTestContext(httptest.NewRecorder())
 	c.Request, _ = http.NewRequest("POST", "/", nil)
 	c.Request.Header.Add("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8")
 
@@ -569,7 +630,7 @@ func TestContextNegotiationFormatCustum(t *testing.T) {
 }
 
 func TestContextIsAborted(t *testing.T) {
-	c, _, _ := CreateTestContext()
+	c, _ := CreateTestContext(httptest.NewRecorder())
 	assert.False(t, c.IsAborted())
 
 	c.Abort()
@@ -585,7 +646,9 @@ func TestContextIsAborted(t *testing.T) {
 // TestContextData tests that the response can be written from `bytesting`
 // with specified MIME type
 func TestContextAbortWithStatus(t *testing.T) {
-	c, w, _ := CreateTestContext()
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
+
 	c.index = 4
 	c.AbortWithStatus(401)
 
@@ -596,7 +659,7 @@ func TestContextAbortWithStatus(t *testing.T) {
 }
 
 func TestContextError(t *testing.T) {
-	c, _, _ := CreateTestContext()
+	c, _ := CreateTestContext(httptest.NewRecorder())
 	assert.Empty(t, c.Errors)
 
 	c.Error(errors.New("first error"))
@@ -622,7 +685,7 @@ func TestContextError(t *testing.T) {
 }
 
 func TestContextTypedError(t *testing.T) {
-	c, _, _ := CreateTestContext()
+	c, _ := CreateTestContext(httptest.NewRecorder())
 	c.Error(errors.New("externo 0")).SetType(ErrorTypePublic)
 	c.Error(errors.New("interno 0")).SetType(ErrorTypePrivate)
 
@@ -636,7 +699,9 @@ func TestContextTypedError(t *testing.T) {
 }
 
 func TestContextAbortWithError(t *testing.T) {
-	c, w, _ := CreateTestContext()
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
+
 	c.AbortWithError(401, errors.New("bad input")).SetMeta("some input")
 
 	assert.Equal(t, w.Code, 401)
@@ -645,11 +710,12 @@ func TestContextAbortWithError(t *testing.T) {
 }
 
 func TestContextClientIP(t *testing.T) {
-	c, _, _ := CreateTestContext()
+	c, _ := CreateTestContext(httptest.NewRecorder())
 	c.Request, _ = http.NewRequest("POST", "/", nil)
 
 	c.Request.Header.Set("X-Real-IP", " 10.10.10.10  ")
 	c.Request.Header.Set("X-Forwarded-For", "  20.20.20.20, 30.30.30.30")
+	c.Request.Header.Set("X-Appengine-Remote-Addr", "50.50.50.50")
 	c.Request.RemoteAddr = "  40.40.40.40:42123 "
 
 	assert.Equal(t, c.ClientIP(), "10.10.10.10")
@@ -661,11 +727,19 @@ func TestContextClientIP(t *testing.T) {
 	assert.Equal(t, c.ClientIP(), "30.30.30.30")
 
 	c.Request.Header.Del("X-Forwarded-For")
+	c.engine.AppEngine = true
+	assert.Equal(t, c.ClientIP(), "50.50.50.50")
+
+	c.Request.Header.Del("X-Appengine-Remote-Addr")
 	assert.Equal(t, c.ClientIP(), "40.40.40.40")
+
+	// no port
+	c.Request.RemoteAddr = "50.50.50.50"
+	assert.Equal(t, c.ClientIP(), "")
 }
 
 func TestContextContentType(t *testing.T) {
-	c, _, _ := CreateTestContext()
+	c, _ := CreateTestContext(httptest.NewRecorder())
 	c.Request, _ = http.NewRequest("POST", "/", nil)
 	c.Request.Header.Set("Content-Type", "application/json; charset=utf-8")
 
@@ -673,7 +747,7 @@ func TestContextContentType(t *testing.T) {
 }
 
 func TestContextAutoBindJSON(t *testing.T) {
-	c, _, _ := CreateTestContext()
+	c, _ := CreateTestContext(httptest.NewRecorder())
 	c.Request, _ = http.NewRequest("POST", "/", bytes.NewBufferString("{\"foo\":\"bar\", \"bar\":\"foo\"}"))
 	c.Request.Header.Add("Content-Type", MIMEJSON)
 
@@ -688,7 +762,9 @@ func TestContextAutoBindJSON(t *testing.T) {
 }
 
 func TestContextBindWithJSON(t *testing.T) {
-	c, w, _ := CreateTestContext()
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
+
 	c.Request, _ = http.NewRequest("POST", "/", bytes.NewBufferString("{\"foo\":\"bar\", \"bar\":\"foo\"}"))
 	c.Request.Header.Add("Content-Type", MIMEXML) // set fake content-type
 
@@ -703,7 +779,9 @@ func TestContextBindWithJSON(t *testing.T) {
 }
 
 func TestContextBadAutoBind(t *testing.T) {
-	c, w, _ := CreateTestContext()
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
+
 	c.Request, _ = http.NewRequest("POST", "http://example.com", bytes.NewBufferString("\"foo\":\"bar\", \"bar\":\"foo\"}"))
 	c.Request.Header.Add("Content-Type", MIMEJSON)
 	var obj struct {
@@ -722,7 +800,7 @@ func TestContextBadAutoBind(t *testing.T) {
 }
 
 func TestContextGolangContext(t *testing.T) {
-	c, _, _ := CreateTestContext()
+	c, _ := CreateTestContext(httptest.NewRecorder())
 	c.Request, _ = http.NewRequest("POST", "/", bytes.NewBufferString("{\"foo\":\"bar\", \"bar\":\"foo\"}"))
 	assert.NoError(t, c.Err())
 	assert.Nil(t, c.Done())

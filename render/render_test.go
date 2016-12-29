@@ -25,8 +25,8 @@ func TestRenderJSON(t *testing.T) {
 	err := (JSON{data}).Render(w)
 
 	assert.NoError(t, err)
-	assert.Equal(t, w.Body.String(), "{\"foo\":\"bar\"}\n")
-	assert.Equal(t, w.Header().Get("Content-Type"), "application/json; charset=utf-8")
+	assert.Equal(t, "{\"foo\":\"bar\"}", w.Body.String())
+	assert.Equal(t, "application/json; charset=utf-8", w.Header().Get("Content-Type"))
 }
 
 func TestRenderIndentedJSON(t *testing.T) {

@@ -15,10 +15,11 @@ import (
 )
 
 // Version is Framework's version
-const Version = "v1.0rc2"
+const Version = "v1.1.4"
 
 var default404Body = []byte("404 page not found")
 var default405Body = []byte("405 method not allowed")
+var defaultAppEngine bool
 
 type HandlerFunc func(*Context)
 type HandlersChain []HandlerFunc
@@ -78,8 +79,13 @@ type (
 		// handler.
 		HandleMethodNotAllowed bool
 		ForwardedByClientIP    bool
+
 		UseRawPath             bool
 		UnescapePathValues     bool
+
+		// #726 #755 If enabled, it will thrust some headers starting with
+		// 'X-AppEngine...' for better integration with that PaaS.
+		AppEngine bool
 	}
 )
 
@@ -103,6 +109,7 @@ func New() *Engine {
 		RedirectFixedPath:      false,
 		HandleMethodNotAllowed: false,
 		ForwardedByClientIP:    true,
+		AppEngine:              defaultAppEngine,
 		trees:                  make(methodTrees, 0, 9),
 	}
 	engine.RouterGroup.engine = engine
