@@ -102,6 +102,13 @@ BenchmarkZeus_GithubAll 		| 2000 		| 944234 	| 300688 	| 2648
     import "net/http"
     ```
 
+4. (Optional) Use latest changes (note: they may be broken and/or unstable):
+    ```sh
+    $ GIN_PATH=$GOPATH/src/gopkg.in/gin-gonic/gin.v1
+    $ git -C $GIN_PATH checkout develop
+    $ git -C $GIN_PATH pull origin develop
+    ```
+
 ## API Examples
 
 #### Using GET, POST, PUT, PATCH, DELETE and OPTIONS
