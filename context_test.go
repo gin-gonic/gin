@@ -814,3 +814,25 @@ func TestContextGolangContext(t *testing.T) {
 	assert.Equal(t, c.Value("foo"), "bar")
 	assert.Nil(t, c.Value(1))
 }
+
+func TestWebsocketsRequired(t *testing.T) {
+	// Example request from spec: https://tools.ietf.org/html/rfc6455#section-1.2
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	c.Request, _ = http.NewRequest("GET", "/chat", nil)
+	c.Request.Header.Set("Host", "server.example.com")
+	c.Request.Header.Set("Upgrade", "websocket")
+	c.Request.Header.Set("Connection", "Upgrade")
+	c.Request.Header.Set("Sec-WebSocket-Key", "dGhlIHNhbXBsZSBub25jZQ==")
+	c.Request.Header.Set("Origin", "http://example.com")
+	c.Request.Header.Set("Sec-WebSocket-Protocol", "chat, superchat")
+	c.Request.Header.Set("Sec-WebSocket-Version", "13")
+
+	assert.True(t, c.IsWebsocket())
+
+	// Normal request, no websocket required.
+	c, _ = CreateTestContext(httptest.NewRecorder())
+	c.Request, _ = http.NewRequest("GET", "/chat", nil)
+	c.Request.Header.Set("Host", "server.example.com")
+
+	assert.False(t, c.IsWebsocket())
+}
