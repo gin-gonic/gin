@@ -17,7 +17,7 @@ import (
 
 	"github.com/gin-gonic/gin/binding"
 	"github.com/gin-gonic/gin/render"
-	"github.com/manucorporat/sse"
+	"gopkg.in/gin-contrib/sse.v0"
 )
 
 // Content-Type MIME of the most common data formats
@@ -404,6 +404,19 @@ func (c *Context) requestHeader(key string) string {
 /******** RESPONSE RENDERING ********/
 /************************************/
 
+// bodyAllowedForStatus is a copy of http.bodyAllowedForStatus non-exported function
+func bodyAllowedForStatus(status int) bool {
+	switch {
+	case status >= 100 && status <= 199:
+		return false
+	case status == 204:
+		return false
+	case status == 304:
+		return false
+	}
+	return true
+}
+
 func (c *Context) Status(code int) {
 	c.writermem.WriteHeader(code)
 }
@@ -453,6 +466,13 @@ func (c *Context) Cookie(name string) (string, error) {
 
 func (c *Context) Render(code int, r render.Render) {
 	c.Status(code)
+
+	if !bodyAllowedForStatus(code) {
+		r.WriteContentType(c.Writer)
+		c.Writer.WriteHeaderNow()
+		return
+	}
+
 	if err := r.Render(c.Writer); err != nil {
 		panic(err)
 	}
@@ -477,10 +497,7 @@ func (c *Context) IndentedJSON(code int, obj interface{}) {
 // JSON serializes the given struct as JSON into the response body.
 // It also sets the Content-Type as "application/json".
 func (c *Context) JSON(code int, obj interface{}) {
-	c.Status(code)
-	if err := render.WriteJSON(c.Writer, obj); err != nil {
-		panic(err)
-	}
+	c.Render(code, render.JSON{Data: obj})
 }
 
 // XML serializes the given struct as XML into the response body.
@@ -496,8 +513,7 @@ func (c *Context) YAML(code int, obj interface{}) {
 
 // String writes the given string into the response body.
 func (c *Context) String(code int, format string, values ...interface{}) {
-	c.Status(code)
-	render.WriteString(c.Writer, format, values)
+	c.Render(code, render.String{Format: format, Data: values})
 }
 
 // Redirect returns a HTTP redirect to the specific location.
