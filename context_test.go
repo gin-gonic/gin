@@ -718,24 +718,25 @@ func TestContextClientIP(t *testing.T) {
 	c.Request.Header.Set("X-Appengine-Remote-Addr", "50.50.50.50")
 	c.Request.RemoteAddr = "  40.40.40.40:42123 "
 
-	assert.Equal(t, c.ClientIP(), "10.10.10.10")
-
-	c.Request.Header.Del("X-Real-IP")
-	assert.Equal(t, c.ClientIP(), "20.20.20.20")
-
-	c.Request.Header.Set("X-Forwarded-For", "30.30.30.30  ")
-	assert.Equal(t, c.ClientIP(), "30.30.30.30")
+	assert.Equal(t, "20.20.20.20", c.ClientIP())
 
 	c.Request.Header.Del("X-Forwarded-For")
+	assert.Equal(t, "10.10.10.10", c.ClientIP())
+
+	c.Request.Header.Set("X-Forwarded-For", "30.30.30.30  ")
+	assert.Equal(t, "30.30.30.30", c.ClientIP())
+
+	c.Request.Header.Del("X-Forwarded-For")
+	c.Request.Header.Del("X-Real-IP")
 	c.engine.AppEngine = true
-	assert.Equal(t, c.ClientIP(), "50.50.50.50")
+	assert.Equal(t, "50.50.50.50", c.ClientIP())
 
 	c.Request.Header.Del("X-Appengine-Remote-Addr")
-	assert.Equal(t, c.ClientIP(), "40.40.40.40")
+	assert.Equal(t, "40.40.40.40", c.ClientIP())
 
 	// no port
 	c.Request.RemoteAddr = "50.50.50.50"
-	assert.Equal(t, c.ClientIP(), "")
+	assert.Equal(t, "", c.ClientIP())
 }
 
 func TestContextContentType(t *testing.T) {
