@@ -111,7 +111,7 @@ BenchmarkZeus_GithubAll 		| 2000 		| 944234 	| 300688 	| 2648
 
 ## API Examples
 
-#### Using GET, POST, PUT, PATCH, DELETE and OPTIONS
+### Using GET, POST, PUT, PATCH, DELETE and OPTIONS
 
 ```go
 func main() {
@@ -137,7 +137,7 @@ func main() {
 }
 ```
 
-#### Parameters in path
+### Parameters in path
 
 ```go
 func main() {
@@ -162,7 +162,7 @@ func main() {
 }
 ```
 
-#### Querystring parameters
+### Querystring parameters
 ```go
 func main() {
 	router := gin.Default()
@@ -229,34 +229,66 @@ func main() {
 id: 1234; page: 1; name: manu; message: this_is_great
 ```
 
-### Another example: upload file
+### Upload files
 
-References issue [#548](https://github.com/gin-gonic/gin/issues/548).
+#### Single file
+
+References issue [#774](https://github.com/gin-gonic/gin/issues/774) and detail [example code](examples/upload-file/single).
 
 ```go
 func main() {
 	router := gin.Default()
-
 	router.POST("/upload", func(c *gin.Context) {
+		// single file
+		file, _ := c.FormFile("file")
+		log.Println(file.Filename)
 
-	        file, header , err := c.Request.FormFile("upload")
-	        filename := header.Filename
-	        fmt.Println(header.Filename)
-	        out, err := os.Create("./tmp/"+filename+".png")
-	        if err != nil {
-	            log.Fatal(err)
-	        }
-	        defer out.Close()
-	        _, err = io.Copy(out, file)
-	        if err != nil {
-	            log.Fatal(err)
-	        }   
+		c.String(http.StatusOK, fmt.Printf("'%s' uploaded!", file.Filename))
 	})
 	router.Run(":8080")
 }
 ```
 
-#### Grouping routes
+How to `curl`:
+
+```bash
+curl -X POST http://localhost:8080/upload \
+  -F "file=@/Users/appleboy/test.zip" \
+  -H "Content-Type: multipart/form-data"
+```
+
+#### Multiple files
+
+See the detail [example code](examples/upload-file/multiple).
+
+```go
+func main() {
+	router := gin.Default()
+	router.POST("/upload", func(c *gin.Context) {
+		// Multipart form
+		form, _ := c.MultipartForm()
+		files := form.File["upload[]"]
+
+		for _, file := range files {
+			log.Println(file.Filename)
+		}
+		c.String(http.StatusOK, fmt.Printf("%d files uploaded!", len(files)))
+	})
+	router.Run(":8080")
+}
+```
+
+How to `curl`:
+
+```bash
+curl -X POST http://localhost:8080/upload \
+  -F "upload[]=@/Users/appleboy/test1.zip" \
+  -F "upload[]=@/Users/appleboy/test2.zip" \
+  -H "Content-Type: multipart/form-data"
+```
+
+### Grouping routes
+
 ```go
 func main() {
 	router := gin.Default()
@@ -282,7 +314,7 @@ func main() {
 ```
 
 
-#### Blank Gin without middleware by default
+### Blank Gin without middleware by default
 
 Use
 
@@ -296,7 +328,7 @@ r := gin.Default()
 ```
 
 
-#### Using middleware
+### Using middleware
 ```go
 func main() {
 	// Creates a router without any middleware by default
@@ -331,7 +363,7 @@ func main() {
 }
 ```
 
-#### Model binding and validation
+### Model binding and validation
 
 To bind a request body into a type, use model binding. We currently support binding of JSON, XML and standard form values (foo=bar&boo=baz).
 
@@ -381,7 +413,7 @@ func main() {
 }
 ```
 
-#### Bind Query String
+### Bind Query String
 
 See the [detail information](https://github.com/gin-gonic/gin/issues/742#issuecomment-264681292).
 
@@ -457,7 +489,7 @@ $ curl -v --form user=user --form password=password http://localhost:8080/login
 ```
 
 
-#### XML, JSON and YAML rendering
+### XML, JSON and YAML rendering
 
 ```go
 func main() {
@@ -496,7 +528,7 @@ func main() {
 }
 ```
 
-####Serving static files
+### Serving static files
 
 ```go
 func main() {
@@ -510,7 +542,7 @@ func main() {
 }
 ```
 
-####HTML rendering
+### HTML rendering
 
 Using LoadHTMLGlob() or LoadHTMLFiles()
 
@@ -590,7 +622,7 @@ func main() {
 ```
 
 
-#### Redirects
+### Redirects
 
 Issuing a HTTP redirect is easy:
 
@@ -602,7 +634,7 @@ r.GET("/test", func(c *gin.Context) {
 Both internal and external locations are supported.
 
 
-#### Custom Middleware
+### Custom Middleware
 
 ```go
 func Logger() gin.HandlerFunc {
@@ -642,7 +674,7 @@ func main() {
 }
 ```
 
-#### Using BasicAuth() middleware
+### Using BasicAuth() middleware
 ```go
 // simulate some private data
 var secrets = gin.H{
@@ -681,7 +713,7 @@ func main() {
 ```
 
 
-#### Goroutines inside a middleware
+### Goroutines inside a middleware
 When starting inside a middleware or handler, you **SHOULD NOT** use the original context inside it, you have to use a read-only copy.
 
 ```go
@@ -713,7 +745,7 @@ func main() {
 }
 ```
 
-#### Custom HTTP configuration
+### Custom HTTP configuration
 
 Use `http.ListenAndServe()` directly, like this:
 
@@ -740,7 +772,7 @@ func main() {
 }
 ```
 
-#### Graceful restart or stop
+### Graceful restart or stop
 
 Do you want to graceful restart or stop your web server?
 There are some ways this can be done.
@@ -771,7 +803,7 @@ An alternative to endless:
   - You should add/modify tests to cover your proposed code changes.
   - If your pull request contains a new feature, please document it on the README.
 
-## Example
+## Users
 
 Awesome project lists using [Gin](https://github.com/gin-gonic/gin) web framework.
 
