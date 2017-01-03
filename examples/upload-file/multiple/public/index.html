@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Multiple file upload</title>
+</head>
+<body>
+<h1>Upload multiple files with fields</h1>
+
+<form action="/upload" method="post" enctype="multipart/form-data">
+    Name: <input type="text" name="name"><br>
+    Email: <input type="email" name="email"><br>
+    Files: <input type="file" name="files" multiple><br><br>
+    <input type="submit" value="Submit">
+</form>
+</body>
+</html>

@@ -233,7 +233,7 @@ id: 1234; page: 1; name: manu; message: this_is_great
 
 #### upload single file
 
-References issue [#774](https://github.com/gin-gonic/gin/issues/774).
+References issue [#774](https://github.com/gin-gonic/gin/issues/774) and detail [example code](examples/upload-file/single).
 
 ```go
 func main() {
@@ -258,6 +258,8 @@ curl -X POST http://localhost:8080/upload \
 ```
 
 #### upload multiple files
+
+See the detail [example code](examples/upload-file/multiple).
 
 ```go
 func main() {
