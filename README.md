@@ -229,34 +229,64 @@ func main() {
 id: 1234; page: 1; name: manu; message: this_is_great
 ```
 
-### Another example: upload file
+### upload file
 
-References issue [#548](https://github.com/gin-gonic/gin/issues/548).
+#### upload single file
+
+References issue [#774](https://github.com/gin-gonic/gin/issues/774).
 
 ```go
 func main() {
 	router := gin.Default()
-
 	router.POST("/upload", func(c *gin.Context) {
+		// single file
+		file, _ := c.FormFile("file")
+		log.Println(file.Filename)
 
-	        file, header , err := c.Request.FormFile("upload")
-	        filename := header.Filename
-	        fmt.Println(header.Filename)
-	        out, err := os.Create("./tmp/"+filename+".png")
-	        if err != nil {
-	            log.Fatal(err)
-	        }
-	        defer out.Close()
-	        _, err = io.Copy(out, file)
-	        if err != nil {
-	            log.Fatal(err)
-	        }   
+		c.String(http.StatusOK, "Uploaded...")
 	})
 	router.Run(":8080")
 }
 ```
 
+curl command:
+
+```bash
+curl -X POST http://localhost:8080/upload \
+  -F "file=@/Users/appleboy/test.zip" \
+  -H "Content-Type: multipart/form-data"
+```
+
+#### upload multiple files
+
+```go
+func main() {
+	router := gin.Default()
+	router.POST("/upload", func(c *gin.Context) {
+		// Multipart form
+		form, _ := c.MultipartForm()
+		files := form.File["upload[]"]
+
+		for _, file := range files {
+			log.Println(file.Filename)
+		}
+		c.String(http.StatusOK, "Uploaded...")
+	})
+	router.Run(":8080")
+}
+```
+
+curl command:
+
+```bash
+curl -X POST http://localhost:8080/upload \
+  -F "upload[]=@/Users/appleboy/test1.zip" \
+  -F "upload[]=@/Users/appleboy/test2.zip" \
+  -H "Content-Type: multipart/form-data"
+```
+
 #### Grouping routes
+
 ```go
 func main() {
 	router := gin.Default()
