@@ -34,7 +34,12 @@ func (r JSON) WriteContentType(w http.ResponseWriter) {
 
 func WriteJSON(w http.ResponseWriter, obj interface{}) error {
 	writeContentType(w, jsonContentType)
-	return json.NewEncoder(w).Encode(obj)
+	jsonBytes, err := json.Marshal(obj)
+	if err != nil {
+		return err
+	}
+	w.Write(jsonBytes)
+	return nil
 }
 
 func (r IndentedJSON) Render(w http.ResponseWriter) error {

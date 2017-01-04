@@ -7,6 +7,7 @@ package gin
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"html/template"
 	"mime/multipart"
 	"net/http"
@@ -379,6 +380,35 @@ func TestContextGetCookie(t *testing.T) {
 	c.Request.Header.Set("Cookie", "user=gin")
 	cookie, _ := c.Cookie("user")
 	assert.Equal(t, cookie, "gin")
+}
+
+func TestContextBodyAllowedForStatus(t *testing.T) {
+	assert.Equal(t, false, bodyAllowedForStatus(102))
+	assert.Equal(t, false, bodyAllowedForStatus(204))
+	assert.Equal(t, false, bodyAllowedForStatus(304))
+	assert.Equal(t, true, bodyAllowedForStatus(500))
+}
+
+type TestPanicRender struct {
+}
+
+func (*TestPanicRender) Render(http.ResponseWriter) error {
+	return errors.New("TestPanicRender")
+}
+
+func (*TestPanicRender) WriteContentType(http.ResponseWriter) {}
+
+func TestContextRenderPanicIfErr(t *testing.T) {
+	defer func() {
+		r := recover()
+		assert.Equal(t, "TestPanicRender", fmt.Sprint(r))
+	}()
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
+
+	c.Render(http.StatusOK, &TestPanicRender{})
+
+	assert.Fail(t, "Panic not detected")
 }
 
 // Tests that the response is serialized as JSON
