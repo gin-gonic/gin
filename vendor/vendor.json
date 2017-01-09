@@ -22,12 +22,6 @@
 			"revisionTime": "2016-11-17T03:31:26Z"
 		},
 		{
-			"checksumSHA1": "b0T0Hzd+zYk+OCDTFMps+jwa/nY=",
-			"path": "github.com/manucorporat/sse",
-			"revision": "ee05b128a739a0fb76c7ebd3ae4810c1de808d6d",
-			"revisionTime": "2016-01-26T18:01:36Z"
-		},
-		{
 			"checksumSHA1": "9if9IBLsxkarJ804NPWAzgskIAk=",
 			"path": "github.com/manucorporat/stats",
 			"revision": "8f2d6ace262eba462e9beb552382c98be51d807b",
@@ -65,6 +59,12 @@
 			"path": "golang.org/x/sys/unix",
 			"revision": "478fcf54317e52ab69f40bb4c7a1520288d7f7ea",
 			"revisionTime": "2016-12-05T15:46:50Z"
+		},
+		{
+			"checksumSHA1": "pyAPYrymvmZl0M/Mr4yfjOQjA8I=",
+			"path": "gopkg.in/gin-contrib/sse.v0",
+			"revision": "22d885f9ecc78bf4ee5d72b937e4bbcdc58e8cae",
+			"revisionTime": "2017-01-09T09:34:21Z"
 		},
 		{
 			"checksumSHA1": "39V1idWER42Lmcmg2Uy40wMzOlo=",
