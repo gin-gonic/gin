@@ -22,9 +22,12 @@ func (r String) Render(w http.ResponseWriter) error {
 	return nil
 }
 
+func (r String) WriteContentType(w http.ResponseWriter) {
+	writeContentType(w, plainContentType)
+}
+
 func WriteString(w http.ResponseWriter, format string, data []interface{}) {
 	writeContentType(w, plainContentType)
-
 	if len(data) > 0 {
 		fmt.Fprintf(w, format, data...)
 	} else {

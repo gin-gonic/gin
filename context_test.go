@@ -7,6 +7,7 @@ package gin
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"html/template"
 	"mime/multipart"
 	"net/http"
@@ -15,9 +16,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/manucorporat/sse"
 	"github.com/stretchr/testify/assert"
 	"golang.org/x/net/context"
+	"gopkg.in/gin-contrib/sse.v0"
 )
 
 var _ context.Context = &Context{}
@@ -381,6 +382,35 @@ func TestContextGetCookie(t *testing.T) {
 	assert.Equal(t, cookie, "gin")
 }
 
+func TestContextBodyAllowedForStatus(t *testing.T) {
+	assert.Equal(t, false, bodyAllowedForStatus(102))
+	assert.Equal(t, false, bodyAllowedForStatus(204))
+	assert.Equal(t, false, bodyAllowedForStatus(304))
+	assert.Equal(t, true, bodyAllowedForStatus(500))
+}
+
+type TestPanicRender struct {
+}
+
+func (*TestPanicRender) Render(http.ResponseWriter) error {
+	return errors.New("TestPanicRender")
+}
+
+func (*TestPanicRender) WriteContentType(http.ResponseWriter) {}
+
+func TestContextRenderPanicIfErr(t *testing.T) {
+	defer func() {
+		r := recover()
+		assert.Equal(t, "TestPanicRender", fmt.Sprint(r))
+	}()
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
+
+	c.Render(http.StatusOK, &TestPanicRender{})
+
+	assert.Fail(t, "Panic not detected")
+}
+
 // Tests that the response is serialized as JSON
 // and Content-Type is set to application/json
 func TestContextRenderJSON(t *testing.T) {
@@ -391,6 +421,18 @@ func TestContextRenderJSON(t *testing.T) {
 
 	assert.Equal(t, 201, w.Code)
 	assert.Equal(t, "{\"foo\":\"bar\"}", w.Body.String())
+	assert.Equal(t, "application/json; charset=utf-8", w.HeaderMap.Get("Content-Type"))
+}
+
+// Tests that no JSON is rendered if code is 204
+func TestContextRenderNoContentJSON(t *testing.T) {
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
+
+	c.JSON(204, H{"foo": "bar"})
+
+	assert.Equal(t, 204, w.Code)
+	assert.Equal(t, "", w.Body.String())
 	assert.Equal(t, "application/json; charset=utf-8", w.HeaderMap.Get("Content-Type"))
 }
 
@@ -408,6 +450,19 @@ func TestContextRenderAPIJSON(t *testing.T) {
 	assert.Equal(t, "application/vnd.api+json", w.HeaderMap.Get("Content-Type"))
 }
 
+// Tests that no Custom JSON is rendered if code is 204
+func TestContextRenderNoContentAPIJSON(t *testing.T) {
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
+
+	c.Header("Content-Type", "application/vnd.api+json")
+	c.JSON(204, H{"foo": "bar"})
+
+	assert.Equal(t, 204, w.Code)
+	assert.Equal(t, "", w.Body.String())
+	assert.Equal(t, w.HeaderMap.Get("Content-Type"), "application/vnd.api+json")
+}
+
 // Tests that the response is serialized as JSON
 // and Content-Type is set to application/json
 func TestContextRenderIndentedJSON(t *testing.T) {
@@ -418,6 +473,18 @@ func TestContextRenderIndentedJSON(t *testing.T) {
 
 	assert.Equal(t, w.Code, 201)
 	assert.Equal(t, w.Body.String(), "{\n    \"bar\": \"foo\",\n    \"foo\": \"bar\",\n    \"nested\": {\n        \"foo\": \"bar\"\n    }\n}")
+	assert.Equal(t, w.HeaderMap.Get("Content-Type"), "application/json; charset=utf-8")
+}
+
+// Tests that no Custom JSON is rendered if code is 204
+func TestContextRenderNoContentIndentedJSON(t *testing.T) {
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
+
+	c.IndentedJSON(204, H{"foo": "bar", "bar": "foo", "nested": H{"foo": "bar"}})
+
+	assert.Equal(t, 204, w.Code)
+	assert.Equal(t, "", w.Body.String())
 	assert.Equal(t, w.HeaderMap.Get("Content-Type"), "application/json; charset=utf-8")
 }
 
@@ -436,6 +503,20 @@ func TestContextRenderHTML(t *testing.T) {
 	assert.Equal(t, w.HeaderMap.Get("Content-Type"), "text/html; charset=utf-8")
 }
 
+// Tests that no HTML is rendered if code is 204
+func TestContextRenderNoContentHTML(t *testing.T) {
+	w := httptest.NewRecorder()
+	c, router := CreateTestContext(w)
+	templ := template.Must(template.New("t").Parse(`Hello {{.name}}`))
+	router.SetHTMLTemplate(templ)
+
+	c.HTML(204, "t", H{"name": "alexandernyquist"})
+
+	assert.Equal(t, 204, w.Code)
+	assert.Equal(t, "", w.Body.String())
+	assert.Equal(t, w.HeaderMap.Get("Content-Type"), "text/html; charset=utf-8")
+}
+
 // TestContextXML tests that the response is serialized as XML
 // and Content-Type is set to application/xml
 func TestContextRenderXML(t *testing.T) {
@@ -449,6 +530,18 @@ func TestContextRenderXML(t *testing.T) {
 	assert.Equal(t, w.HeaderMap.Get("Content-Type"), "application/xml; charset=utf-8")
 }
 
+// Tests that no XML is rendered if code is 204
+func TestContextRenderNoContentXML(t *testing.T) {
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
+
+	c.XML(204, H{"foo": "bar"})
+
+	assert.Equal(t, 204, w.Code)
+	assert.Equal(t, "", w.Body.String())
+	assert.Equal(t, w.HeaderMap.Get("Content-Type"), "application/xml; charset=utf-8")
+}
+
 // TestContextString tests that the response is returned
 // with Content-Type set to text/plain
 func TestContextRenderString(t *testing.T) {
@@ -459,6 +552,18 @@ func TestContextRenderString(t *testing.T) {
 
 	assert.Equal(t, w.Code, 201)
 	assert.Equal(t, w.Body.String(), "test string 2")
+	assert.Equal(t, w.HeaderMap.Get("Content-Type"), "text/plain; charset=utf-8")
+}
+
+// Tests that no String is rendered if code is 204
+func TestContextRenderNoContentString(t *testing.T) {
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
+
+	c.String(204, "test %s %d", "string", 2)
+
+	assert.Equal(t, 204, w.Code)
+	assert.Equal(t, "", w.Body.String())
 	assert.Equal(t, w.HeaderMap.Get("Content-Type"), "text/plain; charset=utf-8")
 }
 
@@ -476,6 +581,19 @@ func TestContextRenderHTMLString(t *testing.T) {
 	assert.Equal(t, w.HeaderMap.Get("Content-Type"), "text/html; charset=utf-8")
 }
 
+// Tests that no HTML String is rendered if code is 204
+func TestContextRenderNoContentHTMLString(t *testing.T) {
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
+
+	c.Header("Content-Type", "text/html; charset=utf-8")
+	c.String(204, "<html>%s %d</html>", "string", 3)
+
+	assert.Equal(t, 204, w.Code)
+	assert.Equal(t, "", w.Body.String())
+	assert.Equal(t, w.HeaderMap.Get("Content-Type"), "text/html; charset=utf-8")
+}
+
 // TestContextData tests that the response can be written from `bytesting`
 // with specified MIME type
 func TestContextRenderData(t *testing.T) {
@@ -486,6 +604,18 @@ func TestContextRenderData(t *testing.T) {
 
 	assert.Equal(t, w.Code, 201)
 	assert.Equal(t, w.Body.String(), "foo,bar")
+	assert.Equal(t, w.HeaderMap.Get("Content-Type"), "text/csv")
+}
+
+// Tests that no Custom Data is rendered if code is 204
+func TestContextRenderNoContentData(t *testing.T) {
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
+
+	c.Data(204, "text/csv", []byte(`foo,bar`))
+
+	assert.Equal(t, 204, w.Code)
+	assert.Equal(t, "", w.Body.String())
 	assert.Equal(t, w.HeaderMap.Get("Content-Type"), "text/csv")
 }
 
