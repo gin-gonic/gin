@@ -68,7 +68,7 @@ func (c *Context) reset() {
 }
 
 // Copy returns a copy of the current context that can be safely used outside the request's scope.
-// This have to be used then the context has to be passed to a goroutine.
+// This has to be used when the context has to be passed to a goroutine.
 func (c *Context) Copy() *Context {
 	var cp = *c
 	cp.writermem.ResponseWriter = nil
