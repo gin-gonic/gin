@@ -120,6 +120,13 @@ func (c *Context) AbortWithStatus(code int) {
 	c.Abort()
 }
 
+// AbortWithStatusJSON calls `Abort()` and then `JSON` internally. This method stops the chain, writes the status code and return a JSON body
+// It also sets the Content-Type as "application/json".
+func (c *Context) AbortWithStatusJSON(code int, jsonObj interface{}) {
+	c.Abort()
+	c.JSON(code, jsonObj)
+}
+
 // AbortWithError calls `AbortWithStatus()` and `Error()` internally. This method stops the chain, writes the status code and
 // pushes the specified error to `c.Errors`.
 // See Context.Error() for more details.
