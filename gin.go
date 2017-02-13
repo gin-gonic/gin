@@ -83,6 +83,13 @@ type (
 		// #726 #755 If enabled, it will thrust some headers starting with
 		// 'X-AppEngine...' for better integration with that PaaS.
 		AppEngine bool
+
+		// If enabled, the url.RawPath will be used to find parameters.
+		UseRawPath bool
+		// If true, the path value will be unescaped.
+		// If UseRawPath is false (by default), the UnescapePathValues effectively is true,
+		// as url.Path gonna be used, which is already unescaped.
+		UnescapePathValues bool
 	}
 )
 
@@ -94,6 +101,8 @@ var _ IRouter = &Engine{}
 // - RedirectFixedPath:      false
 // - HandleMethodNotAllowed: false
 // - ForwardedByClientIP:    true
+// - UseRawPath:             false
+// - UnescapePathValues:     true
 func New() *Engine {
 	debugPrintWARNINGNew()
 	engine := &Engine{
@@ -107,6 +116,8 @@ func New() *Engine {
 		HandleMethodNotAllowed: false,
 		ForwardedByClientIP:    true,
 		AppEngine:              defaultAppEngine,
+		UseRawPath:             false,
+		UnescapePathValues:     true,
 		trees:                  make(methodTrees, 0, 9),
 	}
 	engine.RouterGroup.engine = engine
@@ -284,7 +295,15 @@ func (engine *Engine) HandleContext(c *Context) {
 
 func (engine *Engine) handleHTTPRequest(context *Context) {
 	httpMethod := context.Request.Method
-	path := context.Request.URL.Path
+	var path string
+	var unescape bool
+	if engine.UseRawPath && len(context.Request.URL.RawPath) > 0 {
+		path = context.Request.URL.RawPath
+		unescape = engine.UnescapePathValues
+	} else {
+		path = context.Request.URL.Path
+		unescape = false
+	}
 
 	// Find root of the tree for the given HTTP method
 	t := engine.trees
@@ -292,7 +311,7 @@ func (engine *Engine) handleHTTPRequest(context *Context) {
 		if t[i].method == httpMethod {
 			root := t[i].root
 			// Find route in tree
-			handlers, params, tsr := root.getValue(path, context.Params)
+			handlers, params, tsr := root.getValue(path, context.Params, unescape)
 			if handlers != nil {
 				context.handlers = handlers
 				context.Params = params
@@ -317,7 +336,7 @@ func (engine *Engine) handleHTTPRequest(context *Context) {
 	if engine.HandleMethodNotAllowed {
 		for _, tree := range engine.trees {
 			if tree.method != httpMethod {
-				if handlers, _, _ := tree.root.getValue(path, nil); handlers != nil {
+				if handlers, _, _ := tree.root.getValue(path, nil, unescape); handlers != nil {
 					context.handlers = engine.allNoMethod
 					serveError(context, 405, default405Body)
 					return
