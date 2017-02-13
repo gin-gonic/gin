@@ -631,7 +631,11 @@ func TestContextAbortWithStatus(t *testing.T) {
 func TestContextAbortWithStatusJSON(t *testing.T) {
 	w := httptest.NewRecorder()
 	c, _ := CreateTestContext(w)
+<<<<<<< HEAD
 
+=======
+	
+>>>>>>> d08400d4d4a552c9521b7e5379d79b18a409694e
 	c.index = 4
 	type inboundJsonType struct {
 		Foo string `json:"foo"`
