@@ -7,6 +7,7 @@ package gin
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"html/template"
 	"mime/multipart"
 	"net/http"
@@ -625,6 +626,36 @@ func TestContextAbortWithStatus(t *testing.T) {
 	assert.Equal(t, c.Writer.Status(), 401)
 	assert.Equal(t, w.Code, 401)
 	assert.True(t, c.IsAborted())
+}
+
+func TestContextAbortWithStatusJSON(t *testing.T) {
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
+	
+	c.index = 4
+	type inboundJsonType struct {
+		Foo string `json:"foo"`
+		Bar string `json:"bar"`
+	}
+
+	in := new(inboundJsonType)
+	in.Bar = "barValue"
+	in.Foo = "fooValue"
+
+	c.AbortWithStatusJSON(415, in)
+
+	assert.Equal(t, c.index, abortIndex)
+	assert.Equal(t, c.Writer.Status(), 415)
+	assert.Equal(t, w.Code, 415)
+	assert.True(t, c.IsAborted())
+
+	contentType := w.Header().Get("Content-Type")
+	assert.Equal(t, contentType, "application/json; charset=utf-8")
+
+	buf := new(bytes.Buffer)
+	buf.ReadFrom(w.Body)
+	jsonStringBody := buf.String()
+	assert.Equal(t, fmt.Sprintln(`{"foo":"fooValue","bar":"barValue"}`), jsonStringBody)
 }
 
 func TestContextError(t *testing.T) {
