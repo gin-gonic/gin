@@ -58,9 +58,14 @@ func (r HTMLDebug) loadTemplate() *template.Template {
 }
 
 func (r HTML) Render(w http.ResponseWriter) error {
-	writeContentType(w, htmlContentType)
+	r.WriteContentType(w)
+
 	if len(r.Name) == 0 {
 		return r.Template.Execute(w, r.Data)
 	}
 	return r.Template.ExecuteTemplate(w, r.Name, r.Data)
+}
+
+func (r HTML) WriteContentType(w http.ResponseWriter) {
+	writeContentType(w, htmlContentType)
 }

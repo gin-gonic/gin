@@ -92,7 +92,7 @@ func LoggerWithWriter(out io.Writer, notlogged ...string) HandlerFunc {
 			}
 			comment := c.Errors.ByType(ErrorTypePrivate).String()
 
-			fmt.Fprintf(out, "[GIN] %v |%s %3d %s| %13v | %s |%s  %s %-7s %s\n%s",
+			fmt.Fprintf(out, "[GIN] %v |%s %3d %s| %13v | %15s |%s  %s %-7s %s\n%s",
 				end.Format("2006/01/02 - 15:04:05"),
 				statusColor, statusCode, reset,
 				latency,

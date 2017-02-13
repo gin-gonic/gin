@@ -22,3 +22,5 @@ func (r Redirect) Render(w http.ResponseWriter) error {
 	http.Redirect(w, r.Request, r.Location, r.Code)
 	return nil
 }
+
+func (r Redirect) WriteContentType(http.ResponseWriter) {}

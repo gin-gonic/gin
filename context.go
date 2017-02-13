@@ -8,6 +8,7 @@ import (
 	"errors"
 	"io"
 	"math"
+	"mime/multipart"
 	"net"
 	"net/http"
 	"net/url"
@@ -16,7 +17,7 @@ import (
 
 	"github.com/gin-gonic/gin/binding"
 	"github.com/gin-gonic/gin/render"
-	"github.com/manucorporat/sse"
+	"gopkg.in/gin-contrib/sse.v0"
 )
 
 // Content-Type MIME of the most common data formats
@@ -30,7 +31,10 @@ const (
 	MIMEMultipartPOSTForm = binding.MIMEMultipartPOSTForm
 )
 
-const abortIndex int8 = math.MaxInt8 / 2
+const (
+	defaultMemory      = 32 << 20 // 32 MB
+	abortIndex    int8 = math.MaxInt8 / 2
+)
 
 // Context is the most important part of gin. It allows us to pass variables between middleware,
 // manage the flow, validate the JSON of a request and render a JSON response for example.
@@ -64,7 +68,7 @@ func (c *Context) reset() {
 }
 
 // Copy returns a copy of the current context that can be safely used outside the request's scope.
-// This have to be used then the context has to be passed to a goroutine.
+// This has to be used when the context has to be passed to a goroutine.
 func (c *Context) Copy() *Context {
 	var cp = *c
 	cp.writermem.ResponseWriter = nil
@@ -298,7 +302,7 @@ func (c *Context) PostFormArray(key string) []string {
 func (c *Context) GetPostFormArray(key string) ([]string, bool) {
 	req := c.Request
 	req.ParseForm()
-	req.ParseMultipartForm(32 << 20) // 32 MB
+	req.ParseMultipartForm(defaultMemory)
 	if values := req.PostForm[key]; len(values) > 0 {
 		return values, true
 	}
@@ -308,6 +312,18 @@ func (c *Context) GetPostFormArray(key string) ([]string, bool) {
 		}
 	}
 	return []string{}, false
+}
+
+// FormFile returns the first file for the provided form key.
+func (c *Context) FormFile(name string) (*multipart.FileHeader, error) {
+	_, fh, err := c.Request.FormFile(name)
+	return fh, err
+}
+
+// MultipartForm is the parsed multipart form, including file uploads.
+func (c *Context) MultipartForm() (*multipart.Form, error) {
+	err := c.Request.ParseMultipartForm(defaultMemory)
+	return c.Request.MultipartForm, err
 }
 
 // Bind checks the Content-Type to select a binding engine automatically,
@@ -340,17 +356,18 @@ func (c *Context) BindWith(obj interface{}, b binding.Binding) error {
 
 // ClientIP implements a best effort algorithm to return the real client IP, it parses
 // X-Real-IP and X-Forwarded-For in order to work properly with reverse-proxies such us: nginx or haproxy.
+// Use X-Forwarded-For before X-Real-Ip as nginx uses X-Real-Ip with the proxy's IP.
 func (c *Context) ClientIP() string {
 	if c.engine.ForwardedByClientIP {
-		clientIP := strings.TrimSpace(c.requestHeader("X-Real-Ip"))
-		if len(clientIP) > 0 {
-			return clientIP
-		}
-		clientIP = c.requestHeader("X-Forwarded-For")
+		clientIP := c.requestHeader("X-Forwarded-For")
 		if index := strings.IndexByte(clientIP, ','); index >= 0 {
 			clientIP = clientIP[0:index]
 		}
 		clientIP = strings.TrimSpace(clientIP)
+		if len(clientIP) > 0 {
+			return clientIP
+		}
+		clientIP = strings.TrimSpace(c.requestHeader("X-Real-Ip"))
 		if len(clientIP) > 0 {
 			return clientIP
 		}
@@ -374,6 +391,16 @@ func (c *Context) ContentType() string {
 	return filterFlags(c.requestHeader("Content-Type"))
 }
 
+// IsWebsocket returns true if the request headers indicate that a websocket
+// handshake is being initiated by the client.
+func (c *Context) IsWebsocket() bool {
+	if strings.Contains(strings.ToLower(c.requestHeader("Connection")), "upgrade") &&
+		strings.ToLower(c.requestHeader("Upgrade")) == "websocket" {
+		return true
+	}
+	return false
+}
+
 func (c *Context) requestHeader(key string) string {
 	if values, _ := c.Request.Header[key]; len(values) > 0 {
 		return values[0]
@@ -384,6 +411,19 @@ func (c *Context) requestHeader(key string) string {
 /************************************/
 /******** RESPONSE RENDERING ********/
 /************************************/
+
+// bodyAllowedForStatus is a copy of http.bodyAllowedForStatus non-exported function
+func bodyAllowedForStatus(status int) bool {
+	switch {
+	case status >= 100 && status <= 199:
+		return false
+	case status == 204:
+		return false
+	case status == 304:
+		return false
+	}
+	return true
+}
 
 func (c *Context) Status(code int) {
 	c.writermem.WriteHeader(code)
@@ -434,6 +474,13 @@ func (c *Context) Cookie(name string) (string, error) {
 
 func (c *Context) Render(code int, r render.Render) {
 	c.Status(code)
+
+	if !bodyAllowedForStatus(code) {
+		r.WriteContentType(c.Writer)
+		c.Writer.WriteHeaderNow()
+		return
+	}
+
 	if err := r.Render(c.Writer); err != nil {
 		panic(err)
 	}
@@ -458,10 +505,7 @@ func (c *Context) IndentedJSON(code int, obj interface{}) {
 // JSON serializes the given struct as JSON into the response body.
 // It also sets the Content-Type as "application/json".
 func (c *Context) JSON(code int, obj interface{}) {
-	c.Status(code)
-	if err := render.WriteJSON(c.Writer, obj); err != nil {
-		panic(err)
-	}
+	c.Render(code, render.JSON{Data: obj})
 }
 
 // XML serializes the given struct as XML into the response body.
@@ -477,8 +521,7 @@ func (c *Context) YAML(code int, obj interface{}) {
 
 // String writes the given string into the response body.
 func (c *Context) String(code int, format string, values ...interface{}) {
-	c.Status(code)
-	render.WriteString(c.Writer, format, values)
+	c.Render(code, render.String{Format: format, Data: values})
 }
 
 // Redirect returns a HTTP redirect to the specific location.
