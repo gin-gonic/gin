@@ -12,17 +12,18 @@ import (
 
 	"github.com/gin-gonic/gin/binding/example"
 	"github.com/golang/protobuf/proto"
+	"github.com/ugorji/go/codec"
 
 	"github.com/stretchr/testify/assert"
 )
 
 type FooStruct struct {
-	Foo string `json:"foo" form:"foo" xml:"foo" binding:"required"`
+	Foo string `msgpack:"foo" json:"foo" form:"foo" xml:"foo" binding:"required"`
 }
 
 type FooBarStruct struct {
 	FooStruct
-	Bar string `json:"bar" form:"bar" xml:"bar" binding:"required"`
+	Bar string `msgpack:"bar" json:"bar" form:"bar" xml:"bar" binding:"required"`
 }
 
 func TestBindingDefault(t *testing.T) {
@@ -43,6 +44,9 @@ func TestBindingDefault(t *testing.T) {
 
 	assert.Equal(t, Default("POST", MIMEPROTOBUF), ProtoBuf)
 	assert.Equal(t, Default("PUT", MIMEPROTOBUF), ProtoBuf)
+
+	assert.Equal(t, Default("POST", MIMEMSGPACK), MsgPack)
+	assert.Equal(t, Default("PUT", MIMEMSGPACK2), MsgPack)
 }
 
 func TestBindingJSON(t *testing.T) {
@@ -117,6 +121,26 @@ func TestBindingProtoBuf(t *testing.T) {
 
 	testProtoBodyBinding(t,
 		ProtoBuf, "protobuf",
+		"/", "/",
+		string(data), string(data[1:]))
+}
+
+func TestBindingMsgPack(t *testing.T) {
+	test := FooStruct{
+		Foo: "bar",
+	}
+
+	h := new(codec.MsgpackHandle)
+	assert.NotNil(t, h)
+	buf := bytes.NewBuffer([]byte{})
+	assert.NotNil(t, buf)
+	err := codec.NewEncoder(buf, h).Encode(test)
+	assert.NoError(t, err)
+
+	data := buf.Bytes()
+
+	testMsgPackBodyBinding(t,
+		MsgPack, "msgpack",
 		"/", "/",
 		string(data), string(data[1:]))
 }
@@ -210,6 +234,23 @@ func testProtoBodyBinding(t *testing.T, b Binding, name, path, badPath, body, ba
 	req = requestWithBody("POST", badPath, badBody)
 	req.Header.Add("Content-Type", MIMEPROTOBUF)
 	err = ProtoBuf.Bind(req, &obj)
+	assert.Error(t, err)
+}
+
+func testMsgPackBodyBinding(t *testing.T, b Binding, name, path, badPath, body, badBody string) {
+	assert.Equal(t, b.Name(), name)
+
+	obj := FooStruct{}
+	req := requestWithBody("POST", path, body)
+	req.Header.Add("Content-Type", MIMEMSGPACK)
+	err := b.Bind(req, &obj)
+	assert.NoError(t, err)
+	assert.Equal(t, obj.Foo, "bar")
+
+	obj = FooStruct{}
+	req = requestWithBody("POST", badPath, badBody)
+	req.Header.Add("Content-Type", MIMEMSGPACK)
+	err = MsgPack.Bind(req, &obj)
 	assert.Error(t, err)
 }
 
