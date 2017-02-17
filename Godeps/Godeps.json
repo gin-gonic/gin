@@ -31,6 +31,10 @@
 			"ImportPath": "gopkg.in/go-playground/validator.v8",
 			"Comment": "v8.15.1",
 			"Rev": "c193cecd124b5cc722d7ee5538e945bdb3348435"
+		},
+		{
+			"ImportPath": "github.com/ugorji/go/codec",
+			"Rev": "c88ee250d0221a57af388746f5cf03768c21d6e2"
 		}
 	]
 }
