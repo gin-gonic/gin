@@ -82,6 +82,19 @@ func TestRenderXML(t *testing.T) {
 	assert.Equal(t, w.Header().Get("Content-Type"), "application/xml; charset=utf-8")
 }
 
+func TestRenderMsgpack(t *testing.T) {
+	w := httptest.NewRecorder()
+	data := map[string]interface{}{
+		"foo": "bar",
+	}
+
+	err := (Msgpack{data}).Render(w)
+
+	assert.NoError(t, err)
+	assert.Equal(t, w.Body.Bytes(), []byte{129, 163, 102, 111, 111, 163, 98, 97, 114})
+	assert.Equal(t, w.Header().Get("Content-Type"), "application/x-msgpack; charset=utf-8")
+}
+
 func TestRenderRedirect(t *testing.T) {
 	// TODO
 }
