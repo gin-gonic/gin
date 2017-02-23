@@ -48,6 +48,12 @@
 			"revisionTime": "2016-09-25T22:06:09Z"
 		},
 		{
+			"checksumSHA1": "CoxdaTYdPZNJXr8mJfLxye428N0=",
+			"path": "github.com/ugorji/go/codec",
+			"revision": "c88ee250d0221a57af388746f5cf03768c21d6e2",
+			"revisionTime": "2017-02-15T20:11:44Z"
+		},
+		{
 			"checksumSHA1": "9jjO5GjLa0XF/nfWihF02RoH4qc=",
 			"comment": "release-branch.go1.7",
 			"path": "golang.org/x/net/context",
