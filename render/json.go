@@ -21,12 +21,29 @@ type (
 
 var jsonContentType = []string{"application/json; charset=utf-8"}
 
-func (r JSON) Render(w http.ResponseWriter) error {
-	return WriteJSON(w, r.Data)
+func (r JSON) Render(w http.ResponseWriter) (err error) {
+	if err = WriteJSON(w, r.Data); err != nil {
+		panic(err)
+	}
+	return
+}
+
+func (r JSON) WriteContentType(w http.ResponseWriter) {
+	writeContentType(w, jsonContentType)
+}
+
+func WriteJSON(w http.ResponseWriter, obj interface{}) error {
+	writeContentType(w, jsonContentType)
+	jsonBytes, err := json.Marshal(obj)
+	if err != nil {
+		return err
+	}
+	w.Write(jsonBytes)
+	return nil
 }
 
 func (r IndentedJSON) Render(w http.ResponseWriter) error {
-	writeContentType(w, jsonContentType)
+	r.WriteContentType(w)
 	jsonBytes, err := json.MarshalIndent(r.Data, "", "    ")
 	if err != nil {
 		return err
@@ -35,7 +52,6 @@ func (r IndentedJSON) Render(w http.ResponseWriter) error {
 	return nil
 }
 
-func WriteJSON(w http.ResponseWriter, obj interface{}) error {
+func (r IndentedJSON) WriteContentType(w http.ResponseWriter) {
 	writeContentType(w, jsonContentType)
-	return json.NewEncoder(w).Encode(obj)
 }
