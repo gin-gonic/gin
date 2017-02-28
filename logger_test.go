@@ -36,37 +36,43 @@ func TestLogger(t *testing.T) {
 	// I wrote these first (extending the above) but then realized they are more
 	// like integration tests because they test the whole logging process rather
 	// than individual functions.  Im not sure where these should go.
-
+	buffer.Reset()
 	performRequest(router, "POST", "/example")
 	assert.Contains(t, buffer.String(), "200")
 	assert.Contains(t, buffer.String(), "POST")
 	assert.Contains(t, buffer.String(), "/example")
 
+	buffer.Reset()
 	performRequest(router, "PUT", "/example")
 	assert.Contains(t, buffer.String(), "200")
 	assert.Contains(t, buffer.String(), "PUT")
 	assert.Contains(t, buffer.String(), "/example")
 
+	buffer.Reset()
 	performRequest(router, "DELETE", "/example")
 	assert.Contains(t, buffer.String(), "200")
 	assert.Contains(t, buffer.String(), "DELETE")
 	assert.Contains(t, buffer.String(), "/example")
 
+	buffer.Reset()
 	performRequest(router, "PATCH", "/example")
 	assert.Contains(t, buffer.String(), "200")
 	assert.Contains(t, buffer.String(), "PATCH")
 	assert.Contains(t, buffer.String(), "/example")
 
+	buffer.Reset()
 	performRequest(router, "HEAD", "/example")
 	assert.Contains(t, buffer.String(), "200")
 	assert.Contains(t, buffer.String(), "HEAD")
 	assert.Contains(t, buffer.String(), "/example")
 
+	buffer.Reset()
 	performRequest(router, "OPTIONS", "/example")
 	assert.Contains(t, buffer.String(), "200")
 	assert.Contains(t, buffer.String(), "OPTIONS")
 	assert.Contains(t, buffer.String(), "/example")
 
+	buffer.Reset()
 	performRequest(router, "GET", "/notfound")
 	assert.Contains(t, buffer.String(), "404")
 	assert.Contains(t, buffer.String(), "GET")
@@ -129,6 +135,7 @@ func TestSkippingPaths(t *testing.T) {
 	performRequest(router, "GET", "/logged")
 	assert.Contains(t, buffer.String(), "200")
 
+	buffer.Reset()
 	performRequest(router, "GET", "/skipped")
 	assert.Contains(t, buffer.String(), "")
 }
