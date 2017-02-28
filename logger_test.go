@@ -135,6 +135,7 @@ func TestSkippingPaths(t *testing.T) {
 	performRequest(router, "GET", "/logged")
 	assert.Contains(t, buffer.String(), "200")
 
+	buffer.Reset()
 	performRequest(router, "GET", "/skipped")
 	assert.Contains(t, buffer.String(), "")
 }
