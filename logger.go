@@ -54,7 +54,9 @@ func Logger() HandlerFunc {
 func LoggerWithWriter(out io.Writer, notlogged ...string) HandlerFunc {
 	isTerm := true
 
-	if w, ok := out.(*os.File); !ok || !isatty.IsTerminal(w.Fd()) || disableColor {
+	if w, ok := out.(*os.File); !ok ||
+		(os.Getenv("TERM") == "dumb" || (!isatty.IsTerminal(w.Fd()) && !isatty.IsCygwinTerminal(w.Fd()))) ||
+		disableColor {
 		isTerm = false
 	}
 
