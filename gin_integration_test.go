@@ -115,17 +115,17 @@ func TestWithHttptestWithAutoSelectedPort(t *testing.T) {
 	testRequest(t, ts.URL+"/example")
 }
 
-func TestWithHttptestWithSpecifiedPort(t *testing.T) {
-	router := New()
-	router.GET("/example", func(c *Context) { c.String(http.StatusOK, "it worked") })
+// func TestWithHttptestWithSpecifiedPort(t *testing.T) {
+// 	router := New()
+// 	router.GET("/example", func(c *Context) { c.String(http.StatusOK, "it worked") })
 
-	l, _ := net.Listen("tcp", ":8033")
-	ts := httptest.Server{
-		Listener: l,
-		Config:   &http.Server{Handler: router},
-	}
-	ts.Start()
-	defer ts.Close()
+// 	l, _ := net.Listen("tcp", ":8033")
+// 	ts := httptest.Server{
+// 		Listener: l,
+// 		Config:   &http.Server{Handler: router},
+// 	}
+// 	ts.Start()
+// 	defer ts.Close()
 
-	testRequest(t, "http://localhost:8033/example")
-}
+// 	testRequest(t, "http://localhost:8033/example")
+// }
