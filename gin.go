@@ -9,6 +9,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"path/filepath"
 	"sync"
 
 	"github.com/gin-gonic/gin/render"
@@ -153,6 +154,43 @@ func (engine *Engine) LoadHTMLFiles(files ...string) {
 		engine.HTMLRender = render.HTMLDebug{Files: files}
 	} else {
 		templ := template.Must(template.ParseFiles(files...))
+		engine.SetHTMLTemplate(templ)
+	}
+}
+
+//Load HTML Template from BinData, which generate by go-bindata from https://github.com/jteeuwen/go-bindata
+//Usage:
+//  1. Install go-bindata by `go get https://github.com/jteeuwen/go-bindata/...`
+//  2. Run `go-bindata path/to/template`, then you can find a file named as `bindata.go`
+//  3. Check this file, it must defined two method `AssetNames()` and `MustAssets()`
+//  4. Use return value of AssetNames() as params files, and MustAssets itself (NOT return value of it) as params fileAssetFunc
+//  5. If needed, filter invalid template asset names return by AssetNames() before use.
+func (engine *Engine) LoadHTMLBinData(files []string, fileAssetFunc func(string)([]byte)) {
+	if IsDebugging() {
+		engine.HTMLRender = render.HTMLDebug{Files: files}
+	} else {
+		var templ *template.Template
+		for _, filename := range files {
+			content := fileAssetFunc(filename)
+
+			name := filepath.Base(filename)
+
+			var tmpl *template.Template
+			if templ == nil {
+				templ = template.New(name)
+			}
+
+			if name == templ.Name() {
+				tmpl = templ
+			} else {
+				tmpl = templ.New(name)
+			}
+
+			_, err := tmpl.Parse(string(content))
+			if err != nil {
+				panic("template " + filename + " parse failed: " + err.Error())
+			}
+		}
 		engine.SetHTMLTemplate(templ)
 	}
 }

@@ -561,6 +561,23 @@ func main() {
 	router.Run(":8080")
 }
 ```
+Or if you need package template into execute file by [go-bindata](https://github.com/jteeuwen/go-bindata)
+Just run `go-bindata path/to/tempalte` before to generate `bindata.go` first.
+Then use `LoadHTMLBinData()` as below:
+
+```go
+func main() {
+    router := gin.Default()
+    router.LoadHTMLBinData(AssetNames(), MustAsset)
+    router.GET("/index", func(c *gin.Context) {
+        c.HTML(http.StatusOK, "index.tmpl", gin.H{
+            "title": "Main website",
+        })
+    })
+    router.Run(":8080")
+
+}
+```
 templates/index.tmpl
 ```html
 <html>
