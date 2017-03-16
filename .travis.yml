@@ -13,11 +13,20 @@ install:
   - go get -v github.com/kardianos/govendor
   - govendor sync
 
+install:
+  - test -d ${GOPATH}/bin || mkdir -p ${GOPATH}/bin
+  - wget https://raw.githubusercontent.com/appleboy/golang-testing/master/coverage.sh -O ${GOPATH}/bin/coverage
+  - chmod +x ${GOPATH}/bin/coverage
+  # install dependency tools
+  - coverage tool
+  - go get -d -t -v ./...
+
 script:
-  - go test -v -covermode=count -coverprofile=coverage.out
+  - coverage testing
+  - coverage coverage
 
 after_success:
-  - bash <(curl -s https://codecov.io/bash)
+  - bash <(curl -s https://codecov.io/bash) -f .cover/coverage.txt
 
 notifications:
   webhooks:
