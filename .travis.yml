@@ -12,8 +12,10 @@ git:
 install:
   - go get -v github.com/kardianos/govendor
   - govendor sync
+  - go get -u github.com/campoy/embedmd
 
 script:
+  - embedmd -d README.md
   - go test -v -covermode=count -coverprofile=coverage.out
 
 after_success:

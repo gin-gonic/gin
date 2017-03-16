@@ -1,5 +1,4 @@
-
-#Gin Web Framework
+# Gin Web Framework
 
 <img align="right" src="https://raw.githubusercontent.com/gin-gonic/gin/master/logo.jpg">
 [![Build Status](https://travis-ci.org/gin-gonic/gin.svg)](https://travis-ci.org/gin-gonic/gin)
@@ -16,6 +15,7 @@ Gin is a web framework written in Go (Golang). It features a martini-like API wi
 ```sh
 $ cat test.go
 ```
+
 ```go
 package main
 
@@ -87,28 +87,28 @@ BenchmarkZeus_GithubAll 		| 2000 		| 944234 	| 300688 	| 2648
 
 1. Download and install it:
 
-    ```sh
-    $ go get gopkg.in/gin-gonic/gin.v1
-    ```
+```sh
+$ go get gopkg.in/gin-gonic/gin.v1
+```
 
 2. Import it in your code:
 
-    ```go
-    import "gopkg.in/gin-gonic/gin.v1"
-    ```
+```go
+import "gopkg.in/gin-gonic/gin.v1"
+```
 
 3. (Optional) Import `net/http`. This is required for example if using constants such as `http.StatusOK`.
 
-    ```go
-    import "net/http"
-    ```
+```go
+import "net/http"
+```
 
 4. (Optional) Use latest changes (note: they may be broken and/or unstable):
 
- ```sh  
-    $ GIN_PATH=$GOPATH/src/gopkg.in/gin-gonic/gin.v1
-    $ git -C $GIN_PATH checkout develop
-    $ git -C $GIN_PATH pull origin develop 
+```sh  
+$ GIN_PATH=$GOPATH/src/gopkg.in/gin-gonic/gin.v1
+$ git -C $GIN_PATH checkout develop
+$ git -C $GIN_PATH pull origin develop 
 ```
 
 ## API Examples
@@ -165,6 +165,7 @@ func main() {
 ```
 
 ### Querystring parameters
+
 ```go
 func main() {
 	router := gin.Default()
@@ -315,7 +316,6 @@ func main() {
 }
 ```
 
-
 ### Blank Gin without middleware by default
 
 Use
@@ -323,6 +323,7 @@ Use
 ```go
 r := gin.New()
 ```
+
 instead of
 
 ```go
@@ -450,7 +451,6 @@ func startPage(c *gin.Context) {
 }
 ```
 
-
 ### Multipart/Urlencoded binding
 
 ```go
@@ -489,7 +489,6 @@ Test it with:
 ```sh
 $ curl -v --form user=user --form password=password http://localhost:8080/login
 ```
-
 
 ### XML, JSON and YAML rendering
 
@@ -561,7 +560,9 @@ func main() {
 	router.Run(":8080")
 }
 ```
+
 templates/index.tmpl
+
 ```html
 <html>
 	<h1>
@@ -589,7 +590,9 @@ func main() {
 	router.Run(":8080")
 }
 ```
+
 templates/posts/index.tmpl
+
 ```html
 {{ define "posts/index.tmpl" }}
 <html><h1>
@@ -599,7 +602,9 @@ templates/posts/index.tmpl
 </html>
 {{ end }}
 ```
+
 templates/users/index.tmpl
+
 ```html
 {{ define "users/index.tmpl" }}
 <html><h1>
@@ -680,6 +685,7 @@ func main() {
 ```
 
 ### Using BasicAuth() middleware
+
 ```go
 // simulate some private data
 var secrets = gin.H{
@@ -717,8 +723,8 @@ func main() {
 }
 ```
 
-
 ### Goroutines inside a middleware
+
 When starting inside a middleware or handler, you **SHOULD NOT** use the original context inside it, you have to use a read-only copy.
 
 ```go
@@ -794,6 +800,62 @@ endless.ListenAndServe(":4242", router)
 An alternative to endless:
 
 * [manners](https://github.com/braintree/manners): A polite Go HTTP server that shuts down gracefully.
+* [graceful](https://github.com/tylerb/graceful): Graceful is a Go package enabling graceful shutdown of an http.Handler server.
+* [grace](https://github.com/facebookgo/grace): Graceful restart & zero downtime deploy for Go servers.
+
+If you are using Go 1.8, you may not need to use this library! Consider using http.Server's built-in [Shutdown()](https://golang.org/pkg/net/http/#Server.Shutdown) method for graceful shutdowns. See the full [graceful-shutdown](./examples/graceful-shutdown) example with gin.
+
+[embedmd]:# (examples/graceful-shutdown/graceful-shutdown/server.go go)
+```go
+// +build go1.8
+
+package main
+
+import (
+	"context"
+	"log"
+	"net/http"
+	"os"
+	"os/signal"
+	"time"
+
+	"github.com/gin-gonic/gin"
+)
+
+func main() {
+	router := gin.Default()
+	router.GET("/", func(c *gin.Context) {
+		time.Sleep(5 * time.Second)
+		c.String(http.StatusOK, "Welcome Gin Server")
+	})
+
+	srv := &http.Server{
+		Addr:    ":8080",
+		Handler: router,
+	}
+
+	go func() {
+		// service connections
+		if err := srv.ListenAndServe(); err != nil {
+			log.Printf("listen: %s\n", err)
+		}
+	}()
+
+	// Wait for interrupt signal to gracefully shutdown the server with
+	// a timeout of 5 seconds.
+	quit := make(chan os.Signal)
+	signal.Notify(quit, os.Interrupt)
+	<-quit
+	log.Println("Shutdown Server ...")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	if err := srv.Shutdown(ctx); err != nil {
+		log.Fatal("Server Shutdown:", err)
+	}
+	log.Println("Server exist")
+}
+```
 
 ## Contributing 
 
