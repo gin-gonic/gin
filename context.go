@@ -391,7 +391,7 @@ func (c *Context) Header(key, value string) {
 }
 
 // GetHeader is a shortcut for c.Request.Header.Get(key)
-// It get the header in th request.
+// It gets the header in the request.
 func (c *Context) GetHeader(key string) {
         return c.Request.Header.Get(key)
 }
