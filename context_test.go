@@ -1007,3 +1007,12 @@ func TestWebsocketsRequired(t *testing.T) {
 
 	assert.False(t, c.IsWebsocket())
 }
+
+func TestGetRequestHeaderValue(t *testing.T) {
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	c.Request, _ = http.NewRequest("GET", "/chat", nil)
+	c.Request.Header.Set("Gin-Version", "1.0.0")
+
+	assert.Equal(t, "1.0.0", c.GetHeader("Gin-Version"))
+	assert.Equal(t, "", c.GetHeader("Connection"))
+}
