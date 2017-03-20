@@ -1,7 +1,5 @@
+# Gin Web Framework
 
-#Gin Web Framework
-
-<img align="right" src="https://raw.githubusercontent.com/gin-gonic/gin/master/logo.jpg">
 [![Build Status](https://travis-ci.org/gin-gonic/gin.svg)](https://travis-ci.org/gin-gonic/gin)
 [![codecov](https://codecov.io/gh/gin-gonic/gin/branch/master/graph/badge.svg)](https://codecov.io/gh/gin-gonic/gin)
 [![Go Report Card](https://goreportcard.com/badge/github.com/gin-gonic/gin)](https://goreportcard.com/report/github.com/gin-gonic/gin)
@@ -9,7 +7,7 @@
 [![Join the chat at https://gitter.im/gin-gonic/gin](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/gin-gonic/gin?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
 Gin is a web framework written in Go (Golang). It features a martini-like API with much better performance, up to 40 times faster thanks to [httprouter](https://github.com/julienschmidt/httprouter). If you need performance and good productivity, you will love Gin.
-
+<img align="right" src="https://raw.githubusercontent.com/gin-gonic/gin/master/logo.jpg">
 ![Gin console logger](https://gin-gonic.github.io/gin/other/console.png)
 
 ```sh
@@ -372,7 +370,7 @@ func main() {
 ```
 
 
-###Multipart/Urlencoded binding
+### Multipart/Urlencoded binding
 ```go
 package main
 
@@ -450,7 +448,7 @@ func main() {
 }
 ```
 
-####Serving static files
+#### Serving static files
 
 ```go
 func main() {
@@ -464,7 +462,7 @@ func main() {
 }
 ```
 
-####HTML rendering
+#### HTML rendering
 
 Using LoadHTMLTemplates()
 
