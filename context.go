@@ -440,6 +440,11 @@ func (c *Context) Header(key, value string) {
 	}
 }
 
+// GetHeader returns value from request headers
+func (c *Context) GetHeader(key string) string {
+	return c.requestHeader(key)
+}
+
 func (c *Context) SetCookie(
 	name string,
 	value string,
