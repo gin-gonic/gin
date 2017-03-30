@@ -447,9 +447,8 @@ func (c *Context) GetHeader(key string) string {
 }
 
 // GetRawData return stream data
-func (c *Context) GetRawData() (body []byte, err error) {
-	body, err = ioutil.ReadAll(c.Request.Body)
-	return
+func (c *Context) GetRawData() ([]byte, error) {
+	return ioutil.ReadAll(c.Request.Body)
 }
 
 func (c *Context) SetCookie(
