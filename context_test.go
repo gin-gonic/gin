@@ -1016,3 +1016,14 @@ func TestGetRequestHeaderValue(t *testing.T) {
 	assert.Equal(t, "1.0.0", c.GetHeader("Gin-Version"))
 	assert.Equal(t, "", c.GetHeader("Connection"))
 }
+
+func TestContextGetRawData(t *testing.T) {
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	body := bytes.NewBufferString("Fetch binary post data")
+	c.Request, _ = http.NewRequest("POST", "/", body)
+	c.Request.Header.Add("Content-Type", MIMEPOSTForm)
+
+	data, err := c.GetRawData()
+	assert.Nil(t, err)
+	assert.Equal(t, "Fetch binary post data", string(data))
+}

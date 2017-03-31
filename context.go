@@ -7,6 +7,7 @@ package gin
 import (
 	"errors"
 	"io"
+	"io/ioutil"
 	"math"
 	"mime/multipart"
 	"net"
@@ -443,6 +444,11 @@ func (c *Context) Header(key, value string) {
 // GetHeader returns value from request headers
 func (c *Context) GetHeader(key string) string {
 	return c.requestHeader(key)
+}
+
+// GetRawData return stream data
+func (c *Context) GetRawData() ([]byte, error) {
+	return ioutil.ReadAll(c.Request.Body)
 }
 
 func (c *Context) SetCookie(
