@@ -9,6 +9,7 @@ import (
 	"golang.org/x/crypto/acme/autocert"
 )
 
+// AutoTLSManager is a stateful certificate manager built on top of acme.Client.
 var AutoTLSManager = autocert.Manager{
 	Prompt: autocert.AcceptTOS,
 }
@@ -21,7 +22,7 @@ func (engine *Engine) RunAutoTLS(domain ...string) (err error) {
 	debugPrint("Listening and serving HTTPS on host name is %s\n", domain)
 	defer func() { debugPrintError(err) }()
 
-	//your domain here
+	// HostPolicy controls which domains the Manager will attempt
 	if len(domain) != 0 {
 		AutoTLSManager.HostPolicy = autocert.HostWhitelist(domain...)
 	}
