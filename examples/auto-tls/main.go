@@ -16,5 +16,5 @@ func main() {
 	})
 
 	// Listen and Server in 0.0.0.0:443
-	r.RunAutoTLS("example.com")
+	r.RunAutoTLS("example1.com", "example2.com")
 }
