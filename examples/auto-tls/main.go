@@ -8,6 +8,7 @@ import (
 func main() {
 	r := gin.Default()
 
+	// folder for storing certificates
 	gin.AutoTLSManager.Cache = autocert.DirCache("/var/www/.cache")
 
 	// Ping handler
