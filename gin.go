@@ -15,7 +15,7 @@ import (
 )
 
 // Version is Framework's version
-const Version = "v1.1.4"
+const Version = "v1.2"
 
 var default404Body = []byte("404 page not found")
 var default405Body = []byte("405 method not allowed")
