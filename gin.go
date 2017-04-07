@@ -152,7 +152,8 @@ func (engine *Engine) SetHTMLTemplate(templ *template.Template) {
 	if len(engine.trees) > 0 {
 		debugPrintWARNINGSetHTMLTemplate()
 	}
-	engine.HTMLRender = render.HTMLProduction{Template: templ, Delims: engine.delims}
+
+	engine.HTMLRender = render.HTMLProduction{Template: templ}
 }
 
 // NoRoute adds handlers for NoRoute. It return a 404 code by default.
