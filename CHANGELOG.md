@@ -5,8 +5,13 @@
 - [NEW] Switch from godeps to govendor
 - [NEW] Improve README examples and add extra at examples folder
 - [NEW] Improved support with App Engine
+- [NEW] Add \*context.GetRawData()
+- [NEW] Add \*context.GetHeader() (request)
+- [NEW] Add \*context.AbortWithStatusJSON() (JSON content type)
 - [FIX] Refactor render
 - [FIX] Reworked tests
+- [FIX] logger now supports cygwin
+- [FIX] Use X-Forwarded-For before X-Real-Ip
 
 ### Gin 1.1.4
 
