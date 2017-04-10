@@ -5,14 +5,11 @@
 package gin
 
 import (
-	"reflect"
-	"testing"
-
-	"net/http"
-
 	"fmt"
 	"io/ioutil"
-
+	"net/http"
+	"reflect"
+	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
