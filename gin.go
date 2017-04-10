@@ -130,7 +130,6 @@ func (engine *Engine) Delims(left, right string) *Engine {
 
 func (engine *Engine) LoadHTMLGlob(pattern string) {
 	if IsDebugging() {
-		// debugPrintLoadTemplate(template.Must(template.ParseGlob(pattern)))
 		debugPrintLoadTemplate(template.Must(template.New("").Delims(engine.delims.Left, engine.delims.Right).ParseGlob(pattern)))
 		engine.HTMLRender = render.HTMLDebug{Glob: pattern, Delims: engine.delims}
 	} else {
