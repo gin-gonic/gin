@@ -570,14 +570,15 @@ Using templates with same name in different directories
 ```go
 func main() {
 	router := gin.Default()
-	router.LoadHTMLGlob("templates/**/*")
+	router.LoadHTMLGlob("templates/posts/*")
 	router.GET("/posts/index", func(c *gin.Context) {
-		c.HTML(http.StatusOK, "posts/index.tmpl", gin.H{
+		c.HTML(http.StatusOK, "index.tmpl", gin.H{
 			"title": "Posts",
 		})
 	})
+	router.LoadHTMLGlob("templates/users/*")
 	router.GET("/users/index", func(c *gin.Context) {
-		c.HTML(http.StatusOK, "users/index.tmpl", gin.H{
+		c.HTML(http.StatusOK, "index.tmpl", gin.H{
 			"title": "Users",
 		})
 	})
