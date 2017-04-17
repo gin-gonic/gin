@@ -3,6 +3,7 @@
 ### Gin 1.2
 
 - [NEW] Switch from godeps to govendor
+- [NEW] Add support for Let's Encrypt via gin-gonic/autotls
 - [NEW] Improve README examples and add extra at examples folder
 - [NEW] Improved support with App Engine
 - [NEW] Add \*context.GetRawData()
