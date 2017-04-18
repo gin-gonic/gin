@@ -1,5 +1,5 @@
 
-#Gin Web Framework
+# Gin Web Framework
 
 <img align="right" src="https://raw.githubusercontent.com/gin-gonic/gin/master/logo.jpg">
 [![Build Status](https://travis-ci.org/gin-gonic/gin.svg)](https://travis-ci.org/gin-gonic/gin)
@@ -372,7 +372,7 @@ func main() {
 ```
 
 
-###Multipart/Urlencoded binding
+### Multipart/Urlencoded binding
 ```go
 package main
 
@@ -450,7 +450,7 @@ func main() {
 }
 ```
 
-####Serving static files
+#### Serving static files
 
 ```go
 func main() {
@@ -464,7 +464,7 @@ func main() {
 }
 ```
 
-####HTML rendering
+#### HTML rendering
 
 Using LoadHTMLTemplates()
 
