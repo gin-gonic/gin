@@ -1,5 +1,4 @@
-
-#Gin Web Framework
+# Gin Web Framework
 
 <img align="right" src="https://raw.githubusercontent.com/gin-gonic/gin/master/logo.jpg">
 [![Build Status](https://travis-ci.org/gin-gonic/gin.svg)](https://travis-ci.org/gin-gonic/gin)
@@ -81,7 +80,6 @@ BenchmarkZeus_GithubAll 		| 2000 		| 944234 	| 300688 	| 2648
 - [x] Battle tested
 - [x] API frozen, new releases will not break your code.
 
-
 ## Start using it
 
 1. Download and install it:
@@ -153,6 +151,7 @@ func main() {
 ```
 
 #### Querystring parameters
+
 ```go
 func main() {
 	router := gin.Default()
@@ -247,6 +246,7 @@ func main() {
 ```
 
 #### Grouping routes
+
 ```go
 func main() {
 	router := gin.Default()
@@ -285,8 +285,8 @@ instead of
 r := gin.Default()
 ```
 
-
 #### Using middleware
+
 ```go
 func main() {
 	// Creates a router without any middleware by default
@@ -371,8 +371,8 @@ func main() {
 }
 ```
 
+### Multipart/Urlencoded binding
 
-###Multipart/Urlencoded binding
 ```go
 package main
 
@@ -409,7 +409,6 @@ Test it with:
 ```sh
 $ curl -v --form user=user --form password=password http://localhost:8080/login
 ```
-
 
 #### XML, JSON and YAML rendering
 
@@ -543,7 +542,6 @@ func main() {
 }
 ```
 
-
 #### Redirects
 
 Issuing a HTTP redirect is easy:
@@ -597,6 +595,7 @@ func main() {
 ```
 
 #### Using BasicAuth() middleware
+
 ```go
 // simulate some private data
 var secrets = gin.H{
@@ -634,8 +633,8 @@ func main() {
 }
 ```
 
-
 #### Goroutines inside a middleware
+
 When starting inside a middleware or handler, you **SHOULD NOT** use the original context inside it, you have to use a read-only copy.
 
 ```go
@@ -731,3 +730,4 @@ Awesome project lists using [Gin](https://github.com/gin-gonic/gin) web framewor
 
 * [drone](https://github.com/drone/drone): Drone is a Continuous Delivery platform built on Docker, written in Go
 * [gorush](https://github.com/appleboy/gorush): A push notification server written in Go.
+
