@@ -89,7 +89,7 @@ func (c *Context) HandlerName() string {
 
 // Next should be used only inside middleware.
 // It executes the pending handlers in the chain inside the calling handler.
-// See example in github.
+// See example in GitHub.
 func (c *Context) Next() {
 	c.index++
 	s := int8(len(c.handlers))
@@ -112,7 +112,7 @@ func (c *Context) Abort() {
 }
 
 // AbortWithStatus calls `Abort()` and writes the headers with the specified status code.
-// For example, a failed attempt to authentificate a request could use: context.AbortWithStatus(401).
+// For example, a failed attempt to authenticate a request could use: context.AbortWithStatus(401).
 func (c *Context) AbortWithStatus(code int) {
 	c.Status(code)
 	c.Writer.WriteHeaderNow()
@@ -195,7 +195,7 @@ func (c *Context) Param(key string) string {
 }
 
 // Query returns the keyed url query value if it exists,
-// othewise it returns an empty string `("")`.
+// otherwise it returns an empty string `("")`.
 // It is shortcut for `c.Request.URL.Query().Get(key)`
 // 		GET /path?id=1234&name=Manu&value=
 // 		c.Query("id") == "1234"
@@ -208,7 +208,7 @@ func (c *Context) Query(key string) string {
 }
 
 // DefaultQuery returns the keyed url query value if it exists,
-// othewise it returns the specified defaultValue string.
+// otherwise it returns the specified defaultValue string.
 // See: Query() and GetQuery() for further information.
 // 		GET /?name=Manu&lastname=
 // 		c.DefaultQuery("name", "unknown") == "Manu"
@@ -223,7 +223,7 @@ func (c *Context) DefaultQuery(key, defaultValue string) string {
 
 // GetQuery is like Query(), it returns the keyed url query value
 // if it exists `(value, true)` (even when the value is an empty string),
-// othewise it returns `("", false)`.
+// otherwise it returns `("", false)`.
 // It is shortcut for `c.Request.URL.Query().Get(key)`
 // 		GET /?name=Manu&lastname=
 // 		("Manu", true) == c.GetQuery("name")
@@ -439,7 +439,7 @@ func (c *Context) HTML(code int, name string, obj interface{}) {
 
 // IndentedJSON serializes the given struct as pretty JSON (indented + endlines) into the response body.
 // It also sets the Content-Type as "application/json".
-// WARNING: we recommend to use this only for development propuses since printing pretty JSON is
+// WARNING: we recommend to use this only for development purposes since printing pretty JSON is
 // more CPU and bandwidth consuming. Use Context.JSON() instead.
 func (c *Context) IndentedJSON(code int, obj interface{}) {
 	c.Render(code, render.IndentedJSON{Data: obj})
