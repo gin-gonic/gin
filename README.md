@@ -451,7 +451,7 @@ func main() {
 }
 ```
 
-####Serving static files
+#### Serving static files
 
 ```go
 func main() {
@@ -465,7 +465,7 @@ func main() {
 }
 ```
 
-####HTML rendering
+#### HTML rendering
 
 Using LoadHTMLTemplates()
 
