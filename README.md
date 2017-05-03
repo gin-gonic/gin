@@ -154,6 +154,7 @@ func main() {
 ```
 
 #### Querystring parameters
+
 ```go
 func main() {
 	router := gin.Default()
@@ -248,6 +249,7 @@ func main() {
 ```
 
 #### Grouping routes
+
 ```go
 func main() {
 	router := gin.Default()
@@ -280,6 +282,7 @@ Use
 ```go
 r := gin.New()
 ```
+
 instead of
 
 ```go
@@ -288,6 +291,7 @@ r := gin.Default()
 
 
 #### Using middleware
+
 ```go
 func main() {
 	// Creates a router without any middleware by default
@@ -373,7 +377,8 @@ func main() {
 ```
 
 
-###Multipart/Urlencoded binding
+### Multipart/Urlencoded binding
+
 ```go
 package main
 
@@ -451,7 +456,7 @@ func main() {
 }
 ```
 
-####Serving static files
+#### Serving static files
 
 ```go
 func main() {
@@ -465,7 +470,7 @@ func main() {
 }
 ```
 
-####HTML rendering
+#### HTML rendering
 
 Using LoadHTMLTemplates()
 
@@ -598,6 +603,7 @@ func main() {
 ```
 
 #### Using BasicAuth() middleware
+
 ```go
 // simulate some private data
 var secrets = gin.H{
@@ -637,6 +643,7 @@ func main() {
 
 
 #### Goroutines inside a middleware
+
 When starting inside a middleware or handler, you **SHOULD NOT** use the original context inside it, you have to use a read-only copy.
 
 ```go
