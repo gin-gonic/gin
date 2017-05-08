@@ -52,6 +52,9 @@ func LoggerWithWriter(out io.Writer, notlogged ...string) HandlerFunc {
 	if w, ok := out.(*os.File); !ok || !isatty.IsTerminal(w.Fd()) {
 		isTerm = false
 	}
+	if c, err := os.Open("CONOUT$"); err == nil && isatty.IsTerminal(c.Fd()) {
+		isTerm = true
+	}
 
 	var skip map[string]struct{}
 
