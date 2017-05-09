@@ -144,7 +144,11 @@ func (c *Context) AbortWithError(code int, err error) *Error {
 // It's a good idea to call Error for each error that occurred during the resolution of a request.
 // A middleware can be used to collect all the errors
 // and push them to a database together, print a log, or append it in the HTTP response.
+// Error will panic if err is nil.
 func (c *Context) Error(err error) *Error {
+	if err == nil {
+		panic("err is nil")
+	}
 	var parsedError *Error
 	switch err.(type) {
 	case *Error:
