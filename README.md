@@ -170,7 +170,7 @@ func main() {
 }
 ```
 
-### Multipart/Urlencoded Form
+#### Multipart/Urlencoded Form
 
 ```go
 func main() {
@@ -190,7 +190,7 @@ func main() {
 }
 ```
 
-### Another example: query + post form
+#### Another example: query + post form
 
 ```
 POST /post?id=1234&page=1 HTTP/1.1
@@ -220,7 +220,7 @@ func main() {
 id: 1234; page: 1; name: manu; message: this_is_great
 ```
 
-### Another example: upload file
+#### Another example: upload file
 
 References issue [#548](https://github.com/gin-gonic/gin/issues/548).
 
@@ -373,7 +373,7 @@ func main() {
 ```
 
 
-###Multipart/Urlencoded binding
+#### Multipart/Urlencoded binding
 ```go
 package main
 
@@ -451,7 +451,7 @@ func main() {
 }
 ```
 
-####Serving static files
+#### Serving static files
 
 ```go
 func main() {
@@ -465,7 +465,7 @@ func main() {
 }
 ```
 
-####HTML rendering
+#### HTML rendering
 
 Using LoadHTMLTemplates()
 
