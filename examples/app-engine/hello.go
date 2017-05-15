@@ -9,6 +9,7 @@ import (
 func init() {
 	// Starts a new Gin instance with no middle-ware
 	r := gin.New()
+	gin.SetMode(gin.ReleaseMode)
 
 	// Define your handlers
 	r.GET("/", func(c *gin.Context) {
