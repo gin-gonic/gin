@@ -97,12 +97,6 @@ BenchmarkZeus_GithubAll 		| 2000 		| 944234 	| 300688 	| 2648
     import "gopkg.in/gin-gonic/gin.v1"
     ```
 
-3. (Optional) Import `net/http`. This is required for example if using constants such as `http.StatusOK`.
-
-    ```go
-    import "net/http"
-    ```
-
 ## API Examples
 
 #### Using GET, POST, PUT, PATCH, DELETE and OPTIONS
