@@ -746,6 +746,68 @@ func TestContextRenderRedirectAll(t *testing.T) {
 	assert.NotPanics(t, func() { c.Redirect(308, "/resource") })
 }
 
+func TestContextNegotiationWithJSON(t *testing.T) {
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
+	c.Request, _ = http.NewRequest("POST", "", nil)
+
+	c.Negotiate(200, Negotiate{
+		Offered: []string{MIMEJSON, MIMEXML},
+		Data:    H{"foo": "bar"},
+	})
+
+	assert.Equal(t, 200, w.Code)
+	assert.Equal(t, "{\"foo\":\"bar\"}", w.Body.String())
+	assert.Equal(t, "application/json; charset=utf-8", w.HeaderMap.Get("Content-Type"))
+}
+
+func TestContextNegotiationWithXML(t *testing.T) {
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
+	c.Request, _ = http.NewRequest("POST", "", nil)
+
+	c.Negotiate(200, Negotiate{
+		Offered: []string{MIMEXML, MIMEJSON},
+		Data:    H{"foo": "bar"},
+	})
+
+	assert.Equal(t, 200, w.Code)
+	assert.Equal(t, "<map><foo>bar</foo></map>", w.Body.String())
+	assert.Equal(t, "application/xml; charset=utf-8", w.HeaderMap.Get("Content-Type"))
+}
+
+func TestContextNegotiationWithHTML(t *testing.T) {
+	w := httptest.NewRecorder()
+	c, router := CreateTestContext(w)
+	c.Request, _ = http.NewRequest("POST", "", nil)
+	templ := template.Must(template.New("t").Parse(`Hello {{.name}}`))
+	router.SetHTMLTemplate(templ)
+
+	c.Negotiate(200, Negotiate{
+		Offered:  []string{MIMEHTML},
+		Data:     H{"name": "gin"},
+		HTMLName: "t",
+	})
+
+	assert.Equal(t, 200, w.Code)
+	assert.Equal(t, "Hello gin", w.Body.String())
+	assert.Equal(t, "text/html; charset=utf-8", w.HeaderMap.Get("Content-Type"))
+}
+
+func TestContextNegotiationNotSupport(t *testing.T) {
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
+	c.Request, _ = http.NewRequest("POST", "", nil)
+
+	c.Negotiate(200, Negotiate{
+		Offered: []string{MIMEPOSTForm},
+	})
+
+	assert.Equal(t, 406, w.Code)
+	assert.Equal(t, c.index, abortIndex)
+	assert.True(t, c.IsAborted())
+}
+
 func TestContextNegotiationFormat(t *testing.T) {
 	c, _ := CreateTestContext(httptest.NewRecorder())
 	c.Request, _ = http.NewRequest("POST", "", nil)
