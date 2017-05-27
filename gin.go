@@ -232,6 +232,19 @@ func iterate(path, method string, routes RoutesInfo, root *node) RoutesInfo {
 	return routes
 }
 
+// RunCustom, run server by a net.Listener
+// the main usage is to test, by a custom net.Listener we can let os to choose a free
+// port and get it.
+//
+//     r := gin.Default()
+//     l, err := net.Listen(":0")
+//     l.Addr()
+//     r.RunCustom(l)
+func (engine *Engine) RunCustom(l net.Listener) error {
+	debugPrint("Listening and serving HTTP on %s\n", l.Addr())
+	return http.Serve(l, engine)
+}
+
 // Run attaches the router to a http.Server and starts listening and serving HTTP requests.
 // It is a shortcut for http.ListenAndServe(addr, router)
 // Note: this method will block the calling goroutine indefinitely unless an error happens.
