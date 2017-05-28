@@ -2,3 +2,5 @@ Godeps/*
 !Godeps/Godeps.json
 coverage.out
 count.out
+.idea/
+*.iml
