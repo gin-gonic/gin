@@ -45,6 +45,7 @@ type (
 	// Create an instance of Engine, by using New() or Default()
 	Engine struct {
 		RouterGroup
+		delims      render.Delims
 		HTMLRender  render.HTMLRender
 		allNoRoute  HandlersChain
 		allNoMethod HandlersChain
@@ -119,6 +120,7 @@ func New() *Engine {
 		UseRawPath:             false,
 		UnescapePathValues:     true,
 		trees:                  make(methodTrees, 0, 9),
+		delims:                 render.Delims{"{{", "}}"},
 	}
 	engine.RouterGroup.engine = engine
 	engine.pool.New = func() interface{} {
@@ -138,21 +140,26 @@ func (engine *Engine) allocateContext() *Context {
 	return &Context{engine: engine}
 }
 
+func (engine *Engine) Delims(left, right string) *Engine {
+	engine.delims = render.Delims{left, right}
+	return engine
+}
+
 func (engine *Engine) LoadHTMLGlob(pattern string) {
 	if IsDebugging() {
-		debugPrintLoadTemplate(template.Must(template.ParseGlob(pattern)))
-		engine.HTMLRender = render.HTMLDebug{Glob: pattern}
+		debugPrintLoadTemplate(template.Must(template.New("").Delims(engine.delims.Left, engine.delims.Right).ParseGlob(pattern)))
+		engine.HTMLRender = render.HTMLDebug{Glob: pattern, Delims: engine.delims}
 	} else {
-		templ := template.Must(template.ParseGlob(pattern))
+		templ := template.Must(template.New("").Delims(engine.delims.Left, engine.delims.Right).ParseGlob(pattern))
 		engine.SetHTMLTemplate(templ)
 	}
 }
 
 func (engine *Engine) LoadHTMLFiles(files ...string) {
 	if IsDebugging() {
-		engine.HTMLRender = render.HTMLDebug{Files: files}
+		engine.HTMLRender = render.HTMLDebug{Files: files, Delims: engine.delims}
 	} else {
-		templ := template.Must(template.ParseFiles(files...))
+		templ := template.Must(template.New("").Delims(engine.delims.Left, engine.delims.Right).ParseFiles(files...))
 		engine.SetHTMLTemplate(templ)
 	}
 }
@@ -161,6 +168,7 @@ func (engine *Engine) SetHTMLTemplate(templ *template.Template) {
 	if len(engine.trees) > 0 {
 		debugPrintWARNINGSetHTMLTemplate()
 	}
+
 	engine.HTMLRender = render.HTMLProduction{Template: templ}
 }
 

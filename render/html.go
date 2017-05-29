@@ -10,17 +10,24 @@ import (
 )
 
 type (
+	Delims struct {
+		Left  string
+		Right string
+	}
+
 	HTMLRender interface {
 		Instance(string, interface{}) Render
 	}
 
 	HTMLProduction struct {
 		Template *template.Template
+		Delims   Delims
 	}
 
 	HTMLDebug struct {
-		Files []string
-		Glob  string
+		Files  []string
+		Glob   string
+		Delims Delims
 	}
 
 	HTML struct {
@@ -49,10 +56,10 @@ func (r HTMLDebug) Instance(name string, data interface{}) Render {
 }
 func (r HTMLDebug) loadTemplate() *template.Template {
 	if len(r.Files) > 0 {
-		return template.Must(template.ParseFiles(r.Files...))
+		return template.Must(template.New("").Delims(r.Delims.Left, r.Delims.Right).ParseFiles(r.Files...))
 	}
 	if len(r.Glob) > 0 {
-		return template.Must(template.ParseGlob(r.Glob))
+		return template.Must(template.New("").Delims(r.Delims.Left, r.Delims.Right).ParseGlob(r.Glob))
 	}
 	panic("the HTML debug render was created without files or glob pattern")
 }

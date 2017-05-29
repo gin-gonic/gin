@@ -5,14 +5,60 @@
 package gin
 
 import (
+	"fmt"
+	"io/ioutil"
+	"net/http"
 	"reflect"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 )
 
+func setupHTMLFiles(t *testing.T) func() {
+	go func() {
+		router := New()
+		router.Delims("{[{", "}]}")
+		router.LoadHTMLFiles("./fixtures/basic/hello.tmpl")
+		router.GET("/test", func(c *Context) {
+			c.HTML(http.StatusOK, "hello.tmpl", map[string]string{"name": "world"})
+		})
+		router.Run(":8888")
+	}()
+	t.Log("waiting 1 second for server startup")
+	time.Sleep(1 * time.Second)
+	return func() {}
+}
+
+func setupHTMLGlob(t *testing.T) func() {
+	go func() {
+		router := New()
+		router.Delims("{[{", "}]}")
+		router.LoadHTMLGlob("./fixtures/basic/*")
+		router.GET("/test", func(c *Context) {
+			c.HTML(http.StatusOK, "hello.tmpl", map[string]string{"name": "world"})
+		})
+		router.Run(":8888")
+	}()
+	t.Log("waiting 1 second for server startup")
+	time.Sleep(1 * time.Second)
+	return func() {}
+}
+
 //TODO
-// func (engine *Engine) LoadHTMLGlob(pattern string) {
+func TestLoadHTMLGlob(t *testing.T) {
+	td := setupHTMLGlob(t)
+	res, err := http.Get("http://127.0.0.1:8888/test")
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	resp, _ := ioutil.ReadAll(res.Body)
+	assert.Equal(t, "<h1>Hello world</h1>", string(resp[:]))
+
+	td()
+}
+
 // func (engine *Engine) LoadHTMLFiles(files ...string) {
 // func (engine *Engine) RunTLS(addr string, cert string, key string) error {
 
@@ -41,6 +87,18 @@ func TestCreateEngine(t *testing.T) {
 // 	assert.Equal(t, r.Files, []string{"index.html", "login.html"})
 // 	SetMode(TestMode)
 // }
+
+func TestLoadHTMLFiles(t *testing.T) {
+	td := setupHTMLFiles(t)
+	res, err := http.Get("http://127.0.0.1:8888/test")
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	resp, _ := ioutil.ReadAll(res.Body)
+	assert.Equal(t, "<h1>Hello world</h1>", string(resp[:]))
+	td()
+}
 
 func TestLoadHTMLReleaseMode(t *testing.T) {
 
