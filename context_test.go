@@ -168,6 +168,85 @@ func TestContextSetGetValues(t *testing.T) {
 
 }
 
+func TestContextGetString(t *testing.T) {
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	c.Set("string", "this is a string")
+	assert.Equal(t, "this is a string", c.GetString("string"))
+}
+
+func TestContextSetGetBool(t *testing.T) {
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	c.Set("bool", true)
+	assert.Equal(t, true, c.GetBool("bool"))
+}
+
+func TestContextGetInt(t *testing.T) {
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	c.Set("int", 1)
+	assert.Equal(t, 1, c.GetInt("int"))
+}
+
+func TestContextGetInt64(t *testing.T) {
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	c.Set("int64", int64(42424242424242))
+	assert.Equal(t, int64(42424242424242), c.GetInt64("int64"))
+}
+
+func TestContextGetFloat64(t *testing.T) {
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	c.Set("float64", 4.2)
+	assert.Equal(t, 4.2, c.GetFloat64("float64"))
+}
+
+func TestContextGetTime(t *testing.T) {
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	t1, _ := time.Parse("1/2/2006 15:04:05", "01/01/2017 12:00:00")
+	c.Set("time", t1)
+	assert.Equal(t, t1, c.GetTime("time"))
+}
+
+func TestContextGetDuration(t *testing.T) {
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	c.Set("duration", time.Second)
+	assert.Equal(t, time.Second, c.GetDuration("duration"))
+}
+
+func TestContextGetStringSlice(t *testing.T) {
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	c.Set("slice", []string{"foo"})
+	assert.Equal(t, []string{"foo"}, c.GetStringSlice("slice"))
+}
+
+func TestContextGetStringMap(t *testing.T) {
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	var m = make(map[string]interface{})
+	m["foo"] = 1
+	c.Set("map", m)
+
+	assert.Equal(t, m, c.GetStringMap("map"))
+	assert.Equal(t, 1, c.GetStringMap("map")["foo"])
+}
+
+func TestContextGetStringMapString(t *testing.T) {
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	var m = make(map[string]string)
+	m["foo"] = "bar"
+	c.Set("map", m)
+
+	assert.Equal(t, m, c.GetStringMapString("map"))
+	assert.Equal(t, "bar", c.GetStringMapString("map")["foo"])
+}
+
+func TestContextGetStringMapStringSlice(t *testing.T) {
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	var m = make(map[string][]string)
+	m["foo"] = []string{"foo"}
+	c.Set("map", m)
+
+	assert.Equal(t, m, c.GetStringMapStringSlice("map"))
+	assert.Equal(t, []string{"foo"}, c.GetStringMapStringSlice("map")["foo"])
+}
+
 func TestContextCopy(t *testing.T) {
 	c, _ := CreateTestContext(httptest.NewRecorder())
 	c.index = 2
