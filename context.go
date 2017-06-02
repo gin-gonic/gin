@@ -85,6 +85,11 @@ func (c *Context) HandlerName() string {
 	return nameOfFunction(c.handlers.Last())
 }
 
+// Handler returns the main handler.
+func (c *Context) Handler() HandlerFunc {
+        return c.handlers.Last()
+}
+
 /************************************/
 /*********** FLOW CONTROL ***********/
 /************************************/
