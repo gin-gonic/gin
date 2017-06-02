@@ -161,6 +161,13 @@ func handlerNameTest(c *Context) {
 
 }
 
+func TestContextHandler(t *testing.T) {
+	c, _, _ := CreateTestContext()
+	c.handlers = HandlersChain{func(c *Context) {}, handlerNameTest}
+
+	assert.Equal(t, handlerNameTest, c.Handler())
+}
+
 func TestContextQuery(t *testing.T) {
 	c, _, _ := CreateTestContext()
 	c.Request, _ = http.NewRequest("GET", "http://example.com/?foo=bar&page=10&id=", nil)
