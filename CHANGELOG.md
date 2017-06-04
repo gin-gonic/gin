@@ -1,6 +1,6 @@
-#CHANGELOG
+# CHANGELOG
 
-###Gin 1.0rc2 (...)
+### Gin 1.0rc2 (...)
 
 - [PERFORMANCE] Fast path for writing Content-Type.
 - [PERFORMANCE] Much faster 404 routing
@@ -35,7 +35,7 @@
 - [FIX] MIT license in every file
 
 
-###Gin 1.0rc1 (May 22, 2015)
+### Gin 1.0rc1 (May 22, 2015)
 
 - [PERFORMANCE] Zero allocation router
 - [PERFORMANCE] Faster JSON, XML and text rendering
@@ -79,7 +79,7 @@
 - [FIX] Better support for Google App Engine (using log instead of fmt)
 
 
-###Gin 0.6 (Mar 9, 2015)
+### Gin 0.6 (Mar 9, 2015)
 
 - [NEW] Support multipart/form-data
 - [NEW] NoMethod handler
@@ -89,14 +89,14 @@
 - [FIX] Improve color logger
 
 
-###Gin 0.5 (Feb 7, 2015)
+### Gin 0.5 (Feb 7, 2015)
 
 - [NEW] Content Negotiation
 - [FIX] Solved security bug that allow a client to spoof ip
 - [FIX] Fix unexported/ignored fields in binding
 
 
-###Gin 0.4 (Aug 21, 2014)
+### Gin 0.4 (Aug 21, 2014)
 
 - [NEW] Development mode
 - [NEW] Unit tests
@@ -105,7 +105,7 @@
 - [FIX] Improved documentation for model binding
 
 
-###Gin 0.3 (Jul 18, 2014)
+### Gin 0.3 (Jul 18, 2014)
 
 - [PERFORMANCE] Normal log and error log are printed in the same call.
 - [PERFORMANCE] Improve performance of NoRouter()
@@ -123,7 +123,7 @@
 - [FIX] Check application/x-www-form-urlencoded when parsing form
 
 
-###Gin 0.2b (Jul 08, 2014)
+### Gin 0.2b (Jul 08, 2014)
 - [PERFORMANCE] Using sync.Pool to allocatio/gc overhead
 - [NEW] Travis CI integration
 - [NEW] Completely new logger

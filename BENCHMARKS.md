@@ -1,5 +1,5 @@
-**Machine:** intel i7 ivy bridge quad-core. 8GB RAM.  
-**Date:** June 4th, 2015  
+**Machine:** intel i7 ivy bridge quad-core. 8GB RAM.
+**Date:** June 4th, 2015
 [https://github.com/gin-gonic/go-http-routing-benchmark](https://github.com/gin-gonic/go-http-routing-benchmark)
 
 ```
