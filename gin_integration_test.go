@@ -7,11 +7,13 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"runtime"
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
 	"net/http/httptest"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func testRequest(t *testing.T, url string) {
@@ -77,6 +79,10 @@ func TestRunWithPort(t *testing.T) {
 }
 
 func TestUnixSocket(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		return
+	}
+
 	router := New()
 
 	go func() {
@@ -101,6 +107,10 @@ func TestUnixSocket(t *testing.T) {
 }
 
 func TestBadUnixSocket(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		return
+	}
+
 	router := New()
 	assert.Error(t, router.RunUnix("#/tmp/unix_unit_test"))
 }
