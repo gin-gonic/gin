@@ -10,10 +10,6 @@ import (
 	"log"
 )
 
-func init() {
-	log.SetFlags(0)
-}
-
 // IsDebugging returns true if the framework is running in debug mode.
 // Use SetMode(gin.Release) to switch to disable the debug mode.
 func IsDebugging() bool {
