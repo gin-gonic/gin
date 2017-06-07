@@ -13,7 +13,7 @@ $ cat test.go
 ```go
 package main
 
-import "gopkg.in/gin-gonic/gin.v1"
+import "github.com/gin-gonic/gin"
 
 func main() {
 	r := gin.Default()
@@ -68,7 +68,7 @@ BenchmarkZeus_GithubAll 		| 2000 		| 944234 	| 300688 	| 2648
 (3): Heap Memory (B/op)  
 (4): Average Allocations per Repetition (allocs/op)  
 
-## Gin v1. stable
+## Gin v1.2 develop
 
 - [x] Zero allocation router.
 - [x] Still the fastest http router and framework. From routing to writing.
@@ -78,31 +78,24 @@ BenchmarkZeus_GithubAll 		| 2000 		| 944234 	| 300688 	| 2648
 
 
 ## Start using it
+Note: [govendor](https://github.com/kardianos/govendor) is used by Gin for dependency management.
 
-1. Download and install it:
+1. Download and install Gin:
 
 ```sh
-$ go get gopkg.in/gin-gonic/gin.v1
+$ govendor fetch github.com/gin-gonic/gin@=develop
 ```
 
 2. Import it in your code:
 
 ```go
-import "gopkg.in/gin-gonic/gin.v1"
+import "github.com/gin-gonic/gin"
 ```
 
 3. (Optional) Import `net/http`. This is required for example if using constants such as `http.StatusOK`.
 
 ```go
 import "net/http"
-```
-
-4. (Optional) Use latest changes (note: they may be broken and/or unstable):
-
-```sh  
-$ GIN_PATH=$GOPATH/src/gopkg.in/gin-gonic/gin.v1
-$ git -C $GIN_PATH checkout develop
-$ git -C $GIN_PATH pull origin develop 
 ```
 
 ## API Examples
