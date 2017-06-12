@@ -12,9 +12,8 @@ import (
 
 	"github.com/gin-gonic/gin/binding/example"
 	"github.com/golang/protobuf/proto"
-	"github.com/ugorji/go/codec"
-
 	"github.com/stretchr/testify/assert"
+	"github.com/ugorji/go/codec"
 )
 
 type FooStruct struct {

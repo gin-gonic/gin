@@ -7,7 +7,6 @@ package gin
 import (
 	"errors"
 	"strings"
-
 	"testing"
 
 	"github.com/stretchr/testify/assert"
