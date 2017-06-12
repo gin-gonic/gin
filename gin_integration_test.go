@@ -6,12 +6,12 @@ import (
 	"io/ioutil"
 	"net"
 	"net/http"
+	"net/http/httptest"
 	"os"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	"net/http/httptest"
 )
 
 func testRequest(t *testing.T, url string) {
