@@ -10,13 +10,14 @@ git:
   depth: 3
 
 install:
-  - go get -v github.com/kardianos/govendor
-  - govendor sync
-  - go get -u github.com/campoy/embedmd
+  - make install
 
 script:
-  - embedmd -d README.md
-  - go test -v -covermode=count -coverprofile=coverage.out
+  - make vet
+  - make fmt-check
+  - make embedmd
+  - make misspell-check
+  - make test
 
 after_success:
   - bash <(curl -s https://codecov.io/bash)

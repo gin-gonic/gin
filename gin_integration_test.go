@@ -20,8 +20,8 @@ import (
 
 func testRequest(t *testing.T, url string) {
 	resp, err := http.Get(url)
-	defer resp.Body.Close()
 	assert.NoError(t, err)
+	defer resp.Body.Close()
 
 	body, ioerr := ioutil.ReadAll(resp.Body)
 	assert.NoError(t, ioerr)

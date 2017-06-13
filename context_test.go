@@ -283,12 +283,11 @@ var handlerTest HandlerFunc = func(c *Context) {
 }
 
 func TestContextHandler(t *testing.T) {
-        c, _ := CreateTestContext(httptest.NewRecorder())
-        c.handlers = HandlersChain{func(c *Context) {}, handlerTest}
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	c.handlers = HandlersChain{func(c *Context) {}, handlerTest}
 
-        assert.Equal(t, reflect.ValueOf(handlerTest).Pointer(), reflect.ValueOf(c.Handler()).Pointer())
+	assert.Equal(t, reflect.ValueOf(handlerTest).Pointer(), reflect.ValueOf(c.Handler()).Pointer())
 }
-
 
 func TestContextQuery(t *testing.T) {
 	c, _ := CreateTestContext(httptest.NewRecorder())
