@@ -1,8 +1,6 @@
 GOFMT ?= gofmt "-s"
 PACKAGES ?= $(shell go list ./... | grep -v /vendor/)
 GOFILES := $(shell find . -name "*.go" -type f -not -path "./vendor/*")
-SOURCES ?= $(shell find . -name "*.go" -type f)
-TMPDIR := $(shell mktemp -d 2>/dev/null || mktemp -d -t 'tempdir')
 
 all: build
 
