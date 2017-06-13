@@ -152,7 +152,7 @@ func setTimeField(val string, structField reflect.StructField, value reflect.Val
 	if timeFormat == "" {
 		return errors.New("Blank time format")
 	}
-	
+
 	if val == "" {
 		value.Set(reflect.ValueOf(time.Time{}))
 		return nil
