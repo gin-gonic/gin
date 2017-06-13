@@ -326,8 +326,8 @@ func (engine *Engine) handleHTTPRequest(context *Context) {
 				context.Next()
 				context.writermem.WriteHeaderNow()
 				return
-
-			} else if httpMethod != "CONNECT" && path != "/" {
+			}
+			if httpMethod != "CONNECT" && path != "/" {
 				if tsr && engine.RedirectTrailingSlash {
 					redirectTrailingSlash(context)
 					return
