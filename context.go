@@ -422,47 +422,43 @@ func (c *Context) Cookie(name string) (string, error) {
 	return val, nil
 }
 
-func (c *Context) Render(code int, r render.Render) {
+func (c *Context) Render(code int, r render.Render) error {
 	c.Status(code)
-	if err := r.Render(c.Writer); err != nil {
-		panic(err)
-	}
+	return r.Render(c.Writer)
 }
 
 // HTML renders the HTTP template specified by its file name.
 // It also updates the HTTP code and sets the Content-Type as "text/html".
 // See http://golang.org/doc/articles/wiki/
-func (c *Context) HTML(code int, name string, obj interface{}) {
+func (c *Context) HTML(code int, name string, obj interface{}) error {
 	instance := c.engine.HTMLRender.Instance(name, obj)
-	c.Render(code, instance)
+	return c.Render(code, instance)
 }
 
 // IndentedJSON serializes the given struct as pretty JSON (indented + endlines) into the response body.
 // It also sets the Content-Type as "application/json".
 // WARNING: we recommend to use this only for development propuses since printing pretty JSON is
 // more CPU and bandwidth consuming. Use Context.JSON() instead.
-func (c *Context) IndentedJSON(code int, obj interface{}) {
-	c.Render(code, render.IndentedJSON{Data: obj})
+func (c *Context) IndentedJSON(code int, obj interface{}) error {
+	return c.Render(code, render.IndentedJSON{Data: obj})
 }
 
 // JSON serializes the given struct as JSON into the response body.
 // It also sets the Content-Type as "application/json".
-func (c *Context) JSON(code int, obj interface{}) {
+func (c *Context) JSON(code int, obj interface{}) error {
 	c.Status(code)
-	if err := render.WriteJSON(c.Writer, obj); err != nil {
-		panic(err)
-	}
+	return render.WriteJSON(c.Writer, obj)
 }
 
 // XML serializes the given struct as XML into the response body.
 // It also sets the Content-Type as "application/xml".
-func (c *Context) XML(code int, obj interface{}) {
-	c.Render(code, render.XML{Data: obj})
+func (c *Context) XML(code int, obj interface{}) error {
+	return c.Render(code, render.XML{Data: obj})
 }
 
 // YAML serializes the given struct as YAML into the response body.
-func (c *Context) YAML(code int, obj interface{}) {
-	c.Render(code, render.YAML{Data: obj})
+func (c *Context) YAML(code int, obj interface{}) error {
+	return c.Render(code, render.YAML{Data: obj})
 }
 
 // String writes the given string into the response body.
@@ -472,8 +468,8 @@ func (c *Context) String(code int, format string, values ...interface{}) {
 }
 
 // Redirect returns a HTTP redirect to the specific location.
-func (c *Context) Redirect(code int, location string) {
-	c.Render(-1, render.Redirect{
+func (c *Context) Redirect(code int, location string) error {
+	return c.Render(-1, render.Redirect{
 		Code:     code,
 		Location: location,
 		Request:  c.Request,
@@ -481,8 +477,8 @@ func (c *Context) Redirect(code int, location string) {
 }
 
 // Data writes some data into the body stream and updates the HTTP code.
-func (c *Context) Data(code int, contentType string, data []byte) {
-	c.Render(code, render.Data{
+func (c *Context) Data(code int, contentType string, data []byte) error {
+	return c.Render(code, render.Data{
 		ContentType: contentType,
 		Data:        data,
 	})
@@ -494,8 +490,8 @@ func (c *Context) File(filepath string) {
 }
 
 // SSEvent writes a Server-Sent Event into the body stream.
-func (c *Context) SSEvent(name string, message interface{}) {
-	c.Render(-1, sse.Event{
+func (c *Context) SSEvent(name string, message interface{}) error {
+	return c.Render(-1, sse.Event{
 		Event: name,
 		Data:  message,
 	})

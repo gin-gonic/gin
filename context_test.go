@@ -351,8 +351,9 @@ func TestContextGetCookie(t *testing.T) {
 // and Content-Type is set to application/json
 func TestContextRenderJSON(t *testing.T) {
 	c, w, _ := CreateTestContext()
-	c.JSON(201, H{"foo": "bar"})
+	e := c.JSON(201, H{"foo": "bar"})
 
+	assert.NoError(t, e)
 	assert.Equal(t, w.Code, 201)
 	assert.Equal(t, w.Body.String(), "{\"foo\":\"bar\"}\n")
 	assert.Equal(t, w.HeaderMap.Get("Content-Type"), "application/json; charset=utf-8")
@@ -363,8 +364,9 @@ func TestContextRenderJSON(t *testing.T) {
 func TestContextRenderAPIJSON(t *testing.T) {
 	c, w, _ := CreateTestContext()
 	c.Header("Content-Type", "application/vnd.api+json")
-	c.JSON(201, H{"foo": "bar"})
+	e := c.JSON(201, H{"foo": "bar"})
 
+	assert.NoError(t, e)
 	assert.Equal(t, w.Code, 201)
 	assert.Equal(t, w.Body.String(), "{\"foo\":\"bar\"}\n")
 	assert.Equal(t, w.HeaderMap.Get("Content-Type"), "application/vnd.api+json")
@@ -374,8 +376,9 @@ func TestContextRenderAPIJSON(t *testing.T) {
 // and Content-Type is set to application/json
 func TestContextRenderIndentedJSON(t *testing.T) {
 	c, w, _ := CreateTestContext()
-	c.IndentedJSON(201, H{"foo": "bar", "bar": "foo", "nested": H{"foo": "bar"}})
+	err := c.IndentedJSON(201, H{"foo": "bar", "bar": "foo", "nested": H{"foo": "bar"}})
 
+	assert.NoError(t, err)
 	assert.Equal(t, w.Code, 201)
 	assert.Equal(t, w.Body.String(), "{\n    \"bar\": \"foo\",\n    \"foo\": \"bar\",\n    \"nested\": {\n        \"foo\": \"bar\"\n    }\n}")
 	assert.Equal(t, w.HeaderMap.Get("Content-Type"), "application/json; charset=utf-8")
@@ -388,8 +391,9 @@ func TestContextRenderHTML(t *testing.T) {
 	templ := template.Must(template.New("t").Parse(`Hello {{.name}}`))
 	router.SetHTMLTemplate(templ)
 
-	c.HTML(201, "t", H{"name": "alexandernyquist"})
+	err := c.HTML(201, "t", H{"name": "alexandernyquist"})
 
+	assert.NoError(t, err)
 	assert.Equal(t, w.Code, 201)
 	assert.Equal(t, w.Body.String(), "Hello alexandernyquist")
 	assert.Equal(t, w.HeaderMap.Get("Content-Type"), "text/html; charset=utf-8")
@@ -399,8 +403,9 @@ func TestContextRenderHTML(t *testing.T) {
 // and Content-Type is set to application/xml
 func TestContextRenderXML(t *testing.T) {
 	c, w, _ := CreateTestContext()
-	c.XML(201, H{"foo": "bar"})
+	err := c.XML(201, H{"foo": "bar"})
 
+	assert.NoError(t, err)
 	assert.Equal(t, w.Code, 201)
 	assert.Equal(t, w.Body.String(), "<map><foo>bar</foo></map>")
 	assert.Equal(t, w.HeaderMap.Get("Content-Type"), "application/xml; charset=utf-8")
@@ -433,8 +438,9 @@ func TestContextRenderHTMLString(t *testing.T) {
 // with specified MIME type
 func TestContextRenderData(t *testing.T) {
 	c, w, _ := CreateTestContext()
-	c.Data(201, "text/csv", []byte(`foo,bar`))
+	err := c.Data(201, "text/csv", []byte(`foo,bar`))
 
+	assert.NoError(t, err)
 	assert.Equal(t, w.Code, 201)
 	assert.Equal(t, w.Body.String(), "foo,bar")
 	assert.Equal(t, w.HeaderMap.Get("Content-Type"), "text/csv")
@@ -469,8 +475,9 @@ func TestContextRenderFile(t *testing.T) {
 // and Content-Type is set to application/x-yaml
 func TestContextRenderYAML(t *testing.T) {
 	c, w, _ := CreateTestContext()
-	c.YAML(201, H{"foo": "bar"})
+	err := c.YAML(201, H{"foo": "bar"})
 
+	assert.NoError(t, err)
 	assert.Equal(t, w.Code, 201)
 	assert.Equal(t, w.Body.String(), "foo: bar\n")
 	assert.Equal(t, w.HeaderMap.Get("Content-Type"), "application/x-yaml; charset=utf-8")
@@ -496,10 +503,12 @@ func TestContextHeaders(t *testing.T) {
 func TestContextRenderRedirectWithRelativePath(t *testing.T) {
 	c, w, _ := CreateTestContext()
 	c.Request, _ = http.NewRequest("POST", "http://example.com", nil)
-	assert.Panics(t, func() { c.Redirect(299, "/new_path") })
-	assert.Panics(t, func() { c.Redirect(309, "/new_path") })
+	assert.Error(t, c.Redirect(299, "/new_path"))
+	assert.Error(t, c.Redirect(309, "/new_path"))
 
-	c.Redirect(301, "/path")
+	err := c.Redirect(301, "/path")
+	assert.NoError(t, err)
+
 	c.Writer.WriteHeaderNow()
 	assert.Equal(t, w.Code, 301)
 	assert.Equal(t, w.Header().Get("Location"), "/path")
@@ -528,12 +537,12 @@ func TestContextRenderRedirectWith201(t *testing.T) {
 func TestContextRenderRedirectAll(t *testing.T) {
 	c, _, _ := CreateTestContext()
 	c.Request, _ = http.NewRequest("POST", "http://example.com", nil)
-	assert.Panics(t, func() { c.Redirect(200, "/resource") })
-	assert.Panics(t, func() { c.Redirect(202, "/resource") })
-	assert.Panics(t, func() { c.Redirect(299, "/resource") })
-	assert.Panics(t, func() { c.Redirect(309, "/resource") })
-	assert.NotPanics(t, func() { c.Redirect(300, "/resource") })
-	assert.NotPanics(t, func() { c.Redirect(308, "/resource") })
+	assert.Error(t, c.Redirect(200, "/resource"))
+	assert.Error(t, c.Redirect(202, "/resource"))
+	assert.Error(t, c.Redirect(299, "/resource"))
+	assert.Error(t, c.Redirect(309, "/resource"))
+	assert.NoError(t, c.Redirect(300, "/resource"))
+	assert.NoError(t, c.Redirect(308, "/resource"))
 }
 
 func TestContextNegotiationFormat(t *testing.T) {
