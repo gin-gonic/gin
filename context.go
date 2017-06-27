@@ -430,12 +430,12 @@ func (c *Context) MultipartForm() (*multipart.Form, error) {
 // Like ParseBody() but this method also writes a 400 error if the json is not valid.
 func (c *Context) Bind(obj interface{}) error {
 	b := binding.Default(c.Request.Method, c.ContentType())
-	return c.BindWith(obj, b)
+	return c.MustBindWith(obj, b)
 }
 
-// BindJSON is a shortcut for c.BindWith(obj, binding.JSON)
+// BindJSON is a shortcut for c.MustBindWith(obj, binding.JSON)
 func (c *Context) BindJSON(obj interface{}) error {
-	return c.BindWith(obj, binding.JSON)
+	return c.MustBindWith(obj, binding.JSON)
 }
 
 // MustBindWith binds the passed struct pointer using the specified binding
