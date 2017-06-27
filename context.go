@@ -442,7 +442,7 @@ func (c *Context) BindJSON(obj interface{}) error {
 // See the binding package.
 func (c *Context) BindWith(obj interface{}, b binding.Binding) error {
 	if err := b.Bind(c.Request, obj); err != nil {
-		c.AbortWithError(400, err).SetType(ErrorTypeBind)
+		c.Error(err).SetType(ErrorTypeBind)
 		return err
 	}
 	return nil
