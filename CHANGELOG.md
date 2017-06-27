@@ -6,13 +6,20 @@
 - [NEW] Add support for Let's Encrypt via gin-gonic/autotls
 - [NEW] Improve README examples and add extra at examples folder
 - [NEW] Improved support with App Engine
+- [NEW] Add custom template delimiters, see #860
+- [NEW] Add \*context.Handler(), see #928
 - [NEW] Add \*context.GetRawData()
 - [NEW] Add \*context.GetHeader() (request)
 - [NEW] Add \*context.AbortWithStatusJSON() (JSON content type)
+- [NEW] Add \*context.Keys type cast helpers
+- [NEW] Add \*context.ShouldBindWith()
+- [NEW] Add \*context.MustBindWith()
+- [DEPRECATE] On next release: \*context.BindWith(), see #855
 - [FIX] Refactor render
 - [FIX] Reworked tests
 - [FIX] logger now supports cygwin
 - [FIX] Use X-Forwarded-For before X-Real-Ip
+- [FIX] time.Time binding (#904)
 
 ### Gin 1.1.4
 
