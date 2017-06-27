@@ -88,27 +88,19 @@ BenchmarkZeus_GithubAll 		| 2000 		| 944234 	| 300688 	| 2648
 1. Download and install it:
 
 ```sh
-$ go get gopkg.in/gin-gonic/gin.v1
+$ go get github.com/gin-gonic/gin
 ```
 
 2. Import it in your code:
 
 ```go
-import "gopkg.in/gin-gonic/gin.v1"
+import "github.com/gin-gonic/gin"
 ```
 
 3. (Optional) Import `net/http`. This is required for example if using constants such as `http.StatusOK`.
 
 ```go
 import "net/http"
-```
-
-4. (Optional) Use latest changes (note: they may be broken and/or unstable):
-
-```sh  
-$ GIN_PATH=$GOPATH/src/gopkg.in/gin-gonic/gin.v1
-$ git -C $GIN_PATH checkout develop
-$ git -C $GIN_PATH pull origin develop 
 ```
 
 ## API Examples
@@ -457,7 +449,7 @@ func startPage(c *gin.Context) {
 package main
 
 import (
-	"gopkg.in/gin-gonic/gin.v1"
+	"github.com/gin-gonic/gin"
 )
 
 type LoginForm struct {
