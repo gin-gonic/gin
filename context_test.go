@@ -17,9 +17,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/gin-contrib/sse"
 	"github.com/stretchr/testify/assert"
 	"golang.org/x/net/context"
-	"gopkg.in/gin-contrib/sse.v0"
 )
 
 var _ context.Context = &Context{}
