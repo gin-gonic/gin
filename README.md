@@ -19,7 +19,7 @@ $ cat test.go
 ```go
 package main
 
-import "gopkg.in/gin-gonic/gin.v1"
+import "github.com/gin-gonic/gin"
 
 func main() {
 	r := gin.Default()
