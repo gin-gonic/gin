@@ -438,14 +438,22 @@ func (c *Context) BindJSON(obj interface{}) error {
 	return c.BindWith(obj, binding.JSON)
 }
 
-// BindWith binds the passed struct pointer using the specified binding engine.
+// MustBindWith binds the passed struct pointer using the specified binding
+// engine. It will abort the request with HTTP 400 if any error ocurrs.
 // See the binding package.
-func (c *Context) BindWith(obj interface{}, b binding.Binding) error {
-	if err := b.Bind(c.Request, obj); err != nil {
+func (c *Context) MustBindWith(obj interface{}, b binding.Binding) (err error) {
+	if err = c.ShouldBindWith(obj, b); err != nil {
 		c.AbortWithError(400, err).SetType(ErrorTypeBind)
-		return err
 	}
-	return nil
+
+	return
+}
+
+// ShouldBindWith binds the passed struct pointer using the specified binding
+// engine.
+// See the binding package.
+func (c *Context) ShouldBindWith(obj interface{}, b binding.Binding) error {
+	return b.Bind(c.Request, obj)
 }
 
 // ClientIP implements a best effort algorithm to return the real client IP, it parses
