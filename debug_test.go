@@ -72,7 +72,7 @@ func TestDebugPrintLoadTemplate(t *testing.T) {
 	setup(&w)
 	defer teardown()
 
-	templ := template.Must(template.New("").Delims("{[{", "}]}").ParseGlob("./fixtures/basic/*"))
+	templ := template.Must(template.New("").Delims("{[{", "}]}").ParseGlob("./fixtures/basic/hello.tmpl"))
 	debugPrintLoadTemplate(templ)
 	assert.Equal(t, w.String(), "[GIN-debug] Loaded HTML Templates (2): \n\t- \n\t- hello.tmpl\n\n")
 }
