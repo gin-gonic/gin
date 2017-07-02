@@ -103,6 +103,38 @@ import "github.com/gin-gonic/gin"
 import "net/http"
 ```
 
+### Use a vendor tool like [Govendor](https://github.com/kardianos/govendor)
+
+1. `go get` govendor
+
+```sh
+$ go get github.com/kardianos/govendor
+```
+2. Create your project folder and `cd` inside
+
+```sh
+$ mkdir -p ~/go/src/github.com/myusername/project && cd "$_"
+```
+
+3. Vendor init your project and add gin
+
+```sh
+$ govendor init
+$ govendor add github.com/gin-gonic/gin@v1.2
+```
+
+4. Copy a starting template inside your project
+
+```sh
+$ cp ~/go/src/github.com/gin-gonic/gin/examples/basic/* .
+```
+
+5. Run your project
+
+```sh
+$ go run main.go
+```
+
 ## API Examples
 
 ### Using GET, POST, PUT, PATCH, DELETE and OPTIONS
