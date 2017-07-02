@@ -126,7 +126,7 @@ $ govendor add github.com/gin-gonic/gin@v1.2
 4. Copy a starting template inside your project
 
 ```sh
-$ cp ~/go/src/github.com/gin-gonic/gin/examples/basic/* .
+$ curl https://raw.githubusercontent.com/gin-gonic/gin/master/examples/basic/main.go > main.go
 ```
 
 5. Run your project
