@@ -36,37 +36,43 @@ func TestLogger(t *testing.T) {
 	// I wrote these first (extending the above) but then realized they are more
 	// like integration tests because they test the whole logging process rather
 	// than individual functions.  Im not sure where these should go.
-
+	buffer.Reset()
 	performRequest(router, "POST", "/example")
 	assert.Contains(t, buffer.String(), "200")
 	assert.Contains(t, buffer.String(), "POST")
 	assert.Contains(t, buffer.String(), "/example")
 
+	buffer.Reset()
 	performRequest(router, "PUT", "/example")
 	assert.Contains(t, buffer.String(), "200")
 	assert.Contains(t, buffer.String(), "PUT")
 	assert.Contains(t, buffer.String(), "/example")
 
+	buffer.Reset()
 	performRequest(router, "DELETE", "/example")
 	assert.Contains(t, buffer.String(), "200")
 	assert.Contains(t, buffer.String(), "DELETE")
 	assert.Contains(t, buffer.String(), "/example")
 
+	buffer.Reset()
 	performRequest(router, "PATCH", "/example")
 	assert.Contains(t, buffer.String(), "200")
 	assert.Contains(t, buffer.String(), "PATCH")
 	assert.Contains(t, buffer.String(), "/example")
 
+	buffer.Reset()
 	performRequest(router, "HEAD", "/example")
 	assert.Contains(t, buffer.String(), "200")
 	assert.Contains(t, buffer.String(), "HEAD")
 	assert.Contains(t, buffer.String(), "/example")
 
+	buffer.Reset()
 	performRequest(router, "OPTIONS", "/example")
 	assert.Contains(t, buffer.String(), "200")
 	assert.Contains(t, buffer.String(), "OPTIONS")
 	assert.Contains(t, buffer.String(), "/example")
 
+	buffer.Reset()
 	performRequest(router, "GET", "/notfound")
 	assert.Contains(t, buffer.String(), "404")
 	assert.Contains(t, buffer.String(), "GET")
@@ -107,16 +113,16 @@ func TestErrorLogger(t *testing.T) {
 	})
 
 	w := performRequest(router, "GET", "/error")
-	assert.Equal(t, w.Code, 200)
-	assert.Equal(t, w.Body.String(), "{\"error\":\"this is an error\"}\n")
+	assert.Equal(t, 200, w.Code)
+	assert.Equal(t, "{\"error\":\"this is an error\"}", w.Body.String())
 
 	w = performRequest(router, "GET", "/abort")
-	assert.Equal(t, w.Code, 401)
-	assert.Equal(t, w.Body.String(), "{\"error\":\"no authorized\"}\n")
+	assert.Equal(t, 401, w.Code)
+	assert.Equal(t, "{\"error\":\"no authorized\"}", w.Body.String())
 
 	w = performRequest(router, "GET", "/print")
-	assert.Equal(t, w.Code, 500)
-	assert.Equal(t, w.Body.String(), "hola!{\"error\":\"this is an error\"}\n")
+	assert.Equal(t, 500, w.Code)
+	assert.Equal(t, "hola!{\"error\":\"this is an error\"}", w.Body.String())
 }
 
 func TestSkippingPaths(t *testing.T) {
@@ -129,6 +135,14 @@ func TestSkippingPaths(t *testing.T) {
 	performRequest(router, "GET", "/logged")
 	assert.Contains(t, buffer.String(), "200")
 
+	buffer.Reset()
 	performRequest(router, "GET", "/skipped")
 	assert.Contains(t, buffer.String(), "")
+}
+
+func TestDisableConsoleColor(t *testing.T) {
+	New()
+	assert.False(t, disableColor)
+	DisableConsoleColor()
+	assert.True(t, disableColor)
 }

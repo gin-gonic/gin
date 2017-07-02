@@ -7,6 +7,7 @@ package gin
 import (
 	"bytes"
 	"errors"
+	"html/template"
 	"io"
 	"log"
 	"os"
@@ -64,6 +65,25 @@ func TestDebugPrintRoutes(t *testing.T) {
 
 	debugPrintRoute("GET", "/path/to/route/:param", HandlersChain{func(c *Context) {}, handlerNameTest})
 	assert.Regexp(t, `^\[GIN-debug\] GET    /path/to/route/:param     --> (.*/vendor/)?github.com/gin-gonic/gin.handlerNameTest \(2 handlers\)\n$`, w.String())
+}
+
+func TestDebugPrintLoadTemplate(t *testing.T) {
+	var w bytes.Buffer
+	setup(&w)
+	defer teardown()
+
+	templ := template.Must(template.New("").Delims("{[{", "}]}").ParseGlob("./fixtures/basic/hello.tmpl"))
+	debugPrintLoadTemplate(templ)
+	assert.Equal(t, w.String(), "[GIN-debug] Loaded HTML Templates (2): \n\t- \n\t- hello.tmpl\n\n")
+}
+
+func TestDebugPrintWARNINGSetHTMLTemplate(t *testing.T) {
+	var w bytes.Buffer
+	setup(&w)
+	defer teardown()
+
+	debugPrintWARNINGSetHTMLTemplate()
+	assert.Equal(t, w.String(), "[GIN-debug] [WARNING] Since SetHTMLTemplate() is NOT thread-safe. It should only be called\nat initialization. ie. before any route is registered or the router is listening in a socket:\n\n\trouter := gin.Default()\n\trouter.SetHTMLTemplate(template) // << good place\n\n")
 }
 
 func setup(w io.Writer) {

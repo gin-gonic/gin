@@ -1,14 +1,23 @@
 language: go
 sudo: false
 go:
-  - 1.4
-  - 1.5.4
-  - 1.6.4
-  - 1.7.4
-  - tip
+  - 1.6.x
+  - 1.7.x
+  - 1.8.x
+  - master
+
+git:
+  depth: 3
+
+install:
+  - make install
 
 script:
-  - go test -v -covermode=count -coverprofile=coverage.out
+  - make vet
+  - make fmt-check
+  - make embedmd
+  - make misspell-check
+  - make test
 
 after_success:
   - bash <(curl -s https://codecov.io/bash)

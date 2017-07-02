@@ -5,14 +5,98 @@
 package gin
 
 import (
+	"fmt"
+	"html/template"
+	"io/ioutil"
+	"net/http"
 	"reflect"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 )
 
+func formatAsDate(t time.Time) string {
+	year, month, day := t.Date()
+	return fmt.Sprintf("%d/%02d/%02d", year, month, day)
+}
+
+func setupHTMLFiles(t *testing.T) func() {
+	go func() {
+		SetMode(TestMode)
+		router := New()
+		router.Delims("{[{", "}]}")
+		router.SetFuncMap(template.FuncMap{
+			"formatAsDate": formatAsDate,
+		})
+		router.LoadHTMLFiles("./fixtures/basic/hello.tmpl", "./fixtures/basic/raw.tmpl")
+		router.GET("/test", func(c *Context) {
+			c.HTML(http.StatusOK, "hello.tmpl", map[string]string{"name": "world"})
+		})
+		router.GET("/raw", func(c *Context) {
+			c.HTML(http.StatusOK, "raw.tmpl", map[string]interface{}{
+				"now": time.Date(2017, 07, 01, 0, 0, 0, 0, time.UTC),
+			})
+		})
+		router.Run(":8888")
+	}()
+	t.Log("waiting 1 second for server startup")
+	time.Sleep(1 * time.Second)
+	return func() {}
+}
+
+func setupHTMLGlob(t *testing.T) func() {
+	go func() {
+		SetMode(DebugMode)
+		router := New()
+		router.Delims("{[{", "}]}")
+		router.SetFuncMap(template.FuncMap{
+			"formatAsDate": formatAsDate,
+		})
+		router.LoadHTMLGlob("./fixtures/basic/*")
+		router.GET("/test", func(c *Context) {
+			c.HTML(http.StatusOK, "hello.tmpl", map[string]string{"name": "world"})
+		})
+		router.GET("/raw", func(c *Context) {
+			c.HTML(http.StatusOK, "raw.tmpl", map[string]interface{}{
+				"now": time.Date(2017, 07, 01, 0, 0, 0, 0, time.UTC),
+			})
+		})
+		router.Run(":8888")
+	}()
+	t.Log("waiting 1 second for server startup")
+	time.Sleep(1 * time.Second)
+	return func() {}
+}
+
 //TODO
-// func (engine *Engine) LoadHTMLGlob(pattern string) {
+func TestLoadHTMLGlob(t *testing.T) {
+	td := setupHTMLGlob(t)
+	res, err := http.Get("http://127.0.0.1:8888/test")
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	resp, _ := ioutil.ReadAll(res.Body)
+	assert.Equal(t, "<h1>Hello world</h1>", string(resp[:]))
+
+	td()
+}
+
+func TestLoadHTMLGlobFromFuncMap(t *testing.T) {
+	time.Now()
+	td := setupHTMLGlob(t)
+	res, err := http.Get("http://127.0.0.1:8888/raw")
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	resp, _ := ioutil.ReadAll(res.Body)
+	assert.Equal(t, "Date: 2017/07/01\n", string(resp[:]))
+
+	td()
+}
+
 // func (engine *Engine) LoadHTMLFiles(files ...string) {
 // func (engine *Engine) RunTLS(addr string, cert string, key string) error {
 
@@ -41,6 +125,32 @@ func TestCreateEngine(t *testing.T) {
 // 	assert.Equal(t, r.Files, []string{"index.html", "login.html"})
 // 	SetMode(TestMode)
 // }
+
+func TestLoadHTMLFiles(t *testing.T) {
+	td := setupHTMLFiles(t)
+	res, err := http.Get("http://127.0.0.1:8888/test")
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	resp, _ := ioutil.ReadAll(res.Body)
+	assert.Equal(t, "<h1>Hello world</h1>", string(resp[:]))
+	td()
+}
+
+func TestLoadHTMLFilesFuncMap(t *testing.T) {
+	time.Now()
+	td := setupHTMLFiles(t)
+	res, err := http.Get("http://127.0.0.1:8888/raw")
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	resp, _ := ioutil.ReadAll(res.Body)
+	assert.Equal(t, "Date: 2017/07/01\n", string(resp[:]))
+
+	td()
+}
 
 func TestLoadHTMLReleaseMode(t *testing.T) {
 

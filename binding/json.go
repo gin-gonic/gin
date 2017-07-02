@@ -6,7 +6,6 @@ package binding
 
 import (
 	"encoding/json"
-
 	"net/http"
 )
 
