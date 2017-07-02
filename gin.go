@@ -47,6 +47,7 @@ type (
 		RouterGroup
 		delims      render.Delims
 		HTMLRender  render.HTMLRender
+		FuncMap     template.FuncMap
 		allNoRoute  HandlersChain
 		allNoMethod HandlersChain
 		noRoute     HandlersChain
@@ -112,6 +113,7 @@ func New() *Engine {
 			basePath: "/",
 			root:     true,
 		},
+		FuncMap:                template.FuncMap{},
 		RedirectTrailingSlash:  true,
 		RedirectFixedPath:      false,
 		HandleMethodNotAllowed: false,
@@ -147,19 +149,19 @@ func (engine *Engine) Delims(left, right string) *Engine {
 
 func (engine *Engine) LoadHTMLGlob(pattern string) {
 	if IsDebugging() {
-		debugPrintLoadTemplate(template.Must(template.New("").Delims(engine.delims.Left, engine.delims.Right).ParseGlob(pattern)))
-		engine.HTMLRender = render.HTMLDebug{Glob: pattern, Delims: engine.delims}
+		debugPrintLoadTemplate(template.Must(template.New("").Delims(engine.delims.Left, engine.delims.Right).Funcs(engine.FuncMap).ParseGlob(pattern)))
+		engine.HTMLRender = render.HTMLDebug{Glob: pattern, FuncMap: engine.FuncMap, Delims: engine.delims}
 	} else {
-		templ := template.Must(template.New("").Delims(engine.delims.Left, engine.delims.Right).ParseGlob(pattern))
+		templ := template.Must(template.New("").Delims(engine.delims.Left, engine.delims.Right).Funcs(engine.FuncMap).ParseGlob(pattern))
 		engine.SetHTMLTemplate(templ)
 	}
 }
 
 func (engine *Engine) LoadHTMLFiles(files ...string) {
 	if IsDebugging() {
-		engine.HTMLRender = render.HTMLDebug{Files: files, Delims: engine.delims}
+		engine.HTMLRender = render.HTMLDebug{Files: files, FuncMap: engine.FuncMap, Delims: engine.delims}
 	} else {
-		templ := template.Must(template.New("").Delims(engine.delims.Left, engine.delims.Right).ParseFiles(files...))
+		templ := template.Must(template.New("").Delims(engine.delims.Left, engine.delims.Right).Funcs(engine.FuncMap).ParseFiles(files...))
 		engine.SetHTMLTemplate(templ)
 	}
 }
@@ -169,7 +171,11 @@ func (engine *Engine) SetHTMLTemplate(templ *template.Template) {
 		debugPrintWARNINGSetHTMLTemplate()
 	}
 
-	engine.HTMLRender = render.HTMLProduction{Template: templ}
+	engine.HTMLRender = render.HTMLProduction{Template: templ.Funcs(engine.FuncMap)}
+}
+
+func (engine *Engine) SetFuncMap(funcMap template.FuncMap) {
+	engine.FuncMap = funcMap
 }
 
 // NoRoute adds handlers for NoRoute. It return a 404 code by default.
