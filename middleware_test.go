@@ -7,11 +7,10 @@ package gin
 import (
 	"errors"
 	"strings"
-
 	"testing"
 
+	"github.com/gin-contrib/sse"
 	"github.com/stretchr/testify/assert"
-	"gopkg.in/gin-contrib/sse.v0"
 )
 
 func TestMiddlewareGeneralCase(t *testing.T) {

@@ -12,13 +12,14 @@ import (
 	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/gin-contrib/sse"
 	"github.com/stretchr/testify/assert"
 	"golang.org/x/net/context"
-	"gopkg.in/gin-contrib/sse.v0"
 )
 
 var _ context.Context = &Context{}
@@ -168,6 +169,85 @@ func TestContextSetGetValues(t *testing.T) {
 
 }
 
+func TestContextGetString(t *testing.T) {
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	c.Set("string", "this is a string")
+	assert.Equal(t, "this is a string", c.GetString("string"))
+}
+
+func TestContextSetGetBool(t *testing.T) {
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	c.Set("bool", true)
+	assert.Equal(t, true, c.GetBool("bool"))
+}
+
+func TestContextGetInt(t *testing.T) {
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	c.Set("int", 1)
+	assert.Equal(t, 1, c.GetInt("int"))
+}
+
+func TestContextGetInt64(t *testing.T) {
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	c.Set("int64", int64(42424242424242))
+	assert.Equal(t, int64(42424242424242), c.GetInt64("int64"))
+}
+
+func TestContextGetFloat64(t *testing.T) {
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	c.Set("float64", 4.2)
+	assert.Equal(t, 4.2, c.GetFloat64("float64"))
+}
+
+func TestContextGetTime(t *testing.T) {
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	t1, _ := time.Parse("1/2/2006 15:04:05", "01/01/2017 12:00:00")
+	c.Set("time", t1)
+	assert.Equal(t, t1, c.GetTime("time"))
+}
+
+func TestContextGetDuration(t *testing.T) {
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	c.Set("duration", time.Second)
+	assert.Equal(t, time.Second, c.GetDuration("duration"))
+}
+
+func TestContextGetStringSlice(t *testing.T) {
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	c.Set("slice", []string{"foo"})
+	assert.Equal(t, []string{"foo"}, c.GetStringSlice("slice"))
+}
+
+func TestContextGetStringMap(t *testing.T) {
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	var m = make(map[string]interface{})
+	m["foo"] = 1
+	c.Set("map", m)
+
+	assert.Equal(t, m, c.GetStringMap("map"))
+	assert.Equal(t, 1, c.GetStringMap("map")["foo"])
+}
+
+func TestContextGetStringMapString(t *testing.T) {
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	var m = make(map[string]string)
+	m["foo"] = "bar"
+	c.Set("map", m)
+
+	assert.Equal(t, m, c.GetStringMapString("map"))
+	assert.Equal(t, "bar", c.GetStringMapString("map")["foo"])
+}
+
+func TestContextGetStringMapStringSlice(t *testing.T) {
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	var m = make(map[string][]string)
+	m["foo"] = []string{"foo"}
+	c.Set("map", m)
+
+	assert.Equal(t, m, c.GetStringMapStringSlice("map"))
+	assert.Equal(t, []string{"foo"}, c.GetStringMapStringSlice("map")["foo"])
+}
+
 func TestContextCopy(t *testing.T) {
 	c, _ := CreateTestContext(httptest.NewRecorder())
 	c.index = 2
@@ -196,6 +276,17 @@ func TestContextHandlerName(t *testing.T) {
 
 func handlerNameTest(c *Context) {
 
+}
+
+var handlerTest HandlerFunc = func(c *Context) {
+
+}
+
+func TestContextHandler(t *testing.T) {
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	c.handlers = HandlersChain{func(c *Context) {}, handlerTest}
+
+	assert.Equal(t, reflect.ValueOf(handlerTest).Pointer(), reflect.ValueOf(c.Handler()).Pointer())
 }
 
 func TestContextQuery(t *testing.T) {
@@ -384,12 +475,21 @@ func TestContextSetCookie(t *testing.T) {
 	assert.Equal(t, c.Writer.Header().Get("Set-Cookie"), "user=gin; Path=/; Domain=localhost; Max-Age=1; HttpOnly; Secure")
 }
 
+func TestContextSetCookiePathEmpty(t *testing.T) {
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	c.SetCookie("user", "gin", 1, "", "localhost", true, true)
+	assert.Equal(t, c.Writer.Header().Get("Set-Cookie"), "user=gin; Path=/; Domain=localhost; Max-Age=1; HttpOnly; Secure")
+}
+
 func TestContextGetCookie(t *testing.T) {
 	c, _ := CreateTestContext(httptest.NewRecorder())
 	c.Request, _ = http.NewRequest("GET", "/get", nil)
 	c.Request.Header.Set("Cookie", "user=gin")
 	cookie, _ := c.Cookie("user")
 	assert.Equal(t, cookie, "gin")
+
+	_, err := c.Cookie("nokey")
+	assert.Error(t, err)
 }
 
 func TestContextBodyAllowedForStatus(t *testing.T) {
@@ -735,6 +835,68 @@ func TestContextRenderRedirectAll(t *testing.T) {
 	assert.Panics(t, func() { c.Redirect(309, "/resource") })
 	assert.NotPanics(t, func() { c.Redirect(300, "/resource") })
 	assert.NotPanics(t, func() { c.Redirect(308, "/resource") })
+}
+
+func TestContextNegotiationWithJSON(t *testing.T) {
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
+	c.Request, _ = http.NewRequest("POST", "", nil)
+
+	c.Negotiate(200, Negotiate{
+		Offered: []string{MIMEJSON, MIMEXML},
+		Data:    H{"foo": "bar"},
+	})
+
+	assert.Equal(t, 200, w.Code)
+	assert.Equal(t, "{\"foo\":\"bar\"}", w.Body.String())
+	assert.Equal(t, "application/json; charset=utf-8", w.HeaderMap.Get("Content-Type"))
+}
+
+func TestContextNegotiationWithXML(t *testing.T) {
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
+	c.Request, _ = http.NewRequest("POST", "", nil)
+
+	c.Negotiate(200, Negotiate{
+		Offered: []string{MIMEXML, MIMEJSON},
+		Data:    H{"foo": "bar"},
+	})
+
+	assert.Equal(t, 200, w.Code)
+	assert.Equal(t, "<map><foo>bar</foo></map>", w.Body.String())
+	assert.Equal(t, "application/xml; charset=utf-8", w.HeaderMap.Get("Content-Type"))
+}
+
+func TestContextNegotiationWithHTML(t *testing.T) {
+	w := httptest.NewRecorder()
+	c, router := CreateTestContext(w)
+	c.Request, _ = http.NewRequest("POST", "", nil)
+	templ := template.Must(template.New("t").Parse(`Hello {{.name}}`))
+	router.SetHTMLTemplate(templ)
+
+	c.Negotiate(200, Negotiate{
+		Offered:  []string{MIMEHTML},
+		Data:     H{"name": "gin"},
+		HTMLName: "t",
+	})
+
+	assert.Equal(t, 200, w.Code)
+	assert.Equal(t, "Hello gin", w.Body.String())
+	assert.Equal(t, "text/html; charset=utf-8", w.HeaderMap.Get("Content-Type"))
+}
+
+func TestContextNegotiationNotSupport(t *testing.T) {
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
+	c.Request, _ = http.NewRequest("POST", "", nil)
+
+	c.Negotiate(200, Negotiate{
+		Offered: []string{MIMEPOSTForm},
+	})
+
+	assert.Equal(t, 406, w.Code)
+	assert.Equal(t, c.index, abortIndex)
+	assert.True(t, c.IsAborted())
 }
 
 func TestContextNegotiationFormat(t *testing.T) {

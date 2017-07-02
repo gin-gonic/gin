@@ -5,10 +5,10 @@
 package binding
 
 import (
-	"github.com/golang/protobuf/proto"
-
 	"io/ioutil"
 	"net/http"
+
+	"github.com/golang/protobuf/proto"
 )
 
 type protobufBinding struct{}
