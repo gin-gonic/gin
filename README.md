@@ -120,7 +120,7 @@ $ mkdir -p ~/go/src/github.com/myusername/project && cd "$_"
 
 ```sh
 $ govendor init
-$ govendor add github.com/gin-gonic/gin@v1.2
+$ govendor fetch github.com/gin-gonic/gin@v1.2
 ```
 
 4. Copy a starting template inside your project
