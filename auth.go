@@ -10,9 +10,11 @@ import (
 	"strconv"
 )
 
+// AuthUserKey is the cookie name for user credential in basic auth
 const AuthUserKey = "user"
 
 type (
+	// Accounts defines a key/value for user/pass list of authorized logins
 	Accounts map[string]string
 	authPair struct {
 		Value string
