@@ -23,11 +23,20 @@ func formatAsDate(t time.Time) string {
 
 func setupHTMLFiles(t *testing.T) func() {
 	go func() {
+		SetMode(TestMode)
 		router := New()
 		router.Delims("{[{", "}]}")
-		router.LoadHTMLFiles("./fixtures/basic/hello.tmpl")
+		router.SetFuncMap(template.FuncMap{
+			"formatAsDate": formatAsDate,
+		})
+		router.LoadHTMLFiles("./fixtures/basic/hello.tmpl", "./fixtures/basic/raw.tmpl")
 		router.GET("/test", func(c *Context) {
 			c.HTML(http.StatusOK, "hello.tmpl", map[string]string{"name": "world"})
+		})
+		router.GET("/raw", func(c *Context) {
+			c.HTML(http.StatusOK, "raw.tmpl", map[string]interface{}{
+				"now": time.Date(2017, 07, 01, 0, 0, 0, 0, time.UTC),
+			})
 		})
 		router.Run(":8888")
 	}()
@@ -74,7 +83,7 @@ func TestLoadHTMLGlob(t *testing.T) {
 	td()
 }
 
-func TestLoadHTMLFromFuncMap(t *testing.T) {
+func TestLoadHTMLGlobFromFuncMap(t *testing.T) {
 	time.Now()
 	td := setupHTMLGlob(t)
 	res, err := http.Get("http://127.0.0.1:8888/raw")
@@ -126,6 +135,20 @@ func TestLoadHTMLFiles(t *testing.T) {
 
 	resp, _ := ioutil.ReadAll(res.Body)
 	assert.Equal(t, "<h1>Hello world</h1>", string(resp[:]))
+	td()
+}
+
+func TestLoadHTMLFilesFuncMap(t *testing.T) {
+	time.Now()
+	td := setupHTMLFiles(t)
+	res, err := http.Get("http://127.0.0.1:8888/raw")
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	resp, _ := ioutil.ReadAll(res.Body)
+	assert.Equal(t, "Date: 2017/07/01\n", string(resp[:]))
+
 	td()
 }
 
