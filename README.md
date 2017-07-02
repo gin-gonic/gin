@@ -628,6 +628,46 @@ You may use custom delims
 	r.LoadHTMLGlob("/path/to/templates"))
 ```  
 
+#### Add custom template funcs
+
+main.go
+
+```go
+	...
+	
+	func formatAsDate(t time.Time) string {
+		year, month, day := t.Date()
+		return fmt.Sprintf("%d/%02d/%02d", year, month, day)
+	}
+	
+	...
+	
+	router.SetFuncMap(template.FuncMap{
+		"formatAsDate": formatAsDate,
+	})
+	
+	...
+	
+	router.GET("/raw", func(c *Context) {
+		c.HTML(http.StatusOK, "raw.tmpl", map[string]interface{}{
+			"now": time.Date(2017, 07, 01, 0, 0, 0, 0, time.UTC),
+		})
+	})
+	
+	...
+```
+
+raw.tmpl
+
+```html
+Date: {[{.now | formatAsDate}]}
+```
+
+Result:
+```
+Date: 2017/07/01
+```
+
 ### Multitemplate
 
 Gin allow by default use only one html.Template. Check [a multitemplate render](https://github.com/gin-contrib/multitemplate) for using features like go 1.6 `block template`.
