@@ -74,7 +74,7 @@ func TestDebugPrintLoadTemplate(t *testing.T) {
 
 	templ := template.Must(template.New("").Delims("{[{", "}]}").ParseGlob("./fixtures/basic/hello.tmpl"))
 	debugPrintLoadTemplate(templ)
-	assert.Equal(t, w.String(), "[GIN-debug] Loaded HTML Templates (2): \n\t- \n\t- hello.tmpl\n\n")
+	assert.Regexp(t, `^\[GIN-debug\] Loaded HTML Templates \(2\): \n(\t- \n|\t- hello\.tmpl\n){2}\n`, w.String())
 }
 
 func TestDebugPrintWARNINGSetHTMLTemplate(t *testing.T) {
