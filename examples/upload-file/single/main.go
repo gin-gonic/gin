@@ -17,12 +17,24 @@ func main() {
 		email := c.PostForm("email")
 
 		// Source
-		file, _ := c.FormFile("file")
-		src, _ := file.Open()
+		file, err := c.FormFile("file")
+		if err != nil {
+			c.String(http.StatusBadRequest, fmt.Sprintf("get form err: %s", err.Error()))
+			return
+		}
+		src, err := file.Open()
+		if err != nil {
+			c.String(http.StatusBadRequest, fmt.Sprintf("file open err: %s", err.Error()))
+			return
+		}
 		defer src.Close()
 
 		// Destination
-		dst, _ := os.Create(file.Filename)
+		dst, err := os.Create(file.Filename)
+		if err != nil {
+			c.String(http.StatusBadRequest, fmt.Sprintf("Create file err: %s", err.Error()))
+			return
+		}
 		defer dst.Close()
 
 		// Copy

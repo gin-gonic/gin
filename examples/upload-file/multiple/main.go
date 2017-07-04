@@ -17,16 +17,28 @@ func main() {
 		email := c.PostForm("email")
 
 		// Multipart form
-		form, _ := c.MultipartForm()
+		form, err := c.MultipartForm()
+		if err != nil {
+			c.String(http.StatusBadRequest, fmt.Sprintf("get form err: %s", err.Error()))
+			return
+		}
 		files := form.File["files"]
 
 		for _, file := range files {
 			// Source
-			src, _ := file.Open()
+			src, err := file.Open()
+			if err != nil {
+				c.String(http.StatusBadRequest, fmt.Sprintf("file open err: %s", err.Error()))
+				return
+			}
 			defer src.Close()
 
 			// Destination
-			dst, _ := os.Create(file.Filename)
+			dst, err := os.Create(file.Filename)
+			if err != nil {
+				c.String(http.StatusBadRequest, fmt.Sprintf("Create file err: %s", err.Error()))
+				return
+			}
 			defer dst.Close()
 
 			// Copy
