@@ -23,15 +23,13 @@ const (
 	ErrorTypeNu            = 2
 )
 
-type (
-	Error struct {
-		Err  error
-		Type ErrorType
-		Meta interface{}
-	}
+type Error struct {
+	Err  error
+	Type ErrorType
+	Meta interface{}
+}
 
-	errorMsgs []*Error
-)
+type errorMsgs []*Error
 
 var _ error = &Error{}
 
