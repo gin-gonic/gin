@@ -48,9 +48,15 @@ type Context struct {
 	handlers HandlersChain
 	index    int8
 
-	engine   *Engine
-	Keys     map[string]interface{}
-	Errors   errorMsgs
+	engine *Engine
+
+	// Keys is a key/value pair exclusively for the context of each request
+	Keys map[string]interface{}
+
+	// Errors is a list of errors attached to all the handlers/middlewares who used this context
+	Errors errorMsgs
+
+	// Accepted defines a list of manually accepted formats for content negotiation
 	Accepted []string
 }
 
