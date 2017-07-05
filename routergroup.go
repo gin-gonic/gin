@@ -11,39 +11,37 @@ import (
 	"strings"
 )
 
-type (
-	IRouter interface {
-		IRoutes
-		Group(string, ...HandlerFunc) *RouterGroup
-	}
+type IRouter interface {
+	IRoutes
+	Group(string, ...HandlerFunc) *RouterGroup
+}
 
-	IRoutes interface {
-		Use(...HandlerFunc) IRoutes
+type IRoutes interface {
+	Use(...HandlerFunc) IRoutes
 
-		Handle(string, string, ...HandlerFunc) IRoutes
-		Any(string, ...HandlerFunc) IRoutes
-		GET(string, ...HandlerFunc) IRoutes
-		POST(string, ...HandlerFunc) IRoutes
-		DELETE(string, ...HandlerFunc) IRoutes
-		PATCH(string, ...HandlerFunc) IRoutes
-		PUT(string, ...HandlerFunc) IRoutes
-		OPTIONS(string, ...HandlerFunc) IRoutes
-		HEAD(string, ...HandlerFunc) IRoutes
+	Handle(string, string, ...HandlerFunc) IRoutes
+	Any(string, ...HandlerFunc) IRoutes
+	GET(string, ...HandlerFunc) IRoutes
+	POST(string, ...HandlerFunc) IRoutes
+	DELETE(string, ...HandlerFunc) IRoutes
+	PATCH(string, ...HandlerFunc) IRoutes
+	PUT(string, ...HandlerFunc) IRoutes
+	OPTIONS(string, ...HandlerFunc) IRoutes
+	HEAD(string, ...HandlerFunc) IRoutes
 
-		StaticFile(string, string) IRoutes
-		Static(string, string) IRoutes
-		StaticFS(string, http.FileSystem) IRoutes
-	}
+	StaticFile(string, string) IRoutes
+	Static(string, string) IRoutes
+	StaticFS(string, http.FileSystem) IRoutes
+}
 
-	// RouterGroup is used internally to configure router, a RouterGroup is associated with a prefix
-	// and an array of handlers (middleware)
-	RouterGroup struct {
-		Handlers HandlersChain
-		basePath string
-		engine   *Engine
-		root     bool
-	}
-)
+// RouterGroup is used internally to configure router, a RouterGroup is associated with a prefix
+// and an array of handlers (middleware)
+type RouterGroup struct {
+	Handlers HandlersChain
+	basePath string
+	engine   *Engine
+	root     bool
+}
 
 var _ IRouter = &RouterGroup{}
 

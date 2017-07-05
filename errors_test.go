@@ -54,6 +54,13 @@ func TestError(t *testing.T) {
 		"status": "200",
 		"data":   "some data",
 	})
+
+	type customError struct {
+		status string
+		data   string
+	}
+	err.SetMeta(customError{status: "200", data: "other data"})
+	assert.Equal(t, err.JSON(), customError{status: "200", data: "other data"})
 }
 
 func TestErrorSlice(t *testing.T) {

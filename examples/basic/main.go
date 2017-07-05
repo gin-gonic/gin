@@ -7,6 +7,8 @@ import (
 var DB = make(map[string]string)
 
 func main() {
+	// Disable Console Color
+	// gin.DisableConsoleColor()
 	r := gin.Default()
 
 	// Ping test

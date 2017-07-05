@@ -1,24 +1,26 @@
+# Gin Web Framework
 
-#Gin Web Framework
+<img align="right" src="https://raw.githubusercontent.com/gin-gonic/gin/master/logo.png">
 
-<img align="right" src="https://raw.githubusercontent.com/gin-gonic/gin/master/logo.jpg">
 [![Build Status](https://travis-ci.org/gin-gonic/gin.svg)](https://travis-ci.org/gin-gonic/gin)
-[![codecov](https://codecov.io/gh/gin-gonic/gin/branch/master/graph/badge.svg)](https://codecov.io/gh/gin-gonic/gin)
-[![Go Report Card](https://goreportcard.com/badge/github.com/gin-gonic/gin)](https://goreportcard.com/report/github.com/gin-gonic/gin)
-[![GoDoc](https://godoc.org/github.com/gin-gonic/gin?status.svg)](https://godoc.org/github.com/gin-gonic/gin)
-[![Join the chat at https://gitter.im/gin-gonic/gin](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/gin-gonic/gin?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+ [![codecov](https://codecov.io/gh/gin-gonic/gin/branch/master/graph/badge.svg)](https://codecov.io/gh/gin-gonic/gin)
+ [![Go Report Card](https://goreportcard.com/badge/github.com/gin-gonic/gin)](https://goreportcard.com/report/github.com/gin-gonic/gin)
+ [![GoDoc](https://godoc.org/github.com/gin-gonic/gin?status.svg)](https://godoc.org/github.com/gin-gonic/gin)
+ [![Join the chat at https://gitter.im/gin-gonic/gin](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/gin-gonic/gin?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
 Gin is a web framework written in Go (Golang). It features a martini-like API with much better performance, up to 40 times faster thanks to [httprouter](https://github.com/julienschmidt/httprouter). If you need performance and good productivity, you will love Gin.
 
 ![Gin console logger](https://gin-gonic.github.io/gin/other/console.png)
 
 ```sh
-$ cat test.go
+# assume the following codes in example.go file
+$ cat example.go
 ```
+
 ```go
 package main
 
-import "gopkg.in/gin-gonic/gin.v1"
+import "github.com/gin-gonic/gin"
 
 func main() {
 	r := gin.Default()
@@ -29,6 +31,11 @@ func main() {
 	})
 	r.Run() // listen and serve on 0.0.0.0:8080
 }
+```
+
+```
+# run example.go and visit 0.0.0.0:8080/ping on browser
+$ go run example.go
 ```
 
 ## Benchmarks
@@ -86,28 +93,63 @@ BenchmarkZeus_GithubAll 		| 2000 		| 944234 	| 300688 	| 2648
 
 1. Download and install it:
 
-    ```sh
-    $ go get gopkg.in/gin-gonic/gin.v1
-    ```
+```sh
+$ go get github.com/gin-gonic/gin
+```
 
 2. Import it in your code:
 
-    ```go
-    import "gopkg.in/gin-gonic/gin.v1"
-    ```
+```go
+import "github.com/gin-gonic/gin"
+```
 
 3. (Optional) Import `net/http`. This is required for example if using constants such as `http.StatusOK`.
 
-    ```go
-    import "net/http"
-    ```
+```go
+import "net/http"
+```
+
+### Use a vendor tool like [Govendor](https://github.com/kardianos/govendor)
+
+1. `go get` govendor
+
+```sh
+$ go get github.com/kardianos/govendor
+```
+2. Create your project folder and `cd` inside
+
+```sh
+$ mkdir -p ~/go/src/github.com/myusername/project && cd "$_"
+```
+
+3. Vendor init your project and add gin
+
+```sh
+$ govendor init
+$ govendor fetch github.com/gin-gonic/gin@v1.2
+```
+
+4. Copy a starting template inside your project
+
+```sh
+$ curl https://raw.githubusercontent.com/gin-gonic/gin/master/examples/basic/main.go > main.go
+```
+
+5. Run your project
+
+```sh
+$ go run main.go
+```
 
 ## API Examples
 
-#### Using GET, POST, PUT, PATCH, DELETE and OPTIONS
+### Using GET, POST, PUT, PATCH, DELETE and OPTIONS
 
 ```go
 func main() {
+	// Disable Console Color
+	// gin.DisableConsoleColor()
+
 	// Creates a gin router with default middleware:
 	// logger and recovery (crash-free) middleware
 	router := gin.Default()
@@ -127,7 +169,7 @@ func main() {
 }
 ```
 
-#### Parameters in path
+### Parameters in path
 
 ```go
 func main() {
@@ -152,7 +194,8 @@ func main() {
 }
 ```
 
-#### Querystring parameters
+### Querystring parameters
+
 ```go
 func main() {
 	router := gin.Default()
@@ -219,34 +262,66 @@ func main() {
 id: 1234; page: 1; name: manu; message: this_is_great
 ```
 
-### Another example: upload file
+### Upload files
 
-References issue [#548](https://github.com/gin-gonic/gin/issues/548).
+#### Single file
+
+References issue [#774](https://github.com/gin-gonic/gin/issues/774) and detail [example code](examples/upload-file/single).
 
 ```go
 func main() {
 	router := gin.Default()
-
 	router.POST("/upload", func(c *gin.Context) {
+		// single file
+		file, _ := c.FormFile("file")
+		log.Println(file.Filename)
 
-	        file, header , err := c.Request.FormFile("upload")
-	        filename := header.Filename
-	        fmt.Println(header.Filename)
-	        out, err := os.Create("./tmp/"+filename+".png")
-	        if err != nil {
-	            log.Fatal(err)
-	        }
-	        defer out.Close()
-	        _, err = io.Copy(out, file)
-	        if err != nil {
-	            log.Fatal(err)
-	        }   
+		c.String(http.StatusOK, fmt.Printf("'%s' uploaded!", file.Filename))
 	})
 	router.Run(":8080")
 }
 ```
 
-#### Grouping routes
+How to `curl`:
+
+```bash
+curl -X POST http://localhost:8080/upload \
+  -F "file=@/Users/appleboy/test.zip" \
+  -H "Content-Type: multipart/form-data"
+```
+
+#### Multiple files
+
+See the detail [example code](examples/upload-file/multiple).
+
+```go
+func main() {
+	router := gin.Default()
+	router.POST("/upload", func(c *gin.Context) {
+		// Multipart form
+		form, _ := c.MultipartForm()
+		files := form.File["upload[]"]
+
+		for _, file := range files {
+			log.Println(file.Filename)
+		}
+		c.String(http.StatusOK, fmt.Printf("%d files uploaded!", len(files)))
+	})
+	router.Run(":8080")
+}
+```
+
+How to `curl`:
+
+```bash
+curl -X POST http://localhost:8080/upload \
+  -F "upload[]=@/Users/appleboy/test1.zip" \
+  -F "upload[]=@/Users/appleboy/test2.zip" \
+  -H "Content-Type: multipart/form-data"
+```
+
+### Grouping routes
+
 ```go
 func main() {
 	router := gin.Default()
@@ -271,14 +346,14 @@ func main() {
 }
 ```
 
-
-#### Blank Gin without middleware by default
+### Blank Gin without middleware by default
 
 Use
 
 ```go
 r := gin.New()
 ```
+
 instead of
 
 ```go
@@ -286,7 +361,7 @@ r := gin.Default()
 ```
 
 
-#### Using middleware
+### Using middleware
 ```go
 func main() {
 	// Creates a router without any middleware by default
@@ -321,7 +396,7 @@ func main() {
 }
 ```
 
-#### Model binding and validation
+### Model binding and validation
 
 To bind a request body into a type, use model binding. We currently support binding of JSON, XML and standard form values (foo=bar&boo=baz).
 
@@ -371,13 +446,48 @@ func main() {
 }
 ```
 
+### Bind Query String
 
-###Multipart/Urlencoded binding
+See the [detail information](https://github.com/gin-gonic/gin/issues/742#issuecomment-264681292).
+
+```go
+package main
+
+import "log"
+import "github.com/gin-gonic/gin"
+
+type Person struct {
+	Name    string `form:"name"`
+	Address string `form:"address"`
+}
+
+func main() {
+	route := gin.Default()
+	route.GET("/testing", startPage)
+	route.Run(":8085")
+}
+
+func startPage(c *gin.Context) {
+	var person Person
+	// If `GET`, only `Form` binding engine (`query`) used.
+	// If `POST`, first checks the `content-type` for `JSON` or `XML`, then uses `Form` (`form-data`).
+	// See more at https://github.com/gin-gonic/gin/blob/develop/binding/binding.go#L45
+	if c.Bind(&person) == nil {
+		log.Println(person.Name)
+		log.Println(person.Address)
+	}
+
+	c.String(200, "Success")
+}
+```
+
+### Multipart/Urlencoded binding
+
 ```go
 package main
 
 import (
-	"gopkg.in/gin-gonic/gin.v1"
+	"github.com/gin-gonic/gin"
 )
 
 type LoginForm struct {
@@ -389,7 +499,7 @@ func main() {
 	router := gin.Default()
 	router.POST("/login", func(c *gin.Context) {
 		// you can bind multipart form with explicit binding declaration:
-		// c.BindWith(&form, binding.Form)
+		// c.MustBindWith(&form, binding.Form)
 		// or you can simply use autobinding with Bind method:
 		var form LoginForm
 		// in this case proper binding will be automatically selected
@@ -410,8 +520,7 @@ Test it with:
 $ curl -v --form user=user --form password=password http://localhost:8080/login
 ```
 
-
-#### XML, JSON and YAML rendering
+### XML, JSON and YAML rendering
 
 ```go
 func main() {
@@ -450,7 +559,7 @@ func main() {
 }
 ```
 
-####Serving static files
+### Serving static files
 
 ```go
 func main() {
@@ -464,9 +573,9 @@ func main() {
 }
 ```
 
-####HTML rendering
+### HTML rendering
 
-Using LoadHTMLTemplates()
+Using LoadHTMLGlob() or LoadHTMLFiles()
 
 ```go
 func main() {
@@ -481,7 +590,9 @@ func main() {
 	router.Run(":8080")
 }
 ```
+
 templates/index.tmpl
+
 ```html
 <html>
 	<h1>
@@ -509,7 +620,9 @@ func main() {
 	router.Run(":8080")
 }
 ```
+
 templates/posts/index.tmpl
+
 ```html
 {{ define "posts/index.tmpl" }}
 <html><h1>
@@ -519,7 +632,9 @@ templates/posts/index.tmpl
 </html>
 {{ end }}
 ```
+
 templates/users/index.tmpl
+
 ```html
 {{ define "users/index.tmpl" }}
 <html><h1>
@@ -543,8 +658,59 @@ func main() {
 }
 ```
 
+You may use custom delims
 
-#### Redirects
+```go
+	r := gin.Default()
+	r.Delims("{[{", "}]}")
+	r.LoadHTMLGlob("/path/to/templates"))
+```  
+
+#### Add custom template funcs
+
+main.go
+
+```go
+	...
+	
+	func formatAsDate(t time.Time) string {
+		year, month, day := t.Date()
+		return fmt.Sprintf("%d/%02d/%02d", year, month, day)
+	}
+	
+	...
+	
+	router.SetFuncMap(template.FuncMap{
+		"formatAsDate": formatAsDate,
+	})
+	
+	...
+	
+	router.GET("/raw", func(c *Context) {
+		c.HTML(http.StatusOK, "raw.tmpl", map[string]interface{}{
+			"now": time.Date(2017, 07, 01, 0, 0, 0, 0, time.UTC),
+		})
+	})
+	
+	...
+```
+
+raw.tmpl
+
+```html
+Date: {[{.now | formatAsDate}]}
+```
+
+Result:
+```
+Date: 2017/07/01
+```
+
+### Multitemplate
+
+Gin allow by default use only one html.Template. Check [a multitemplate render](https://github.com/gin-contrib/multitemplate) for using features like go 1.6 `block template`.
+
+### Redirects
 
 Issuing a HTTP redirect is easy:
 
@@ -556,7 +722,7 @@ r.GET("/test", func(c *gin.Context) {
 Both internal and external locations are supported.
 
 
-#### Custom Middleware
+### Custom Middleware
 
 ```go
 func Logger() gin.HandlerFunc {
@@ -596,7 +762,8 @@ func main() {
 }
 ```
 
-#### Using BasicAuth() middleware
+### Using BasicAuth() middleware
+
 ```go
 // simulate some private data
 var secrets = gin.H{
@@ -634,8 +801,8 @@ func main() {
 }
 ```
 
+### Goroutines inside a middleware
 
-#### Goroutines inside a middleware
 When starting inside a middleware or handler, you **SHOULD NOT** use the original context inside it, you have to use a read-only copy.
 
 ```go
@@ -667,7 +834,7 @@ func main() {
 }
 ```
 
-#### Custom HTTP configuration
+### Custom HTTP configuration
 
 Use `http.ListenAndServe()` directly, like this:
 
@@ -694,7 +861,66 @@ func main() {
 }
 ```
 
-#### Graceful restart or stop
+### Support Let's Encrypt
+
+example for 1-line LetsEncrypt HTTPS servers.
+
+[embedmd]:# (examples/auto-tls/example1.go go)
+```go
+package main
+
+import (
+	"log"
+
+	"github.com/gin-gonic/autotls"
+	"github.com/gin-gonic/gin"
+)
+
+func main() {
+	r := gin.Default()
+
+	// Ping handler
+	r.GET("/ping", func(c *gin.Context) {
+		c.String(200, "pong")
+	})
+
+	log.Fatal(autotls.Run(r, "example1.com", "example2.com"))
+}
+```
+
+example for custom autocert manager.
+
+[embedmd]:# (examples/auto-tls/example2.go go)
+```go
+package main
+
+import (
+	"log"
+
+	"github.com/gin-gonic/autotls"
+	"github.com/gin-gonic/gin"
+	"golang.org/x/crypto/acme/autocert"
+)
+
+func main() {
+	r := gin.Default()
+
+	// Ping handler
+	r.GET("/ping", func(c *gin.Context) {
+		c.String(200, "pong")
+	})
+
+	m := autocert.Manager{
+		Prompt:     autocert.AcceptTOS,
+		HostPolicy: autocert.HostWhitelist("example1.com", "example2.com"),
+		Cache:      autocert.DirCache("/var/www/.cache"),
+	}
+
+	log.Fatal(autotls.RunWithManager(r, &m))
+}
+```
+
+### Graceful restart or stop
 
 Do you want to graceful restart or stop your web server?
 There are some ways this can be done.
@@ -711,21 +937,64 @@ endless.ListenAndServe(":4242", router)
 An alternative to endless:
 
 * [manners](https://github.com/braintree/manners): A polite Go HTTP server that shuts down gracefully.
+* [graceful](https://github.com/tylerb/graceful): Graceful is a Go package enabling graceful shutdown of an http.Handler server.
+* [grace](https://github.com/facebookgo/grace): Graceful restart & zero downtime deploy for Go servers.
 
-## Contributing 
+If you are using Go 1.8, you may not need to use this library! Consider using http.Server's built-in [Shutdown()](https://golang.org/pkg/net/http/#Server.Shutdown) method for graceful shutdowns. See the full [graceful-shutdown](./examples/graceful-shutdown) example with gin.
 
-- With issues:
-  - Use the search tool before opening a new issue.
-  - Please provide source code and commit sha if you found a bug.
-  - Review existing issues and provide feedback or react to them.
-- With pull requests:
-  - Open your pull request against develop
-  - Your pull request should have no more than two commits, if not you should squash them.
-  - It should pass all tests in the available continuous integrations systems such as TravisCI.
-  - You should add/modify tests to cover your proposed code changes.
-  - If your pull request contains a new feature, please document it on the README.
+[embedmd]:# (examples/graceful-shutdown/graceful-shutdown/server.go go)
+```go
+// +build go1.8
 
-## Example
+package main
+
+import (
+	"context"
+	"log"
+	"net/http"
+	"os"
+	"os/signal"
+	"time"
+
+	"github.com/gin-gonic/gin"
+)
+
+func main() {
+	router := gin.Default()
+	router.GET("/", func(c *gin.Context) {
+		time.Sleep(5 * time.Second)
+		c.String(http.StatusOK, "Welcome Gin Server")
+	})
+
+	srv := &http.Server{
+		Addr:    ":8080",
+		Handler: router,
+	}
+
+	go func() {
+		// service connections
+		if err := srv.ListenAndServe(); err != nil {
+			log.Printf("listen: %s\n", err)
+		}
+	}()
+
+	// Wait for interrupt signal to gracefully shutdown the server with
+	// a timeout of 5 seconds.
+	quit := make(chan os.Signal)
+	signal.Notify(quit, os.Interrupt)
+	<-quit
+	log.Println("Shutdown Server ...")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	if err := srv.Shutdown(ctx); err != nil {
+		log.Fatal("Server Shutdown:", err)
+	}
+	log.Println("Server exist")
+}
+```
+
+## Users
 
 Awesome project lists using [Gin](https://github.com/gin-gonic/gin) web framework.
 

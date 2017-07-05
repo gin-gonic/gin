@@ -23,15 +23,13 @@ const (
 	ErrorTypeNu            = 2
 )
 
-type (
-	Error struct {
-		Err  error
-		Type ErrorType
-		Meta interface{}
-	}
+type Error struct {
+	Err  error
+	Type ErrorType
+	Meta interface{}
+}
 
-	errorMsgs []*Error
-)
+type errorMsgs []*Error
 
 var _ error = &Error{}
 
@@ -72,7 +70,7 @@ func (msg *Error) MarshalJSON() ([]byte, error) {
 }
 
 // Implements the error interface
-func (msg *Error) Error() string {
+func (msg Error) Error() string {
 	return msg.Err.Error()
 }
 
@@ -80,7 +78,7 @@ func (msg *Error) IsType(flags ErrorType) bool {
 	return (msg.Type & flags) > 0
 }
 
-// Returns a readonly copy filterd the byte.
+// Returns a readonly copy filtered the byte.
 // ie ByType(gin.ErrorTypePublic) returns a slice of errors with type=ErrorTypePublic
 func (a errorMsgs) ByType(typ ErrorType) errorMsgs {
 	if len(a) == 0 {

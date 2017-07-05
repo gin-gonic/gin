@@ -10,16 +10,18 @@ import (
 	"strconv"
 )
 
+// AuthUserKey is the cookie name for user credential in basic auth
 const AuthUserKey = "user"
 
-type (
-	Accounts map[string]string
-	authPair struct {
-		Value string
-		User  string
-	}
-	authPairs []authPair
-)
+// Accounts defines a key/value for user/pass list of authorized logins
+type Accounts map[string]string
+
+type authPair struct {
+	Value string
+	User  string
+}
+
+type authPairs []authPair
 
 func (a authPairs) searchCredential(authValue string) (string, bool) {
 	if len(authValue) == 0 {
@@ -87,6 +89,6 @@ func secureCompare(given, actual string) bool {
 	if subtle.ConstantTimeEq(int32(len(given)), int32(len(actual))) == 1 {
 		return subtle.ConstantTimeCompare([]byte(given), []byte(actual)) == 1
 	}
-	/* Securely compare actual to itself to keep constant time, but always return false */
+	// Securely compare actual to itself to keep constant time, but always return false
 	return subtle.ConstantTimeCompare([]byte(actual), []byte(actual)) == 1 && false
 }

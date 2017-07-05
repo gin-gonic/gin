@@ -1,4 +1,4 @@
-Godeps/*
-!Godeps/Godeps.json
+vendor/*
+!vendor/vendor.json
 coverage.out
 count.out
