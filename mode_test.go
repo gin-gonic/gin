@@ -5,6 +5,7 @@
 package gin
 
 import (
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -28,4 +29,9 @@ func TestSetMode(t *testing.T) {
 	assert.Equal(t, Mode(), TestMode)
 
 	assert.Panics(t, func() { SetMode("unknown") })
+
+	os.Setenv(ENV_GIN_MODE, DebugMode)
+	assert.Equal(t, ginMode, debugCode)
+	assert.Equal(t, Mode(), DebugMode)
+	os.Unsetenv(ENV_GIN_MODE)
 }
