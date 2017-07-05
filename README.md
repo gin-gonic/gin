@@ -645,6 +645,8 @@ templates/users/index.tmpl
 {{ end }}
 ```
 
+#### Custom Template renderer
+
 You can also use your own html template render
 
 ```go
@@ -658,6 +660,8 @@ func main() {
 }
 ```
 
+#### Custom Delimiters
+
 You may use custom delims
 
 ```go
@@ -666,7 +670,7 @@ You may use custom delims
 	r.LoadHTMLGlob("/path/to/templates"))
 ```  
 
-#### Add custom template funcs
+#### Custom Template Funcs
 
 main.go
 
