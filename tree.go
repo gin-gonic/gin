@@ -105,9 +105,7 @@ func (n *node) incrementChildPrio(pos int) int {
 	newPos := pos
 	for newPos > 0 && n.children[newPos-1].priority < prio {
 		// swap node positions
-		tmpN := n.children[newPos-1]
-		n.children[newPos-1] = n.children[newPos]
-		n.children[newPos] = tmpN
+		n.children[newPos-1], n.children[newPos] = n.children[newPos], n.children[newPos-1]
 
 		newPos--
 	}
