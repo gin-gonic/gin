@@ -439,3 +439,15 @@ func TestRouteRawPathNoUnescape(t *testing.T) {
 	w := performRequest(route, "POST", "/project/Some%2FOther%2FProject/build/333")
 	assert.Equal(t, w.Code, 200)
 }
+
+func TestRouteServeErrorWithWriteHeader(t *testing.T) {
+	route := New()
+	route.Use(func(c *Context) {
+		c.Status(421)
+		c.Next()
+	})
+
+	w := performRequest(route, "GET", "/NotFound")
+	assert.Equal(t, 421, w.Code)
+	assert.Equal(t, 0, w.Body.Len())
+}
