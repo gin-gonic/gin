@@ -9,15 +9,13 @@ import (
 	"net/http"
 )
 
-type (
-	JSON struct {
-		Data interface{}
-	}
+type JSON struct {
+	Data interface{}
+}
 
-	IndentedJSON struct {
-		Data interface{}
-	}
-)
+type IndentedJSON struct {
+	Data interface{}
+}
 
 var jsonContentType = []string{"application/json; charset=utf-8"}
 
