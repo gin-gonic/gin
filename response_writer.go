@@ -95,7 +95,7 @@ func (w *responseWriter) Written() bool {
 	return w.size != noWritten
 }
 
-// Implements the http.Hijacker interface
+// Hijack implements the http.Hijacker interface
 func (w *responseWriter) Hijack() (net.Conn, *bufio.ReadWriter, error) {
 	if w.size < 0 {
 		w.size = 0
@@ -103,12 +103,12 @@ func (w *responseWriter) Hijack() (net.Conn, *bufio.ReadWriter, error) {
 	return w.ResponseWriter.(http.Hijacker).Hijack()
 }
 
-// Implements the http.CloseNotify interface
+// CloseNotify implements the http.CloseNotify interface
 func (w *responseWriter) CloseNotify() <-chan bool {
 	return w.ResponseWriter.(http.CloseNotifier).CloseNotify()
 }
 
-// Implements the http.Flush interface
+// Flush implements the http.Flush interface
 func (w *responseWriter) Flush() {
 	w.ResponseWriter.(http.Flusher).Flush()
 }

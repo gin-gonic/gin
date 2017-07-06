@@ -151,7 +151,7 @@ func (c *Context) AbortWithError(code int, err error) *Error {
 /********* ERROR MANAGEMENT *********/
 /************************************/
 
-// Attaches an error to the current context. The error is pushed to a list of errors.
+// Error attaches an error to the current context. The error is pushed to a list of errors.
 // It's a good idea to call Error for each error that occurred during the resolution of a request.
 // A middleware can be used to collect all the errors
 // and push them to a database together, print a log, or append it in the HTTP response.
