@@ -285,7 +285,7 @@ func (engine *Engine) RunUnix(file string) (err error) {
 	return
 }
 
-// Conforms to the http.Handler interface.
+// ServeHTTP conforms to the http.Handler interface.
 func (engine *Engine) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	c := engine.pool.Get().(*Context)
 	c.writermem.reset(w)
@@ -297,7 +297,7 @@ func (engine *Engine) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	engine.pool.Put(c)
 }
 
-// Re-enter a context that has been rewritten.
+// HandleContext re-enter a context that has been rewritten.
 // This can be done by setting c.Request.Path to your new target.
 // Disclaimer: You can loop yourself to death with this, use wisely.
 func (engine *Engine) HandleContext(c *Context) {
