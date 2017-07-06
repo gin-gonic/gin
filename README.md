@@ -998,7 +998,7 @@ func main() {
 }
 ```
 
-## Users
+## Users  [![Sourcegraph](https://sourcegraph.com/github.com/gin-gonic/gin/-/badge.svg)](https://sourcegraph.com/github.com/gin-gonic/gin?badge)
 
 Awesome project lists using [Gin](https://github.com/gin-gonic/gin) web framework.
 
