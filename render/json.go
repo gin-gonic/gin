@@ -5,6 +5,7 @@
 package render
 
 import (
+	"bytes"
 	"encoding/json"
 	"net/http"
 )
@@ -16,6 +17,13 @@ type JSON struct {
 type IndentedJSON struct {
 	Data interface{}
 }
+
+type SecureJSON struct {
+	Prefix string
+	Data   interface{}
+}
+
+type SecureJSONPrefix string
 
 var jsonContentType = []string{"application/json; charset=utf-8"}
 
@@ -51,5 +59,23 @@ func (r IndentedJSON) Render(w http.ResponseWriter) error {
 }
 
 func (r IndentedJSON) WriteContentType(w http.ResponseWriter) {
+	writeContentType(w, jsonContentType)
+}
+
+func (r SecureJSON) Render(w http.ResponseWriter) error {
+	r.WriteContentType(w)
+	jsonBytes, err := json.Marshal(r.Data)
+	if err != nil {
+		return err
+	}
+	// if the jsonBytes is array values
+	if bytes.HasPrefix(jsonBytes, []byte("[")) && bytes.HasSuffix(jsonBytes, []byte("]")) {
+		w.Write([]byte(r.Prefix))
+	}
+	w.Write(jsonBytes)
+	return nil
+}
+
+func (r SecureJSON) WriteContentType(w http.ResponseWriter) {
 	writeContentType(w, jsonContentType)
 }

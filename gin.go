@@ -44,15 +44,16 @@ type RoutesInfo []RouteInfo
 // Create an instance of Engine, by using New() or Default()
 type Engine struct {
 	RouterGroup
-	delims      render.Delims
-	HTMLRender  render.HTMLRender
-	FuncMap     template.FuncMap
-	allNoRoute  HandlersChain
-	allNoMethod HandlersChain
-	noRoute     HandlersChain
-	noMethod    HandlersChain
-	pool        sync.Pool
-	trees       methodTrees
+	delims           render.Delims
+	secureJsonPrefix string
+	HTMLRender       render.HTMLRender
+	FuncMap          template.FuncMap
+	allNoRoute       HandlersChain
+	allNoMethod      HandlersChain
+	noRoute          HandlersChain
+	noMethod         HandlersChain
+	pool             sync.Pool
+	trees            methodTrees
 
 	// Enables automatic redirection if the current route can't be matched but a
 	// handler for the path with (without) the trailing slash exists.
@@ -121,6 +122,7 @@ func New() *Engine {
 		UnescapePathValues:     true,
 		trees:                  make(methodTrees, 0, 9),
 		delims:                 render.Delims{"{{", "}}"},
+		secureJsonPrefix:       "while(1);",
 	}
 	engine.RouterGroup.engine = engine
 	engine.pool.New = func() interface{} {
@@ -142,6 +144,11 @@ func (engine *Engine) allocateContext() *Context {
 
 func (engine *Engine) Delims(left, right string) *Engine {
 	engine.delims = render.Delims{left, right}
+	return engine
+}
+
+func (engine *Engine) SecureJsonPrefix(prefix string) *Engine {
+	engine.secureJsonPrefix = prefix
 	return engine
 }
 

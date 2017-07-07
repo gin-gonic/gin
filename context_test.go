@@ -598,6 +598,32 @@ func TestContextRenderNoContentIndentedJSON(t *testing.T) {
 	assert.Equal(t, w.HeaderMap.Get("Content-Type"), "application/json; charset=utf-8")
 }
 
+// Tests that the response is serialized as Secure JSON
+// and Content-Type is set to application/json
+func TestContextRenderSecureJSON(t *testing.T) {
+	w := httptest.NewRecorder()
+	c, router := CreateTestContext(w)
+
+	router.SecureJsonPrefix("&&&START&&&")
+	c.SecureJSON(201, []string{"foo", "bar"})
+
+	assert.Equal(t, w.Code, 201)
+	assert.Equal(t, w.Body.String(), "&&&START&&&[\"foo\",\"bar\"]")
+	assert.Equal(t, w.HeaderMap.Get("Content-Type"), "application/json; charset=utf-8")
+}
+
+// Tests that no Custom JSON is rendered if code is 204
+func TestContextRenderNoContentSecureJSON(t *testing.T) {
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
+
+	c.SecureJSON(204, []string{"foo", "bar"})
+
+	assert.Equal(t, 204, w.Code)
+	assert.Equal(t, "", w.Body.String())
+	assert.Equal(t, w.HeaderMap.Get("Content-Type"), "application/json; charset=utf-8")
+}
+
 // Tests that the response executes the templates
 // and responds with Content-Type set to text/html
 func TestContextRenderHTML(t *testing.T) {
