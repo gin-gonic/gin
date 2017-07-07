@@ -1,6 +1,6 @@
 # Gin Web Framework
 
-<img align="right" width="159px" src="https://raw.githubusercontent.com/gin-gonic/gin/master/logo.png">
+<img align="right" width="159px" src="https://raw.githubusercontent.com/gin-gonic/logo/master/color.png">
 
 [![Build Status](https://travis-ci.org/gin-gonic/gin.svg)](https://travis-ci.org/gin-gonic/gin)
  [![codecov](https://codecov.io/gh/gin-gonic/gin/branch/master/graph/badge.svg)](https://codecov.io/gh/gin-gonic/gin)
