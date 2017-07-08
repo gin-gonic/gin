@@ -91,7 +91,7 @@ Error #03: third
 		H{"error": "third", "status": "400"},
 	})
 	jsonBytes, _ := json.Marshal(errs)
-	assert.Equal(t, string(jsonBytes), "[{\"error\":\"first\"},{\"error\":\"second\",\"meta\":\"some data\"},{\"error\":\"third\",\"status\":\"400\"}]")
+	assert.Equal(t, "[{\"error\":\"first\"},{\"meta\":\"some data\",\"error\":\"second\"},{\"status\":\"400\",\"error\":\"third\"}]", string(jsonBytes))
 	errs = errorMsgs{
 		{Err: errors.New("first"), Type: ErrorTypePrivate},
 	}
