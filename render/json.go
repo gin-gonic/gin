@@ -6,9 +6,12 @@ package render
 
 import (
 	"bytes"
-	"encoding/json"
 	"net/http"
+
+	"github.com/json-iterator/go"
 )
+
+var json = jsoniter.ConfigCompatibleWithStandardLibrary
 
 type JSON struct {
 	Data interface{}

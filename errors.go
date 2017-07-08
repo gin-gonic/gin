@@ -6,10 +6,13 @@ package gin
 
 import (
 	"bytes"
-	"encoding/json"
 	"fmt"
 	"reflect"
+
+	"github.com/json-iterator/go"
 )
+
+var json = jsoniter.ConfigCompatibleWithStandardLibrary
 
 type ErrorType uint64
 
