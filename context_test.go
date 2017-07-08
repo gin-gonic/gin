@@ -582,7 +582,7 @@ func TestContextRenderIndentedJSON(t *testing.T) {
 	c.IndentedJSON(201, H{"foo": "bar", "bar": "foo", "nested": H{"foo": "bar"}})
 
 	assert.Equal(t, w.Code, 201)
-	assert.Equal(t, "{\n    \"foo\":\"bar\",\n    \"bar\":\"foo\",\n    \"nested\":{\n        \"foo\":\"bar\"\n    }\n}", w.Body.String())
+	assert.Equal(t, "{\n    \"bar\":\"foo\",\n    \"foo\":\"bar\",\n    \"nested\":{\n        \"foo\":\"bar\"\n    }\n}", w.Body.String())
 	assert.Equal(t, "application/json; charset=utf-8", w.HeaderMap.Get("Content-Type"))
 }
 

@@ -7,8 +7,10 @@ package binding
 import (
 	"net/http"
 
-	json "github.com/json-iterator/go"
+	"github.com/json-iterator/go"
 )
+
+var json = jsoniter.ConfigCompatibleWithStandardLibrary
 
 type jsonBinding struct{}
 
