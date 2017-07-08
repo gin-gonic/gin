@@ -6,9 +6,10 @@ package gin
 
 import (
 	"bytes"
-	"encoding/json"
 	"fmt"
 	"reflect"
+
+	json "github.com/json-iterator/go"
 )
 
 type ErrorType uint64

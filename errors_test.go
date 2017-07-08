@@ -5,10 +5,10 @@
 package gin
 
 import (
-	"encoding/json"
 	"errors"
 	"testing"
 
+	json "github.com/json-iterator/go"
 	"github.com/stretchr/testify/assert"
 )
 

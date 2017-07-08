@@ -5,8 +5,9 @@
 package binding
 
 import (
-	"encoding/json"
 	"net/http"
+
+	json "github.com/json-iterator/go"
 )
 
 type jsonBinding struct{}

@@ -6,8 +6,9 @@ package render
 
 import (
 	"bytes"
-	"encoding/json"
 	"net/http"
+
+	json "github.com/json-iterator/go"
 )
 
 type JSON struct {
