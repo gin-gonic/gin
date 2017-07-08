@@ -32,7 +32,7 @@ func TestError(t *testing.T) {
 	})
 
 	jsonBytes, _ := json.Marshal(err)
-	assert.Equal(t, string(jsonBytes), "{\"error\":\"test error\",\"meta\":\"some data\"}")
+	assert.Equal(t, "{\"meta\":\"some data\",\"error\":\"test error\"}", string(jsonBytes))
 
 	err.SetMeta(H{
 		"status": "200",
