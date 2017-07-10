@@ -64,6 +64,10 @@ func DisableBindValidation() {
 	binding.Validator = nil
 }
 
+func EnableJsonDecoderUseNumber() {
+	binding.EnableDecoderUseNumber = true
+}
+
 func Mode() string {
 	return modeName
 }

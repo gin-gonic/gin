@@ -8,6 +8,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/gin-gonic/gin/binding"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -33,4 +34,10 @@ func TestSetMode(t *testing.T) {
 	assert.Equal(t, Mode(), TestMode)
 
 	assert.Panics(t, func() { SetMode("unknown") })
+}
+
+func TestEnableJsonDecoderUseNumber(t *testing.T) {
+	assert.False(t, binding.EnableDecoderUseNumber)
+	EnableJsonDecoderUseNumber()
+	assert.True(t, binding.EnableDecoderUseNumber)
 }
