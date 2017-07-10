@@ -12,6 +12,8 @@ git:
 install:
   - make install
 
+go_import_path: github.com/gin-gonic/gin
+
 script:
   - make vet
   - make fmt-check

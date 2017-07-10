@@ -481,6 +481,52 @@ func startPage(c *gin.Context) {
 }
 ```
 
+### Bind HTML checkboxes
+
+See the [detail information](https://github.com/gin-gonic/gin/issues/129#issuecomment-124260092)
+
+main.go
+
+```go
+...
+
+type myForm struct {
+    Colors []string `form:"colors[]"`
+}
+
+...
+
+func formHandler(c *gin.Context) {
+    var fakeForm myForm
+    c.Bind(&fakeForm)
+    c.JSON(200, gin.H{"color": fakeForm.Colors})
+}
+
+...
+
+```
+
+form.html
+
+```html
+<form action="/" method="POST">
+    <p>Check some colors</p>
+    <label for="red">Red</label>
+    <input type="checkbox" name="colors[]" value="red" id="red" />
+    <label for="green">Green</label>
+    <input type="checkbox" name="colors[]" value="green" id="green" />
+    <label for="blue">Blue</label>
+    <input type="checkbox" name="colors[]" value="blue" id="blue" />
+    <input type="submit" />
+</form>
+```
+
+result:
+
+```
+{"color":["red","green","blue"]}
+```
+
 ### Multipart/Urlencoded binding
 
 ```go
@@ -558,6 +604,29 @@ func main() {
 	r.Run(":8080")
 }
 ```
+
+#### SecureJSON
+
+Using SecureJSON to prevent json hijacking. Default prepends `"while(1),"` to response body if the given struct is array values.
+
+```go
+func main() {
+	r := gin.Default()
+
+	// You can also use your own secure json prefix
+	// r.SecureJsonPrefix(")]}',\n")
+
+	r.GET("/someJSON", func(c *gin.Context) {
+		names := []string{"lena", "austin", "foo"}
+
+		// Will output  :   while(1);["lena","austin","foo"]
+		c.SecureJSON(http.StatusOK, names)
+	})
+
+	// Listen and serve on 0.0.0.0:8080
+	r.Run(":8080")
+}
+```  
 
 ### Serving static files
 
