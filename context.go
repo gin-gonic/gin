@@ -85,8 +85,8 @@ func (c *Context) Copy() *Context {
 	return &cp
 }
 
-// HandlerName returns the main handler's name. For example if the handler is "handleGetUsers()", this
-// function will return "main.handleGetUsers"
+// HandlerName returns the main handler's name. For example if the handler is "handleGetUsers()",
+// this function will return "main.handleGetUsers"
 func (c *Context) HandlerName() string {
 	return nameOfFunction(c.handlers.Last())
 }
@@ -117,8 +117,8 @@ func (c *Context) IsAborted() bool {
 }
 
 // Abort prevents pending handlers from being called. Note that this will not stop the current handler.
-// Let's say you have an authorization middleware that validates that the current request is authorized. If the
-// authorization fails (ex: the password does not match), call Abort to ensure the remaining handlers
+// Let's say you have an authorization middleware that validates that the current request is authorized.
+// If the authorization fails (ex: the password does not match), call Abort to ensure the remaining handlers
 // for this request are not called.
 func (c *Context) Abort() {
 	c.index = abortIndex
@@ -132,15 +132,16 @@ func (c *Context) AbortWithStatus(code int) {
 	c.Abort()
 }
 
-// AbortWithStatusJSON calls `Abort()` and then `JSON` internally. This method stops the chain, writes the status code and return a JSON body
+// AbortWithStatusJSON calls `Abort()` and then `JSON` internally.
+// This method stops the chain, writes the status code and return a JSON body.
 // It also sets the Content-Type as "application/json".
 func (c *Context) AbortWithStatusJSON(code int, jsonObj interface{}) {
 	c.Abort()
 	c.JSON(code, jsonObj)
 }
 
-// AbortWithError calls `AbortWithStatus()` and `Error()` internally. This method stops the chain, writes the status code and
-// pushes the specified error to `c.Errors`.
+// AbortWithError calls `AbortWithStatus()` and `Error()` internally.
+// This method stops the chain, writes the status code and pushes the specified error to `c.Errors`.
 // See Context.Error() for more details.
 func (c *Context) AbortWithError(code int, err error) *Error {
 	c.AbortWithStatus(code)
@@ -153,8 +154,8 @@ func (c *Context) AbortWithError(code int, err error) *Error {
 
 // Error attaches an error to the current context. The error is pushed to a list of errors.
 // It's a good idea to call Error for each error that occurred during the resolution of a request.
-// A middleware can be used to collect all the errors
-// and push them to a database together, print a log, or append it in the HTTP response.
+// A middleware can be used to collect all the errors and push them to a database together,
+// print a log, or append it in the HTTP response.
 // Error will panic if err is nil.
 func (c *Context) Error(err error) *Error {
 	if err == nil {
@@ -296,10 +297,10 @@ func (c *Context) GetStringMapStringSlice(key string) (smss map[string][]string)
 
 // Param returns the value of the URL param.
 // It is a shortcut for c.Params.ByName(key)
-//		router.GET("/user/:id", func(c *gin.Context) {
-//			// a GET request to /user/john
-//			id := c.Param("id") // id == "john"
-//		})
+//     router.GET("/user/:id", func(c *gin.Context) {
+//         // a GET request to /user/john
+//         id := c.Param("id") // id == "john"
+//     })
 func (c *Context) Param(key string) string {
 	return c.Params.ByName(key)
 }
@@ -307,11 +308,11 @@ func (c *Context) Param(key string) string {
 // Query returns the keyed url query value if it exists,
 // otherwise it returns an empty string `("")`.
 // It is shortcut for `c.Request.URL.Query().Get(key)`
-// 		GET /path?id=1234&name=Manu&value=
-// 		c.Query("id") == "1234"
-// 		c.Query("name") == "Manu"
-// 		c.Query("value") == ""
-// 		c.Query("wtf") == ""
+//     GET /path?id=1234&name=Manu&value=
+// 	   c.Query("id") == "1234"
+// 	   c.Query("name") == "Manu"
+// 	   c.Query("value") == ""
+// 	   c.Query("wtf") == ""
 func (c *Context) Query(key string) string {
 	value, _ := c.GetQuery(key)
 	return value
@@ -320,10 +321,10 @@ func (c *Context) Query(key string) string {
 // DefaultQuery returns the keyed url query value if it exists,
 // otherwise it returns the specified defaultValue string.
 // See: Query() and GetQuery() for further information.
-// 		GET /?name=Manu&lastname=
-// 		c.DefaultQuery("name", "unknown") == "Manu"
-// 		c.DefaultQuery("id", "none") == "none"
-// 		c.DefaultQuery("lastname", "none") == ""
+//     GET /?name=Manu&lastname=
+//     c.DefaultQuery("name", "unknown") == "Manu"
+//     c.DefaultQuery("id", "none") == "none"
+//     c.DefaultQuery("lastname", "none") == ""
 func (c *Context) DefaultQuery(key, defaultValue string) string {
 	if value, ok := c.GetQuery(key); ok {
 		return value
@@ -335,10 +336,10 @@ func (c *Context) DefaultQuery(key, defaultValue string) string {
 // if it exists `(value, true)` (even when the value is an empty string),
 // otherwise it returns `("", false)`.
 // It is shortcut for `c.Request.URL.Query().Get(key)`
-// 		GET /?name=Manu&lastname=
-// 		("Manu", true) == c.GetQuery("name")
-// 		("", false) == c.GetQuery("id")
-// 		("", true) == c.GetQuery("lastname")
+//     GET /?name=Manu&lastname=
+//     ("Manu", true) == c.GetQuery("name")
+//     ("", false) == c.GetQuery("id")
+//     ("", true) == c.GetQuery("lastname")
 func (c *Context) GetQuery(key string) (string, bool) {
 	if values, ok := c.GetQueryArray(key); ok {
 		return values[0], ok
@@ -384,9 +385,9 @@ func (c *Context) DefaultPostForm(key, defaultValue string) string {
 // form or multipart form when it exists `(value, true)` (even when the value is an empty string),
 // otherwise it returns ("", false).
 // For example, during a PATCH request to update the user's email:
-// 		email=mail@example.com  -->  ("mail@example.com", true) := GetPostForm("email") // set email to "mail@example.com"
-// 		email=  			  	-->  ("", true) := GetPostForm("email") // set email to ""
-//							 	-->  ("", false) := GetPostForm("email") // do nothing with email
+//     email=mail@example.com  -->  ("mail@example.com", true) := GetPostForm("email") // set email to "mail@example.com"
+// 	   email=                  -->  ("", true) := GetPostForm("email") // set email to ""
+//                             -->  ("", false) := GetPostForm("email") // do nothing with email
 func (c *Context) GetPostForm(key string) (string, bool) {
 	if values, ok := c.GetPostFormArray(key); ok {
 		return values[0], ok
@@ -432,8 +433,8 @@ func (c *Context) MultipartForm() (*multipart.Form, error) {
 
 // Bind checks the Content-Type to select a binding engine automatically,
 // Depending the "Content-Type" header different bindings are used:
-// 		"application/json" --> JSON binding
-// 		"application/xml"  --> XML binding
+//     "application/json" --> JSON binding
+//     "application/xml"  --> XML binding
 // otherwise --> returns an error
 // It parses the request's body as JSON if Content-Type == "application/json" using JSON or XML as a JSON input.
 // It decodes the json payload into the struct specified as a pointer.
