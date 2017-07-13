@@ -97,11 +97,11 @@
 			"revisionTime": "2017-03-08T15:04:45Z"
 		},
 		{
-			"checksumSHA1": "39V1idWER42Lmcmg2Uy40wMzOlo=",
-			"comment": "v8.18.1",
-			"path": "gopkg.in/go-playground/validator.v8",
-			"revision": "5f57d2222ad794d0dffb07e664ea05e2ee07d60c",
-			"revisionTime": "2016-07-18T13:41:25Z"
+			"checksumSHA1": "bghmjNaktOtwAJkf3Vql4cofS3M=",
+			"comment": "v9.4.0",
+			"path": "gopkg.in/go-playground/validator.v9",
+			"revision": "fb68f39656d7ebf8aa339ad4917aa0c260ecc237",
+			"revisionTime": "2017-06-12T05:26:53Z"
 		},
 		{
 			"checksumSHA1": "12GqsW8PiRPnezDDy0v4brZrndM=",
