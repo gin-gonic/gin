@@ -276,7 +276,7 @@ func main() {
 		file, _ := c.FormFile("file")
 		log.Println(file.Filename)
 
-		c.String(http.StatusOK, fmt.Printf("'%s' uploaded!", file.Filename))
+		c.String(http.StatusOK, fmt.Sprintf("'%s' uploaded!", file.Filename))
 	})
 	router.Run(":8080")
 }
