@@ -305,7 +305,7 @@ func main() {
 		for _, file := range files {
 			log.Println(file.Filename)
 		}
-		c.String(http.StatusOK, fmt.Printf("%d files uploaded!", len(files)))
+		c.String(http.StatusOK, fmt.Sprintf("%d files uploaded!", len(files)))
 	})
 	router.Run(":8080")
 }
