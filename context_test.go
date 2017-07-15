@@ -72,12 +72,18 @@ func TestContextFormFile(t *testing.T) {
 	if assert.NoError(t, err) {
 		assert.Equal(t, "test", f.Filename)
 	}
+
+	assert.NoError(t, c.SaveUploadedFile(f, "test"))
 }
 
 func TestContextMultipartForm(t *testing.T) {
 	buf := new(bytes.Buffer)
 	mw := multipart.NewWriter(buf)
 	mw.WriteField("foo", "bar")
+	w, err := mw.CreateFormFile("file", "test")
+	if assert.NoError(t, err) {
+		w.Write([]byte("test"))
+	}
 	mw.Close()
 	c, _ := CreateTestContext(httptest.NewRecorder())
 	c.Request, _ = http.NewRequest("POST", "/", buf)
@@ -86,6 +92,42 @@ func TestContextMultipartForm(t *testing.T) {
 	if assert.NoError(t, err) {
 		assert.NotNil(t, f)
 	}
+
+	assert.NoError(t, c.SaveUploadedFile(f.File["file"][0], "test"))
+}
+
+func TestSaveUploadedOpenFailed(t *testing.T) {
+	buf := new(bytes.Buffer)
+	mw := multipart.NewWriter(buf)
+	mw.Close()
+
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	c.Request, _ = http.NewRequest("POST", "/", buf)
+	c.Request.Header.Set("Content-Type", mw.FormDataContentType())
+
+	f := &multipart.FileHeader{
+		Filename: "file",
+	}
+	assert.Error(t, c.SaveUploadedFile(f, "test"))
+}
+
+func TestSaveUploadedCreateFailed(t *testing.T) {
+	buf := new(bytes.Buffer)
+	mw := multipart.NewWriter(buf)
+	w, err := mw.CreateFormFile("file", "test")
+	if assert.NoError(t, err) {
+		w.Write([]byte("test"))
+	}
+	mw.Close()
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	c.Request, _ = http.NewRequest("POST", "/", buf)
+	c.Request.Header.Set("Content-Type", mw.FormDataContentType())
+	f, err := c.FormFile("file")
+	if assert.NoError(t, err) {
+		assert.Equal(t, "test", f.Filename)
+	}
+
+	assert.Error(t, c.SaveUploadedFile(f, "/"))
 }
 
 func TestContextReset(t *testing.T) {
