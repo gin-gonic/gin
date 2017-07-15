@@ -23,7 +23,7 @@ func main() {
 		files := form.File["files"]
 
 		for _, file := range files {
-			if err:=c.SaveUploadedFile(file,file.Filename);err!=nil{
+			if err := c.SaveUploadedFile(file, file.Filename); err != nil {
 				c.String(http.StatusBadRequest, fmt.Sprintf("upload file err: %s", err.Error()))
 			}
 		}
