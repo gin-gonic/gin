@@ -25,6 +25,7 @@ func main() {
 		for _, file := range files {
 			if err := c.SaveUploadedFile(file, file.Filename); err != nil {
 				c.String(http.StatusBadRequest, fmt.Sprintf("upload file err: %s", err.Error()))
+				return
 			}
 		}
 
