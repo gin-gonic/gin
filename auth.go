@@ -52,11 +52,13 @@ func BasicAuthForRealm(accounts Accounts, realm string) HandlerFunc {
 			// Credentials doesn't match, we return 401 and abort handlers chain.
 			c.Header("WWW-Authenticate", realm)
 			c.AbortWithStatus(401)
-		} else {
-			// The user credentials was found, set user's id to key AuthUserKey in this context, the userId can be read later using
-			// c.MustGet(gin.AuthUserKey)
-			c.Set(AuthUserKey, user)
+			return
 		}
+
+		// The user credentials was found, set user's id to key AuthUserKey in this context, the user's id can be read later using
+		// c.MustGet(gin.AuthUserKey)
+		c.Set(AuthUserKey, user)
+		return
 	}
 }
 
