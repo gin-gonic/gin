@@ -461,8 +461,11 @@ func main() {
 ```go
 package main
 
-import "log"
-import "github.com/gin-gonic/gin"
+import (
+	"log"
+
+	"github.com/gin-gonic/gin"
+)
 
 type Person struct {
 	Name    string `form:"name"`
