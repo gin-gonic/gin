@@ -9,10 +9,8 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/json-iterator/go"
+	"github.com/gin-gonic/gin/json"
 )
-
-var json = jsoniter.ConfigCompatibleWithStandardLibrary
 
 type ErrorType uint64
 

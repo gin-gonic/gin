@@ -8,10 +8,8 @@ import (
 	"bytes"
 	"net/http"
 
-	"github.com/json-iterator/go"
+	"github.com/gin-gonic/gin/json"
 )
-
-var json = jsoniter.ConfigCompatibleWithStandardLibrary
 
 type JSON struct {
 	Data interface{}

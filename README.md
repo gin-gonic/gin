@@ -88,7 +88,6 @@ BenchmarkZeus_GithubAll 		| 2000 		| 944234 	| 300688 	| 2648
 - [x] Battle tested
 - [x] API frozen, new releases will not break your code.
 
-
 ## Start using it
 
 1. Download and install it:
@@ -139,6 +138,14 @@ $ curl https://raw.githubusercontent.com/gin-gonic/gin/master/examples/basic/mai
 
 ```sh
 $ go run main.go
+```
+
+## Build with [jsoniter](https://github.com/json-iterator/go)
+
+Gin use `encoding/json` as default json package but you can change to [jsoniter](https://github.com/json-iterator/go) by build from other tags.
+
+```sh
+$ go build -tags=jsoniter .
 ```
 
 ## API Examples
