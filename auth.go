@@ -58,7 +58,6 @@ func BasicAuthForRealm(accounts Accounts, realm string) HandlerFunc {
 		// The user credentials was found, set user's id to key AuthUserKey in this context, the user's id can be read later using
 		// c.MustGet(gin.AuthUserKey)
 		c.Set(AuthUserKey, user)
-		return
 	}
 }
 
