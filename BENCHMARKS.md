@@ -1,11 +1,11 @@
 
 ## Benchmark System
 
-**VM HOST:** DigitalOcean
-**Machine:** 4 CPU, 8 GB RAM. Ubuntu 16.04.2 x64
-**Date:** July 19th, 2017
-**Go Version:** 1.8.3 linux/amd64
-**Source:** [Go HTTP Router Benchmark](https://github.com/julienschmidt/go-http-routing-benchmark)
+**VM HOST:** DigitalOcean  
+**Machine:** 4 CPU, 8 GB RAM. Ubuntu 16.04.2 x64  
+**Date:** July 19th, 2017  
+**Go Version:** 1.8.3 linux/amd64  
+**Source:** [Go HTTP Router Benchmark](https://github.com/julienschmidt/go-http-routing-benchmark)  
 
 ## Static Routes: 157
 
