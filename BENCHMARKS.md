@@ -10,135 +10,141 @@
 ## Static Routes: 157
 
 ```
-HttpServeMux: 17344 Bytes
-Ace: 30080 Bytes
-Bear: 30472 Bytes
-Beego: 96408 Bytes
-Bone: 37904 Bytes
-Denco: 10464 Bytes
-Echo: 73680 Bytes
-Gin: 30512 Bytes
-GocraftWeb: 55720 Bytes
-Goji: 27200 Bytes
-Gojiv2: 104464 Bytes
-GoJsonRest: 136472 Bytes
-GoRestful: 914904 Bytes
-GorillaMux: 675568 Bytes
-HttpRouter: 21128 Bytes
-HttpTreeMux: 73448 Bytes
-Kocha: 115072 Bytes
-LARS: 30120 Bytes
-Macaron: 37984 Bytes
-Martini: 310832 Bytes
-Pat: 20464 Bytes
-Possum: 91328 Bytes
-R2router: 23712 Bytes
-Rivet: 23880 Bytes
-Tango: 28008 Bytes
-TigerTonic: 80368 Bytes
-Traffic: 626480 Bytes
-Vulcan: 369064 Bytes
+Gin:             30512 Bytes
+
+HttpServeMux:    17344 Bytes
+Ace:             30080 Bytes
+Bear:            30472 Bytes
+Beego:           96408 Bytes
+Bone:            37904 Bytes
+Denco:           10464 Bytes
+Echo:            73680 Bytes
+GocraftWeb:      55720 Bytes
+Goji:            27200 Bytes
+Gojiv2:         104464 Bytes
+GoJsonRest:     136472 Bytes
+GoRestful:      914904 Bytes
+GorillaMux:     675568 Bytes
+HttpRouter:      21128 Bytes
+HttpTreeMux:     73448 Bytes
+Kocha:          115072 Bytes
+LARS:            30120 Bytes
+Macaron:         37984 Bytes
+Martini:        310832 Bytes
+Pat:             20464 Bytes
+Possum:          91328 Bytes
+R2router:        23712 Bytes
+Rivet:           23880 Bytes
+Tango:           28008 Bytes
+TigerTonic:      80368 Bytes
+Traffic:        626480 Bytes
+Vulcan:         369064 Bytes
 ```
 
 ## GithubAPI Routes: 203
 
 ```
-Ace: 48992 Bytes
-Bear: 161592 Bytes
-Beego: 147992 Bytes
-Bone: 97728 Bytes
-Denco: 36440 Bytes
-Echo: 95672 Bytes
-Gin: 52672 Bytes
-GocraftWeb: 95640 Bytes
-Goji: 86088 Bytes
-Gojiv2: 144392 Bytes
-GoJsonRest: 134648 Bytes
-GoRestful: 1410760 Bytes
-GorillaMux: 1509488 Bytes
-HttpRouter: 37464 Bytes
-HttpTreeMux: 78800 Bytes
-Kocha: 785408 Bytes
-LARS: 49032 Bytes
-Macaron: 132712 Bytes
-Martini: 564352 Bytes
-Pat: 21200 Bytes
-Possum: 83888 Bytes
-R2router: 47104 Bytes
-Rivet: 42840 Bytes
-Tango: 54584 Bytes
-TigerTonic: 96384 Bytes
-Traffic: 1061920 Bytes
-Vulcan: 465296 Bytes
+Gin:             52672 Bytes
+
+Ace:             48992 Bytes
+Bear:           161592 Bytes
+Beego:          147992 Bytes
+Bone:            97728 Bytes
+Denco:           36440 Bytes
+Echo:            95672 Bytes
+GocraftWeb:      95640 Bytes
+Goji:            86088 Bytes
+Gojiv2:         144392 Bytes
+GoJsonRest:     134648 Bytes
+GoRestful:     1410760 Bytes
+GorillaMux:    1509488 Bytes
+HttpRouter:      37464 Bytes
+HttpTreeMux:     78800 Bytes
+Kocha:          785408 Bytes
+LARS:            49032 Bytes
+Macaron:        132712 Bytes
+Martini:        564352 Bytes
+Pat:             21200 Bytes
+Possum:          83888 Bytes
+R2router:        47104 Bytes
+Rivet:           42840 Bytes
+Tango:           54584 Bytes
+TigerTonic:      96384 Bytes
+Traffic:       1061920 Bytes
+Vulcan:         465296 Bytes
 ```
 
 ## GPlusAPI Routes: 13
 
 ```
-Ace: 3600 Bytes
-Bear: 7112 Bytes
-Beego: 10048 Bytes
-Bone: 6480 Bytes
-Denco: 3256 Bytes
-Echo: 9000 Bytes
-Gin: 3968 Bytes
-GocraftWeb: 7496 Bytes
-Goji: 2912 Bytes
-Gojiv2: 7376 Bytes
-GoJsonRest: 11544 Bytes
-GoRestful: 88776 Bytes
-GorillaMux: 71488 Bytes
-HttpRouter: 2712 Bytes
-HttpTreeMux: 7440 Bytes
-Kocha: 128880 Bytes
-LARS: 3640 Bytes
-Macaron: 8656 Bytes
-Martini: 23936 Bytes
-Pat: 1856 Bytes
-Possum: 7248 Bytes
-R2router: 3928 Bytes
-Rivet: 3064 Bytes
-Tango: 4912 Bytes
-TigerTonic: 9408 Bytes
-Traffic: 49472 Bytes
-Vulcan: 25496 Bytes
+Gin:              3968 Bytes
+
+Ace:              3600 Bytes
+Bear:             7112 Bytes
+Beego:           10048 Bytes
+Bone:             6480 Bytes
+Denco:            3256 Bytes
+Echo:             9000 Bytes
+GocraftWeb:       7496 Bytes
+Goji:             2912 Bytes
+Gojiv2:           7376 Bytes
+GoJsonRest:      11544 Bytes
+GoRestful:       88776 Bytes
+GorillaMux:      71488 Bytes
+HttpRouter:       2712 Bytes
+HttpTreeMux:      7440 Bytes
+Kocha:          128880 Bytes
+LARS:             3640 Bytes
+Macaron:          8656 Bytes
+Martini:         23936 Bytes
+Pat:              1856 Bytes
+Possum:           7248 Bytes
+R2router:         3928 Bytes
+Rivet:            3064 Bytes
+Tango:            4912 Bytes
+TigerTonic:       9408 Bytes
+Traffic:         49472 Bytes
+Vulcan:          25496 Bytes
 ```
 
 ## ParseAPI Routes: 26
 
 ```
-Ace: 6592 Bytes
-Bear: 12320 Bytes
-Beego: 18960 Bytes
-Bone: 11024 Bytes
-Denco: 4184 Bytes
-Echo: 11168 Bytes
-Gin: 6928 Bytes
-GocraftWeb: 12800 Bytes
-Goji: 5232 Bytes
-Gojiv2: 14464 Bytes
-GoJsonRest: 14216 Bytes
-GoRestful: 127368 Bytes
-GorillaMux: 123016 Bytes
-HttpRouter: 4976 Bytes
-HttpTreeMux: 7848 Bytes
-Kocha: 181712 Bytes
-LARS: 6632 Bytes
-Macaron: 13648 Bytes
-Martini: 45952 Bytes
-Pat: 2560 Bytes
-Possum: 9200 Bytes
-R2router: 7056 Bytes
-Rivet: 5680 Bytes
-Tango: 8664 Bytes
-TigerTonic: 9840 Bytes
-Traffic: 93480 Bytes
-Vulcan: 44504 Bytes
+Gin:              6928 Bytes
+
+Ace:              6592 Bytes
+Bear:            12320 Bytes
+Beego:           18960 Bytes
+Bone:            11024 Bytes
+Denco:            4184 Bytes
+Echo:            11168 Bytes
+GocraftWeb:      12800 Bytes
+Goji:             5232 Bytes
+Gojiv2:          14464 Bytes
+GoJsonRest:      14216 Bytes
+GoRestful:      127368 Bytes
+GorillaMux:     123016 Bytes
+HttpRouter:       4976 Bytes
+HttpTreeMux:      7848 Bytes
+Kocha:          181712 Bytes
+LARS:             6632 Bytes
+Macaron:         13648 Bytes
+Martini:         45952 Bytes
+Pat:              2560 Bytes
+Possum:           9200 Bytes
+R2router:         7056 Bytes
+Rivet:            5680 Bytes
+Tango:            8664 Bytes
+TigerTonic:       9840 Bytes
+Traffic:         93480 Bytes
+Vulcan:          44504 Bytes
 ```
 
 ## Static Routes
 
 ```
+BenchmarkGin_StaticAll                     50000             34506 ns/op               0 B/op          0 allocs/op
+
 BenchmarkAce_StaticAll                     30000             49657 ns/op               0 B/op          0 allocs/op
 BenchmarkHttpServeMux_StaticAll             2000           1183737 ns/op              96 B/op          8 allocs/op
 BenchmarkBeego_StaticAll                    5000            412621 ns/op           57776 B/op        628 allocs/op
@@ -146,7 +152,6 @@ BenchmarkBear_StaticAll                    10000            149242 ns/op        
 BenchmarkBone_StaticAll                    10000            118583 ns/op               0 B/op          0 allocs/op
 BenchmarkDenco_StaticAll                  100000             13247 ns/op               0 B/op          0 allocs/op
 BenchmarkEcho_StaticAll                    20000             79914 ns/op            5024 B/op        157 allocs/op
-BenchmarkGin_StaticAll                     50000             34506 ns/op               0 B/op          0 allocs/op
 BenchmarkGocraftWeb_StaticAll              10000            211823 ns/op           46440 B/op        785 allocs/op
 BenchmarkGoji_StaticAll                    10000            109390 ns/op               0 B/op          0 allocs/op
 BenchmarkGojiv2_StaticAll                   3000            415533 ns/op          145696 B/op       1099 allocs/op
@@ -172,13 +177,14 @@ BenchmarkVulcan_StaticAll                   5000            277366 ns/op        
 ## Micro Benchmarks
 
 ```
+BenchmarkGin_Param                      20000000               113 ns/op               0 B/op          0 allocs/op
+
 BenchmarkAce_Param                       5000000               375 ns/op              32 B/op          1 allocs/op
 BenchmarkBear_Param                      1000000              1709 ns/op             456 B/op          5 allocs/op
 BenchmarkBeego_Param                     1000000              2484 ns/op             368 B/op          4 allocs/op
 BenchmarkBone_Param                      1000000              2391 ns/op             688 B/op          5 allocs/op
 BenchmarkDenco_Param                    10000000               240 ns/op              32 B/op          1 allocs/op
 BenchmarkEcho_Param                      5000000               366 ns/op              32 B/op          1 allocs/op
-BenchmarkGin_Param                      20000000               113 ns/op               0 B/op          0 allocs/op
 BenchmarkGocraftWeb_Param                1000000              2343 ns/op             648 B/op          8 allocs/op
 BenchmarkGoji_Param                      1000000              1197 ns/op             336 B/op          2 allocs/op
 BenchmarkGojiv2_Param                    1000000              2771 ns/op             944 B/op          8 allocs/op
@@ -285,13 +291,14 @@ BenchmarkVulcan_ParamWrite               1000000              1006 ns/op        
 ## GitHub
 
 ```
+BenchmarkGin_GithubStatic               10000000               156 ns/op               0 B/op          0 allocs/op
+
 BenchmarkAce_GithubStatic                5000000               294 ns/op               0 B/op          0 allocs/op
 BenchmarkBear_GithubStatic               2000000               893 ns/op             120 B/op          3 allocs/op
 BenchmarkBeego_GithubStatic              1000000              2491 ns/op             368 B/op          4 allocs/op
 BenchmarkBone_GithubStatic                 50000             25300 ns/op            2880 B/op         60 allocs/op
 BenchmarkDenco_GithubStatic             20000000                76.0 ns/op             0 B/op          0 allocs/op
 BenchmarkEcho_GithubStatic               2000000               516 ns/op              32 B/op          1 allocs/op
-BenchmarkGin_GithubStatic               10000000               156 ns/op               0 B/op          0 allocs/op
 BenchmarkGocraftWeb_GithubStatic         1000000              1448 ns/op             296 B/op          5 allocs/op
 BenchmarkGoji_GithubStatic               3000000               496 ns/op               0 B/op          0 allocs/op
 BenchmarkGojiv2_GithubStatic             1000000              2941 ns/op             928 B/op          7 allocs/op
@@ -371,13 +378,14 @@ BenchmarkVulcan_GithubAll                   5000            394253 ns/op        
 ## Google+
 
 ```
+BenchmarkGin_GPlusStatic                10000000               183 ns/op               0 B/op          0 allocs/op
+
 BenchmarkAce_GPlusStatic                 5000000               276 ns/op               0 B/op          0 allocs/op
 BenchmarkBear_GPlusStatic                2000000               652 ns/op             104 B/op          3 allocs/op
 BenchmarkBeego_GPlusStatic               1000000              2239 ns/op             368 B/op          4 allocs/op
 BenchmarkBone_GPlusStatic                5000000               380 ns/op              32 B/op          1 allocs/op
 BenchmarkDenco_GPlusStatic              30000000                45.8 ns/op             0 B/op          0 allocs/op
 BenchmarkEcho_GPlusStatic                5000000               338 ns/op              32 B/op          1 allocs/op
-BenchmarkGin_GPlusStatic                10000000               183 ns/op               0 B/op          0 allocs/op
 BenchmarkGocraftWeb_GPlusStatic          1000000              1158 ns/op             280 B/op          5 allocs/op
 BenchmarkGoji_GPlusStatic                5000000               331 ns/op               0 B/op          0 allocs/op
 BenchmarkGojiv2_GPlusStatic              1000000              2106 ns/op             928 B/op          7 allocs/op
@@ -484,13 +492,14 @@ BenchmarkVulcan_GPlusAll                  100000             18555 ns/op        
 ## Parse.com
 
 ```
+BenchmarkGin_ParseStatic                10000000               133 ns/op               0 B/op          0 allocs/op
+
 BenchmarkAce_ParseStatic                 5000000               241 ns/op               0 B/op          0 allocs/op
 BenchmarkBear_ParseStatic                2000000               728 ns/op             120 B/op          3 allocs/op
 BenchmarkBeego_ParseStatic               1000000              2623 ns/op             368 B/op          4 allocs/op
 BenchmarkBone_ParseStatic                1000000              1285 ns/op             144 B/op          3 allocs/op
 BenchmarkDenco_ParseStatic              30000000                57.8 ns/op             0 B/op          0 allocs/op
 BenchmarkEcho_ParseStatic                5000000               342 ns/op              32 B/op          1 allocs/op
-BenchmarkGin_ParseStatic                10000000               133 ns/op               0 B/op          0 allocs/op
 BenchmarkGocraftWeb_ParseStatic          1000000              1478 ns/op             296 B/op          5 allocs/op
 BenchmarkGoji_ParseStatic                3000000               415 ns/op               0 B/op          0 allocs/op
 BenchmarkGojiv2_ParseStatic              1000000              2087 ns/op             928 B/op          7 allocs/op
