@@ -67,6 +67,18 @@ func TestBindingForm2(t *testing.T) {
 		"", "")
 }
 
+func TestBindingQuery(t *testing.T) {
+	testQueryBinding(t, "POST",
+		"/?foo=bar&bar=foo", "/",
+		"foo=unused", "bar2=foo")
+}
+
+func TestBindingQuery2(t *testing.T) {
+	testQueryBinding(t, "GET",
+		"/?foo=bar&bar=foo", "/?bar2=foo",
+		"foo=unused", "")
+}
+
 func TestBindingXML(t *testing.T) {
 	testBodyBinding(t,
 		XML, "xml",
@@ -202,6 +214,21 @@ func testFormBinding(t *testing.T, method, path, badPath, body, badBody string) 
 	req = requestWithBody(method, badPath, badBody)
 	err = JSON.Bind(req, &obj)
 	assert.Error(t, err)
+}
+
+func testQueryBinding(t *testing.T, method, path, badPath, body, badBody string) {
+	b := Query
+	assert.Equal(t, b.Name(), "query")
+
+	obj := FooBarStruct{}
+	req := requestWithBody(method, path, body)
+	if method == "POST" {
+		req.Header.Add("Content-Type", MIMEPOSTForm)
+	}
+	err := b.Bind(req, &obj)
+	assert.NoError(t, err)
+	assert.Equal(t, obj.Foo, "bar")
+	assert.Equal(t, obj.Bar, "foo")
 }
 
 func testBodyBinding(t *testing.T, b Binding, name, path, badPath, body, badBody string) {

@@ -467,6 +467,11 @@ func (c *Context) BindJSON(obj interface{}) error {
 	return c.MustBindWith(obj, binding.JSON)
 }
 
+// BindQuery is a shortcut for c.MustBindWith(obj, binding.Query)
+func (c *Context) BindQuery(obj interface{}) error {
+	return c.MustBindWith(obj, binding.Query)
+}
+
 // MustBindWith binds the passed struct pointer using the specified binding
 // engine. It will abort the request with HTTP 400 if any error ocurrs.
 // See the binding package.
