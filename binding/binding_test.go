@@ -9,6 +9,7 @@ import (
 	"mime/multipart"
 	"net/http"
 	"testing"
+	"time"
 
 	"github.com/gin-gonic/gin/binding/example"
 	"github.com/golang/protobuf/proto"
@@ -283,4 +284,15 @@ func testMsgPackBodyBinding(t *testing.T, b Binding, name, path, badPath, body, 
 func requestWithBody(method, path, body string) (req *http.Request) {
 	req, _ = http.NewRequest(method, path, bytes.NewBufferString(body))
 	return
+}
+
+func TestBindingFormOptionalTimeFormat(t *testing.T) {
+	q := struct {
+		Date time.Time `form:"date"`
+	}{}
+	req, _ := http.NewRequest(http.MethodGet, "/?date=2017-07-20", nil)
+	b := Form
+	err := b.Bind(req, &q)
+	assert.NoError(t, err)
+	assert.Equal(t, time.Date(2017, time.July, 20, 0, 0, 0, 0, time.Local), q.Date)
 }
