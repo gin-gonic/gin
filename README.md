@@ -791,6 +791,8 @@ You may use custom delims
 
 #### Custom Template Funcs
 
+See the detail [example code](examples/template).
+
 main.go
 
 ```go
