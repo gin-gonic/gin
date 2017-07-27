@@ -161,6 +161,19 @@ func TestRenderString(t *testing.T) {
 	assert.Equal(t, w.Header().Get("Content-Type"), "text/plain; charset=utf-8")
 }
 
+func TestRenderStringHTML(t *testing.T) {
+	w := httptest.NewRecorder()
+
+	err := (StringHTML{
+		Format: "<html><body><h1>Hola mi %s numero %d</h1></body></html>",
+		Data:   []interface{}{"amigo", 1},
+	}).Render(w)
+
+	assert.NoError(t, err)
+	assert.Equal(t, w.Body.String(), "<html><body><h1>Hola mi amigo numero 1</h1></body></html>")
+	assert.Equal(t, w.Header().Get("Content-Type"), "text/html; charset=utf-8")
+}
+
 func TestRenderHTMLTemplate(t *testing.T) {
 	w := httptest.NewRecorder()
 	templ := template.Must(template.New("t").Parse(`Hello {{.name}}`))

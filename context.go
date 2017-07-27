@@ -665,6 +665,11 @@ func (c *Context) YAML(code int, obj interface{}) {
 	c.Render(code, render.YAML{Data: obj})
 }
 
+// StringHTML renders the provided content by setting the Content-Type as "text/html".
+func (c *Context) StringHTML(code int, content string, values ...interface{}) {
+	c.Render(code, render.StringHTML{Format: content, Data: values})
+}
+
 // String writes the given string into the response body.
 func (c *Context) String(code int, format string, values ...interface{}) {
 	c.Render(code, render.String{Format: format, Data: values})

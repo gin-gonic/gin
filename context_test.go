@@ -733,6 +733,19 @@ func TestContextRenderString(t *testing.T) {
 	assert.Equal(t, w.HeaderMap.Get("Content-Type"), "text/plain; charset=utf-8")
 }
 
+// TestContextStringHTML tests that the response is returned
+// with Content-Type set to text/html
+func TestContextRenderStringHTML(t *testing.T) {
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
+
+	c.StringHTML(201, "<html><body><h1>test %s %d</h1></body><html>", "string", 2)
+
+	assert.Equal(t, w.Code, 201)
+	assert.Equal(t, w.Body.String(), "<html><body><h1>test string 2</h1></body><html>")
+	assert.Equal(t, w.HeaderMap.Get("Content-Type"), "text/html; charset=utf-8")
+}
+
 // Tests that no String is rendered if code is 204
 func TestContextRenderNoContentString(t *testing.T) {
 	w := httptest.NewRecorder()
