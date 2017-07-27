@@ -561,6 +561,7 @@ func bodyAllowedForStatus(status int) bool {
 	return true
 }
 
+// Status sets the HTTP response code.
 func (c *Context) Status(code int) {
 	c.writermem.WriteHeader(code)
 }
