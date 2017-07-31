@@ -855,6 +855,15 @@ r.GET("/test", func(c *gin.Context) {
 ```
 Both internal and external locations are supported.
 
+### HTML rendering from String
+
+For services that doesn't want to store HTML files on disk, you can use the `StringHTML()` method that will render an HTML from the provided `String`:
+
+```go
+r.GET("/index", func(c *gin.Context) {
+	c.StringHTML(200, "<html><body><h2>Bienvenido a Gin Server!</h2></body></html>")
+})
+```
 
 ### Custom Middleware
 
