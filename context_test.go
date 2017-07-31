@@ -612,7 +612,7 @@ func TestContextRenderNoContentAPIJSON(t *testing.T) {
 
 	assert.Equal(t, 204, w.Code)
 	assert.Equal(t, "", w.Body.String())
-	assert.Equal(t, w.HeaderMap.Get("Content-Type"), "application/vnd.api+json")
+	assert.Equal(t, "application/vnd.api+json", w.HeaderMap.Get("Content-Type"))
 }
 
 // Tests that the response is serialized as JSON
@@ -649,9 +649,9 @@ func TestContextRenderSecureJSON(t *testing.T) {
 	router.SecureJsonPrefix("&&&START&&&")
 	c.SecureJSON(201, []string{"foo", "bar"})
 
-	assert.Equal(t, w.Code, 201)
-	assert.Equal(t, w.Body.String(), "&&&START&&&[\"foo\",\"bar\"]")
-	assert.Equal(t, w.HeaderMap.Get("Content-Type"), "application/json; charset=utf-8")
+	assert.Equal(t, 201, w.Code)
+	assert.Equal(t, "&&&START&&&[\"foo\",\"bar\"]", w.Body.String())
+	assert.Equal(t, "application/json; charset=utf-8", w.HeaderMap.Get("Content-Type"))
 }
 
 // Tests that no Custom JSON is rendered if code is 204
@@ -663,7 +663,7 @@ func TestContextRenderNoContentSecureJSON(t *testing.T) {
 
 	assert.Equal(t, 204, w.Code)
 	assert.Equal(t, "", w.Body.String())
-	assert.Equal(t, w.HeaderMap.Get("Content-Type"), "application/json; charset=utf-8")
+	assert.Equal(t, "application/json; charset=utf-8", w.HeaderMap.Get("Content-Type"))
 }
 
 // Tests that the response executes the templates
@@ -676,9 +676,9 @@ func TestContextRenderHTML(t *testing.T) {
 
 	c.HTML(201, "t", H{"name": "alexandernyquist"})
 
-	assert.Equal(t, w.Code, 201)
-	assert.Equal(t, w.Body.String(), "Hello alexandernyquist")
-	assert.Equal(t, w.HeaderMap.Get("Content-Type"), "text/html; charset=utf-8")
+	assert.Equal(t, 201, w.Code)
+	assert.Equal(t, "Hello alexandernyquist", w.Body.String())
+	assert.Equal(t, "text/html; charset=utf-8", w.HeaderMap.Get("Content-Type"))
 }
 
 // Tests that no HTML is rendered if code is 204
@@ -692,7 +692,7 @@ func TestContextRenderNoContentHTML(t *testing.T) {
 
 	assert.Equal(t, 204, w.Code)
 	assert.Equal(t, "", w.Body.String())
-	assert.Equal(t, w.HeaderMap.Get("Content-Type"), "text/html; charset=utf-8")
+	assert.Equal(t, "text/html; charset=utf-8", w.HeaderMap.Get("Content-Type"))
 }
 
 // TestContextXML tests that the response is serialized as XML
@@ -703,9 +703,9 @@ func TestContextRenderXML(t *testing.T) {
 
 	c.XML(201, H{"foo": "bar"})
 
-	assert.Equal(t, w.Code, 201)
-	assert.Equal(t, w.Body.String(), "<map><foo>bar</foo></map>")
-	assert.Equal(t, w.HeaderMap.Get("Content-Type"), "application/xml; charset=utf-8")
+	assert.Equal(t, 201, w.Code)
+	assert.Equal(t, "<map><foo>bar</foo></map>", w.Body.String())
+	assert.Equal(t, "application/xml; charset=utf-8", w.HeaderMap.Get("Content-Type"))
 }
 
 // Tests that no XML is rendered if code is 204
@@ -717,7 +717,7 @@ func TestContextRenderNoContentXML(t *testing.T) {
 
 	assert.Equal(t, 204, w.Code)
 	assert.Equal(t, "", w.Body.String())
-	assert.Equal(t, w.HeaderMap.Get("Content-Type"), "application/xml; charset=utf-8")
+	assert.Equal(t, "application/xml; charset=utf-8", w.HeaderMap.Get("Content-Type"))
 }
 
 // TestContextString tests that the response is returned
@@ -728,9 +728,9 @@ func TestContextRenderString(t *testing.T) {
 
 	c.String(201, "test %s %d", "string", 2)
 
-	assert.Equal(t, w.Code, 201)
-	assert.Equal(t, w.Body.String(), "test string 2")
-	assert.Equal(t, w.HeaderMap.Get("Content-Type"), "text/plain; charset=utf-8")
+	assert.Equal(t, 201, w.Code)
+	assert.Equal(t, "test string 2", w.Body.String())
+	assert.Equal(t, "text/plain; charset=utf-8", w.HeaderMap.Get("Content-Type"))
 }
 
 // TestContextStringHTML tests that the response is returned
@@ -741,9 +741,9 @@ func TestContextRenderStringHTML(t *testing.T) {
 
 	c.StringHTML(201, "<html><body><h1>test %s %d</h1></body><html>", "string", 2)
 
-	assert.Equal(t, w.Code, 201)
-	assert.Equal(t, w.Body.String(), "<html><body><h1>test string 2</h1></body><html>")
-	assert.Equal(t, w.HeaderMap.Get("Content-Type"), "text/html; charset=utf-8")
+	assert.Equal(t, 201, w.Code)
+	assert.Equal(t, "<html><body><h1>test string 2</h1></body><html>", w.Body.String())
+	assert.Equal(t, "text/html; charset=utf-8", w.HeaderMap.Get("Content-Type"))
 }
 
 // Tests that no String is rendered if code is 204
@@ -755,7 +755,7 @@ func TestContextRenderNoContentString(t *testing.T) {
 
 	assert.Equal(t, 204, w.Code)
 	assert.Equal(t, "", w.Body.String())
-	assert.Equal(t, w.HeaderMap.Get("Content-Type"), "text/plain; charset=utf-8")
+	assert.Equal(t, "text/plain; charset=utf-8", w.HeaderMap.Get("Content-Type"))
 }
 
 // TestContextString tests that the response is returned
@@ -767,9 +767,9 @@ func TestContextRenderHTMLString(t *testing.T) {
 	c.Header("Content-Type", "text/html; charset=utf-8")
 	c.String(201, "<html>%s %d</html>", "string", 3)
 
-	assert.Equal(t, w.Code, 201)
-	assert.Equal(t, w.Body.String(), "<html>string 3</html>")
-	assert.Equal(t, w.HeaderMap.Get("Content-Type"), "text/html; charset=utf-8")
+	assert.Equal(t, 201, w.Code)
+	assert.Equal(t, "<html>string 3</html>", w.Body.String())
+	assert.Equal(t, "text/html; charset=utf-8", w.HeaderMap.Get("Content-Type"))
 }
 
 // Tests that no HTML String is rendered if code is 204
@@ -782,7 +782,7 @@ func TestContextRenderNoContentHTMLString(t *testing.T) {
 
 	assert.Equal(t, 204, w.Code)
 	assert.Equal(t, "", w.Body.String())
-	assert.Equal(t, w.HeaderMap.Get("Content-Type"), "text/html; charset=utf-8")
+	assert.Equal(t, "text/html; charset=utf-8", w.HeaderMap.Get("Content-Type"))
 }
 
 // TestContextData tests that the response can be written from `bytesting`
@@ -793,9 +793,9 @@ func TestContextRenderData(t *testing.T) {
 
 	c.Data(201, "text/csv", []byte(`foo,bar`))
 
-	assert.Equal(t, w.Code, 201)
-	assert.Equal(t, w.Body.String(), "foo,bar")
-	assert.Equal(t, w.HeaderMap.Get("Content-Type"), "text/csv")
+	assert.Equal(t, 201, w.Code)
+	assert.Equal(t, "foo,bar", w.Body.String())
+	assert.Equal(t, "text/csv", w.HeaderMap.Get("Content-Type"))
 }
 
 // Tests that no Custom Data is rendered if code is 204
@@ -807,7 +807,7 @@ func TestContextRenderNoContentData(t *testing.T) {
 
 	assert.Equal(t, 204, w.Code)
 	assert.Equal(t, "", w.Body.String())
-	assert.Equal(t, w.HeaderMap.Get("Content-Type"), "text/csv")
+	assert.Equal(t, "text/csv", w.HeaderMap.Get("Content-Type"))
 }
 
 func TestContextRenderSSE(t *testing.T) {
@@ -834,9 +834,9 @@ func TestContextRenderFile(t *testing.T) {
 	c.Request, _ = http.NewRequest("GET", "/", nil)
 	c.File("./gin.go")
 
-	assert.Equal(t, w.Code, 200)
+	assert.Equal(t, 200, w.Code)
 	assert.Contains(t, w.Body.String(), "func New() *Engine {")
-	assert.Equal(t, w.HeaderMap.Get("Content-Type"), "text/plain; charset=utf-8")
+	assert.Equal(t, "text/plain; charset=utf-8", w.HeaderMap.Get("Content-Type"))
 }
 
 // TestContextRenderYAML tests that the response is serialized as YAML
@@ -847,9 +847,9 @@ func TestContextRenderYAML(t *testing.T) {
 
 	c.YAML(201, H{"foo": "bar"})
 
-	assert.Equal(t, w.Code, 201)
-	assert.Equal(t, w.Body.String(), "foo: bar\n")
-	assert.Equal(t, w.HeaderMap.Get("Content-Type"), "application/x-yaml; charset=utf-8")
+	assert.Equal(t, 201, w.Code)
+	assert.Equal(t, "foo: bar\n", w.Body.String())
+	assert.Equal(t, "application/x-yaml; charset=utf-8", w.HeaderMap.Get("Content-Type"))
 }
 
 func TestContextHeaders(t *testing.T) {
@@ -879,8 +879,8 @@ func TestContextRenderRedirectWithRelativePath(t *testing.T) {
 
 	c.Redirect(301, "/path")
 	c.Writer.WriteHeaderNow()
-	assert.Equal(t, w.Code, 301)
-	assert.Equal(t, w.Header().Get("Location"), "/path")
+	assert.Equal(t, 301, w.Code)
+	assert.Equal(t, "/path", w.Header().Get("Location"))
 }
 
 func TestContextRenderRedirectWithAbsolutePath(t *testing.T) {
@@ -891,8 +891,8 @@ func TestContextRenderRedirectWithAbsolutePath(t *testing.T) {
 	c.Redirect(302, "http://google.com")
 	c.Writer.WriteHeaderNow()
 
-	assert.Equal(t, w.Code, 302)
-	assert.Equal(t, w.Header().Get("Location"), "http://google.com")
+	assert.Equal(t, 302, w.Code)
+	assert.Equal(t, "http://google.com", w.Header().Get("Location"))
 }
 
 func TestContextRenderRedirectWith201(t *testing.T) {
@@ -903,8 +903,8 @@ func TestContextRenderRedirectWith201(t *testing.T) {
 	c.Redirect(201, "/resource")
 	c.Writer.WriteHeaderNow()
 
-	assert.Equal(t, w.Code, 201)
-	assert.Equal(t, w.Header().Get("Location"), "/resource")
+	assert.Equal(t, 201, w.Code)
+	assert.Equal(t, "/resource", w.Header().Get("Location"))
 }
 
 func TestContextRenderRedirectAll(t *testing.T) {

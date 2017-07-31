@@ -126,8 +126,8 @@ func TestRenderXML(t *testing.T) {
 	err := (XML{data}).Render(w)
 
 	assert.NoError(t, err)
-	assert.Equal(t, w.Body.String(), "<map><foo>bar</foo></map>")
-	assert.Equal(t, w.Header().Get("Content-Type"), "application/xml; charset=utf-8")
+	assert.Equal(t, "<map><foo>bar</foo></map>", w.Body.String())
+	assert.Equal(t, "application/xml; charset=utf-8", w.Header().Get("Content-Type"))
 }
 
 func TestRenderRedirect(t *testing.T) {
@@ -144,8 +144,8 @@ func TestRenderData(t *testing.T) {
 	}).Render(w)
 
 	assert.NoError(t, err)
-	assert.Equal(t, w.Body.String(), "#!PNG some raw data")
-	assert.Equal(t, w.Header().Get("Content-Type"), "image/png")
+	assert.Equal(t, "#!PNG some raw data", w.Body.String())
+	assert.Equal(t, "image/png", w.Header().Get("Content-Type"))
 }
 
 func TestRenderString(t *testing.T) {
@@ -157,8 +157,8 @@ func TestRenderString(t *testing.T) {
 	}).Render(w)
 
 	assert.NoError(t, err)
-	assert.Equal(t, w.Body.String(), "hola manu 2")
-	assert.Equal(t, w.Header().Get("Content-Type"), "text/plain; charset=utf-8")
+	assert.Equal(t, "hola manu 2", w.Body.String())
+	assert.Equal(t, "text/plain; charset=utf-8", w.Header().Get("Content-Type"))
 }
 
 func TestRenderStringHTML(t *testing.T) {
@@ -170,8 +170,8 @@ func TestRenderStringHTML(t *testing.T) {
 	}).Render(w)
 
 	assert.NoError(t, err)
-	assert.Equal(t, w.Body.String(), "<html><body><h1>Hola mi amigo numero 1</h1></body></html>")
-	assert.Equal(t, w.Header().Get("Content-Type"), "text/html; charset=utf-8")
+	assert.Equal(t, "<html><body><h1>Hola mi amigo numero 1</h1></body></html>", w.Body.String())
+	assert.Equal(t, "text/html; charset=utf-8", w.Header().Get("Content-Type"))
 }
 
 func TestRenderHTMLTemplate(t *testing.T) {
@@ -186,6 +186,6 @@ func TestRenderHTMLTemplate(t *testing.T) {
 	err := instance.Render(w)
 
 	assert.NoError(t, err)
-	assert.Equal(t, w.Body.String(), "Hello alexandernyquist")
-	assert.Equal(t, w.Header().Get("Content-Type"), "text/html; charset=utf-8")
+	assert.Equal(t, "Hello alexandernyquist", w.Body.String())
+	assert.Equal(t, "text/html; charset=utf-8", w.Header().Get("Content-Type"))
 }
