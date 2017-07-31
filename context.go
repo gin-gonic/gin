@@ -482,6 +482,29 @@ func (c *Context) MustBindWith(obj interface{}, b binding.Binding) (err error) {
 	return
 }
 
+// ShouldBind checks the Content-Type to select a binding engine automatically,
+// Depending the "Content-Type" header different bindings are used:
+//     "application/json" --> JSON binding
+//     "application/xml"  --> XML binding
+// otherwise --> returns an error
+// It parses the request's body as JSON if Content-Type == "application/json" using JSON or XML as a JSON input.
+// It decodes the json payload into the struct specified as a pointer.
+// Like c.Bind() but this method does not set the response status code to 400 and abort if the json is not valid.
+func (c *Context) ShouldBind(obj interface{}) error {
+	b := binding.Default(c.Request.Method, c.ContentType())
+	return c.ShouldBindWith(obj, b)
+}
+
+// ShouldBindJSON is a shortcut for c.ShouldBindWith(obj, binding.JSON).
+func (c *Context) ShouldBindJSON(obj interface{}) error {
+	return c.ShouldBindWith(obj, binding.JSON)
+}
+
+// ShouldBindQuery is a shortcut for c.ShouldBindWith(obj, binding.Query).
+func (c *Context) ShouldBindQuery(obj interface{}) error {
+	return c.ShouldBindWith(obj, binding.Query)
+}
+
 // ShouldBindWith binds the passed struct pointer using the specified binding engine.
 // See the binding package.
 func (c *Context) ShouldBindWith(obj interface{}, b binding.Binding) error {
