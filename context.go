@@ -456,7 +456,7 @@ func (c *Context) SaveUploadedFile(file *multipart.FileHeader, dst string) error
 // otherwise --> returns an error
 // It parses the request's body as JSON if Content-Type == "application/json" using JSON or XML as a JSON input.
 // It decodes the json payload into the struct specified as a pointer.
-// Like ParseBody() but this method also writes a 400 error if the json is not valid.
+// It will writes a 400 error and sets Content-Type header "text/plain" in the response if input is not valid.
 func (c *Context) Bind(obj interface{}) error {
 	b := binding.Default(c.Request.Method, c.ContentType())
 	return c.MustBindWith(obj, b)
