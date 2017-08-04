@@ -53,15 +53,15 @@ func TestBasicAuthSearchCredential(t *testing.T) {
 	})
 
 	user, found := pairs.searchCredential(authorizationHeader("admin", "password"))
-	assert.Equal(t, user, "admin")
+	assert.Equal(t, "admin", user)
 	assert.True(t, found)
 
 	user, found = pairs.searchCredential(authorizationHeader("foo", "bar"))
-	assert.Equal(t, user, "foo")
+	assert.Equal(t, "foo", user)
 	assert.True(t, found)
 
 	user, found = pairs.searchCredential(authorizationHeader("bar", "foo"))
-	assert.Equal(t, user, "bar")
+	assert.Equal(t, "bar", user)
 	assert.True(t, found)
 
 	user, found = pairs.searchCredential(authorizationHeader("admins", "password"))
@@ -78,7 +78,7 @@ func TestBasicAuthSearchCredential(t *testing.T) {
 }
 
 func TestBasicAuthAuthorizationHeader(t *testing.T) {
-	assert.Equal(t, authorizationHeader("admin", "password"), "Basic YWRtaW46cGFzc3dvcmQ=")
+	assert.Equal(t, "Basic YWRtaW46cGFzc3dvcmQ=", authorizationHeader("admin", "password"))
 }
 
 func TestBasicAuthSecureCompare(t *testing.T) {
@@ -101,8 +101,8 @@ func TestBasicAuthSucceed(t *testing.T) {
 	req.Header.Set("Authorization", authorizationHeader("admin", "password"))
 	router.ServeHTTP(w, req)
 
-	assert.Equal(t, w.Code, 200)
-	assert.Equal(t, w.Body.String(), "admin")
+	assert.Equal(t, 200, w.Code)
+	assert.Equal(t, "admin", w.Body.String())
 }
 
 func TestBasicAuth401(t *testing.T) {
@@ -121,8 +121,8 @@ func TestBasicAuth401(t *testing.T) {
 	router.ServeHTTP(w, req)
 
 	assert.False(t, called)
-	assert.Equal(t, w.Code, 401)
-	assert.Equal(t, w.HeaderMap.Get("WWW-Authenticate"), "Basic realm=\"Authorization Required\"")
+	assert.Equal(t, 401, w.Code)
+	assert.Equal(t, "Basic realm=\"Authorization Required\"", w.HeaderMap.Get("WWW-Authenticate"))
 }
 
 func TestBasicAuth401WithCustomRealm(t *testing.T) {
@@ -141,6 +141,6 @@ func TestBasicAuth401WithCustomRealm(t *testing.T) {
 	router.ServeHTTP(w, req)
 
 	assert.False(t, called)
-	assert.Equal(t, w.Code, 401)
-	assert.Equal(t, w.HeaderMap.Get("WWW-Authenticate"), "Basic realm=\"My Custom \\\"Realm\\\"\"")
+	assert.Equal(t, 401, w.Code)
+	assert.Equal(t, "Basic realm=\"My Custom \\\"Realm\\\"\"", w.HeaderMap.Get("WWW-Authenticate"))
 }
