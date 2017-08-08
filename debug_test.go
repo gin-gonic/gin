@@ -42,7 +42,7 @@ func TestDebugPrint(t *testing.T) {
 
 	SetMode(DebugMode)
 	debugPrint("these are %d %s\n", 2, "error messages")
-	assert.Equal(t, w.String(), "[GIN-debug] these are 2 error messages\n")
+	assert.Equal(t, "[GIN-debug] these are 2 error messages\n", w.String())
 }
 
 func TestDebugPrintError(t *testing.T) {
@@ -55,7 +55,7 @@ func TestDebugPrintError(t *testing.T) {
 	assert.Empty(t, w.String())
 
 	debugPrintError(errors.New("this is an error"))
-	assert.Equal(t, w.String(), "[GIN-debug] [ERROR] this is an error\n")
+	assert.Equal(t, "[GIN-debug] [ERROR] this is an error\n", w.String())
 }
 
 func TestDebugPrintRoutes(t *testing.T) {
@@ -83,7 +83,7 @@ func TestDebugPrintWARNINGSetHTMLTemplate(t *testing.T) {
 	defer teardown()
 
 	debugPrintWARNINGSetHTMLTemplate()
-	assert.Equal(t, w.String(), "[GIN-debug] [WARNING] Since SetHTMLTemplate() is NOT thread-safe. It should only be called\nat initialization. ie. before any route is registered or the router is listening in a socket:\n\n\trouter := gin.Default()\n\trouter.SetHTMLTemplate(template) // << good place\n\n")
+	assert.Equal(t, "[GIN-debug] [WARNING] Since SetHTMLTemplate() is NOT thread-safe. It should only be called\nat initialization. ie. before any route is registered or the router is listening in a socket:\n\n\trouter := gin.Default()\n\trouter.SetHTMLTemplate(template) // << good place\n\n", w.String())
 }
 
 func setup(w io.Writer) {

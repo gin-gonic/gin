@@ -34,11 +34,11 @@ func TestResponseWriterReset(t *testing.T) {
 	var w ResponseWriter = writer
 
 	writer.reset(testWritter)
-	assert.Equal(t, writer.size, -1)
-	assert.Equal(t, writer.status, 200)
-	assert.Equal(t, writer.ResponseWriter, testWritter)
-	assert.Equal(t, w.Size(), -1)
-	assert.Equal(t, w.Status(), 200)
+	assert.Equal(t, -1, writer.size)
+	assert.Equal(t, 200, writer.status)
+	assert.Equal(t, testWritter, writer.ResponseWriter)
+	assert.Equal(t, -1, w.Size())
+	assert.Equal(t, 200, w.Status())
 	assert.False(t, w.Written())
 }
 
@@ -50,11 +50,11 @@ func TestResponseWriterWriteHeader(t *testing.T) {
 
 	w.WriteHeader(300)
 	assert.False(t, w.Written())
-	assert.Equal(t, w.Status(), 300)
+	assert.Equal(t, 300, w.Status())
 	assert.NotEqual(t, testWritter.Code, 300)
 
 	w.WriteHeader(-1)
-	assert.Equal(t, w.Status(), 300)
+	assert.Equal(t, 300, w.Status())
 }
 
 func TestResponseWriterWriteHeadersNow(t *testing.T) {
@@ -67,12 +67,12 @@ func TestResponseWriterWriteHeadersNow(t *testing.T) {
 	w.WriteHeaderNow()
 
 	assert.True(t, w.Written())
-	assert.Equal(t, w.Size(), 0)
-	assert.Equal(t, testWritter.Code, 300)
+	assert.Equal(t, 0, w.Size())
+	assert.Equal(t, 300, testWritter.Code)
 
 	writer.size = 10
 	w.WriteHeaderNow()
-	assert.Equal(t, w.Size(), 10)
+	assert.Equal(t, 10, w.Size())
 }
 
 func TestResponseWriterWrite(t *testing.T) {
@@ -82,17 +82,17 @@ func TestResponseWriterWrite(t *testing.T) {
 	w := ResponseWriter(writer)
 
 	n, err := w.Write([]byte("hola"))
-	assert.Equal(t, n, 4)
-	assert.Equal(t, w.Size(), 4)
-	assert.Equal(t, w.Status(), 200)
-	assert.Equal(t, testWritter.Code, 200)
-	assert.Equal(t, testWritter.Body.String(), "hola")
+	assert.Equal(t, 4, n)
+	assert.Equal(t, 4, w.Size())
+	assert.Equal(t, 200, w.Status())
+	assert.Equal(t, 200, testWritter.Code)
+	assert.Equal(t, "hola", testWritter.Body.String())
 	assert.NoError(t, err)
 
 	n, err = w.Write([]byte(" adios"))
-	assert.Equal(t, n, 6)
-	assert.Equal(t, w.Size(), 10)
-	assert.Equal(t, testWritter.Body.String(), "hola adios")
+	assert.Equal(t, 6, n)
+	assert.Equal(t, 10, w.Size())
+	assert.Equal(t, "hola adios", testWritter.Body.String())
 	assert.NoError(t, err)
 }
 
