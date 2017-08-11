@@ -14,7 +14,7 @@ import (
 	"github.com/gin-gonic/gin/render"
 )
 
-// Version is Framework's version
+// Version is Framework's version.
 const Version = "v1.2"
 
 var default404Body = []byte("404 page not found")
@@ -191,7 +191,7 @@ func (engine *Engine) NoRoute(handlers ...HandlerFunc) {
 	engine.rebuild404Handlers()
 }
 
-// NoMethod sets the handlers called when... TODO
+// NoMethod sets the handlers called when... TODO.
 func (engine *Engine) NoMethod(handlers ...HandlerFunc) {
 	engine.noMethod = handlers
 	engine.rebuild405Handlers()
