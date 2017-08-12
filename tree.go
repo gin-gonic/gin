@@ -448,6 +448,7 @@ walk: // Outer loop for walking the tree
 					i := len(p)
 					p = p[:i+1] // expand slice within preallocated capacity
 					p[i].Key = n.path[2:]
+					path = path[1:] // not include the slash
 					if unescape {
 						var err error
 						if p[i].Value, err = url.QueryUnescape(path); err != nil {

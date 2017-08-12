@@ -239,7 +239,26 @@ func TestRouteParamsByName(t *testing.T) {
 	assert.Equal(t, w.Code, 200)
 	assert.Equal(t, name, "john")
 	assert.Equal(t, lastName, "smith")
-	assert.Equal(t, wild, "/is/super/great")
+	assert.Equal(t, wild, "is/super/great")
+}
+
+func TestRouteEmptyWildcardParam(t *testing.T) {
+	name := "A"
+	wild := "A"
+	router := New()
+	router.GET("/test/:name/*wild", func(c *Context) {
+		name = c.Params.ByName("name")
+		wild = c.Params.ByName("wild")
+	})
+
+	// RUN
+	w := performRequest(router, "GET", "/test/john/")
+	assert.Equal(t, 200, w.Code)
+	assert.Equal(t, "john", name)
+	assert.Empty(t, wild)
+
+	w = performRequest(router, "GET", "/test/john")
+	assert.Equal(t, 404, w.Code)
 }
 
 // TestHandleStaticFile - ensure the static file handles properly
