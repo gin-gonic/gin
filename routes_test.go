@@ -356,9 +356,9 @@ func TestRouterNotFound(t *testing.T) {
 	router.GET("/", func(c *Context) {})
 
 	testRoutes := []struct {
-		route  string
-		code   int
-		header string
+		route    string
+		code     int
+		Location string
 	}{
 		{"/path/", 301, "/path"},   // TSR -/
 		{"/dir", 301, "/dir/"},     // TSR +/
@@ -374,7 +374,7 @@ func TestRouterNotFound(t *testing.T) {
 		w := performRequest(router, "GET", tr.route)
 		assert.Equal(t, w.Code, tr.code)
 		if w.Code != 404 {
-			assert.Equal(t, fmt.Sprint(w.Header().Get("Location")), tr.header)
+			assert.Equal(t, fmt.Sprint(w.Header().Get("Location")), tr.Location)
 		}
 	}
 
