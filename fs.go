@@ -29,7 +29,7 @@ func Dir(root string, listDirectory bool) http.FileSystem {
 	return &onlyfilesFS{fs}
 }
 
-// Open conforms to http.Filesystem
+// Open conforms to http.Filesystem.
 func (fs onlyfilesFS) Open(name string) (http.File, error) {
 	f, err := fs.fs.Open(name)
 	if err != nil {
@@ -38,7 +38,7 @@ func (fs onlyfilesFS) Open(name string) (http.File, error) {
 	return neuteredReaddirFile{f}, nil
 }
 
-// Readdir overrides the http.File default implementation
+// Readdir overrides the http.File default implementation.
 func (f neuteredReaddirFile) Readdir(count int) ([]os.FileInfo, error) {
 	// this disables directory listing
 	return nil, nil
