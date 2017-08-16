@@ -356,25 +356,25 @@ func TestRouterNotFound(t *testing.T) {
 	router.GET("/", func(c *Context) {})
 
 	testRoutes := []struct {
-		route  string
-		code   int
-		header string
+		route    string
+		code     int
+		location string
 	}{
-		{"/path/", 301, "map[Location:[/path]]"},   // TSR -/
-		{"/dir", 301, "map[Location:[/dir/]]"},     // TSR +/
-		{"", 301, "map[Location:[/]]"},             // TSR +/
-		{"/PATH", 301, "map[Location:[/path]]"},    // Fixed Case
-		{"/DIR/", 301, "map[Location:[/dir/]]"},    // Fixed Case
-		{"/PATH/", 301, "map[Location:[/path]]"},   // Fixed Case -/
-		{"/DIR", 301, "map[Location:[/dir/]]"},     // Fixed Case +/
-		{"/../path", 301, "map[Location:[/path]]"}, // CleanPath
-		{"/nope", 404, ""},                         // NotFound
+		{"/path/", 301, "/path"},   // TSR -/
+		{"/dir", 301, "/dir/"},     // TSR +/
+		{"", 301, "/"},             // TSR +/
+		{"/PATH", 301, "/path"},    // Fixed Case
+		{"/DIR/", 301, "/dir/"},    // Fixed Case
+		{"/PATH/", 301, "/path"},   // Fixed Case -/
+		{"/DIR", 301, "/dir/"},     // Fixed Case +/
+		{"/../path", 301, "/path"}, // CleanPath
+		{"/nope", 404, ""},         // NotFound
 	}
 	for _, tr := range testRoutes {
 		w := performRequest(router, "GET", tr.route)
 		assert.Equal(t, w.Code, tr.code)
 		if w.Code != 404 {
-			assert.Equal(t, fmt.Sprint(w.Header()), tr.header)
+			assert.Equal(t, fmt.Sprint(w.Header().Get("Location")), tr.location)
 		}
 	}
 
