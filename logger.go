@@ -91,10 +91,11 @@ func LoggerWithWriter(out io.Writer, notlogged ...string) HandlerFunc {
 			clientIP := c.ClientIP()
 			method := c.Request.Method
 			statusCode := c.Writer.Status()
-			var statusColor, methodColor string
+			var statusColor, methodColor, resetColor string
 			if isTerm {
 				statusColor = colorForStatus(statusCode)
 				methodColor = colorForMethod(method)
+				resetColor = reset
 			}
 			comment := c.Errors.ByType(ErrorTypePrivate).String()
 
@@ -104,10 +105,10 @@ func LoggerWithWriter(out io.Writer, notlogged ...string) HandlerFunc {
 
 			fmt.Fprintf(out, "[GIN] %v |%s %3d %s| %13v | %15s |%s %-7s %s %s\n%s",
 				end.Format("2006/01/02 - 15:04:05"),
-				statusColor, statusCode, reset,
+				statusColor, statusCode, resetColor,
 				latency,
 				clientIP,
-				methodColor, method, reset,
+				methodColor, method, resetColor,
 				path,
 				comment,
 			)
