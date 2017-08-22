@@ -381,7 +381,8 @@ func main() {
 	r := gin.New()
 
 	// Global middleware
-	// Logger middleware will write the logs to gin.DefaultWriter even you set with GIN_MODE=release. By default gin.DefaultWriter = os.Stdout
+	// Logger middleware will write the logs to gin.DefaultWriter even you set with GIN_MODE=release.
+	// By default gin.DefaultWriter = os.Stdout
 	r.Use(gin.Logger())
 	
 	// Recovery middleware recovers from any panics and writes a 500 if there was one.
@@ -409,6 +410,27 @@ func main() {
 
 	// Listen and serve on 0.0.0.0:8080
 	r.Run(":8080")
+}
+```
+
+### Output log to file
+```go
+func main() {
+    // Disable Console Color, because not need color when output log to file
+    gin.DisableConsoleColor()
+    // Create one file to save logs
+    f, _ := os.Create("gin.log")
+    // Reset gin.DefaultWriter
+    gin.DefaultWriter = io.MultiWriter(f)
+    // If need to output log to file and console at a time, please use the following code:
+    // gin.DefaultWriter = io.MultiWriter(f, os.Stdout)
+
+    router := gin.Default()
+    router.GET("/ping", func(c *gin.Context) {
+        c.String(200, "pong")
+    })
+
+    r.Run(":8080")
 }
 ```
 
