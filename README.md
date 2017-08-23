@@ -423,7 +423,7 @@ func main() {
     f, _ := os.Create("gin.log")
     gin.DefaultWriter = io.MultiWriter(f)
     
-    // Use the following code if you need to write logs to file and console at the same time.
+    // Use the following code if you need to write the logs to file and console at the same time.
     // gin.DefaultWriter = io.MultiWriter(f, os.Stdout)
 
     router := gin.Default()
