@@ -9,15 +9,15 @@ import (
 	"net/http"
 	"sync"
 
-	. "github.com/gin-gonic/gin"
+	"github.com/gin-gonic/gin"
 )
 
 var once sync.Once
-var internalEngine *Engine
+var internalEngine *gin.Engine
 
-func engine() *Engine {
+func engine() *gin.Engine {
 	once.Do(func() {
-		internalEngine = Default()
+		internalEngine = gin.Default()
 	})
 	return internalEngine
 }
