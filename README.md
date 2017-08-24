@@ -532,10 +532,12 @@ package main
 
 import "log"
 import "github.com/gin-gonic/gin"
+import "time"
 
 type Person struct {
-	Name    string `form:"name"`
-	Address string `form:"address"`
+	Name     string    `form:"name"`
+	Address  string    `form:"address"`
+	Birthday time.Time `form:"birthday" time_format:"2006-01-02" time_utc:"1"`
 }
 
 func main() {
@@ -552,10 +554,16 @@ func startPage(c *gin.Context) {
 	if c.Bind(&person) == nil {
 		log.Println(person.Name)
 		log.Println(person.Address)
+		log.Println(person.Birthday)
 	}
 
 	c.String(200, "Success")
 }
+```
+
+Test it with:
+```sh
+$ curl -X GET "localhost:8085/testing?name=appleboy&address=xyz&birthday=1992-03-15"
 ```
 
 ### Bind HTML checkboxes
