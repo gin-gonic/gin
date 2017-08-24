@@ -316,11 +316,8 @@ func (engine *Engine) HandleContext(c *Context) {
 
 func (engine *Engine) handleHTTPRequest(context *Context) {
 	httpMethod := context.Request.Method
-	var path string
-	var unescape bool
-
-	path = context.Request.URL.Path
-	unescape = false
+	path := context.Request.URL.Path
+	unescape := false
 	if engine.UseRawPath && len(context.Request.URL.RawPath) > 0 {
 		path = context.Request.URL.RawPath
 		unescape = engine.UnescapePathValues
