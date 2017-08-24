@@ -413,16 +413,17 @@ func main() {
 }
 ```
 
-### Output log to file
+### How to write log file
 ```go
 func main() {
-    // Disable Console Color, because not need color when output log to file
+    // Disable Console Color, you don't need console color when writing the logs to file.
     gin.DisableConsoleColor()
-    // Create one file to save logs
+    
+    // Logging to a file.
     f, _ := os.Create("gin.log")
-    // Reset gin.DefaultWriter
     gin.DefaultWriter = io.MultiWriter(f)
-    // If need to output log to file and console at a time, please use the following code:
+    
+    // Use the following code if you need to write the logs to file and console at the same time.
     // gin.DefaultWriter = io.MultiWriter(f, os.Stdout)
 
     router := gin.Default()
