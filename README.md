@@ -369,6 +369,7 @@ r := gin.New()
 instead of
 
 ```go
+// Default With the Logger and Recovery middleware already attached
 r := gin.Default()
 ```
 
@@ -380,7 +381,11 @@ func main() {
 	r := gin.New()
 
 	// Global middleware
+	// Logger middleware will write the logs to gin.DefaultWriter even you set with GIN_MODE=release.
+	// By default gin.DefaultWriter = os.Stdout
 	r.Use(gin.Logger())
+	
+	// Recovery middleware recovers from any panics and writes a 500 if there was one.
 	r.Use(gin.Recovery())
 
 	// Per route middleware, you can add as many as you desire.
@@ -405,6 +410,28 @@ func main() {
 
 	// Listen and serve on 0.0.0.0:8080
 	r.Run(":8080")
+}
+```
+
+### How to write log file
+```go
+func main() {
+    // Disable Console Color, you don't need console color when writing the logs to file.
+    gin.DisableConsoleColor()
+    
+    // Logging to a file.
+    f, _ := os.Create("gin.log")
+    gin.DefaultWriter = io.MultiWriter(f)
+    
+    // Use the following code if you need to write the logs to file and console at the same time.
+    // gin.DefaultWriter = io.MultiWriter(f, os.Stdout)
+
+    router := gin.Default()
+    router.GET("/ping", func(c *gin.Context) {
+        c.String(200, "pong")
+    })
+
+    r.Run(":8080")
 }
 ```
 
@@ -505,10 +532,12 @@ package main
 
 import "log"
 import "github.com/gin-gonic/gin"
+import "time"
 
 type Person struct {
-	Name    string `form:"name"`
-	Address string `form:"address"`
+	Name     string    `form:"name"`
+	Address  string    `form:"address"`
+	Birthday time.Time `form:"birthday" time_format:"2006-01-02" time_utc:"1"`
 }
 
 func main() {
@@ -525,10 +554,16 @@ func startPage(c *gin.Context) {
 	if c.Bind(&person) == nil {
 		log.Println(person.Name)
 		log.Println(person.Address)
+		log.Println(person.Birthday)
 	}
 
 	c.String(200, "Success")
 }
+```
+
+Test it with:
+```sh
+$ curl -X GET "localhost:8085/testing?name=appleboy&address=xyz&birthday=1992-03-15"
 ```
 
 ### Bind HTML checkboxes

@@ -96,7 +96,7 @@ type node struct {
 	priority  uint32
 }
 
-// increments priority of the given child and reorders if necessary
+// increments priority of the given child and reorders if necessary.
 func (n *node) incrementChildPrio(pos int) int {
 	n.children[pos].priority++
 	prio := n.children[pos].priority

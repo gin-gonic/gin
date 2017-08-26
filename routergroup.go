@@ -35,7 +35,7 @@ type IRoutes interface {
 }
 
 // RouterGroup is used internally to configure router, a RouterGroup is associated with a prefix
-// and an array of handlers (middleware)
+// and an array of handlers (middleware).
 type RouterGroup struct {
 	Handlers HandlersChain
 	basePath string
@@ -89,43 +89,43 @@ func (group *RouterGroup) Handle(httpMethod, relativePath string, handlers ...Ha
 	return group.handle(httpMethod, relativePath, handlers)
 }
 
-// POST is a shortcut for router.Handle("POST", path, handle)
+// POST is a shortcut for router.Handle("POST", path, handle).
 func (group *RouterGroup) POST(relativePath string, handlers ...HandlerFunc) IRoutes {
 	return group.handle("POST", relativePath, handlers)
 }
 
-// GET is a shortcut for router.Handle("GET", path, handle)
+// GET is a shortcut for router.Handle("GET", path, handle).
 func (group *RouterGroup) GET(relativePath string, handlers ...HandlerFunc) IRoutes {
 	return group.handle("GET", relativePath, handlers)
 }
 
-// DELETE is a shortcut for router.Handle("DELETE", path, handle)
+// DELETE is a shortcut for router.Handle("DELETE", path, handle).
 func (group *RouterGroup) DELETE(relativePath string, handlers ...HandlerFunc) IRoutes {
 	return group.handle("DELETE", relativePath, handlers)
 }
 
-// PATCH is a shortcut for router.Handle("PATCH", path, handle)
+// PATCH is a shortcut for router.Handle("PATCH", path, handle).
 func (group *RouterGroup) PATCH(relativePath string, handlers ...HandlerFunc) IRoutes {
 	return group.handle("PATCH", relativePath, handlers)
 }
 
-// PUT is a shortcut for router.Handle("PUT", path, handle)
+// PUT is a shortcut for router.Handle("PUT", path, handle).
 func (group *RouterGroup) PUT(relativePath string, handlers ...HandlerFunc) IRoutes {
 	return group.handle("PUT", relativePath, handlers)
 }
 
-// OPTIONS is a shortcut for router.Handle("OPTIONS", path, handle)
+// OPTIONS is a shortcut for router.Handle("OPTIONS", path, handle).
 func (group *RouterGroup) OPTIONS(relativePath string, handlers ...HandlerFunc) IRoutes {
 	return group.handle("OPTIONS", relativePath, handlers)
 }
 
-// HEAD is a shortcut for router.Handle("HEAD", path, handle)
+// HEAD is a shortcut for router.Handle("HEAD", path, handle).
 func (group *RouterGroup) HEAD(relativePath string, handlers ...HandlerFunc) IRoutes {
 	return group.handle("HEAD", relativePath, handlers)
 }
 
 // Any registers a route that matches all the HTTP methods.
-// GET, POST, PUT, PATCH, HEAD, OPTIONS, DELETE, CONNECT, TRACE
+// GET, POST, PUT, PATCH, HEAD, OPTIONS, DELETE, CONNECT, TRACE.
 func (group *RouterGroup) Any(relativePath string, handlers ...HandlerFunc) IRoutes {
 	group.handle("GET", relativePath, handlers)
 	group.handle("POST", relativePath, handlers)
