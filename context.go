@@ -509,7 +509,7 @@ func (c *Context) ClientIP() string {
 	}
 
 	if c.engine.AppEngine {
-		if addr := c.Request.Header.Get("X-Appengine-Remote-Addr"); addr != "" {
+		if addr := c.requestHeader("X-Appengine-Remote-Addr"); addr != "" {
 			return addr
 		}
 	}
