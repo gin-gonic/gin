@@ -537,10 +537,7 @@ func (c *Context) IsWebsocket() bool {
 }
 
 func (c *Context) requestHeader(key string) string {
-	if values, _ := c.Request.Header[key]; len(values) > 0 {
-		return values[0]
-	}
-	return ""
+	return c.Request.Header.Get(key)
 }
 
 /************************************/
