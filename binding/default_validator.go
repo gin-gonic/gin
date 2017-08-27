@@ -28,6 +28,11 @@ func (v *defaultValidator) ValidateStruct(obj interface{}) error {
 	return nil
 }
 
+func (v *defaultValidator) RegisterValidation(key string, fn validator.Func) error {
+	v.lazyinit()
+	return v.validate.RegisterValidation(key, fn)
+}
+
 func (v *defaultValidator) lazyinit() {
 	v.once.Do(func() {
 		config := &validator.Config{TagName: "binding"}
