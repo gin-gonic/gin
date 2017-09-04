@@ -8,8 +8,10 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"runtime"
 	"time"
 
+	"github.com/mattn/go-colorable"
 	"github.com/mattn/go-isatty"
 )
 
@@ -56,11 +58,15 @@ func Logger() HandlerFunc {
 // Example: os.Stdout, a file opened in write mode, a socket...
 func LoggerWithWriter(out io.Writer, notlogged ...string) HandlerFunc {
 	isTerm := true
+	cout := out
 
 	if w, ok := out.(*os.File); !ok ||
-		(os.Getenv("TERM") == "dumb" || (!isatty.IsTerminal(w.Fd()) && !isatty.IsCygwinTerminal(w.Fd()))) ||
-		disableColor {
+		disableColor ||
+		os.Getenv("TERM") == "dumb" ||
+		!isatty.IsTerminal(w.Fd()) && !isatty.IsCygwinTerminal(w.Fd()) {
 		isTerm = false
+	} else if runtime.GOOS == "windows" {
+		cout = colorable.NewColorable(w)
 	}
 
 	var skip map[string]struct{}
@@ -103,7 +109,7 @@ func LoggerWithWriter(out io.Writer, notlogged ...string) HandlerFunc {
 				path = path + "?" + raw
 			}
 
-			fmt.Fprintf(out, "[GIN] %v |%s %3d %s| %13v | %15s |%s %-7s %s %s\n%s",
+			fmt.Fprintf(cout, "[GIN] %v |%s %3d %s| %13v | %15s |%s %-7s %s %s\n%s",
 				end.Format("2006/01/02 - 15:04:05"),
 				statusColor, statusCode, resetColor,
 				latency,
