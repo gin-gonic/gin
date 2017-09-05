@@ -473,11 +473,11 @@ func (c *Context) BindQuery(obj interface{}) error {
 }
 
 // MustBindWith binds the passed struct pointer using the specified binding engine.
-// It will abort the request with HTTP 400 if any error ocurrs.
+// It will abort the request with HTTP 422(Unprocessable Entity) if any error ocurrs.
 // See the binding package.
 func (c *Context) MustBindWith(obj interface{}, b binding.Binding) (err error) {
 	if err = c.ShouldBindWith(obj, b); err != nil {
-		c.AbortWithError(400, err).SetType(ErrorTypeBind)
+		c.AbortWithError(422, err).SetType(ErrorTypeBind)
 	}
 
 	return
