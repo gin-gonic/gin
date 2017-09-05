@@ -1219,7 +1219,7 @@ func TestContextBadAutoBind(t *testing.T) {
 
 	assert.Empty(t, obj.Bar)
 	assert.Empty(t, obj.Foo)
-	assert.Equal(t, w.Code, 400)
+	assert.Equal(t, w.Code, 422)
 	assert.True(t, c.IsAborted())
 }
 
