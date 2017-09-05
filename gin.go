@@ -15,7 +15,10 @@ import (
 )
 
 // Version is Framework's version.
-const Version = "v1.2"
+const (
+	Version                = "v1.2"
+	defaultMultipartMemory = 32 << 20 // 32 MB
+)
 
 var default404Body = []byte("404 page not found")
 var default405Body = []byte("405 method not allowed")
@@ -92,6 +95,10 @@ type Engine struct {
 	// If UseRawPath is false (by default), the UnescapePathValues effectively is true,
 	// as url.Path gonna be used, which is already unescaped.
 	UnescapePathValues bool
+
+	// Value of 'maxMemory' param that is given to http.Request's ParseMultipartForm
+	// method call.
+	MaxMultipartMemory int64
 }
 
 var _ IRouter = &Engine{}
@@ -120,6 +127,7 @@ func New() *Engine {
 		AppEngine:              defaultAppEngine,
 		UseRawPath:             false,
 		UnescapePathValues:     true,
+		MaxMultipartMemory:     defaultMultipartMemory,
 		trees:                  make(methodTrees, 0, 9),
 		delims:                 render.Delims{Left: "{{", Right: "}}"},
 		secureJsonPrefix:       "while(1);",
