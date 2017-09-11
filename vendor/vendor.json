@@ -3,6 +3,12 @@
 	"ignore": "test",
 	"package": [
 		{
+			"checksumSHA1": "5P/i6wl4VszvH+3ep0egh4C/BDM=",
+			"path": "github.com/araddon/dateparse",
+			"revision": "a1537bb04470047339734bb11c0403cbc41c31aa",
+			"revisionTime": "2017-07-27T05:39:44Z"
+		},
+		{
 			"checksumSHA1": "dvabztWVQX8f6oMLRyv4dLH+TGY=",
 			"comment": "v1.1.0",
 			"path": "github.com/davecgh/go-spew/spew",

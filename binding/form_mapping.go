@@ -9,6 +9,8 @@ import (
 	"reflect"
 	"strconv"
 	"time"
+
+	"github.com/araddon/dateparse"
 )
 
 func mapForm(ptr interface{}, form map[string][]string) error {
@@ -148,22 +150,29 @@ func setFloatField(val string, bitSize int, field reflect.Value) error {
 }
 
 func setTimeField(val string, structField reflect.StructField, value reflect.Value) error {
-	timeFormat := structField.Tag.Get("time_format")
-	if timeFormat == "" {
-		return errors.New("Blank time format")
-	}
 
 	if val == "" {
 		value.Set(reflect.ValueOf(time.Time{}))
 		return nil
 	}
 
+	timeFormat := structField.Tag.Get("time_format")
+
 	l := time.Local
 	if isUTC, _ := strconv.ParseBool(structField.Tag.Get("time_utc")); isUTC {
 		l = time.UTC
 	}
 
-	t, err := time.ParseInLocation(timeFormat, val, l)
+	var t time.Time
+	var err error
+	switch timeFormat {
+	case "":
+		t, err = dateparse.ParseIn(val, l)
+	default:
+		t, err = time.ParseInLocation(timeFormat, val, l)
+
+	}
+
 	if err != nil {
 		return err
 	}
