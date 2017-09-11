@@ -41,5 +41,5 @@ func main() {
 		}
 	}
 
-	log.Println("Server exist")
+	log.Println("Server exiting")
 }
