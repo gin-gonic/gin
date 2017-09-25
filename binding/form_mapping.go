@@ -163,6 +163,14 @@ func setTimeField(val string, structField reflect.StructField, value reflect.Val
 		l = time.UTC
 	}
 
+	if locTag := structField.Tag.Get("time_location"); locTag != "" {
+		loc, err := time.LoadLocation(locTag)
+		if err != nil {
+			return err
+		}
+		l = loc
+	}
+
 	t, err := time.ParseInLocation(timeFormat, val, l)
 	if err != nil {
 		return err
