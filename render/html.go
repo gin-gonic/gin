@@ -60,7 +60,7 @@ func (r HTMLDebug) loadTemplate() *template.Template {
 	if len(r.Files) > 0 {
 		return template.Must(template.New("").Delims(r.Delims.Left, r.Delims.Right).Funcs(r.FuncMap).ParseFiles(r.Files...))
 	}
-	if len(r.Glob) > 0 {
+	if r.Glob != "" {
 		return template.Must(template.New("").Delims(r.Delims.Left, r.Delims.Right).Funcs(r.FuncMap).ParseGlob(r.Glob))
 	}
 	panic("the HTML debug render was created without files or glob pattern")
@@ -69,7 +69,7 @@ func (r HTMLDebug) loadTemplate() *template.Template {
 func (r HTML) Render(w http.ResponseWriter) error {
 	r.WriteContentType(w)
 
-	if len(r.Name) == 0 {
+	if r.Name == "" {
 		return r.Template.Execute(w, r.Data)
 	}
 	return r.Template.ExecuteTemplate(w, r.Name, r.Data)

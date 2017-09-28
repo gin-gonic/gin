@@ -24,7 +24,7 @@ type authPair struct {
 type authPairs []authPair
 
 func (a authPairs) searchCredential(authValue string) (string, bool) {
-	if len(authValue) == 0 {
+	if authValue == "" {
 		return "", false
 	}
 	for _, pair := range a {
@@ -71,7 +71,7 @@ func processAccounts(accounts Accounts) authPairs {
 	assert1(len(accounts) > 0, "Empty list of authorized credentials")
 	pairs := make(authPairs, 0, len(accounts))
 	for user, password := range accounts {
-		assert1(len(user) > 0, "User can not be empty")
+		assert1(user != "", "User can not be empty")
 		value := authorizationHeader(user, password)
 		pairs = append(pairs, authPair{
 			Value: value,
