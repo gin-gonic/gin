@@ -86,6 +86,24 @@ func TestDebugPrintWARNINGSetHTMLTemplate(t *testing.T) {
 	assert.Equal(t, "[GIN-debug] [WARNING] Since SetHTMLTemplate() is NOT thread-safe. It should only be called\nat initialization. ie. before any route is registered or the router is listening in a socket:\n\n\trouter := gin.Default()\n\trouter.SetHTMLTemplate(template) // << good place\n\n", w.String())
 }
 
+func TestDebugPrintWARNINGDefault(t *testing.T) {
+	var w bytes.Buffer
+	setup(&w)
+	defer teardown()
+
+	debugPrintWARNINGDefault()
+	assert.Equal(t, "[GIN-debug] [WARNING] Creating an Engine instance with the Logger and Recovery middleware already attached.\n\n", w.String())
+}
+
+func TestDebugPrintWARNINGNew(t *testing.T) {
+	var w bytes.Buffer
+	setup(&w)
+	defer teardown()
+
+	debugPrintWARNINGNew()
+	assert.Equal(t, "[GIN-debug] [WARNING] Running in \"debug\" mode. Switch to \"release\" mode in production.\n - using env:\texport GIN_MODE=release\n - using code:\tgin.SetMode(gin.ReleaseMode)\n\n", w.String())
+}
+
 func setup(w io.Writer) {
 	SetMode(DebugMode)
 	log.SetOutput(w)
