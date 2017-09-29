@@ -20,9 +20,11 @@ const (
 	defaultMultipartMemory = 32 << 20 // 32 MB
 )
 
-var default404Body = []byte("404 page not found")
-var default405Body = []byte("405 method not allowed")
-var defaultAppEngine bool
+var (
+	default404Body   = []byte("404 page not found")
+	default405Body   = []byte("405 method not allowed")
+	defaultAppEngine bool
+)
 
 type HandlerFunc func(*Context)
 type HandlersChain []HandlerFunc
@@ -91,6 +93,7 @@ type Engine struct {
 
 	// If enabled, the url.RawPath will be used to find parameters.
 	UseRawPath bool
+
 	// If true, the path value will be unescaped.
 	// If UseRawPath is false (by default), the UnescapePathValues effectively is true,
 	// as url.Path gonna be used, which is already unescaped.
@@ -141,6 +144,7 @@ func New() *Engine {
 
 // Default returns an Engine instance with the Logger and Recovery middleware already attached.
 func Default() *Engine {
+	debugPrintWARNINGDefault()
 	engine := New()
 	engine.Use(Logger(), Recovery())
 	return engine
@@ -161,13 +165,16 @@ func (engine *Engine) SecureJsonPrefix(prefix string) *Engine {
 }
 
 func (engine *Engine) LoadHTMLGlob(pattern string) {
+	left := engine.delims.Left
+	right := engine.delims.Right
+
 	if IsDebugging() {
-		debugPrintLoadTemplate(template.Must(template.New("").Delims(engine.delims.Left, engine.delims.Right).Funcs(engine.FuncMap).ParseGlob(pattern)))
+		debugPrintLoadTemplate(template.Must(template.New("").Delims(left, right).Funcs(engine.FuncMap).ParseGlob(pattern)))
 		engine.HTMLRender = render.HTMLDebug{Glob: pattern, FuncMap: engine.FuncMap, Delims: engine.delims}
 		return
 	}
 
-	templ := template.Must(template.New("").Delims(engine.delims.Left, engine.delims.Right).Funcs(engine.FuncMap).ParseGlob(pattern))
+	templ := template.Must(template.New("").Delims(left, right).Funcs(engine.FuncMap).ParseGlob(pattern))
 	engine.SetHTMLTemplate(templ)
 }
 
@@ -225,7 +232,7 @@ func (engine *Engine) rebuild405Handlers() {
 
 func (engine *Engine) addRoute(method, path string, handlers HandlersChain) {
 	assert1(path[0] == '/', "path must begin with '/'")
-	assert1(len(method) > 0, "HTTP method can not be empty")
+	assert1(method != "", "HTTP method can not be empty")
 	assert1(len(handlers) > 0, "there must be at least one handler")
 
 	debugPrintRoute(method, path, handlers)
@@ -322,12 +329,12 @@ func (engine *Engine) HandleContext(c *Context) {
 	engine.pool.Put(c)
 }
 
-func (engine *Engine) handleHTTPRequest(context *Context) {
-	httpMethod := context.Request.Method
-	path := context.Request.URL.Path
+func (engine *Engine) handleHTTPRequest(c *Context) {
+	httpMethod := c.Request.Method
+	path := c.Request.URL.Path
 	unescape := false
-	if engine.UseRawPath && len(context.Request.URL.RawPath) > 0 {
-		path = context.Request.URL.RawPath
+	if engine.UseRawPath && len(c.Request.URL.RawPath) > 0 {
+		path = c.Request.URL.RawPath
 		unescape = engine.UnescapePathValues
 	}
 
@@ -337,20 +344,20 @@ func (engine *Engine) handleHTTPRequest(context *Context) {
 		if t[i].method == httpMethod {
 			root := t[i].root
 			// Find route in tree
-			handlers, params, tsr := root.getValue(path, context.Params, unescape)
+			handlers, params, tsr := root.getValue(path, c.Params, unescape)
 			if handlers != nil {
-				context.handlers = handlers
-				context.Params = params
-				context.Next()
-				context.writermem.WriteHeaderNow()
+				c.handlers = handlers
+				c.Params = params
+				c.Next()
+				c.writermem.WriteHeaderNow()
 				return
 			}
 			if httpMethod != "CONNECT" && path != "/" {
 				if tsr && engine.RedirectTrailingSlash {
-					redirectTrailingSlash(context)
+					redirectTrailingSlash(c)
 					return
 				}
-				if engine.RedirectFixedPath && redirectFixedPath(context, root, engine.RedirectFixedPath) {
+				if engine.RedirectFixedPath && redirectFixedPath(c, root, engine.RedirectFixedPath) {
 					return
 				}
 			}
@@ -362,15 +369,15 @@ func (engine *Engine) handleHTTPRequest(context *Context) {
 		for _, tree := range engine.trees {
 			if tree.method != httpMethod {
 				if handlers, _, _ := tree.root.getValue(path, nil, unescape); handlers != nil {
-					context.handlers = engine.allNoMethod
-					serveError(context, 405, default405Body)
+					c.handlers = engine.allNoMethod
+					serveError(c, 405, default405Body)
 					return
 				}
 			}
 		}
 	}
-	context.handlers = engine.allNoRoute
-	serveError(context, 404, default404Body)
+	c.handlers = engine.allNoRoute
+	serveError(c, 404, default404Body)
 }
 
 var mimePlain = []string{MIMEPlain}

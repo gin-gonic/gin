@@ -46,6 +46,12 @@ func debugPrint(format string, values ...interface{}) {
 	}
 }
 
+func debugPrintWARNINGDefault() {
+	debugPrint(`[WARNING] Creating an Engine instance with the Logger and Recovery middleware already attached.
+
+`)
+}
+
 func debugPrintWARNINGNew() {
 	debugPrint(`[WARNING] Running in "debug" mode. Switch to "release" mode in production.
  - using env:	export GIN_MODE=release
