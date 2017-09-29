@@ -101,7 +101,7 @@ func TestDebugPrintWARNINGNew(t *testing.T) {
 	defer teardown()
 
 	debugPrintWARNINGNew()
-	assert.Equal(t, "[GIN-debug] [WARNING] Running in \"debug\" mode. Switch to \"release\" mode in production.\n - using env:\t\texport GIN_MODE=release\n - using code:\t\tgin.SetMode(gin.ReleaseMode)\n\n", w.String())
+	assert.Equal(t, "[GIN-debug] [WARNING] Running in \"debug\" mode. Switch to \"release\" mode in production.\n - using env:\texport GIN_MODE=release\n - using code:\tgin.SetMode(gin.ReleaseMode)\n\n", w.String())
 }
 
 func setup(w io.Writer) {
