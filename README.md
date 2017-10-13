@@ -272,7 +272,7 @@ id: 1234; page: 1; name: manu; message: this_is_great
 
 #### Single file
 
-References issue [#774](https://github.com/gin-gonic/gin/issues/774) and detail [example code](examples/upload-file/single).
+References issue [#774](https://github.com/gin-gonic/gin/issues/774) and detail [example code](_examples/upload-file/single).
 
 ```go
 func main() {
@@ -303,7 +303,7 @@ curl -X POST http://localhost:8080/upload \
 
 #### Multiple files
 
-See the detail [example code](examples/upload-file/multiple).
+See the detail [example code](_examples/upload-file/multiple).
 
 ```go
 func main() {
@@ -527,9 +527,9 @@ $ curl -v -X POST \
 
 ### Custom Validators
 
-It is also possible to register custom validators. See the [example code](examples/custom-validation/server.go).
+It is also possible to register custom validators. See the [example code](_examples/custom-validation/server.go).
 
-[embedmd]:# (examples/custom-validation/server.go go)
+[embedmd]:# (_examples/custom-validation/server.go go)
 ```go
 package main
 
@@ -925,7 +925,7 @@ You may use custom delims
 
 #### Custom Template Funcs
 
-See the detail [example code](examples/template).
+See the detail [example code](_examples/template).
 
 main.go
 
@@ -1133,7 +1133,7 @@ func main() {
 
 example for 1-line LetsEncrypt HTTPS servers.
 
-[embedmd]:# (examples/auto-tls/example1.go go)
+[embedmd]:# (_examples/auto-tls/example1.go go)
 ```go
 package main
 
@@ -1158,7 +1158,7 @@ func main() {
 
 example for custom autocert manager.
 
-[embedmd]:# (examples/auto-tls/example2.go go)
+[embedmd]:# (_examples/auto-tls/example2.go go)
 ```go
 package main
 
@@ -1192,7 +1192,7 @@ func main() {
 
 See the [question](https://github.com/gin-gonic/gin/issues/346) and try the folling example:
 
-[embedmd]:# (examples/multiple-service/main.go go)
+[embedmd]:# (_examples/multiple-service/main.go go)
 ```go
 package main
 
@@ -1290,9 +1290,9 @@ An alternative to endless:
 * [graceful](https://github.com/tylerb/graceful): Graceful is a Go package enabling graceful shutdown of an http.Handler server.
 * [grace](https://github.com/facebookgo/grace): Graceful restart & zero downtime deploy for Go servers.
 
-If you are using Go 1.8, you may not need to use this library! Consider using http.Server's built-in [Shutdown()](https://golang.org/pkg/net/http/#Server.Shutdown) method for graceful shutdowns. See the full [graceful-shutdown](./examples/graceful-shutdown) example with gin.
+If you are using Go 1.8, you may not need to use this library! Consider using http.Server's built-in [Shutdown()](https://golang.org/pkg/net/http/#Server.Shutdown) method for graceful shutdowns. See the full [graceful-shutdown](_examples/graceful-shutdown) example with gin.
 
-[embedmd]:# (examples/graceful-shutdown/graceful-shutdown/server.go go)
+[embedmd]:# (_examples/graceful-shutdown/graceful-shutdown/server.go go)
 ```go
 // +build go1.8
 
