@@ -1,4 +1,5 @@
 vendor/*
-!vendor/vendor.json
+# vendor backups by dep
+_vendor-*
 coverage.out
 count.out
