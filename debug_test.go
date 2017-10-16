@@ -11,6 +11,7 @@ import (
 	"io"
 	"log"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -58,13 +59,36 @@ func TestDebugPrintError(t *testing.T) {
 	assert.Equal(t, "[GIN-debug] [ERROR] this is an error\n", w.String())
 }
 
+func TestGetTerminalSize(t *testing.T) {
+	var w bytes.Buffer
+	setup(&w)
+	defer teardown()
+
+	gs := getTerminalSize(0)
+	if assert.NotNil(t, gs) {
+		assert.Equal(t, 75, 75)
+	}
+}
+
 func TestDebugPrintRoutes(t *testing.T) {
 	var w bytes.Buffer
 	setup(&w)
 	defer teardown()
 
+	// Even routes
 	debugPrintRoute("GET", "/path/to/route/:param", HandlersChain{func(c *Context) {}, handlerNameTest})
-	assert.Regexp(t, `^\[GIN-debug\] GET    /path/to/route/:param     --> (.*/vendor/)?github.com/gin-gonic/gin.handlerNameTest \(2 handlers\)\n$`, w.String())
+	s := w.String()
+	lines := strings.Split(s, "\n")
+	assert.Regexp(t, `^\[GIN-debug\] GET    /path/to/route/:param     --> (.*/vendor/)?github.com/gin-gonic/gin.handlerNameTest \(2 handlers\)\n$`, lines[len(lines)-2]+"\n")
+
+	// Odd routes
+	setup(&w)
+	defer teardown()
+
+	debugPrintRoute("GET", "/path/to/route/:param", HandlersChain{func(c *Context) {}, handlerNameTest, handlerNameTest1})
+	s = w.String()
+	lines = strings.Split(s, "\n")
+	assert.Regexp(t, `^\[GIN-debug\] GET    /path/to/route/:param     --> (.*/vendor/)?github.com/gin-gonic/gin.handlerNameTest1 \(3 handlers\)\n$`, lines[len(lines)-2]+"\n")
 }
 
 func TestDebugPrintLoadTemplate(t *testing.T) {

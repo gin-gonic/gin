@@ -6,8 +6,12 @@ package gin
 
 import (
 	"bytes"
+	"fmt"
 	"html/template"
 	"log"
+	"os"
+
+	"golang.org/x/crypto/ssh/terminal"
 )
 
 func init() {
@@ -20,9 +24,40 @@ func IsDebugging() bool {
 	return ginMode == debugCode
 }
 
+func getTerminalSize(fd int) int {
+	width := 100
+	w, _, err := terminal.GetSize(fd)
+	if err != nil {
+		debugPrint("Couldn't get terminal size. Using default value...\n")
+	}
+	width = w - 25
+	return width
+}
+
 func debugPrintRoute(httpMethod, absolutePath string, handlers HandlersChain) {
 	if IsDebugging() {
+		s := "<<<<<<<\tRunning Handlers\t>>>>>>>"
+		fd := int(os.Stdout.Fd())
+		w := getTerminalSize(fd)
+
+		debugPrint(fmt.Sprintf("%%%ds\n", w/2), s)
+		if len(handlers)%2 == 0 {
+			for i := 0; i < len(handlers); i += 2 {
+				first := nameOfFunction(handlers[i])
+				second := nameOfFunction(handlers[i+1])
+				debugPrint("| %-50s | %-50s |\n", first, second)
+			}
+		} else {
+			for i := 0; i < len(handlers)-1; i += 2 {
+				first := nameOfFunction(handlers[i])
+				second := nameOfFunction(handlers[i+1])
+				debugPrint("| %-50s | %-50s |\n", first, second)
+			}
+			last := nameOfFunction(handlers.Last())
+			debugPrint("| %-50s |\n", last)
+		}
 		nuHandlers := len(handlers)
+		debugPrint("Total %d handlers found...\n\n", nuHandlers)
 		handlerName := nameOfFunction(handlers.Last())
 		debugPrint("%-6s %-25s --> %s (%d handlers)\n", httpMethod, absolutePath, handlerName, nuHandlers)
 	}
