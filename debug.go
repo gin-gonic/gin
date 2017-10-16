@@ -6,8 +6,14 @@ package gin
 
 import (
 	"bytes"
+	"fmt"
 	"html/template"
 	"log"
+	"os"
+	"reflect"
+	"runtime"
+
+	"golang.org/x/crypto/ssh/terminal"
 )
 
 func init() {
@@ -22,7 +28,21 @@ func IsDebugging() bool {
 
 func debugPrintRoute(httpMethod, absolutePath string, handlers HandlersChain) {
 	if IsDebugging() {
+		s := "<<<<<<<\tHandlers Running\t>>>>>>>"
+		w := 100
+
+		if terminal.IsTerminal(int(os.Stdout.Fd())) {
+			w, _, _ = terminal.GetSize(int(os.Stdout.Fd()))
+			w -= 25
+		} else {
+			debugPrint("Couldn't get terminal size. Using default value...\n")
+		}
+		debugPrint(fmt.Sprintf("%%%ds\n", w/2), s)
+		for i := 0; i < len(handlers); i += 2 {
+			debugPrint("| %-50s | %-50s |\n", runtime.FuncForPC(reflect.ValueOf(handlers[i]).Pointer()).Name(), runtime.FuncForPC(reflect.ValueOf(handlers[i+1]).Pointer()).Name())
+		}
 		nuHandlers := len(handlers)
+		debugPrint("Total %d handlers found...\n\n", nuHandlers)
 		handlerName := nameOfFunction(handlers.Last())
 		debugPrint("%-6s %-25s --> %s (%d handlers)\n", httpMethod, absolutePath, handlerName, nuHandlers)
 	}
