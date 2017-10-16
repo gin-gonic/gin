@@ -11,6 +11,7 @@ git:
   depth: 3
 
 install:
+  - go get golang.org/x/crypto/ssh/terminal
   - make install
 
 go_import_path: github.com/gin-gonic/gin
