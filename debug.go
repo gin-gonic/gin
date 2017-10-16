@@ -10,8 +10,6 @@ import (
 	"html/template"
 	"log"
 	"os"
-	"reflect"
-	"runtime"
 
 	"golang.org/x/crypto/ssh/terminal"
 )
@@ -26,20 +24,37 @@ func IsDebugging() bool {
 	return ginMode == debugCode
 }
 
-func debugPrintRoute(httpMethod, absolutePath string, handlers HandlersChain) {
-	if IsDebugging() {
-		s := "<<<<<<<\tHandlers Running\t>>>>>>>"
-		w := 100
-
-		if terminal.IsTerminal(int(os.Stdout.Fd())) {
-			w, _, _ = terminal.GetSize(int(os.Stdout.Fd()))
-			w -= 25
-		} else {
+func getTerminalSize() int {
+	width := 100
+	if terminal.IsTerminal(int(os.Stdout.Fd())) {
+		w, _, err := terminal.GetSize(int(os.Stdout.Fd()))
+		if err != nil {
 			debugPrint("Couldn't get terminal size. Using default value...\n")
 		}
+		width = w - 25
+	}
+	return width
+}
+func debugPrintRoute(httpMethod, absolutePath string, handlers HandlersChain) {
+	if IsDebugging() {
+		s := "<<<<<<<\tRunning Handlers\t>>>>>>>"
+		w := getTerminalSize()
+
 		debugPrint(fmt.Sprintf("%%%ds\n", w/2), s)
-		for i := 0; i < len(handlers); i += 2 {
-			debugPrint("| %-50s | %-50s |\n", runtime.FuncForPC(reflect.ValueOf(handlers[i]).Pointer()).Name(), runtime.FuncForPC(reflect.ValueOf(handlers[i+1]).Pointer()).Name())
+		if len(handlers)%2 == 0 {
+			for i := 0; i < len(handlers); i += 2 {
+				first := nameOfFunction(handlers[i])
+				second := nameOfFunction(handlers[i+1])
+				debugPrint("| %-50s | %-50s |\n", first, second)
+			}
+		} else {
+			for i := 0; i < len(handlers)-1; i += 2 {
+				first := nameOfFunction(handlers[i])
+				second := nameOfFunction(handlers[i+1])
+				debugPrint("| %-50s | %-50s |\n", first, second)
+			}
+			last := nameOfFunction(handlers.Last())
+			debugPrint("| %-50s |\n", last)
 		}
 		nuHandlers := len(handlers)
 		debugPrint("Total %d handlers found...\n\n", nuHandlers)
