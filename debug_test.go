@@ -59,6 +59,17 @@ func TestDebugPrintError(t *testing.T) {
 	assert.Equal(t, "[GIN-debug] [ERROR] this is an error\n", w.String())
 }
 
+func TestGetTerminalSize(t *testing.T) {
+	var w bytes.Buffer
+	setup(&w)
+	defer teardown()
+
+	gs := getTerminalSize(0)
+	if assert.NotNil(t, gs) {
+		assert.Equal(t, 75, 75)
+	}
+}
+
 func TestDebugPrintRoutes(t *testing.T) {
 	var w bytes.Buffer
 	setup(&w)
