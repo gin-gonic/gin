@@ -77,7 +77,7 @@ func TestDebugPrintRoutes(t *testing.T) {
 	debugPrintRoute("GET", "/path/to/route/:param", HandlersChain{func(c *Context) {}, handlerNameTest, handlerNameTest1})
 	s = w.String()
 	lines = strings.Split(s, "\n")
-	assert.Regexp(t, `^\[GIN-debug\] GET    /path/to/route/:param     --> (.*/vendor/)?github.com/gin-gonic/gin.handlerNameTest \(3 handlers\)\n$`, lines[len(lines)-2]+"\n")
+	assert.Regexp(t, `^\[GIN-debug\] GET    /path/to/route/:param     --> (.*/vendor/)?github.com/gin-gonic/gin.handlerNameTest1 \(3 handlers\)\n$`, lines[len(lines)-2]+"\n")
 }
 
 func TestDebugPrintLoadTemplate(t *testing.T) {
