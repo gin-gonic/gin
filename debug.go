@@ -35,6 +35,7 @@ func getTerminalSize() int {
 	}
 	return width
 }
+
 func debugPrintRoute(httpMethod, absolutePath string, handlers HandlersChain) {
 	if IsDebugging() {
 		s := "<<<<<<<\tRunning Handlers\t>>>>>>>"

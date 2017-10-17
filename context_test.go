@@ -321,6 +321,10 @@ func handlerNameTest(c *Context) {
 
 }
 
+func handlerNameTest1(c *Context) {
+
+}
+
 var handlerTest HandlerFunc = func(c *Context) {
 
 }
