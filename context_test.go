@@ -1228,6 +1228,73 @@ func TestContextBadAutoBind(t *testing.T) {
 	assert.True(t, c.IsAborted())
 }
 
+func TestContextAutoShouldBindJSON(t *testing.T) {
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	c.Request, _ = http.NewRequest("POST", "/", bytes.NewBufferString("{\"foo\":\"bar\", \"bar\":\"foo\"}"))
+	c.Request.Header.Add("Content-Type", MIMEJSON)
+
+	var obj struct {
+		Foo string `json:"foo"`
+		Bar string `json:"bar"`
+	}
+	assert.NoError(t, c.ShouldBind(&obj))
+	assert.Equal(t, obj.Bar, "foo")
+	assert.Equal(t, obj.Foo, "bar")
+	assert.Empty(t, c.Errors)
+}
+
+func TestContextShouldBindWithJSON(t *testing.T) {
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
+
+	c.Request, _ = http.NewRequest("POST", "/", bytes.NewBufferString("{\"foo\":\"bar\", \"bar\":\"foo\"}"))
+	c.Request.Header.Add("Content-Type", MIMEXML) // set fake content-type
+
+	var obj struct {
+		Foo string `json:"foo"`
+		Bar string `json:"bar"`
+	}
+	assert.NoError(t, c.ShouldBindJSON(&obj))
+	assert.Equal(t, obj.Bar, "foo")
+	assert.Equal(t, obj.Foo, "bar")
+	assert.Equal(t, w.Body.Len(), 0)
+}
+
+func TestContextShouldBindWithQuery(t *testing.T) {
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
+
+	c.Request, _ = http.NewRequest("POST", "/?foo=bar&bar=foo", bytes.NewBufferString("foo=unused"))
+
+	var obj struct {
+		Foo string `form:"foo"`
+		Bar string `form:"bar"`
+	}
+	assert.NoError(t, c.ShouldBindQuery(&obj))
+	assert.Equal(t, "foo", obj.Bar)
+	assert.Equal(t, "bar", obj.Foo)
+	assert.Equal(t, 0, w.Body.Len())
+}
+
+func TestContextBadAutoShouldBind(t *testing.T) {
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
+
+	c.Request, _ = http.NewRequest("POST", "http://example.com", bytes.NewBufferString("\"foo\":\"bar\", \"bar\":\"foo\"}"))
+	c.Request.Header.Add("Content-Type", MIMEJSON)
+	var obj struct {
+		Foo string `json:"foo"`
+		Bar string `json:"bar"`
+	}
+
+	assert.False(t, c.IsAborted())
+	assert.Error(t, c.ShouldBind(&obj))
+
+	assert.Empty(t, obj.Bar)
+	assert.Empty(t, obj.Foo)
+	assert.False(t, c.IsAborted())
+}
+
 func TestContextGolangContext(t *testing.T) {
 	c, _ := CreateTestContext(httptest.NewRecorder())
 	c.Request, _ = http.NewRequest("POST", "/", bytes.NewBufferString("{\"foo\":\"bar\", \"bar\":\"foo\"}"))
