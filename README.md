@@ -107,12 +107,12 @@ import "github.com/gin-gonic/gin"
 import "net/http"
 ```
 
-### Use a vendor tool like [Govendor](https://github.com/kardianos/govendor)
+### Use a vendor tool like [`dep`](https://github.com/golang/dep)
 
-1. `go get` govendor
+1. `go get` dep
 
 ```sh
-$ go get github.com/kardianos/govendor
+$ go get -u github.com/golang/dep/cmd/dep
 ```
 2. Create your project folder and `cd` inside
 
@@ -120,17 +120,25 @@ $ go get github.com/kardianos/govendor
 $ mkdir -p ~/go/src/github.com/myusername/project && cd "$_"
 ```
 
-3. Vendor init your project and add gin
-
-```sh
-$ govendor init
-$ govendor fetch github.com/gin-gonic/gin@v1.2
-```
-
-4. Copy a starting template inside your project
+3. Copy a starting template inside your project
 
 ```sh
 $ curl https://raw.githubusercontent.com/gin-gonic/gin/master/examples/basic/main.go > main.go
+```
+
+4. Vendor init your project and pull in the required dependencies into `vendor`
+
+```sh
+$ dep init
+  Locking in v8.18.2 (5f1438d) for transitive dep gopkg.in/go-playground/validator.v8
+  Locking in v0.0.3 (0360b2a) for transitive dep github.com/mattn/go-isatty
+  Locking in master (8dbc5d0) for transitive dep golang.org/x/sys
+  Locking in v2 (eb3733d) for transitive dep gopkg.in/yaml.v2
+  Using ^1.2.0 as constraint for direct dep github.com/gin-gonic/gin
+  Locking in v1.2 (d459835) for direct dep github.com/gin-gonic/gin
+  Locking in master (22d885f) for transitive dep github.com/gin-contrib/sse
+  Locking in master (1643683) for transitive dep github.com/golang/protobuf
+  Locking in master (bdcc60b) for transitive dep github.com/ugorji/go
 ```
 
 5. Run your project
