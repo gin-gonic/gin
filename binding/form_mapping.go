@@ -26,10 +26,10 @@ func mapForm(ptr interface{}, form map[string][]string) error {
 		inputFieldName := typeField.Tag.Get("form")
 		inputFieldNameList := strings.Split(inputFieldName, ",")
 		inputFieldName = inputFieldNameList[0]
-		var defaultValue interface{}
+		var defaultValue string
 		if len(inputFieldNameList) > 1 {
-			defaultList := strings.Split(inputFieldNameList[1], "=")
-			if len(defaultList) == 2 && defaultList[0] == "default" {
+			defaultList := strings.SplitN(inputFieldNameList[1], "=", 2)
+			if defaultList[0] == "default" {
 				defaultValue = defaultList[1]
 			}
 		}
@@ -50,11 +50,11 @@ func mapForm(ptr interface{}, form map[string][]string) error {
 		inputValue, exists := form[inputFieldName]
 
 		if !exists {
-			if defaultValue == nil {
+			if defaultValue == "" {
 				continue
 			}
 			inputValue = make([]string, 1)
-			inputValue[0] = defaultValue.(string)
+			inputValue[0] = defaultValue
 		}
 
 		numElems := len(inputValue)
