@@ -50,7 +50,7 @@ func mapForm(ptr interface{}, form map[string][]string) error {
 		inputValue, exists := form[inputFieldName]
 
 		if !exists {
-			if defaultValue.(string) == "" {
+			if defaultValue == nil {
 				continue
 			}
 			inputValue = make([]string, 1)
