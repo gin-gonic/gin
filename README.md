@@ -388,7 +388,7 @@ func main() {
 	// Logger middleware will write the logs to gin.DefaultWriter even you set with GIN_MODE=release.
 	// By default gin.DefaultWriter = os.Stdout
 	r.Use(gin.Logger())
-	
+
 	// Recovery middleware recovers from any panics and writes a 500 if there was one.
 	r.Use(gin.Recovery())
 
@@ -422,11 +422,11 @@ func main() {
 func main() {
     // Disable Console Color, you don't need console color when writing the logs to file.
     gin.DisableConsoleColor()
-    
+
     // Logging to a file.
     f, _ := os.Create("gin.log")
     gin.DefaultWriter = io.MultiWriter(f)
-    
+
     // Use the following code if you need to write the logs to file and console at the same time.
     // gin.DefaultWriter = io.MultiWriter(f, os.Stdout)
 
@@ -447,9 +447,17 @@ Gin uses [**go-playground/validator.v8**](https://github.com/go-playground/valid
 
 Note that you need to set the corresponding binding tag on all fields you want to bind. For example, when binding from JSON, set `json:"fieldname"`.
 
-When using the Bind-method, Gin tries to infer the binder depending on the Content-Type header. If you are sure what you are binding, you can use BindWith.
+Also, Gin provides two sets of methods for binding:
+- **Type** - Must bind
+  - **Methods** - `Bind`, `BindJSON`, `BindQuery`
+  - **Behavior** - These methods use `MustBindWith` under the hood. If there is a binding error, the request is aborted with `c.AbortWithError(400, err).SetType(ErrorTypeBind)`. This sets the response status code to 400 and the `Content-Type` header is set to `text/plain; charset=utf-8`. Note that if you try to set the response code after this, it will result in a warning `[GIN-debug] [WARNING] Headers were already written. Wanted to override status code 400 with 422`. If you wish to have greater control over the behavior, consider using the `ShouldBind` equivalent method.
+- **Type** - Should bind
+  - **Methods** - `ShouldBind`, `ShouldBindJSON`, `ShouldBindQuery`
+  - **Behavior** - These methods use `ShouldBindWith` under the hood. If there is a binding error, the error is returned and it is the developer's responsibility to handle the request and error appropriately.
 
-You can also specify that specific fields are required. If a field is decorated with `binding:"required"` and has a empty value when binding, the current request will fail with an error.
+When using the Bind-method, Gin tries to infer the binder depending on the Content-Type header. If you are sure what you are binding, you can use `MustBindWith` or `ShouldBindWith`.
+
+You can also specify that specific fields are required. If a field is decorated with `binding:"required"` and has a empty value when binding, an error will be returned.
 
 ```go
 // Binding from JSON
@@ -464,12 +472,14 @@ func main() {
 	// Example for binding JSON ({"user": "manu", "password": "123"})
 	router.POST("/loginJSON", func(c *gin.Context) {
 		var json Login
-		if c.BindJSON(&json) == nil {
+		if err = c.ShouldBindJSON(&json); err == nil {
 			if json.User == "manu" && json.Password == "123" {
 				c.JSON(http.StatusOK, gin.H{"status": "you are logged in"})
 			} else {
 				c.JSON(http.StatusUnauthorized, gin.H{"status": "unauthorized"})
 			}
+		} else {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		}
 	})
 
@@ -477,18 +487,42 @@ func main() {
 	router.POST("/loginForm", func(c *gin.Context) {
 		var form Login
 		// This will infer what binder to use depending on the content-type header.
-		if c.Bind(&form) == nil {
+		if err := c.ShouldBind(&form); err == nil {
 			if form.User == "manu" && form.Password == "123" {
 				c.JSON(http.StatusOK, gin.H{"status": "you are logged in"})
 			} else {
 				c.JSON(http.StatusUnauthorized, gin.H{"status": "unauthorized"})
 			}
+		} else {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		}
 	})
 
 	// Listen and serve on 0.0.0.0:8080
 	router.Run(":8080")
 }
+```
+
+**Sample request**
+```shell
+$ curl -v -X POST \
+  http://localhost:8080/loginJSON \
+  -H 'content-type: application/json' \
+  -d '{ "user": "manu" }'
+> POST /loginJSON HTTP/1.1
+> Host: localhost:8080
+> User-Agent: curl/7.51.0
+> Accept: */*
+> content-type: application/json
+> Content-Length: 18
+>
+* upload completely sent off: 18 out of 18 bytes
+< HTTP/1.1 400 Bad Request
+< Content-Type: application/json; charset=utf-8
+< Date: Fri, 04 Aug 2017 03:51:31 GMT
+< Content-Length: 100
+<
+{"error":"Key: 'Login.Password' Error:Field validation for 'Password' failed on the 'required' tag"}
 ```
 
 ### Custom Validators
@@ -554,7 +588,7 @@ $ curl "localhost:8085/bookable?check_in=2017-08-15&check_out=2017-08-16"
 
 ### Only Bind Query String
 
-`BindQuery` function only binds the query params and not the post data. See the [detail information](https://github.com/gin-gonic/gin/issues/742#issuecomment-315953017).
+`ShouldBindQuery` function only binds the query params and not the post data. See the [detail information](https://github.com/gin-gonic/gin/issues/742#issuecomment-315953017).
 
 ```go
 package main
@@ -578,7 +612,7 @@ func main() {
 
 func startPage(c *gin.Context) {
 	var person Person
-	if c.BindQuery(&person) == nil {
+	if c.ShouldBindQuery(&person) == nil {
 		log.Println("====== Only Bind By Query String ======")
 		log.Println(person.Name)
 		log.Println(person.Address)
@@ -616,7 +650,7 @@ func startPage(c *gin.Context) {
 	// If `GET`, only `Form` binding engine (`query`) used.
 	// If `POST`, first checks the `content-type` for `JSON` or `XML`, then uses `Form` (`form-data`).
 	// See more at https://github.com/gin-gonic/gin/blob/master/binding/binding.go#L48
-	if c.Bind(&person) == nil {
+	if c.ShouldBind(&person) == nil {
 		log.Println(person.Name)
 		log.Println(person.Address)
 		log.Println(person.Birthday)
@@ -648,7 +682,7 @@ type myForm struct {
 
 func formHandler(c *gin.Context) {
     var fakeForm myForm
-    c.Bind(&fakeForm)
+    c.ShouldBind(&fakeForm)
     c.JSON(200, gin.H{"color": fakeForm.Colors})
 }
 
@@ -695,11 +729,11 @@ func main() {
 	router := gin.Default()
 	router.POST("/login", func(c *gin.Context) {
 		// you can bind multipart form with explicit binding declaration:
-		// c.MustBindWith(&form, binding.Form)
-		// or you can simply use autobinding with Bind method:
+		// c.ShouldBindWith(&form, binding.Form)
+		// or you can simply use autobinding with ShouldBind method:
 		var form LoginForm
 		// in this case proper binding will be automatically selected
-		if c.Bind(&form) == nil {
+		if c.ShouldBind(&form) == nil {
 			if form.User == "user" && form.Password == "password" {
 				c.JSON(200, gin.H{"status": "you are logged in"})
 			} else {
