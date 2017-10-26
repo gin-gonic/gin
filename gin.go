@@ -14,8 +14,8 @@ import (
 	"github.com/gin-gonic/gin/render"
 )
 
-// Version is Framework's version.
 const (
+	// Version is Framework's version.
 	Version                = "v1.2"
 	defaultMultipartMemory = 32 << 20 // 32 MB
 )
