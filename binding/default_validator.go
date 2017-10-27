@@ -33,6 +33,11 @@ func (v *defaultValidator) RegisterValidation(key string, fn validator.Func) err
 	return v.validate.RegisterValidation(key, fn)
 }
 
+func (v *defaultValidator) RegisterStructValidation(fn validator.StructLevelFunc, types ...interface{}) {
+	v.lazyinit()
+	v.validate.RegisterStructValidation(fn, types...)
+}
+
 func (v *defaultValidator) lazyinit() {
 	v.once.Do(func() {
 		config := &validator.Config{TagName: "binding"}

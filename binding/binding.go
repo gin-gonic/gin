@@ -40,6 +40,10 @@ type StructValidator interface {
 	// NOTE: if the key already exists, the previous validation function will be replaced.
 	// NOTE: this method is not thread-safe it is intended that these all be registered prior to any validation
 	RegisterValidation(string, validator.Func) error
+
+	// RegisterStructValidation registers a StructLevelFunc against a number of types.
+	// NOTE: this method is not thread-safe it is intended that these all be registered prior to any validation
+	RegisterStructValidation(fn validator.StructLevelFunc, types ...interface{})
 }
 
 var Validator StructValidator = &defaultValidator{}
