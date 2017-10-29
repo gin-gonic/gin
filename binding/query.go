@@ -4,9 +4,7 @@
 
 package binding
 
-import (
-	"net/http"
-)
+import "net/http"
 
 type queryBinding struct{}
 
