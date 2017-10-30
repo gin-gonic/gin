@@ -2,35 +2,33 @@ package main
 
 import (
 	"fmt"
-	"io"
 	"net/http"
-	"os"
 
 	"github.com/gin-gonic/gin"
 )
 
 func main() {
 	router := gin.Default()
+	// Set a lower memory limit for multipart forms (default is 32 MiB)
+	router.MaxMultipartMemory = 8 << 20 // 8 MiB
 	router.Static("/", "./public")
 	router.POST("/upload", func(c *gin.Context) {
 		name := c.PostForm("name")
 		email := c.PostForm("email")
 
 		// Multipart form
-		form, _ := c.MultipartForm()
+		form, err := c.MultipartForm()
+		if err != nil {
+			c.String(http.StatusBadRequest, fmt.Sprintf("get form err: %s", err.Error()))
+			return
+		}
 		files := form.File["files"]
 
 		for _, file := range files {
-			// Source
-			src, _ := file.Open()
-			defer src.Close()
-
-			// Destination
-			dst, _ := os.Create(file.Filename)
-			defer dst.Close()
-
-			// Copy
-			io.Copy(dst, src)
+			if err := c.SaveUploadedFile(file, file.Filename); err != nil {
+				c.String(http.StatusBadRequest, fmt.Sprintf("upload file err: %s", err.Error()))
+				return
+			}
 		}
 
 		c.String(http.StatusOK, fmt.Sprintf("Uploaded successfully %d files with fields name=%s and email=%s.", len(files), name, email))

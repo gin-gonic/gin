@@ -17,12 +17,8 @@ func (msgpackBinding) Name() string {
 }
 
 func (msgpackBinding) Bind(req *http.Request, obj interface{}) error {
-
 	if err := codec.NewDecoder(req.Body, new(codec.MsgpackHandle)).Decode(&obj); err != nil {
-		//var decoder *codec.Decoder = codec.NewDecoder(req.Body, &codec.MsgpackHandle)
-		//if err := decoder.Decode(&obj); err != nil {
 		return err
 	}
 	return validate(obj)
-
 }

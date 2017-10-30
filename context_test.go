@@ -45,6 +45,7 @@ func createMultipartRequest() *http.Request {
 	must(mw.WriteField("id", ""))
 	must(mw.WriteField("time_local", "31/12/2016 14:55"))
 	must(mw.WriteField("time_utc", "31/12/2016 14:55"))
+	must(mw.WriteField("time_location", "31/12/2016 14:55"))
 	req, err := http.NewRequest("POST", "/", body)
 	must(err)
 	req.Header.Set("Content-Type", MIMEMultipartPOSTForm+"; boundary="+boundary)
@@ -72,12 +73,18 @@ func TestContextFormFile(t *testing.T) {
 	if assert.NoError(t, err) {
 		assert.Equal(t, "test", f.Filename)
 	}
+
+	assert.NoError(t, c.SaveUploadedFile(f, "test"))
 }
 
 func TestContextMultipartForm(t *testing.T) {
 	buf := new(bytes.Buffer)
 	mw := multipart.NewWriter(buf)
 	mw.WriteField("foo", "bar")
+	w, err := mw.CreateFormFile("file", "test")
+	if assert.NoError(t, err) {
+		w.Write([]byte("test"))
+	}
 	mw.Close()
 	c, _ := CreateTestContext(httptest.NewRecorder())
 	c.Request, _ = http.NewRequest("POST", "/", buf)
@@ -86,6 +93,42 @@ func TestContextMultipartForm(t *testing.T) {
 	if assert.NoError(t, err) {
 		assert.NotNil(t, f)
 	}
+
+	assert.NoError(t, c.SaveUploadedFile(f.File["file"][0], "test"))
+}
+
+func TestSaveUploadedOpenFailed(t *testing.T) {
+	buf := new(bytes.Buffer)
+	mw := multipart.NewWriter(buf)
+	mw.Close()
+
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	c.Request, _ = http.NewRequest("POST", "/", buf)
+	c.Request.Header.Set("Content-Type", mw.FormDataContentType())
+
+	f := &multipart.FileHeader{
+		Filename: "file",
+	}
+	assert.Error(t, c.SaveUploadedFile(f, "test"))
+}
+
+func TestSaveUploadedCreateFailed(t *testing.T) {
+	buf := new(bytes.Buffer)
+	mw := multipart.NewWriter(buf)
+	w, err := mw.CreateFormFile("file", "test")
+	if assert.NoError(t, err) {
+		w.Write([]byte("test"))
+	}
+	mw.Close()
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	c.Request, _ = http.NewRequest("POST", "/", buf)
+	c.Request.Header.Set("Content-Type", mw.FormDataContentType())
+	f, err := c.FormFile("file")
+	if assert.NoError(t, err) {
+		assert.Equal(t, "test", f.Filename)
+	}
+
+	assert.Error(t, c.SaveUploadedFile(f, "/"))
 }
 
 func TestContextReset(t *testing.T) {
@@ -402,14 +445,15 @@ func TestContextPostFormMultipart(t *testing.T) {
 	c.Request = createMultipartRequest()
 
 	var obj struct {
-		Foo       string    `form:"foo"`
-		Bar       string    `form:"bar"`
-		BarAsInt  int       `form:"bar"`
-		Array     []string  `form:"array"`
-		ID        string    `form:"id"`
-		TimeLocal time.Time `form:"time_local" time_format:"02/01/2006 15:04"`
-		TimeUTC   time.Time `form:"time_utc" time_format:"02/01/2006 15:04" time_utc:"1"`
-		BlankTime time.Time `form:"blank_time" time_format:"02/01/2006 15:04"`
+		Foo          string    `form:"foo"`
+		Bar          string    `form:"bar"`
+		BarAsInt     int       `form:"bar"`
+		Array        []string  `form:"array"`
+		ID           string    `form:"id"`
+		TimeLocal    time.Time `form:"time_local" time_format:"02/01/2006 15:04"`
+		TimeUTC      time.Time `form:"time_utc" time_format:"02/01/2006 15:04" time_utc:"1"`
+		TimeLocation time.Time `form:"time_location" time_format:"02/01/2006 15:04" time_location:"Asia/Tokyo"`
+		BlankTime    time.Time `form:"blank_time" time_format:"02/01/2006 15:04"`
 	}
 	assert.NoError(t, c.Bind(&obj))
 	assert.Equal(t, obj.Foo, "bar")
@@ -421,6 +465,9 @@ func TestContextPostFormMultipart(t *testing.T) {
 	assert.Equal(t, obj.TimeLocal.Location(), time.Local)
 	assert.Equal(t, obj.TimeUTC.Format("02/01/2006 15:04"), "31/12/2016 14:55")
 	assert.Equal(t, obj.TimeUTC.Location(), time.UTC)
+	loc, _ := time.LoadLocation("Asia/Tokyo")
+	assert.Equal(t, obj.TimeLocation.Format("02/01/2006 15:04"), "31/12/2016 14:55")
+	assert.Equal(t, obj.TimeLocation.Location(), loc)
 	assert.True(t, obj.BlankTime.IsZero())
 
 	value, ok := c.GetQuery("foo")
@@ -582,8 +629,8 @@ func TestContextRenderIndentedJSON(t *testing.T) {
 	c.IndentedJSON(201, H{"foo": "bar", "bar": "foo", "nested": H{"foo": "bar"}})
 
 	assert.Equal(t, w.Code, 201)
-	assert.Equal(t, w.Body.String(), "{\n    \"bar\": \"foo\",\n    \"foo\": \"bar\",\n    \"nested\": {\n        \"foo\": \"bar\"\n    }\n}")
-	assert.Equal(t, w.HeaderMap.Get("Content-Type"), "application/json; charset=utf-8")
+	assert.Equal(t, "{\n    \"bar\": \"foo\",\n    \"foo\": \"bar\",\n    \"nested\": {\n        \"foo\": \"bar\"\n    }\n}", w.Body.String())
+	assert.Equal(t, "application/json; charset=utf-8", w.HeaderMap.Get("Content-Type"))
 }
 
 // Tests that no Custom JSON is rendered if code is 204
@@ -592,6 +639,32 @@ func TestContextRenderNoContentIndentedJSON(t *testing.T) {
 	c, _ := CreateTestContext(w)
 
 	c.IndentedJSON(204, H{"foo": "bar", "bar": "foo", "nested": H{"foo": "bar"}})
+
+	assert.Equal(t, 204, w.Code)
+	assert.Equal(t, "", w.Body.String())
+	assert.Equal(t, "application/json; charset=utf-8", w.HeaderMap.Get("Content-Type"))
+}
+
+// Tests that the response is serialized as Secure JSON
+// and Content-Type is set to application/json
+func TestContextRenderSecureJSON(t *testing.T) {
+	w := httptest.NewRecorder()
+	c, router := CreateTestContext(w)
+
+	router.SecureJsonPrefix("&&&START&&&")
+	c.SecureJSON(201, []string{"foo", "bar"})
+
+	assert.Equal(t, w.Code, 201)
+	assert.Equal(t, w.Body.String(), "&&&START&&&[\"foo\",\"bar\"]")
+	assert.Equal(t, w.HeaderMap.Get("Content-Type"), "application/json; charset=utf-8")
+}
+
+// Tests that no Custom JSON is rendered if code is 204
+func TestContextRenderNoContentSecureJSON(t *testing.T) {
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
+
+	c.SecureJSON(204, []string{"foo", "bar"})
 
 	assert.Equal(t, 204, w.Code)
 	assert.Equal(t, "", w.Body.String())
@@ -1014,6 +1087,13 @@ func TestContextError(t *testing.T) {
 	assert.Equal(t, c.Errors[1].Type, ErrorTypePublic)
 
 	assert.Equal(t, c.Errors.Last(), c.Errors[1])
+
+	defer func() {
+		if recover() == nil {
+			t.Error("didn't panic")
+		}
+	}()
+	c.Error(nil)
 }
 
 func TestContextTypedError(t *testing.T) {
@@ -1111,6 +1191,22 @@ func TestContextBindWithJSON(t *testing.T) {
 	assert.Equal(t, w.Body.Len(), 0)
 }
 
+func TestContextBindWithQuery(t *testing.T) {
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
+
+	c.Request, _ = http.NewRequest("POST", "/?foo=bar&bar=foo", bytes.NewBufferString("foo=unused"))
+
+	var obj struct {
+		Foo string `form:"foo"`
+		Bar string `form:"bar"`
+	}
+	assert.NoError(t, c.BindQuery(&obj))
+	assert.Equal(t, "foo", obj.Bar)
+	assert.Equal(t, "bar", obj.Foo)
+	assert.Equal(t, 0, w.Body.Len())
+}
+
 func TestContextBadAutoBind(t *testing.T) {
 	w := httptest.NewRecorder()
 	c, _ := CreateTestContext(w)
@@ -1130,6 +1226,73 @@ func TestContextBadAutoBind(t *testing.T) {
 	assert.Empty(t, obj.Foo)
 	assert.Equal(t, w.Code, 400)
 	assert.True(t, c.IsAborted())
+}
+
+func TestContextAutoShouldBindJSON(t *testing.T) {
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	c.Request, _ = http.NewRequest("POST", "/", bytes.NewBufferString("{\"foo\":\"bar\", \"bar\":\"foo\"}"))
+	c.Request.Header.Add("Content-Type", MIMEJSON)
+
+	var obj struct {
+		Foo string `json:"foo"`
+		Bar string `json:"bar"`
+	}
+	assert.NoError(t, c.ShouldBind(&obj))
+	assert.Equal(t, obj.Bar, "foo")
+	assert.Equal(t, obj.Foo, "bar")
+	assert.Empty(t, c.Errors)
+}
+
+func TestContextShouldBindWithJSON(t *testing.T) {
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
+
+	c.Request, _ = http.NewRequest("POST", "/", bytes.NewBufferString("{\"foo\":\"bar\", \"bar\":\"foo\"}"))
+	c.Request.Header.Add("Content-Type", MIMEXML) // set fake content-type
+
+	var obj struct {
+		Foo string `json:"foo"`
+		Bar string `json:"bar"`
+	}
+	assert.NoError(t, c.ShouldBindJSON(&obj))
+	assert.Equal(t, obj.Bar, "foo")
+	assert.Equal(t, obj.Foo, "bar")
+	assert.Equal(t, w.Body.Len(), 0)
+}
+
+func TestContextShouldBindWithQuery(t *testing.T) {
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
+
+	c.Request, _ = http.NewRequest("POST", "/?foo=bar&bar=foo", bytes.NewBufferString("foo=unused"))
+
+	var obj struct {
+		Foo string `form:"foo"`
+		Bar string `form:"bar"`
+	}
+	assert.NoError(t, c.ShouldBindQuery(&obj))
+	assert.Equal(t, "foo", obj.Bar)
+	assert.Equal(t, "bar", obj.Foo)
+	assert.Equal(t, 0, w.Body.Len())
+}
+
+func TestContextBadAutoShouldBind(t *testing.T) {
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
+
+	c.Request, _ = http.NewRequest("POST", "http://example.com", bytes.NewBufferString("\"foo\":\"bar\", \"bar\":\"foo\"}"))
+	c.Request.Header.Add("Content-Type", MIMEJSON)
+	var obj struct {
+		Foo string `json:"foo"`
+		Bar string `json:"bar"`
+	}
+
+	assert.False(t, c.IsAborted())
+	assert.Error(t, c.ShouldBind(&obj))
+
+	assert.Empty(t, obj.Bar)
+	assert.Empty(t, obj.Foo)
+	assert.False(t, c.IsAborted())
 }
 
 func TestContextGolangContext(t *testing.T) {

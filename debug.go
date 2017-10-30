@@ -15,7 +15,7 @@ func init() {
 }
 
 // IsDebugging returns true if the framework is running in debug mode.
-// Use SetMode(gin.Release) to switch to disable the debug mode.
+// Use SetMode(gin.Release) to disable debug mode.
 func IsDebugging() bool {
 	return ginMode == debugCode
 }
@@ -44,6 +44,12 @@ func debugPrint(format string, values ...interface{}) {
 	if IsDebugging() {
 		log.Printf("[GIN-debug] "+format, values...)
 	}
+}
+
+func debugPrintWARNINGDefault() {
+	debugPrint(`[WARNING] Creating an Engine instance with the Logger and Recovery middleware already attached.
+
+`)
 }
 
 func debugPrintWARNINGNew() {

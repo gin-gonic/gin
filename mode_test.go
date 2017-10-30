@@ -5,16 +5,22 @@
 package gin
 
 import (
+	"os"
 	"testing"
 
+	"github.com/gin-gonic/gin/binding"
 	"github.com/stretchr/testify/assert"
 )
 
 func init() {
-	SetMode(TestMode)
+	os.Setenv(ENV_GIN_MODE, TestMode)
 }
 
 func TestSetMode(t *testing.T) {
+	assert.Equal(t, ginMode, testCode)
+	assert.Equal(t, Mode(), TestMode)
+	os.Unsetenv(ENV_GIN_MODE)
+
 	SetMode(DebugMode)
 	assert.Equal(t, ginMode, debugCode)
 	assert.Equal(t, Mode(), DebugMode)
@@ -28,4 +34,10 @@ func TestSetMode(t *testing.T) {
 	assert.Equal(t, Mode(), TestMode)
 
 	assert.Panics(t, func() { SetMode("unknown") })
+}
+
+func TestEnableJsonDecoderUseNumber(t *testing.T) {
+	assert.False(t, binding.EnableDecoderUseNumber)
+	EnableJsonDecoderUseNumber()
+	assert.True(t, binding.EnableDecoderUseNumber)
 }

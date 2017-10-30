@@ -96,7 +96,7 @@ type node struct {
 	priority  uint32
 }
 
-// increments priority of the given child and reorders if necessary
+// increments priority of the given child and reorders if necessary.
 func (n *node) incrementChildPrio(pos int) int {
 	n.children[pos].priority++
 	prio := n.children[pos].priority
@@ -105,9 +105,7 @@ func (n *node) incrementChildPrio(pos int) int {
 	newPos := pos
 	for newPos > 0 && n.children[newPos-1].priority < prio {
 		// swap node positions
-		tmpN := n.children[newPos-1]
-		n.children[newPos-1] = n.children[newPos]
-		n.children[newPos] = tmpN
+		n.children[newPos-1], n.children[newPos] = n.children[newPos], n.children[newPos-1]
 
 		newPos--
 	}
@@ -359,7 +357,7 @@ func (n *node) insertChild(numParams uint8, path string, fullPath string, handle
 	n.handlers = handlers
 }
 
-// Returns the handle registered with the given path (key). The values of
+// getValue returns the handle registered with the given path (key). The values of
 // wildcards are saved to a map.
 // If no handle can be found, a TSR (trailing slash redirect) recommendation is
 // made if a handle exists with an extra (without the) trailing slash for the
@@ -501,7 +499,7 @@ walk: // Outer loop for walking the tree
 	}
 }
 
-// Makes a case-insensitive lookup of the given path and tries to find a handler.
+// findCaseInsensitivePath makes a case-insensitive lookup of the given path and tries to find a handler.
 // It can optionally also fix trailing slashes.
 // It returns the case-corrected path and a bool indicating whether the lookup
 // was successful.

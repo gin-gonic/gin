@@ -4,6 +4,7 @@ go:
   - 1.6.x
   - 1.7.x
   - 1.8.x
+  - 1.9.x
   - master
 
 git:
@@ -11,6 +12,8 @@ git:
 
 install:
   - make install
+
+go_import_path: github.com/gin-gonic/gin
 
 script:
   - make vet

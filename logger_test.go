@@ -28,10 +28,11 @@ func TestLogger(t *testing.T) {
 	router.HEAD("/example", func(c *Context) {})
 	router.OPTIONS("/example", func(c *Context) {})
 
-	performRequest(router, "GET", "/example")
+	performRequest(router, "GET", "/example?a=100")
 	assert.Contains(t, buffer.String(), "200")
 	assert.Contains(t, buffer.String(), "GET")
 	assert.Contains(t, buffer.String(), "/example")
+	assert.Contains(t, buffer.String(), "a=100")
 
 	// I wrote these first (extending the above) but then realized they are more
 	// like integration tests because they test the whole logging process rather

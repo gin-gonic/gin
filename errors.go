@@ -6,9 +6,10 @@ package gin
 
 import (
 	"bytes"
-	"encoding/json"
 	"fmt"
 	"reflect"
+
+	"github.com/gin-gonic/gin/json"
 )
 
 type ErrorType uint64
@@ -23,15 +24,13 @@ const (
 	ErrorTypeNu            = 2
 )
 
-type (
-	Error struct {
-		Err  error
-		Type ErrorType
-		Meta interface{}
-	}
+type Error struct {
+	Err  error
+	Type ErrorType
+	Meta interface{}
+}
 
-	errorMsgs []*Error
-)
+type errorMsgs []*Error
 
 var _ error = &Error{}
 
@@ -66,12 +65,12 @@ func (msg *Error) JSON() interface{} {
 	return json
 }
 
-// MarshalJSON implements the json.Marshaller interface
+// MarshalJSON implements the json.Marshaller interface.
 func (msg *Error) MarshalJSON() ([]byte, error) {
 	return json.Marshal(msg.JSON())
 }
 
-// Implements the error interface
+// Error implements the error interface
 func (msg Error) Error() string {
 	return msg.Err.Error()
 }
@@ -80,8 +79,8 @@ func (msg *Error) IsType(flags ErrorType) bool {
 	return (msg.Type & flags) > 0
 }
 
-// Returns a readonly copy filtered the byte.
-// ie ByType(gin.ErrorTypePublic) returns a slice of errors with type=ErrorTypePublic
+// ByType returns a readonly copy filtered the byte.
+// ie ByType(gin.ErrorTypePublic) returns a slice of errors with type=ErrorTypePublic.
 func (a errorMsgs) ByType(typ ErrorType) errorMsgs {
 	if len(a) == 0 {
 		return nil
@@ -98,17 +97,16 @@ func (a errorMsgs) ByType(typ ErrorType) errorMsgs {
 	return result
 }
 
-// Returns the last error in the slice. It returns nil if the array is empty.
-// Shortcut for errors[len(errors)-1]
+// Last returns the last error in the slice. It returns nil if the array is empty.
+// Shortcut for errors[len(errors)-1].
 func (a errorMsgs) Last() *Error {
-	length := len(a)
-	if length > 0 {
+	if length := len(a); length > 0 {
 		return a[length-1]
 	}
 	return nil
 }
 
-// Returns an array will all the error messages.
+// Errors returns an array will all the error messages.
 // Example:
 // 		c.Error(errors.New("first"))
 // 		c.Error(errors.New("second"))
