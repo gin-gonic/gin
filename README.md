@@ -74,10 +74,10 @@ BenchmarkTigerTonic_GithubAll               |    1000    |  1439483    |  239104
 BenchmarkTraffic_GithubAll                  |     100    | 11383067    | 2659329    | 21848
 BenchmarkVulcan_GithubAll                   |    5000    |   394253    |   19894    |   609
 
-(1): Total Repetitions achieved in constant time, higher means more confident result
-(2): Single Repetition Duration (ns/op), lower is better
-(3): Heap Memory (B/op), lower is better
-(4): Average Allocations per Repetition (allocs/op), lower is better
+- (1): Total Repetitions achieved in constant time, higher means more confident result
+- (2): Single Repetition Duration (ns/op), lower is better
+- (3): Heap Memory (B/op), lower is better
+- (4): Average Allocations per Repetition (allocs/op), lower is better
 
 ## Gin v1. stable
 
