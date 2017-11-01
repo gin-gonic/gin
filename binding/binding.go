@@ -7,7 +7,7 @@ package binding
 import (
 	"net/http"
 
-	validator "gopkg.in/go-playground/validator.v8"
+	"gopkg.in/go-playground/validator.v8"
 )
 
 const (
