@@ -107,12 +107,12 @@ import "github.com/gin-gonic/gin"
 import "net/http"
 ```
 
-### Use a vendor tool like [Govendor](https://github.com/kardianos/govendor)
+### Use a vendor tool like [`dep`](https://github.com/golang/dep)
 
-1. `go get` govendor
+1. `go get` dep
 
 ```sh
-$ go get github.com/kardianos/govendor
+$ go get -u github.com/golang/dep/cmd/dep
 ```
 2. Create your project folder and `cd` inside
 
@@ -120,17 +120,25 @@ $ go get github.com/kardianos/govendor
 $ mkdir -p ~/go/src/github.com/myusername/project && cd "$_"
 ```
 
-3. Vendor init your project and add gin
-
-```sh
-$ govendor init
-$ govendor fetch github.com/gin-gonic/gin@v1.2
-```
-
-4. Copy a starting template inside your project
+3. Copy a starting template inside your project
 
 ```sh
 $ curl https://raw.githubusercontent.com/gin-gonic/gin/master/examples/basic/main.go > main.go
+```
+
+4. Vendor init your project and pull in the required dependencies into `vendor`
+
+```sh
+$ dep init
+  Locking in v8.18.2 (5f1438d) for transitive dep gopkg.in/go-playground/validator.v8
+  Locking in v0.0.3 (0360b2a) for transitive dep github.com/mattn/go-isatty
+  Locking in master (8dbc5d0) for transitive dep golang.org/x/sys
+  Locking in v2 (eb3733d) for transitive dep gopkg.in/yaml.v2
+  Using ^1.2.0 as constraint for direct dep github.com/gin-gonic/gin
+  Locking in v1.2 (d459835) for direct dep github.com/gin-gonic/gin
+  Locking in master (22d885f) for transitive dep github.com/gin-contrib/sse
+  Locking in master (1643683) for transitive dep github.com/golang/protobuf
+  Locking in master (bdcc60b) for transitive dep github.com/ugorji/go
 ```
 
 5. Run your project
@@ -272,7 +280,7 @@ id: 1234; page: 1; name: manu; message: this_is_great
 
 #### Single file
 
-References issue [#774](https://github.com/gin-gonic/gin/issues/774) and detail [example code](examples/upload-file/single).
+References issue [#774](https://github.com/gin-gonic/gin/issues/774) and detail [example code](_examples/upload-file/single).
 
 ```go
 func main() {
@@ -303,7 +311,7 @@ curl -X POST http://localhost:8080/upload \
 
 #### Multiple files
 
-See the detail [example code](examples/upload-file/multiple).
+See the detail [example code](_examples/upload-file/multiple).
 
 ```go
 func main() {
@@ -527,9 +535,9 @@ $ curl -v -X POST \
 
 ### Custom Validators
 
-It is also possible to register custom validators. See the [example code](examples/custom-validation/server.go).
+It is also possible to register custom validators. See the [example code](_examples/custom-validation/server.go).
 
-[embedmd]:# (examples/custom-validation/server.go go)
+[embedmd]:# (_examples/custom-validation/server.go go)
 ```go
 package main
 
@@ -925,7 +933,7 @@ You may use custom delims
 
 #### Custom Template Funcs
 
-See the detail [example code](examples/template).
+See the detail [example code](_examples/template).
 
 main.go
 
@@ -1133,7 +1141,7 @@ func main() {
 
 example for 1-line LetsEncrypt HTTPS servers.
 
-[embedmd]:# (examples/auto-tls/example1.go go)
+[embedmd]:# (_examples/auto-tls/example1.go go)
 ```go
 package main
 
@@ -1158,7 +1166,7 @@ func main() {
 
 example for custom autocert manager.
 
-[embedmd]:# (examples/auto-tls/example2.go go)
+[embedmd]:# (_examples/auto-tls/example2.go go)
 ```go
 package main
 
@@ -1192,7 +1200,7 @@ func main() {
 
 See the [question](https://github.com/gin-gonic/gin/issues/346) and try the folling example:
 
-[embedmd]:# (examples/multiple-service/main.go go)
+[embedmd]:# (_examples/multiple-service/main.go go)
 ```go
 package main
 
@@ -1290,9 +1298,9 @@ An alternative to endless:
 * [graceful](https://github.com/tylerb/graceful): Graceful is a Go package enabling graceful shutdown of an http.Handler server.
 * [grace](https://github.com/facebookgo/grace): Graceful restart & zero downtime deploy for Go servers.
 
-If you are using Go 1.8, you may not need to use this library! Consider using http.Server's built-in [Shutdown()](https://golang.org/pkg/net/http/#Server.Shutdown) method for graceful shutdowns. See the full [graceful-shutdown](./examples/graceful-shutdown) example with gin.
+If you are using Go 1.8, you may not need to use this library! Consider using http.Server's built-in [Shutdown()](https://golang.org/pkg/net/http/#Server.Shutdown) method for graceful shutdowns. See the full [graceful-shutdown](_examples/graceful-shutdown) example with gin.
 
-[embedmd]:# (examples/graceful-shutdown/graceful-shutdown/server.go go)
+[embedmd]:# (_examples/graceful-shutdown/graceful-shutdown/server.go go)
 ```go
 // +build go1.8
 
