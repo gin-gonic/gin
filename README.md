@@ -1133,7 +1133,7 @@ func main() {
 
 example for 1-line LetsEncrypt HTTPS servers.
 
-[embedmd]:# (examples/auto-tls/example1.go go)
+[embedmd]:# (examples/auto-tls/example1/main.go go)
 ```go
 package main
 
@@ -1158,7 +1158,7 @@ func main() {
 
 example for custom autocert manager.
 
-[embedmd]:# (examples/auto-tls/example2.go go)
+[embedmd]:# (examples/auto-tls/example2/main.go go)
 ```go
 package main
 
