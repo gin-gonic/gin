@@ -22,10 +22,10 @@
 			"revisionTime": "2017-01-09T09:34:21Z"
 		},
 		{
-			"checksumSHA1": "FJKrZuFmeLJp8HDeJc6UkIDBPUw=",
+			"checksumSHA1": "+vZNyF2MykVjenLg1TpjjgjthV0=",
 			"path": "github.com/gin-gonic/autotls",
-			"revision": "5b3297bdcee778ff3bbdc99ab7c41e1c2677d22d",
-			"revisionTime": "2017-04-16T09:39:34Z"
+			"revision": "8ca25fbde72bb72a00466215b94b489c71fcb815",
+			"revisionTime": "2017-09-16T16:54:15Z"
 		},
 		{
 			"checksumSHA1": "qlPUeFabwF4RKAOF1H+yBFU1Veg=",
@@ -97,10 +97,10 @@
 			"revisionTime": "2016-10-18T08:54:36Z"
 		},
 		{
-			"checksumSHA1":"S0DP7Pn7sZUmXc55IzZnNvERu6s=",
-			"path":"golang.org/x/sync/errgroup",
-			"revision":"8e0aa688b654ef28caa72506fa5ec8dba9fc7690",
-			"revisionTime":"2017-07-19T03:38:01Z"
+			"checksumSHA1": "S0DP7Pn7sZUmXc55IzZnNvERu6s=",
+			"path": "golang.org/x/sync/errgroup",
+			"revision": "8e0aa688b654ef28caa72506fa5ec8dba9fc7690",
+			"revisionTime": "2017-07-19T03:38:01Z"
 		},
 		{
 			"checksumSHA1": "TVEkpH3gq84iQ39I4R+mlDwjuVI=",
