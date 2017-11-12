@@ -25,6 +25,11 @@ type FooBarStruct struct {
 	Bar string `msgpack:"bar" json:"bar" form:"bar" xml:"bar" binding:"required"`
 }
 
+type FooDefaultBarStruct struct {
+	FooStruct
+	Bar string `msgpack:"bar" json:"bar,default=hello" form:"bar" xml:"bar" binding:"required"`
+}
+
 func TestBindingDefault(t *testing.T) {
 	assert.Equal(t, Default("GET", ""), Form)
 	assert.Equal(t, Default("GET", MIMEJSON), Form)
@@ -92,6 +97,12 @@ func createFormPostRequest() *http.Request {
 	return req
 }
 
+func createDefaultFormPostRequest() *http.Request {
+	req, _ := http.NewRequest("POST", "/?foo=getfoo&bar=getbar", bytes.NewBufferString("foo=bar"))
+	req.Header.Set("Content-Type", MIMEPOSTForm)
+	return req
+}
+
 func createFormMultipartRequest() *http.Request {
 	boundary := "--testboundary"
 	body := new(bytes.Buffer)
@@ -113,6 +124,15 @@ func TestBindingFormPost(t *testing.T) {
 
 	assert.Equal(t, obj.Foo, "bar")
 	assert.Equal(t, obj.Bar, "foo")
+}
+
+func TestBindingDefaultValueFormPost(t *testing.T) {
+	req := createDefaultFormPostRequest()
+	var obj FooDefaultBarStruct
+	FormPost.Bind(req, &obj)
+
+	assert.Equal(t, obj.Foo, "bar")
+	assert.Equal(t, obj.Bar, "hello")
 }
 
 func TestBindingFormMultipart(t *testing.T) {
