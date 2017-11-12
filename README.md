@@ -472,7 +472,7 @@ func main() {
 	// Example for binding JSON ({"user": "manu", "password": "123"})
 	router.POST("/loginJSON", func(c *gin.Context) {
 		var json Login
-		if err = c.ShouldBindJSON(&json); err == nil {
+		if err := c.ShouldBindJSON(&json); err == nil {
 			if json.User == "manu" && json.Password == "123" {
 				c.JSON(http.StatusOK, gin.H{"status": "you are logged in"})
 			} else {
