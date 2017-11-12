@@ -27,7 +27,7 @@ type FooBarStruct struct {
 
 type FooDefaultBarStruct struct {
 	FooStruct
-	Bar string `msgpack:"bar" json:"bar,default=hello" form:"bar" xml:"bar" binding:"required"`
+	Bar string `msgpack:"bar" json:"bar" form:"bar,default=hello" xml:"bar" binding:"required"`
 }
 
 func TestBindingDefault(t *testing.T) {
@@ -69,6 +69,18 @@ func TestBindingForm(t *testing.T) {
 func TestBindingForm2(t *testing.T) {
 	testFormBinding(t, "GET",
 		"/?foo=bar&bar=foo", "/?bar2=foo",
+		"", "")
+}
+
+func TestBindingFormDefaultValue(t *testing.T) {
+	testFormBindingDefaultValue(t, "POST",
+		"/", "/",
+		"foo=bar", "bar2=foo")
+}
+
+func TestBindingFormDefaultValue2(t *testing.T) {
+	testFormBindingDefaultValue(t, "GET",
+		"/?foo=bar", "/?bar2=foo",
 		"", "")
 }
 
@@ -231,6 +243,26 @@ func testFormBinding(t *testing.T, method, path, badPath, body, badBody string) 
 	assert.Equal(t, obj.Bar, "foo")
 
 	obj = FooBarStruct{}
+	req = requestWithBody(method, badPath, badBody)
+	err = JSON.Bind(req, &obj)
+	assert.Error(t, err)
+}
+
+func testFormBindingDefaultValue(t *testing.T, method, path, badPath, body, badBody string) {
+	b := Form
+	assert.Equal(t, b.Name(), "form")
+
+	obj := FooDefaultBarStruct{}
+	req := requestWithBody(method, path, body)
+	if method == "POST" {
+		req.Header.Add("Content-Type", MIMEPOSTForm)
+	}
+	err := b.Bind(req, &obj)
+	assert.NoError(t, err)
+	assert.Equal(t, obj.Foo, "bar")
+	assert.Equal(t, obj.Bar, "hello")
+
+	obj = FooDefaultBarStruct{}
 	req = requestWithBody(method, badPath, badBody)
 	err = JSON.Bind(req, &obj)
 	assert.Error(t, err)
