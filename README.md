@@ -984,7 +984,7 @@ Issuing a HTTP redirect is easy:
 
 ```go
 r.GET("/test", func(c *gin.Context) {
-	c.Redirect(http.StatusMovedPermanently, "http://www.google.com/")
+	c.Redirect(http.StatusTemporaryRedirect, "http://www.google.com/")
 })
 ```
 Both internal and external locations are supported.
