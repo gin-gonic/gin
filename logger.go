@@ -5,6 +5,7 @@
 package gin
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"os"
@@ -100,7 +101,11 @@ func LoggerWithWriter(out io.Writer, notlogged ...string) HandlerFunc {
 			comment := c.Errors.ByType(ErrorTypePrivate).String()
 
 			if raw != "" {
-				path = path + "?" + raw
+				var buffer bytes.Buffer
+				buffer.WriteString(path)
+				buffer.WriteString("?")
+				buffer.WriteString(raw)
+				path = buffer.String()
 			}
 
 			fmt.Fprintf(out, "[GIN] %v |%s %3d %s| %13v | %15s |%s %-7s %s %s\n%s",
