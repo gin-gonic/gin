@@ -9,7 +9,6 @@ import (
 	"errors"
 	"html/template"
 	"io"
-	"log"
 	"os"
 	"testing"
 
@@ -106,10 +105,10 @@ func TestDebugPrintWARNINGNew(t *testing.T) {
 
 func setup(w io.Writer) {
 	SetMode(DebugMode)
-	log.SetOutput(w)
+	debugLog.SetOutput(w)
 }
 
 func teardown() {
 	SetMode(TestMode)
-	log.SetOutput(os.Stdout)
+	debugLog.SetOutput(os.Stderr)
 }

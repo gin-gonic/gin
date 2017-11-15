@@ -8,11 +8,10 @@ import (
 	"bytes"
 	"html/template"
 	"log"
+	"os"
 )
 
-func init() {
-	log.SetFlags(0)
-}
+var debugLog = log.New(os.Stderr, "[GIN-debug] ", 0)
 
 // IsDebugging returns true if the framework is running in debug mode.
 // Use SetMode(gin.Release) to disable debug mode.
@@ -42,7 +41,7 @@ func debugPrintLoadTemplate(tmpl *template.Template) {
 
 func debugPrint(format string, values ...interface{}) {
 	if IsDebugging() {
-		log.Printf("[GIN-debug] "+format, values...)
+		debugLog.Printf(format, values...)
 	}
 }
 
