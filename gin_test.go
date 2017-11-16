@@ -80,7 +80,6 @@ func setupHTMLGlob(t *testing.T, mode string, tls bool) func() {
 	return func() {}
 }
 
-//TODO
 func TestLoadHTMLGlob(t *testing.T) {
 	td := setupHTMLGlob(t, DebugMode, false)
 	res, err := http.Get("http://127.0.0.1:8888/test")
@@ -96,6 +95,19 @@ func TestLoadHTMLGlob(t *testing.T) {
 
 func TestLoadHTMLGlob2(t *testing.T) {
 	td := setupHTMLGlob(t, TestMode, false)
+	res, err := http.Get("http://127.0.0.1:8888/test")
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	resp, _ := ioutil.ReadAll(res.Body)
+	assert.Equal(t, "<h1>Hello world</h1>", string(resp[:]))
+
+	td()
+}
+
+func TestLoadHTMLGlob3(t *testing.T) {
+	td := setupHTMLGlob(t, ReleaseMode, false)
 	res, err := http.Get("http://127.0.0.1:8888/test")
 	if err != nil {
 		fmt.Println(err)
@@ -191,6 +203,18 @@ func TestLoadHTMLFiles2(t *testing.T) {
 	td()
 }
 
+func TestLoadHTMLFiles3(t *testing.T) {
+	td := setupHTMLFiles(t, ReleaseMode, false)
+	res, err := http.Get("http://127.0.0.1:8888/test")
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	resp, _ := ioutil.ReadAll(res.Body)
+	assert.Equal(t, "<h1>Hello world</h1>", string(resp[:]))
+	td()
+}
+
 func TestLoadHTMLFilesUsingTLS(t *testing.T) {
 	td := setupHTMLFiles(t, TestMode, true)
 	// Use InsecureSkipVerify for avoiding `x509: certificate signed by unknown authority` error
@@ -222,10 +246,6 @@ func TestLoadHTMLFilesFuncMap(t *testing.T) {
 	assert.Equal(t, "Date: 2017/07/01\n", string(resp[:]))
 
 	td()
-}
-
-func TestLoadHTMLReleaseMode(t *testing.T) {
-
 }
 
 func TestAddRoute(t *testing.T) {
