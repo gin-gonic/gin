@@ -57,6 +57,12 @@ type InvalidNameType struct {
 	TestName string `invalid_name:"test_name"`
 }
 
+type InvalidNameMapType struct {
+	TestName struct {
+		MapFoo map[string]interface{} `form:"map_foo"`
+	}
+}
+
 type FooStructForSliceType struct {
 	SliceFoo []int `form:"slice_foo"`
 }
@@ -221,6 +227,12 @@ func TestBindingFormInvalidName(t *testing.T) {
 	testFormBindingInvalidName(t, "POST",
 		"/", "/",
 		"test_name=bar", "bar2=foo")
+}
+
+func TestBindingFormInvalidName2(t *testing.T) {
+	testFormBindingInvalidName2(t, "POST",
+		"/", "/",
+		"map_foo=bar", "bar2=foo")
 }
 
 func TestBindingFormForType(t *testing.T) {
@@ -644,6 +656,24 @@ func testFormBindingInvalidName(t *testing.T, method, path, badPath, body, badBo
 	assert.Equal(t, obj.TestName, "")
 
 	obj = InvalidNameType{}
+	req = requestWithBody(method, badPath, badBody)
+	err = JSON.Bind(req, &obj)
+	assert.Error(t, err)
+}
+
+func testFormBindingInvalidName2(t *testing.T, method, path, badPath, body, badBody string) {
+	b := Form
+	assert.Equal(t, b.Name(), "form")
+
+	obj := InvalidNameMapType{}
+	req := requestWithBody(method, path, body)
+	if method == "POST" {
+		req.Header.Add("Content-Type", MIMEPOSTForm)
+	}
+	err := b.Bind(req, &obj)
+	assert.Error(t, err)
+
+	obj = InvalidNameMapType{}
 	req = requestWithBody(method, badPath, badBody)
 	err = JSON.Bind(req, &obj)
 	assert.Error(t, err)
