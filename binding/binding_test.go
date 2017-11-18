@@ -6,6 +6,7 @@ package binding
 
 import (
 	"bytes"
+	"encoding/json"
 	"mime/multipart"
 	"net/http"
 	"testing"
@@ -24,6 +25,10 @@ type FooStruct struct {
 type FooBarStruct struct {
 	FooStruct
 	Bar string `msgpack:"bar" json:"bar" form:"bar" xml:"bar" binding:"required"`
+}
+
+type FooStructUseNumber struct {
+	Foo interface{} `json:"foo" binding:"required"`
 }
 
 type FooBarStructForTimeType struct {
@@ -154,6 +159,20 @@ func TestBindingJSON(t *testing.T) {
 		JSON, "json",
 		"/", "/",
 		`{"foo": "bar"}`, `{"bar": "foo"}`)
+}
+
+func TestBindingJSONUseNumber(t *testing.T) {
+	testBodyBindingUseNumber(t,
+		JSON, "json",
+		"/", "/",
+		`{"foo": 123}`, `{"bar": "foo"}`)
+}
+
+func TestBindingJSONUseNumber2(t *testing.T) {
+	testBodyBindingUseNumber2(t,
+		JSON, "json",
+		"/", "/",
+		`{"foo": 123}`, `{"bar": "foo"}`)
 }
 
 func TestBindingForm(t *testing.T) {
@@ -841,6 +860,43 @@ func testBodyBinding(t *testing.T, b Binding, name, path, badPath, body, badBody
 	assert.Equal(t, obj.Foo, "bar")
 
 	obj = FooStruct{}
+	req = requestWithBody("POST", badPath, badBody)
+	err = JSON.Bind(req, &obj)
+	assert.Error(t, err)
+}
+
+func testBodyBindingUseNumber(t *testing.T, b Binding, name, path, badPath, body, badBody string) {
+	assert.Equal(t, b.Name(), name)
+
+	obj := FooStructUseNumber{}
+	req := requestWithBody("POST", path, body)
+	EnableDecoderUseNumber = true
+	err := b.Bind(req, &obj)
+	assert.NoError(t, err)
+	// we hope it is int64(123)
+	v, e := obj.Foo.(json.Number).Int64()
+	assert.NoError(t, e)
+	assert.Equal(t, v, int64(123))
+
+	obj = FooStructUseNumber{}
+	req = requestWithBody("POST", badPath, badBody)
+	err = JSON.Bind(req, &obj)
+	assert.Error(t, err)
+}
+
+func testBodyBindingUseNumber2(t *testing.T, b Binding, name, path, badPath, body, badBody string) {
+	assert.Equal(t, b.Name(), name)
+
+	obj := FooStructUseNumber{}
+	req := requestWithBody("POST", path, body)
+	EnableDecoderUseNumber = false
+	err := b.Bind(req, &obj)
+	assert.NoError(t, err)
+	// it will return float64(123) if not use EnableDecoderUseNumber
+	// maybe it is not hoped
+	assert.Equal(t, obj.Foo, float64(123))
+
+	obj = FooStructUseNumber{}
 	req = requestWithBody("POST", badPath, badBody)
 	err = JSON.Bind(req, &obj)
 	assert.Error(t, err)
