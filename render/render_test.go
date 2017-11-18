@@ -7,6 +7,7 @@ package render
 import (
 	"bytes"
 	"encoding/xml"
+	"errors"
 	"html/template"
 	"net/http"
 	"net/http/httptest"
@@ -168,6 +169,19 @@ b:
 	assert.NoError(t, err)
 	assert.Equal(t, w.Body.String(), "\"\\na : Easy!\\nb:\\n\\tc: 2\\n\\td: [3, 4]\\n\\t\"\n")
 	assert.Equal(t, w.Header().Get("Content-Type"), "application/x-yaml; charset=utf-8")
+}
+
+type fail struct{}
+
+// Hook MarshalYAML
+func (ft *fail) MarshalYAML() (interface{}, error) {
+	return nil, errors.New("fail")
+}
+
+func TestRenderYAMLFail(t *testing.T) {
+	w := httptest.NewRecorder()
+	err := (YAML{&fail{}}).Render(w)
+	assert.Error(t, err)
 }
 
 func TestRenderXML(t *testing.T) {
