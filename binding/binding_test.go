@@ -7,6 +7,8 @@ package binding
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
+	"io/ioutil"
 	"mime/multipart"
 	"net/http"
 	"testing"
@@ -484,6 +486,18 @@ func TestBindingProtoBuf(t *testing.T) {
 		string(data), string(data[1:]))
 }
 
+func TestBindingProtoBufFail(t *testing.T) {
+	test := &example.Test{
+		Label: proto.String("yes"),
+	}
+	data, _ := proto.Marshal(test)
+
+	testProtoBodyBindingFail(t,
+		ProtoBuf, "protobuf",
+		"/", "/",
+		string(data), string(data[1:]))
+}
+
 func TestBindingMsgPack(t *testing.T) {
 	test := FooStruct{
 		Foo: "bar",
@@ -955,6 +969,30 @@ func testProtoBodyBinding(t *testing.T, b Binding, name, path, badPath, body, ba
 	err := b.Bind(req, &obj)
 	assert.NoError(t, err)
 	assert.Equal(t, *obj.Label, "yes")
+
+	obj = example.Test{}
+	req = requestWithBody("POST", badPath, badBody)
+	req.Header.Add("Content-Type", MIMEPROTOBUF)
+	err = ProtoBuf.Bind(req, &obj)
+	assert.Error(t, err)
+}
+
+type hook struct{}
+
+func (h hook) Read([]byte) (int, error) {
+	return 0, errors.New("error")
+}
+
+func testProtoBodyBindingFail(t *testing.T, b Binding, name, path, badPath, body, badBody string) {
+	assert.Equal(t, b.Name(), name)
+
+	obj := example.Test{}
+	req := requestWithBody("POST", path, body)
+
+	req.Body = ioutil.NopCloser(&hook{})
+	req.Header.Add("Content-Type", MIMEPROTOBUF)
+	err := b.Bind(req, &obj)
+	assert.Error(t, err)
 
 	obj = example.Test{}
 	req = requestWithBody("POST", badPath, badBody)
