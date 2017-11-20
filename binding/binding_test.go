@@ -32,7 +32,7 @@ type FooStructUseNumber struct {
 }
 
 type FooBarStructForTimeType struct {
-	TimeFoo time.Time `form:"time_foo" time_format:"2006-01-02" time_utc:"1" time_location:"asia/chongqing"`
+	TimeFoo time.Time `form:"time_foo" time_format:"2006-01-02" time_utc:"1" time_location:"Asia/Chongqing"`
 	TimeBar time.Time `form:"time_bar" time_format:"2006-01-02" time_utc:"1"`
 }
 
@@ -575,12 +575,11 @@ func testFormBindingForTime(t *testing.T, method, path, badPath, body, badBody s
 	}
 	err := b.Bind(req, &obj)
 
-	// todo: fix
-	// assert.NoError(t, err)
-	// assert.Equal(t, obj.TimeFoo.Unix(), int64(1510675200))
-	// assert.Equal(t, obj.TimeFoo.Location().String(), "asia/chongqing")
-	// assert.Equal(t, obj.TimeBar.Unix(), int64(-62135596800))
-	// assert.Equal(t, obj.TimeBar.Location().String(), "UTC")
+	assert.NoError(t, err)
+	assert.Equal(t, obj.TimeFoo.Unix(), int64(1510675200))
+	assert.Equal(t, obj.TimeFoo.Location().String(), "Asia/Chongqing")
+	assert.Equal(t, obj.TimeBar.Unix(), int64(-62135596800))
+	assert.Equal(t, obj.TimeBar.Location().String(), "UTC")
 
 	obj = FooBarStructForTimeType{}
 	req = requestWithBody(method, badPath, badBody)
