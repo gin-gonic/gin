@@ -39,16 +39,12 @@ var modeName = DebugMode
 
 func init() {
 	mode := os.Getenv(ENV_GIN_MODE)
-	if mode == "" {
-		SetMode(DebugMode)
-	} else {
-		SetMode(mode)
-	}
+	SetMode(mode)
 }
 
 func SetMode(value string) {
 	switch value {
-	case DebugMode:
+	case DebugMode, "":
 		ginMode = debugCode
 	case ReleaseMode:
 		ginMode = releaseCode
