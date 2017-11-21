@@ -685,9 +685,9 @@ func TestContextRenderHTML(t *testing.T) {
 
 	c.HTML(201, "t", H{"name": "alexandernyquist"})
 
-	assert.Equal(t, w.Code, 201)
-	assert.Equal(t, w.Body.String(), "Hello alexandernyquist")
-	assert.Equal(t, w.HeaderMap.Get("Content-Type"), "text/html; charset=utf-8")
+	assert.Equal(t, 201, w.Code)
+	assert.Equal(t, "Hello alexandernyquist", w.Body.String())
+	assert.Equal(t, "text/html; charset=utf-8", w.HeaderMap.Get("Content-Type"))
 }
 
 func TestContextRenderHTML2(t *testing.T) {
@@ -709,9 +709,9 @@ func TestContextRenderHTML2(t *testing.T) {
 
 	c.HTML(201, "t", H{"name": "alexandernyquist"})
 
-	assert.Equal(t, w.Code, 201)
-	assert.Equal(t, w.Body.String(), "Hello alexandernyquist")
-	assert.Equal(t, w.HeaderMap.Get("Content-Type"), "text/html; charset=utf-8")
+	assert.Equal(t, 201, w.Code)
+	assert.Equal(t, "Hello alexandernyquist", w.Body.String())
+	assert.Equal(t, "text/html; charset=utf-8", w.HeaderMap.Get("Content-Type"))
 }
 
 // Tests that no HTML is rendered if code is 204
