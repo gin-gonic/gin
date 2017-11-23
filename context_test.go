@@ -677,9 +677,6 @@ func TestContextRenderHTML(t *testing.T) {
 	w := httptest.NewRecorder()
 	c, router := CreateTestContext(w)
 
-	router.addRoute("GET", "/", HandlersChain{func(_ *Context) {}})
-	assert.Len(t, router.trees, 1)
-
 	templ := template.Must(template.New("t").Parse(`Hello {{.name}}`))
 	router.SetHTMLTemplate(templ)
 
