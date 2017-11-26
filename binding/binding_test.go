@@ -11,7 +11,6 @@ import (
 	"io/ioutil"
 	"mime/multipart"
 	"net/http"
-	"strings"
 	"testing"
 	"time"
 
@@ -584,11 +583,27 @@ func TestFormBindingFail(t *testing.T) {
 	assert.Equal(t, b.Name(), "form")
 
 	obj := FooBarStruct{}
-	req := &http.Request{
-		Method: "POST",
-		Header: http.Header(map[string][]string{}),
-		Body:   ioutil.NopCloser(strings.NewReader("body")),
-	}
+	req, _ := http.NewRequest("POST", "/", nil)
+	err := b.Bind(req, &obj)
+	assert.Error(t, err)
+}
+
+func TestFormPostBindingFail(t *testing.T) {
+	b := FormPost
+	assert.Equal(t, b.Name(), "form-urlencoded")
+
+	obj := FooBarStruct{}
+	req, _ := http.NewRequest("POST", "/", nil)
+	err := b.Bind(req, &obj)
+	assert.Error(t, err)
+}
+
+func TestFormMultipartBindingFail(t *testing.T) {
+	b := FormMultipart
+	assert.Equal(t, b.Name(), "multipart/form-data")
+
+	obj := FooBarStruct{}
+	req, _ := http.NewRequest("POST", "/", nil)
 	err := b.Bind(req, &obj)
 	assert.Error(t, err)
 }
