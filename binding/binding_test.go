@@ -11,6 +11,7 @@ import (
 	"io/ioutil"
 	"mime/multipart"
 	"net/http"
+	"strings"
 	"testing"
 	"time"
 
@@ -575,6 +576,20 @@ func testFormBinding(t *testing.T, method, path, badPath, body, badBody string) 
 	obj = FooBarStruct{}
 	req = requestWithBody(method, badPath, badBody)
 	err = JSON.Bind(req, &obj)
+	assert.Error(t, err)
+}
+
+func TestFormBindingFail(t *testing.T) {
+	b := Form
+	assert.Equal(t, b.Name(), "form")
+
+	obj := FooBarStruct{}
+	req := &http.Request{
+		Method: "POST",
+		Header: http.Header(map[string][]string{}),
+		Body:   ioutil.NopCloser(strings.NewReader("body")),
+	}
+	err := b.Bind(req, &obj)
 	assert.Error(t, err)
 }
 
