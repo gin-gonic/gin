@@ -21,8 +21,8 @@ type testStruct struct {
 }
 
 func (t *testStruct) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	assert.Equal(t.T, req.Method, "POST")
-	assert.Equal(t.T, req.URL.Path, "/path")
+	assert.Equal(t.T, "POST", req.Method)
+	assert.Equal(t.T, "/path", req.URL.Path)
 	w.WriteHeader(500)
 	fmt.Fprint(w, "hello")
 }
@@ -31,50 +31,50 @@ func TestWrap(t *testing.T) {
 	router := New()
 	router.POST("/path", WrapH(&testStruct{t}))
 	router.GET("/path2", WrapF(func(w http.ResponseWriter, req *http.Request) {
-		assert.Equal(t, req.Method, "GET")
-		assert.Equal(t, req.URL.Path, "/path2")
+		assert.Equal(t, "GET", req.Method)
+		assert.Equal(t, "/path2", req.URL.Path)
 		w.WriteHeader(400)
 		fmt.Fprint(w, "hola!")
 	}))
 
 	w := performRequest(router, "POST", "/path")
-	assert.Equal(t, w.Code, 500)
-	assert.Equal(t, w.Body.String(), "hello")
+	assert.Equal(t, 500, w.Code)
+	assert.Equal(t, "hello", w.Body.String())
 
 	w = performRequest(router, "GET", "/path2")
-	assert.Equal(t, w.Code, 400)
-	assert.Equal(t, w.Body.String(), "hola!")
+	assert.Equal(t, 400, w.Code)
+	assert.Equal(t, "hola!", w.Body.String())
 }
 
 func TestLastChar(t *testing.T) {
-	assert.Equal(t, lastChar("hola"), uint8('a'))
-	assert.Equal(t, lastChar("adios"), uint8('s'))
+	assert.Equal(t, uint8('a'), lastChar("hola"))
+	assert.Equal(t, uint8('s'), lastChar("adios"))
 	assert.Panics(t, func() { lastChar("") })
 }
 
 func TestParseAccept(t *testing.T) {
 	parts := parseAccept("text/html , application/xhtml+xml,application/xml;q=0.9,  */* ;q=0.8")
 	assert.Len(t, parts, 4)
-	assert.Equal(t, parts[0], "text/html")
-	assert.Equal(t, parts[1], "application/xhtml+xml")
-	assert.Equal(t, parts[2], "application/xml")
-	assert.Equal(t, parts[3], "*/*")
+	assert.Equal(t, "text/html", parts[0])
+	assert.Equal(t, "application/xhtml+xml", parts[1])
+	assert.Equal(t, "application/xml", parts[2])
+	assert.Equal(t, "*/*", parts[3])
 }
 
 func TestChooseData(t *testing.T) {
 	A := "a"
 	B := "b"
-	assert.Equal(t, chooseData(A, B), A)
-	assert.Equal(t, chooseData(nil, B), B)
+	assert.Equal(t, A, chooseData(A, B))
+	assert.Equal(t, B, chooseData(nil, B))
 	assert.Panics(t, func() { chooseData(nil, nil) })
 }
 
 func TestFilterFlags(t *testing.T) {
 	result := filterFlags("text/html ")
-	assert.Equal(t, result, "text/html")
+	assert.Equal(t, "text/html", result)
 
 	result = filterFlags("text/html;")
-	assert.Equal(t, result, "text/html")
+	assert.Equal(t, "text/html", result)
 }
 
 func TestFunctionName(t *testing.T) {
@@ -86,16 +86,16 @@ func somefunction() {
 }
 
 func TestJoinPaths(t *testing.T) {
-	assert.Equal(t, joinPaths("", ""), "")
-	assert.Equal(t, joinPaths("", "/"), "/")
-	assert.Equal(t, joinPaths("/a", ""), "/a")
-	assert.Equal(t, joinPaths("/a/", ""), "/a/")
-	assert.Equal(t, joinPaths("/a/", "/"), "/a/")
-	assert.Equal(t, joinPaths("/a", "/"), "/a/")
-	assert.Equal(t, joinPaths("/a", "/hola"), "/a/hola")
-	assert.Equal(t, joinPaths("/a/", "/hola"), "/a/hola")
-	assert.Equal(t, joinPaths("/a/", "/hola/"), "/a/hola/")
-	assert.Equal(t, joinPaths("/a/", "/hola//"), "/a/hola/")
+	assert.Equal(t, "", joinPaths("", ""))
+	assert.Equal(t, "/", joinPaths("", "/"))
+	assert.Equal(t, "/a", joinPaths("/a", ""))
+	assert.Equal(t, "/a/", joinPaths("/a/", ""))
+	assert.Equal(t, "/a/", joinPaths("/a/", "/"))
+	assert.Equal(t, "/a/", joinPaths("/a", "/"))
+	assert.Equal(t, "/a/hola", joinPaths("/a", "/hola"))
+	assert.Equal(t, "/a/hola", joinPaths("/a/", "/hola"))
+	assert.Equal(t, "/a/hola/", joinPaths("/a/", "/hola/"))
+	assert.Equal(t, "/a/hola/", joinPaths("/a/", "/hola//"))
 }
 
 type bindTestStruct struct {
@@ -113,8 +113,8 @@ func TestBindMiddleware(t *testing.T) {
 	})
 	performRequest(router, "GET", "/?foo=hola&bar=10")
 	assert.True(t, called)
-	assert.Equal(t, value.Foo, "hola")
-	assert.Equal(t, value.Bar, 10)
+	assert.Equal(t, "hola", value.Foo)
+	assert.Equal(t, 10, value.Bar)
 
 	called = false
 	performRequest(router, "GET", "/?foo=hola&bar=1")
