@@ -82,21 +82,21 @@ func TestLogger(t *testing.T) {
 }
 
 func TestColorForMethod(t *testing.T) {
-	assert.Equal(t, colorForMethod("GET"), string([]byte{27, 91, 57, 55, 59, 52, 52, 109}), "get should be blue")
-	assert.Equal(t, colorForMethod("POST"), string([]byte{27, 91, 57, 55, 59, 52, 54, 109}), "post should be cyan")
-	assert.Equal(t, colorForMethod("PUT"), string([]byte{27, 91, 57, 55, 59, 52, 51, 109}), "put should be yellow")
-	assert.Equal(t, colorForMethod("DELETE"), string([]byte{27, 91, 57, 55, 59, 52, 49, 109}), "delete should be red")
-	assert.Equal(t, colorForMethod("PATCH"), string([]byte{27, 91, 57, 55, 59, 52, 50, 109}), "patch should be green")
-	assert.Equal(t, colorForMethod("HEAD"), string([]byte{27, 91, 57, 55, 59, 52, 53, 109}), "head should be magenta")
-	assert.Equal(t, colorForMethod("OPTIONS"), string([]byte{27, 91, 57, 48, 59, 52, 55, 109}), "options should be white")
-	assert.Equal(t, colorForMethod("TRACE"), string([]byte{27, 91, 48, 109}), "trace is not defined and should be the reset color")
+	assert.Equal(t, string([]byte{27, 91, 57, 55, 59, 52, 52, 109}), colorForMethod("GET"), "get should be blue")
+	assert.Equal(t, string([]byte{27, 91, 57, 55, 59, 52, 54, 109}), colorForMethod("POST"), "post should be cyan")
+	assert.Equal(t, string([]byte{27, 91, 57, 55, 59, 52, 51, 109}), colorForMethod("PUT"), "put should be yellow")
+	assert.Equal(t, string([]byte{27, 91, 57, 55, 59, 52, 49, 109}), colorForMethod("DELETE"), "delete should be red")
+	assert.Equal(t, string([]byte{27, 91, 57, 55, 59, 52, 50, 109}), colorForMethod("PATCH"), "patch should be green")
+	assert.Equal(t, string([]byte{27, 91, 57, 55, 59, 52, 53, 109}), colorForMethod("HEAD"), "head should be magenta")
+	assert.Equal(t, string([]byte{27, 91, 57, 48, 59, 52, 55, 109}), colorForMethod("OPTIONS"), "options should be white")
+	assert.Equal(t, string([]byte{27, 91, 48, 109}), colorForMethod("TRACE"), "trace is not defined and should be the reset color")
 }
 
 func TestColorForStatus(t *testing.T) {
-	assert.Equal(t, colorForStatus(200), string([]byte{27, 91, 57, 55, 59, 52, 50, 109}), "2xx should be green")
-	assert.Equal(t, colorForStatus(301), string([]byte{27, 91, 57, 48, 59, 52, 55, 109}), "3xx should be white")
-	assert.Equal(t, colorForStatus(404), string([]byte{27, 91, 57, 55, 59, 52, 51, 109}), "4xx should be yellow")
-	assert.Equal(t, colorForStatus(2), string([]byte{27, 91, 57, 55, 59, 52, 49, 109}), "other things should be red")
+	assert.Equal(t, string([]byte{27, 91, 57, 55, 59, 52, 50, 109}), colorForStatus(200), "2xx should be green")
+	assert.Equal(t, string([]byte{27, 91, 57, 48, 59, 52, 55, 109}), colorForStatus(301), "3xx should be white")
+	assert.Equal(t, string([]byte{27, 91, 57, 55, 59, 52, 51, 109}), colorForStatus(404), "4xx should be yellow")
+	assert.Equal(t, string([]byte{27, 91, 57, 55, 59, 52, 49, 109}), colorForStatus(2), "other things should be red")
 }
 
 func TestErrorLogger(t *testing.T) {
