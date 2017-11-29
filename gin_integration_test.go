@@ -94,7 +94,7 @@ func TestUnixSocket(t *testing.T) {
 	c, err := net.Dial("unix", "/tmp/unix_unit_test")
 	assert.NoError(t, err)
 
-	fmt.Fprintf(c, "GET /example HTTP/1.0\r\n\r\n")
+	fmt.Fprint(c, "GET /example HTTP/1.0\r\n\r\n")
 	scanner := bufio.NewScanner(c)
 	var response string
 	for scanner.Scan() {
