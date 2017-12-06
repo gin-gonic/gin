@@ -992,7 +992,7 @@ func TestContextNegotiationNotSupport(t *testing.T) {
 		Offered: []string{MIMEPOSTForm},
 	})
 
-	assert.Equal(t, 406, w.Code)
+	assert.Equal(t, 200, w.Code)
 	assert.Equal(t, c.index, abortIndex)
 	assert.True(t, c.IsAborted())
 }
@@ -1054,7 +1054,7 @@ func TestContextAbortWithStatus(t *testing.T) {
 
 	assert.Equal(t, abortIndex, c.index)
 	assert.Equal(t, 401, c.Writer.Status())
-	assert.Equal(t, 401, w.Code)
+	assert.Equal(t, 200, w.Code)
 	assert.True(t, c.IsAborted())
 }
 
@@ -1141,7 +1141,7 @@ func TestContextAbortWithError(t *testing.T) {
 
 	c.AbortWithError(401, errors.New("bad input")).SetMeta("some input")
 
-	assert.Equal(t, 401, w.Code)
+	assert.Equal(t, 200, w.Code)
 	assert.Equal(t, abortIndex, c.index)
 	assert.True(t, c.IsAborted())
 }
