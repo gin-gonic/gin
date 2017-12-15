@@ -1071,7 +1071,7 @@ func main() {
 
 ### Goroutines inside a middleware
 
-When starting inside a middleware or handler, you **SHOULD NOT** use the original context inside it, you have to use a read-only copy.
+When starting new Goroutines inside a middleware or handler, you **SHOULD NOT** use the original context inside it, you have to use a read-only copy.
 
 ```go
 func main() {
