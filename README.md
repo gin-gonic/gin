@@ -117,7 +117,7 @@ $ go get github.com/kardianos/govendor
 2. Create your project folder and `cd` inside
 
 ```sh
-$ mkdir -p ~/go/src/github.com/myusername/project && cd "$_"
+$ mkdir -p $GOPATH/src/github.com/myusername/project && cd "$_"
 ```
 
 3. Vendor init your project and add gin
@@ -1071,7 +1071,7 @@ func main() {
 
 ### Goroutines inside a middleware
 
-When starting inside a middleware or handler, you **SHOULD NOT** use the original context inside it, you have to use a read-only copy.
+When starting new Goroutines inside a middleware or handler, you **SHOULD NOT** use the original context inside it, you have to use a read-only copy.
 
 ```go
 func main() {
