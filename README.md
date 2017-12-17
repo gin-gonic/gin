@@ -117,7 +117,7 @@ $ go get github.com/kardianos/govendor
 2. Create your project folder and `cd` inside
 
 ```sh
-$ mkdir -p ~/go/src/github.com/myusername/project && cd "$_"
+$ mkdir -p $GOPATH/src/github.com/myusername/project && cd "$_"
 ```
 
 3. Vendor init your project and add gin
