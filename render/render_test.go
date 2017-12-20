@@ -111,9 +111,8 @@ func (h xmlmap) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
 			return err
 		}
 	}
-	err := e.EncodeToken(xml.EndElement{Name: start.Name})
 
-	return err
+	return e.EncodeToken(xml.EndElement{Name: start.Name})
 }
 
 func TestRenderXML(t *testing.T) {
