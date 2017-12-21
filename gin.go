@@ -21,6 +21,7 @@ const (
 )
 
 var (
+	default400Body   = []byte("400 parameter invalid")
 	default404Body   = []byte("404 page not found")
 	default405Body   = []byte("405 method not allowed")
 	defaultAppEngine bool
@@ -346,6 +347,13 @@ func (engine *Engine) handleHTTPRequest(c *Context) {
 			root := t[i].root
 			// Find route in tree
 			handlers, params, tsr := root.getValue(path, c.Params, unescape)
+			// Check parameter in path
+			for _, item := range params {
+				if ":"+item.Key == item.Value {
+					serveError(c, http.StatusBadRequest, default400Body)
+					return
+				}
+			}
 			if handlers != nil {
 				c.handlers = handlers
 				c.Params = params
