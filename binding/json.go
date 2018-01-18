@@ -10,9 +10,7 @@ import (
 	"github.com/gin-gonic/gin/json"
 )
 
-var (
-	EnableDecoderUseNumber = false
-)
+var EnableDecoderUseNumber = false
 
 type jsonBinding struct{}
 

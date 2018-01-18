@@ -22,16 +22,16 @@ func TestBasicAuth(t *testing.T) {
 
 	assert.Len(t, pairs, 3)
 	assert.Contains(t, pairs, authPair{
-		User:  "bar",
-		Value: "Basic YmFyOmZvbw==",
+		user:  "bar",
+		value: "Basic YmFyOmZvbw==",
 	})
 	assert.Contains(t, pairs, authPair{
-		User:  "foo",
-		Value: "Basic Zm9vOmJhcg==",
+		user:  "foo",
+		value: "Basic Zm9vOmJhcg==",
 	})
 	assert.Contains(t, pairs, authPair{
-		User:  "admin",
-		Value: "Basic YWRtaW46cGFzc3dvcmQ=",
+		user:  "admin",
+		value: "Basic YWRtaW46cGFzc3dvcmQ=",
 	})
 }
 
