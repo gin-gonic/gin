@@ -1190,7 +1190,7 @@ func main() {
 
 ### Run multiple service using Gin
 
-See the [question](https://github.com/gin-gonic/gin/issues/346) and try the folling example:
+See the [question](https://github.com/gin-gonic/gin/issues/346) and try the following example:
 
 [embedmd]:# (examples/multiple-service/main.go go)
 ```go
