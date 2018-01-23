@@ -133,3 +133,22 @@ func TestWithHttptestWithAutoSelectedPort(t *testing.T) {
 
 // 	testRequest(t, "http://localhost:8033/example")
 // }
+
+func TestParameterInPath(t *testing.T) {
+	router := New()
+
+	go func() {
+		router.GET("/user/:name", func(c *Context) { c.String(http.StatusOK, "it worked") })
+		assert.NoError(t, router.Run(":4123"))
+	}()
+	// have to wait for the goroutine to start and run the server
+	// otherwise the main thread will complete
+	time.Sleep(5 * time.Millisecond)
+
+	resp, err := http.Get("http://localhost:4123/user/:name")
+	assert.NoError(t, err)
+	defer resp.Body.Close()
+
+	assert.Equal(t, "400 Bad Request", resp.Status, "should get a 400")
+	testRequest(t, "http://localhost:4123/user/gin")
+}
