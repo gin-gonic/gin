@@ -49,16 +49,6 @@ type RoutesInfo []RouteInfo
 // Create an instance of Engine, by using New() or Default()
 type Engine struct {
 	RouterGroup
-	delims           render.Delims
-	secureJsonPrefix string
-	HTMLRender       render.HTMLRender
-	FuncMap          template.FuncMap
-	allNoRoute       HandlersChain
-	allNoMethod      HandlersChain
-	noRoute          HandlersChain
-	noMethod         HandlersChain
-	pool             sync.Pool
-	trees            methodTrees
 
 	// Enables automatic redirection if the current route can't be matched but a
 	// handler for the path with (without) the trailing slash exists.
@@ -102,6 +92,17 @@ type Engine struct {
 	// Value of 'maxMemory' param that is given to http.Request's ParseMultipartForm
 	// method call.
 	MaxMultipartMemory int64
+
+	delims           render.Delims
+	secureJsonPrefix string
+	HTMLRender       render.HTMLRender
+	FuncMap          template.FuncMap
+	allNoRoute       HandlersChain
+	allNoMethod      HandlersChain
+	noRoute          HandlersChain
+	noMethod         HandlersChain
+	pool             sync.Pool
+	trees            methodTrees
 }
 
 var _ IRouter = &Engine{}
@@ -159,11 +160,14 @@ func (engine *Engine) Delims(left, right string) *Engine {
 	return engine
 }
 
+// SecureJsonPrefix sets the secureJsonPrefix used in Context.SecureJSON.
 func (engine *Engine) SecureJsonPrefix(prefix string) *Engine {
 	engine.secureJsonPrefix = prefix
 	return engine
 }
 
+// LoadHTMLGlob loads HTML files identified by glob pattern
+// and associates the result with HTML renderer.
 func (engine *Engine) LoadHTMLGlob(pattern string) {
 	left := engine.delims.Left
 	right := engine.delims.Right
@@ -178,6 +182,8 @@ func (engine *Engine) LoadHTMLGlob(pattern string) {
 	engine.SetHTMLTemplate(templ)
 }
 
+// LoadHTMLFiles loads a slice of HTML files
+// and associates the result with HTML renderer.
 func (engine *Engine) LoadHTMLFiles(files ...string) {
 	if IsDebugging() {
 		engine.HTMLRender = render.HTMLDebug{Files: files, FuncMap: engine.FuncMap, Delims: engine.delims}
@@ -188,6 +194,7 @@ func (engine *Engine) LoadHTMLFiles(files ...string) {
 	engine.SetHTMLTemplate(templ)
 }
 
+// SetHTMLTemplate associate a template with HTML renderer.
 func (engine *Engine) SetHTMLTemplate(templ *template.Template) {
 	if len(engine.trees) > 0 {
 		debugPrintWARNINGSetHTMLTemplate()
@@ -196,6 +203,7 @@ func (engine *Engine) SetHTMLTemplate(templ *template.Template) {
 	engine.HTMLRender = render.HTMLProduction{Template: templ.Funcs(engine.FuncMap)}
 }
 
+// SetFuncMap sets the FuncMap used for template.FuncMap.
 func (engine *Engine) SetFuncMap(funcMap template.FuncMap) {
 	engine.FuncMap = funcMap
 }
