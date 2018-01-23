@@ -435,7 +435,7 @@ func main() {
         c.String(200, "pong")
     })
 
-    r.Run(":8080")
+    router.Run(":8080")
 }
 ```
 
