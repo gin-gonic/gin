@@ -9,7 +9,7 @@ install: deps
 
 .PHONY: test
 test:
-	go test -v -covermode=count -coverprofile=coverage.out
+	sh coverage.sh
 
 .PHONY: fmt
 fmt:
