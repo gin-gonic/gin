@@ -19,7 +19,7 @@ func init() {
 }
 
 // IsDebugging returns true if the framework is running in debug mode.
-// Use SetMode(gin.Release) to disable debug mode.
+// Use SetMode(gin.ReleaseMode) to disable debug mode.
 func IsDebugging() bool {
 	return ginMode == debugCode
 }

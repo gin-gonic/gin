@@ -87,13 +87,13 @@ const (
 
 type node struct {
 	path      string
-	wildChild bool
-	nType     nodeType
-	maxParams uint8
 	indices   string
 	children  []*node
 	handlers  HandlersChain
 	priority  uint32
+	nType     nodeType
+	maxParams uint8
+	wildChild bool
 }
 
 // increments priority of the given child and reorders if necessary.
@@ -384,7 +384,7 @@ walk: // Outer loop for walking the tree
 					// Nothing found.
 					// We can recommend to redirect to the same URL without a
 					// trailing slash if a leaf exists for that path.
-					tsr = (path == "/" && n.handlers != nil)
+					tsr = path == "/" && n.handlers != nil
 					return
 				}
 
@@ -424,7 +424,7 @@ walk: // Outer loop for walking the tree
 						}
 
 						// ... but we can't
-						tsr = (len(path) == end+1)
+						tsr = len(path) == end+1
 						return
 					}
 
@@ -435,7 +435,7 @@ walk: // Outer loop for walking the tree
 						// No handle found. Check if a handle for this path + a
 						// trailing slash exists for TSR recommendation
 						n = n.children[0]
-						tsr = (n.path == "/" && n.handlers != nil)
+						tsr = n.path == "/" && n.handlers != nil
 					}
 
 					return
@@ -530,7 +530,7 @@ func (n *node) findCaseInsensitivePath(path string, fixTrailingSlash bool) (ciPa
 
 				// Nothing found. We can recommend to redirect to the same URL
 				// without a trailing slash if a leaf exists for that path
-				found = (fixTrailingSlash && path == "/" && n.handlers != nil)
+				found = fixTrailingSlash && path == "/" && n.handlers != nil
 				return
 			}
 
