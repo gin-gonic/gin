@@ -117,7 +117,7 @@ $ go get github.com/kardianos/govendor
 2. Create your project folder and `cd` inside
 
 ```sh
-$ mkdir -p ~/go/src/github.com/myusername/project && cd "$_"
+$ mkdir -p $GOPATH/src/github.com/myusername/project && cd "$_"
 ```
 
 3. Vendor init your project and add gin
@@ -385,7 +385,7 @@ func main() {
 	r := gin.New()
 
 	// Global middleware
-	// Logger middleware will write the logs to gin.DefaultWriter even you set with GIN_MODE=release.
+	// Logger middleware will write the logs to gin.DefaultWriter even if you set with GIN_MODE=release.
 	// By default gin.DefaultWriter = os.Stdout
 	r.Use(gin.Logger())
 
@@ -435,7 +435,7 @@ func main() {
         c.String(200, "pong")
     })
 
-    r.Run(":8080")
+    router.Run(":8080")
 }
 ```
 
@@ -1071,7 +1071,7 @@ func main() {
 
 ### Goroutines inside a middleware
 
-When starting inside a middleware or handler, you **SHOULD NOT** use the original context inside it, you have to use a read-only copy.
+When starting new Goroutines inside a middleware or handler, you **SHOULD NOT** use the original context inside it, you have to use a read-only copy.
 
 ```go
 func main() {
@@ -1190,7 +1190,7 @@ func main() {
 
 ### Run multiple service using Gin
 
-See the [question](https://github.com/gin-gonic/gin/issues/346) and try the folling example:
+See the [question](https://github.com/gin-gonic/gin/issues/346) and try the following example:
 
 [embedmd]:# (examples/multiple-service/main.go go)
 ```go

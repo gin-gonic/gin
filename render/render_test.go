@@ -148,10 +148,8 @@ func (h xmlmap) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
 			return err
 		}
 	}
-	if err := e.EncodeToken(xml.EndElement{Name: start.Name}); err != nil {
-		return err
-	}
-	return nil
+
+	return e.EncodeToken(xml.EndElement{Name: start.Name})
 }
 
 func TestRenderYAML(t *testing.T) {
