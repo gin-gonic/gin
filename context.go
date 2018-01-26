@@ -33,9 +33,7 @@ const (
 	MIMEMultipartPOSTForm = binding.MIMEMultipartPOSTForm
 )
 
-const (
-	abortIndex int8 = math.MaxInt8 / 2
-)
+const abortIndex int8 = math.MaxInt8 / 2
 
 // Context is the most important part of gin. It allows us to pass variables between middleware,
 // manage the flow, validate the JSON of a request and render a JSON response for example.
@@ -105,8 +103,7 @@ func (c *Context) Handler() HandlerFunc {
 // See example in GitHub.
 func (c *Context) Next() {
 	c.index++
-	s := int8(len(c.handlers))
-	for ; c.index < s; c.index++ {
+	for s := int8(len(c.handlers)); c.index < s; c.index++ {
 		c.handlers[c.index](c)
 	}
 }
@@ -452,10 +449,10 @@ func (c *Context) SaveUploadedFile(file *multipart.FileHeader, dst string) error
 // Depending the "Content-Type" header different bindings are used:
 //     "application/json" --> JSON binding
 //     "application/xml"  --> XML binding
-// otherwise --> returns an error
+// otherwise --> returns an error.
 // It parses the request's body as JSON if Content-Type == "application/json" using JSON or XML as a JSON input.
 // It decodes the json payload into the struct specified as a pointer.
-// It will writes a 400 error and sets Content-Type header "text/plain" in the response if input is not valid.
+// It writes a 400 error and sets Content-Type header "text/plain" in the response if input is not valid.
 func (c *Context) Bind(obj interface{}) error {
 	b := binding.Default(c.Request.Method, c.ContentType())
 	return c.MustBindWith(obj, b)
@@ -521,11 +518,11 @@ func (c *Context) ClientIP() string {
 			clientIP = clientIP[0:index]
 		}
 		clientIP = strings.TrimSpace(clientIP)
-		if len(clientIP) > 0 {
+		if clientIP != "" {
 			return clientIP
 		}
 		clientIP = strings.TrimSpace(c.requestHeader("X-Real-Ip"))
-		if len(clientIP) > 0 {
+		if clientIP != "" {
 			return clientIP
 		}
 	}
@@ -588,7 +585,7 @@ func (c *Context) Status(code int) {
 // It writes a header in the response.
 // If value == "", this method removes the header `c.Writer.Header().Del(key)`
 func (c *Context) Header(key, value string) {
-	if len(value) == 0 {
+	if value == "" {
 		c.Writer.Header().Del(key)
 	} else {
 		c.Writer.Header().Set(key, value)

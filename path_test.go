@@ -67,8 +67,8 @@ var cleanTests = []struct {
 
 func TestPathClean(t *testing.T) {
 	for _, test := range cleanTests {
-		assert.Equal(t, cleanPath(test.path), test.result)
-		assert.Equal(t, cleanPath(test.result), test.result)
+		assert.Equal(t, test.result, cleanPath(test.path))
+		assert.Equal(t, test.result, cleanPath(test.result))
 	}
 }
 

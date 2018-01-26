@@ -117,7 +117,7 @@ $ go get github.com/kardianos/govendor
 2. Create your project folder and `cd` inside
 
 ```sh
-$ mkdir -p ~/go/src/github.com/myusername/project && cd "$_"
+$ mkdir -p $GOPATH/src/github.com/myusername/project && cd "$_"
 ```
 
 3. Vendor init your project and add gin
@@ -385,7 +385,7 @@ func main() {
 	r := gin.New()
 
 	// Global middleware
-	// Logger middleware will write the logs to gin.DefaultWriter even you set with GIN_MODE=release.
+	// Logger middleware will write the logs to gin.DefaultWriter even if you set with GIN_MODE=release.
 	// By default gin.DefaultWriter = os.Stdout
 	r.Use(gin.Logger())
 
@@ -435,7 +435,7 @@ func main() {
         c.String(200, "pong")
     })
 
-    r.Run(":8080")
+    router.Run(":8080")
 }
 ```
 
@@ -472,7 +472,7 @@ func main() {
 	// Example for binding JSON ({"user": "manu", "password": "123"})
 	router.POST("/loginJSON", func(c *gin.Context) {
 		var json Login
-		if err = c.ShouldBindJSON(&json); err == nil {
+		if err := c.ShouldBindJSON(&json); err == nil {
 			if json.User == "manu" && json.Password == "123" {
 				c.JSON(http.StatusOK, gin.H{"status": "you are logged in"})
 			} else {
@@ -540,7 +540,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
-	validator "gopkg.in/go-playground/validator.v8"
+	"gopkg.in/go-playground/validator.v8"
 )
 
 type Booking struct {
@@ -1071,7 +1071,7 @@ func main() {
 
 ### Goroutines inside a middleware
 
-When starting inside a middleware or handler, you **SHOULD NOT** use the original context inside it, you have to use a read-only copy.
+When starting new Goroutines inside a middleware or handler, you **SHOULD NOT** use the original context inside it, you have to use a read-only copy.
 
 ```go
 func main() {
@@ -1133,7 +1133,7 @@ func main() {
 
 example for 1-line LetsEncrypt HTTPS servers.
 
-[embedmd]:# (examples/auto-tls/example1.go go)
+[embedmd]:# (examples/auto-tls/example1/main.go go)
 ```go
 package main
 
@@ -1158,7 +1158,7 @@ func main() {
 
 example for custom autocert manager.
 
-[embedmd]:# (examples/auto-tls/example2.go go)
+[embedmd]:# (examples/auto-tls/example2/main.go go)
 ```go
 package main
 
@@ -1190,7 +1190,7 @@ func main() {
 
 ### Run multiple service using Gin
 
-See the [question](https://github.com/gin-gonic/gin/issues/346) and try the folling example:
+See the [question](https://github.com/gin-gonic/gin/issues/346) and try the following example:
 
 [embedmd]:# (examples/multiple-service/main.go go)
 ```go
@@ -1341,6 +1341,52 @@ func main() {
 		log.Fatal("Server Shutdown:", err)
 	}
 	log.Println("Server exiting")
+}
+```
+
+## Testing
+
+The `net/http/httptest` package is preferable way for HTTP testing.
+
+```go
+package main
+
+func setupRouter() *gin.Engine {
+	r := gin.Default()
+	r.GET("/ping", func(c *gin.Context) {
+		c.String(200, "pong")
+	})
+	return r
+}
+
+func main() {
+	r := setupRouter()
+	r.Run(":8080")
+}
+```
+
+Test for code example above:
+
+```go
+package main
+
+import (
+	"net/http"
+	"net/http/httptest"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+)
+
+func TestPingRoute(t *testing.T) {
+	router := setupRouter()
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/ping", nil)
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, 200, w.Code)
+	assert.Equal(t, "pong", w.Body.String())
 }
 ```
 
