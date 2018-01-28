@@ -9,6 +9,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"path"
 	"sync"
 
 	"github.com/gin-gonic/gin/render"
@@ -405,7 +406,13 @@ func serveError(c *Context, code int, defaultMessage []byte) {
 
 func redirectTrailingSlash(c *Context) {
 	req := c.Request
-	path := req.URL.Path
+	prefix := path.Clean(c.Request.Header.Get("X-Forwarded-Prefix"))
+	path := ""
+	if prefix == "." {
+		path = req.URL.Path
+	} else {
+		path = prefix + "/" + req.URL.Path
+	}
 	code := 301 // Permanent redirect, request with GET method
 	if req.Method != "GET" {
 		code = 307
