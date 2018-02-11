@@ -94,6 +94,11 @@ func (c *Context) Handler() HandlerFunc {
 	return c.handlers.Last()
 }
 
+// GetRequest returns the raw http.Request.
+func (c *Context) GetRequest() *http.Request {
+	return c.Request
+}
+
 /************************************/
 /*********** FLOW CONTROL ***********/
 /************************************/

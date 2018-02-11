@@ -332,6 +332,14 @@ func TestContextHandler(t *testing.T) {
 	assert.Equal(t, reflect.ValueOf(handlerTest).Pointer(), reflect.ValueOf(c.Handler()).Pointer())
 }
 
+func TestContextGetRequest(t *testing.T) {
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	request, _ := http.NewRequest("GET", "http://example.com/?foo=bar&page=10&id=", nil)
+	c.Request = request
+
+	assert.Equal(t, request, c.GetRequest())
+}
+
 func TestContextQuery(t *testing.T) {
 	c, _ := CreateTestContext(httptest.NewRecorder())
 	c.Request, _ = http.NewRequest("GET", "http://example.com/?foo=bar&page=10&id=", nil)
