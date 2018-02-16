@@ -5,6 +5,7 @@
 package gin
 
 import (
+	"encoding/json"
 	"errors"
 	"io"
 	"io/ioutil"
@@ -56,6 +57,8 @@ type Context struct {
 
 	// Accepted defines a list of manually accepted formats for content negotiation.
 	Accepted []string
+
+	body *binding.Body
 }
 
 /************************************/
@@ -819,4 +822,30 @@ func (c *Context) Value(key interface{}) interface{} {
 		return val
 	}
 	return nil
+}
+
+// Body parses body content
+//
+func (c *Context) Body() (*binding.Body, error) {
+	if c.body != nil {
+		return c.body, nil
+	}
+
+	var err error
+	body := new(binding.Body)
+
+	switch c.ContentType() {
+	case MIMEJSON:
+		err = json.NewDecoder(c.Request.Body).Decode(&body)
+	case MIMEPOSTForm:
+		err = c.Request.ParseForm()
+		body = binding.ToBody(c.Request.Form)
+	case MIMEMultipartPOSTForm:
+		_, err = c.MultipartForm()
+		body = binding.ToBody(c.Request.Form)
+	}
+
+	c.body = body
+
+	return body, err
 }
