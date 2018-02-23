@@ -21,6 +21,10 @@ func TestSetMode(t *testing.T) {
 	assert.Equal(t, TestMode, Mode())
 	os.Unsetenv(ENV_GIN_MODE)
 
+	SetMode("")
+	assert.Equal(t, debugCode, ginMode)
+	assert.Equal(t, DebugMode, Mode())
+
 	SetMode(DebugMode)
 	assert.Equal(t, debugCode, ginMode)
 	assert.Equal(t, DebugMode, Mode())
