@@ -10,8 +10,11 @@ import (
 	"io"
 	"io/ioutil"
 	"log"
+	"net"
 	"net/http/httputil"
+	"os"
 	"runtime"
+	"syscall"
 )
 
 var (
@@ -35,12 +38,33 @@ func RecoveryWithWriter(out io.Writer) HandlerFunc {
 	return func(c *Context) {
 		defer func() {
 			if err := recover(); err != nil {
-				if logger != nil {
-					stack := stack(3)
-					httprequest, _ := httputil.DumpRequest(c.Request, false)
-					logger.Printf("[Recovery] panic recovered:\n%s\n%s\n%s%s", string(httprequest), err, stack, reset)
+				// Check for a broken connection, as it is not really a
+				// condition that warrants a panic stack trace.
+				var brokenPipe bool
+				if ne, ok := err.(*net.OpError); ok {
+					if se, ok := ne.Err.(*os.SyscallError); ok {
+						if se.Err == syscall.EPIPE || se.Err == syscall.ECONNRESET {
+							brokenPipe = true
+						}
+					}
 				}
-				c.AbortWithStatus(500)
+				if logger != nil {
+					httprequest, _ := httputil.DumpRequest(c.Request, false)
+					if brokenPipe {
+						logger.Printf("%s\n%s%s", err, string(httprequest), reset)
+					} else {
+						logger.Printf("[Recovery] panic recovered:\n%s\n%s\n%s%s",
+							string(httprequest), err, stack(3), reset)
+					}
+				}
+
+				// If the connection is dead, we can't write a status to it.
+				if brokenPipe {
+					c.Error(err.(error))
+					c.Abort()
+				} else {
+					c.AbortWithStatus(500)
+				}
 			}
 		}()
 		c.Next()
