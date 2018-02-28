@@ -6,6 +6,9 @@ package gin
 
 import (
 	"bytes"
+	"net"
+	"os"
+	"syscall"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -40,4 +43,39 @@ func TestPanicWithAbort(t *testing.T) {
 	w := performRequest(router, "GET", "/recovery")
 	// TEST
 	assert.Equal(t, 400, w.Code)
+}
+
+// TestPanicWithBrokenPipe asserts that recovery specifically handles
+// writting responses to broken pipes
+func TestPanicWithBrokenPipe(t *testing.T) {
+	const expectCode = 204
+
+	expectMsgs := map[syscall.Errno]string{
+		syscall.EPIPE:      "broken pipe",
+		syscall.ECONNRESET: "connection reset",
+	}
+
+	for errno, expectMsg := range expectMsgs {
+		t.Run(expectMsg, func(t *testing.T) {
+
+			var buf bytes.Buffer
+
+			router := New()
+			router.Use(RecoveryWithWriter(&buf))
+			router.GET("/recovery", func(c *Context) {
+				// Start writting response
+				c.Header("X-Test", "Value")
+				c.Status(expectCode)
+
+				// Oops. Client connection closed
+				e := &net.OpError{Err: &os.SyscallError{Err: errno}}
+				panic(e)
+			})
+			// RUN
+			w := performRequest(router, "GET", "/recovery")
+			// TEST
+			assert.Equal(t, expectCode, w.Code)
+			assert.Contains(t, buf.String(), expectMsg)
+		})
+	}
 }
