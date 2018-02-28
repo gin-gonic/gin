@@ -46,7 +46,7 @@ func TestPanicWithAbort(t *testing.T) {
 }
 
 // TestPanicWithBrokenPipe asserts that recovery specifically handles
-// writting responses to broken pipes
+// writing responses to broken pipes
 func TestPanicWithBrokenPipe(t *testing.T) {
 	const expectCode = 204
 
@@ -63,7 +63,7 @@ func TestPanicWithBrokenPipe(t *testing.T) {
 			router := New()
 			router.Use(RecoveryWithWriter(&buf))
 			router.GET("/recovery", func(c *Context) {
-				// Start writting response
+				// Start writing response
 				c.Header("X-Test", "Value")
 				c.Status(expectCode)
 
