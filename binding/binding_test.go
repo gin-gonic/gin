@@ -8,9 +8,11 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"io"
 	"io/ioutil"
 	"mime/multipart"
 	"net/http"
+	"os"
 	"testing"
 	"time"
 
@@ -27,6 +29,18 @@ type FooStruct struct {
 type FooBarStruct struct {
 	FooStruct
 	Bar string `msgpack:"bar" json:"bar" form:"bar" xml:"bar" binding:"required"`
+}
+
+type FooBarFileStruct struct {
+	FooBarStruct
+	File *multipart.FileHeader `form:"file" binding:"required"`
+}
+
+type FooBarFileFailStruct struct {
+	FooBarStruct
+	File *multipart.FileHeader `invalid_name:"file" binding:"required"`
+	// for unexport test
+	data *multipart.FileHeader `form:"data" binding:"required"`
 }
 
 type FooStructUseNumber struct {
@@ -152,8 +166,8 @@ func TestBindingDefault(t *testing.T) {
 	assert.Equal(t, Default("POST", MIMEPOSTForm), Form)
 	assert.Equal(t, Default("PUT", MIMEPOSTForm), Form)
 
-	assert.Equal(t, Default("POST", MIMEMultipartPOSTForm), Form)
-	assert.Equal(t, Default("PUT", MIMEMultipartPOSTForm), Form)
+	assert.Equal(t, Default("POST", MIMEMultipartPOSTForm), FormMultipart)
+	assert.Equal(t, Default("PUT", MIMEMultipartPOSTForm), FormMultipart)
 
 	assert.Equal(t, Default("POST", MIMEPROTOBUF), ProtoBuf)
 	assert.Equal(t, Default("PUT", MIMEPROTOBUF), ProtoBuf)
@@ -413,6 +427,48 @@ func createFormPostRequestFail() *http.Request {
 	return req
 }
 
+func createFormFilesMultipartRequest() *http.Request {
+	boundary := "--testboundary"
+	body := new(bytes.Buffer)
+	mw := multipart.NewWriter(body)
+	defer mw.Close()
+
+	mw.SetBoundary(boundary)
+	mw.WriteField("foo", "bar")
+	mw.WriteField("bar", "foo")
+
+	f, _ := os.Open("form.go")
+	defer f.Close()
+	fw, _ := mw.CreateFormFile("file", "form.go")
+	io.Copy(fw, f)
+
+	req, _ := http.NewRequest("POST", "/?foo=getfoo&bar=getbar", body)
+	req.Header.Set("Content-Type", MIMEMultipartPOSTForm+"; boundary="+boundary)
+
+	return req
+}
+
+func createFormFilesMultipartRequestFail() *http.Request {
+	boundary := "--testboundary"
+	body := new(bytes.Buffer)
+	mw := multipart.NewWriter(body)
+	defer mw.Close()
+
+	mw.SetBoundary(boundary)
+	mw.WriteField("foo", "bar")
+	mw.WriteField("bar", "foo")
+
+	f, _ := os.Open("form.go")
+	defer f.Close()
+	fw, _ := mw.CreateFormFile("file_foo", "form_foo.go")
+	io.Copy(fw, f)
+
+	req, _ := http.NewRequest("POST", "/?foo=getfoo&bar=getbar", body)
+	req.Header.Set("Content-Type", MIMEMultipartPOSTForm+"; boundary="+boundary)
+
+	return req
+}
+
 func createFormMultipartRequest() *http.Request {
 	boundary := "--testboundary"
 	body := new(bytes.Buffer)
@@ -454,6 +510,34 @@ func TestBindingFormPostFail(t *testing.T) {
 	req := createFormPostRequestFail()
 	var obj FooStructForMapType
 	err := FormPost.Bind(req, &obj)
+	assert.Error(t, err)
+}
+
+func TestBindingFormFilesMultipart(t *testing.T) {
+	req := createFormFilesMultipartRequest()
+	var obj FooBarFileStruct
+	FormMultipart.Bind(req, &obj)
+
+	// file from os
+	f, _ := os.Open("form.go")
+	defer f.Close()
+	fileActual, _ := ioutil.ReadAll(f)
+
+	// file from multipart
+	mf, _ := obj.File.Open()
+	defer mf.Close()
+	fileExpect, _ := ioutil.ReadAll(mf)
+
+	assert.Equal(t, FormMultipart.Name(), "multipart/form-data")
+	assert.Equal(t, obj.Foo, "bar")
+	assert.Equal(t, obj.Bar, "foo")
+	assert.Equal(t, fileExpect, fileActual)
+}
+
+func TestBindingFormFilesMultipartFail(t *testing.T) {
+	req := createFormFilesMultipartRequestFail()
+	var obj FooBarFileFailStruct
+	err := FormMultipart.Bind(req, &obj)
 	assert.Error(t, err)
 }
 

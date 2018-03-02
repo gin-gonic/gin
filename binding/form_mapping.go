@@ -6,10 +6,40 @@ package binding
 
 import (
 	"errors"
+	"fmt"
+	"net/http"
 	"reflect"
 	"strconv"
 	"time"
 )
+
+func mapFiles(ptr interface{}, req *http.Request) error {
+	typ := reflect.TypeOf(ptr).Elem()
+	val := reflect.ValueOf(ptr).Elem()
+	for i := 0; i < typ.NumField(); i++ {
+		typeField := typ.Field(i)
+		structField := val.Field(i)
+
+		t := fmt.Sprintf("%s", typeField.Type)
+		if string(t) != "*multipart.FileHeader" {
+			continue
+		}
+
+		inputFieldName := typeField.Tag.Get("form")
+		if inputFieldName == "" {
+			inputFieldName = typeField.Name
+		}
+
+		_, fileHeader, err := req.FormFile(inputFieldName)
+		if err != nil {
+			return err
+		}
+
+		structField.Set(reflect.ValueOf(fileHeader))
+
+	}
+	return nil
+}
 
 func mapForm(ptr interface{}, form map[string][]string) error {
 	typ := reflect.TypeOf(ptr).Elem()

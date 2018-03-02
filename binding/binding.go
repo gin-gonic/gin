@@ -69,6 +69,8 @@ func Default(method, contentType string) Binding {
 		return ProtoBuf
 	case MIMEMSGPACK, MIMEMSGPACK2:
 		return MsgPack
+	case MIMEMultipartPOSTForm:
+		return FormMultipart
 	default: //case MIMEPOSTForm, MIMEMultipartPOSTForm:
 		return Form
 	}
