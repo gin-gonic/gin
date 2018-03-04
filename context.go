@@ -739,6 +739,34 @@ func (c *Context) Stream(step func(w io.Writer) bool) {
 	}
 }
 
+/******************************************/
+/******** FORMATTING JSON RESPONSE ********/
+/******************************************/
+
+//Success response data such as {"errcode": 0, "data": data}
+func (c *Context) Success(data interface{}) {
+	c.JSON(200, H{"errcode": 0, "data": data})
+}
+
+//Fail response fail message with json
+func (c *Context) Fail(errcode int, msg string, err error, args ...interface{}) {
+	obj := H{"errcode": errcode, "msg": msg}
+	if err != nil {
+		obj["err"] = err.Error()
+	}
+	if len(args) > 0 {
+		obj["data"] = args[0]
+	}
+	c.JSON(200, obj)
+	c.Error(Error{Type: ErrorTypePublic, Meta: msg, Err: err})
+}
+
+//FailWithAbort fail and abort immediately
+func (c *Context) FailWithAbort(errcode int, msg string, err error, args ...interface{}) {
+	c.Fail(errcode, msg, err, args...)
+	c.Abort()
+}
+
 /************************************/
 /******** CONTENT NEGOTIATION *******/
 /************************************/

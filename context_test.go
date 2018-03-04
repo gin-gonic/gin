@@ -1377,3 +1377,47 @@ func TestContextGetRawData(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, "Fetch binary post data", string(data))
 }
+
+func TestContextSuccess(t *testing.T) {
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
+
+	c.Success(H{"foo": "bar"})
+
+	assert.Equal(t, 200, w.Code)
+	assert.Equal(t, "{\"data\":{\"foo\":\"bar\"},\"errcode\":0}", w.Body.String())
+	assert.Equal(t, "application/json; charset=utf-8", w.HeaderMap.Get("Content-Type"))
+}
+
+func TestContextFail(t *testing.T) {
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
+	assert.Empty(t, c.Errors)
+
+	c.Fail(401, "not login", fmt.Errorf("auth err"), H{"foo": "bar"})
+
+	assert.Equal(t, 200, w.Code)
+	assert.Equal(t, "{\"data\":{\"foo\":\"bar\"},\"err\":\"auth err\",\"errcode\":401,\"msg\":\"not login\"}", w.Body.String())
+	assert.Equal(t, "application/json; charset=utf-8", w.HeaderMap.Get("Content-Type"))
+	assert.Len(t, c.Errors, 1)
+}
+
+func TestContextFailNoErrNoArgs(t *testing.T) {
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
+
+	c.Fail(401, "not login", nil)
+
+	assert.Equal(t, "{\"errcode\":401,\"msg\":\"not login\"}", w.Body.String())
+}
+
+func TestContextFailWithAbort(t *testing.T) {
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
+
+	c.FailWithAbort(401, "not login", fmt.Errorf("auth err"))
+
+	assert.Equal(t, 200, w.Code)
+	assert.Equal(t, "{\"err\":\"auth err\",\"errcode\":401,\"msg\":\"not login\"}", w.Body.String())
+	assert.True(t, c.IsAborted())
+}
