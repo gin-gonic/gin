@@ -39,7 +39,7 @@ type ResponseWriter interface {
 	WriteHeaderNow()
 
 	// get the http.Pusher for server push
-	Pusher()
+	Pusher() http.Pusher
 }
 
 type responseWriter struct {
