@@ -30,7 +30,11 @@ func bookableDate(
 
 func main() {
 	route := gin.Default()
-	binding.Validator.RegisterValidation("bookabledate", bookableDate)
+	v := binding.ValidatorEngine()
+	if v == nil {
+		panic("validator engine is nil")
+	}
+	v.RegisterValidation("bookabledate", bookableDate)
 	route.GET("/bookable", getBookable)
 	route.Run(":8085")
 }
