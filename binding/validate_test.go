@@ -218,8 +218,8 @@ func TestValidatorEngine(t *testing.T) {
 	// This validates that the function `notOne` matches
 	// the expected function signature by `defaultValidator`
 	// and by extension the validator library.
-	engine := ValidatorEngine()
-	assert.NotNil(t, engine)
+	engine, ok := Validator.Engine().(*validator.Validate)
+	assert.True(t, ok)
 
 	err := engine.RegisterValidation("notone", notOne)
 	// Check that we can register custom validation without error

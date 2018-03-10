@@ -6,8 +6,6 @@ package binding
 
 import (
 	"net/http"
-
-	validator "gopkg.in/go-playground/validator.v8"
 )
 
 const (
@@ -42,6 +40,10 @@ type StructValidator interface {
 	// If the struct is not valid or the validation itself fails, a descriptive error should be returned.
 	// Otherwise nil must be returned.
 	ValidateStruct(interface{}) error
+
+	// Engine returns the underlying validator engine which powers the
+	// StructValidator implementation.
+	Engine() interface{}
 }
 
 // Validator is the default validator which implements the StructValidator
@@ -88,19 +90,4 @@ func validate(obj interface{}) error {
 		return nil
 	}
 	return Validator.ValidateStruct(obj)
-}
-
-// ValidatorEngine returns the underlying validator engine which powers the
-// default Validator instance. This is useful if you want to register custom
-// validations or struct level validations. See validator GoDoc for more info -
-// https://godoc.org/gopkg.in/go-playground/validator.v8
-func ValidatorEngine() *validator.Validate {
-	if Validator == nil {
-		return nil
-	}
-	if v, ok := Validator.(*defaultValidator); ok {
-		v.lazyinit()
-		return v.validate
-	}
-	return nil
 }

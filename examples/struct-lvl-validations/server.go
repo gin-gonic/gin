@@ -42,11 +42,11 @@ func UserStructLevelValidation(v *validator.Validate, structLevel *validator.Str
 
 func main() {
 	route := gin.Default()
-	v := binding.ValidatorEngine()
-	if v == nil {
-		panic("validator engine is nil")
+
+	if v, ok := binding.Validator.Engine().(*validator.Validate); ok {
+		v.RegisterStructValidation(UserStructLevelValidation, User{})
 	}
-	v.RegisterStructValidation(UserStructLevelValidation, User{})
+
 	route.POST("/user", validateUser)
 	route.Run(":8085")
 }
