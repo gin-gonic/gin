@@ -231,3 +231,45 @@ func TestRegisterValidation(t *testing.T) {
 	// Check that the error matches expactation
 	assert.Error(t, errs, "", "", "notone")
 }
+
+// aOrB is a helper struct we use to test struct level validation.
+type aOrB struct {
+	A, B int
+}
+
+func aOrBValidation(v *validator.Validate, structLevel *validator.StructLevel) {
+	val := structLevel.CurrentStruct.Interface().(aOrB)
+
+	if val.A == 0 && val.B == 0 {
+		structLevel.ReportError(reflect.ValueOf(val.A), "A", "a", "aorb")
+		structLevel.ReportError(reflect.ValueOf(val.B), "B", "b", "aorb")
+	}
+}
+
+func TestRegisterStructValidation(t *testing.T) {
+	// Register and associate the struct validation.
+	Validator.RegisterStructValidation(aOrBValidation, aOrB{})
+
+	cases := []struct {
+		aOrB
+		errMsg string
+	}{
+		// Both A and B are non-zero, should not fail validation
+		{aOrB{1, 1}, ""},
+		// Both A is non-zero, should not fail validation
+		{aOrB{A: 1}, ""},
+		// Both B is non-zero, should not fail validation
+		{aOrB{B: 1}, ""},
+		// Neither A or B are non-zero, should fail validation
+		{aOrB{}, "Key: 'aOrB.A' Error:Field validation for 'A' failed on the 'aorb' tag\n" +
+			"Key: 'aOrB.B' Error:Field validation for 'B' failed on the 'aorb' tag"},
+	}
+	for _, c := range cases {
+		err := validate(c.aOrB)
+		if len(c.errMsg) == 0 {
+			assert.Nil(t, err)
+		} else {
+			assert.Error(t, err, c.errMsg)
+		}
+	}
+}

@@ -587,6 +587,9 @@ $ curl "localhost:8085/bookable?check_in=2017-08-15&check_out=2017-08-16"
 {"error":"Key: 'Booking.CheckIn' Error:Field validation for 'CheckIn' failed on the 'bookabledate' tag"}
 ```
 
+[Struct level validations](https://github.com/go-playground/validator/releases/tag/v8.7) are also supported.
+See the [struct-lvl-validation example](examples/struct-lvl-validations) to learn more.
+
 ### Only Bind Query String
 
 `ShouldBindQuery` function only binds the query params and not the post data. See the [detail information](https://github.com/gin-gonic/gin/issues/742#issuecomment-315953017).
