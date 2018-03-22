@@ -197,7 +197,7 @@ func (engine *Engine) LoadHTMLFiles(files ...string) {
 	engine.SetHTMLTemplate(templ)
 }
 
-// LoadHTMLFilesRecursively loads recursivly a slice of HTML files mathing an extension
+// LoadHTMLFilesRecursively loads recursively a slice of HTML files mathing an extension
 // and associates the result with HTML renderer.
 func (engine *Engine) LoadHTMLFilesRecursively(folder string, extensionsAllowed []string) {
 
