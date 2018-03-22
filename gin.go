@@ -10,6 +10,9 @@ import (
 	"net/http"
 	"os"
 	"sync"
+	"strings"
+	"sort"
+	"path/filepath"
 
 	"github.com/gin-gonic/gin/render"
 )
@@ -192,6 +195,26 @@ func (engine *Engine) LoadHTMLFiles(files ...string) {
 
 	templ := template.Must(template.New("").Delims(engine.delims.Left, engine.delims.Right).Funcs(engine.FuncMap).ParseFiles(files...))
 	engine.SetHTMLTemplate(templ)
+}
+
+// LoadHTMLFilesRecursively loads recursivly a slice of HTML files mathing an extension
+// and associates the result with HTML renderer.
+func (engine *Engine) LoadHTMLFilesRecursively(folder string, extensionsAllowed []string) {
+
+	files := []string{}
+	sort.Strings(extensionsAllowed)
+
+	filepath.Walk(folder, func(path string, info os.FileInfo, err error) error {
+		extension := strings.ToLower(filepath.Ext(path))
+		indexFound := sort.SearchStrings(extensionsAllowed, extension)
+		if indexFound < len(extensionsAllowed) && extensionsAllowed[indexFound] == extension {
+			files = append(files, path);
+		}
+
+		return nil
+	})
+
+	engine.LoadHTMLFiles(files...)
 }
 
 // SetHTMLTemplate associate a template with HTML renderer.
