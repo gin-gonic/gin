@@ -837,7 +837,7 @@ func main() {
 	router.LoadHTMLGlob("templates/*")
 	//router.LoadHTMLFiles("templates/template1.html", "templates/template2.html")
 
-	// load recursively all .html in "public" folder
+	// load recursively all .html files in "public" folder
 	//router.LoadHTMLFilesRecursively("public", []string{".html"})
 	
 	router.GET("/index", func(c *gin.Context) {
