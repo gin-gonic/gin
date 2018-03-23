@@ -278,19 +278,6 @@ func TestLoadHTMLFilesFuncMap(t *testing.T) {
 }
 
 func TestLoadHTMLFilesRecursively(t *testing.T) {
-	td := setupHTMLFilesRecursively(t, DebugMode, false)
-	res, err := http.Get("http://127.0.0.1:8888/test")
-	if err != nil {
-		fmt.Println(err)
-	}
-
-	resp, _ := ioutil.ReadAll(res.Body)
-	assert.Equal(t, "<h1>Hello world</h1>", string(resp[:]))
-
-	td()
-}
-
-func TestLoadHTMLFilesRecursively2(t *testing.T) {
 	td := setupHTMLFilesRecursively(t, TestMode, false)
 	res, err := http.Get("http://127.0.0.1:8888/test")
 	if err != nil {
@@ -299,7 +286,18 @@ func TestLoadHTMLFilesRecursively2(t *testing.T) {
 
 	resp, _ := ioutil.ReadAll(res.Body)
 	assert.Equal(t, "<h1>Hello world</h1>", string(resp[:]))
+	td()
+}
 
+func TestLoadHTMLFilesRecursively2(t *testing.T) {
+	td := setupHTMLFilesRecursively(t, DebugMode, false)
+	res, err := http.Get("http://127.0.0.1:8888/test")
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	resp, _ := ioutil.ReadAll(res.Body)
+	assert.Equal(t, "<h1>Hello world</h1>", string(resp[:]))
 	td()
 }
 
@@ -312,12 +310,11 @@ func TestLoadHTMLFilesRecursively3(t *testing.T) {
 
 	resp, _ := ioutil.ReadAll(res.Body)
 	assert.Equal(t, "<h1>Hello world</h1>", string(resp[:]))
-
 	td()
 }
 
 func TestLoadHTMLFilesRecursivelyUsingTLS(t *testing.T) {
-	td := setupHTMLFilesRecursively(t, DebugMode, true)
+	td := setupHTMLFilesRecursively(t, TestMode, true)
 	// Use InsecureSkipVerify for avoiding `x509: certificate signed by unknown authority` error
 	tr := &http.Transport{
 		TLSClientConfig: &tls.Config{
@@ -332,13 +329,12 @@ func TestLoadHTMLFilesRecursivelyUsingTLS(t *testing.T) {
 
 	resp, _ := ioutil.ReadAll(res.Body)
 	assert.Equal(t, "<h1>Hello world</h1>", string(resp[:]))
-
 	td()
 }
 
-func TestLoadHTMLFilesRecursivelyFromFuncMap(t *testing.T) {
+func TestLoadHTMLFilesRecursivelyFuncMap(t *testing.T) {
 	time.Now()
-	td := setupHTMLFilesRecursively(t, DebugMode, false)
+	td := setupHTMLFilesRecursively(t, TestMode, false)
 	res, err := http.Get("http://127.0.0.1:8888/raw")
 	if err != nil {
 		fmt.Println(err)
