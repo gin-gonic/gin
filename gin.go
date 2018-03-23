@@ -9,10 +9,10 @@ import (
 	"net"
 	"net/http"
 	"os"
-	"sync"
-	"strings"
-	"sort"
 	"path/filepath"
+	"sort"
+	"strings"
+	"sync"
 
 	"github.com/gin-gonic/gin/render"
 )
@@ -208,7 +208,7 @@ func (engine *Engine) LoadHTMLFilesRecursively(folder string, extensionsAllowed 
 		extension := strings.ToLower(filepath.Ext(path))
 		indexFound := sort.SearchStrings(extensionsAllowed, extension)
 		if indexFound < len(extensionsAllowed) && extensionsAllowed[indexFound] == extension {
-			files = append(files, path);
+			files = append(files, path)
 		}
 
 		return nil

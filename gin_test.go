@@ -277,7 +277,6 @@ func TestLoadHTMLFilesFuncMap(t *testing.T) {
 	td()
 }
 
-
 func TestLoadHTMLFilesRecursively(t *testing.T) {
 	td := setupHTMLFilesRecursively(t, DebugMode, false)
 	res, err := http.Get("http://127.0.0.1:8888/test")
