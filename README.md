@@ -584,9 +584,6 @@ func getBookable(c *gin.Context) {
 ```
 
 ```console
-$ date +'%m/%d/%Y'
-03/09/2018
-
 $ curl "localhost:8085/bookable?check_in=2018-04-16&check_out=2018-04-17"
 {"message":"Booking dates are valid!"}
 
