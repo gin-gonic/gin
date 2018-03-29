@@ -6,8 +6,6 @@ package binding
 
 import (
 	"net/http"
-
-	"gopkg.in/go-playground/validator.v8"
 )
 
 const (
@@ -23,11 +21,18 @@ const (
 	MIMEMSGPACK2          = "application/msgpack"
 )
 
+// Binding describes the interface which needs to be implemented for binding the
+// data present in the request such as JSON request body, query parameters or
+// the form POST.
 type Binding interface {
 	Name() string
 	Bind(*http.Request, interface{}) error
 }
 
+// StructValidator is the minimal interface which needs to be implemented in
+// order for it to be used as the validator engine for ensuring the correctness
+// of the reqest. Gin provides a default implementation for this using
+// https://github.com/go-playground/validator/tree/v8.18.2.
 type StructValidator interface {
 	// ValidateStruct can receive any kind of type and it should never panic, even if the configuration is not right.
 	// If the received type is not a struct, any validation should be skipped and nil must be returned.
@@ -36,14 +41,18 @@ type StructValidator interface {
 	// Otherwise nil must be returned.
 	ValidateStruct(interface{}) error
 
-	// RegisterValidation adds a validation Func to a Validate's map of validators denoted by the key
-	// NOTE: if the key already exists, the previous validation function will be replaced.
-	// NOTE: this method is not thread-safe it is intended that these all be registered prior to any validation
-	RegisterValidation(string, validator.Func) error
+	// Engine returns the underlying validator engine which powers the
+	// StructValidator implementation.
+	Engine() interface{}
 }
 
+// Validator is the default validator which implements the StructValidator
+// interface. It uses https://github.com/go-playground/validator/tree/v8.18.2
+// under the hood.
 var Validator StructValidator = &defaultValidator{}
 
+// These implement the Binding interface and can be used to bind the data
+// present in the request to struct instances.
 var (
 	JSON          = jsonBinding{}
 	XML           = xmlBinding{}
@@ -55,6 +64,8 @@ var (
 	MsgPack       = msgpackBinding{}
 )
 
+// Default returns the appropriate Binding instance based on the HTTP method
+// and the content type.
 func Default(method, contentType string) Binding {
 	if method == "GET" {
 		return Form

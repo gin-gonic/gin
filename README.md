@@ -564,7 +564,11 @@ func bookableDate(
 
 func main() {
 	route := gin.Default()
-	binding.Validator.RegisterValidation("bookabledate", bookableDate)
+
+	if v, ok := binding.Validator.Engine().(*validator.Validate); ok {
+		v.RegisterValidation("bookabledate", bookableDate)
+	}
+
 	route.GET("/bookable", getBookable)
 	route.Run(":8085")
 }
@@ -580,12 +584,15 @@ func getBookable(c *gin.Context) {
 ```
 
 ```console
-$ curl "localhost:8085/bookable?check_in=2017-08-16&check_out=2017-08-17"
+$ curl "localhost:8085/bookable?check_in=2018-04-16&check_out=2018-04-17"
 {"message":"Booking dates are valid!"}
 
-$ curl "localhost:8085/bookable?check_in=2017-08-15&check_out=2017-08-16"
+$ curl "localhost:8085/bookable?check_in=2018-03-08&check_out=2018-03-09"
 {"error":"Key: 'Booking.CheckIn' Error:Field validation for 'CheckIn' failed on the 'bookabledate' tag"}
 ```
+
+[Struct level validations](https://github.com/go-playground/validator/releases/tag/v8.7) can also be registed this way.
+See the [struct-lvl-validation example](examples/struct-lvl-validations) to learn more.
 
 ### Only Bind Query String
 
