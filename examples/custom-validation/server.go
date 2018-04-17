@@ -7,7 +7,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
-	validator "gopkg.in/go-playground/validator.v8"
+	"gopkg.in/go-playground/validator.v8"
 )
 
 type Booking struct {
@@ -30,7 +30,11 @@ func bookableDate(
 
 func main() {
 	route := gin.Default()
-	binding.Validator.RegisterValidation("bookabledate", bookableDate)
+
+	if v, ok := binding.Validator.Engine().(*validator.Validate); ok {
+		v.RegisterValidation("bookabledate", bookableDate)
+	}
+
 	route.GET("/bookable", getBookable)
 	route.Run(":8085")
 }

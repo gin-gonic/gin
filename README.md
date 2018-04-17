@@ -7,6 +7,7 @@
  [![Go Report Card](https://goreportcard.com/badge/github.com/gin-gonic/gin)](https://goreportcard.com/report/github.com/gin-gonic/gin)
  [![GoDoc](https://godoc.org/github.com/gin-gonic/gin?status.svg)](https://godoc.org/github.com/gin-gonic/gin)
  [![Join the chat at https://gitter.im/gin-gonic/gin](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/gin-gonic/gin?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+[![Open Source Helpers](https://www.codetriage.com/gin-gonic/gin/badges/users.svg)](https://www.codetriage.com/gin-gonic/gin)
 
 Gin is a web framework written in Go (Golang). It features a martini-like API with much better performance, up to 40 times faster thanks to [httprouter](https://github.com/julienschmidt/httprouter). If you need performance and good productivity, you will love Gin.
 
@@ -74,10 +75,10 @@ BenchmarkTigerTonic_GithubAll               |    1000    |  1439483    |  239104
 BenchmarkTraffic_GithubAll                  |     100    | 11383067    | 2659329    | 21848
 BenchmarkVulcan_GithubAll                   |    5000    |   394253    |   19894    |   609
 
-(1): Total Repetitions achieved in constant time, higher means more confident result
-(2): Single Repetition Duration (ns/op), lower is better
-(3): Heap Memory (B/op), lower is better
-(4): Average Allocations per Repetition (allocs/op), lower is better
+- (1): Total Repetitions achieved in constant time, higher means more confident result
+- (2): Single Repetition Duration (ns/op), lower is better
+- (3): Heap Memory (B/op), lower is better
+- (4): Average Allocations per Repetition (allocs/op), lower is better
 
 ## Gin v1. stable
 
@@ -117,7 +118,7 @@ $ go get github.com/kardianos/govendor
 2. Create your project folder and `cd` inside
 
 ```sh
-$ mkdir -p ~/go/src/github.com/myusername/project && cd "$_"
+$ mkdir -p $GOPATH/src/github.com/myusername/project && cd "$_"
 ```
 
 3. Vendor init your project and add gin
@@ -385,7 +386,7 @@ func main() {
 	r := gin.New()
 
 	// Global middleware
-	// Logger middleware will write the logs to gin.DefaultWriter even you set with GIN_MODE=release.
+	// Logger middleware will write the logs to gin.DefaultWriter even if you set with GIN_MODE=release.
 	// By default gin.DefaultWriter = os.Stdout
 	r.Use(gin.Logger())
 
@@ -435,7 +436,7 @@ func main() {
         c.String(200, "pong")
     })
 
-    r.Run(":8080")
+    router.Run(":8080")
 }
 ```
 
@@ -472,7 +473,7 @@ func main() {
 	// Example for binding JSON ({"user": "manu", "password": "123"})
 	router.POST("/loginJSON", func(c *gin.Context) {
 		var json Login
-		if err = c.ShouldBindJSON(&json); err == nil {
+		if err := c.ShouldBindJSON(&json); err == nil {
 			if json.User == "manu" && json.Password == "123" {
 				c.JSON(http.StatusOK, gin.H{"status": "you are logged in"})
 			} else {
@@ -540,7 +541,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
-	validator "gopkg.in/go-playground/validator.v8"
+	"gopkg.in/go-playground/validator.v8"
 )
 
 type Booking struct {
@@ -563,7 +564,11 @@ func bookableDate(
 
 func main() {
 	route := gin.Default()
-	binding.Validator.RegisterValidation("bookabledate", bookableDate)
+
+	if v, ok := binding.Validator.Engine().(*validator.Validate); ok {
+		v.RegisterValidation("bookabledate", bookableDate)
+	}
+
 	route.GET("/bookable", getBookable)
 	route.Run(":8085")
 }
@@ -579,12 +584,15 @@ func getBookable(c *gin.Context) {
 ```
 
 ```console
-$ curl "localhost:8085/bookable?check_in=2017-08-16&check_out=2017-08-17"
+$ curl "localhost:8085/bookable?check_in=2018-04-16&check_out=2018-04-17"
 {"message":"Booking dates are valid!"}
 
-$ curl "localhost:8085/bookable?check_in=2017-08-15&check_out=2017-08-16"
+$ curl "localhost:8085/bookable?check_in=2018-03-08&check_out=2018-03-09"
 {"error":"Key: 'Booking.CheckIn' Error:Field validation for 'CheckIn' failed on the 'bookabledate' tag"}
 ```
+
+[Struct level validations](https://github.com/go-playground/validator/releases/tag/v8.7) can also be registed this way.
+See the [struct-lvl-validation example](examples/struct-lvl-validations) to learn more.
 
 ### Only Bind Query String
 
@@ -1071,7 +1079,7 @@ func main() {
 
 ### Goroutines inside a middleware
 
-When starting inside a middleware or handler, you **SHOULD NOT** use the original context inside it, you have to use a read-only copy.
+When starting new Goroutines inside a middleware or handler, you **SHOULD NOT** use the original context inside it, you have to use a read-only copy.
 
 ```go
 func main() {
@@ -1133,7 +1141,7 @@ func main() {
 
 example for 1-line LetsEncrypt HTTPS servers.
 
-[embedmd]:# (examples/auto-tls/example1.go go)
+[embedmd]:# (examples/auto-tls/example1/main.go go)
 ```go
 package main
 
@@ -1158,7 +1166,7 @@ func main() {
 
 example for custom autocert manager.
 
-[embedmd]:# (examples/auto-tls/example2.go go)
+[embedmd]:# (examples/auto-tls/example2/main.go go)
 ```go
 package main
 
@@ -1190,7 +1198,7 @@ func main() {
 
 ### Run multiple service using Gin
 
-See the [question](https://github.com/gin-gonic/gin/issues/346) and try the folling example:
+See the [question](https://github.com/gin-gonic/gin/issues/346) and try the following example:
 
 [embedmd]:# (examples/multiple-service/main.go go)
 ```go
@@ -1323,8 +1331,8 @@ func main() {
 
 	go func() {
 		// service connections
-		if err := srv.ListenAndServe(); err != nil {
-			log.Printf("listen: %s\n", err)
+		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Fatalf("listen: %s\n", err)
 		}
 	}()
 
@@ -1341,6 +1349,52 @@ func main() {
 		log.Fatal("Server Shutdown:", err)
 	}
 	log.Println("Server exiting")
+}
+```
+
+## Testing
+
+The `net/http/httptest` package is preferable way for HTTP testing.
+
+```go
+package main
+
+func setupRouter() *gin.Engine {
+	r := gin.Default()
+	r.GET("/ping", func(c *gin.Context) {
+		c.String(200, "pong")
+	})
+	return r
+}
+
+func main() {
+	r := setupRouter()
+	r.Run(":8080")
+}
+```
+
+Test for code example above:
+
+```go
+package main
+
+import (
+	"net/http"
+	"net/http/httptest"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+)
+
+func TestPingRoute(t *testing.T) {
+	router := setupRouter()
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/ping", nil)
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, 200, w.Code)
+	assert.Equal(t, "pong", w.Body.String())
 }
 ```
 

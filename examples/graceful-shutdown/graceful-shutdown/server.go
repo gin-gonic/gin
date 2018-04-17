@@ -27,8 +27,8 @@ func main() {
 
 	go func() {
 		// service connections
-		if err := srv.ListenAndServe(); err != nil {
-			log.Printf("listen: %s\n", err)
+		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Fatalf("listen: %s\n", err)
 		}
 	}()
 

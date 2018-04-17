@@ -5,21 +5,10 @@
 package gin
 
 import (
-	"fmt"
 	"reflect"
 	"strings"
 	"testing"
 )
-
-func printChildren(n *node, prefix string) {
-	fmt.Printf(" %02d:%02d %s%s[%d] %v %t %d \r\n", n.priority, n.maxParams, prefix, n.path, len(n.children), n.handlers, n.wildChild, n.nType)
-	for l := len(n.path); l > 0; l-- {
-		prefix += " "
-	}
-	for _, child := range n.children {
-		printChildren(child, prefix)
-	}
-}
 
 // Used as a workaround since we can't compare functions or their addressses
 var fakeHandlerValue string

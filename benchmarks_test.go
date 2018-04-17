@@ -59,8 +59,6 @@ func BenchmarkOneRouteJSON(B *testing.B) {
 	runRequest(B, router, "GET", "/json")
 }
 
-var htmlContentType = []string{"text/html; charset=utf-8"}
-
 func BenchmarkOneRouteHTML(B *testing.B) {
 	router := New()
 	t := template.Must(template.New("index").Parse(`
