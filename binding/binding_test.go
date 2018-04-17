@@ -426,8 +426,8 @@ func createFormPostRequest() *http.Request {
 
 func createDefaultFormPostRequest() *http.Request {
 	req, _ := http.NewRequest("POST", "/?foo=getfoo&bar=getbar", bytes.NewBufferString("foo=bar"))
-    req.Header.Set("Content-Type", MIMEPOSTForm)
-    return req
+	req.Header.Set("Content-Type", MIMEPOSTForm)
+	return req
 }
 
 func createFormPostRequestFail() *http.Request {
