@@ -615,12 +615,12 @@ func testFormBindingDefaultValue(t *testing.T, method, path, badPath, body, badB
 	assert.Equal(t, b.Name(), "form")
 
 	obj := FooDefaultBarStruct{}
-    req := requestWithBody(method, path, body)
+	req := requestWithBody(method, path, body)
 	if method == "POST" {
 		req.Header.Add("Content-Type", MIMEPOSTForm)
 	}
 	err := b.Bind(req, &obj)
-    assert.NoError(t, err)
+	assert.NoError(t, err)
 	assert.Equal(t, obj.Foo, "bar")
 	assert.Equal(t, obj.Bar, "hello")
 
@@ -670,11 +670,6 @@ func testFormBindingForTime(t *testing.T, method, path, badPath, body, badBody s
 		req.Header.Add("Content-Type", MIMEPOSTForm)
 	}
 	err := b.Bind(req, &obj)
-	assert.NoError(t, err)
-	assert.Equal(t, obj.Foo, "bar")
-	assert.Equal(t, obj.Bar, "hello")
-
-	obj = FooDefaultBarStruct{}
 
 	assert.NoError(t, err)
 	assert.Equal(t, obj.TimeFoo.Unix(), int64(1510675200))
