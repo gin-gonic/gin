@@ -21,7 +21,7 @@ Gin is a web framework written in Go (Golang). It features a martini-like API wi
 - [Start using it](#start-using-it)
 - [Build with jsoniter](#build-with-jsoniter)
 - [API Examples](#api-examples)
-	- [Using GET,POST,PUT,PATCH,DELETE and OPTIONS](#using-get-post-put-patch-delete-and-options)
+    - [Using GET,POST,PUT,PATCH,DELETE and OPTIONS](#using-get-post-put-patch-delete-and-options)
     - [Parameters in path](#parameters-in-path)
     - [Querystring parameters](#querystring-parameters)
     - [Multipart/Urlencoded Form](#multiparturlencoded-form)
