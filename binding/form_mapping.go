@@ -8,6 +8,7 @@ import (
 	"errors"
 	"reflect"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -38,6 +39,7 @@ func mapForm(ptr interface{}, form map[string][]string) error {
 			}
 		}
 		inputValue, exists := form[inputFieldName]
+
 		if !exists {
 			continue
 		}
