@@ -13,6 +13,19 @@ Gin is a web framework written in Go (Golang). It features a martini-like API wi
 
 ![Gin console logger](https://gin-gonic.github.io/gin/other/console.png)
 
+## Contents
+
+- [Quick start](#Quick start)
+- [Benchmarks](#Benchmarks)
+- [Gin v1.stable](#Gin v1.stable)
+- [Start using it](#Start using it)
+- [Build with jsoniter](#Build with jsoniter)
+- [API Examples](#API Examples)
+- [Testing](#Testing)
+- [Users](#Users)
+
+## Quick start
+ 
 ```sh
 # assume the following codes in example.go file
 $ cat example.go
