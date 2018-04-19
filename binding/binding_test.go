@@ -447,7 +447,7 @@ func TestBindingFormPost(t *testing.T) {
 
 	assert.Equal(t, "form-urlencoded", FormPost.Name())
 	assert.Equal(t, "bar", obj.Foo)
-	assert.Equal(t, "foor", obj.Bar)
+	assert.Equal(t, "foo", obj.Bar)
 }
 
 func TestBindingFormPostFail(t *testing.T) {
