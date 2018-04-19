@@ -15,12 +15,14 @@ Gin is a web framework written in Go (Golang). It features a martini-like API wi
 
 ## Contents
 
-- [Quick start](#Quick start)
+- [Quick start](#Quick-start)
 - [Benchmarks](#Benchmarks)
-- [Gin v1.stable](#Gin v1.stable)
-- [Start using it](#Start using it)
-- [Build with jsoniter](#Build with jsoniter)
-- [API Examples](#API Examples)
+- [Gin v1.stable](#Gin-v1.stable)
+- [Start using it](#Start-using-it)
+- [Build with jsoniter](#Build-with-jsoniter)
+- [API Examples](#API-Examples)
+	- [Using GET,POST,PUT,PATCH,DELETE and OPTIONS](Using GET,POST,PUT,PATCH,DELETE-and-OPTIONS)
+    - []()
 - [Testing](#Testing)
 - [Users](#Users)
 
