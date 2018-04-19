@@ -10,6 +10,9 @@ import (
 	"github.com/gin-gonic/gin/json"
 )
 
+// EnableDecoderUseNumber is used to call the UseNumber method on the JSON
+// Decoder instance. UseNumber causes the Decoder to unmarshal a number into an
+// interface{} as a Number instead of as a float64.
 var EnableDecoderUseNumber = false
 
 type jsonBinding struct{}

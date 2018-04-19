@@ -214,11 +214,14 @@ func notOne(
 	return false
 }
 
-func TestRegisterValidation(t *testing.T) {
+func TestValidatorEngine(t *testing.T) {
 	// This validates that the function `notOne` matches
 	// the expected function signature by `defaultValidator`
 	// and by extension the validator library.
-	err := Validator.RegisterValidation("notone", notOne)
+	engine, ok := Validator.Engine().(*validator.Validate)
+	assert.True(t, ok)
+
+	err := engine.RegisterValidation("notone", notOne)
 	// Check that we can register custom validation without error
 	assert.Nil(t, err)
 
@@ -228,6 +231,6 @@ func TestRegisterValidation(t *testing.T) {
 
 	// Check that we got back non-nil errs
 	assert.NotNil(t, errs)
-	// Check that the error matches expactation
+	// Check that the error matches expectation
 	assert.Error(t, errs, "", "", "notone")
 }
