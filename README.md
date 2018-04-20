@@ -13,6 +13,47 @@ Gin is a web framework written in Go (Golang). It features a martini-like API wi
 
 ![Gin console logger](https://gin-gonic.github.io/gin/other/console.png)
 
+## Contents
+
+- [Quick start](#quick-start)
+- [Benchmarks](#benchmarks)
+- [Gin v1.stable](#gin-v1-stable)
+- [Start using it](#start-using-it)
+- [Build with jsoniter](#build-with-jsoniter)
+- [API Examples](#api-examples)
+    - [Using GET,POST,PUT,PATCH,DELETE and OPTIONS](#using-get-post-put-patch-delete-and-options)
+    - [Parameters in path](#parameters-in-path)
+    - [Querystring parameters](#querystring-parameters)
+    - [Multipart/Urlencoded Form](#multiparturlencoded-form)
+    - [Another example: query + post form](#another-example-query--post-form)
+    - [Upload files](#upload-files)
+    - [Grouping routes](#grouping-routes)
+    - [Blank Gin without middleware by default](#blank-gin-without-middleware-by-default)
+    - [Using middleware](#using-middleware)
+    - [How to write log file](#how-to-write-log-file)
+    - [Model binding and validation](#model-binding-and-validation)
+    - [Custom Validators](#custom-validators)
+    - [Only Bind Query String](#only-bind-query-string)
+    - [Bind Query String or Post Data](#bind-query-string-or-post-data)
+    - [Bind HTML checkboxes](#bind-html-checkboxes)
+    - [Multipart/Urlencoded binding](#multiparturlencoded-binding)
+    - [XML, JSON and YAML rendering](#xml-json-and-yaml-rendering)
+    - [Serving static files](#serving-static-files)
+    - [HTML rendering](#html-rendering)
+    - [Multitemplate](#multitemplate)
+    - [Redirects](#redirects)
+    - [Custom Middleware](#custom-middleware)
+    - [Using BasicAuth() middleware](#using-basicauth-middleware)
+    - [Goroutines inside a middleware](#goroutines-inside-a-middleware)
+    - [Custom HTTP configuration](#custom-http-configuration)
+    - [Support Let's Encrypt](#support-lets-encrypt)
+    - [Run multiple service using Gin](#run-multiple-service-using-gin)
+    - [Graceful restart or stop](#graceful-restart-or-stop)
+- [Testing](#testing)
+- [Users](#users--)
+
+## Quick start
+ 
 ```sh
 # assume the following codes in example.go file
 $ cat example.go

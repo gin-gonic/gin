@@ -176,7 +176,7 @@ func TestValidatePrimitives(t *testing.T) {
 	obj := Object{"foo": "bar", "bar": 1}
 	assert.NoError(t, validate(obj))
 	assert.NoError(t, validate(&obj))
-	assert.Equal(t, obj, Object{"foo": "bar", "bar": 1})
+	assert.Equal(t, Object{"foo": "bar", "bar": 1}, obj)
 
 	obj2 := []Object{{"foo": "bar", "bar": 1}, {"foo": "bar", "bar": 1}}
 	assert.NoError(t, validate(obj2))
@@ -185,12 +185,12 @@ func TestValidatePrimitives(t *testing.T) {
 	nu := 10
 	assert.NoError(t, validate(nu))
 	assert.NoError(t, validate(&nu))
-	assert.Equal(t, nu, 10)
+	assert.Equal(t, 10, nu)
 
 	str := "value"
 	assert.NoError(t, validate(str))
 	assert.NoError(t, validate(&str))
-	assert.Equal(t, str, "value")
+	assert.Equal(t, "value", str)
 }
 
 // structCustomValidation is a helper struct we use to check that
