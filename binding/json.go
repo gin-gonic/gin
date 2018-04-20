@@ -7,13 +7,13 @@ package binding
 import (
 	"net/http"
 
-	"github.com/json-iterator/go"
+	"github.com/gin-gonic/gin/json"
 )
 
-var (
-	json                   = jsoniter.ConfigCompatibleWithStandardLibrary
-	EnableDecoderUseNumber = false
-)
+// EnableDecoderUseNumber is used to call the UseNumber method on the JSON
+// Decoder instance. UseNumber causes the Decoder to unmarshal a number into an
+// interface{} as a Number instead of as a float64.
+var EnableDecoderUseNumber = false
 
 type jsonBinding struct{}
 
