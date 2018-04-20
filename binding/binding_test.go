@@ -478,8 +478,8 @@ func TestBindingDefaultValueFormPost(t *testing.T) {
 	var obj FooDefaultBarStruct
 	FormPost.Bind(req, &obj)
 
-	assert.Equal(t, obj.Foo, "bar")
-	assert.Equal(t, obj.Bar, "hello")
+	assert.Equal(t, "bar", obj.Foo)
+	assert.Equal(t, "hello", obj.Bar)
 }
 
 func TestBindingFormPostFail(t *testing.T) {
@@ -612,7 +612,7 @@ func testFormBinding(t *testing.T, method, path, badPath, body, badBody string) 
 
 func testFormBindingDefaultValue(t *testing.T, method, path, badPath, body, badBody string) {
 	b := Form
-	assert.Equal(t, b.Name(), "form")
+	assert.Equal(t, "form", b.Name())
 
 	obj := FooDefaultBarStruct{}
 	req := requestWithBody(method, path, body)
@@ -621,8 +621,8 @@ func testFormBindingDefaultValue(t *testing.T, method, path, badPath, body, badB
 	}
 	err := b.Bind(req, &obj)
 	assert.NoError(t, err)
-	assert.Equal(t, obj.Foo, "bar")
-	assert.Equal(t, obj.Bar, "hello")
+	assert.Equal(t, "bar", obj.Foo)
+	assert.Equal(t, "hello", obj.Bar)
 
 	obj = FooDefaultBarStruct{}
 	req = requestWithBody(method, badPath, badBody)
