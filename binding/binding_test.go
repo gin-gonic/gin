@@ -462,7 +462,7 @@ func TestBindingFormMultipart(t *testing.T) {
 	var obj FooBarStruct
 	FormMultipart.Bind(req, &obj)
 
-	assert.Equal(t, "multipart/form-data", FormMultpart.Name())
+	assert.Equal(t, "multipart/form-data", FormMultipart.Name())
 	assert.Equal(t, "bar", obj.Foo)
 	assert.Equal(t, "foo", obj.Bar)
 }
