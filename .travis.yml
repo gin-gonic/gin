@@ -9,7 +9,7 @@ go:
   - master
 
 git:
-  depth: 3
+  depth: 10
 
 install:
   - make install
