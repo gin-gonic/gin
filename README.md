@@ -49,6 +49,7 @@ Gin is a web framework written in Go (Golang). It features a martini-like API wi
     - [Support Let's Encrypt](#support-lets-encrypt)
     - [Run multiple service using Gin](#run-multiple-service-using-gin)
     - [Graceful restart or stop](#graceful-restart-or-stop)
+    - [Build a single binary with templates](#build-a-single-binary-with-templates)
 - [Testing](#testing)
 - [Users](#users--)
 
@@ -1392,6 +1393,50 @@ func main() {
 	log.Println("Server exiting")
 }
 ```
+
+### Build a single binary with templates
+
+You can build a server into a single binary containing templates by using [go-assets][].
+
+[go-assets]: https://github.com/jessevdk/go-assets
+
+```go
+func main() {
+	r := gin.New()
+
+	t, err := loadTemplate()
+	if err != nil {
+		panic(err)
+	}
+	r.SetHTMLTemplate(t)
+
+	r.GET("/", func(c *gin.Context) {
+		c.HTML(http.StatusOK, "/html/index.tmpl",nil)
+	})
+	r.Run(":8080")
+}
+
+// loadTemplate loads templates embedded by go-assets-builder
+func loadTemplate() (*template.Template, error) {
+	t := template.New("")
+	for name, file := range Assets.Files {
+		if file.IsDir() || !strings.HasSuffix(name, ".tmpl") {
+			continue
+		}
+		h, err := ioutil.ReadAll(file)
+		if err != nil {
+			return nil, err
+		}
+		t, err = t.New(name).Parse(string(h))
+		if err != nil {
+			return nil, err
+		}
+	}
+	return t, nil
+}
+```
+
+See a complete example in the `examples/assets-in-binary` directory.
 
 ## Testing
 
