@@ -670,6 +670,13 @@ func (c *Context) SecureJSON(code int, obj interface{}) {
 	c.Render(code, render.SecureJSON{Prefix: c.engine.secureJsonPrefix, Data: obj})
 }
 
+// JSONP serializes the given struct as JSON into the response body.
+// It add padding to response body to request data from a server residing in a different domain than the client.
+// It also sets the Content-Type as "application/javascript".
+func (c *Context) JSONP(code int, obj interface{}) {
+	c.Render(code, render.JsonpJSON{Callback: c.DefaultQuery("callback", ""), Data: obj})
+}
+
 // JSON serializes the given struct as JSON into the response body.
 // It also sets the Content-Type as "application/json".
 func (c *Context) JSON(code int, obj interface{}) {
