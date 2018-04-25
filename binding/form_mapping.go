@@ -112,6 +112,12 @@ func setWithProperType(valueKind reflect.Kind, val string, structField reflect.V
 		return setFloatField(val, 64, structField)
 	case reflect.String:
 		structField.SetString(val)
+	case reflect.Ptr:
+		if !structField.Elem().IsValid() {
+			structField.Set(reflect.New(structField.Type().Elem()))
+		}
+		structFieldElem := structField.Elem()
+		return setWithProperType(structFieldElem.Kind(), val, structFieldElem)
 	default:
 		return errors.New("Unknown type")
 	}
