@@ -8,6 +8,7 @@ import (
 	"errors"
 	"reflect"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -23,6 +24,15 @@ func mapForm(ptr interface{}, form map[string][]string) error {
 
 		structFieldKind := structField.Kind()
 		inputFieldName := typeField.Tag.Get("form")
+		inputFieldNameList := strings.Split(inputFieldName, ",")
+		inputFieldName = inputFieldNameList[0]
+		var defaultValue string
+		if len(inputFieldNameList) > 1 {
+			defaultList := strings.SplitN(inputFieldNameList[1], "=", 2)
+			if defaultList[0] == "default" {
+				defaultValue = defaultList[1]
+			}
+		}
 		if inputFieldName == "" {
 			inputFieldName = typeField.Name
 
@@ -38,8 +48,13 @@ func mapForm(ptr interface{}, form map[string][]string) error {
 			}
 		}
 		inputValue, exists := form[inputFieldName]
+
 		if !exists {
-			continue
+			if defaultValue == "" {
+				continue
+			}
+			inputValue = make([]string, 1)
+			inputValue[0] = defaultValue
 		}
 
 		numElems := len(inputValue)

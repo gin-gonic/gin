@@ -29,6 +29,11 @@ type FooBarStruct struct {
 	Bar string `msgpack:"bar" json:"bar" form:"bar" xml:"bar" binding:"required"`
 }
 
+type FooDefaultBarStruct struct {
+	FooStruct
+	Bar string `msgpack:"bar" json:"bar" form:"bar,default=hello" xml:"bar" binding:"required"`
+}
+
 type FooStructUseNumber struct {
 	Foo interface{} `json:"foo" binding:"required"`
 }
@@ -192,6 +197,18 @@ func TestBindingForm(t *testing.T) {
 func TestBindingForm2(t *testing.T) {
 	testFormBinding(t, "GET",
 		"/?foo=bar&bar=foo", "/?bar2=foo",
+		"", "")
+}
+
+func TestBindingFormDefaultValue(t *testing.T) {
+	testFormBindingDefaultValue(t, "POST",
+		"/", "/",
+		"foo=bar", "bar2=foo")
+}
+
+func TestBindingFormDefaultValue2(t *testing.T) {
+	testFormBindingDefaultValue(t, "GET",
+		"/?foo=bar", "/?bar2=foo",
 		"", "")
 }
 
@@ -407,6 +424,12 @@ func createFormPostRequest() *http.Request {
 	return req
 }
 
+func createDefaultFormPostRequest() *http.Request {
+	req, _ := http.NewRequest("POST", "/?foo=getfoo&bar=getbar", bytes.NewBufferString("foo=bar"))
+	req.Header.Set("Content-Type", MIMEPOSTForm)
+	return req
+}
+
 func createFormPostRequestFail() *http.Request {
 	req, _ := http.NewRequest("POST", "/?map_foo=getfoo", bytes.NewBufferString("map_foo=bar"))
 	req.Header.Set("Content-Type", MIMEPOSTForm)
@@ -448,6 +471,15 @@ func TestBindingFormPost(t *testing.T) {
 	assert.Equal(t, "form-urlencoded", FormPost.Name())
 	assert.Equal(t, "bar", obj.Foo)
 	assert.Equal(t, "foo", obj.Bar)
+}
+
+func TestBindingDefaultValueFormPost(t *testing.T) {
+	req := createDefaultFormPostRequest()
+	var obj FooDefaultBarStruct
+	FormPost.Bind(req, &obj)
+
+	assert.Equal(t, "bar", obj.Foo)
+	assert.Equal(t, "hello", obj.Bar)
 }
 
 func TestBindingFormPostFail(t *testing.T) {
@@ -573,6 +605,26 @@ func testFormBinding(t *testing.T, method, path, badPath, body, badBody string) 
 	assert.Equal(t, "foo", obj.Bar)
 
 	obj = FooBarStruct{}
+	req = requestWithBody(method, badPath, badBody)
+	err = JSON.Bind(req, &obj)
+	assert.Error(t, err)
+}
+
+func testFormBindingDefaultValue(t *testing.T, method, path, badPath, body, badBody string) {
+	b := Form
+	assert.Equal(t, "form", b.Name())
+
+	obj := FooDefaultBarStruct{}
+	req := requestWithBody(method, path, body)
+	if method == "POST" {
+		req.Header.Add("Content-Type", MIMEPOSTForm)
+	}
+	err := b.Bind(req, &obj)
+	assert.NoError(t, err)
+	assert.Equal(t, "bar", obj.Foo)
+	assert.Equal(t, "hello", obj.Bar)
+
+	obj = FooDefaultBarStruct{}
 	req = requestWithBody(method, badPath, badBody)
 	err = JSON.Bind(req, &obj)
 	assert.Error(t, err)
