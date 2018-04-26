@@ -144,6 +144,15 @@ type FooBarStructForFloat64Type struct {
 	Float64Bar float64 `form:"float64_bar" binding:"required"`
 }
 
+type FooStructForStringPtrType struct {
+	PtrFoo *string `form:"ptr_foo"`
+	PtrBar *string `form:"ptr_bar" binding:"required"`
+}
+
+type FooStructForMapPtrType struct {
+	PtrBar *map[string]interface{} `form:"ptr_bar"`
+}
+
 func TestBindingDefault(t *testing.T) {
 	assert.Equal(t, Form, Default("GET", ""))
 	assert.Equal(t, Form, Default("GET", MIMEJSON))
@@ -378,6 +387,14 @@ func TestBindingFormForType(t *testing.T) {
 	testFormBindingForType(t, "GET",
 		"/?float64_foo=&float64_bar=-12.34", "/?bar2=12.3",
 		"", "", "Float64")
+
+	testFormBindingForType(t, "POST",
+		"/", "/",
+		"ptr_bar=test", "bar2=test", "Ptr")
+
+	testFormBindingForType(t, "GET",
+		"/?ptr_bar=test", "/?bar2=test",
+		"", "", "Ptr")
 }
 
 func TestBindingQuery(t *testing.T) {
@@ -943,6 +960,27 @@ func testFormBindingForType(t *testing.T, method, path, badPath, body, badBody s
 	case "SliceMap":
 		obj := FooStructForSliceMapType{}
 		err := b.Bind(req, &obj)
+		assert.Error(t, err)
+	case "Ptr":
+		obj := FooStructForStringPtrType{}
+		err := b.Bind(req, &obj)
+		assert.NoError(t, err)
+		assert.Nil(t, obj.PtrFoo)
+		assert.Equal(t, "test", *obj.PtrBar)
+
+		obj = FooStructForStringPtrType{}
+		obj.PtrBar = new(string)
+		err = b.Bind(req, &obj)
+		assert.NoError(t, err)
+		assert.Equal(t, "test", *obj.PtrBar)
+
+		objErr := FooStructForMapPtrType{}
+		err = b.Bind(req, &objErr)
+		assert.Error(t, err)
+
+		obj = FooStructForStringPtrType{}
+		req = requestWithBody(method, badPath, badBody)
+		err = b.Bind(req, &obj)
 		assert.Error(t, err)
 	}
 }
