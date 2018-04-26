@@ -581,6 +581,20 @@ func TestContextRenderJSON(t *testing.T) {
 	assert.Equal(t, "application/json; charset=utf-8", w.HeaderMap.Get("Content-Type"))
 }
 
+// Tests that the response is serialized as JSONP
+// and Content-Type is set to application/javascript
+func TestContextRenderJSONP(t *testing.T) {
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
+	c.Request, _ = http.NewRequest("GET", "http://example.com/?callback=x", nil)
+
+	c.JSONP(201, H{"foo": "bar"})
+
+	assert.Equal(t, 201, w.Code)
+	assert.Equal(t, "x({\"foo\":\"bar\"})", w.Body.String())
+	assert.Equal(t, "application/javascript; charset=utf-8", w.HeaderMap.Get("Content-Type"))
+}
+
 // Tests that no JSON is rendered if code is 204
 func TestContextRenderNoContentJSON(t *testing.T) {
 	w := httptest.NewRecorder()
