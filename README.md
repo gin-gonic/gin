@@ -38,6 +38,7 @@ Gin is a web framework written in Go (Golang). It features a martini-like API wi
     - [Bind HTML checkboxes](#bind-html-checkboxes)
     - [Multipart/Urlencoded binding](#multiparturlencoded-binding)
     - [XML, JSON and YAML rendering](#xml-json-and-yaml-rendering)
+    - [JSONP rendering](#jsonp)
     - [Serving static files](#serving-static-files)
     - [HTML rendering](#html-rendering)
     - [Multitemplate](#multitemplate)
@@ -855,6 +856,28 @@ func main() {
 
 		// Will output  :   while(1);["lena","austin","foo"]
 		c.SecureJSON(http.StatusOK, names)
+	})
+
+	// Listen and serve on 0.0.0.0:8080
+	r.Run(":8080")
+}
+```
+#### JSONP
+
+Using JSONP to request data from a server  in a different domain. Add callback to response body if the query parameter callback exists.
+
+```go
+func main() {
+	r := gin.Default()
+
+	r.GET("/JSONP?callback=x", func(c *gin.Context) {
+		data := map[string]interface{}{
+			"foo": "bar",
+		}
+		
+		//callback is x
+		// Will output  :   x({\"foo\":\"bar\"})
+		c.JSONP(http.StatusOK, data)
 	})
 
 	// Listen and serve on 0.0.0.0:8080

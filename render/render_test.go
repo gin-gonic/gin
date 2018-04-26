@@ -128,6 +128,43 @@ func TestRenderSecureJSONFail(t *testing.T) {
 	assert.Error(t, err)
 }
 
+func TestRenderJsonpJSON(t *testing.T) {
+	w1 := httptest.NewRecorder()
+	data := map[string]interface{}{
+		"foo": "bar",
+	}
+
+	(JsonpJSON{"x", data}).WriteContentType(w1)
+	assert.Equal(t, "application/javascript; charset=utf-8", w1.Header().Get("Content-Type"))
+
+	err1 := (JsonpJSON{"x", data}).Render(w1)
+
+	assert.NoError(t, err1)
+	assert.Equal(t, "x({\"foo\":\"bar\"})", w1.Body.String())
+	assert.Equal(t, "application/javascript; charset=utf-8", w1.Header().Get("Content-Type"))
+
+	w2 := httptest.NewRecorder()
+	datas := []map[string]interface{}{{
+		"foo": "bar",
+	}, {
+		"bar": "foo",
+	}}
+
+	err2 := (JsonpJSON{"x", datas}).Render(w2)
+	assert.NoError(t, err2)
+	assert.Equal(t, "x([{\"foo\":\"bar\"},{\"bar\":\"foo\"}])", w2.Body.String())
+	assert.Equal(t, "application/javascript; charset=utf-8", w2.Header().Get("Content-Type"))
+}
+
+func TestRenderJsonpJSONFail(t *testing.T) {
+	w := httptest.NewRecorder()
+	data := make(chan int)
+
+	// json: unsupported type: chan int
+	err := (JsonpJSON{"x", data}).Render(w)
+	assert.Error(t, err)
+}
+
 type xmlmap map[string]interface{}
 
 // Allows type H to be used with xml.Marshal
