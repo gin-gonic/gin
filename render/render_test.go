@@ -161,7 +161,7 @@ func TestRenderJsonpJSONFail(t *testing.T) {
 	data := make(chan int)
 
 	// json: unsupported type: chan int
-	err := (SecureJSON{"x", data}).Render(w)
+	err := (JsonpJSON{"x", data}).Render(w)
 	assert.Error(t, err)
 }
 
