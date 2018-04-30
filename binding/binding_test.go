@@ -986,14 +986,22 @@ func testFormBindingForType(t *testing.T, method, path, badPath, body, badBody s
 		err := b.Bind(req, &obj)
 		assert.NoError(t, err)
 		assert.Equal(t,
-			struct { Idx int "form:\"idx\"" }(struct { Idx int "form:\"idx\"" }{Idx:123}),
+			struct {
+				Idx int "form:\"idx\""
+			}(struct {
+				Idx int "form:\"idx\""
+			}{Idx:123}),
 			obj.StructFoo)
 	case "StructPointer":
 		obj := FooStructForStructPointerType{}
 		err := b.Bind(req, &obj)
 		assert.NoError(t, err)
 		assert.Equal(t,
-			struct { Name string "form:\"name\"" }(struct { Name string "form:\"name\"" }{Name:"thinkerou"}),
+			struct {
+				Name string "form:\"name\""
+			}(struct {
+				Name string "form:\"name\""
+			}{Name:"thinkerou"}),
 			*obj.StructPointerFoo)
 	case "Map":
 		obj := FooStructForMapType{}
