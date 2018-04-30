@@ -990,7 +990,7 @@ func testFormBindingForType(t *testing.T, method, path, badPath, body, badBody s
 				Idx int "form:\"idx\""
 			}(struct {
 				Idx int "form:\"idx\""
-			}{Idx:123}),
+			}{Idx: 123}),
 			obj.StructFoo)
 	case "StructPointer":
 		obj := FooStructForStructPointerType{}
@@ -1001,7 +1001,7 @@ func testFormBindingForType(t *testing.T, method, path, badPath, body, badBody s
 				Name string "form:\"name\""
 			}(struct {
 				Name string "form:\"name\""
-			}{Name:"thinkerou"}),
+			}{Name: "thinkerou"}),
 			*obj.StructPointerFoo)
 	case "Map":
 		obj := FooStructForMapType{}
