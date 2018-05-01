@@ -74,6 +74,18 @@ type FooStructForSliceType struct {
 	SliceFoo []int `form:"slice_foo"`
 }
 
+type FooStructForStructType struct {
+	StructFoo struct {
+		Idx int `form:"idx"`
+	}
+}
+
+type FooStructForStructPointerType struct {
+	StructPointerFoo *struct {
+		Name string `form:"name"`
+	}
+}
+
 type FooStructForSliceMapType struct {
 	// Unknown type: not support map
 	SliceMapFoo []map[string]interface{} `form:"slice_map_foo"`
@@ -395,6 +407,22 @@ func TestBindingFormForType(t *testing.T) {
 	testFormBindingForType(t, "GET",
 		"/?ptr_bar=test", "/?bar2=test",
 		"", "", "Ptr")
+
+	testFormBindingForType(t, "POST",
+		"/", "/",
+		"idx=123", "id1=1", "Struct")
+
+	testFormBindingForType(t, "GET",
+		"/?idx=123", "/?id1=1",
+		"", "", "Struct")
+
+	testFormBindingForType(t, "POST",
+		"/", "/",
+		"name=thinkerou", "name1=ou", "StructPointer")
+
+	testFormBindingForType(t, "GET",
+		"/?name=thinkerou", "/?name1=ou",
+		"", "", "StructPointer")
 }
 
 func TestBindingQuery(t *testing.T) {
@@ -953,6 +981,28 @@ func testFormBindingForType(t *testing.T, method, path, badPath, body, badBody s
 		req = requestWithBody(method, badPath, badBody)
 		err = JSON.Bind(req, &obj)
 		assert.Error(t, err)
+	case "Struct":
+		obj := FooStructForStructType{}
+		err := b.Bind(req, &obj)
+		assert.NoError(t, err)
+		assert.Equal(t,
+			struct {
+				Idx int "form:\"idx\""
+			}(struct {
+				Idx int "form:\"idx\""
+			}{Idx: 123}),
+			obj.StructFoo)
+	case "StructPointer":
+		obj := FooStructForStructPointerType{}
+		err := b.Bind(req, &obj)
+		assert.NoError(t, err)
+		assert.Equal(t,
+			struct {
+				Name string "form:\"name\""
+			}(struct {
+				Name string "form:\"name\""
+			}{Name: "thinkerou"}),
+			*obj.StructPointerFoo)
 	case "Map":
 		obj := FooStructForMapType{}
 		err := b.Bind(req, &obj)

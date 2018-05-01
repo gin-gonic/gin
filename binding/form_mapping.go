@@ -36,9 +36,16 @@ func mapForm(ptr interface{}, form map[string][]string) error {
 		if inputFieldName == "" {
 			inputFieldName = typeField.Name
 
-			// if "form" tag is nil, we inspect if the field is a struct.
+			// if "form" tag is nil, we inspect if the field is a struct or struct pointer.
 			// this would not make sense for JSON parsing but it does for a form
 			// since data is flatten
+			if structFieldKind == reflect.Ptr {
+				if !structField.Elem().IsValid() {
+					structField.Set(reflect.New(structField.Type().Elem()))
+				}
+				structField = structField.Elem()
+				structFieldKind = structField.Kind()
+			}
 			if structFieldKind == reflect.Struct {
 				err := mapForm(structField.Addr().Interface(), form)
 				if err != nil {

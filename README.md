@@ -51,6 +51,7 @@ Gin is a web framework written in Go (Golang). It features a martini-like API wi
     - [Run multiple service using Gin](#run-multiple-service-using-gin)
     - [Graceful restart or stop](#graceful-restart-or-stop)
     - [Build a single binary with templates](#build-a-single-binary-with-templates)
+    - [Bind form-data request with custom struct](#bind-form-data-request-with-custom-struct)
 - [Testing](#testing)
 - [Users](#users--)
 
@@ -1460,6 +1461,98 @@ func loadTemplate() (*template.Template, error) {
 ```
 
 See a complete example in the `examples/assets-in-binary` directory.
+
+### Bind form-data request with custom struct
+
+The follow example using custom struct:
+
+```go
+type StructA struct {
+    FieldA string `form:"field_a"`
+}
+
+type StructB struct {
+    NestedStruct StructA
+    FieldB string `form:"field_b"`
+}
+
+type StructC struct {
+    NestedStructPointer *StructA
+    FieldC string `form:"field_c"`
+}
+
+type StructD struct {
+    NestedAnonyStruct struct {
+        FieldX string `form:"field_x"`
+    }
+    FieldD string `form:"field_d"`
+}
+
+func GetDataB(c *gin.Context) {
+    var b StructB
+    c.Bind(&b)
+    c.JSON(200, gin.H{
+        "a": b.NestedStruct,
+        "b": b.FieldB,
+    })
+}
+
+func GetDataC(c *gin.Context) {
+    var b StructC
+    c.Bind(&b)
+    c.JSON(200, gin.H{
+        "a": b.NestedStructPointer,
+        "c": b.FieldC,
+    })
+}
+
+func GetDataD(c *gin.Context) {
+    var b StructD
+    c.Bind(&b)
+    c.JSON(200, gin.H{
+        "x": b.NestedAnonyStruct,
+        "d": b.FieldD,
+    })
+}
+
+func main() {
+    r := gin.Default()
+    r.GET("/getb", GetDataB)
+    r.GET("/getc", GetDataC)
+    r.GET("/getd", GetDataD)
+
+    r.Run()
+}
+```
+
+Using the command `curl` command result:
+
+```
+$ curl "http://localhost:8080/getb?field_a=hello&field_b=world"
+{"a":{"FieldA":"hello"},"b":"world"}
+$ curl "http://localhost:8080/getc?field_a=hello&field_c=world"
+{"a":{"FieldA":"hello"},"c":"world"}
+$ curl "http://localhost:8080/getd?field_x=hello&field_d=world"
+{"d":"world","x":{"FieldX":"hello"}}
+```
+
+**NOTE**: NOT support the follow style struct:
+
+```go
+type StructX struct {
+    X struct {} `form:"name_x"` // HERE have form
+}
+
+type StructY struct {
+    Y StructX `form:"name_y"` // HERE hava form
+}
+
+type StructZ struct {
+    Z *StructZ `form:"name_z"` // HERE hava form
+}
+```
+
+In a word, only support nested custom struct which have no `form` now.
 
 ## Testing
 
