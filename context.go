@@ -31,7 +31,7 @@ const (
 	MIMEPlain             = binding.MIMEPlain
 	MIMEPOSTForm          = binding.MIMEPOSTForm
 	MIMEMultipartPOSTForm = binding.MIMEMultipartPOSTForm
-	BodyBytesKey          = "github.com/gin-gonic/gin/bodyBytes"
+	BindBodyBytesKey      = "github.com/gin-gonic/gin/bindBodyBytes"
 )
 
 const abortIndex int8 = math.MaxInt8 / 2
@@ -518,7 +518,7 @@ func (c *Context) ShouldBindBodyWith(
 	obj interface{}, bb binding.BindingBody,
 ) (err error) {
 	var body []byte
-	if cb, ok := c.Get(BodyBytesKey); ok {
+	if cb, ok := c.Get(BindBodyBytesKey); ok {
 		if cbb, ok := cb.([]byte); ok {
 			body = cbb
 		}
@@ -528,7 +528,7 @@ func (c *Context) ShouldBindBodyWith(
 		if err != nil {
 			return err
 		}
-		c.Set(BodyBytesKey, body)
+		c.Set(BindBodyBytesKey, body)
 	}
 	return bb.BindBody(body, obj)
 }
