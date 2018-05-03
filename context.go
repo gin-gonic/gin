@@ -31,7 +31,7 @@ const (
 	MIMEPlain             = binding.MIMEPlain
 	MIMEPOSTForm          = binding.MIMEPOSTForm
 	MIMEMultipartPOSTForm = binding.MIMEMultipartPOSTForm
-	BodyBytesKey          = "github.com/gin-gonic/gin/bodyBytes"
+	BodyBytesKey          = "_gin-gonic/gin/bodybyteskey"
 )
 
 const abortIndex int8 = math.MaxInt8 / 2
