@@ -512,7 +512,7 @@ func (c *Context) ShouldBindWith(obj interface{}, b binding.Binding) error {
 // ShouldBindBodyWith is similar with ShouldBindWith, but it stores the request
 // body into the context, and reuse when it is called again.
 //
-// NOTE: This method reads the body before binding.  So you should use
+// NOTE: This method reads the body before binding. So you should use
 // ShouldBindWith for better performance if you need to call only once.
 func (c *Context) ShouldBindBodyWith(
 	obj interface{}, bb binding.BindingBody,
