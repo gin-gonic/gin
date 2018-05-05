@@ -18,6 +18,7 @@ import (
 	"time"
 
 	"github.com/gin-contrib/sse"
+	"github.com/gin-gonic/gin/binding"
 	"github.com/stretchr/testify/assert"
 	"golang.org/x/net/context"
 )
@@ -1332,6 +1333,85 @@ func TestContextBadAutoShouldBind(t *testing.T) {
 	assert.Empty(t, obj.Bar)
 	assert.Empty(t, obj.Foo)
 	assert.False(t, c.IsAborted())
+}
+
+func TestContextShouldBindBodyWith(t *testing.T) {
+	type typeA struct {
+		Foo string `json:"foo" xml:"foo" binding:"required"`
+	}
+	type typeB struct {
+		Bar string `json:"bar" xml:"bar" binding:"required"`
+	}
+	for _, tt := range []struct {
+		name               string
+		bindingA, bindingB binding.BindingBody
+		bodyA, bodyB       string
+	}{
+		{
+			name:     "JSON & JSON",
+			bindingA: binding.JSON,
+			bindingB: binding.JSON,
+			bodyA:    `{"foo":"FOO"}`,
+			bodyB:    `{"bar":"BAR"}`,
+		},
+		{
+			name:     "JSON & XML",
+			bindingA: binding.JSON,
+			bindingB: binding.XML,
+			bodyA:    `{"foo":"FOO"}`,
+			bodyB: `<?xml version="1.0" encoding="UTF-8"?>
+<root>
+   <bar>BAR</bar>
+</root>`,
+		},
+		{
+			name:     "XML & XML",
+			bindingA: binding.XML,
+			bindingB: binding.XML,
+			bodyA: `<?xml version="1.0" encoding="UTF-8"?>
+<root>
+   <foo>FOO</foo>
+</root>`,
+			bodyB: `<?xml version="1.0" encoding="UTF-8"?>
+<root>
+   <bar>BAR</bar>
+</root>`,
+		},
+	} {
+		t.Logf("testing: %s", tt.name)
+		// bodyA to typeA and typeB
+		{
+			w := httptest.NewRecorder()
+			c, _ := CreateTestContext(w)
+			c.Request, _ = http.NewRequest(
+				"POST", "http://example.com", bytes.NewBufferString(tt.bodyA),
+			)
+			// When it binds to typeA and typeB, it finds the body is
+			// not typeB but typeA.
+			objA := typeA{}
+			assert.NoError(t, c.ShouldBindBodyWith(&objA, tt.bindingA))
+			assert.Equal(t, typeA{"FOO"}, objA)
+			objB := typeB{}
+			assert.Error(t, c.ShouldBindBodyWith(&objB, tt.bindingB))
+			assert.NotEqual(t, typeB{"BAR"}, objB)
+		}
+		// bodyB to typeA and typeB
+		{
+			// When it binds to typeA and typeB, it finds the body is
+			// not typeA but typeB.
+			w := httptest.NewRecorder()
+			c, _ := CreateTestContext(w)
+			c.Request, _ = http.NewRequest(
+				"POST", "http://example.com", bytes.NewBufferString(tt.bodyB),
+			)
+			objA := typeA{}
+			assert.Error(t, c.ShouldBindBodyWith(&objA, tt.bindingA))
+			assert.NotEqual(t, typeA{"FOO"}, objA)
+			objB := typeB{}
+			assert.NoError(t, c.ShouldBindBodyWith(&objB, tt.bindingB))
+			assert.Equal(t, typeB{"BAR"}, objB)
+		}
+	}
 }
 
 func TestContextGolangContext(t *testing.T) {
