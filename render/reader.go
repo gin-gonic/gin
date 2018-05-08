@@ -1,9 +1,9 @@
 package render
 
 import (
-	"fmt"
 	"io"
 	"net/http"
+	"strconv"
 )
 
 type Reader struct {
@@ -16,7 +16,7 @@ type Reader struct {
 // Render (Reader) writes data with custom ContentType and headers.
 func (r Reader) Render(w http.ResponseWriter) (err error) {
 	r.WriteContentType(w)
-	r.Headers["Content-Length"] = fmt.Sprintf("%d", r.ContentLength)
+	r.Headers["Content-Length"] = strconv.FormatInt(r.ContentLength, 10)
 	r.writeHeaders(w, r.Headers)
 	_, err = io.Copy(w, r.Reader)
 	return
