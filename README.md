@@ -40,6 +40,7 @@ Gin is a web framework written in Go (Golang). It features a martini-like API wi
     - [XML, JSON and YAML rendering](#xml-json-and-yaml-rendering)
     - [JSONP rendering](#jsonp)
     - [Serving static files](#serving-static-files)
+    - [Serving data from reader](#serving-data-from-reader)
     - [HTML rendering](#html-rendering)
     - [Multitemplate](#multitemplate)
     - [Redirects](#redirects)
