@@ -19,7 +19,7 @@ import (
 
 	"github.com/gin-contrib/sse"
 	"github.com/stretchr/testify/assert"
-	"golang.org/x/net/context"
+	"context"
 )
 
 var _ context.Context = &Context{}
