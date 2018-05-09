@@ -96,13 +96,6 @@
 			"revisionTime": "2017-06-19T06:03:41Z"
 		},
 		{
-			"checksumSHA1": "9jjO5GjLa0XF/nfWihF02RoH4qc=",
-			"comment": "release-branch.go1.7",
-			"path": "golang.org/x/net/context",
-			"revision": "d4c55e66d8c3a2f3382d264b08e3e3454a66355a",
-			"revisionTime": "2016-10-18T08:54:36Z"
-		},
-		{
 			"checksumSHA1": "S0DP7Pn7sZUmXc55IzZnNvERu6s=",
 			"path": "golang.org/x/sync/errgroup",
 			"revision": "8e0aa688b654ef28caa72506fa5ec8dba9fc7690",
