@@ -91,6 +91,10 @@ type FooStructForSliceMapType struct {
 	SliceMapFoo []map[string]interface{} `form:"slice_map_foo"`
 }
 
+type FooStructForBoolType struct {
+	BoolFoo bool `form:"bool_foo"`
+}
+
 type FooBarStructForIntType struct {
 	IntFoo int `form:"int_foo"`
 	IntBar int `form:"int_bar" binding:"required"`
@@ -447,6 +451,12 @@ func TestBindingQueryFail2(t *testing.T) {
 	testQueryBindingFail(t, "GET",
 		"/?map_foo=", "/?bar2=foo",
 		"map_foo=unused", "")
+}
+
+func TestBindingQueryBoolFail(t *testing.T) {
+	testQueryBindingBoolFail(t, "GET",
+		"/?bool_foo=fasl", "/?bar2=foo",
+		"bool_foo=unused", "")
 }
 
 func TestBindingXML(t *testing.T) {
@@ -1055,6 +1065,19 @@ func testQueryBindingFail(t *testing.T, method, path, badPath, body, badBody str
 	assert.Equal(t, "query", b.Name())
 
 	obj := FooStructForMapType{}
+	req := requestWithBody(method, path, body)
+	if method == "POST" {
+		req.Header.Add("Content-Type", MIMEPOSTForm)
+	}
+	err := b.Bind(req, &obj)
+	assert.Error(t, err)
+}
+
+func testQueryBindingBoolFail(t *testing.T, method, path, badPath, body, badBody string) {
+	b := Query
+	assert.Equal(t, "query", b.Name())
+
+	obj := FooStructForBoolType{}
 	req := requestWithBody(method, path, body)
 	if method == "POST" {
 		req.Header.Add("Content-Type", MIMEPOSTForm)
