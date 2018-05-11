@@ -31,6 +31,7 @@ const (
 	MIMEPlain             = binding.MIMEPlain
 	MIMEPOSTForm          = binding.MIMEPOSTForm
 	MIMEMultipartPOSTForm = binding.MIMEMultipartPOSTForm
+	BodyBytesKey          = "_gin-gonic/gin/bodybyteskey"
 )
 
 const abortIndex int8 = math.MaxInt8 / 2
@@ -506,6 +507,30 @@ func (c *Context) ShouldBindQuery(obj interface{}) error {
 // See the binding package.
 func (c *Context) ShouldBindWith(obj interface{}, b binding.Binding) error {
 	return b.Bind(c.Request, obj)
+}
+
+// ShouldBindBodyWith is similar with ShouldBindWith, but it stores the request
+// body into the context, and reuse when it is called again.
+//
+// NOTE: This method reads the body before binding. So you should use
+// ShouldBindWith for better performance if you need to call only once.
+func (c *Context) ShouldBindBodyWith(
+	obj interface{}, bb binding.BindingBody,
+) (err error) {
+	var body []byte
+	if cb, ok := c.Get(BodyBytesKey); ok {
+		if cbb, ok := cb.([]byte); ok {
+			body = cbb
+		}
+	}
+	if body == nil {
+		body, err = ioutil.ReadAll(c.Request.Body)
+		if err != nil {
+			return err
+		}
+		c.Set(BodyBytesKey, body)
+	}
+	return bb.BindBody(body, obj)
 }
 
 // ClientIP implements a best effort algorithm to return the real client IP, it parses

@@ -29,6 +29,13 @@ type Binding interface {
 	Bind(*http.Request, interface{}) error
 }
 
+// BindingBody adds BindBody method to Binding. BindBody is similar with Bind,
+// but it reads the body from supplied bytes instead of req.Body.
+type BindingBody interface {
+	Binding
+	BindBody([]byte, interface{}) error
+}
+
 // StructValidator is the minimal interface which needs to be implemented in
 // order for it to be used as the validator engine for ensuring the correctness
 // of the reqest. Gin provides a default implementation for this using
