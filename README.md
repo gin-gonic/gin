@@ -40,6 +40,7 @@ Gin is a web framework written in Go (Golang). It features a martini-like API wi
     - [XML, JSON and YAML rendering](#xml-json-and-yaml-rendering)
     - [JSONP rendering](#jsonp)
     - [Serving static files](#serving-static-files)
+    - [Serving data from reader](#serving-data-from-reader)
     - [HTML rendering](#html-rendering)
     - [Multitemplate](#multitemplate)
     - [Redirects](#redirects)
@@ -897,6 +898,32 @@ func main() {
 	router.StaticFile("/favicon.ico", "./resources/favicon.ico")
 
 	// Listen and serve on 0.0.0.0:8080
+	router.Run(":8080")
+}
+```
+
+### Serving data from reader
+
+```go
+func main() {
+	router := gin.Default()
+	router.GET("/someDataFromReader", func(c *gin.Context) {
+		response, err := http.Get("https://raw.githubusercontent.com/gin-gonic/logo/master/color.png")
+		if err != nil || response.StatusCode != http.StatusOK {
+			c.Status(http.StatusServiceUnavailable)
+			return
+		}
+
+		reader := response.Body
+		contentLength := response.ContentLength
+		contentType := response.Header.Get("Content-Type")
+
+		extraHeaders := map[string]string{
+			"Content-Disposition": `attachment; filename="gopher.png"`,
+		}
+
+		c.DataFromReader(http.StatusOK, contentLength, contentType, reader, extraHeaders)
+	})
 	router.Run(":8080")
 }
 ```

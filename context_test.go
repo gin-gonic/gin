@@ -1471,3 +1471,22 @@ func TestContextGetRawData(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, "Fetch binary post data", string(data))
 }
+
+func TestContextRenderDataFromReader(t *testing.T) {
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
+
+	body := "#!PNG some raw data"
+	reader := strings.NewReader(body)
+	contentLength := int64(len(body))
+	contentType := "image/png"
+	extraHeaders := map[string]string{"Content-Disposition": `attachment; filename="gopher.png"`}
+
+	c.DataFromReader(http.StatusOK, contentLength, contentType, reader, extraHeaders)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Equal(t, body, w.Body.String())
+	assert.Equal(t, contentType, w.HeaderMap.Get("Content-Type"))
+	assert.Equal(t, fmt.Sprintf("%d", contentLength), w.HeaderMap.Get("Content-Length"))
+	assert.Equal(t, extraHeaders["Content-Disposition"], w.HeaderMap.Get("Content-Disposition"))
+}
