@@ -161,7 +161,7 @@ func setBoolField(val string, field reflect.Value) error {
 	if err == nil {
 		field.SetBool(boolVal)
 	}
-	return nil
+	return err
 }
 
 func setFloatField(val string, bitSize int, field reflect.Value) error {
