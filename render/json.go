@@ -6,9 +6,9 @@ package render
 
 import (
 	"bytes"
+	"fmt"
 	"html/template"
 	"net/http"
-	"strconv"
 
 	"github.com/gin-gonic/gin/json"
 )
@@ -127,12 +127,12 @@ func (r AsciiJSON) Render(w http.ResponseWriter) (err error) {
 	}
 
 	result := ""
-	for _, r := range ret {
+	for _, r := range string(ret) {
 		cvt := ""
 		if r < 128 {
 			cvt = string(r)
 		} else {
-			cvt = `\u` + strconv.FormatInt(int64(r), 16)
+			cvt = fmt.Sprintf("\\u%04x", int64(r))
 		}
 		result = result + cvt
 	}
@@ -142,5 +142,5 @@ func (r AsciiJSON) Render(w http.ResponseWriter) (err error) {
 }
 
 func (r AsciiJSON) WriteContentType(w http.ResponseWriter) {
-	writeContentType(w, jsonContentType)
+	writeContentType(w, jsonAsciiContentType)
 }
