@@ -8,6 +8,7 @@ import (
 	"bytes"
 	"html/template"
 	"net/http"
+	"strconv"
 
 	"github.com/gin-gonic/gin/json"
 )
@@ -30,10 +31,15 @@ type JsonpJSON struct {
 	Data     interface{}
 }
 
+type AsciiJSON struct {
+	Data interface{}
+}
+
 type SecureJSONPrefix string
 
 var jsonContentType = []string{"application/json; charset=utf-8"}
 var jsonpContentType = []string{"application/javascript; charset=utf-8"}
+var jsonAsciiContentType = []string{"application/json"}
 
 func (r JSON) Render(w http.ResponseWriter) (err error) {
 	if err = WriteJSON(w, r.Data); err != nil {
@@ -111,4 +117,30 @@ func (r JsonpJSON) Render(w http.ResponseWriter) (err error) {
 
 func (r JsonpJSON) WriteContentType(w http.ResponseWriter) {
 	writeContentType(w, jsonpContentType)
+}
+
+func (r AsciiJSON) Render(w http.ResponseWriter) (err error) {
+	r.WriteContentType(w)
+	ret, err := json.Marshal(r.Data)
+	if err != nil {
+		return err
+	}
+
+	result := ""
+	for _, r := range ret {
+		cvt := ""
+		if r < 128 {
+			cvt = string(r)
+		} else {
+			cvt = `\u` + strconv.FormatInt(int64(r), 16)
+		}
+		result = result + cvt
+	}
+
+	w.Write([]byte(result))
+	return nil
+}
+
+func (r AsciiJSON) WriteContentType(w http.ResponseWriter) {
+	writeContentType(w, jsonContentType)
 }
