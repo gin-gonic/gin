@@ -572,6 +572,7 @@ $ curl -v -X POST \
 ```
 
 **Skip validate**
+
 When running the above example using the above the `curl` command, it returns error. Because the example use `binding:"required"` for `Password`. If use `binding:"-"` for `Password`, then it will not return error when running the above example again.
 
 ### Custom Validators
