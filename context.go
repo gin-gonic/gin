@@ -741,6 +741,16 @@ func (c *Context) Data(code int, contentType string, data []byte) {
 	})
 }
 
+// DataFromReader writes the specified reader into the body stream and updates the HTTP code.
+func (c *Context) DataFromReader(code int, contentLength int64, contentType string, reader io.Reader, extraHeaders map[string]string) {
+	c.Render(code, render.Reader{
+		Headers:       extraHeaders,
+		ContentType:   contentType,
+		ContentLength: contentLength,
+		Reader:        reader,
+	})
+}
+
 // File writes the specified file into the body stream in a efficient way.
 func (c *Context) File(filepath string) {
 	http.ServeFile(c.Writer, c.Request, filepath)
