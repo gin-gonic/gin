@@ -36,10 +36,7 @@ var jsonContentType = []string{"application/json; charset=utf-8"}
 var jsonpContentType = []string{"application/javascript; charset=utf-8"}
 
 func (r JSON) Render(w http.ResponseWriter) (err error) {
-	if err = WriteJSON(w, r.Data); err != nil {
-		panic(err)
-	}
-	return
+	return WriteJSON(w, r.Data)
 }
 
 func (r JSON) WriteContentType(w http.ResponseWriter) {
@@ -52,8 +49,8 @@ func WriteJSON(w http.ResponseWriter, obj interface{}) error {
 	if err != nil {
 		return err
 	}
-	w.Write(jsonBytes)
-	return nil
+	_, err = w.Write(jsonBytes)
+	return err
 }
 
 func (r IndentedJSON) Render(w http.ResponseWriter) error {
@@ -62,8 +59,8 @@ func (r IndentedJSON) Render(w http.ResponseWriter) error {
 	if err != nil {
 		return err
 	}
-	w.Write(jsonBytes)
-	return nil
+	_, err = w.Write(jsonBytes)
+	return err
 }
 
 func (r IndentedJSON) WriteContentType(w http.ResponseWriter) {
@@ -78,10 +75,10 @@ func (r SecureJSON) Render(w http.ResponseWriter) error {
 	}
 	// if the jsonBytes is array values
 	if bytes.HasPrefix(jsonBytes, []byte("[")) && bytes.HasSuffix(jsonBytes, []byte("]")) {
-		w.Write([]byte(r.Prefix))
+		jsonBytes = append([]byte(r.Prefix), jsonBytes...)
 	}
-	w.Write(jsonBytes)
-	return nil
+	_, err = w.Write(jsonBytes)
+	return err
 }
 
 func (r SecureJSON) WriteContentType(w http.ResponseWriter) {
@@ -96,17 +93,20 @@ func (r JsonpJSON) Render(w http.ResponseWriter) (err error) {
 	}
 
 	if r.Callback == "" {
-		w.Write(ret)
-		return nil
+		_, err := w.Write(ret)
+		return err
 	}
 
 	callback := template.JSEscapeString(r.Callback)
-	w.Write([]byte(callback))
-	w.Write([]byte("("))
-	w.Write(ret)
-	w.Write([]byte(")"))
 
-	return nil
+	tmp := []byte("")
+	tmp = append(tmp, []byte(callback)...)
+	tmp = append(tmp, []byte("(")...)
+	tmp = append(tmp, ret...)
+	tmp = append(tmp, []byte(")")...)
+
+	_, err = w.Write(tmp)
+	return err
 }
 
 func (r JsonpJSON) WriteContentType(w http.ResponseWriter) {

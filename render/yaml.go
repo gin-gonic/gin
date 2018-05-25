@@ -24,8 +24,8 @@ func (r YAML) Render(w http.ResponseWriter) error {
 		return err
 	}
 
-	w.Write(bytes)
-	return nil
+	_, err = w.Write(bytes)
+	return err
 }
 
 func (r YAML) WriteContentType(w http.ResponseWriter) {
