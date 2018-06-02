@@ -24,7 +24,7 @@ func TestPanicInHandler(t *testing.T) {
 	w := performRequest(router, "GET", "/recovery")
 	// TEST
 	assert.Equal(t, http.StatusInternalServerError, w.Code)
-	assert.Contains(t, buffer.String(), "GET /recovery")
+	assert.Contains(t, buffer.String(), "panic recovered")
 	assert.Contains(t, buffer.String(), "Oupps, Houston, we have a problem")
 	assert.Contains(t, buffer.String(), "TestPanicInHandler")
 }
