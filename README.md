@@ -572,6 +572,10 @@ $ curl -v -X POST \
 {"error":"Key: 'Login.Password' Error:Field validation for 'Password' failed on the 'required' tag"}
 ```
 
+**Skip validate**
+
+When running the above example using the above the `curl` command, it returns error. Because the example use `binding:"required"` for `Password`. If use `binding:"-"` for `Password`, then it will not return error when running the above example again.
+
 ### Custom Validators
 
 It is also possible to register custom validators. See the [example code](examples/custom-validation/server.go).
@@ -1082,14 +1086,26 @@ Gin allow by default use only one html.Template. Check [a multitemplate render](
 
 ### Redirects
 
-Issuing a HTTP redirect is easy:
+Issuing a HTTP redirect is easy. Both internal and external locations are supported.
 
 ```go
 r.GET("/test", func(c *gin.Context) {
 	c.Redirect(http.StatusMovedPermanently, "http://www.google.com/")
 })
 ```
-Both internal and external locations are supported.
+
+
+Issuing a Router redirect, use `HandleContext` like below.
+
+``` go
+r.GET("/test", func(c *gin.Context) {
+    c.Request.URL.Path = "/test2"
+    r.HandleContext(c)
+})
+r.GET("/test2", func(c *gin.Context) {
+    c.JSON(200, gin.H{"hello": "world"})
+})
+```
 
 
 ### Custom Middleware

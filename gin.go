@@ -329,7 +329,7 @@ func (engine *Engine) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 }
 
 // HandleContext re-enter a context that has been rewritten.
-// This can be done by setting c.Request.Path to your new target.
+// This can be done by setting c.Request.URL.Path to your new target.
 // Disclaimer: You can loop yourself to death with this, use wisely.
 func (engine *Engine) HandleContext(c *Context) {
 	c.reset()
