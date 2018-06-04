@@ -9,10 +9,8 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/json-iterator/go"
+	"github.com/gin-gonic/gin/json"
 )
-
-var json = jsoniter.ConfigCompatibleWithStandardLibrary
 
 type ErrorType uint64
 
@@ -67,7 +65,7 @@ func (msg *Error) JSON() interface{} {
 	return json
 }
 
-// MarshalJSON implements the json.Marshaller interface
+// MarshalJSON implements the json.Marshaller interface.
 func (msg *Error) MarshalJSON() ([]byte, error) {
 	return json.Marshal(msg.JSON())
 }
@@ -82,7 +80,7 @@ func (msg *Error) IsType(flags ErrorType) bool {
 }
 
 // ByType returns a readonly copy filtered the byte.
-// ie ByType(gin.ErrorTypePublic) returns a slice of errors with type=ErrorTypePublic
+// ie ByType(gin.ErrorTypePublic) returns a slice of errors with type=ErrorTypePublic.
 func (a errorMsgs) ByType(typ ErrorType) errorMsgs {
 	if len(a) == 0 {
 		return nil
@@ -100,7 +98,7 @@ func (a errorMsgs) ByType(typ ErrorType) errorMsgs {
 }
 
 // Last returns the last error in the slice. It returns nil if the array is empty.
-// Shortcut for errors[len(errors)-1]
+// Shortcut for errors[len(errors)-1].
 func (a errorMsgs) Last() *Error {
 	if length := len(a); length > 0 {
 		return a[length-1]
@@ -150,7 +148,7 @@ func (a errorMsgs) String() string {
 	}
 	var buffer bytes.Buffer
 	for i, msg := range a {
-		fmt.Fprintf(&buffer, "Error #%02d: %s\n", (i + 1), msg.Err)
+		fmt.Fprintf(&buffer, "Error #%02d: %s\n", i+1, msg.Err)
 		if msg.Meta != nil {
 			fmt.Fprintf(&buffer, "     Meta: %v\n", msg.Meta)
 		}

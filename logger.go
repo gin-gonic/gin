@@ -25,17 +25,17 @@ var (
 	disableColor = false
 )
 
-// DisableConsoleColor disables color output in the console
+// DisableConsoleColor disables color output in the console.
 func DisableConsoleColor() {
 	disableColor = true
 }
 
-// ErrorLogger returns a handlerfunc for any error type
+// ErrorLogger returns a handlerfunc for any error type.
 func ErrorLogger() HandlerFunc {
 	return ErrorLoggerT(ErrorTypeAny)
 }
 
-// ErrorLoggerT returns a handlerfunc for a given error type
+// ErrorLoggerT returns a handlerfunc for a given error type.
 func ErrorLoggerT(typ ErrorType) HandlerFunc {
 	return func(c *Context) {
 		c.Next()
@@ -46,8 +46,8 @@ func ErrorLoggerT(typ ErrorType) HandlerFunc {
 	}
 }
 
-// Logger instances a Logger middleware that will write the logs to gin.DefaultWriter
-// By default gin.DefaultWriter = os.Stdout
+// Logger instances a Logger middleware that will write the logs to gin.DefaultWriter.
+// By default gin.DefaultWriter = os.Stdout.
 func Logger() HandlerFunc {
 	return LoggerWithWriter(DefaultWriter)
 }
@@ -91,10 +91,11 @@ func LoggerWithWriter(out io.Writer, notlogged ...string) HandlerFunc {
 			clientIP := c.ClientIP()
 			method := c.Request.Method
 			statusCode := c.Writer.Status()
-			var statusColor, methodColor string
+			var statusColor, methodColor, resetColor string
 			if isTerm {
 				statusColor = colorForStatus(statusCode)
 				methodColor = colorForMethod(method)
+				resetColor = reset
 			}
 			comment := c.Errors.ByType(ErrorTypePrivate).String()
 
@@ -102,12 +103,12 @@ func LoggerWithWriter(out io.Writer, notlogged ...string) HandlerFunc {
 				path = path + "?" + raw
 			}
 
-			fmt.Fprintf(out, "[GIN] %v |%s %3d %s| %13v | %15s |%s  %s %-7s %s\n%s",
+			fmt.Fprintf(out, "[GIN] %v |%s %3d %s| %13v | %15s |%s %-7s %s %s\n%s",
 				end.Format("2006/01/02 - 15:04:05"),
-				statusColor, statusCode, reset,
+				statusColor, statusCode, resetColor,
 				latency,
 				clientIP,
-				methodColor, method, reset,
+				methodColor, method, resetColor,
 				path,
 				comment,
 			)

@@ -22,7 +22,7 @@ import (
 	"github.com/gin-gonic/gin/render"
 )
 
-// Content-Type MIME of the most common data formats
+// Content-Type MIME of the most common data formats.
 const (
 	MIMEJSON              = binding.MIMEJSON
 	MIMEHTML              = binding.MIMEHTML
@@ -31,12 +31,10 @@ const (
 	MIMEPlain             = binding.MIMEPlain
 	MIMEPOSTForm          = binding.MIMEPOSTForm
 	MIMEMultipartPOSTForm = binding.MIMEMultipartPOSTForm
+	BodyBytesKey          = "_gin-gonic/gin/bodybyteskey"
 )
 
-const (
-	defaultMemory      = 32 << 20 // 32 MB
-	abortIndex    int8 = math.MaxInt8 / 2
-)
+const abortIndex int8 = math.MaxInt8 / 2
 
 // Context is the most important part of gin. It allows us to pass variables between middleware,
 // manage the flow, validate the JSON of a request and render a JSON response for example.
@@ -51,13 +49,13 @@ type Context struct {
 
 	engine *Engine
 
-	// Keys is a key/value pair exclusively for the context of each request
+	// Keys is a key/value pair exclusively for the context of each request.
 	Keys map[string]interface{}
 
-	// Errors is a list of errors attached to all the handlers/middlewares who used this context
+	// Errors is a list of errors attached to all the handlers/middlewares who used this context.
 	Errors errorMsgs
 
-	// Accepted defines a list of manually accepted formats for content negotiation
+	// Accepted defines a list of manually accepted formats for content negotiation.
 	Accepted []string
 }
 
@@ -91,7 +89,7 @@ func (c *Context) Copy() *Context {
 }
 
 // HandlerName returns the main handler's name. For example if the handler is "handleGetUsers()",
-// this function will return "main.handleGetUsers"
+// this function will return "main.handleGetUsers".
 func (c *Context) HandlerName() string {
 	return nameOfFunction(c.handlers.Last())
 }
@@ -110,8 +108,7 @@ func (c *Context) Handler() HandlerFunc {
 // See example in GitHub.
 func (c *Context) Next() {
 	c.index++
-	s := int8(len(c.handlers))
-	for ; c.index < s; c.index++ {
+	for s := int8(len(c.handlers)); c.index < s; c.index++ {
 		c.handlers[c.index](c)
 	}
 }
@@ -411,7 +408,7 @@ func (c *Context) PostFormArray(key string) []string {
 func (c *Context) GetPostFormArray(key string) ([]string, bool) {
 	req := c.Request
 	req.ParseForm()
-	req.ParseMultipartForm(defaultMemory)
+	req.ParseMultipartForm(c.engine.MaxMultipartMemory)
 	if values := req.PostForm[key]; len(values) > 0 {
 		return values, true
 	}
@@ -431,7 +428,7 @@ func (c *Context) FormFile(name string) (*multipart.FileHeader, error) {
 
 // MultipartForm is the parsed multipart form, including file uploads.
 func (c *Context) MultipartForm() (*multipart.Form, error) {
-	err := c.Request.ParseMultipartForm(defaultMemory)
+	err := c.Request.ParseMultipartForm(c.engine.MaxMultipartMemory)
 	return c.Request.MultipartForm, err
 }
 
@@ -457,22 +454,27 @@ func (c *Context) SaveUploadedFile(file *multipart.FileHeader, dst string) error
 // Depending the "Content-Type" header different bindings are used:
 //     "application/json" --> JSON binding
 //     "application/xml"  --> XML binding
-// otherwise --> returns an error
+// otherwise --> returns an error.
 // It parses the request's body as JSON if Content-Type == "application/json" using JSON or XML as a JSON input.
 // It decodes the json payload into the struct specified as a pointer.
-// Like ParseBody() but this method also writes a 400 error if the json is not valid.
+// It writes a 400 error and sets Content-Type header "text/plain" in the response if input is not valid.
 func (c *Context) Bind(obj interface{}) error {
 	b := binding.Default(c.Request.Method, c.ContentType())
 	return c.MustBindWith(obj, b)
 }
 
-// BindJSON is a shortcut for c.MustBindWith(obj, binding.JSON)
+// BindJSON is a shortcut for c.MustBindWith(obj, binding.JSON).
 func (c *Context) BindJSON(obj interface{}) error {
 	return c.MustBindWith(obj, binding.JSON)
 }
 
-// MustBindWith binds the passed struct pointer using the specified binding
-// engine. It will abort the request with HTTP 400 if any error ocurrs.
+// BindQuery is a shortcut for c.MustBindWith(obj, binding.Query).
+func (c *Context) BindQuery(obj interface{}) error {
+	return c.MustBindWith(obj, binding.Query)
+}
+
+// MustBindWith binds the passed struct pointer using the specified binding engine.
+// It will abort the request with HTTP 400 if any error ocurrs.
 // See the binding package.
 func (c *Context) MustBindWith(obj interface{}, b binding.Binding) (err error) {
 	if err = c.ShouldBindWith(obj, b); err != nil {
@@ -482,11 +484,57 @@ func (c *Context) MustBindWith(obj interface{}, b binding.Binding) (err error) {
 	return
 }
 
-// ShouldBindWith binds the passed struct pointer using the specified binding
-// engine.
+// ShouldBind checks the Content-Type to select a binding engine automatically,
+// Depending the "Content-Type" header different bindings are used:
+//     "application/json" --> JSON binding
+//     "application/xml"  --> XML binding
+// otherwise --> returns an error
+// It parses the request's body as JSON if Content-Type == "application/json" using JSON or XML as a JSON input.
+// It decodes the json payload into the struct specified as a pointer.
+// Like c.Bind() but this method does not set the response status code to 400 and abort if the json is not valid.
+func (c *Context) ShouldBind(obj interface{}) error {
+	b := binding.Default(c.Request.Method, c.ContentType())
+	return c.ShouldBindWith(obj, b)
+}
+
+// ShouldBindJSON is a shortcut for c.ShouldBindWith(obj, binding.JSON).
+func (c *Context) ShouldBindJSON(obj interface{}) error {
+	return c.ShouldBindWith(obj, binding.JSON)
+}
+
+// ShouldBindQuery is a shortcut for c.ShouldBindWith(obj, binding.Query).
+func (c *Context) ShouldBindQuery(obj interface{}) error {
+	return c.ShouldBindWith(obj, binding.Query)
+}
+
+// ShouldBindWith binds the passed struct pointer using the specified binding engine.
 // See the binding package.
 func (c *Context) ShouldBindWith(obj interface{}, b binding.Binding) error {
 	return b.Bind(c.Request, obj)
+}
+
+// ShouldBindBodyWith is similar with ShouldBindWith, but it stores the request
+// body into the context, and reuse when it is called again.
+//
+// NOTE: This method reads the body before binding. So you should use
+// ShouldBindWith for better performance if you need to call only once.
+func (c *Context) ShouldBindBodyWith(
+	obj interface{}, bb binding.BindingBody,
+) (err error) {
+	var body []byte
+	if cb, ok := c.Get(BodyBytesKey); ok {
+		if cbb, ok := cb.([]byte); ok {
+			body = cbb
+		}
+	}
+	if body == nil {
+		body, err = ioutil.ReadAll(c.Request.Body)
+		if err != nil {
+			return err
+		}
+		c.Set(BodyBytesKey, body)
+	}
+	return bb.BindBody(body, obj)
 }
 
 // ClientIP implements a best effort algorithm to return the real client IP, it parses
@@ -499,17 +547,17 @@ func (c *Context) ClientIP() string {
 			clientIP = clientIP[0:index]
 		}
 		clientIP = strings.TrimSpace(clientIP)
-		if len(clientIP) > 0 {
+		if clientIP != "" {
 			return clientIP
 		}
 		clientIP = strings.TrimSpace(c.requestHeader("X-Real-Ip"))
-		if len(clientIP) > 0 {
+		if clientIP != "" {
 			return clientIP
 		}
 	}
 
 	if c.engine.AppEngine {
-		if addr := c.Request.Header.Get("X-Appengine-Remote-Addr"); addr != "" {
+		if addr := c.requestHeader("X-Appengine-Remote-Addr"); addr != "" {
 			return addr
 		}
 	}
@@ -537,17 +585,14 @@ func (c *Context) IsWebsocket() bool {
 }
 
 func (c *Context) requestHeader(key string) string {
-	if values, _ := c.Request.Header[key]; len(values) > 0 {
-		return values[0]
-	}
-	return ""
+	return c.Request.Header.Get(key)
 }
 
 /************************************/
 /******** RESPONSE RENDERING ********/
 /************************************/
 
-// bodyAllowedForStatus is a copy of http.bodyAllowedForStatus non-exported function
+// bodyAllowedForStatus is a copy of http.bodyAllowedForStatus non-exported function.
 func bodyAllowedForStatus(status int) bool {
 	switch {
 	case status >= 100 && status <= 199:
@@ -560,31 +605,35 @@ func bodyAllowedForStatus(status int) bool {
 	return true
 }
 
+// Status sets the HTTP response code.
 func (c *Context) Status(code int) {
 	c.writermem.WriteHeader(code)
 }
 
-// Header is a intelligent shortcut for c.Writer.Header().Set(key, value)
+// Header is a intelligent shortcut for c.Writer.Header().Set(key, value).
 // It writes a header in the response.
 // If value == "", this method removes the header `c.Writer.Header().Del(key)`
 func (c *Context) Header(key, value string) {
-	if len(value) == 0 {
+	if value == "" {
 		c.Writer.Header().Del(key)
 	} else {
 		c.Writer.Header().Set(key, value)
 	}
 }
 
-// GetHeader returns value from request headers
+// GetHeader returns value from request headers.
 func (c *Context) GetHeader(key string) string {
 	return c.requestHeader(key)
 }
 
-// GetRawData return stream data
+// GetRawData return stream data.
 func (c *Context) GetRawData() ([]byte, error) {
 	return ioutil.ReadAll(c.Request.Body)
 }
 
+// SetCookie adds a Set-Cookie header to the ResponseWriter's headers.
+// The provided cookie must have a valid Name. Invalid cookies may be
+// silently dropped.
 func (c *Context) SetCookie(name, value string, maxAge int, path, domain string, secure, httpOnly bool) {
 	if path == "" {
 		path = "/"
@@ -600,6 +649,10 @@ func (c *Context) SetCookie(name, value string, maxAge int, path, domain string,
 	})
 }
 
+// Cookie returns the named cookie provided in the request or
+// ErrNoCookie if not found. And return the named cookie is unescaped.
+// If multiple cookies match the given name, only one cookie will
+// be returned.
 func (c *Context) Cookie(name string) (string, error) {
 	cookie, err := c.Request.Cookie(name)
 	if err != nil {
@@ -646,6 +699,13 @@ func (c *Context) SecureJSON(code int, obj interface{}) {
 	c.Render(code, render.SecureJSON{Prefix: c.engine.secureJsonPrefix, Data: obj})
 }
 
+// JSONP serializes the given struct as JSON into the response body.
+// It add padding to response body to request data from a server residing in a different domain than the client.
+// It also sets the Content-Type as "application/javascript".
+func (c *Context) JSONP(code int, obj interface{}) {
+	c.Render(code, render.JsonpJSON{Callback: c.DefaultQuery("callback", ""), Data: obj})
+}
+
 // JSON serializes the given struct as JSON into the response body.
 // It also sets the Content-Type as "application/json".
 func (c *Context) JSON(code int, obj interface{}) {
@@ -682,6 +742,16 @@ func (c *Context) Data(code int, contentType string, data []byte) {
 	c.Render(code, render.Data{
 		ContentType: contentType,
 		Data:        data,
+	})
+}
+
+// DataFromReader writes the specified reader into the body stream and updates the HTTP code.
+func (c *Context) DataFromReader(code int, contentLength int64, contentType string, reader io.Reader, extraHeaders map[string]string) {
+	c.Render(code, render.Reader{
+		Headers:       extraHeaders,
+		ContentType:   contentType,
+		ContentLength: contentLength,
+		Reader:        reader,
 	})
 }
 

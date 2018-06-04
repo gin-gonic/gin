@@ -6,12 +6,11 @@ package render
 
 import (
 	"bytes"
+	"html/template"
 	"net/http"
 
-	"github.com/json-iterator/go"
+	"github.com/gin-gonic/gin/json"
 )
-
-var json = jsoniter.ConfigCompatibleWithStandardLibrary
 
 type JSON struct {
 	Data interface{}
@@ -26,9 +25,15 @@ type SecureJSON struct {
 	Data   interface{}
 }
 
+type JsonpJSON struct {
+	Callback string
+	Data     interface{}
+}
+
 type SecureJSONPrefix string
 
 var jsonContentType = []string{"application/json; charset=utf-8"}
+var jsonpContentType = []string{"application/javascript; charset=utf-8"}
 
 func (r JSON) Render(w http.ResponseWriter) (err error) {
 	if err = WriteJSON(w, r.Data); err != nil {
@@ -81,4 +86,29 @@ func (r SecureJSON) Render(w http.ResponseWriter) error {
 
 func (r SecureJSON) WriteContentType(w http.ResponseWriter) {
 	writeContentType(w, jsonContentType)
+}
+
+func (r JsonpJSON) Render(w http.ResponseWriter) (err error) {
+	r.WriteContentType(w)
+	ret, err := json.Marshal(r.Data)
+	if err != nil {
+		return err
+	}
+
+	if r.Callback == "" {
+		w.Write(ret)
+		return nil
+	}
+
+	callback := template.JSEscapeString(r.Callback)
+	w.Write([]byte(callback))
+	w.Write([]byte("("))
+	w.Write(ret)
+	w.Write([]byte(")"))
+
+	return nil
+}
+
+func (r JsonpJSON) WriteContentType(w http.ResponseWriter) {
+	writeContentType(w, jsonpContentType)
 }
