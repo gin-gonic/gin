@@ -363,16 +363,25 @@ func (c *Context) GetQueryArray(key string) ([]string, bool) {
 
 // QueryMap returns a map for a given query key.
 func (c *Context) QueryMap(key string) map[string]string {
+	dicts, _ := c.GetQueryMap(key)
+	return dicts
+}
+
+// GetQueryMap returns a map for a given query key, plus a boolean value
+// whether at least one value exists for the given key.
+func (c *Context) GetQueryMap(key string) (map[string]string, bool) {
 	params := c.Request.URL.Query()
 	dicts := make(map[string]string)
+	exist := false
 	for k, v := range params {
 		if i := strings.IndexByte(k, '['); i >= 1 && k[0:i] == key {
 			if j := strings.IndexByte(k[i+1:], ']'); j >= 1 {
+				exist = true
 				dicts[k[i+1:][:j]] = v[0]
 			}
 		}
 	}
-	return dicts
+	return dicts, exist
 }
 
 // PostForm returns the specified key from a POST urlencoded form or multipart form
