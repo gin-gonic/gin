@@ -439,6 +439,31 @@ func (c *Context) GetPostFormArray(key string) ([]string, bool) {
 	return []string{}, false
 }
 
+// PostFormMap returns a map for a given form key.
+func (c *Context) PostFormMap(key string) map[string]string {
+	dicts, _ := c.GetPostFormMap(key)
+	return dicts
+}
+
+// GetPostFormMap returns a map for a given form key, plus a boolean value
+// whether at least one value exists for the given key.
+func (c *Context) GetPostFormMap(key string) (map[string]string, bool) {
+	req := c.Request
+	req.ParseForm()
+	req.ParseMultipartForm(c.engine.MaxMultipartMemory)
+	dicts := make(map[string]string)
+	exist := false
+	for k, v := range req.PostForm {
+		if i := strings.IndexByte(k, '['); i >= 1 && k[0:i] == key {
+			if j := strings.IndexByte(k[i+1:], ']'); j >= 1 {
+				exist = true
+				dicts[k[i+1:][:j]] = v[0]
+			}
+		}
+	}
+	return dicts, exist
+}
+
 // FormFile returns the first file for the provided form key.
 func (c *Context) FormFile(name string) (*multipart.FileHeader, error) {
 	_, fh, err := c.Request.FormFile(name)
