@@ -361,6 +361,20 @@ func (c *Context) GetQueryArray(key string) ([]string, bool) {
 	return []string{}, false
 }
 
+// QueryMap returns a map for a given query key.
+func (c *Context) QueryMap(key string) map[string]string {
+	params := c.Request.URL.Query()
+	dicts := make(map[string]string)
+	for k, v := range params {
+		if i := strings.IndexByte(k, '['); i >= 1 && k[0:i] == key {
+			if j := strings.IndexByte(k[i+1:], ']'); j >= 1 {
+				dicts[k[i+1:][:j]] = v[0]
+			}
+		}
+	}
+	return dicts
+}
+
 // PostForm returns the specified key from a POST urlencoded form or multipart form
 // when it exists, otherwise it returns an empty string `("")`.
 func (c *Context) PostForm(key string) string {
