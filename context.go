@@ -370,18 +370,7 @@ func (c *Context) QueryMap(key string) map[string]string {
 // GetQueryMap returns a map for a given query key, plus a boolean value
 // whether at least one value exists for the given key.
 func (c *Context) GetQueryMap(key string) (map[string]string, bool) {
-	params := c.Request.URL.Query()
-	dicts := make(map[string]string)
-	exist := false
-	for k, v := range params {
-		if i := strings.IndexByte(k, '['); i >= 1 && k[0:i] == key {
-			if j := strings.IndexByte(k[i+1:], ']'); j >= 1 {
-				exist = true
-				dicts[k[i+1:][:j]] = v[0]
-			}
-		}
-	}
-	return dicts, exist
+	return c.get(c.Request.URL.Query(), key)
 }
 
 // PostForm returns the specified key from a POST urlencoded form or multipart form
@@ -451,9 +440,21 @@ func (c *Context) GetPostFormMap(key string) (map[string]string, bool) {
 	req := c.Request
 	req.ParseForm()
 	req.ParseMultipartForm(c.engine.MaxMultipartMemory)
+	dicts, exist := c.get(req.PostForm, key)
+
+	// when go version is 1.6, exist is false
+	if !exist && req.MultipartForm != nil && req.MultipartForm.File != nil {
+		dicts, exist = c.get(req.MultipartForm.Value, key)
+	}
+
+	return dicts, exist
+}
+
+// get is an internal method and returns a map which satisfy conditions.
+func (c *Context) get(m map[string][]string, key string) (map[string]string, bool) {
 	dicts := make(map[string]string)
 	exist := false
-	for k, v := range req.PostForm {
+	for k, v := range m {
 		if i := strings.IndexByte(k, '['); i >= 1 && k[0:i] == key {
 			if j := strings.IndexByte(k[i+1:], ']'); j >= 1 {
 				exist = true
@@ -461,17 +462,6 @@ func (c *Context) GetPostFormMap(key string) (map[string]string, bool) {
 			}
 		}
 	}
-	if !exist && req.MultipartForm != nil && req.MultipartForm.File != nil {
-		for k, v := range req.MultipartForm.Value {
-			if i := strings.IndexByte(k, '['); i >= 1 && k[0:i] == key {
-				if j := strings.IndexByte(k[i+1:], ']'); j >= 1 {
-					exist = true
-					dicts[k[i+1:][:j]] = v[0]
-				}
-			}
-		}
-	}
-
 	return dicts, exist
 }
 
