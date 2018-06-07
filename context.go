@@ -442,7 +442,6 @@ func (c *Context) GetPostFormMap(key string) (map[string]string, bool) {
 	req.ParseMultipartForm(c.engine.MaxMultipartMemory)
 	dicts, exist := c.get(req.PostForm, key)
 
-	// when go version is 1.6, exist is false
 	if !exist && req.MultipartForm != nil && req.MultipartForm.File != nil {
 		dicts, exist = c.get(req.MultipartForm.Value, key)
 	}
