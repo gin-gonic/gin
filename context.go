@@ -461,6 +461,17 @@ func (c *Context) GetPostFormMap(key string) (map[string]string, bool) {
 			}
 		}
 	}
+	if !exist && req.MultipartForm != nil && req.MultipartForm.File != nil {
+		for k, v := range req.MultipartForm.Value {
+			if i := strings.IndexByte(k, '['); i >= 1 && k[0:i] == key {
+				if j := strings.IndexByte(k[i+1:], ']'); j >= 1 {
+					exist = true
+					dicts[k[i+1:][:j]] = v[0]
+				}
+			}
+		}
+	}
+
 	return dicts, exist
 }
 
