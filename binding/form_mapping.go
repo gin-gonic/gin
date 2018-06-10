@@ -7,7 +7,6 @@ package binding
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"reflect"
 	"strconv"
 	"strings"
@@ -135,7 +134,6 @@ func setWithProperType(valueKind reflect.Kind, val string, structField reflect.V
 		return setFloatField(val, 64, structField)
 	case reflect.String:
 		structField.SetString(val)
-		fmt.Println(structField.Interface())
 	case reflect.Ptr:
 		if !structField.Elem().IsValid() {
 			structField.Set(reflect.New(structField.Type().Elem()))
