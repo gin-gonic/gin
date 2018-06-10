@@ -5,7 +5,9 @@
 package binding
 
 import (
+	"encoding/json"
 	"errors"
+	"fmt"
 	"reflect"
 	"strconv"
 	"strings"
@@ -74,6 +76,20 @@ func mapForm(ptr interface{}, form map[string][]string) error {
 				}
 			}
 			val.Field(i).Set(slice)
+		} else if structFieldKind == reflect.Map {
+			m := make(map[string]interface{})
+			err := json.Unmarshal([]byte(inputValue[0]), &m)
+			if err != nil {
+				return err
+			}
+
+			structField = reflect.Indirect(structField)
+			structField = reflect.MakeMap(structField.Type())
+			for k, v := range m {
+				structField.SetMapIndex(reflect.ValueOf(k), reflect.ValueOf(v))
+			}
+
+			val.Field(i).Set(structField)
 		} else {
 			if _, isTime := structField.Interface().(time.Time); isTime {
 				if err := setTimeField(inputValue[0], typeField, structField); err != nil {
@@ -119,6 +135,7 @@ func setWithProperType(valueKind reflect.Kind, val string, structField reflect.V
 		return setFloatField(val, 64, structField)
 	case reflect.String:
 		structField.SetString(val)
+		fmt.Println(structField.Interface())
 	case reflect.Ptr:
 		if !structField.Elem().IsValid() {
 			structField.Set(reflect.New(structField.Type().Elem()))
