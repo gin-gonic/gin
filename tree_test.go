@@ -33,7 +33,7 @@ func checkRequests(t *testing.T, tree *node, requests testRequests, unescapes ..
 	}
 
 	for _, request := range requests {
-		handler, ps, _ := tree.getValue(request.path, nil, unescape)
+		handler, ps, route, _ := tree.getValue(request.path, nil, unescape)
 
 		if handler == nil {
 			if !request.nilHandler {
@@ -45,6 +45,9 @@ func checkRequests(t *testing.T, tree *node, requests testRequests, unescapes ..
 			handler[0](nil)
 			if fakeHandlerValue != request.route {
 				t.Errorf("handle mismatch for route '%s': Wrong handle (%s != %s)", request.path, fakeHandlerValue, request.route)
+			}
+			if route != request.route {
+				t.Errorf("handle mismatch for route '%s': Wrong route (%s != %s)", request.path, route, request.route)
 			}
 		}
 
@@ -463,7 +466,7 @@ func TestTreeTrailingSlashRedirect(t *testing.T) {
 		"/doc/",
 	}
 	for _, route := range tsrRoutes {
-		handler, _, tsr := tree.getValue(route, nil, false)
+		handler, _, _, tsr := tree.getValue(route, nil, false)
 		if handler != nil {
 			t.Fatalf("non-nil handler for TSR route '%s", route)
 		} else if !tsr {
@@ -480,7 +483,7 @@ func TestTreeTrailingSlashRedirect(t *testing.T) {
 		"/api/world/abc",
 	}
 	for _, route := range noTsrRoutes {
-		handler, _, tsr := tree.getValue(route, nil, false)
+		handler, _, _, tsr := tree.getValue(route, nil, false)
 		if handler != nil {
 			t.Fatalf("non-nil handler for No-TSR route '%s", route)
 		} else if tsr {
@@ -499,7 +502,7 @@ func TestTreeRootTrailingSlashRedirect(t *testing.T) {
 		t.Fatalf("panic inserting test route: %v", recv)
 	}
 
-	handler, _, tsr := tree.getValue("/", nil, false)
+	handler, _, _, tsr := tree.getValue("/", nil, false)
 	if handler != nil {
 		t.Fatalf("non-nil handler")
 	} else if tsr {

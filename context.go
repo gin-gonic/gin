@@ -43,6 +43,7 @@ type Context struct {
 	Request   *http.Request
 	Writer    ResponseWriter
 
+	Route    string
 	Params   Params
 	handlers HandlersChain
 	index    int8
@@ -65,6 +66,7 @@ type Context struct {
 
 func (c *Context) reset() {
 	c.Writer = &c.writermem
+	c.Route = ""
 	c.Params = c.Params[0:0]
 	c.handlers = nil
 	c.index = -1

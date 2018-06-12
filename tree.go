@@ -362,12 +362,13 @@ func (n *node) insertChild(numParams uint8, path string, fullPath string, handle
 // If no handle can be found, a TSR (trailing slash redirect) recommendation is
 // made if a handle exists with an extra (without the) trailing slash for the
 // given path.
-func (n *node) getValue(path string, po Params, unescape bool) (handlers HandlersChain, p Params, tsr bool) {
+func (n *node) getValue(path string, po Params, unescape bool) (handlers HandlersChain, p Params, route string, tsr bool) {
 	p = po
 walk: // Outer loop for walking the tree
 	for {
 		if len(path) > len(n.path) {
 			if path[:len(n.path)] == n.path {
+				route += n.path
 				path = path[len(n.path):]
 				// If this node does not have a wildcard (param or catchAll)
 				// child,  we can just look up the next child node and continue
@@ -418,6 +419,7 @@ walk: // Outer loop for walking the tree
 					// we need to go deeper!
 					if end < len(path) {
 						if len(n.children) > 0 {
+							route += n.path
 							path = path[end:]
 							n = n.children[0]
 							continue walk
@@ -429,6 +431,7 @@ walk: // Outer loop for walking the tree
 					}
 
 					if handlers = n.handlers; handlers != nil {
+						route += n.path
 						return
 					}
 					if len(n.children) == 1 {
@@ -457,6 +460,7 @@ walk: // Outer loop for walking the tree
 						p[i].Value = path
 					}
 
+					route += n.path
 					handlers = n.handlers
 					return
 
@@ -468,6 +472,7 @@ walk: // Outer loop for walking the tree
 			// We should have reached the node containing the handle.
 			// Check if this node has a handle registered.
 			if handlers = n.handlers; handlers != nil {
+				route += n.path
 				return
 			}
 
