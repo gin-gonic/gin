@@ -15,6 +15,7 @@ import (
 	"net/url"
 	"os"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/gin-contrib/sse"
@@ -49,6 +50,9 @@ type Context struct {
 
 	engine *Engine
 
+	// This mutex protect Keys map
+	KeysMutex *sync.RWMutex
+
 	// Keys is a key/value pair exclusively for the context of each request.
 	Keys map[string]interface{}
 
@@ -68,6 +72,7 @@ func (c *Context) reset() {
 	c.Params = c.Params[0:0]
 	c.handlers = nil
 	c.index = -1
+	c.KeysMutex = &sync.RWMutex{}
 	c.Keys = nil
 	c.Errors = c.Errors[0:0]
 	c.Accepted = nil
@@ -180,16 +185,21 @@ func (c *Context) Error(err error) *Error {
 // Set is used to store a new key/value pair exclusively for this context.
 // It also lazy initializes  c.Keys if it was not used previously.
 func (c *Context) Set(key string, value interface{}) {
+	c.KeysMutex.Lock()
 	if c.Keys == nil {
 		c.Keys = make(map[string]interface{})
 	}
+
 	c.Keys[key] = value
+	c.KeysMutex.Unlock()
 }
 
 // Get returns the value for the given key, ie: (value, true).
 // If the value does not exists it returns (nil, false)
 func (c *Context) Get(key string) (value interface{}, exists bool) {
+	c.KeysMutex.RLock()
 	value, exists = c.Keys[key]
+	c.KeysMutex.RUnlock()
 	return
 }
 
