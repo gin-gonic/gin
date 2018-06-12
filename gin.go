@@ -152,7 +152,7 @@ func Default() *Engine {
 }
 
 func (engine *Engine) allocateContext() *Context {
-	return &Context{engine: engine}
+	return &Context{engine: engine, KeysMutex: &sync.RWMutex{}}
 }
 
 func (engine *Engine) Delims(left, right string) *Engine {
