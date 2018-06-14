@@ -15,6 +15,8 @@ Gin is a web framework written in Go (Golang). It features a martini-like API wi
 
 ## Contents
 
+- [Installation](#installation)
+- [Prerequisite](#prerequisite)
 - [Quick start](#quick-start)
 - [Benchmarks](#benchmarks)
 - [Gin v1.stable](#gin-v1-stable)
@@ -56,6 +58,18 @@ Gin is a web framework written in Go (Golang). It features a martini-like API wi
     - [Try to bind body into different structs](#try-to-bind-body-into-different-structs)
 - [Testing](#testing)
 - [Users](#users--)
+
+## Installation
+
+To install Gin package, you need to install Go and set your Go workspace. The simplest way to install the library is to run:
+
+```sh
+$ go get -u github.com/gin-gonic/gin
+```
+
+## Prerequisite
+
+Now Gin requires Go 1.6 or later and Go 1.7 will be required soon.
 
 ## Quick start
  
