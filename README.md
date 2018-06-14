@@ -80,10 +80,6 @@ import "github.com/gin-gonic/gin"
 import "net/http"
 ```
 
-```sh
-$ go get -u github.com/gin-gonic/gin
-```
-
 ### Use a vendor tool like [Govendor](https://github.com/kardianos/govendor)
 
 1. `go get` govendor
