@@ -6,7 +6,9 @@
 
 package gin
 
-import "net/http"
+import (
+	"net/http"
+)
 
 // ResponseWriter ...
 type ResponseWriter interface {
@@ -36,7 +38,7 @@ type ResponseWriter interface {
 }
 
 func (w *responseWriter) Pusher() (pusher http.Pusher) {
-	if pusher, ok := w.ResponseWriter.(http.ResponseWriter).(http.Pusher); ok {
+	if pusher, ok := w.ResponseWriter.(http.Pusher); ok {
 		return pusher
 	}
 	return nil
