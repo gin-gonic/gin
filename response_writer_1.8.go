@@ -1,4 +1,4 @@
-// +build !go1.7
+// +build go1.8
 
 // Copyright 2018 Gin Core Team.  All rights reserved.
 // Use of this source code is governed by a MIT style
