@@ -17,22 +17,22 @@ func main() {
 		log.Fatalf("did not connect: %v", err)
 	}
 	defer conn.Close()
-	c := pb.NewGreeterClient(conn)
+	client := pb.NewGreeterClient(conn)
 
 	// Set up a http setver.
 	r := gin.Default()
-	r.GET("/rest/n/:name", func(g *gin.Context) {
-		name := g.Param("name")
+	r.GET("/rest/n/:name", func(c *gin.Context) {
+		name := c.Param("name")
 
 		// Contact the server and print out its response.
 		req := &pb.HelloRequest{Name: name}
-		res, err := c.SayHello(g, req)
+		res, err := client.SayHello(g, req)
 		if err != nil {
-			g.JSON(http.StatusInternalServerError, gin.H{
+			c.JSON(http.StatusInternalServerError, gin.H{
 				"error": err.Error(),
 			})
 		} else {
-			g.JSON(http.StatusOK, gin.H{
+			c.JSON(http.StatusOK, gin.H{
 				"result": fmt.Sprint(res.Message),
 			})
 		}

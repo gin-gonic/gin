@@ -115,12 +115,6 @@
 			"revisionTime": "2017-03-08T15:04:45Z"
 		},
 		{
-			"checksumSHA1": "alYroN0n+3NDlMXZeiC6d/LG764=",
-			"path": "google.golang.org/grpc",
-			"revision": "9cb02b885b41e0db982e23d6e51a24ea465dec2e",
-			"revisionTime": "2017-06-26T23:20:44Z"
-		},
-		{
 			"checksumSHA1": "39V1idWER42Lmcmg2Uy40wMzOlo=",
 			"comment": "v8.18.1",
 			"path": "gopkg.in/go-playground/validator.v8",
