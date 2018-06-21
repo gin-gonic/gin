@@ -4,10 +4,10 @@ import (
 	"log"
 	"net"
 
+	pb "github.com/gin-gonic/gin/examples/grpc/pb"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
-	pb "github.com/gin-gonic/gin/examples/grpc/pb"
 )
 
 // server is used to implement helloworld.GreeterServer.

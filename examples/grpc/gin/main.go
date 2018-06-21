@@ -6,8 +6,8 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"google.golang.org/grpc"
 	pb "github.com/gin-gonic/gin/examples/grpc/pb"
+	"google.golang.org/grpc"
 )
 
 func main() {
