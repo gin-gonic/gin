@@ -33,7 +33,7 @@ func main() {
 			})
 			return
 		}
-		
+
 		c.JSON(http.StatusOK, gin.H{
 			"result": fmt.Sprint(res.Message),
 		})
