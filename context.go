@@ -539,14 +539,10 @@ func (c *Context) ShouldBindBodyWith(
 func (c *Context) ClientIP() string {
 	if c.engine.ForwardedByClientIP {
 		clientIP := c.requestHeader("X-Forwarded-For")
-		if index := strings.IndexByte(clientIP, ','); index >= 0 {
-			clientIP = clientIP[0:index]
+		clientIP = strings.TrimSpace(strings.Split(clientIP, ",")[0])
+		if clientIP == "" {
+			clientIP = strings.TrimSpace(c.requestHeader("X-Real-Ip"))
 		}
-		clientIP = strings.TrimSpace(clientIP)
-		if clientIP != "" {
-			return clientIP
-		}
-		clientIP = strings.TrimSpace(c.requestHeader("X-Real-Ip"))
 		if clientIP != "" {
 			return clientIP
 		}
