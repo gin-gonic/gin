@@ -47,6 +47,13 @@
 			"revisionTime": "2017-02-15T20:11:44Z"
 		},
 		{
+			"checksumSHA1": "9jjO5GjLa0XF/nfWihF02RoH4qc=",
+			"comment": "release-branch.go1.7",
+			"path": "golang.org/x/net/context",
+			"revision": "d4c55e66d8c3a2f3382d264b08e3e3454a66355a",
+			"revisionTime": "2016-10-18T08:54:36Z"
+		},
+		{
 			"checksumSHA1": "39V1idWER42Lmcmg2Uy40wMzOlo=",
 			"comment": "v8.18.1",
 			"path": "gopkg.in/go-playground/validator.v8",
