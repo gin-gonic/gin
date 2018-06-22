@@ -26,7 +26,7 @@ func main() {
 
 		// Contact the server and print out its response.
 		req := &pb.HelloRequest{Name: name}
-		res, err := client.SayHello(g, req)
+		res, err := client.SayHello(c, req)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"error": err.Error(),
