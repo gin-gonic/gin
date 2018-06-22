@@ -15,10 +15,11 @@ Gin is a web framework written in Go (Golang). It features a martini-like API wi
 
 ## Contents
 
+- [Installation](#installation)
+- [Prerequisite](#prerequisite)
 - [Quick start](#quick-start)
 - [Benchmarks](#benchmarks)
 - [Gin v1.stable](#gin-v1-stable)
-- [Start using it](#start-using-it)
 - [Build with jsoniter](#build-with-jsoniter)
 - [API Examples](#api-examples)
     - [Using GET,POST,PUT,PATCH,DELETE and OPTIONS](#using-get-post-put-patch-delete-and-options)
@@ -57,6 +58,64 @@ Gin is a web framework written in Go (Golang). It features a martini-like API wi
     - [http2 server push](#http2-server-push)
 - [Testing](#testing)
 - [Users](#users--)
+
+## Installation
+
+To install Gin package, you need to install Go and set your Go workspace first.
+
+1. Download and install it:
+
+```sh
+$ go get -u github.com/gin-gonic/gin
+```
+
+2. Import it in your code:
+
+```go
+import "github.com/gin-gonic/gin"
+```
+
+3. (Optional) Import `net/http`. This is required for example if using constants such as `http.StatusOK`.
+
+```go
+import "net/http"
+```
+
+### Use a vendor tool like [Govendor](https://github.com/kardianos/govendor)
+
+1. `go get` govendor
+
+```sh
+$ go get github.com/kardianos/govendor
+```
+2. Create your project folder and `cd` inside
+
+```sh
+$ mkdir -p $GOPATH/src/github.com/myusername/project && cd "$_"
+```
+
+3. Vendor init your project and add gin
+
+```sh
+$ govendor init
+$ govendor fetch github.com/gin-gonic/gin@v1.2
+```
+
+4. Copy a starting template inside your project
+
+```sh
+$ curl https://raw.githubusercontent.com/gin-gonic/gin/master/examples/basic/main.go > main.go
+```
+
+5. Run your project
+
+```sh
+$ go run main.go
+```
+
+## Prerequisite
+
+Now Gin requires Go 1.6 or later and Go 1.7 will be required soon.
 
 ## Quick start
  
@@ -134,58 +193,6 @@ BenchmarkVulcan_GithubAll                   |    5000    |   394253    |   19894
 - [x] Complete suite of unit tests
 - [x] Battle tested
 - [x] API frozen, new releases will not break your code.
-
-## Start using it
-
-1. Download and install it:
-
-```sh
-$ go get github.com/gin-gonic/gin
-```
-
-2. Import it in your code:
-
-```go
-import "github.com/gin-gonic/gin"
-```
-
-3. (Optional) Import `net/http`. This is required for example if using constants such as `http.StatusOK`.
-
-```go
-import "net/http"
-```
-
-### Use a vendor tool like [Govendor](https://github.com/kardianos/govendor)
-
-1. `go get` govendor
-
-```sh
-$ go get github.com/kardianos/govendor
-```
-2. Create your project folder and `cd` inside
-
-```sh
-$ mkdir -p $GOPATH/src/github.com/myusername/project && cd "$_"
-```
-
-3. Vendor init your project and add gin
-
-```sh
-$ govendor init
-$ govendor fetch github.com/gin-gonic/gin@v1.2
-```
-
-4. Copy a starting template inside your project
-
-```sh
-$ curl https://raw.githubusercontent.com/gin-gonic/gin/master/examples/basic/main.go > main.go
-```
-
-5. Run your project
-
-```sh
-$ go run main.go
-```
 
 ## Build with [jsoniter](https://github.com/json-iterator/go)
 
