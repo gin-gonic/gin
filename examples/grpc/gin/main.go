@@ -31,11 +31,11 @@ func main() {
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"error": err.Error(),
 			})
-		} else {
-			c.JSON(http.StatusOK, gin.H{
-				"result": fmt.Sprint(res.Message),
-			})
 		}
+		
+		c.JSON(http.StatusOK, gin.H{
+			"result": fmt.Sprint(res.Message),
+		})
 	})
 
 	// Run http server
