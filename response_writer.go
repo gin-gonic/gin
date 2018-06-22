@@ -16,7 +16,7 @@ const (
 	defaultStatus = 200
 )
 
-type ResponseWriter interface {
+type responseWriterBase interface {
 	http.ResponseWriter
 	http.Hijacker
 	http.Flusher
