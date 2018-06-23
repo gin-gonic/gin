@@ -41,7 +41,7 @@ func cleanPath(p string) string {
 		buf[0] = '/'
 	}
 
-	trailing := n > 2 && p[n-1] == '/'
+	trailing := n > 1 && p[n-1] == '/'
 
 	// A bit more clunky without a 'lazybuf' like the path package, but the loop
 	// gets completely inlined (bufApp). So in contrast to the path package this
