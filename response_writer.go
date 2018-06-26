@@ -13,7 +13,7 @@ import (
 
 const (
 	noWritten     = -1
-	defaultStatus = 200
+	defaultStatus = http.StatusOK
 )
 
 type responseWriterBase interface {
