@@ -13,10 +13,10 @@ import (
 
 const (
 	noWritten     = -1
-	defaultStatus = 200
+	defaultStatus = http.StatusOK
 )
 
-type ResponseWriter interface {
+type responseWriterBase interface {
 	http.ResponseWriter
 	http.Hijacker
 	http.Flusher

@@ -378,14 +378,14 @@ func (engine *Engine) handleHTTPRequest(c *Context) {
 			if tree.method != httpMethod {
 				if handlers, _, _ := tree.root.getValue(path, nil, unescape); handlers != nil {
 					c.handlers = engine.allNoMethod
-					serveError(c, 405, default405Body)
+					serveError(c, http.StatusMethodNotAllowed, default405Body)
 					return
 				}
 			}
 		}
 	}
 	c.handlers = engine.allNoRoute
-	serveError(c, 404, default404Body)
+	serveError(c, http.StatusNotFound, default404Body)
 }
 
 var mimePlain = []string{MIMEPlain}
@@ -406,9 +406,9 @@ func serveError(c *Context, code int, defaultMessage []byte) {
 func redirectTrailingSlash(c *Context) {
 	req := c.Request
 	path := req.URL.Path
-	code := 301 // Permanent redirect, request with GET method
+	code := http.StatusMovedPermanently // Permanent redirect, request with GET method
 	if req.Method != "GET" {
-		code = 307
+		code = http.StatusTemporaryRedirect
 	}
 
 	if length := len(path); length > 1 && path[length-1] == '/' {
@@ -430,9 +430,9 @@ func redirectFixedPath(c *Context, root *node, trailingSlash bool) bool {
 		trailingSlash,
 	)
 	if found {
-		code := 301 // Permanent redirect, request with GET method
+		code := http.StatusMovedPermanently // Permanent redirect, request with GET method
 		if req.Method != "GET" {
-			code = 307
+			code = http.StatusTemporaryRedirect
 		}
 		req.URL.Path = string(fixedPath)
 		debugPrint("redirecting request %d: %s --> %s", code, path, req.URL.String())

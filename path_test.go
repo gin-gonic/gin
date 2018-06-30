@@ -24,6 +24,7 @@ var cleanTests = []struct {
 
 	// missing root
 	{"", "/"},
+	{"a/", "/a/"},
 	{"abc", "/abc"},
 	{"abc/def", "/abc/def"},
 	{"a/b/c", "/a/b/c"},
