@@ -11,7 +11,7 @@ import (
 	"github.com/gin-gonic/gin/binding"
 )
 
-const ENV_GIN_MODE = "GIN_MODE"
+const EnvGinMode = "GIN_MODE"
 
 const (
 	DebugMode   = "debug"
@@ -38,7 +38,7 @@ var ginMode = debugCode
 var modeName = DebugMode
 
 func init() {
-	mode := os.Getenv(ENV_GIN_MODE)
+	mode := os.Getenv(EnvGinMode)
 	SetMode(mode)
 }
 
