@@ -690,9 +690,9 @@ func TestContextRenderNoContentAsciiJSON(t *testing.T) {
 	w := httptest.NewRecorder()
 	c, _ := CreateTestContext(w)
 
-	c.AsciiJSON(204, []string{"lang", "Go语言"})
+	c.AsciiJSON(http.StatusNoContent, []string{"lang", "Go语言"})
 
-	assert.Equal(t, 204, w.Code)
+	assert.Equal(t, http.StatusNoContent, w.Code)
 	assert.Empty(t, w.Body.String())
 	assert.Equal(t, "application/json", w.HeaderMap.Get("Content-Type"))
 }
