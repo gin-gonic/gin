@@ -171,14 +171,14 @@ func (engine *Engine) SecureJsonPrefix(prefix string) *Engine {
 func (engine *Engine) LoadHTMLGlob(pattern string) {
 	left := engine.delims.Left
 	right := engine.delims.Right
+	templ := template.Must(template.New("").Delims(left, right).Funcs(engine.FuncMap).ParseGlob(pattern))
 
 	if IsDebugging() {
-		debugPrintLoadTemplate(template.Must(template.New("").Delims(left, right).Funcs(engine.FuncMap).ParseGlob(pattern)))
+		debugPrintLoadTemplate(templ)
 		engine.HTMLRender = render.HTMLDebug{Glob: pattern, FuncMap: engine.FuncMap, Delims: engine.delims}
 		return
 	}
 
-	templ := template.Must(template.New("").Delims(left, right).Funcs(engine.FuncMap).ParseGlob(pattern))
 	engine.SetHTMLTemplate(templ)
 }
 
@@ -425,11 +425,7 @@ func redirectFixedPath(c *Context, root *node, trailingSlash bool) bool {
 	req := c.Request
 	path := req.URL.Path
 
-	fixedPath, found := root.findCaseInsensitivePath(
-		cleanPath(path),
-		trailingSlash,
-	)
-	if found {
+	if fixedPath, ok := root.findCaseInsensitivePath(cleanPath(path), trailingSlash); ok {
 		code := http.StatusMovedPermanently // Permanent redirect, request with GET method
 		if req.Method != "GET" {
 			code = http.StatusTemporaryRedirect
