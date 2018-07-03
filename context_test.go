@@ -686,6 +686,17 @@ func TestContextRenderNoContentSecureJSON(t *testing.T) {
 	assert.Equal(t, "application/json; charset=utf-8", w.HeaderMap.Get("Content-Type"))
 }
 
+func TestContextRenderNoContentAsciiJSON(t *testing.T) {
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
+
+	c.AsciiJSON(http.StatusNoContent, []string{"lang", "Go语言"})
+
+	assert.Equal(t, http.StatusNoContent, w.Code)
+	assert.Empty(t, w.Body.String())
+	assert.Equal(t, "application/json", w.HeaderMap.Get("Content-Type"))
+}
+
 // Tests that the response executes the templates
 // and responds with Content-Type set to text/html
 func TestContextRenderHTML(t *testing.T) {
