@@ -26,7 +26,7 @@ Gin 是一个用 Go 语言编写的 WEB 框架。它具有和 maritini 类似的
     - [path 中的参数](#path-中的参数)
     - [请求参数](#请求参数)
     - [Multipart/Urlencoded 表单](#Multipart/Urlencoded-表单)
-    - [其他示例： 请求参数 + post form](#其他示例：-请求参数--post-form)
+    - [其他示例： 请求参数 + post form](#其他示例-请求参数--post-form)
     - [上传文件](#上传文件)
     - [组路由](#组路由)
     - [默认的没有中间件的空白 Gin](#默认的没有中间件的空白-Gin)
