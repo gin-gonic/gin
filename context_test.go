@@ -1508,7 +1508,7 @@ func TestContextStream(t *testing.T) {
 	c, _ := CreateTestContext(w)
 
 	stopStream := true
-	c.Stream(func (w io.Writer) bool {
+	c.Stream(func(w io.Writer) bool {
 		defer func() {
 			stopStream = false
 		}()
@@ -1525,7 +1525,7 @@ func TestContextStreamWithClientGone(t *testing.T) {
 	w := CreateTestResponseRecorder()
 	c, _ := CreateTestContext(w)
 
-	c.Stream(func (writer io.Writer) bool {
+	c.Stream(func(writer io.Writer) bool {
 		defer func() {
 			w.closeClient()
 		}()
