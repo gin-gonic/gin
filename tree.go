@@ -362,8 +362,9 @@ func (n *node) insertChild(numParams uint8, path string, fullPath string, handle
 // If no handle can be found, a TSR (trailing slash redirect) recommendation is
 // made if a handle exists with an extra (without the) trailing slash for the
 // given path.
-func (n *node) getValue(path string, po Params, unescape bool) (handlers HandlersChain, p Params, tsr bool) {
+func (n *node) getValue(path string, po Params, unescape bool) (handlers HandlersChain, p Params, relativePath string, tsr bool) {
 	p = po
+	relativePath = path
 walk: // Outer loop for walking the tree
 	for {
 		if len(path) > len(n.path) {
@@ -415,6 +416,9 @@ walk: // Outer loop for walking the tree
 						p[i].Value = val
 					}
 
+					// replace p.value with p.key (pattern :)
+					relativePath = strings.Replace(relativePath, p[i].Value, ":"+p[i].Key, 1)
+
 					// we need to go deeper!
 					if end < len(path) {
 						if len(n.children) > 0 {
@@ -456,6 +460,9 @@ walk: // Outer loop for walking the tree
 					} else {
 						p[i].Value = path
 					}
+
+					// replace p.value with p.key (pattern *)
+					relativePath = strings.Replace(relativePath, p[i].Value, "/*"+p[i].Key, 1)
 
 					handlers = n.handlers
 					return
