@@ -57,6 +57,9 @@ type Context struct {
 
 	// Accepted defines a list of manually accepted formats for content negotiation.
 	Accepted []string
+
+	// save the route's relativePath
+	RelativePath string
 }
 
 /************************************/
