@@ -51,7 +51,7 @@ func TestResponseWriterWriteHeader(t *testing.T) {
 	w.WriteHeader(300)
 	assert.False(t, w.Written())
 	assert.Equal(t, 300, w.Status())
-	assert.NotEqual(t, testWritter.Code, 300)
+	assert.NotEqual(t, 300, testWritter.Code)
 
 	w.WriteHeader(-1)
 	assert.Equal(t, 300, w.Status())

@@ -18,11 +18,17 @@ type defaultValidator struct {
 
 var _ StructValidator = &defaultValidator{}
 
+// ValidateStruct receives any kind of type, but only performed struct or pointer to struct type.
 func (v *defaultValidator) ValidateStruct(obj interface{}) error {
-	if kindOfData(obj) == reflect.Struct {
+	value := reflect.ValueOf(obj)
+	valueType := value.Kind()
+	if valueType == reflect.Ptr {
+		valueType = value.Elem().Kind()
+	}
+	if valueType == reflect.Struct {
 		v.lazyinit()
 		if err := v.validate.Struct(obj); err != nil {
-			return error(err)
+			return err
 		}
 	}
 	return nil
@@ -42,13 +48,4 @@ func (v *defaultValidator) lazyinit() {
 		config := &validator.Config{TagName: "binding"}
 		v.validate = validator.New(config)
 	})
-}
-
-func kindOfData(data interface{}) reflect.Kind {
-	value := reflect.ValueOf(data)
-	valueType := value.Kind()
-	if valueType == reflect.Ptr {
-		valueType = value.Elem().Kind()
-	}
-	return valueType
 }

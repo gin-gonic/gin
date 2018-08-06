@@ -639,6 +639,20 @@ func TestContextRenderJSONP(t *testing.T) {
 	assert.Equal(t, "application/javascript; charset=utf-8", w.HeaderMap.Get("Content-Type"))
 }
 
+// Tests that the response is serialized as JSONP
+// and Content-Type is set to application/json
+func TestContextRenderJSONPWithoutCallback(t *testing.T) {
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
+	c.Request, _ = http.NewRequest("GET", "http://example.com", nil)
+
+	c.JSONP(201, H{"foo": "bar"})
+
+	assert.Equal(t, 201, w.Code)
+	assert.Equal(t, "{\"foo\":\"bar\"}", w.Body.String())
+	assert.Equal(t, "application/json; charset=utf-8", w.HeaderMap.Get("Content-Type"))
+}
+
 // Tests that no JSON is rendered if code is 204
 func TestContextRenderNoContentJSON(t *testing.T) {
 	w := httptest.NewRecorder()
@@ -727,6 +741,17 @@ func TestContextRenderNoContentSecureJSON(t *testing.T) {
 	assert.Equal(t, 204, w.Code)
 	assert.Empty(t, w.Body.String())
 	assert.Equal(t, "application/json; charset=utf-8", w.HeaderMap.Get("Content-Type"))
+}
+
+func TestContextRenderNoContentAsciiJSON(t *testing.T) {
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
+
+	c.AsciiJSON(http.StatusNoContent, []string{"lang", "Go语言"})
+
+	assert.Equal(t, http.StatusNoContent, w.Code)
+	assert.Empty(t, w.Body.String())
+	assert.Equal(t, "application/json", w.HeaderMap.Get("Content-Type"))
 }
 
 // Tests that the response executes the templates

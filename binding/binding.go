@@ -4,10 +4,9 @@
 
 package binding
 
-import (
-	"net/http"
-)
+import "net/http"
 
+// Content-Type MIME of the most common data formats.
 const (
 	MIMEJSON              = "application/json"
 	MIMEHTML              = "text/html"
