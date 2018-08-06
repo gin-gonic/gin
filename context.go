@@ -360,6 +360,18 @@ func (c *Context) GetQueryArray(key string) ([]string, bool) {
 	return []string{}, false
 }
 
+// QueryMap returns a map for a given query key.
+func (c *Context) QueryMap(key string) map[string]string {
+	dicts, _ := c.GetQueryMap(key)
+	return dicts
+}
+
+// GetQueryMap returns a map for a given query key, plus a boolean value
+// whether at least one value exists for the given key.
+func (c *Context) GetQueryMap(key string) (map[string]string, bool) {
+	return c.get(c.Request.URL.Query(), key)
+}
+
 // PostForm returns the specified key from a POST urlencoded form or multipart form
 // when it exists, otherwise it returns an empty string `("")`.
 func (c *Context) PostForm(key string) string {
@@ -413,6 +425,42 @@ func (c *Context) GetPostFormArray(key string) ([]string, bool) {
 		}
 	}
 	return []string{}, false
+}
+
+// PostFormMap returns a map for a given form key.
+func (c *Context) PostFormMap(key string) map[string]string {
+	dicts, _ := c.GetPostFormMap(key)
+	return dicts
+}
+
+// GetPostFormMap returns a map for a given form key, plus a boolean value
+// whether at least one value exists for the given key.
+func (c *Context) GetPostFormMap(key string) (map[string]string, bool) {
+	req := c.Request
+	req.ParseForm()
+	req.ParseMultipartForm(c.engine.MaxMultipartMemory)
+	dicts, exist := c.get(req.PostForm, key)
+
+	if !exist && req.MultipartForm != nil && req.MultipartForm.File != nil {
+		dicts, exist = c.get(req.MultipartForm.Value, key)
+	}
+
+	return dicts, exist
+}
+
+// get is an internal method and returns a map which satisfy conditions.
+func (c *Context) get(m map[string][]string, key string) (map[string]string, bool) {
+	dicts := make(map[string]string)
+	exist := false
+	for k, v := range m {
+		if i := strings.IndexByte(k, '['); i >= 1 && k[0:i] == key {
+			if j := strings.IndexByte(k[i+1:], ']'); j >= 1 {
+				exist = true
+				dicts[k[i+1:][:j]] = v[0]
+			}
+		}
+	}
+	return dicts, exist
 }
 
 // FormFile returns the first file for the provided form key.

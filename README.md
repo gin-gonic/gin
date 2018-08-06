@@ -27,6 +27,7 @@ Gin is a web framework written in Go (Golang). It features a martini-like API wi
     - [Querystring parameters](#querystring-parameters)
     - [Multipart/Urlencoded Form](#multiparturlencoded-form)
     - [Another example: query + post form](#another-example-query--post-form)
+    - [Map as querystring or postform parameters](#map-as-querystring-or-postform-parameters)
     - [Upload files](#upload-files)
     - [Grouping routes](#grouping-routes)
     - [Blank Gin without middleware by default](#blank-gin-without-middleware-by-default)
@@ -321,6 +322,34 @@ func main() {
 
 ```
 id: 1234; page: 1; name: manu; message: this_is_great
+```
+
+### Map as querystring or postform parameters
+
+```
+POST /post?ids[a]=1234&ids[b]=hello HTTP/1.1
+Content-Type: application/x-www-form-urlencoded
+
+names[first]=thinkerou&names[second]=tianou
+```
+
+```go
+func main() {
+	router := gin.Default()
+
+	router.POST("/post", func(c *gin.Context) {
+
+		ids := c.QueryMap("ids")
+		names := c.PostFormMap("names")
+
+		fmt.Printf("ids: %v; names: %v", ids, names)
+	})
+	router.Run(":8080")
+}
+```
+
+```
+ids: map[b:hello a:1234], names: map[second:tianou first:thinkerou]
 ```
 
 ### Upload files
