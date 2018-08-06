@@ -113,3 +113,19 @@ func TestResponseWriterHijack(t *testing.T) {
 
 	w.Flush()
 }
+
+func TestResponseWriterFlush(t *testing.T) {
+	testServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		writer := &responseWriter{}
+		writer.reset(w)
+
+		writer.WriteHeader(http.StatusInternalServerError)
+		writer.Flush()
+	}))
+	defer testServer.Close()
+
+	// should return 500
+	resp, err := http.Get(testServer.URL)
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusInternalServerError, resp.StatusCode)
+}
