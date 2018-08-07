@@ -4,10 +4,7 @@
 
 package gin
 
-import (
-	"net/http"
-	"net/http/httptest"
-)
+import "net/http"
 
 // CreateTestContext returns a fresh engine and context for testing purposes
 func CreateTestContext(w http.ResponseWriter) (c *Context, r *Engine) {
@@ -18,22 +15,3 @@ func CreateTestContext(w http.ResponseWriter) (c *Context, r *Engine) {
 	return
 }
 
-type TestResponseRecorder struct {
-	*httptest.ResponseRecorder
-	closeChannel chan bool
-}
-
-func (r *TestResponseRecorder) CloseNotify() <-chan bool {
-	return r.closeChannel
-}
-
-func (r *TestResponseRecorder) closeClient() {
-	r.closeChannel <- true
-}
-
-func CreateTestResponseRecorder() *TestResponseRecorder {
-	return &TestResponseRecorder{
-		httptest.NewRecorder(),
-		make(chan bool, 1),
-	}
-}
