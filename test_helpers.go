@@ -14,4 +14,3 @@ func CreateTestContext(w http.ResponseWriter) (c *Context, r *Engine) {
 	c.writermem.reset(w)
 	return
 }
-
