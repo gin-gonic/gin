@@ -7,6 +7,7 @@ package gin
 import (
 	"bytes"
 	"errors"
+	"net/http"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -93,9 +94,9 @@ func TestColorForMethod(t *testing.T) {
 }
 
 func TestColorForStatus(t *testing.T) {
-	assert.Equal(t, string([]byte{27, 91, 57, 55, 59, 52, 50, 109}), colorForStatus(200), "2xx should be green")
-	assert.Equal(t, string([]byte{27, 91, 57, 48, 59, 52, 55, 109}), colorForStatus(301), "3xx should be white")
-	assert.Equal(t, string([]byte{27, 91, 57, 55, 59, 52, 51, 109}), colorForStatus(404), "4xx should be yellow")
+	assert.Equal(t, string([]byte{27, 91, 57, 55, 59, 52, 50, 109}), colorForStatus(http.StatusOK), "2xx should be green")
+	assert.Equal(t, string([]byte{27, 91, 57, 48, 59, 52, 55, 109}), colorForStatus(http.StatusMovedPermanently), "3xx should be white")
+	assert.Equal(t, string([]byte{27, 91, 57, 55, 59, 52, 51, 109}), colorForStatus(http.StatusNotFound), "4xx should be yellow")
 	assert.Equal(t, string([]byte{27, 91, 57, 55, 59, 52, 49, 109}), colorForStatus(2), "other things should be red")
 }
 
@@ -106,23 +107,23 @@ func TestErrorLogger(t *testing.T) {
 		c.Error(errors.New("this is an error"))
 	})
 	router.GET("/abort", func(c *Context) {
-		c.AbortWithError(401, errors.New("no authorized"))
+		c.AbortWithError(http.StatusUnauthorized, errors.New("no authorized"))
 	})
 	router.GET("/print", func(c *Context) {
 		c.Error(errors.New("this is an error"))
-		c.String(500, "hola!")
+		c.String(http.StatusInternalServerError, "hola!")
 	})
 
 	w := performRequest(router, "GET", "/error")
-	assert.Equal(t, 200, w.Code)
+	assert.Equal(t, http.StatusOK, w.Code)
 	assert.Equal(t, "{\"error\":\"this is an error\"}", w.Body.String())
 
 	w = performRequest(router, "GET", "/abort")
-	assert.Equal(t, 401, w.Code)
+	assert.Equal(t, http.StatusUnauthorized, w.Code)
 	assert.Equal(t, "{\"error\":\"no authorized\"}", w.Body.String())
 
 	w = performRequest(router, "GET", "/print")
-	assert.Equal(t, 500, w.Code)
+	assert.Equal(t, http.StatusInternalServerError, w.Code)
 	assert.Equal(t, "hola!{\"error\":\"this is an error\"}", w.Body.String())
 }
 
