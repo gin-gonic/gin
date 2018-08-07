@@ -21,6 +21,7 @@ import (
 	"github.com/gin-gonic/gin/binding"
 	"github.com/stretchr/testify/assert"
 	"golang.org/x/net/context"
+	"io"
 )
 
 var _ context.Context = &Context{}
@@ -1557,4 +1558,39 @@ func TestContextRenderDataFromReader(t *testing.T) {
 	assert.Equal(t, contentType, w.HeaderMap.Get("Content-Type"))
 	assert.Equal(t, fmt.Sprintf("%d", contentLength), w.HeaderMap.Get("Content-Length"))
 	assert.Equal(t, extraHeaders["Content-Disposition"], w.HeaderMap.Get("Content-Disposition"))
+}
+
+func TestContextStream(t *testing.T) {
+	w := CreateTestResponseRecorder()
+	c, _ := CreateTestContext(w)
+
+	stopStream := true
+	c.Stream(func(w io.Writer) bool {
+		defer func() {
+			stopStream = false
+		}()
+
+		w.Write([]byte("test"))
+
+		return stopStream
+	})
+
+	assert.Equal(t, "testtest", w.Body.String())
+}
+
+func TestContextStreamWithClientGone(t *testing.T) {
+	w := CreateTestResponseRecorder()
+	c, _ := CreateTestContext(w)
+
+	c.Stream(func(writer io.Writer) bool {
+		defer func() {
+			w.closeClient()
+		}()
+
+		writer.Write([]byte("test"))
+
+		return true
+	})
+
+	assert.Equal(t, "test", w.Body.String())
 }
