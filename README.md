@@ -28,6 +28,7 @@ Gin is a web framework written in Go (Golang). It features a martini-like API wi
     - [Querystring parameters](#querystring-parameters)
     - [Multipart/Urlencoded Form](#multiparturlencoded-form)
     - [Another example: query + post form](#another-example-query--post-form)
+    - [Map as querystring or postform parameters](#map-as-querystring-or-postform-parameters)
     - [Upload files](#upload-files)
     - [Grouping routes](#grouping-routes)
     - [Blank Gin without middleware by default](#blank-gin-without-middleware-by-default)
@@ -322,6 +323,34 @@ func main() {
 
 ```
 id: 1234; page: 1; name: manu; message: this_is_great
+```
+
+### Map as querystring or postform parameters
+
+```
+POST /post?ids[a]=1234&ids[b]=hello HTTP/1.1
+Content-Type: application/x-www-form-urlencoded
+
+names[first]=thinkerou&names[second]=tianou
+```
+
+```go
+func main() {
+	router := gin.Default()
+
+	router.POST("/post", func(c *gin.Context) {
+
+		ids := c.QueryMap("ids")
+		names := c.PostFormMap("names")
+
+		fmt.Printf("ids: %v; names: %v", ids, names)
+	})
+	router.Run(":8080")
+}
+```
+
+```
+ids: map[b:hello a:1234], names: map[second:tianou first:thinkerou]
 ```
 
 ### Upload files
@@ -894,6 +923,29 @@ func main() {
 		//callback is x
 		// Will output  :   x({\"foo\":\"bar\"})
 		c.JSONP(http.StatusOK, data)
+	})
+
+	// Listen and serve on 0.0.0.0:8080
+	r.Run(":8080")
+}
+```
+
+#### AsciiJSON
+
+Using AsciiJSON to Generates ASCII-only JSON with escaped non-ASCII chracters.
+
+```go
+func main() {
+	r := gin.Default()
+
+	r.GET("/someJSON", func(c *gin.Context) {
+		data := map[string]interface{}{
+			"lang": "GO语言",
+			"tag":  "<br>",
+		}
+
+		// will output : {"lang":"GO\u8bed\u8a00","tag":"\u003cbr\u003e"}
+		c.AsciiJSON(http.StatusOK, data)
 	})
 
 	// Listen and serve on 0.0.0.0:8080

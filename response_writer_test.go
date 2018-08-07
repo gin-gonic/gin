@@ -51,7 +51,7 @@ func TestResponseWriterWriteHeader(t *testing.T) {
 	w.WriteHeader(300)
 	assert.False(t, w.Written())
 	assert.Equal(t, 300, w.Status())
-	assert.NotEqual(t, testWritter.Code, 300)
+	assert.NotEqual(t, 300, testWritter.Code)
 
 	w.WriteHeader(-1)
 	assert.Equal(t, 300, w.Status())
@@ -112,4 +112,20 @@ func TestResponseWriterHijack(t *testing.T) {
 	})
 
 	w.Flush()
+}
+
+func TestResponseWriterFlush(t *testing.T) {
+	testServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		writer := &responseWriter{}
+		writer.reset(w)
+
+		writer.WriteHeader(http.StatusInternalServerError)
+		writer.Flush()
+	}))
+	defer testServer.Close()
+
+	// should return 500
+	resp, err := http.Get(testServer.URL)
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusInternalServerError, resp.StatusCode)
 }
