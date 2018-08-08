@@ -57,6 +57,9 @@ type Context struct {
 
 	// Accepted defines a list of manually accepted formats for content negotiation.
 	Accepted []string
+
+	// cacheQuery
+	cacheQuery url.Values
 }
 
 /************************************/
@@ -71,6 +74,11 @@ func (c *Context) reset() {
 	c.Keys = nil
 	c.Errors = c.Errors[0:0]
 	c.Accepted = nil
+	c.cacheQuery = nil
+
+	if c.Request != nil && c.Request.URL != nil {
+		c.cacheQuery = c.Request.URL.Query()
+	}
 }
 
 // Copy returns a copy of the current context that can be safely used outside the request's scope.
@@ -81,6 +89,7 @@ func (c *Context) Copy() *Context {
 	cp.Writer = &cp.writermem
 	cp.index = abortIndex
 	cp.handlers = nil
+	cp.cacheQuery = nil
 	return &cp
 }
 
@@ -354,7 +363,12 @@ func (c *Context) QueryArray(key string) []string {
 // GetQueryArray returns a slice of strings for a given query key, plus
 // a boolean value whether at least one value exists for the given key.
 func (c *Context) GetQueryArray(key string) ([]string, bool) {
-	if values, ok := c.Request.URL.Query()[key]; ok && len(values) > 0 {
+	cacheQuery := c.cacheQuery
+	if cacheQuery == nil {
+		cacheQuery = c.Request.URL.Query()
+	}
+
+	if values, ok := cacheQuery[key]; ok && len(values) > 0 {
 		return values, true
 	}
 	return []string{}, false
@@ -369,7 +383,12 @@ func (c *Context) QueryMap(key string) map[string]string {
 // GetQueryMap returns a map for a given query key, plus a boolean value
 // whether at least one value exists for the given key.
 func (c *Context) GetQueryMap(key string) (map[string]string, bool) {
-	return c.get(c.Request.URL.Query(), key)
+	cacheQuery := c.cacheQuery
+	if cacheQuery == nil {
+		cacheQuery = c.Request.URL.Query()
+	}
+
+	return c.get(cacheQuery, key)
 }
 
 // PostForm returns the specified key from a POST urlencoded form or multipart form
