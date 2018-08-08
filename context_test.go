@@ -21,6 +21,7 @@ import (
 	"github.com/gin-gonic/gin/binding"
 	"github.com/stretchr/testify/assert"
 	"golang.org/x/net/context"
+	"io"
 )
 
 var _ context.Context = &Context{}
@@ -47,6 +48,8 @@ func createMultipartRequest() *http.Request {
 	must(mw.WriteField("time_local", "31/12/2016 14:55"))
 	must(mw.WriteField("time_utc", "31/12/2016 14:55"))
 	must(mw.WriteField("time_location", "31/12/2016 14:55"))
+	must(mw.WriteField("names[a]", "thinkerou"))
+	must(mw.WriteField("names[b]", "tianou"))
 	req, err := http.NewRequest("POST", "/", body)
 	must(err)
 	req.Header.Set("Content-Type", MIMEMultipartPOSTForm+"; boundary="+boundary)
@@ -371,7 +374,8 @@ func TestContextQuery(t *testing.T) {
 func TestContextQueryAndPostForm(t *testing.T) {
 	c, _ := CreateTestContext(httptest.NewRecorder())
 	body := bytes.NewBufferString("foo=bar&page=11&both=&foo=second")
-	c.Request, _ = http.NewRequest("POST", "/?both=GET&id=main&id=omit&array[]=first&array[]=second", body)
+	c.Request, _ = http.NewRequest("POST",
+		"/?both=GET&id=main&id=omit&array[]=first&array[]=second&ids[a]=hi&ids[b]=3.14", body)
 	c.Request.Header.Add("Content-Type", MIMEPOSTForm)
 
 	assert.Equal(t, "bar", c.DefaultPostForm("foo", "none"))
@@ -439,6 +443,30 @@ func TestContextQueryAndPostForm(t *testing.T) {
 	values = c.QueryArray("both")
 	assert.Equal(t, 1, len(values))
 	assert.Equal(t, "GET", values[0])
+
+	dicts, ok := c.GetQueryMap("ids")
+	assert.True(t, ok)
+	assert.Equal(t, "hi", dicts["a"])
+	assert.Equal(t, "3.14", dicts["b"])
+
+	dicts, ok = c.GetQueryMap("nokey")
+	assert.False(t, ok)
+	assert.Equal(t, 0, len(dicts))
+
+	dicts, ok = c.GetQueryMap("both")
+	assert.False(t, ok)
+	assert.Equal(t, 0, len(dicts))
+
+	dicts, ok = c.GetQueryMap("array")
+	assert.False(t, ok)
+	assert.Equal(t, 0, len(dicts))
+
+	dicts = c.QueryMap("ids")
+	assert.Equal(t, "hi", dicts["a"])
+	assert.Equal(t, "3.14", dicts["b"])
+
+	dicts = c.QueryMap("nokey")
+	assert.Equal(t, 0, len(dicts))
 }
 
 func TestContextPostFormMultipart(t *testing.T) {
@@ -515,6 +543,22 @@ func TestContextPostFormMultipart(t *testing.T) {
 	values = c.PostFormArray("foo")
 	assert.Equal(t, 1, len(values))
 	assert.Equal(t, "bar", values[0])
+
+	dicts, ok := c.GetPostFormMap("names")
+	assert.True(t, ok)
+	assert.Equal(t, "thinkerou", dicts["a"])
+	assert.Equal(t, "tianou", dicts["b"])
+
+	dicts, ok = c.GetPostFormMap("nokey")
+	assert.False(t, ok)
+	assert.Equal(t, 0, len(dicts))
+
+	dicts = c.PostFormMap("names")
+	assert.Equal(t, "thinkerou", dicts["a"])
+	assert.Equal(t, "tianou", dicts["b"])
+
+	dicts = c.PostFormMap("nokey")
+	assert.Equal(t, 0, len(dicts))
 }
 
 func TestContextSetCookie(t *testing.T) {
@@ -1514,4 +1558,39 @@ func TestContextRenderDataFromReader(t *testing.T) {
 	assert.Equal(t, contentType, w.HeaderMap.Get("Content-Type"))
 	assert.Equal(t, fmt.Sprintf("%d", contentLength), w.HeaderMap.Get("Content-Length"))
 	assert.Equal(t, extraHeaders["Content-Disposition"], w.HeaderMap.Get("Content-Disposition"))
+}
+
+func TestContextStream(t *testing.T) {
+	w := CreateTestResponseRecorder()
+	c, _ := CreateTestContext(w)
+
+	stopStream := true
+	c.Stream(func(w io.Writer) bool {
+		defer func() {
+			stopStream = false
+		}()
+
+		w.Write([]byte("test"))
+
+		return stopStream
+	})
+
+	assert.Equal(t, "testtest", w.Body.String())
+}
+
+func TestContextStreamWithClientGone(t *testing.T) {
+	w := CreateTestResponseRecorder()
+	c, _ := CreateTestContext(w)
+
+	c.Stream(func(writer io.Writer) bool {
+		defer func() {
+			w.closeClient()
+		}()
+
+		writer.Write([]byte("test"))
+
+		return true
+	})
+
+	assert.Equal(t, "test", w.Body.String())
 }
