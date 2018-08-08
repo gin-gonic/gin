@@ -94,6 +94,7 @@ type node struct {
 	nType     nodeType
 	maxParams uint8
 	wildChild bool
+	fullPath  string
 }
 
 // increments priority of the given child and reorders if necessary.
@@ -247,6 +248,9 @@ func (n *node) addRoute(path string, handlers HandlersChain) {
 func (n *node) insertChild(numParams uint8, path string, fullPath string, handlers HandlersChain) {
 	var offset int // already handled bytes of the path
 
+	// save the node's full path
+	var nodeFullPath string
+
 	// find prefix until first wildcard (beginning with ':' or '*')
 	for i, max := 0, len(path); numParams > 0; i++ {
 		c := path[i]
@@ -285,6 +289,13 @@ func (n *node) insertChild(numParams uint8, path string, fullPath string, handle
 				n.path = path[offset:i]
 				offset = i
 			}
+			if n.path[0] != '/' {
+				nodeFullPath = "/" + n.path
+			} else {
+				nodeFullPath += n.path
+			}
+			// save node's full path
+			n.fullPath = nodeFullPath
 
 			child := &node{
 				nType:     param,
@@ -301,6 +312,9 @@ func (n *node) insertChild(numParams uint8, path string, fullPath string, handle
 			if end < max {
 				n.path = path[offset:end]
 				offset = end
+
+				nodeFullPath += n.path
+				n.fullPath = nodeFullPath
 
 				child := &node{
 					maxParams: numParams,
@@ -326,6 +340,8 @@ func (n *node) insertChild(numParams uint8, path string, fullPath string, handle
 			}
 
 			n.path = path[offset:i]
+			nodeFullPath += n.path
+			n.fullPath = nodeFullPath
 
 			// first node: catchAll node with empty path
 			child := &node{
@@ -345,6 +361,7 @@ func (n *node) insertChild(numParams uint8, path string, fullPath string, handle
 				maxParams: 1,
 				handlers:  handlers,
 				priority:  1,
+				fullPath:  nodeFullPath + path[i:],
 			}
 			n.children = []*node{child}
 
@@ -354,6 +371,7 @@ func (n *node) insertChild(numParams uint8, path string, fullPath string, handle
 
 	// insert remaining path part and handle to the leaf
 	n.path = path[offset:]
+	n.fullPath = nodeFullPath + n.path
 	n.handlers = handlers
 }
 
@@ -364,7 +382,9 @@ func (n *node) insertChild(numParams uint8, path string, fullPath string, handle
 // given path.
 func (n *node) getValue(path string, po Params, unescape bool) (handlers HandlersChain, p Params, relativePath string, tsr bool) {
 	p = po
-	relativePath = path
+	defer func() {
+		relativePath = n.fullPath
+	}()
 walk: // Outer loop for walking the tree
 	for {
 		if len(path) > len(n.path) {
@@ -416,9 +436,6 @@ walk: // Outer loop for walking the tree
 						p[i].Value = val
 					}
 
-					// replace p.value with p.key (pattern :)
-					relativePath = strings.Replace(relativePath, p[i].Value, ":"+p[i].Key, 1)
-
 					// we need to go deeper!
 					if end < len(path) {
 						if len(n.children) > 0 {
@@ -460,9 +477,6 @@ walk: // Outer loop for walking the tree
 					} else {
 						p[i].Value = path
 					}
-
-					// replace p.value with p.key (pattern *)
-					relativePath = strings.Replace(relativePath, p[i].Value, "/*"+p[i].Key, 1)
 
 					handlers = n.handlers
 					return
