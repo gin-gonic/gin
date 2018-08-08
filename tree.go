@@ -248,9 +248,6 @@ func (n *node) addRoute(path string, handlers HandlersChain) {
 func (n *node) insertChild(numParams uint8, path string, fullPath string, handlers HandlersChain) {
 	var offset int // already handled bytes of the path
 
-	// save the node's full path
-	var nodeFullPath string
-
 	// find prefix until first wildcard (beginning with ':' or '*')
 	for i, max := 0, len(path); numParams > 0; i++ {
 		c := path[i]
@@ -289,13 +286,6 @@ func (n *node) insertChild(numParams uint8, path string, fullPath string, handle
 				n.path = path[offset:i]
 				offset = i
 			}
-			if n.path[0] != '/' {
-				nodeFullPath = "/" + n.path
-			} else {
-				nodeFullPath += n.path
-			}
-			// save node's full path
-			n.fullPath = nodeFullPath
 
 			child := &node{
 				nType:     param,
@@ -312,9 +302,6 @@ func (n *node) insertChild(numParams uint8, path string, fullPath string, handle
 			if end < max {
 				n.path = path[offset:end]
 				offset = end
-
-				nodeFullPath += n.path
-				n.fullPath = nodeFullPath
 
 				child := &node{
 					maxParams: numParams,
@@ -340,8 +327,6 @@ func (n *node) insertChild(numParams uint8, path string, fullPath string, handle
 			}
 
 			n.path = path[offset:i]
-			nodeFullPath += n.path
-			n.fullPath = nodeFullPath
 
 			// first node: catchAll node with empty path
 			child := &node{
@@ -361,7 +346,7 @@ func (n *node) insertChild(numParams uint8, path string, fullPath string, handle
 				maxParams: 1,
 				handlers:  handlers,
 				priority:  1,
-				fullPath:  nodeFullPath + path[i:],
+				fullPath:  fullPath,
 			}
 			n.children = []*node{child}
 
@@ -371,7 +356,7 @@ func (n *node) insertChild(numParams uint8, path string, fullPath string, handle
 
 	// insert remaining path part and handle to the leaf
 	n.path = path[offset:]
-	n.fullPath = nodeFullPath + n.path
+	n.fullPath = fullPath
 	n.handlers = handlers
 }
 
