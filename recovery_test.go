@@ -56,3 +56,8 @@ func TestSource(t *testing.T) {
 	bs = source(in, 1)
 	assert.Equal(t, []byte("Hello world."), bs)
 }
+
+func TestFunction(t *testing.T) {
+	bs := function(1)
+	assert.Equal(t, []byte("???"), bs)
+}
