@@ -155,6 +155,7 @@ func (n *node) addRoute(path string, handlers HandlersChain) {
 					children:  n.children,
 					handlers:  n.handlers,
 					priority:  n.priority - 1,
+					fullPath:  n.fullPath,
 				}
 
 				// Update maxParams (max of all children)
@@ -236,6 +237,7 @@ func (n *node) addRoute(path string, handlers HandlersChain) {
 					panic("handlers are already registered for path '" + fullPath + "'")
 				}
 				n.handlers = handlers
+				n.fullPath = fullPath
 			}
 			return
 		}
