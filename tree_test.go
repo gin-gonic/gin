@@ -33,7 +33,7 @@ func checkRequests(t *testing.T, tree *node, requests testRequests, unescapes ..
 	}
 
 	for _, request := range requests {
-		handler, ps, _, _ := tree.getValue(request.path, nil, unescape)
+		handler, ps, rp, _ := tree.getValue(request.path, nil, unescape)
 
 		if handler == nil {
 			if !request.nilHandler {
@@ -45,6 +45,9 @@ func checkRequests(t *testing.T, tree *node, requests testRequests, unescapes ..
 			handler[0](nil)
 			if fakeHandlerValue != request.route {
 				t.Errorf("handle mismatch for route '%s': Wrong handle (%s != %s)", request.path, fakeHandlerValue, request.route)
+			}
+			if rp != request.route {
+				t.Errorf("full path mismatch, expected: \"%s\" got: \"%s\"", request.route, rp)
 			}
 		}
 
