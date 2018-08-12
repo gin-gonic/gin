@@ -5,6 +5,8 @@
 package gin
 
 import (
+	"bytes"
+	"encoding/xml"
 	"fmt"
 	"net/http"
 	"testing"
@@ -123,4 +125,15 @@ func TestBindMiddleware(t *testing.T) {
 	assert.Panics(t, func() {
 		Bind(&bindTestStruct{})
 	})
+}
+
+func TestMarshalXMLforH(t *testing.T) {
+	h := H{
+		"": "test",
+	}
+	var b bytes.Buffer
+	enc := xml.NewEncoder(&b)
+	var x xml.StartElement
+	e := h.MarshalXML(enc, x)
+	assert.Error(t, e)
 }
