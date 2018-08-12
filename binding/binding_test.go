@@ -14,7 +14,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/gin-gonic/gin/binding/example"
+	"github.com/gin-gonic/gin/testdata/protoexample"
 	"github.com/golang/protobuf/proto"
 	"github.com/stretchr/testify/assert"
 	"github.com/ugorji/go/codec"
@@ -562,7 +562,7 @@ func TestBindingFormMultipartFail(t *testing.T) {
 }
 
 func TestBindingProtoBuf(t *testing.T) {
-	test := &example.Test{
+	test := &protoexample.Test{
 		Label: proto.String("yes"),
 	}
 	data, _ := proto.Marshal(test)
@@ -574,7 +574,7 @@ func TestBindingProtoBuf(t *testing.T) {
 }
 
 func TestBindingProtoBufFail(t *testing.T) {
-	test := &example.Test{
+	test := &protoexample.Test{
 		Label: proto.String("yes"),
 	}
 	data, _ := proto.Marshal(test)
@@ -1156,14 +1156,14 @@ func testBodyBindingFail(t *testing.T, b Binding, name, path, badPath, body, bad
 func testProtoBodyBinding(t *testing.T, b Binding, name, path, badPath, body, badBody string) {
 	assert.Equal(t, name, b.Name())
 
-	obj := example.Test{}
+	obj := protoexample.Test{}
 	req := requestWithBody("POST", path, body)
 	req.Header.Add("Content-Type", MIMEPROTOBUF)
 	err := b.Bind(req, &obj)
 	assert.NoError(t, err)
 	assert.Equal(t, "yes", *obj.Label)
 
-	obj = example.Test{}
+	obj = protoexample.Test{}
 	req = requestWithBody("POST", badPath, badBody)
 	req.Header.Add("Content-Type", MIMEPROTOBUF)
 	err = ProtoBuf.Bind(req, &obj)
@@ -1179,7 +1179,7 @@ func (h hook) Read([]byte) (int, error) {
 func testProtoBodyBindingFail(t *testing.T, b Binding, name, path, badPath, body, badBody string) {
 	assert.Equal(t, name, b.Name())
 
-	obj := example.Test{}
+	obj := protoexample.Test{}
 	req := requestWithBody("POST", path, body)
 
 	req.Body = ioutil.NopCloser(&hook{})
@@ -1187,7 +1187,7 @@ func testProtoBodyBindingFail(t *testing.T, b Binding, name, path, badPath, body
 	err := b.Bind(req, &obj)
 	assert.Error(t, err)
 
-	obj = example.Test{}
+	obj = protoexample.Test{}
 	req = requestWithBody("POST", badPath, badBody)
 	req.Header.Add("Content-Type", MIMEPROTOBUF)
 	err = ProtoBuf.Bind(req, &obj)

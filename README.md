@@ -1117,7 +1117,7 @@ func main() {
     router.SetFuncMap(template.FuncMap{
         "formatAsDate": formatAsDate,
     })
-    router.LoadHTMLFiles("./fixtures/basic/raw.tmpl")
+    router.LoadHTMLFiles("./testdata/template/raw.tmpl")
 
     router.GET("/raw", func(c *gin.Context) {
         c.HTML(http.StatusOK, "raw.tmpl", map[string]interface{}{
