@@ -333,6 +333,16 @@ func TestRouteNotAllowedEnabled(t *testing.T) {
 	assert.Equal(t, http.StatusTeapot, w.Code)
 }
 
+func TestRouteNotAllowedEnabled2(t *testing.T) {
+	router := New()
+	router.HandleMethodNotAllowed = true
+	// add one methodTree to trees
+	router.addRoute("POST", "/", HandlersChain{func(_ *Context) {}})
+	router.GET("/path2", func(c *Context) {})
+	w := performRequest(router, "POST", "/path2")
+	assert.Equal(t, http.StatusMethodNotAllowed, w.Code)
+}
+
 func TestRouteNotAllowedDisabled(t *testing.T) {
 	router := New()
 	router.HandleMethodNotAllowed = false
