@@ -237,6 +237,9 @@ b:
 	assert.Equal(t, "application/x-yaml; charset=utf-8", w.Header().Get("Content-Type"))
 }
 
+func TestRenderProtoBuf(t *testing.T) {
+}
+
 type fail struct{}
 
 // Hook MarshalYAML
