@@ -158,6 +158,21 @@ func TestRenderJsonpJSON(t *testing.T) {
 	assert.Equal(t, "application/javascript; charset=utf-8", w2.Header().Get("Content-Type"))
 }
 
+func TestRenderJsonpJSONError2(t *testing.T) {
+	w := httptest.NewRecorder()
+	data := map[string]interface{}{
+		"foo": "bar",
+	}
+	(JsonpJSON{"", data}).WriteContentType(w)
+	assert.Equal(t, "application/javascript; charset=utf-8", w.Header().Get("Content-Type"))
+
+	e := (JsonpJSON{"", data}).Render(w)
+	assert.NoError(t, e)
+
+	assert.Equal(t, "{\"foo\":\"bar\"}", w.Body.String())
+	assert.Equal(t, "application/javascript; charset=utf-8", w.Header().Get("Content-Type"))
+}
+
 func TestRenderJsonpJSONFail(t *testing.T) {
 	w := httptest.NewRecorder()
 	data := make(chan int)
@@ -165,6 +180,35 @@ func TestRenderJsonpJSONFail(t *testing.T) {
 	// json: unsupported type: chan int
 	err := (JsonpJSON{"x", data}).Render(w)
 	assert.Error(t, err)
+}
+
+func TestRenderAsciiJSON(t *testing.T) {
+	w1 := httptest.NewRecorder()
+	data1 := map[string]interface{}{
+		"lang": "GO语言",
+		"tag":  "<br>",
+	}
+
+	err := (AsciiJSON{data1}).Render(w1)
+
+	assert.NoError(t, err)
+	assert.Equal(t, "{\"lang\":\"GO\\u8bed\\u8a00\",\"tag\":\"\\u003cbr\\u003e\"}", w1.Body.String())
+	assert.Equal(t, "application/json", w1.Header().Get("Content-Type"))
+
+	w2 := httptest.NewRecorder()
+	data2 := float64(3.1415926)
+
+	err = (AsciiJSON{data2}).Render(w2)
+	assert.NoError(t, err)
+	assert.Equal(t, "3.1415926", w2.Body.String())
+}
+
+func TestRenderAsciiJSONFail(t *testing.T) {
+	w := httptest.NewRecorder()
+	data := make(chan int)
+
+	// json: unsupported type: chan int
+	assert.Error(t, (AsciiJSON{data}).Render(w))
 }
 
 type xmlmap map[string]interface{}
