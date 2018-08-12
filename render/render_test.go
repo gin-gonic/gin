@@ -158,6 +158,21 @@ func TestRenderJsonpJSON(t *testing.T) {
 	assert.Equal(t, "application/javascript; charset=utf-8", w2.Header().Get("Content-Type"))
 }
 
+func TestRenderJsonpJSONError2(t *testing.T) {
+	w := httptest.NewRecorder()
+	data := map[string]interface{}{
+		"foo": "bar",
+	}
+	(JsonpJSON{"", data}).WriteContentType(w)
+	assert.Equal(t, "application/javascript; charset=utf-8", w.Header().Get("Content-Type"))
+
+	e := (JsonpJSON{"", data}).Render(w)
+	assert.NoError(t, e)
+
+	assert.Equal(t, "{\"foo\":\"bar\"}", w.Body.String())
+	assert.Equal(t, "application/javascript; charset=utf-8", w.Header().Get("Content-Type"))
+}
+
 func TestRenderJsonpJSONFail(t *testing.T) {
 	w := httptest.NewRecorder()
 	data := make(chan int)
