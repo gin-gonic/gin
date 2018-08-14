@@ -286,7 +286,7 @@ func TestRenderRedirect(t *testing.T) {
 	assert.NoError(t, err)
 
 	data1 := Redirect{
-		Code:     301,
+		Code:     http.StatusMovedPermanently,
 		Request:  req,
 		Location: "/new/location",
 	}
@@ -296,7 +296,7 @@ func TestRenderRedirect(t *testing.T) {
 	assert.NoError(t, err)
 
 	data2 := Redirect{
-		Code:     200,
+		Code:     http.StatusOK,
 		Request:  req,
 		Location: "/new/location",
 	}
