@@ -16,7 +16,7 @@ import (
 
 const (
 	// Version is Framework's version.
-	Version                = "v1.2"
+	Version                = "v1.3.0"
 	defaultMultipartMemory = 32 << 20 // 32 MB
 )
 
