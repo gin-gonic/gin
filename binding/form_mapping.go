@@ -69,19 +69,13 @@ func mapForm(ptr interface{}, form map[string][]string) error {
 			sliceOf := structField.Type().Elem().Kind()
 			slice := reflect.MakeSlice(structField.Type(), numElems, numElems)
 			for i := 0; i < numElems; i++ {
-				if err := setWithProperType(sliceOf, inputValue[i], slice.Index(i)); err != nil {
+				if err := setWithProperType(sliceOf, inputValue[i], slice.Index(i), typeField); err != nil {
 					return err
 				}
 			}
 			val.Field(i).Set(slice)
 		} else {
-			if _, isTime := structField.Interface().(time.Time); isTime {
-				if err := setTimeField(inputValue[0], typeField, structField); err != nil {
-					return err
-				}
-				continue
-			}
-			if err := setWithProperType(typeField.Type.Kind(), inputValue[0], structField); err != nil {
+			if err := setWithProperType(typeField.Type.Kind(), inputValue[0], structField, typeField); err != nil {
 				return err
 			}
 		}
@@ -89,7 +83,7 @@ func mapForm(ptr interface{}, form map[string][]string) error {
 	return nil
 }
 
-func setWithProperType(valueKind reflect.Kind, val string, structField reflect.Value) error {
+func setWithProperType(valueKind reflect.Kind, val string, structField reflect.Value, typeField reflect.StructField) error {
 	switch valueKind {
 	case reflect.Int:
 		return setIntField(val, 0, structField)
@@ -124,7 +118,12 @@ func setWithProperType(valueKind reflect.Kind, val string, structField reflect.V
 			structField.Set(reflect.New(structField.Type().Elem()))
 		}
 		structFieldElem := structField.Elem()
-		return setWithProperType(structFieldElem.Kind(), val, structFieldElem)
+		return setWithProperType(structFieldElem.Kind(), val, structFieldElem, typeField)
+	case reflect.Struct:
+		if _, isTime := structField.Interface().(time.Time); isTime {
+			return setTimeField(val, typeField, structField)
+		}
+		fallthrough
 	default:
 		return errors.New("Unknown type")
 	}
