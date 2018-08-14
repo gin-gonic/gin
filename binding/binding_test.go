@@ -39,8 +39,8 @@ type FooStructUseNumber struct {
 }
 
 type FooBarStructForTimeType struct {
-	TimeFoo time.Time `form:"time_foo" time_format:"2006-01-02" time_utc:"1" time_location:"Asia/Chongqing"`
-	TimeBar time.Time `form:"time_bar" time_format:"2006-01-02" time_utc:"1"`
+	TimeFoo time.Time  `form:"time_foo" time_format:"2006-01-02" time_utc:"1" time_location:"Asia/Chongqing"`
+	TimeBar *time.Time `form:"time_bar" time_format:"2006-01-02" time_utc:"1"`
 }
 
 type FooStructForTimeTypeNotFormat struct {
