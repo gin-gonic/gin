@@ -3,6 +3,7 @@ package main
 import (
 	"html/template"
 	"log"
+	"net/http"
 	"os"
 
 	"github.com/gin-gonic/gin"
@@ -27,7 +28,7 @@ func main() {
 	r.SetHTMLTemplate(html)
 
 	r.GET("/welcome", func(c *gin.Context) {
-		c.HTML(200, "https", gin.H{
+		c.HTML(http.StatusOK, "https", gin.H{
 			"status": "success",
 		})
 	})
