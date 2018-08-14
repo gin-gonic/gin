@@ -585,7 +585,8 @@ func TestContextGetCookie(t *testing.T) {
 }
 
 func TestContextBodyAllowedForStatus(t *testing.T) {
-	assert.False(t, false, bodyAllowedForStatus(http.StatusProcessing))
+	// todo(thinkerou): go1.6 not support StatusProcessing
+	assert.False(t, false, bodyAllowedForStatus(102))
 	assert.False(t, false, bodyAllowedForStatus(http.StatusNoContent))
 	assert.False(t, false, bodyAllowedForStatus(http.StatusNotModified))
 	assert.True(t, true, bodyAllowedForStatus(http.StatusInternalServerError))
