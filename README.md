@@ -679,7 +679,7 @@ $ curl "localhost:8085/bookable?check_in=2018-03-08&check_out=2018-03-09"
 {"error":"Key: 'Booking.CheckIn' Error:Field validation for 'CheckIn' failed on the 'bookabledate' tag"}
 ```
 
-[Struct level validations](https://github.com/go-playground/validator/releases/tag/v8.7) can also be registed this way.
+[Struct level validations](https://github.com/go-playground/validator/releases/tag/v8.7) can also be registered this way.
 See the [struct-lvl-validation example](examples/struct-lvl-validations) to learn more.
 
 ### Only Bind Query String
