@@ -158,6 +158,21 @@ func TestRenderJsonpJSON(t *testing.T) {
 	assert.Equal(t, "application/javascript; charset=utf-8", w2.Header().Get("Content-Type"))
 }
 
+func TestRenderJsonpJSONError2(t *testing.T) {
+	w := httptest.NewRecorder()
+	data := map[string]interface{}{
+		"foo": "bar",
+	}
+	(JsonpJSON{"", data}).WriteContentType(w)
+	assert.Equal(t, "application/javascript; charset=utf-8", w.Header().Get("Content-Type"))
+
+	e := (JsonpJSON{"", data}).Render(w)
+	assert.NoError(t, e)
+
+	assert.Equal(t, "{\"foo\":\"bar\"}", w.Body.String())
+	assert.Equal(t, "application/javascript; charset=utf-8", w.Header().Get("Content-Type"))
+}
+
 func TestRenderJsonpJSONFail(t *testing.T) {
 	w := httptest.NewRecorder()
 	data := make(chan int)
@@ -271,7 +286,7 @@ func TestRenderRedirect(t *testing.T) {
 	assert.NoError(t, err)
 
 	data1 := Redirect{
-		Code:     301,
+		Code:     http.StatusMovedPermanently,
 		Request:  req,
 		Location: "/new/location",
 	}
@@ -281,7 +296,7 @@ func TestRenderRedirect(t *testing.T) {
 	assert.NoError(t, err)
 
 	data2 := Redirect{
-		Code:     200,
+		Code:     http.StatusOK,
 		Request:  req,
 		Location: "/new/location",
 	}
@@ -373,7 +388,7 @@ func TestRenderHTMLTemplateEmptyName(t *testing.T) {
 
 func TestRenderHTMLDebugFiles(t *testing.T) {
 	w := httptest.NewRecorder()
-	htmlRender := HTMLDebug{Files: []string{"../fixtures/basic/hello.tmpl"},
+	htmlRender := HTMLDebug{Files: []string{"../testdata/template/hello.tmpl"},
 		Glob:    "",
 		Delims:  Delims{Left: "{[{", Right: "}]}"},
 		FuncMap: nil,
@@ -392,7 +407,7 @@ func TestRenderHTMLDebugFiles(t *testing.T) {
 func TestRenderHTMLDebugGlob(t *testing.T) {
 	w := httptest.NewRecorder()
 	htmlRender := HTMLDebug{Files: nil,
-		Glob:    "../fixtures/basic/hello*",
+		Glob:    "../testdata/template/hello*",
 		Delims:  Delims{Left: "{[{", Right: "}]}"},
 		FuncMap: nil,
 	}

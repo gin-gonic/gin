@@ -238,7 +238,7 @@ func main() {
 func main() {
 	router := gin.Default()
 
-	// This handler will match /user/john but will not match neither /user/ or /user
+	// This handler will match /user/john but will not match /user/ or /user
 	router.GET("/user/:name", func(c *gin.Context) {
 		name := c.Param("name")
 		c.String(http.StatusOK, "Hello %s", name)
@@ -679,7 +679,7 @@ $ curl "localhost:8085/bookable?check_in=2018-03-08&check_out=2018-03-09"
 {"error":"Key: 'Booking.CheckIn' Error:Field validation for 'CheckIn' failed on the 'bookabledate' tag"}
 ```
 
-[Struct level validations](https://github.com/go-playground/validator/releases/tag/v8.7) can also be registed this way.
+[Struct level validations](https://github.com/go-playground/validator/releases/tag/v8.7) can also be registered this way.
 See the [struct-lvl-validation example](examples/struct-lvl-validations) to learn more.
 
 ### Only Bind Query String
@@ -1117,7 +1117,7 @@ func main() {
     router.SetFuncMap(template.FuncMap{
         "formatAsDate": formatAsDate,
     })
-    router.LoadHTMLFiles("./fixtures/basic/raw.tmpl")
+    router.LoadHTMLFiles("./testdata/template/raw.tmpl")
 
     router.GET("/raw", func(c *gin.Context) {
         c.HTML(http.StatusOK, "raw.tmpl", map[string]interface{}{
