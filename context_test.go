@@ -575,9 +575,9 @@ func TestContextRenderJSON(t *testing.T) {
 	w := httptest.NewRecorder()
 	c, _ := CreateTestContext(w)
 
-	c.JSON(http.StatusCreated, H{"foo": "bar", "html": "<b>"})
+	c.JSON(201, H{"foo": "bar", "html": "<b>"})
 
-	assert.Equal(t, http.StatusCreated, w.Code)
+	assert.Equal(t, 201, w.Code)
 	assert.Equal(
 		t,
 		"{\"foo\":\"bar\",\"html\":\"\\u003cb\\u003e\"}\n",
@@ -591,7 +591,7 @@ func TestContextRenderJSON(t *testing.T) {
 func TestContextRenderPureJSON(t *testing.T) {
 	c, w, _ := CreateTestContext()
 	c.PureJSON(201, H{"foo": "bar", "html": "<b>"})
-	assert.Equal(t, w.Code, 201)
+	assert.Equal(t, 201, w.Code)
 	assert.Equal(t, "{\"foo\":\"bar\",\"html\":\"<b>\"}\n", w.Body.String())
 	assert.Equal(t, "application/json; charset=utf-8", w.HeaderMap.Get("Content-Type"))
 }
