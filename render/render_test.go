@@ -42,7 +42,7 @@ func TestRenderMsgPack(t *testing.T) {
 func TestRenderJSON(t *testing.T) {
 	w := httptest.NewRecorder()
 	data := map[string]interface{}{
-		"foo": "bar",
+		"foo":  "bar",
 		"html": "<b>",
 	}
 

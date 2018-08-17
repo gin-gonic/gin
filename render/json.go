@@ -19,7 +19,6 @@ type PureJSON struct {
 	Data interface{}
 }
 
-
 type IndentedJSON struct {
 	Data interface{}
 }
