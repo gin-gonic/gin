@@ -15,6 +15,11 @@ type JSON struct {
 	Data interface{}
 }
 
+type PureJSON struct {
+	Data interface{}
+}
+
+
 type IndentedJSON struct {
 	Data interface{}
 }
@@ -47,6 +52,13 @@ func WriteJSON(w http.ResponseWriter, obj interface{}) error {
 	}
 	w.Write(jsonBytes)
 	return nil
+}
+
+func (r PureJSON) Render(w http.ResponseWriter) error {
+	writeContentType(w, jsonContentType)
+	encoder := json.NewEncoder(w)
+	encoder.SetEscapeHTML(false)
+	return encoder.Encode(r.Data)
 }
 
 func (r IndentedJSON) Render(w http.ResponseWriter) error {

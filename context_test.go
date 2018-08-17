@@ -570,14 +570,29 @@ func TestContextRenderPanicIfErr(t *testing.T) {
 
 // Tests that the response is serialized as JSON
 // and Content-Type is set to application/json
+// and special HTML characters are escaped
 func TestContextRenderJSON(t *testing.T) {
 	w := httptest.NewRecorder()
 	c, _ := CreateTestContext(w)
 
-	c.JSON(201, H{"foo": "bar"})
+	c.JSON(http.StatusCreated, H{"foo": "bar", "html": "<b>"})
 
-	assert.Equal(t, 201, w.Code)
-	assert.Equal(t, "{\"foo\":\"bar\"}", w.Body.String())
+	assert.Equal(t, http.StatusCreated, w.Code)
+	assert.Equal(
+		t,
+		"{\"foo\":\"bar\",\"html\":\"\\u003cb\\u003e\"}\n",
+		w.Body.String())
+	assert.Equal(t, "application/json; charset=utf-8", w.HeaderMap.Get("Content-Type"))
+}
+
+// Tests that the response is serialized as JSON
+// and Content-Type is set to application/json
+// and special HTML characters are preserved
+func TestContextRenderPureJSON(t *testing.T) {
+	c, w, _ := CreateTestContext()
+	c.PureJSON(201, H{"foo": "bar", "html": "<b>"})
+	assert.Equal(t, w.Code, 201)
+	assert.Equal(t, "{\"foo\":\"bar\",\"html\":\"<b>\"}\n", w.Body.String())
 	assert.Equal(t, "application/json; charset=utf-8", w.HeaderMap.Get("Content-Type"))
 }
 
