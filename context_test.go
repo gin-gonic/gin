@@ -589,7 +589,8 @@ func TestContextRenderJSON(t *testing.T) {
 // and Content-Type is set to application/json
 // and special HTML characters are preserved
 func TestContextRenderPureJSON(t *testing.T) {
-	c, w, _ := CreateTestContext()
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
 	c.PureJSON(201, H{"foo": "bar", "html": "<b>"})
 	assert.Equal(t, 201, w.Code)
 	assert.Equal(t, "{\"foo\":\"bar\",\"html\":\"<b>\"}\n", w.Body.String())
