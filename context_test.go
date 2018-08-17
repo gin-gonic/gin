@@ -1302,6 +1302,26 @@ func TestContextBindWithJSON(t *testing.T) {
 	assert.Equal(t, "bar", obj.Foo)
 	assert.Equal(t, 0, w.Body.Len())
 }
+func TestContextBindWithXML(t *testing.T) {
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
+
+	c.Request, _ = http.NewRequest("POST", "/", bytes.NewBufferString(`<?xml version="1.0" encoding="UTF-8"?>
+		<root>
+			<foo>FOO</foo>
+		   	<bar>BAR</bar>
+		</root>`))
+	c.Request.Header.Add("Content-Type", MIMEXML) // set fake content-type
+
+	var obj struct {
+		Foo string `xml:"foo"`
+		Bar string `xml:"bar"`
+	}
+	assert.NoError(t, c.BindXML(&obj))
+	assert.Equal(t, "FOO", obj.Foo)
+	assert.Equal(t, "BAR", obj.Bar)
+	assert.Equal(t, 0, w.Body.Len())
+}
 
 func TestContextBindWithQuery(t *testing.T) {
 	w := httptest.NewRecorder()
@@ -1369,6 +1389,27 @@ func TestContextShouldBindWithJSON(t *testing.T) {
 	assert.NoError(t, c.ShouldBindJSON(&obj))
 	assert.Equal(t, "foo", obj.Bar)
 	assert.Equal(t, "bar", obj.Foo)
+	assert.Equal(t, 0, w.Body.Len())
+}
+
+func TestContextShouldBindWithXML(t *testing.T) {
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
+
+	c.Request, _ = http.NewRequest("POST", "/", bytes.NewBufferString(`<?xml version="1.0" encoding="UTF-8"?>
+		<root>
+			<foo>FOO</foo>
+		   	<bar>BAR</bar>
+		</root>`))
+	c.Request.Header.Add("Content-Type", MIMEXML) // set fake content-type
+
+	var obj struct {
+		Foo string `xml:"foo"`
+		Bar string `xml:"bar"`
+	}
+	assert.NoError(t, c.ShouldBindXML(&obj))
+	assert.Equal(t, "FOO", obj.Foo)
+	assert.Equal(t, "BAR", obj.Bar)
 	assert.Equal(t, 0, w.Body.Len())
 }
 
