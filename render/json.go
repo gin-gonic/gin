@@ -54,10 +54,14 @@ func WriteJSON(w http.ResponseWriter, obj interface{}) error {
 }
 
 func (r PureJSON) Render(w http.ResponseWriter) error {
-	writeContentType(w, jsonContentType)
+	r.WriteContentType(w)
 	encoder := json.NewEncoder(w)
 	encoder.SetEscapeHTML(false)
 	return encoder.Encode(r.Data)
+}
+
+func (r PureJSON) WriteContentType(w http.ResponseWriter) {
+	writeContentType(w, jsonContentType)
 }
 
 func (r IndentedJSON) Render(w http.ResponseWriter) error {
