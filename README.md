@@ -100,7 +100,7 @@ $ mkdir -p $GOPATH/src/github.com/myusername/project && cd "$_"
 
 ```sh
 $ govendor init
-$ govendor fetch github.com/gin-gonic/gin@v1.2
+$ govendor fetch github.com/gin-gonic/gin@v1.3
 ```
 
 4. Copy a starting template inside your project
@@ -198,7 +198,7 @@ BenchmarkVulcan_GithubAll                   |    5000    |   394253    |   19894
 
 ## Build with [jsoniter](https://github.com/json-iterator/go)
 
-Gin use `encoding/json` as default json package but you can change to [jsoniter](https://github.com/json-iterator/go) by build from other tags.
+Gin uses `encoding/json` as default json package but you can change to [jsoniter](https://github.com/json-iterator/go) by build from other tags.
 
 ```sh
 $ go build -tags=jsoniter .
