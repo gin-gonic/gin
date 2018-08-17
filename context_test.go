@@ -580,7 +580,7 @@ func TestContextRenderJSON(t *testing.T) {
 	assert.Equal(t, 201, w.Code)
 	assert.Equal(
 		t,
-		"{\"foo\":\"bar\",\"html\":\"\\u003cb\\u003e\"}\n",
+		"{\"foo\":\"bar\",\"html\":\"\\u003cb\\u003e\"}",
 		w.Body.String())
 	assert.Equal(t, "application/json; charset=utf-8", w.HeaderMap.Get("Content-Type"))
 }
