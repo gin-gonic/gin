@@ -965,34 +965,19 @@ func TestContextRenderProtoBuf(t *testing.T) {
 	c, _ := CreateTestContext(w)
 
 	reps := []int64{int64(1), int64(2)}
-<<<<<<< HEAD
-
-	data := &testdata.Test{
-		label: "test",
-		reps:  resp,
-=======
 	label := "test"
 	data := &testdata.Test{
 		Label: &label,
 		Reps:  reps,
->>>>>>> 4624389... add protobuf render test
 	}
 
 	c.ProtoBuf(201, data)
 
-<<<<<<< HEAD
-	data, err := proto.Marshal(test)
-	assert.NoError(t, err)
-
-	assert.Equal(t, 201, w.Code)
-	assert.Equal(t, data, w.Body.String())
-=======
 	protoData, err := proto.Marshal(data)
 	assert.NoError(t, err)
 
 	assert.Equal(t, 201, w.Code)
 	assert.Equal(t, string(protoData[:]), w.Body.String())
->>>>>>> 4624389... add protobuf render test
 	assert.Equal(t, "application/x-protobuf", w.HeaderMap.Get("Content-Type"))
 }
 
