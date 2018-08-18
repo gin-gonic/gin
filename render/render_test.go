@@ -57,18 +57,6 @@ func TestRenderJSON(t *testing.T) {
 	assert.Equal(t, "application/json; charset=utf-8", w.Header().Get("Content-Type"))
 }
 
-func TestRenderPureJSON(t *testing.T) {
-	w := httptest.NewRecorder()
-	data := map[string]interface{}{
-		"foo":  "bar",
-		"html": "<b>",
-	}
-	err := (PureJSON{data}).Render(w)
-	assert.NoError(t, err)
-	assert.Equal(t, "{\"foo\":\"bar\",\"html\":\"<b>\"}\n", w.Body.String())
-	assert.Equal(t, "application/json; charset=utf-8", w.Header().Get("Content-Type"))
-}
-
 func TestRenderIndentedJSON(t *testing.T) {
 	w := httptest.NewRecorder()
 	data := map[string]interface{}{
