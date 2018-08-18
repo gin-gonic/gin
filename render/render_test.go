@@ -289,6 +289,13 @@ func TestRenderProtoBuf(t *testing.T) {
 	assert.Equal(t, "application/x-protobuf", w.Header().Get("Content-Type"))
 }
 
+func TestRenderProtoBufFail(t *testing.T) {
+	w := httptest.NewRecorder()
+	data := &testdata.Test{}
+	err := (ProtoBuf{data}).Render(w)
+	assert.Error(t, err)
+}
+
 func TestRenderXML(t *testing.T) {
 	w := httptest.NewRecorder()
 	data := xmlmap{
