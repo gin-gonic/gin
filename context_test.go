@@ -971,7 +971,7 @@ func TestContextRenderProtoBuf(t *testing.T) {
 		Reps:  reps,
 	}
 
-	c.ProtoBuf(201, data)
+	c.ProtoBuf(http.StatusCreated, data)
 
 	protoData, err := proto.Marshal(data)
 	assert.NoError(t, err)
