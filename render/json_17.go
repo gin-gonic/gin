@@ -7,7 +7,6 @@
 package render
 
 import (
-	"bytes"
 	"net/http"
 
 	"github.com/gin-gonic/gin/json"
