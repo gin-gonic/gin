@@ -7,21 +7,10 @@
 package gin
 
 import (
-	"bytes"
-	"errors"
-	"fmt"
-	"html/template"
-	"mime/multipart"
-	"net/http"
 	"net/http/httptest"
-	"reflect"
-	"strings"
 	"testing"
-	"time"
 
-	"github.com/gin-contrib/sse"
 	"github.com/stretchr/testify/assert"
-	"golang.org/x/net/context"
 )
 
 // Tests that the response is serialized as JSON

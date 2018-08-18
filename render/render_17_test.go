@@ -7,14 +7,10 @@
 package render
 
 import (
-	"bytes"
-	"encoding/xml"
-	"html/template"
 	"net/http/httptest"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/ugorji/go/codec"
 )
 
 func TestRenderPureJSON(t *testing.T) {
