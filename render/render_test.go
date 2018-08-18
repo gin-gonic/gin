@@ -280,10 +280,13 @@ func TestRenderProtoBuf(t *testing.T) {
 	(ProtoBuf{data}).WriteContentType(w)
 	protoData, err := proto.Marshal(data)
 	assert.NoError(t, err)
-	(YAML{data}).WriteContentType(w)
-	assert.Equal(t, "application/x-yaml; charset=utf-8", w.Header().Get("Content-Type"))
+	assert.Equal(t, "application/x-protobuf", w.Header().Get("Content-Type"))
 
+	err = (ProtoBuf{data}).Render(w)
+
+	assert.NoError(t, err)
 	assert.Equal(t, string(protoData[:]), w.Body.String())
+	assert.Equal(t, "application/x-protobuf", w.Header().Get("Content-Type"))
 }
 
 func TestRenderXML(t *testing.T) {

@@ -976,7 +976,7 @@ func TestContextRenderProtoBuf(t *testing.T) {
 	protoData, err := proto.Marshal(data)
 	assert.NoError(t, err)
 
-	assert.Equal(t, 201, w.Code)
+	assert.Equal(t, http.StatusCreated, w.Code)
 	assert.Equal(t, string(protoData[:]), w.Body.String())
 	assert.Equal(t, "application/x-protobuf", w.HeaderMap.Get("Content-Type"))
 }
