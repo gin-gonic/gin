@@ -908,12 +908,13 @@ func main() {
 	r.GET("/someProtoBuf", func(c *gin.Context) {
 		reps := []int64{int64(1), int64(2)}
 		label := "test"
-
-		// Proto specifically defines the testdata/protoexample file
+		// The specific definition of protobuf is written in the testdata/protoexample file.
 		data := &protoexample.Test{
 			Label: &label,
 			Reps:  reps,
 		}
+		// Note that data becomes binary data in the response
+		// Will output protoexample.Test protobuf serialized data
 		c.ProtoBuf(http.StatusOK, data)
 	})
 
