@@ -20,8 +20,11 @@ import (
 
 	"github.com/gin-contrib/sse"
 	"github.com/gin-gonic/gin/binding"
+	"github.com/golang/protobuf/proto"
 	"github.com/stretchr/testify/assert"
 	"golang.org/x/net/context"
+
+	testdata "github.com/gin-gonic/gin/testdata/protoexample"
 )
 
 var _ context.Context = &Context{}
@@ -952,6 +955,30 @@ func TestContextRenderYAML(t *testing.T) {
 	assert.Equal(t, http.StatusCreated, w.Code)
 	assert.Equal(t, "foo: bar\n", w.Body.String())
 	assert.Equal(t, "application/x-yaml; charset=utf-8", w.HeaderMap.Get("Content-Type"))
+}
+
+// TestContextRenderProtoBuf tests that the response is serialized as ProtoBuf
+// and Content-Type is set to application/x-protobuf
+// and we just use the example protobuf to check if the response is correct
+func TestContextRenderProtoBuf(t *testing.T) {
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
+
+	reps := []int64{int64(1), int64(2)}
+	label := "test"
+	data := &testdata.Test{
+		Label: &label,
+		Reps:  reps,
+	}
+
+	c.ProtoBuf(http.StatusCreated, data)
+
+	protoData, err := proto.Marshal(data)
+	assert.NoError(t, err)
+
+	assert.Equal(t, http.StatusCreated, w.Code)
+	assert.Equal(t, string(protoData[:]), w.Body.String())
+	assert.Equal(t, "application/x-protobuf", w.HeaderMap.Get("Content-Type"))
 }
 
 func TestContextHeaders(t *testing.T) {

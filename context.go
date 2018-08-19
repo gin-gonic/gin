@@ -20,6 +20,7 @@ import (
 	"github.com/gin-contrib/sse"
 	"github.com/gin-gonic/gin/binding"
 	"github.com/gin-gonic/gin/render"
+	"github.com/golang/protobuf/proto"
 )
 
 // Content-Type MIME of the most common data formats.
@@ -843,6 +844,11 @@ func (c *Context) Stream(step func(w io.Writer) bool) {
 			}
 		}
 	}
+}
+
+// ProtoBuf serializes the given struct as ProtoBuf into the response body.
+func (c *Context) ProtoBuf(code int, obj proto.Message) {
+	c.Render(code, render.ProtoBuf{Data: obj})
 }
 
 /************************************/
