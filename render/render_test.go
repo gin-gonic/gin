@@ -15,10 +15,11 @@ import (
 	"strings"
 	"testing"
 
-	testdata "github.com/gin-gonic/gin/testdata/protoexample"
 	"github.com/golang/protobuf/proto"
 	"github.com/stretchr/testify/assert"
 	"github.com/ugorji/go/codec"
+
+	testdata "github.com/gin-gonic/gin/testdata/protoexample"
 )
 
 // TODO unit tests
