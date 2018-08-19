@@ -11,7 +11,7 @@ import (
 )
 
 type ProtoBuf struct {
-	Data proto.Message
+	Data interface{}
 }
 
 var protobufContentType = []string{"application/x-protobuf"}
@@ -19,7 +19,7 @@ var protobufContentType = []string{"application/x-protobuf"}
 func (r ProtoBuf) Render(w http.ResponseWriter) error {
 	r.WriteContentType(w)
 
-	bytes, err := proto.Marshal(r.Data)
+	bytes, err := proto.Marshal(r.Data.(proto.Message))
 	if err != nil {
 		return err
 	}
