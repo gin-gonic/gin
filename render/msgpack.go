@@ -26,6 +26,6 @@ func (r MsgPack) Render(w http.ResponseWriter) error {
 
 func WriteMsgPack(w http.ResponseWriter, obj interface{}) error {
 	writeContentType(w, msgpackContentType)
-	var h codec.Handle = new(codec.MsgpackHandle)
-	return codec.NewEncoder(w, h).Encode(obj)
+	var mh codec.MsgpackHandle
+	return codec.NewEncoder(w, &mh).Encode(obj)
 }
