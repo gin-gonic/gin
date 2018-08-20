@@ -52,7 +52,8 @@ func TestRenderMsgPack(t *testing.T) {
 func TestRenderJSON(t *testing.T) {
 	w := httptest.NewRecorder()
 	data := map[string]interface{}{
-		"foo": "bar",
+		"foo":  "bar",
+		"html": "<b>",
 	}
 
 	(JSON{data}).WriteContentType(w)
@@ -61,7 +62,7 @@ func TestRenderJSON(t *testing.T) {
 	err := (JSON{data}).Render(w)
 
 	assert.NoError(t, err)
-	assert.Equal(t, "{\"foo\":\"bar\"}", w.Body.String())
+	assert.Equal(t, "{\"foo\":\"bar\",\"html\":\"\\u003cb\\u003e\"}", w.Body.String())
 	assert.Equal(t, "application/json; charset=utf-8", w.Header().Get("Content-Type"))
 }
 
