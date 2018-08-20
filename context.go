@@ -783,6 +783,11 @@ func (c *Context) YAML(code int, obj interface{}) {
 	c.Render(code, render.YAML{Data: obj})
 }
 
+// ProtoBuf serializes the given struct as ProtoBuf into the response body.
+func (c *Context) ProtoBuf(code int, obj interface{}) {
+	c.Render(code, render.ProtoBuf{Data: obj})
+}
+
 // String writes the given string into the response body.
 func (c *Context) String(code int, format string, values ...interface{}) {
 	c.Render(code, render.String{Format: format, Data: values})
