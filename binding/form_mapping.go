@@ -74,16 +74,16 @@ func mapForm(ptr interface{}, form map[string][]string) error {
 				}
 			}
 			val.Field(i).Set(slice)
-		} else {
-			if _, isTime := structField.Interface().(time.Time); isTime {
-				if err := setTimeField(inputValue[0], typeField, structField); err != nil {
-					return err
-				}
-				continue
-			}
-			if err := setWithProperType(typeField.Type.Kind(), inputValue[0], structField); err != nil {
+			continue
+		}
+		if _, isTime := structField.Interface().(time.Time); isTime {
+			if err := setTimeField(inputValue[0], typeField, structField); err != nil {
 				return err
 			}
+			continue
+		}
+		if err := setWithProperType(typeField.Type.Kind(), inputValue[0], structField); err != nil {
+			return err
 		}
 	}
 	return nil

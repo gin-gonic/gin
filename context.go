@@ -665,9 +665,9 @@ func (c *Context) Status(code int) {
 func (c *Context) Header(key, value string) {
 	if value == "" {
 		c.Writer.Header().Del(key)
-	} else {
-		c.Writer.Header().Set(key, value)
+		return
 	}
+	c.Writer.Header().Set(key, value)
 }
 
 // GetHeader returns value from request headers.
@@ -755,9 +755,9 @@ func (c *Context) JSONP(code int, obj interface{}) {
 	callback := c.DefaultQuery("callback", "")
 	if callback == "" {
 		c.Render(code, render.JSON{Data: obj})
-	} else {
-		c.Render(code, render.JsonpJSON{Callback: callback, Data: obj})
+		return
 	}
+	c.Render(code, render.JsonpJSON{Callback: callback, Data: obj})
 }
 
 // JSON serializes the given struct as JSON into the response body.
