@@ -15,7 +15,7 @@ func init() {
 }
 
 // IsDebugging returns true if the framework is running in debug mode.
-// Use SetMode(gin.Release) to disable debug mode.
+// Use SetMode(gin.ReleaseMode) to disable debug mode.
 func IsDebugging() bool {
 	return ginMode == debugCode
 }
@@ -47,6 +47,9 @@ func debugPrint(format string, values ...interface{}) {
 }
 
 func debugPrintWARNINGDefault() {
+	debugPrint(`[WARNING] Now Gin requires Go 1.6 or later and Go 1.7 will be required soon.
+
+`)
 	debugPrint(`[WARNING] Creating an Engine instance with the Logger and Recovery middleware already attached.
 
 `)

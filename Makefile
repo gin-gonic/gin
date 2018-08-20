@@ -1,15 +1,16 @@
 GOFMT ?= gofmt "-s"
 PACKAGES ?= $(shell go list ./... | grep -v /vendor/)
+VETPACKAGES ?= $(shell go list ./... | grep -v /vendor/ | grep -v /examples/)
 GOFILES := $(shell find . -name "*.go" -type f -not -path "./vendor/*")
 
-all: build
+all: install
 
 install: deps
 	govendor sync
 
 .PHONY: test
 test:
-	go test -v -covermode=count -coverprofile=coverage.out
+	sh coverage.sh
 
 .PHONY: fmt
 fmt:
@@ -26,7 +27,7 @@ fmt-check:
 	fi;
 
 vet:
-	go vet $(PACKAGES)
+	go vet $(VETPACKAGES)
 
 deps:
 	@hash govendor > /dev/null 2>&1; if [ $$? -ne 0 ]; then \
