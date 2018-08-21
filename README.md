@@ -750,9 +750,12 @@ See the [detail information](https://github.com/gin-gonic/gin/issues/742#issueco
 ```go
 package main
 
-import "log"
-import "github.com/gin-gonic/gin"
-import "time"
+import (
+	"log"
+	"time"
+
+	"github.com/gin-gonic/gin"
+)
 
 type Person struct {
 	Name     string    `form:"name"`
