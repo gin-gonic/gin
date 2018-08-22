@@ -15,8 +15,11 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/golang/protobuf/proto"
 	"github.com/stretchr/testify/assert"
 	"github.com/ugorji/go/codec"
+
+	testdata "github.com/gin-gonic/gin/testdata/protoexample"
 )
 
 // TODO unit tests
@@ -49,7 +52,8 @@ func TestRenderMsgPack(t *testing.T) {
 func TestRenderJSON(t *testing.T) {
 	w := httptest.NewRecorder()
 	data := map[string]interface{}{
-		"foo": "bar",
+		"foo":  "bar",
+		"html": "<b>",
 	}
 
 	(JSON{data}).WriteContentType(w)
@@ -58,7 +62,7 @@ func TestRenderJSON(t *testing.T) {
 	err := (JSON{data}).Render(w)
 
 	assert.NoError(t, err)
-	assert.Equal(t, "{\"foo\":\"bar\"}", w.Body.String())
+	assert.Equal(t, "{\"foo\":\"bar\",\"html\":\"\\u003cb\\u003e\"}", w.Body.String())
 	assert.Equal(t, "application/json; charset=utf-8", w.Header().Get("Content-Type"))
 }
 
@@ -262,6 +266,35 @@ func (ft *fail) MarshalYAML() (interface{}, error) {
 func TestRenderYAMLFail(t *testing.T) {
 	w := httptest.NewRecorder()
 	err := (YAML{&fail{}}).Render(w)
+	assert.Error(t, err)
+}
+
+// test Protobuf rendering
+func TestRenderProtoBuf(t *testing.T) {
+	w := httptest.NewRecorder()
+	reps := []int64{int64(1), int64(2)}
+	label := "test"
+	data := &testdata.Test{
+		Label: &label,
+		Reps:  reps,
+	}
+
+	(ProtoBuf{data}).WriteContentType(w)
+	protoData, err := proto.Marshal(data)
+	assert.NoError(t, err)
+	assert.Equal(t, "application/x-protobuf", w.Header().Get("Content-Type"))
+
+	err = (ProtoBuf{data}).Render(w)
+
+	assert.NoError(t, err)
+	assert.Equal(t, string(protoData[:]), w.Body.String())
+	assert.Equal(t, "application/x-protobuf", w.Header().Get("Content-Type"))
+}
+
+func TestRenderProtoBufFail(t *testing.T) {
+	w := httptest.NewRecorder()
+	data := &testdata.Test{}
+	err := (ProtoBuf{data}).Render(w)
 	assert.Error(t, err)
 }
 

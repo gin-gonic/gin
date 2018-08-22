@@ -668,9 +668,9 @@ func (c *Context) Status(code int) {
 func (c *Context) Header(key, value string) {
 	if value == "" {
 		c.Writer.Header().Del(key)
-	} else {
-		c.Writer.Header().Set(key, value)
+		return
 	}
+	c.Writer.Header().Set(key, value)
 }
 
 // GetHeader returns value from request headers.
@@ -758,9 +758,9 @@ func (c *Context) JSONP(code int, obj interface{}) {
 	callback := c.DefaultQuery("callback", "")
 	if callback == "" {
 		c.Render(code, render.JSON{Data: obj})
-	} else {
-		c.Render(code, render.JsonpJSON{Callback: callback, Data: obj})
+		return
 	}
+	c.Render(code, render.JsonpJSON{Callback: callback, Data: obj})
 }
 
 // JSON serializes the given struct as JSON into the response body.
@@ -784,6 +784,11 @@ func (c *Context) XML(code int, obj interface{}) {
 // YAML serializes the given struct as YAML into the response body.
 func (c *Context) YAML(code int, obj interface{}) {
 	c.Render(code, render.YAML{Data: obj})
+}
+
+// ProtoBuf serializes the given struct as ProtoBuf into the response body.
+func (c *Context) ProtoBuf(code int, obj interface{}) {
+	c.Render(code, render.ProtoBuf{Data: obj})
 }
 
 // String writes the given string into the response body.

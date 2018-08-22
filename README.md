@@ -40,7 +40,7 @@ Gin is a web framework written in Go (Golang). It features a martini-like API wi
     - [Bind Query String or Post Data](#bind-query-string-or-post-data)
     - [Bind HTML checkboxes](#bind-html-checkboxes)
     - [Multipart/Urlencoded binding](#multiparturlencoded-binding)
-    - [XML, JSON and YAML rendering](#xml-json-and-yaml-rendering)
+    - [XML, JSON, YAML and ProtoBuf rendering](#xml-json-yaml-and-protobuf-rendering)
     - [JSONP rendering](#jsonp)
     - [Serving static files](#serving-static-files)
     - [Serving data from reader](#serving-data-from-reader)
@@ -750,9 +750,12 @@ See the [detail information](https://github.com/gin-gonic/gin/issues/742#issueco
 ```go
 package main
 
-import "log"
-import "github.com/gin-gonic/gin"
-import "time"
+import (
+	"log"
+	"time"
+
+	"github.com/gin-gonic/gin"
+)
 
 type Person struct {
 	Name     string    `form:"name"`
@@ -871,7 +874,7 @@ Test it with:
 $ curl -v --form user=user --form password=password http://localhost:8080/login
 ```
 
-### XML, JSON and YAML rendering
+### XML, JSON, YAML and ProtoBuf rendering
 
 ```go
 func main() {
@@ -903,6 +906,19 @@ func main() {
 
 	r.GET("/someYAML", func(c *gin.Context) {
 		c.YAML(http.StatusOK, gin.H{"message": "hey", "status": http.StatusOK})
+	})
+
+	r.GET("/someProtoBuf", func(c *gin.Context) {
+		reps := []int64{int64(1), int64(2)}
+		label := "test"
+		// The specific definition of protobuf is written in the testdata/protoexample file.
+		data := &protoexample.Test{
+			Label: &label,
+			Reps:  reps,
+		}
+		// Note that data becomes binary data in the response
+		// Will output protoexample.Test protobuf serialized data
+		c.ProtoBuf(http.StatusOK, data)
 	})
 
 	// Listen and serve on 0.0.0.0:8080
@@ -975,6 +991,34 @@ func main() {
 
 	// Listen and serve on 0.0.0.0:8080
 	r.Run(":8080")
+}
+```
+
+#### PureJSON
+
+Normally, JSON replaces special HTML characters with their unicode entities, e.g. `<` becomes  `\u003c`. If you want to encode such characters literally, you can use PureJSON instead.
+This feature is unavailable in Go 1.6 and lower.
+
+```go
+func main() {
+	r := gin.Default()
+	
+	// Serves unicode entities
+	r.GET("/json", func(c *gin.Context) {
+		c.JSON(200, gin.H{
+			"html": "<b>Hello, world!</b>",
+		})
+	})
+	
+	// Serves literal characters
+	r.GET("/purejson", func(c *gin.Context) {
+		c.PureJSON(200, gin.H{
+			"html": "<b>Hello, world!</b>",
+		})
+	})
+	
+	// listen and serve on 0.0.0.0:8080
+	r.Run(":8080)
 }
 ```
 
