@@ -1215,3 +1215,17 @@ func requestWithBody(method, path, body string) (req *http.Request) {
 	req, _ = http.NewRequest(method, path, bytes.NewBufferString(body))
 	return
 }
+
+func TestResetForm(t *testing.T) {
+	m := make(map[string][]string)
+	m["a"] = []string{"hi"}
+	m["k=v&id=main&id=omit&array[]=first&array[]=second&ids[i]=111&ids[j]=3.14"] = []string{""}
+
+	res := resetForm(m)
+	assert.Equal(t, []string{"hi"}, res["a"])
+	assert.Equal(t, []string{"v"}, res["k"])
+	assert.Equal(t, []string{"main", "omit"}, res["id"])
+	assert.Equal(t, []string{"first", "second"}, res["array[]"])
+	assert.Equal(t, []string{"111"}, res["ids[i]"])
+	assert.Equal(t, []string{"3.14"}, res["ids[j]"])
+}
