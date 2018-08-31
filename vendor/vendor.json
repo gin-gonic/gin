@@ -27,8 +27,8 @@
 			"path": "github.com/json-iterator/go",
 			"revision": "1624edc4454b8682399def8740d46db5e4362ba4",
 			"revisionTime": "2018-08-06T06:07:27Z",
-			"version": "1.1.5",
-			"versionExact": "1.1.5"
+			"version": "v1.1",
+			"versionExact": "v1.1.5"
 		},
 		{
 			"checksumSHA1": "y/A5iuvwjytQE2CqVuphQRXR2nI=",
@@ -37,24 +37,6 @@
 			"revisionTime": "2017-09-25T05:34:41Z",
 			"version": "v0.0.3",
 			"versionExact": "v0.0.3"
-		},
-		{
-			"checksumSHA1": "ZTcgWKWHsrX0RXYVXn5Xeb8Q0go=",
-			"path": "github.com/modern-go/concurrent",
-			"revision": "bacd9c7ef1dd9b15be4a9909b8ac7a4e313eec94",
-			"revisionTime": "2018-03-06T01:26:44Z"
-		},
-		{
-			"checksumSHA1": "qvH48wzTIV3QKSDqI0dLFtVjaDI=",
-			"path": "github.com/modern-go/reflect2",
-			"revision": "94122c33edd36123c84d5368cfb2b69df93a0ec8",
-			"revisionTime": "2018-07-18T01:23:57Z"
-		},
-		{
-			"checksumSHA1": "LuFv4/jlrmFNnDb/5SCSEPAM9vU=",
-			"path": "github.com/pmezard/go-difflib/difflib",
-			"revision": "792786c7400a136282c1664665ae0a8db921c6c2",
-			"revisionTime": "2016-01-10T10:55:54Z"
 		},
 		{
 			"checksumSHA1": "c6pbpF7eowwO59phRTpF8cQ80Z0=",
@@ -78,12 +60,6 @@
 			"path": "golang.org/x/net/context",
 			"revision": "d4c55e66d8c3a2f3382d264b08e3e3454a66355a",
 			"revisionTime": "2016-10-18T08:54:36Z"
-		},
-		{
-			"checksumSHA1": "7Gocawl8bm27cpAILtuf21xvVD8=",
-			"path": "golang.org/x/sys/unix",
-			"revision": "1c9583448a9c3aa0f9a6a5241bf73c0bd8aafded",
-			"revisionTime": "2018-08-15T07:37:39Z"
 		},
 		{
 			"checksumSHA1": "P/k5ZGf0lEBgpKgkwy++F7K1PSg=",
