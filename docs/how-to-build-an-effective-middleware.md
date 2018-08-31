@@ -8,26 +8,26 @@ The middleware has two parts:
 
   - part two is what executes on every request. For example, a database middleware you simply inject your "global" database object into the context. Once it's inside the context, you can retrieve it from within other middlewares and your handler furnction.
 
-```go
-func funcName(params string) gin.HandlerFunc {
-    // <---
-    // This is part one
-    // --->
-    // The follow code is an example
-    if err := check(params); err != nil {
-        panic(err)
-    }
+  ```go
+  func funcName(params string) gin.HandlerFunc {
+      // <---
+      // This is part one
+      // --->
+      // The follow code is an example
+      if err := check(params); err != nil {
+          panic(err)
+      }
 
-    return func(c *gin.Context) {
-        // <---
-        // This is part two
-        // --->
-        // The follow code is an example
-        c.Set("TestVar", params)
-        c.Next()    
-    }
-}
-```
+      return func(c *gin.Context) {
+          // <---
+          // This is part two
+          // --->
+          // The follow code is an example
+          c.Set("TestVar", params)
+          c.Next()    
+      }
+  }
+  ```
 
 ## Execution process
 
