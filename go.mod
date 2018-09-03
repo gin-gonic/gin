@@ -12,6 +12,7 @@ require (
 	github.com/mattn/go-isatty v0.0.3
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.1 // indirect
+	github.com/newrelic/go-agent v2.1.0+incompatible
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/stretchr/testify v1.2.2
 	github.com/thinkerou/favicon v0.0.0-20170710140520-94a442a49da6
