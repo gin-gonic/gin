@@ -95,6 +95,12 @@ func (c *Context) Handler() HandlerFunc {
 	return c.handlers.Last()
 }
 
+// Routes returns a slice of registered routes, including some useful information, such as:
+// the http method, path and the handler name.
+func (c *Context) Routes() RoutesInfo {
+	return c.engine.Routes()
+}
+
 /************************************/
 /*********** FLOW CONTROL ***********/
 /************************************/
