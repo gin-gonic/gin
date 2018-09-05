@@ -87,6 +87,9 @@ import "net/http"
 
 ### Use a vendor tool like [Govendor](https://github.com/kardianos/govendor)
 
+<details>
+<summary>How to use govendor tool details?</summary>
+
 1. `go get` govendor
 
 ```sh
@@ -116,6 +119,8 @@ $ curl https://raw.githubusercontent.com/gin-gonic/gin/master/examples/basic/mai
 ```sh
 $ go run main.go
 ```
+
+</details>
 
 ## Prerequisite
 
