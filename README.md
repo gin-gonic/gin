@@ -88,6 +88,7 @@ import "net/http"
 ### Use a vendor tool like [Govendor](https://github.com/kardianos/govendor)
 
 <details>
+
 <summary>How to use govendor tool details?</summary>
 
 1. `go get` govendor
@@ -156,6 +157,10 @@ $ go run example.go
 
 ## Benchmarks
 
+<details>
+
+<summary>See gin performance details</summary>
+
 Gin uses a custom version of [HttpRouter](https://github.com/julienschmidt/httprouter)
 
 [See all benchmarks](/BENCHMARKS.md)
@@ -195,6 +200,8 @@ BenchmarkVulcan_GithubAll                   |    5000    |   394253    |   19894
 - (3): Heap Memory (B/op), lower is better
 - (4): Average Allocations per Repetition (allocs/op), lower is better
 
+</details>
+
 ## Gin v1. stable
 
 - [x] Zero allocation router.
@@ -205,11 +212,17 @@ BenchmarkVulcan_GithubAll                   |    5000    |   394253    |   19894
 
 ## Build with [jsoniter](https://github.com/json-iterator/go)
 
+<details>
+
+<summary>How to use jsoniter on your gin project?</summary>
+
 Gin uses `encoding/json` as default json package but you can change to [jsoniter](https://github.com/json-iterator/go) by build from other tags.
 
 ```sh
 $ go build -tags=jsoniter .
 ```
+
+</details>
 
 ## API Examples
 
@@ -1844,6 +1857,10 @@ func main() {
 
 ## Testing
 
+<details>
+
+<summary>How to test your gin code?</summary>
+
 The `net/http/httptest` package is preferable way for HTTP testing.
 
 ```go
@@ -1887,6 +1904,8 @@ func TestPingRoute(t *testing.T) {
 	assert.Equal(t, "pong", w.Body.String())
 }
 ```
+
+</details>
 
 ## Users
 
