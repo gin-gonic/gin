@@ -1,4 +1,4 @@
-// +build go1.11
+// +build go1.8
 
 package main
 
