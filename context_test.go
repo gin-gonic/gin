@@ -1135,6 +1135,8 @@ func TestContextNegotiationFormatWithAccept(t *testing.T) {
 		{typicalAccept, []string{MIMEJSON, MIMEXML}, MIMEXML},
 		{typicalAccept, []string{MIMEXML, MIMEHTML}, MIMEHTML},
 		{typicalAccept, []string{MIMEJSON}, MIMEJSON},
+		{"text/*", []string{MIMEJSON, MIMEHTML}, MIMEHTML},
+		{"text/*", []string{MIMEJSON, MIMEXML}, ""},
 	}
 
 	for i, tc := range testCases {
