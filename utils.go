@@ -110,6 +110,26 @@ func parseAccept(acceptHeader string) []string {
 	return out
 }
 
+// contentMatches returns true if content matches the pattern.
+// See RFC2616, section 14.1.
+func contentMatches(pattern, content string) bool {
+	patternParts := strings.SplitN(pattern, "/", 2)
+	contentParts := strings.SplitN(content, "/", 2)
+	if patternParts[0] == "*" {
+		return true
+	}
+	if patternParts[0] != contentParts[0] {
+		return false
+	}
+	if patternParts[1] == "*" {
+		return true
+	}
+	if patternParts[1] != contentParts[1] {
+		return false
+	}
+	return true
+}
+
 func lastChar(str string) uint8 {
 	if str == "" {
 		panic("The length of the string can't be 0")

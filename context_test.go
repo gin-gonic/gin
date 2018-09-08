@@ -1122,13 +1122,27 @@ func TestContextNegotiationFormat(t *testing.T) {
 }
 
 func TestContextNegotiationFormatWithAccept(t *testing.T) {
-	c, _ := CreateTestContext(httptest.NewRecorder())
-	c.Request, _ = http.NewRequest("POST", "/", nil)
-	c.Request.Header.Add("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8")
+	typicalAccept := "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
+	testCases := []struct {
+		accept string
+		offer  []string
+		expect string
+	}{
+		{"*/*", []string{MIMEJSON}, MIMEJSON},
+		{"", []string{MIMEJSON, MIMEXML}, MIMEJSON},
+		{MIMEJSON, []string{MIMEXML}, ""},
+		{MIMEJSON, []string{MIMEXML, MIMEJSON, MIMEHTML}, MIMEJSON},
+		{typicalAccept, []string{MIMEJSON, MIMEXML}, MIMEXML},
+		{typicalAccept, []string{MIMEXML, MIMEHTML}, MIMEHTML},
+		{typicalAccept, []string{MIMEJSON}, MIMEJSON},
+	}
 
-	assert.Equal(t, MIMEXML, c.NegotiateFormat(MIMEJSON, MIMEXML))
-	assert.Equal(t, MIMEHTML, c.NegotiateFormat(MIMEXML, MIMEHTML))
-	assert.Empty(t, c.NegotiateFormat(MIMEJSON))
+	for i, tc := range testCases {
+		c, _ := CreateTestContext(httptest.NewRecorder())
+		c.Request, _ = http.NewRequest("POST", "/", nil)
+		c.Request.Header.Add("Accept", tc.accept)
+		assert.Equal(t, tc.expect, c.NegotiateFormat(tc.offer...), fmt.Sprintf("test case %d", i))
+	}
 }
 
 func TestContextNegotiationFormatCustum(t *testing.T) {

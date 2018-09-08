@@ -893,7 +893,7 @@ func (c *Context) NegotiateFormat(offered ...string) string {
 	}
 	for _, accepted := range c.Accepted {
 		for _, offert := range offered {
-			if accepted == offert {
+			if contentMatches(accepted, offert) {
 				return offert
 			}
 		}
