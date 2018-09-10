@@ -74,16 +74,16 @@ func mapForm(ptr interface{}, form map[string][]string) error {
 				}
 			}
 			val.Field(i).Set(slice)
-		} else {
-			if _, isTime := structField.Interface().(time.Time); isTime {
-				if err := setTimeField(inputValue[0], typeField, structField); err != nil {
-					return err
-				}
-				continue
-			}
-			if err := setWithProperType(typeField.Type.Kind(), inputValue[0], structField); err != nil {
+			continue
+		}
+		if _, isTime := structField.Interface().(time.Time); isTime {
+			if err := setTimeField(inputValue[0], typeField, structField); err != nil {
 				return err
 			}
+			continue
+		}
+		if err := setWithProperType(typeField.Type.Kind(), inputValue[0], structField); err != nil {
+			return err
 		}
 	}
 	return nil
@@ -178,7 +178,7 @@ func setFloatField(val string, bitSize int, field reflect.Value) error {
 func setTimeField(val string, structField reflect.StructField, value reflect.Value) error {
 	timeFormat := structField.Tag.Get("time_format")
 	if timeFormat == "" {
-		return errors.New("Blank time format")
+		timeFormat = time.RFC3339
 	}
 
 	if val == "" {

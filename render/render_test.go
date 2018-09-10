@@ -15,8 +15,11 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/golang/protobuf/proto"
 	"github.com/stretchr/testify/assert"
 	"github.com/ugorji/go/codec"
+
+	testdata "github.com/gin-gonic/gin/testdata/protoexample"
 )
 
 // TODO unit tests
@@ -49,7 +52,8 @@ func TestRenderMsgPack(t *testing.T) {
 func TestRenderJSON(t *testing.T) {
 	w := httptest.NewRecorder()
 	data := map[string]interface{}{
-		"foo": "bar",
+		"foo":  "bar",
+		"html": "<b>",
 	}
 
 	(JSON{data}).WriteContentType(w)
@@ -58,7 +62,7 @@ func TestRenderJSON(t *testing.T) {
 	err := (JSON{data}).Render(w)
 
 	assert.NoError(t, err)
-	assert.Equal(t, "{\"foo\":\"bar\"}", w.Body.String())
+	assert.Equal(t, "{\"foo\":\"bar\",\"html\":\"\\u003cb\\u003e\"}", w.Body.String())
 	assert.Equal(t, "application/json; charset=utf-8", w.Header().Get("Content-Type"))
 }
 
@@ -158,6 +162,21 @@ func TestRenderJsonpJSON(t *testing.T) {
 	assert.Equal(t, "application/javascript; charset=utf-8", w2.Header().Get("Content-Type"))
 }
 
+func TestRenderJsonpJSONError2(t *testing.T) {
+	w := httptest.NewRecorder()
+	data := map[string]interface{}{
+		"foo": "bar",
+	}
+	(JsonpJSON{"", data}).WriteContentType(w)
+	assert.Equal(t, "application/javascript; charset=utf-8", w.Header().Get("Content-Type"))
+
+	e := (JsonpJSON{"", data}).Render(w)
+	assert.NoError(t, e)
+
+	assert.Equal(t, "{\"foo\":\"bar\"}", w.Body.String())
+	assert.Equal(t, "application/javascript; charset=utf-8", w.Header().Get("Content-Type"))
+}
+
 func TestRenderJsonpJSONFail(t *testing.T) {
 	w := httptest.NewRecorder()
 	data := make(chan int)
@@ -165,6 +184,35 @@ func TestRenderJsonpJSONFail(t *testing.T) {
 	// json: unsupported type: chan int
 	err := (JsonpJSON{"x", data}).Render(w)
 	assert.Error(t, err)
+}
+
+func TestRenderAsciiJSON(t *testing.T) {
+	w1 := httptest.NewRecorder()
+	data1 := map[string]interface{}{
+		"lang": "GO语言",
+		"tag":  "<br>",
+	}
+
+	err := (AsciiJSON{data1}).Render(w1)
+
+	assert.NoError(t, err)
+	assert.Equal(t, "{\"lang\":\"GO\\u8bed\\u8a00\",\"tag\":\"\\u003cbr\\u003e\"}", w1.Body.String())
+	assert.Equal(t, "application/json", w1.Header().Get("Content-Type"))
+
+	w2 := httptest.NewRecorder()
+	data2 := float64(3.1415926)
+
+	err = (AsciiJSON{data2}).Render(w2)
+	assert.NoError(t, err)
+	assert.Equal(t, "3.1415926", w2.Body.String())
+}
+
+func TestRenderAsciiJSONFail(t *testing.T) {
+	w := httptest.NewRecorder()
+	data := make(chan int)
+
+	// json: unsupported type: chan int
+	assert.Error(t, (AsciiJSON{data}).Render(w))
 }
 
 type xmlmap map[string]interface{}
@@ -221,6 +269,35 @@ func TestRenderYAMLFail(t *testing.T) {
 	assert.Error(t, err)
 }
 
+// test Protobuf rendering
+func TestRenderProtoBuf(t *testing.T) {
+	w := httptest.NewRecorder()
+	reps := []int64{int64(1), int64(2)}
+	label := "test"
+	data := &testdata.Test{
+		Label: &label,
+		Reps:  reps,
+	}
+
+	(ProtoBuf{data}).WriteContentType(w)
+	protoData, err := proto.Marshal(data)
+	assert.NoError(t, err)
+	assert.Equal(t, "application/x-protobuf", w.Header().Get("Content-Type"))
+
+	err = (ProtoBuf{data}).Render(w)
+
+	assert.NoError(t, err)
+	assert.Equal(t, string(protoData[:]), w.Body.String())
+	assert.Equal(t, "application/x-protobuf", w.Header().Get("Content-Type"))
+}
+
+func TestRenderProtoBufFail(t *testing.T) {
+	w := httptest.NewRecorder()
+	data := &testdata.Test{}
+	err := (ProtoBuf{data}).Render(w)
+	assert.Error(t, err)
+}
+
 func TestRenderXML(t *testing.T) {
 	w := httptest.NewRecorder()
 	data := xmlmap{
@@ -242,7 +319,7 @@ func TestRenderRedirect(t *testing.T) {
 	assert.NoError(t, err)
 
 	data1 := Redirect{
-		Code:     301,
+		Code:     http.StatusMovedPermanently,
 		Request:  req,
 		Location: "/new/location",
 	}
@@ -252,7 +329,7 @@ func TestRenderRedirect(t *testing.T) {
 	assert.NoError(t, err)
 
 	data2 := Redirect{
-		Code:     200,
+		Code:     http.StatusOK,
 		Request:  req,
 		Location: "/new/location",
 	}
@@ -344,7 +421,7 @@ func TestRenderHTMLTemplateEmptyName(t *testing.T) {
 
 func TestRenderHTMLDebugFiles(t *testing.T) {
 	w := httptest.NewRecorder()
-	htmlRender := HTMLDebug{Files: []string{"../fixtures/basic/hello.tmpl"},
+	htmlRender := HTMLDebug{Files: []string{"../testdata/template/hello.tmpl"},
 		Glob:    "",
 		Delims:  Delims{Left: "{[{", Right: "}]}"},
 		FuncMap: nil,
@@ -363,7 +440,7 @@ func TestRenderHTMLDebugFiles(t *testing.T) {
 func TestRenderHTMLDebugGlob(t *testing.T) {
 	w := httptest.NewRecorder()
 	htmlRender := HTMLDebug{Files: nil,
-		Glob:    "../fixtures/basic/hello*",
+		Glob:    "../testdata/template/hello*",
 		Delims:  Delims{Left: "{[{", Right: "}]}"},
 		FuncMap: nil,
 	}

@@ -5,7 +5,7 @@ import (
 	"io/ioutil"
 	"testing"
 
-	"github.com/gin-gonic/gin/binding/example"
+	"github.com/gin-gonic/gin/testdata/protoexample"
 	"github.com/golang/protobuf/proto"
 	"github.com/stretchr/testify/assert"
 	"github.com/ugorji/go/codec"
@@ -55,12 +55,12 @@ func msgPackBody(t *testing.T) string {
 }
 
 func TestBindingBodyProto(t *testing.T) {
-	test := example.Test{
+	test := protoexample.Test{
 		Label: proto.String("FOO"),
 	}
 	data, _ := proto.Marshal(&test)
 	req := requestWithBody("POST", "/", string(data))
-	form := example.Test{}
+	form := protoexample.Test{}
 	body, _ := ioutil.ReadAll(req.Body)
 	assert.NoError(t, ProtoBuf.BindBody(body, &form))
 	assert.Equal(t, test, form)

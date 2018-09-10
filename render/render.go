@@ -26,6 +26,8 @@ var (
 	_ Render     = YAML{}
 	_ Render     = MsgPack{}
 	_ Render     = Reader{}
+	_ Render     = AsciiJSON{}
+	_ Render     = ProtoBuf{}
 )
 
 func writeContentType(w http.ResponseWriter, value []string) {

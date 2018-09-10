@@ -3,10 +3,11 @@
 <img align="right" width="159px" src="https://raw.githubusercontent.com/gin-gonic/logo/master/color.png">
 
 [![Build Status](https://travis-ci.org/gin-gonic/gin.svg)](https://travis-ci.org/gin-gonic/gin)
- [![codecov](https://codecov.io/gh/gin-gonic/gin/branch/master/graph/badge.svg)](https://codecov.io/gh/gin-gonic/gin)
- [![Go Report Card](https://goreportcard.com/badge/github.com/gin-gonic/gin)](https://goreportcard.com/report/github.com/gin-gonic/gin)
- [![GoDoc](https://godoc.org/github.com/gin-gonic/gin?status.svg)](https://godoc.org/github.com/gin-gonic/gin)
- [![Join the chat at https://gitter.im/gin-gonic/gin](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/gin-gonic/gin?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+[![codecov](https://codecov.io/gh/gin-gonic/gin/branch/master/graph/badge.svg)](https://codecov.io/gh/gin-gonic/gin)
+[![Go Report Card](https://goreportcard.com/badge/github.com/gin-gonic/gin)](https://goreportcard.com/report/github.com/gin-gonic/gin)
+[![GoDoc](https://godoc.org/github.com/gin-gonic/gin?status.svg)](https://godoc.org/github.com/gin-gonic/gin)
+[![Join the chat at https://gitter.im/gin-gonic/gin](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/gin-gonic/gin?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+[![Sourcegraph](https://sourcegraph.com/github.com/gin-gonic/gin/-/badge.svg)](https://sourcegraph.com/github.com/gin-gonic/gin?badge)
 [![Open Source Helpers](https://www.codetriage.com/gin-gonic/gin/badges/users.svg)](https://www.codetriage.com/gin-gonic/gin)
 
 Gin is a web framework written in Go (Golang). It features a martini-like API with much better performance, up to 40 times faster thanks to [httprouter](https://github.com/julienschmidt/httprouter). If you need performance and good productivity, you will love Gin.
@@ -15,10 +16,11 @@ Gin is a web framework written in Go (Golang). It features a martini-like API wi
 
 ## Contents
 
+- [Installation](#installation)
+- [Prerequisite](#prerequisite)
 - [Quick start](#quick-start)
 - [Benchmarks](#benchmarks)
 - [Gin v1.stable](#gin-v1-stable)
-- [Start using it](#start-using-it)
 - [Build with jsoniter](#build-with-jsoniter)
 - [API Examples](#api-examples)
     - [Using GET,POST,PUT,PATCH,DELETE and OPTIONS](#using-get-post-put-patch-delete-and-options)
@@ -26,6 +28,7 @@ Gin is a web framework written in Go (Golang). It features a martini-like API wi
     - [Querystring parameters](#querystring-parameters)
     - [Multipart/Urlencoded Form](#multiparturlencoded-form)
     - [Another example: query + post form](#another-example-query--post-form)
+    - [Map as querystring or postform parameters](#map-as-querystring-or-postform-parameters)
     - [Upload files](#upload-files)
     - [Grouping routes](#grouping-routes)
     - [Blank Gin without middleware by default](#blank-gin-without-middleware-by-default)
@@ -37,7 +40,7 @@ Gin is a web framework written in Go (Golang). It features a martini-like API wi
     - [Bind Query String or Post Data](#bind-query-string-or-post-data)
     - [Bind HTML checkboxes](#bind-html-checkboxes)
     - [Multipart/Urlencoded binding](#multiparturlencoded-binding)
-    - [XML, JSON and YAML rendering](#xml-json-and-yaml-rendering)
+    - [XML, JSON, YAML and ProtoBuf rendering](#xml-json-yaml-and-protobuf-rendering)
     - [JSONP rendering](#jsonp)
     - [Serving static files](#serving-static-files)
     - [Serving data from reader](#serving-data-from-reader)
@@ -54,8 +57,67 @@ Gin is a web framework written in Go (Golang). It features a martini-like API wi
     - [Build a single binary with templates](#build-a-single-binary-with-templates)
     - [Bind form-data request with custom struct](#bind-form-data-request-with-custom-struct)
     - [Try to bind body into different structs](#try-to-bind-body-into-different-structs)
+    - [http2 server push](#http2-server-push)
 - [Testing](#testing)
-- [Users](#users--)
+- [Users](#users)
+
+## Installation
+
+To install Gin package, you need to install Go and set your Go workspace first.
+
+1. Download and install it:
+
+```sh
+$ go get -u github.com/gin-gonic/gin
+```
+
+2. Import it in your code:
+
+```go
+import "github.com/gin-gonic/gin"
+```
+
+3. (Optional) Import `net/http`. This is required for example if using constants such as `http.StatusOK`.
+
+```go
+import "net/http"
+```
+
+### Use a vendor tool like [Govendor](https://github.com/kardianos/govendor)
+
+1. `go get` govendor
+
+```sh
+$ go get github.com/kardianos/govendor
+```
+2. Create your project folder and `cd` inside
+
+```sh
+$ mkdir -p $GOPATH/src/github.com/myusername/project && cd "$_"
+```
+
+3. Vendor init your project and add gin
+
+```sh
+$ govendor init
+$ govendor fetch github.com/gin-gonic/gin@v1.3
+```
+
+4. Copy a starting template inside your project
+
+```sh
+$ curl https://raw.githubusercontent.com/gin-gonic/gin/master/examples/basic/main.go > main.go
+```
+
+5. Run your project
+
+```sh
+$ go run main.go
+```
+
+## Prerequisite
+
+Now Gin requires Go 1.6 or later and Go 1.7 will be required soon.
 
 ## Quick start
  
@@ -134,61 +196,9 @@ BenchmarkVulcan_GithubAll                   |    5000    |   394253    |   19894
 - [x] Battle tested
 - [x] API frozen, new releases will not break your code.
 
-## Start using it
-
-1. Download and install it:
-
-```sh
-$ go get github.com/gin-gonic/gin
-```
-
-2. Import it in your code:
-
-```go
-import "github.com/gin-gonic/gin"
-```
-
-3. (Optional) Import `net/http`. This is required for example if using constants such as `http.StatusOK`.
-
-```go
-import "net/http"
-```
-
-### Use a vendor tool like [Govendor](https://github.com/kardianos/govendor)
-
-1. `go get` govendor
-
-```sh
-$ go get github.com/kardianos/govendor
-```
-2. Create your project folder and `cd` inside
-
-```sh
-$ mkdir -p $GOPATH/src/github.com/myusername/project && cd "$_"
-```
-
-3. Vendor init your project and add gin
-
-```sh
-$ govendor init
-$ govendor fetch github.com/gin-gonic/gin@v1.2
-```
-
-4. Copy a starting template inside your project
-
-```sh
-$ curl https://raw.githubusercontent.com/gin-gonic/gin/master/examples/basic/main.go > main.go
-```
-
-5. Run your project
-
-```sh
-$ go run main.go
-```
-
 ## Build with [jsoniter](https://github.com/json-iterator/go)
 
-Gin use `encoding/json` as default json package but you can change to [jsoniter](https://github.com/json-iterator/go) by build from other tags.
+Gin uses `encoding/json` as default json package but you can change to [jsoniter](https://github.com/json-iterator/go) by build from other tags.
 
 ```sh
 $ go build -tags=jsoniter .
@@ -228,7 +238,7 @@ func main() {
 func main() {
 	router := gin.Default()
 
-	// This handler will match /user/john but will not match neither /user/ or /user
+	// This handler will match /user/john but will not match /user/ or /user
 	router.GET("/user/:name", func(c *gin.Context) {
 		name := c.Param("name")
 		c.String(http.StatusOK, "Hello %s", name)
@@ -313,6 +323,34 @@ func main() {
 
 ```
 id: 1234; page: 1; name: manu; message: this_is_great
+```
+
+### Map as querystring or postform parameters
+
+```
+POST /post?ids[a]=1234&ids[b]=hello HTTP/1.1
+Content-Type: application/x-www-form-urlencoded
+
+names[first]=thinkerou&names[second]=tianou
+```
+
+```go
+func main() {
+	router := gin.Default()
+
+	router.POST("/post", func(c *gin.Context) {
+
+		ids := c.QueryMap("ids")
+		names := c.PostFormMap("names")
+
+		fmt.Printf("ids: %v; names: %v", ids, names)
+	})
+	router.Run(":8080")
+}
+```
+
+```
+ids: map[b:hello a:1234], names: map[second:tianou first:thinkerou]
 ```
 
 ### Upload files
@@ -496,10 +534,10 @@ Note that you need to set the corresponding binding tag on all fields you want t
 
 Also, Gin provides two sets of methods for binding:
 - **Type** - Must bind
-  - **Methods** - `Bind`, `BindJSON`, `BindQuery`
+  - **Methods** - `Bind`, `BindJSON`, `BindXML`, `BindQuery`
   - **Behavior** - These methods use `MustBindWith` under the hood. If there is a binding error, the request is aborted with `c.AbortWithError(400, err).SetType(ErrorTypeBind)`. This sets the response status code to 400 and the `Content-Type` header is set to `text/plain; charset=utf-8`. Note that if you try to set the response code after this, it will result in a warning `[GIN-debug] [WARNING] Headers were already written. Wanted to override status code 400 with 422`. If you wish to have greater control over the behavior, consider using the `ShouldBind` equivalent method.
 - **Type** - Should bind
-  - **Methods** - `ShouldBind`, `ShouldBindJSON`, `ShouldBindQuery`
+  - **Methods** - `ShouldBind`, `ShouldBindJSON`, `ShouldBindXML`, `ShouldBindQuery`
   - **Behavior** - These methods use `ShouldBindWith` under the hood. If there is a binding error, the error is returned and it is the developer's responsibility to handle the request and error appropriately.
 
 When using the Bind-method, Gin tries to infer the binder depending on the Content-Type header. If you are sure what you are binding, you can use `MustBindWith` or `ShouldBindWith`.
@@ -509,8 +547,8 @@ You can also specify that specific fields are required. If a field is decorated 
 ```go
 // Binding from JSON
 type Login struct {
-	User     string `form:"user" json:"user" binding:"required"`
-	Password string `form:"password" json:"password" binding:"required"`
+	User     string `form:"user" json:"user" xml:"user"  binding:"required"`
+	Password string `form:"password" json:"password" xml:"password" binding:"required"`
 }
 
 func main() {
@@ -519,30 +557,55 @@ func main() {
 	// Example for binding JSON ({"user": "manu", "password": "123"})
 	router.POST("/loginJSON", func(c *gin.Context) {
 		var json Login
-		if err := c.ShouldBindJSON(&json); err == nil {
-			if json.User == "manu" && json.Password == "123" {
-				c.JSON(http.StatusOK, gin.H{"status": "you are logged in"})
-			} else {
-				c.JSON(http.StatusUnauthorized, gin.H{"status": "unauthorized"})
-			}
-		} else {
+		if err := c.ShouldBindJSON(&json); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
 		}
+		
+		if json.User != "manu" || json.Password != "123" {
+			c.JSON(http.StatusUnauthorized, gin.H{"status": "unauthorized"})
+			return
+		} 
+		
+		c.JSON(http.StatusOK, gin.H{"status": "you are logged in"})
+	})
+
+	// Example for binding XML (
+	//	<?xml version="1.0" encoding="UTF-8"?>
+	//	<root>
+	//		<user>user</user>
+	//		<password>123</user>
+	//	</root>)
+	router.POST("/loginXML", func(c *gin.Context) {
+		var xml Login
+		if err := c.ShouldBindXML(&xml); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+		
+		if xml.User != "manu" || xml.Password != "123" {
+			c.JSON(http.StatusUnauthorized, gin.H{"status": "unauthorized"})
+			return
+		} 
+		
+		c.JSON(http.StatusOK, gin.H{"status": "you are logged in"})
 	})
 
 	// Example for binding a HTML form (user=manu&password=123)
 	router.POST("/loginForm", func(c *gin.Context) {
 		var form Login
 		// This will infer what binder to use depending on the content-type header.
-		if err := c.ShouldBind(&form); err == nil {
-			if form.User == "manu" && form.Password == "123" {
-				c.JSON(http.StatusOK, gin.H{"status": "you are logged in"})
-			} else {
-				c.JSON(http.StatusUnauthorized, gin.H{"status": "unauthorized"})
-			}
-		} else {
+		if err := c.ShouldBind(&form); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
 		}
+		
+		if form.User != "manu" || form.Password != "123" {
+			c.JSON(http.StatusUnauthorized, gin.H{"status": "unauthorized"})
+			return
+		} 
+		
+		c.JSON(http.StatusOK, gin.H{"status": "you are logged in"})
 	})
 
 	// Listen and serve on 0.0.0.0:8080
@@ -571,6 +634,10 @@ $ curl -v -X POST \
 <
 {"error":"Key: 'Login.Password' Error:Field validation for 'Password' failed on the 'required' tag"}
 ```
+
+**Skip validate**
+
+When running the above example using the above the `curl` command, it returns error. Because the example use `binding:"required"` for `Password`. If use `binding:"-"` for `Password`, then it will not return error when running the above example again.
 
 ### Custom Validators
 
@@ -637,7 +704,7 @@ $ curl "localhost:8085/bookable?check_in=2018-03-08&check_out=2018-03-09"
 {"error":"Key: 'Booking.CheckIn' Error:Field validation for 'CheckIn' failed on the 'bookabledate' tag"}
 ```
 
-[Struct level validations](https://github.com/go-playground/validator/releases/tag/v8.7) can also be registed this way.
+[Struct level validations](https://github.com/go-playground/validator/releases/tag/v8.7) can also be registered this way.
 See the [struct-lvl-validation example](examples/struct-lvl-validations) to learn more.
 
 ### Only Bind Query String
@@ -683,9 +750,12 @@ See the [detail information](https://github.com/gin-gonic/gin/issues/742#issueco
 ```go
 package main
 
-import "log"
-import "github.com/gin-gonic/gin"
-import "time"
+import (
+	"log"
+	"time"
+
+	"github.com/gin-gonic/gin"
+)
 
 type Person struct {
 	Name     string    `form:"name"`
@@ -804,7 +874,7 @@ Test it with:
 $ curl -v --form user=user --form password=password http://localhost:8080/login
 ```
 
-### XML, JSON and YAML rendering
+### XML, JSON, YAML and ProtoBuf rendering
 
 ```go
 func main() {
@@ -836,6 +906,19 @@ func main() {
 
 	r.GET("/someYAML", func(c *gin.Context) {
 		c.YAML(http.StatusOK, gin.H{"message": "hey", "status": http.StatusOK})
+	})
+
+	r.GET("/someProtoBuf", func(c *gin.Context) {
+		reps := []int64{int64(1), int64(2)}
+		label := "test"
+		// The specific definition of protobuf is written in the testdata/protoexample file.
+		data := &protoexample.Test{
+			Label: &label,
+			Reps:  reps,
+		}
+		// Note that data becomes binary data in the response
+		// Will output protoexample.Test protobuf serialized data
+		c.ProtoBuf(http.StatusOK, data)
 	})
 
 	// Listen and serve on 0.0.0.0:8080
@@ -885,6 +968,57 @@ func main() {
 
 	// Listen and serve on 0.0.0.0:8080
 	r.Run(":8080")
+}
+```
+
+#### AsciiJSON
+
+Using AsciiJSON to Generates ASCII-only JSON with escaped non-ASCII chracters.
+
+```go
+func main() {
+	r := gin.Default()
+
+	r.GET("/someJSON", func(c *gin.Context) {
+		data := map[string]interface{}{
+			"lang": "GO语言",
+			"tag":  "<br>",
+		}
+
+		// will output : {"lang":"GO\u8bed\u8a00","tag":"\u003cbr\u003e"}
+		c.AsciiJSON(http.StatusOK, data)
+	})
+
+	// Listen and serve on 0.0.0.0:8080
+	r.Run(":8080")
+}
+```
+
+#### PureJSON
+
+Normally, JSON replaces special HTML characters with their unicode entities, e.g. `<` becomes  `\u003c`. If you want to encode such characters literally, you can use PureJSON instead.
+This feature is unavailable in Go 1.6 and lower.
+
+```go
+func main() {
+	r := gin.Default()
+	
+	// Serves unicode entities
+	r.GET("/json", func(c *gin.Context) {
+		c.JSON(200, gin.H{
+			"html": "<b>Hello, world!</b>",
+		})
+	})
+	
+	// Serves literal characters
+	r.GET("/purejson", func(c *gin.Context) {
+		c.PureJSON(200, gin.H{
+			"html": "<b>Hello, world!</b>",
+		})
+	})
+	
+	// listen and serve on 0.0.0.0:8080
+	r.Run(":8080)
 }
 ```
 
@@ -1052,7 +1186,7 @@ func main() {
     router.SetFuncMap(template.FuncMap{
         "formatAsDate": formatAsDate,
     })
-    router.LoadHTMLFiles("./fixtures/basic/raw.tmpl")
+    router.LoadHTMLFiles("./testdata/template/raw.tmpl")
 
     router.GET("/raw", func(c *gin.Context) {
         c.HTML(http.StatusOK, "raw.tmpl", map[string]interface{}{
@@ -1082,14 +1216,26 @@ Gin allow by default use only one html.Template. Check [a multitemplate render](
 
 ### Redirects
 
-Issuing a HTTP redirect is easy:
+Issuing a HTTP redirect is easy. Both internal and external locations are supported.
 
 ```go
 r.GET("/test", func(c *gin.Context) {
 	c.Redirect(http.StatusMovedPermanently, "http://www.google.com/")
 })
 ```
-Both internal and external locations are supported.
+
+
+Issuing a Router redirect, use `HandleContext` like below.
+
+``` go
+r.GET("/test", func(c *gin.Context) {
+    c.Request.URL.Path = "/test2"
+    r.HandleContext(c)
+})
+r.GET("/test2", func(c *gin.Context) {
+    c.JSON(200, gin.H{"hello": "world"})
+})
+```
 
 
 ### Custom Middleware
@@ -1640,6 +1786,55 @@ enough to call binding at once.
 can be called by `c.ShouldBind()` multiple times without any damage to
 performance (See [#1341](https://github.com/gin-gonic/gin/pull/1341)).
 
+### http2 server push
+
+http.Pusher is supported only **go1.8+**. See the [golang blog](https://blog.golang.org/h2push) for detail information.
+
+[embedmd]:# (examples/http-pusher/main.go go)
+```go
+package main
+
+import (
+	"html/template"
+	"log"
+
+	"github.com/gin-gonic/gin"
+)
+
+var html = template.Must(template.New("https").Parse(`
+<html>
+<head>
+  <title>Https Test</title>
+  <script src="/assets/app.js"></script>
+</head>
+<body>
+  <h1 style="color:red;">Welcome, Ginner!</h1>
+</body>
+</html>
+`))
+
+func main() {
+	r := gin.Default()
+	r.Static("/assets", "./assets")
+	r.SetHTMLTemplate(html)
+
+	r.GET("/", func(c *gin.Context) {
+		if pusher := c.Writer.Pusher(); pusher != nil {
+			// use pusher.Push() to do server push
+			if err := pusher.Push("/assets/app.js", nil); err != nil {
+				log.Printf("Failed to push: %v", err)
+			}
+		}
+		c.HTML(200, "https", gin.H{
+			"status": "success",
+		})
+	})
+
+	// Listen and Server in https://127.0.0.1:8080
+	r.RunTLS(":8080", "./testdata/server.pem", "./testdata/server.key")
+}
+```
+
 ## Testing
 
 The `net/http/httptest` package is preferable way for HTTP testing.
@@ -1686,9 +1881,10 @@ func TestPingRoute(t *testing.T) {
 }
 ```
 
-## Users  [![Sourcegraph](https://sourcegraph.com/github.com/gin-gonic/gin/-/badge.svg)](https://sourcegraph.com/github.com/gin-gonic/gin?badge)
+## Users
 
 Awesome project lists using [Gin](https://github.com/gin-gonic/gin) web framework.
 
-* [drone](https://github.com/drone/drone): Drone is a Continuous Delivery platform built on Docker, written in Go
+* [drone](https://github.com/drone/drone): Drone is a Continuous Delivery platform built on Docker, written in Go.
 * [gorush](https://github.com/appleboy/gorush): A push notification server written in Go.
+* [fnproject](https://github.com/fnproject/fn): The container native, cloud agnostic serverless platform.

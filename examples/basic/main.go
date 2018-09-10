@@ -1,6 +1,8 @@
 package main
 
 import (
+	"net/http"
+
 	"github.com/gin-gonic/gin"
 )
 
@@ -13,7 +15,7 @@ func setupRouter() *gin.Engine {
 
 	// Ping test
 	r.GET("/ping", func(c *gin.Context) {
-		c.String(200, "pong")
+		c.String(http.StatusOK, "pong")
 	})
 
 	// Get user value
@@ -21,9 +23,9 @@ func setupRouter() *gin.Engine {
 		user := c.Params.ByName("name")
 		value, ok := DB[user]
 		if ok {
-			c.JSON(200, gin.H{"user": user, "value": value})
+			c.JSON(http.StatusOK, gin.H{"user": user, "value": value})
 		} else {
-			c.JSON(200, gin.H{"user": user, "status": "no value"})
+			c.JSON(http.StatusOK, gin.H{"user": user, "status": "no value"})
 		}
 	})
 
@@ -49,7 +51,7 @@ func setupRouter() *gin.Engine {
 
 		if c.Bind(&json) == nil {
 			DB[user] = json.Value
-			c.JSON(200, gin.H{"status": "ok"})
+			c.JSON(http.StatusOK, gin.H{"status": "ok"})
 		}
 	})
 
