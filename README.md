@@ -58,6 +58,7 @@ Gin is a web framework written in Go (Golang). It features a martini-like API wi
     - [Bind form-data request with custom struct](#bind-form-data-request-with-custom-struct)
     - [Try to bind body into different structs](#try-to-bind-body-into-different-structs)
     - [http2 server push](#http2-server-push)
+	- [Support limiting the number of accepted requests using netutil.LimitListener](#RunLimited)
 - [Testing](#testing)
 - [Users](#users)
 
@@ -557,7 +558,7 @@ func main() {
 	// Example for binding JSON ({"user": "manu", "password": "123"})
 	router.POST("/loginJSON", func(c *gin.Context) {
 		var json Login
-		if err := c.ShouldBindXML(&json); err != nil {
+		if err := c.ShouldBindJSON(&json); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
 		}
@@ -1835,6 +1836,29 @@ func main() {
 }
 ```
 
+### RunLimited
+
+Limit the number of accepted requests via [netutils.LimitListener](https://godoc.org/golang.org/x/net/netutil) 
+
+
+[embedmd]:# (examples/run-limited/main.go go)
+```go
+package main
+
+import "github.com/gin-gonic/gin"
+
+const maxConnections = 10
+func main() {
+	r := gin.Default()
+	r.GET("/ping", func(c *gin.Context) {
+		c.JSON(200, gin.H{
+			"message": "pong",
+		})
+	})
+	r.RunLimited(maxConnections, ":80") // listen and serve on 0.0.0.0:8080
+}
+```
+
 ## Testing
 
 The `net/http/httptest` package is preferable way for HTTP testing.
@@ -1885,5 +1909,6 @@ func TestPingRoute(t *testing.T) {
 
 Awesome project lists using [Gin](https://github.com/gin-gonic/gin) web framework.
 
-* [drone](https://github.com/drone/drone): Drone is a Continuous Delivery platform built on Docker, written in Go
+* [drone](https://github.com/drone/drone): Drone is a Continuous Delivery platform built on Docker, written in Go.
 * [gorush](https://github.com/appleboy/gorush): A push notification server written in Go.
+* [fnproject](https://github.com/fnproject/fn): The container native, cloud agnostic serverless platform.

@@ -9,7 +9,7 @@ package render
 import (
 	"net/http"
 
-	"github.com/gin-gonic/gin/json"
+	"github.com/gin-gonic/gin/internal/json"
 )
 
 type PureJSON struct {
