@@ -287,7 +287,7 @@ func TestRenderProtoBuf(t *testing.T) {
 	err = (ProtoBuf{data}).Render(w)
 
 	assert.NoError(t, err)
-	assert.Equal(t, string(protoData[:]), w.Body.String())
+	assert.Equal(t, string(protoData), w.Body.String())
 	assert.Equal(t, "application/x-protobuf", w.Header().Get("Content-Type"))
 }
 
