@@ -58,6 +58,7 @@ Gin is a web framework written in Go (Golang). It features a martini-like API wi
     - [Bind form-data request with custom struct](#bind-form-data-request-with-custom-struct)
     - [Try to bind body into different structs](#try-to-bind-body-into-different-structs)
     - [http2 server push](#http2-server-push)
+	- [Support limiting the number of accepted requests using netutil.LimitListener](#RunLimited)
 - [Testing](#testing)
 - [Users](#users)
 
@@ -1832,6 +1833,29 @@ func main() {
 
 	// Listen and Server in https://127.0.0.1:8080
 	r.RunTLS(":8080", "./testdata/server.pem", "./testdata/server.key")
+}
+```
+
+### RunLimited
+
+Limit the number of accepted requests via [netutils.LimitListener](https://godoc.org/golang.org/x/net/netutil) 
+
+
+[embedmd]:# (examples/run-limited/main.go go)
+```go
+package main
+
+import "github.com/gin-gonic/gin"
+
+const maxConnections = 10
+func main() {
+	r := gin.Default()
+	r.GET("/ping", func(c *gin.Context) {
+		c.JSON(200, gin.H{
+			"message": "pong",
+		})
+	})
+	r.RunLimited(maxConnections, ":80") // listen and serve on 0.0.0.0:8080
 }
 ```
 

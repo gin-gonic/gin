@@ -10,8 +10,10 @@ import (
 	"net/http"
 	"os"
 	"sync"
+	"time"
 
 	"github.com/gin-gonic/gin/render"
+	"golang.org/x/net/netutil"
 )
 
 const (
@@ -286,6 +288,42 @@ func (engine *Engine) Run(addr ...string) (err error) {
 	debugPrint("Listening and serving HTTP on %s\n", address)
 	err = http.ListenAndServe(address, engine)
 	return
+}
+
+// RunLimited - use netuil.LimitListener to limit the number of inbound accepts
+func (engine *GalapagosEngine) RunLimited(limit int, addr ...string) (err error) {
+	defer func() { debugPrintError(err) }()
+
+	address := resolveAddress(addr)
+	debugPrint("Listening and serving HTTP on %s\n", address)
+
+	// err = http.ListenAndServe(address, engine)
+
+	srv := &http.Server{Addr: address, Handler: engine}
+	address = srv.Addr
+	if address == "" {
+		address = ":http"
+	}
+	ln, err := net.Listen("tcp", address)
+	if err != nil {
+		return err
+	}
+	lnLimited := netutil.LimitListener(tcpKeepAliveListener{ln.(*net.TCPListener)}, limit)
+	return srv.Serve(lnLimited)
+}
+
+type tcpKeepAliveListener struct {
+	*net.TCPListener
+}
+
+func (ln tcpKeepAliveListener) Accept() (net.Conn, error) {
+	tc, err := ln.AcceptTCP()
+	if err != nil {
+		return nil, err
+	}
+	tc.SetKeepAlive(true)
+	tc.SetKeepAlivePeriod(3 * time.Minute)
+	return tc, nil
 }
 
 // RunTLS attaches the router to a http.Server and starts listening and serving HTTPS (secure) requests.
