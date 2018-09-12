@@ -12,14 +12,14 @@ import (
 // Delims represents a set of Left and Right delimiters for HTML template rendering.
 type Delims struct {
 	// Left delimiter, defaults to {{.
-	Left  string
+	Left string
 	// Right delimiter, defaults to }}.
 	Right string
 }
 
-// HTMLRender interface is to be implemented by HTMLProduction and HTMLDebug. 
+// HTMLRender interface is to be implemented by HTMLProduction and HTMLDebug.
 type HTMLRender interface {
-	// Instance returns an HTML instance. 
+	// Instance returns an HTML instance.
 	Instance(string, interface{}) Render
 }
 
@@ -29,7 +29,7 @@ type HTMLProduction struct {
 	Delims   Delims
 }
 
-// HTMLDebug contains template delims and pattern and function with file list. 
+// HTMLDebug contains template delims and pattern and function with file list.
 type HTMLDebug struct {
 	Files   []string
 	Glob    string

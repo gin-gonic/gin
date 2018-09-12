@@ -102,7 +102,7 @@ func (r SecureJSON) Render(w http.ResponseWriter) error {
 	return nil
 }
 
-// WriteContentType (SecureJSON) writes JSON ContentType. 
+// WriteContentType (SecureJSON) writes JSON ContentType.
 func (r SecureJSON) WriteContentType(w http.ResponseWriter) {
 	writeContentType(w, jsonContentType)
 }
