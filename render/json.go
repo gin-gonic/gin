@@ -54,11 +54,11 @@ func (r JSON) WriteContentType(w http.ResponseWriter) {
 
 func WriteJSON(w http.ResponseWriter, obj interface{}) error {
 	writeContentType(w, jsonContentType)
-	jsonBytes, err := json.Marshal(obj)
+	encoder := json.NewEncoder(w)
+	err := encoder.Encode(&obj)
 	if err != nil {
 		return err
 	}
-	w.Write(jsonBytes)
 	return nil
 }
 
