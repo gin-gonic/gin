@@ -46,7 +46,7 @@ type HTML struct {
 
 var htmlContentType = []string{"text/html; charset=utf-8"}
 
-// Instance (HTMLProduction) returns an HTML instance which it realizes Render interface..
+// Instance (HTMLProduction) returns an HTML instance which it realizes Render interface.
 func (r HTMLProduction) Instance(name string, data interface{}) Render {
 	return HTML{
 		Template: r.Template,
@@ -55,7 +55,7 @@ func (r HTMLProduction) Instance(name string, data interface{}) Render {
 	}
 }
 
-// Instance (HTMLDebug) returns an HTML instance which it realizes Render interface..
+// Instance (HTMLDebug) returns an HTML instance which it realizes Render interface.
 func (r HTMLDebug) Instance(name string, data interface{}) Render {
 	return HTML{
 		Template: r.loadTemplate(),
