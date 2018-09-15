@@ -16,7 +16,7 @@ import (
 
 const (
 	// Version is Framework's version.
-	Version                = "v1.2"
+	Version                = "v1.3.0"
 	defaultMultipartMemory = 32 << 20 // 32 MB
 )
 
@@ -26,7 +26,10 @@ var (
 	defaultAppEngine bool
 )
 
+// HandlerFunc defines the handler used by gin middleware as return value.
 type HandlerFunc func(*Context)
+
+// HandlersChain defines a HandlerFunc array.
 type HandlersChain []HandlerFunc
 
 // Last returns the last handler in the chain. ie. the last handler is the main own.
@@ -37,12 +40,14 @@ func (c HandlersChain) Last() HandlerFunc {
 	return nil
 }
 
+// RouteInfo represents a request route's specification which contains method and path and its handler.
 type RouteInfo struct {
 	Method  string
 	Path    string
 	Handler string
 }
 
+// RoutesInfo defines a RouteInfo array.
 type RoutesInfo []RouteInfo
 
 // Engine is the framework's instance, it contains the muxer, middleware and configuration settings.
@@ -155,6 +160,7 @@ func (engine *Engine) allocateContext() *Context {
 	return &Context{engine: engine, KeysMutex: &sync.RWMutex{}}
 }
 
+// Delims sets template left and right delims and returns a Engine instance.
 func (engine *Engine) Delims(left, right string) *Engine {
 	engine.delims = render.Delims{Left: left, Right: right}
 	return engine
@@ -171,14 +177,14 @@ func (engine *Engine) SecureJsonPrefix(prefix string) *Engine {
 func (engine *Engine) LoadHTMLGlob(pattern string) {
 	left := engine.delims.Left
 	right := engine.delims.Right
+	templ := template.Must(template.New("").Delims(left, right).Funcs(engine.FuncMap).ParseGlob(pattern))
 
 	if IsDebugging() {
-		debugPrintLoadTemplate(template.Must(template.New("").Delims(left, right).Funcs(engine.FuncMap).ParseGlob(pattern)))
+		debugPrintLoadTemplate(templ)
 		engine.HTMLRender = render.HTMLDebug{Glob: pattern, FuncMap: engine.FuncMap, Delims: engine.delims}
 		return
 	}
 
-	templ := template.Must(template.New("").Delims(left, right).Funcs(engine.FuncMap).ParseGlob(pattern))
 	engine.SetHTMLTemplate(templ)
 }
 
@@ -349,43 +355,45 @@ func (engine *Engine) handleHTTPRequest(c *Context) {
 	// Find root of the tree for the given HTTP method
 	t := engine.trees
 	for i, tl := 0, len(t); i < tl; i++ {
-		if t[i].method == httpMethod {
-			root := t[i].root
-			// Find route in tree
-			handlers, params, tsr := root.getValue(path, c.Params, unescape)
-			if handlers != nil {
-				c.handlers = handlers
-				c.Params = params
-				c.Next()
-				c.writermem.WriteHeaderNow()
+		if t[i].method != httpMethod {
+			continue
+		}
+		root := t[i].root
+		// Find route in tree
+		handlers, params, tsr := root.getValue(path, c.Params, unescape)
+		if handlers != nil {
+			c.handlers = handlers
+			c.Params = params
+			c.Next()
+			c.writermem.WriteHeaderNow()
+			return
+		}
+		if httpMethod != "CONNECT" && path != "/" {
+			if tsr && engine.RedirectTrailingSlash {
+				redirectTrailingSlash(c)
 				return
 			}
-			if httpMethod != "CONNECT" && path != "/" {
-				if tsr && engine.RedirectTrailingSlash {
-					redirectTrailingSlash(c)
-					return
-				}
-				if engine.RedirectFixedPath && redirectFixedPath(c, root, engine.RedirectFixedPath) {
-					return
-				}
+			if engine.RedirectFixedPath && redirectFixedPath(c, root, engine.RedirectFixedPath) {
+				return
 			}
-			break
 		}
+		break
 	}
 
 	if engine.HandleMethodNotAllowed {
 		for _, tree := range engine.trees {
-			if tree.method != httpMethod {
-				if handlers, _, _ := tree.root.getValue(path, nil, unescape); handlers != nil {
-					c.handlers = engine.allNoMethod
-					serveError(c, 405, default405Body)
-					return
-				}
+			if tree.method == httpMethod {
+				continue
+			}
+			if handlers, _, _ := tree.root.getValue(path, nil, unescape); handlers != nil {
+				c.handlers = engine.allNoMethod
+				serveError(c, http.StatusMethodNotAllowed, default405Body)
+				return
 			}
 		}
 	}
 	c.handlers = engine.allNoRoute
-	serveError(c, 404, default404Body)
+	serveError(c, http.StatusNotFound, default404Body)
 }
 
 var mimePlain = []string{MIMEPlain}
@@ -393,28 +401,29 @@ var mimePlain = []string{MIMEPlain}
 func serveError(c *Context, code int, defaultMessage []byte) {
 	c.writermem.status = code
 	c.Next()
-	if !c.writermem.Written() {
-		if c.writermem.Status() == code {
-			c.writermem.Header()["Content-Type"] = mimePlain
-			c.Writer.Write(defaultMessage)
-		} else {
-			c.writermem.WriteHeaderNow()
-		}
+	if c.writermem.Written() {
+		return
 	}
+	if c.writermem.Status() == code {
+		c.writermem.Header()["Content-Type"] = mimePlain
+		c.Writer.Write(defaultMessage)
+		return
+	}
+	c.writermem.WriteHeaderNow()
+	return
 }
 
 func redirectTrailingSlash(c *Context) {
 	req := c.Request
 	path := req.URL.Path
-	code := 301 // Permanent redirect, request with GET method
+	code := http.StatusMovedPermanently // Permanent redirect, request with GET method
 	if req.Method != "GET" {
-		code = 307
+		code = http.StatusTemporaryRedirect
 	}
 
+	req.URL.Path = path + "/"
 	if length := len(path); length > 1 && path[length-1] == '/' {
 		req.URL.Path = path[:length-1]
-	} else {
-		req.URL.Path = path + "/"
 	}
 	debugPrint("redirecting request %d: %s --> %s", code, path, req.URL.String())
 	http.Redirect(c.Writer, req, req.URL.String(), code)
@@ -425,14 +434,10 @@ func redirectFixedPath(c *Context, root *node, trailingSlash bool) bool {
 	req := c.Request
 	path := req.URL.Path
 
-	fixedPath, found := root.findCaseInsensitivePath(
-		cleanPath(path),
-		trailingSlash,
-	)
-	if found {
-		code := 301 // Permanent redirect, request with GET method
+	if fixedPath, ok := root.findCaseInsensitivePath(cleanPath(path), trailingSlash); ok {
+		code := http.StatusMovedPermanently // Permanent redirect, request with GET method
 		if req.Method != "GET" {
-			code = 307
+			code = http.StatusTemporaryRedirect
 		}
 		req.URL.Path = string(fixedPath)
 		debugPrint("redirecting request %d: %s --> %s", code, path, req.URL.String())

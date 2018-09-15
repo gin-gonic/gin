@@ -22,14 +22,17 @@ func engine() *gin.Engine {
 	return internalEngine
 }
 
+// LoadHTMLGlob is a wrapper for Engine.LoadHTMLGlob.
 func LoadHTMLGlob(pattern string) {
 	engine().LoadHTMLGlob(pattern)
 }
 
+// LoadHTMLFiles is a wrapper for Engine.LoadHTMLFiles.
 func LoadHTMLFiles(files ...string) {
 	engine().LoadHTMLFiles(files...)
 }
 
+// SetHTMLTemplate is a wrapper for Engine.SetHTMLTemplate.
 func SetHTMLTemplate(templ *template.Template) {
 	engine().SetHTMLTemplate(templ)
 }
@@ -39,7 +42,7 @@ func NoRoute(handlers ...gin.HandlerFunc) {
 	engine().NoRoute(handlers...)
 }
 
-// NoMethod sets the handlers called when... TODO
+// NoMethod is a wrapper for Engine.NoMethod.
 func NoMethod(handlers ...gin.HandlerFunc) {
 	engine().NoMethod(handlers...)
 }
@@ -50,6 +53,7 @@ func Group(relativePath string, handlers ...gin.HandlerFunc) *gin.RouterGroup {
 	return engine().Group(relativePath, handlers...)
 }
 
+// Handle is a wrapper for Engine.Handle.
 func Handle(httpMethod, relativePath string, handlers ...gin.HandlerFunc) gin.IRoutes {
 	return engine().Handle(httpMethod, relativePath, handlers...)
 }
@@ -89,10 +93,12 @@ func HEAD(relativePath string, handlers ...gin.HandlerFunc) gin.IRoutes {
 	return engine().HEAD(relativePath, handlers...)
 }
 
+// Any is a wrapper for Engine.Any.
 func Any(relativePath string, handlers ...gin.HandlerFunc) gin.IRoutes {
 	return engine().Any(relativePath, handlers...)
 }
 
+// StaticFile is a wrapper for Engine.StaticFile.
 func StaticFile(relativePath, filepath string) gin.IRoutes {
 	return engine().StaticFile(relativePath, filepath)
 }
@@ -107,6 +113,7 @@ func Static(relativePath, root string) gin.IRoutes {
 	return engine().Static(relativePath, root)
 }
 
+// StaticFS is a wrapper for Engine.StaticFS.
 func StaticFS(relativePath string, fs http.FileSystem) gin.IRoutes {
 	return engine().StaticFS(relativePath, fs)
 }
@@ -128,7 +135,7 @@ func Run(addr ...string) (err error) {
 // RunTLS : The router is attached to a http.Server and starts listening and serving HTTPS requests.
 // It is a shortcut for http.ListenAndServeTLS(addr, certFile, keyFile, router)
 // Note: this method will block the calling goroutine undefinitelly unless an error happens.
-func RunTLS(addr string, certFile string, keyFile string) (err error) {
+func RunTLS(addr, certFile, keyFile string) (err error) {
 	return engine().RunTLS(addr, certFile, keyFile)
 }
 
