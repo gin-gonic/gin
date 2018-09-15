@@ -16,11 +16,11 @@ const ENV_GIN_MODE = "GIN_MODE"
 
 const (
 	// DebugMode indicates gin mode is debug.
-	DebugMode   = "debug"
+	DebugMode = "debug"
 	// ReleaseMode indicates gin mode is relase.
 	ReleaseMode = "release"
 	// TestMode indicates gin mode is test.
-	TestMode    = "test"
+	TestMode = "test"
 )
 const (
 	debugCode = iota
