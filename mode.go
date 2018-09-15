@@ -11,7 +11,7 @@ import (
 	"github.com/gin-gonic/gin/binding"
 )
 
-// ENV_GIN_MODE indicates enviroment name for gin mode.
+// ENV_GIN_MODE indicates environment name for gin mode.
 const ENV_GIN_MODE = "GIN_MODE"
 
 const (
