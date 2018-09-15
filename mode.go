@@ -11,12 +11,16 @@ import (
 	"github.com/gin-gonic/gin/binding"
 )
 
+// ENV_GIN_MODE indicates environment name for gin mode.
 const ENV_GIN_MODE = "GIN_MODE"
 
 const (
-	DebugMode   = "debug"
+	// DebugMode indicates gin mode is debug.
+	DebugMode = "debug"
+	// ReleaseMode indicates gin mode is relase.
 	ReleaseMode = "release"
-	TestMode    = "test"
+	// TestMode indicates gin mode is test.
+	TestMode = "test"
 )
 const (
 	debugCode = iota
@@ -42,6 +46,7 @@ func init() {
 	SetMode(mode)
 }
 
+// SetMode sets gin mode according to input string.
 func SetMode(value string) {
 	switch value {
 	case DebugMode, "":
@@ -59,14 +64,18 @@ func SetMode(value string) {
 	modeName = value
 }
 
+// DisableBindValidation closes the default validator.
 func DisableBindValidation() {
 	binding.Validator = nil
 }
 
+// EnableJsonDecoderUseNumber sets true for binding.EnableDecoderUseNumberto to
+// call the UseNumber method on the JSON Decoder instance.
 func EnableJsonDecoderUseNumber() {
 	binding.EnableDecoderUseNumber = true
 }
 
+// Mode returns currently gin mode.
 func Mode() string {
 	return modeName
 }

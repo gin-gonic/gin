@@ -20,7 +20,7 @@ func ConfigRuntime() {
 	fmt.Printf("Running with %d CPUs\n", nuCPU)
 }
 
-// StartWrokers start starsWorker by goroutine.
+// StartWorkers start starsWorker by goroutine.
 func StartWorkers() {
 	go statsWorker()
 }
