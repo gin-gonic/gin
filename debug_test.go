@@ -72,7 +72,7 @@ func TestDebugPrintLoadTemplate(t *testing.T) {
 	setup(&w)
 	defer teardown()
 
-	templ := template.Must(template.New("").Delims("{[{", "}]}").ParseGlob("./fixtures/basic/hello.tmpl"))
+	templ := template.Must(template.New("").Delims("{[{", "}]}").ParseGlob("./testdata/template/hello.tmpl"))
 	debugPrintLoadTemplate(templ)
 	assert.Regexp(t, `^\[GIN-debug\] Loaded HTML Templates \(2\): \n(\t- \n|\t- hello\.tmpl\n){2}\n`, w.String())
 }
@@ -92,7 +92,7 @@ func TestDebugPrintWARNINGDefault(t *testing.T) {
 	defer teardown()
 
 	debugPrintWARNINGDefault()
-	assert.Equal(t, "[GIN-debug] [WARNING] Creating an Engine instance with the Logger and Recovery middleware already attached.\n\n", w.String())
+	assert.Equal(t, "[GIN-debug] [WARNING] Now Gin requires Go 1.6 or later and Go 1.7 will be required soon.\n\n[GIN-debug] [WARNING] Creating an Engine instance with the Logger and Recovery middleware already attached.\n\n", w.String())
 }
 
 func TestDebugPrintWARNINGNew(t *testing.T) {

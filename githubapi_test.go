@@ -293,7 +293,7 @@ func githubConfigRouter(router *Engine) {
 			for _, param := range c.Params {
 				output[param.Key] = param.Value
 			}
-			c.JSON(200, output)
+			c.JSON(http.StatusOK, output)
 		})
 	}
 }

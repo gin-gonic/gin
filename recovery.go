@@ -10,6 +10,7 @@ import (
 	"io"
 	"io/ioutil"
 	"log"
+	"net/http"
 	"net/http/httputil"
 	"runtime"
 	"time"
@@ -41,7 +42,7 @@ func RecoveryWithWriter(out io.Writer) HandlerFunc {
 					httprequest, _ := httputil.DumpRequest(c.Request, false)
 					logger.Printf("[Recovery] %s panic recovered:\n%s\n%s\n%s%s", timeFormat(time.Now()), string(httprequest), err, stack, reset)
 				}
-				c.AbortWithStatus(500)
+				c.AbortWithStatus(http.StatusInternalServerError)
 			}
 		}()
 		c.Next()
