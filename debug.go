@@ -20,11 +20,17 @@ func IsDebugging() bool {
 	return ginMode == debugCode
 }
 
+var DebugPrintRouteFunc func(httpMethod, absolutePath, handlerName string, nuHandlers int)
+
 func debugPrintRoute(httpMethod, absolutePath string, handlers HandlersChain) {
 	if IsDebugging() {
 		nuHandlers := len(handlers)
 		handlerName := nameOfFunction(handlers.Last())
-		debugPrint("%-6s %-25s --> %s (%d handlers)\n", httpMethod, absolutePath, handlerName, nuHandlers)
+		if DebugPrintRouteFunc == nil {
+			debugPrint("%-6s %-25s --> %s (%d handlers)\n", httpMethod, absolutePath, handlerName, nuHandlers)
+		} else {
+			DebugPrintRouteFunc(httpMethod, absolutePath, handlerName, nuHandlers)
+		}
 	}
 }
 
