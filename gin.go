@@ -14,11 +14,7 @@ import (
 	"github.com/gin-gonic/gin/render"
 )
 
-const (
-	// Version is Framework's version.
-	Version                = "v1.3.0"
-	defaultMultipartMemory = 32 << 20 // 32 MB
-)
+const defaultMultipartMemory = 32 << 20 // 32 MB
 
 var (
 	default404Body   = []byte("404 page not found")
