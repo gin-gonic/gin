@@ -32,14 +32,12 @@ vet:
 deps:
 	@hash go help mod > /dev/null 2>&1; if [ $$? -ne 0 ]; then \
 		go mod download; \
-		go install github.com/campoy/embedmd; \
-	else \
-		@hash govendor > /dev/null 2>&1; if [ $$? -ne 0 ]; then \
-			go get -u github.com/kardianos/govendor; \
-		fi
-		@hash embedmd > /dev/null 2>&1; if [ $$? -ne 0 ]; then \
-			go get -u github.com/campoy/embedmd; \
-		fi \
+	fi
+	@hash govendor > /dev/null 2>&1; if [ $$? -ne 0 ]; then \
+		go get -u github.com/kardianos/govendor; \
+	fi
+	@hash embedmd > /dev/null 2>&1; if [ $$? -ne 0 ]; then \
+		go get -u github.com/campoy/embedmd; \
 	fi
 
 embedmd:
