@@ -6,10 +6,10 @@ go:
   - 1.8.x
   - 1.9.x
   - 1.10.x
-  - master
+  - 1.11.x
 
 git:
-  depth: 3
+  depth: 10
 
 install:
   - make install

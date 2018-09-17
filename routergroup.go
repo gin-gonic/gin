@@ -11,11 +11,13 @@ import (
 	"strings"
 )
 
+// IRouter defines all router handle interface includes single and group router.
 type IRouter interface {
 	IRoutes
 	Group(string, ...HandlerFunc) *RouterGroup
 }
 
+// Iroutes defins all router handle interface.
 type IRoutes interface {
 	Use(...HandlerFunc) IRoutes
 
@@ -34,8 +36,8 @@ type IRoutes interface {
 	StaticFS(string, http.FileSystem) IRoutes
 }
 
-// RouterGroup is used internally to configure router, a RouterGroup is associated with a prefix
-// and an array of handlers (middleware).
+// RouterGroup is used internally to configure router, a RouterGroup is associated with
+// a prefix and an array of handlers (middleware).
 type RouterGroup struct {
 	Handlers HandlersChain
 	basePath string
@@ -61,6 +63,8 @@ func (group *RouterGroup) Group(relativePath string, handlers ...HandlerFunc) *R
 	}
 }
 
+// BasePath returns the base path of router group.
+// For example, if v := router.Group("/rest/n/v1/api"), v.BasePath() is "/rest/n/v1/api".
 func (group *RouterGroup) BasePath() string {
 	return group.basePath
 }
@@ -139,7 +143,7 @@ func (group *RouterGroup) Any(relativePath string, handlers ...HandlerFunc) IRou
 	return group.returnObj()
 }
 
-// StaticFile registers a single route in order to server a single file of the local filesystem.
+// StaticFile registers a single route in order to serve a single file of the local filesystem.
 // router.StaticFile("favicon.ico", "./resources/favicon.ico")
 func (group *RouterGroup) StaticFile(relativePath, filepath string) IRoutes {
 	if strings.Contains(relativePath, ":") || strings.Contains(relativePath, "*") {
@@ -184,7 +188,7 @@ func (group *RouterGroup) createStaticHandler(relativePath string, fs http.FileS
 	_, nolisting := fs.(*onlyfilesFS)
 	return func(c *Context) {
 		if nolisting {
-			c.Writer.WriteHeader(404)
+			c.Writer.WriteHeader(http.StatusNotFound)
 		}
 		fileServer.ServeHTTP(c.Writer, c.Request)
 	}

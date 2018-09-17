@@ -7,7 +7,8 @@ package gin
 import (
 	"bytes"
 	"net"
-	"os"
+	"net/http"
+  "os"
 	"syscall"
 	"testing"
 
@@ -25,7 +26,7 @@ func TestPanicInHandler(t *testing.T) {
 	// RUN
 	w := performRequest(router, "GET", "/recovery")
 	// TEST
-	assert.Equal(t, 500, w.Code)
+	assert.Equal(t, http.StatusInternalServerError, w.Code)
 	assert.Contains(t, buffer.String(), "GET /recovery")
 	assert.Contains(t, buffer.String(), "Oupps, Houston, we have a problem")
 	assert.Contains(t, buffer.String(), "TestPanicInHandler")
@@ -36,13 +37,33 @@ func TestPanicWithAbort(t *testing.T) {
 	router := New()
 	router.Use(RecoveryWithWriter(nil))
 	router.GET("/recovery", func(c *Context) {
-		c.AbortWithStatus(400)
+		c.AbortWithStatus(http.StatusBadRequest)
 		panic("Oupps, Houston, we have a problem")
 	})
 	// RUN
 	w := performRequest(router, "GET", "/recovery")
 	// TEST
-	assert.Equal(t, 400, w.Code)
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+}
+
+func TestSource(t *testing.T) {
+	bs := source(nil, 0)
+	assert.Equal(t, []byte("???"), bs)
+
+	in := [][]byte{
+		[]byte("Hello world."),
+		[]byte("Hi, gin.."),
+	}
+	bs = source(in, 10)
+	assert.Equal(t, []byte("???"), bs)
+
+	bs = source(in, 1)
+	assert.Equal(t, []byte("Hello world."), bs)
+}
+
+func TestFunction(t *testing.T) {
+	bs := function(1)
+	assert.Equal(t, []byte("???"), bs)
 }
 
 // TestPanicWithBrokenPipe asserts that recovery specifically handles

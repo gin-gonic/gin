@@ -20,11 +20,17 @@ func IsDebugging() bool {
 	return ginMode == debugCode
 }
 
+var DebugPrintRouteFunc func(httpMethod, absolutePath, handlerName string, nuHandlers int)
+
 func debugPrintRoute(httpMethod, absolutePath string, handlers HandlersChain) {
 	if IsDebugging() {
 		nuHandlers := len(handlers)
 		handlerName := nameOfFunction(handlers.Last())
-		debugPrint("%-6s %-25s --> %s (%d handlers)\n", httpMethod, absolutePath, handlerName, nuHandlers)
+		if DebugPrintRouteFunc == nil {
+			debugPrint("%-6s %-25s --> %s (%d handlers)\n", httpMethod, absolutePath, handlerName, nuHandlers)
+		} else {
+			DebugPrintRouteFunc(httpMethod, absolutePath, handlerName, nuHandlers)
+		}
 	}
 }
 
@@ -47,6 +53,9 @@ func debugPrint(format string, values ...interface{}) {
 }
 
 func debugPrintWARNINGDefault() {
+	debugPrint(`[WARNING] Now Gin requires Go 1.6 or later and Go 1.7 will be required soon.
+
+`)
 	debugPrint(`[WARNING] Creating an Engine instance with the Logger and Recovery middleware already attached.
 
 `)

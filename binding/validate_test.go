@@ -176,7 +176,7 @@ func TestValidatePrimitives(t *testing.T) {
 	obj := Object{"foo": "bar", "bar": 1}
 	assert.NoError(t, validate(obj))
 	assert.NoError(t, validate(&obj))
-	assert.Equal(t, obj, Object{"foo": "bar", "bar": 1})
+	assert.Equal(t, Object{"foo": "bar", "bar": 1}, obj)
 
 	obj2 := []Object{{"foo": "bar", "bar": 1}, {"foo": "bar", "bar": 1}}
 	assert.NoError(t, validate(obj2))
@@ -185,12 +185,12 @@ func TestValidatePrimitives(t *testing.T) {
 	nu := 10
 	assert.NoError(t, validate(nu))
 	assert.NoError(t, validate(&nu))
-	assert.Equal(t, nu, 10)
+	assert.Equal(t, 10, nu)
 
 	str := "value"
 	assert.NoError(t, validate(str))
 	assert.NoError(t, validate(&str))
-	assert.Equal(t, str, "value")
+	assert.Equal(t, "value", str)
 }
 
 // structCustomValidation is a helper struct we use to check that
@@ -214,11 +214,14 @@ func notOne(
 	return false
 }
 
-func TestRegisterValidation(t *testing.T) {
+func TestValidatorEngine(t *testing.T) {
 	// This validates that the function `notOne` matches
 	// the expected function signature by `defaultValidator`
 	// and by extension the validator library.
-	err := Validator.RegisterValidation("notone", notOne)
+	engine, ok := Validator.Engine().(*validator.Validate)
+	assert.True(t, ok)
+
+	err := engine.RegisterValidation("notone", notOne)
 	// Check that we can register custom validation without error
 	assert.Nil(t, err)
 
@@ -228,6 +231,6 @@ func TestRegisterValidation(t *testing.T) {
 
 	// Check that we got back non-nil errs
 	assert.NotNil(t, errs)
-	// Check that the error matches expactation
+	// Check that the error matches expectation
 	assert.Error(t, errs, "", "", "notone")
 }
