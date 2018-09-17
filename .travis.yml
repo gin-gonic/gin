@@ -7,9 +7,13 @@ go:
   - 1.9.x
   - 1.10.x
   - 1.11.x
+    env: GO111MODULE=on
 
 git:
   depth: 10
+
+before_install:
+  - if [[ "$GO111MODULE" = "on" ]]; then mkdir "$HOME/go"; export GOPATH="$HOME/go"; fi
 
 install:
   - make install
