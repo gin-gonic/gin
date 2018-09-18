@@ -6,7 +6,11 @@ GOFILES := $(shell find . -name "*.go" -type f -not -path "./vendor/*")
 all: install
 
 install: deps
-	govendor sync
+	@hash go help mod > /dev/null 2>&1; if [ $$? -ne 0 ]; then \
+		go mod download; \
+	else \
+		govendor sync; \
+	fi
 
 .PHONY: test
 test:
@@ -30,11 +34,10 @@ vet:
 	go vet $(VETPACKAGES)
 
 deps:
-	@hash go help mod > /dev/null 2>&1; if [ $$? -ne 0 ]; then \
-		go mod download; \
-	fi
-	@hash govendor > /dev/null 2>&1; if [ $$? -ne 0 ]; then \
-		go get -u github.com/kardianos/govendor; \
+	@hash go help mod > /dev/null 2>&1; if [ $$? -eq 0 ]; then \
+		@hash govendor > /dev/null 2>&1; if [ $$? -ne 0 ]; then \
+			go get -u github.com/kardianos/govendor; \
+		fi \
 	fi
 	@hash embedmd > /dev/null 2>&1; if [ $$? -ne 0 ]; then \
 		go get -u github.com/campoy/embedmd; \
