@@ -8,6 +8,10 @@ go:
   - 1.10.x
   - 1.11.x
 
+matrix:
+  allow_failures:
+    - go: master
+
 git:
   depth: 10
 
