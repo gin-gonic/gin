@@ -16,6 +16,7 @@ func IsDebugging() bool {
 	return ginMode == debugCode
 }
 
+// DebugPrintRouteFunc indicates debug log output format.
 var DebugPrintRouteFunc func(httpMethod, absolutePath, handlerName string, nuHandlers int)
 
 func debugPrintRoute(httpMethod, absolutePath string, handlers HandlersChain) {
