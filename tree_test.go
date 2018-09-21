@@ -5,7 +5,9 @@
 package gin
 
 import (
+	"fmt"
 	"reflect"
+	"regexp"
 	"strings"
 	"testing"
 )
@@ -651,5 +653,45 @@ func TestTreeInvalidNodeType(t *testing.T) {
 	})
 	if rs, ok := recv.(string); !ok || rs != panicMsg {
 		t.Fatalf("Expected panic '"+panicMsg+"', got '%v'", recv)
+	}
+}
+
+func TestTreeWildcardConflictEx(t *testing.T) {
+	conflicts := [...]struct {
+		route        string
+		segPath      string
+		existPath    string
+		existSegPath string
+	}{
+		{"/who/are/foo", "/foo", `/who/are/\*you`, `/\*you`},
+		{"/who/are/foo/", "/foo/", `/who/are/\*you`, `/\*you`},
+		{"/who/are/foo/bar", "/foo/bar", `/who/are/\*you`, `/\*you`},
+		{"/conxxx", "xxx", `/con:tact`, `:tact`},
+		{"/conooo/xxx", "ooo", `/con:tact`, `:tact`},
+	}
+
+	for _, conflict := range conflicts {
+		// I have to re-create a 'tree', because the 'tree' will be
+		// in an inconsistent state when the loop recovers from the
+		// panic which threw by 'addRoute' function.
+		tree := &node{}
+		routes := [...]string{
+			"/con:tact",
+			"/who/are/*you",
+			"/who/foo/hello",
+		}
+
+		for _, route := range routes {
+			tree.addRoute(route, fakeHandler(route))
+		}
+
+		recv := catchPanic(func() {
+			tree.addRoute(conflict.route, fakeHandler(conflict.route))
+		})
+
+		if !regexp.MustCompile(fmt.Sprintf("'%s' in new path .* conflicts with existing wildcard '%s' in existing prefix '%s'",
+			conflict.segPath, conflict.existSegPath, conflict.existPath)).MatchString(fmt.Sprint(recv)) {
+			t.Fatalf("invalid wildcard conflict error (%v)", recv)
+		}
 	}
 }
