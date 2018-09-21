@@ -3,8 +3,8 @@
   - Please provide source code and commit sha if you found a bug.
   - Review existing issues and provide feedback or react to them.
 
+- go version:
 - gin version (or commit ref):
-- git version:
 - operating system:
 
 ## Description
