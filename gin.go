@@ -104,6 +104,11 @@ type Engine struct {
 	noMethod         HandlersChain
 	pool             sync.Pool
 	trees            methodTrees
+
+	// If defiend, invoke before `handleHTTPRequest`
+	// Change `httpMethod`, `path`, `rawPath` for complex route match,it will not change origin `Context.Request`
+	// Note: If necessary, DON'T MODIFIY `Context`
+	BeforeHandle func(c *Context, httpMethod, path, rawPath *string)
 }
 
 var _ IRouter = &Engine{}
@@ -342,9 +347,15 @@ func (engine *Engine) HandleContext(c *Context) {
 func (engine *Engine) handleHTTPRequest(c *Context) {
 	httpMethod := c.Request.Method
 	path := c.Request.URL.Path
+	rawPath := c.Request.URL.RawPath
+	if engine.BeforeHandle != nil {
+		engine.BeforeHandle(c, &httpMethod, &path, &rawPath)
+	}
+
 	unescape := false
-	if engine.UseRawPath && len(c.Request.URL.RawPath) > 0 {
-		path = c.Request.URL.RawPath
+
+	if engine.UseRawPath && len(rawPath) > 0 {
+		path = rawPath
 		unescape = engine.UnescapePathValues
 	}
 
