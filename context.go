@@ -711,6 +711,7 @@ func (c *Context) Cookie(name string) (string, error) {
 	return val, nil
 }
 
+// Render writes the response headers and calls render.Render to render data.
 func (c *Context) Render(code int, r render.Render) {
 	c.Status(code)
 
@@ -833,6 +834,7 @@ func (c *Context) SSEvent(name string, message interface{}) {
 	})
 }
 
+// Stream sends a streaming response.
 func (c *Context) Stream(step func(w io.Writer) bool) {
 	w := c.Writer
 	clientGone := w.CloseNotify()
@@ -854,6 +856,7 @@ func (c *Context) Stream(step func(w io.Writer) bool) {
 /******** CONTENT NEGOTIATION *******/
 /************************************/
 
+// Negotiate contains all negotiations data.
 type Negotiate struct {
 	Offered  []string
 	HTMLName string
@@ -863,6 +866,7 @@ type Negotiate struct {
 	Data     interface{}
 }
 
+// Negotiate calls different Render according acceptable Accept format.
 func (c *Context) Negotiate(code int, config Negotiate) {
 	switch c.NegotiateFormat(config.Offered...) {
 	case binding.MIMEJSON:
@@ -882,6 +886,7 @@ func (c *Context) Negotiate(code int, config Negotiate) {
 	}
 }
 
+// NegotiateFormat returns an acceptable Accept format.
 func (c *Context) NegotiateFormat(offered ...string) string {
 	assert1(len(offered) > 0, "you must provide at least one offer")
 
@@ -901,6 +906,7 @@ func (c *Context) NegotiateFormat(offered ...string) string {
 	return ""
 }
 
+// SetAccepted sets Accept header data.
 func (c *Context) SetAccepted(formats ...string) {
 	c.Accepted = formats
 }
