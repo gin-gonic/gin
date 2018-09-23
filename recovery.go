@@ -51,12 +51,16 @@ func RecoveryWithWriter(out io.Writer) HandlerFunc {
 					}
 				}
 				if logger != nil {
+					stack := stack(3)
 					httprequest, _ := httputil.DumpRequest(c.Request, false)
 					if brokenPipe {
 						logger.Printf("%s\n%s%s", err, string(httprequest), reset)
-					} else {
+					} else if IsDebugging() {
 						logger.Printf("[Recovery] %s panic recovered:\n%s\n%s\n%s%s",
-							timeFormat(time.Now()), string(httprequest), err, stack(3), reset)
+							timeFormat(time.Now()), string(httprequest), err, stack, reset)
+					} else {
+						logger.Printf("[Recovery] %s panic recovered:\n%s\n%s%s",
+							timeFormat(time.Now()), err, stack, reset)
 					}
 				}
 
