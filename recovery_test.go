@@ -27,6 +27,7 @@ func TestPanicInHandler(t *testing.T) {
 	assert.Contains(t, buffer.String(), "panic recovered")
 	assert.Contains(t, buffer.String(), "Oupps, Houston, we have a problem")
 	assert.Contains(t, buffer.String(), "TestPanicInHandler")
+	assert.NotContains(t, buffer.String(), "GET /recovery")
 
 	// Debug mode prints the request
 	SetMode(DebugMode)
