@@ -60,3 +60,9 @@ misspell:
 		go get -u github.com/client9/misspell/cmd/misspell; \
 	fi
 	misspell -w $(GOFILES)
+
+.PHONY: tools
+tools:
+	go install github.com/golang/lint/golint; \
+	go install github.com/client9/misspell/cmd/misspell; \
+	go install github.com/campoy/embedmd;
