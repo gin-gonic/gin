@@ -12,6 +12,7 @@ go:
 matrix:
   allow_failures:
     - go: master
+  fast_finish: true
 
 git:
   depth: 10
