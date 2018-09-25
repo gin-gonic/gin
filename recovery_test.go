@@ -24,9 +24,19 @@ func TestPanicInHandler(t *testing.T) {
 	w := performRequest(router, "GET", "/recovery")
 	// TEST
 	assert.Equal(t, http.StatusInternalServerError, w.Code)
-	assert.Contains(t, buffer.String(), "GET /recovery")
+	assert.Contains(t, buffer.String(), "panic recovered")
 	assert.Contains(t, buffer.String(), "Oupps, Houston, we have a problem")
 	assert.Contains(t, buffer.String(), "TestPanicInHandler")
+	assert.NotContains(t, buffer.String(), "GET /recovery")
+
+	// Debug mode prints the request
+	SetMode(DebugMode)
+	// RUN
+	w = performRequest(router, "GET", "/recovery")
+	// TEST
+	assert.Equal(t, http.StatusInternalServerError, w.Code)
+	assert.Contains(t, buffer.String(), "GET /recovery")
+
 }
 
 // TestPanicWithAbort assert that panic has been recovered even if context.Abort was used.
