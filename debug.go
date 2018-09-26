@@ -53,14 +53,12 @@ func debugPrint(format string, values ...interface{}) {
 }
 
 func getMinVer(v string) (uint64, error) {
-	if IsDebugging() {
-		first := strings.IndexByte(v, '.')
-		last := strings.LastIndexByte(v, '.')
-		if first == last {
-			return strconv.ParseUint(v[first+1:], 10, 64)
-		}
-		return strconv.ParseUint(v[first+1:last], 10, 64)
+	first := strings.IndexByte(v, '.')
+	last := strings.LastIndexByte(v, '.')
+	if first == last {
+		return strconv.ParseUint(v[first+1:], 10, 64)
 	}
+	return strconv.ParseUint(v[first+1:last], 10, 64)
 }
 
 func debugPrintWARNINGDefault() {
