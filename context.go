@@ -354,7 +354,7 @@ func (c *Context) QueryArray(key string) []string {
 // GetQueryArray returns a slice of strings for a given query key, plus
 // a boolean value whether at least one value exists for the given key.
 func (c *Context) GetQueryArray(key string) ([]string, bool) {
-	if values, ok := c.Request.URL.Query()[key]; ok && len(values) > 0 {
+	if values, ok := c.resetQuery()[key]; ok && len(values) > 0 {
 		return values, true
 	}
 	return []string{}, false
@@ -369,7 +369,7 @@ func (c *Context) QueryMap(key string) map[string]string {
 // GetQueryMap returns a map for a given query key, plus a boolean value
 // whether at least one value exists for the given key.
 func (c *Context) GetQueryMap(key string) (map[string]string, bool) {
-	return c.get(c.Request.URL.Query(), key)
+	return c.get(c.resetQuery(), key)
 }
 
 // PostForm returns the specified key from a POST urlencoded form or multipart form
@@ -446,6 +446,23 @@ func (c *Context) GetPostFormMap(key string) (map[string]string, bool) {
 	}
 
 	return dicts, exist
+}
+
+func (c *Context) resetQuery() map[string][]string {
+	dicts := make(map[string][]string)
+	url := c.Request.URL.Query()
+	for k, v := range url {
+		lists := strings.Split(k, "&")
+		if len(lists) == 1 {
+			dicts[k] = v
+			continue
+		}
+		for _, vv := range lists {
+			p := strings.Split(vv, "=")
+			dicts[p[0]] = append(dicts[p[0]], p[1])
+		}
+	}
+	return dicts
 }
 
 // get is an internal method and returns a map which satisfy conditions.
