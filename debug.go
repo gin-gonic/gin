@@ -8,6 +8,7 @@ import (
 	"bytes"
 	"fmt"
 	"html/template"
+	"os"
 	"runtime"
 	"strconv"
 	"strings"
@@ -50,7 +51,7 @@ func debugPrintLoadTemplate(tmpl *template.Template) {
 
 func debugPrint(format string, values ...interface{}) {
 	if IsDebugging() {
-		fmt.Printf("[GIN-debug] "+format, values...)
+		fmt.Fprintf(os.Stderr, "[GIN-debug] "+format, values...)
 	}
 }
 
