@@ -8,7 +8,12 @@ import (
 	"bytes"
 	"fmt"
 	"html/template"
+	"runtime"
+	"strconv"
+	"strings"
 )
+
+const ginSupportMinGoVer = 6
 
 // IsDebugging returns true if the framework is running in debug mode.
 // Use SetMode(gin.ReleaseMode) to disable debug mode.
@@ -49,10 +54,21 @@ func debugPrint(format string, values ...interface{}) {
 	}
 }
 
+func getMinVer(v string) (uint64, error) {
+	first := strings.IndexByte(v, '.')
+	last := strings.LastIndexByte(v, '.')
+	if first == last {
+		return strconv.ParseUint(v[first+1:], 10, 64)
+	}
+	return strconv.ParseUint(v[first+1:last], 10, 64)
+}
+
 func debugPrintWARNINGDefault() {
-	debugPrint(`[WARNING] Now Gin requires Go 1.6 or later and Go 1.7 will be required soon.
+	if v, e := getMinVer(runtime.Version()); e == nil && v <= ginSupportMinGoVer {
+		debugPrint(`[WARNING] Now Gin requires Go 1.6 or later and Go 1.7 will be required soon.
 
 `)
+	}
 	debugPrint(`[WARNING] Creating an Engine instance with the Logger and Recovery middleware already attached.
 
 `)
