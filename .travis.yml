@@ -1,16 +1,19 @@
 language: go
+
 sudo: false
-go:
-  - 1.6.x
-  - 1.7.x
-  - 1.8.x
-  - 1.9.x
-  - 1.10.x
-  - 1.11.x
-  - master
 
 matrix:
   fast_finish: true
+  include:
+  - go: 1.6.x
+  - go: 1.7.x
+  - go: 1.8.x
+  - go: 1.9.x
+  - go: 1.10.x
+  - go: 1.11.x
+  - go: 1.11.x
+    env: GO111MODULE=on
+  - go: master
 
 git:
   depth: 10
