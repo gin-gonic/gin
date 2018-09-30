@@ -45,7 +45,7 @@ func (v *defaultValidator) Engine() interface{} {
 
 func (v *defaultValidator) lazyinit() {
 	v.once.Do(func() {
-		config := &validator.Config{TagName: "binding"}
-		v.validate = validator.New(config)
+		//config := &validator.Config{TagName: "binding"}
+		v.validate = validator.New()
 	})
 }
