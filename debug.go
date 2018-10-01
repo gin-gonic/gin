@@ -12,6 +12,7 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
+	"sync/atomic"
 )
 
 const ginSupportMinGoVer = 6
@@ -19,7 +20,7 @@ const ginSupportMinGoVer = 6
 // IsDebugging returns true if the framework is running in debug mode.
 // Use SetMode(gin.ReleaseMode) to disable debug mode.
 func IsDebugging() bool {
-	return ginMode == debugCode
+	return atomic.LoadInt32(&ginMode) == debugCode
 }
 
 // DebugPrintRouteFunc indicates debug log output format.

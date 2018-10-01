@@ -7,6 +7,7 @@ package gin
 import (
 	"io"
 	"os"
+	"sync/atomic"
 
 	"github.com/gin-gonic/gin/binding"
 )
@@ -38,10 +39,11 @@ const (
 var DefaultWriter io.Writer = os.Stdout
 var DefaultErrorWriter io.Writer = os.Stderr
 
-var ginMode = debugCode
-var modeName = DebugMode
+var ginMode int32 = debugCode
+var modeName atomic.Value
 
 func init() {
+	modeName.Store(DebugMode)
 	mode := os.Getenv(ENV_GIN_MODE)
 	SetMode(mode)
 }
@@ -50,18 +52,18 @@ func init() {
 func SetMode(value string) {
 	switch value {
 	case DebugMode, "":
-		ginMode = debugCode
+		atomic.StoreInt32(&ginMode, debugCode)
 	case ReleaseMode:
-		ginMode = releaseCode
+		atomic.StoreInt32(&ginMode, releaseCode)
 	case TestMode:
-		ginMode = testCode
+		atomic.StoreInt32(&ginMode, testCode)
 	default:
 		panic("gin mode unknown: " + value)
 	}
 	if value == "" {
 		value = DebugMode
 	}
-	modeName = value
+	modeName.Store(value)
 }
 
 // DisableBindValidation closes the default validator.
@@ -77,5 +79,5 @@ func EnableJsonDecoderUseNumber() {
 
 // Mode returns currently gin mode.
 func Mode() string {
-	return modeName
+	return modeName.Load().(string)
 }
