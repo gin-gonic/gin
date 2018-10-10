@@ -1721,11 +1721,11 @@ type StructX struct {
 }
 
 type StructY struct {
-    Y StructX `form:"name_y"` // HERE hava form
+    Y StructX `form:"name_y"` // HERE have form
 }
 
 type StructZ struct {
-    Z *StructZ `form:"name_z"` // HERE hava form
+    Z *StructZ `form:"name_z"` // HERE have form
 }
 ```
 
