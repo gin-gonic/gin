@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"sync"
 	"testing"
 	"time"
 
@@ -117,6 +118,29 @@ func TestWithHttptestWithAutoSelectedPort(t *testing.T) {
 	defer ts.Close()
 
 	testRequest(t, ts.URL+"/example")
+}
+
+func TestConcurrentHandleContext(t *testing.T) {
+	router := New()
+	router.GET("/", func(c *Context) {
+		c.Request.URL.Path = "/example"
+		router.HandleContext(c)
+	})
+	router.GET("/example", func(c *Context) { c.String(http.StatusOK, "it worked") })
+
+	ts := httptest.NewServer(router)
+	defer ts.Close()
+
+	var wg sync.WaitGroup
+	iterations := 200
+	wg.Add(iterations)
+	for i := 0; i < iterations; i++ {
+		go func() {
+			testRequest(t, ts.URL+"/")
+			wg.Done()
+		}()
+	}
+	wg.Wait()
 }
 
 // func TestWithHttptestWithSpecifiedPort(t *testing.T) {
