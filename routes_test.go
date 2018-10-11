@@ -267,7 +267,7 @@ func TestRouteStaticFile(t *testing.T) {
 	assert.Equal(t, w, w2)
 	assert.Equal(t, http.StatusOK, w.Code)
 	assert.Equal(t, "Gin Web Framework", w.Body.String())
-	assert.Equal(t, "text/plain; charset=utf-8", w.HeaderMap.Get("Content-Type"))
+	assert.Equal(t, "text/plain; charset=utf-8", w.Header().Get("Content-Type"))
 
 	w3 := performRequest(router, "HEAD", "/using_static/"+filename)
 	w4 := performRequest(router, "HEAD", "/result")
@@ -285,7 +285,7 @@ func TestRouteStaticListingDir(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, w.Code)
 	assert.Contains(t, w.Body.String(), "gin.go")
-	assert.Equal(t, "text/html; charset=utf-8", w.HeaderMap.Get("Content-Type"))
+	assert.Equal(t, "text/html; charset=utf-8", w.Header().Get("Content-Type"))
 }
 
 // TestHandleHeadToDir - ensure the root/sub dir handles properly
@@ -312,10 +312,10 @@ func TestRouterMiddlewareAndStatic(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, w.Code)
 	assert.Contains(t, w.Body.String(), "package gin")
-	assert.Equal(t, "text/plain; charset=utf-8", w.HeaderMap.Get("Content-Type"))
-	assert.NotEqual(t, w.HeaderMap.Get("Last-Modified"), "Mon, 02 Jan 2006 15:04:05 MST")
-	assert.Equal(t, "Mon, 02 Jan 2006 15:04:05 MST", w.HeaderMap.Get("Expires"))
-	assert.Equal(t, "Gin Framework", w.HeaderMap.Get("x-GIN"))
+	assert.Equal(t, "text/plain; charset=utf-8", w.Header().Get("Content-Type"))
+	assert.NotEqual(t, w.Header().Get("Last-Modified"), "Mon, 02 Jan 2006 15:04:05 MST")
+	assert.Equal(t, "Mon, 02 Jan 2006 15:04:05 MST", w.Header().Get("Expires"))
+	assert.Equal(t, "Gin Framework", w.Header().Get("x-GIN"))
 }
 
 func TestRouteNotAllowedEnabled(t *testing.T) {
