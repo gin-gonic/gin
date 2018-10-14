@@ -63,6 +63,6 @@ misspell:
 
 .PHONY: tools
 tools:
-	go install github.com/golang/lint/golint; \
+	go install golang.org/x/lint/golint; \
 	go install github.com/client9/misspell/cmd/misspell; \
 	go install github.com/campoy/embedmd;
