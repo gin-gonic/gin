@@ -16,10 +16,10 @@ import (
 	_ "github.com/client9/misspell/cmd/misspell"
 	_ "github.com/dustin/go-broadcast"
 	_ "github.com/gin-gonic/autotls"
-	_ "github.com/golang/lint/golint"
 	_ "github.com/jessevdk/go-assets"
 	_ "github.com/manucorporat/stats"
 	_ "github.com/thinkerou/favicon"
 	_ "golang.org/x/crypto/acme/autocert"
+	_ "golang.org/x/lint/golint"
 	_ "google.golang.org/grpc"
 )
