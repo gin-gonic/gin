@@ -88,7 +88,7 @@ func TestLoadHTMLGlob(t *testing.T) {
 	}
 
 	resp, _ := ioutil.ReadAll(res.Body)
-	assert.Equal(t, "<h1>Hello world</h1>", string(resp[:]))
+	assert.Equal(t, "<h1>Hello world</h1>", string(resp))
 
 	td()
 }
@@ -101,7 +101,7 @@ func TestLoadHTMLGlob2(t *testing.T) {
 	}
 
 	resp, _ := ioutil.ReadAll(res.Body)
-	assert.Equal(t, "<h1>Hello world</h1>", string(resp[:]))
+	assert.Equal(t, "<h1>Hello world</h1>", string(resp))
 
 	td()
 }
@@ -114,7 +114,7 @@ func TestLoadHTMLGlob3(t *testing.T) {
 	}
 
 	resp, _ := ioutil.ReadAll(res.Body)
-	assert.Equal(t, "<h1>Hello world</h1>", string(resp[:]))
+	assert.Equal(t, "<h1>Hello world</h1>", string(resp))
 
 	td()
 }
@@ -134,7 +134,7 @@ func TestLoadHTMLGlobUsingTLS(t *testing.T) {
 	}
 
 	resp, _ := ioutil.ReadAll(res.Body)
-	assert.Equal(t, "<h1>Hello world</h1>", string(resp[:]))
+	assert.Equal(t, "<h1>Hello world</h1>", string(resp))
 
 	td()
 }
@@ -148,7 +148,7 @@ func TestLoadHTMLGlobFromFuncMap(t *testing.T) {
 	}
 
 	resp, _ := ioutil.ReadAll(res.Body)
-	assert.Equal(t, "Date: 2017/07/01\n", string(resp[:]))
+	assert.Equal(t, "Date: 2017/07/01\n", string(resp))
 
 	td()
 }
@@ -187,7 +187,7 @@ func TestLoadHTMLFiles(t *testing.T) {
 	}
 
 	resp, _ := ioutil.ReadAll(res.Body)
-	assert.Equal(t, "<h1>Hello world</h1>", string(resp[:]))
+	assert.Equal(t, "<h1>Hello world</h1>", string(resp))
 	td()
 }
 
@@ -199,7 +199,7 @@ func TestLoadHTMLFiles2(t *testing.T) {
 	}
 
 	resp, _ := ioutil.ReadAll(res.Body)
-	assert.Equal(t, "<h1>Hello world</h1>", string(resp[:]))
+	assert.Equal(t, "<h1>Hello world</h1>", string(resp))
 	td()
 }
 
@@ -211,7 +211,7 @@ func TestLoadHTMLFiles3(t *testing.T) {
 	}
 
 	resp, _ := ioutil.ReadAll(res.Body)
-	assert.Equal(t, "<h1>Hello world</h1>", string(resp[:]))
+	assert.Equal(t, "<h1>Hello world</h1>", string(resp))
 	td()
 }
 
@@ -230,7 +230,7 @@ func TestLoadHTMLFilesUsingTLS(t *testing.T) {
 	}
 
 	resp, _ := ioutil.ReadAll(res.Body)
-	assert.Equal(t, "<h1>Hello world</h1>", string(resp[:]))
+	assert.Equal(t, "<h1>Hello world</h1>", string(resp))
 	td()
 }
 
@@ -243,7 +243,7 @@ func TestLoadHTMLFilesFuncMap(t *testing.T) {
 	}
 
 	resp, _ := ioutil.ReadAll(res.Body)
-	assert.Equal(t, "Date: 2017/07/01\n", string(resp[:]))
+	assert.Equal(t, "Date: 2017/07/01\n", string(resp))
 
 	td()
 }
