@@ -122,7 +122,7 @@ func TestBasicAuth401(t *testing.T) {
 
 	assert.False(t, called)
 	assert.Equal(t, http.StatusUnauthorized, w.Code)
-	assert.Equal(t, "Basic realm=\"Authorization Required\"", w.HeaderMap.Get("WWW-Authenticate"))
+	assert.Equal(t, "Basic realm=\"Authorization Required\"", w.Header().Get("WWW-Authenticate"))
 }
 
 func TestBasicAuth401WithCustomRealm(t *testing.T) {
@@ -142,5 +142,5 @@ func TestBasicAuth401WithCustomRealm(t *testing.T) {
 
 	assert.False(t, called)
 	assert.Equal(t, http.StatusUnauthorized, w.Code)
-	assert.Equal(t, "Basic realm=\"My Custom \\\"Realm\\\"\"", w.HeaderMap.Get("WWW-Authenticate"))
+	assert.Equal(t, "Basic realm=\"My Custom \\\"Realm\\\"\"", w.Header().Get("WWW-Authenticate"))
 }
