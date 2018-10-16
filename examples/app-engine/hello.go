@@ -21,4 +21,5 @@ func init() {
 
 	// Handle all requests using net/http
 	http.Handle("/", r)
+	r.Run(":3000")
 }
