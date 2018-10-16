@@ -10,37 +10,44 @@ import (
 	"html/template"
 	"net/http"
 
-	"github.com/gin-gonic/gin/json"
+	"github.com/gin-gonic/gin/internal/json"
 )
 
+// JSON contains the given interface object.
 type JSON struct {
 	Data interface{}
 }
 
+// IndentedJSON contains the given interface object.
 type IndentedJSON struct {
 	Data interface{}
 }
 
+// SecureJSON contains the given interface object and its prefix.
 type SecureJSON struct {
 	Prefix string
 	Data   interface{}
 }
 
+// JsonpJSON contains the given interface object its callback.
 type JsonpJSON struct {
 	Callback string
 	Data     interface{}
 }
 
+// AsciiJSON contains the given interface object.
 type AsciiJSON struct {
 	Data interface{}
 }
 
+// SecureJSONPrefix is a string which represents SecureJSON prefix.
 type SecureJSONPrefix string
 
 var jsonContentType = []string{"application/json; charset=utf-8"}
 var jsonpContentType = []string{"application/javascript; charset=utf-8"}
 var jsonAsciiContentType = []string{"application/json"}
 
+// Render (JSON) writes data with custom ContentType.
 func (r JSON) Render(w http.ResponseWriter) (err error) {
 	if err = WriteJSON(w, r.Data); err != nil {
 		panic(err)
@@ -48,10 +55,12 @@ func (r JSON) Render(w http.ResponseWriter) (err error) {
 	return
 }
 
+// WriteContentType (JSON) writes JSON ContentType.
 func (r JSON) WriteContentType(w http.ResponseWriter) {
 	writeContentType(w, jsonContentType)
 }
 
+// WriteJSON marshals the given interface object and writes it with custom ContentType.
 func WriteJSON(w http.ResponseWriter, obj interface{}) error {
 	writeContentType(w, jsonContentType)
 	jsonBytes, err := json.Marshal(obj)
@@ -62,6 +71,7 @@ func WriteJSON(w http.ResponseWriter, obj interface{}) error {
 	return nil
 }
 
+// Render (IndentedJSON) marshals the given interface object and writes it with custom ContentType.
 func (r IndentedJSON) Render(w http.ResponseWriter) error {
 	r.WriteContentType(w)
 	jsonBytes, err := json.MarshalIndent(r.Data, "", "    ")
@@ -72,10 +82,12 @@ func (r IndentedJSON) Render(w http.ResponseWriter) error {
 	return nil
 }
 
+// WriteContentType (IndentedJSON) writes JSON ContentType.
 func (r IndentedJSON) WriteContentType(w http.ResponseWriter) {
 	writeContentType(w, jsonContentType)
 }
 
+// Render (SecureJSON) marshals the given interface object and writes it with custom ContentType.
 func (r SecureJSON) Render(w http.ResponseWriter) error {
 	r.WriteContentType(w)
 	jsonBytes, err := json.Marshal(r.Data)
@@ -90,10 +102,12 @@ func (r SecureJSON) Render(w http.ResponseWriter) error {
 	return nil
 }
 
+// WriteContentType (SecureJSON) writes JSON ContentType.
 func (r SecureJSON) WriteContentType(w http.ResponseWriter) {
 	writeContentType(w, jsonContentType)
 }
 
+// Render (JsonpJSON) marshals the given interface object and writes it and its callback with custom ContentType.
 func (r JsonpJSON) Render(w http.ResponseWriter) (err error) {
 	r.WriteContentType(w)
 	ret, err := json.Marshal(r.Data)
@@ -115,10 +129,12 @@ func (r JsonpJSON) Render(w http.ResponseWriter) (err error) {
 	return nil
 }
 
+// WriteContentType (JsonpJSON) writes Javascript ContentType.
 func (r JsonpJSON) WriteContentType(w http.ResponseWriter) {
 	writeContentType(w, jsonpContentType)
 }
 
+// Render (AsciiJSON) marshals the given interface object and writes it with custom ContentType.
 func (r AsciiJSON) Render(w http.ResponseWriter) (err error) {
 	r.WriteContentType(w)
 	ret, err := json.Marshal(r.Data)
@@ -139,6 +155,7 @@ func (r AsciiJSON) Render(w http.ResponseWriter) (err error) {
 	return nil
 }
 
+// WriteContentType (AsciiJSON) writes JSON ContentType.
 func (r AsciiJSON) WriteContentType(w http.ResponseWriter) {
 	writeContentType(w, jsonAsciiContentType)
 }

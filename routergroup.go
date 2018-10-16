@@ -11,11 +11,13 @@ import (
 	"strings"
 )
 
+// IRouter defines all router handle interface includes single and group router.
 type IRouter interface {
 	IRoutes
 	Group(string, ...HandlerFunc) *RouterGroup
 }
 
+// IRoutes defines all router handle interface.
 type IRoutes interface {
 	Use(...HandlerFunc) IRoutes
 
@@ -34,8 +36,8 @@ type IRoutes interface {
 	StaticFS(string, http.FileSystem) IRoutes
 }
 
-// RouterGroup is used internally to configure router, a RouterGroup is associated with a prefix
-// and an array of handlers (middleware).
+// RouterGroup is used internally to configure router, a RouterGroup is associated with
+// a prefix and an array of handlers (middleware).
 type RouterGroup struct {
 	Handlers HandlersChain
 	basePath string
@@ -61,6 +63,8 @@ func (group *RouterGroup) Group(relativePath string, handlers ...HandlerFunc) *R
 	}
 }
 
+// BasePath returns the base path of router group.
+// For example, if v := router.Group("/rest/n/v1/api"), v.BasePath() is "/rest/n/v1/api".
 func (group *RouterGroup) BasePath() string {
 	return group.basePath
 }
