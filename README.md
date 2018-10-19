@@ -60,6 +60,7 @@ Gin is a web framework written in Go (Golang). It features a martini-like API wi
     - [Try to bind body into different structs](#try-to-bind-body-into-different-structs)
     - [http2 server push](#http2-server-push)
     - [Define format for the log of routes](#define-format-for-the-log-of-routes)
+    - [Set and get a cookie](#set-and-get-a-cookie)
 - [Testing](#testing)
 - [Users](#users)
 
@@ -1877,6 +1878,35 @@ func main() {
 
 	// Listen and Server in http://0.0.0.0:8080
 	r.Run()
+}
+```
+
+### Set and get a cookie
+
+```go
+import (
+    "fmt"
+
+    "github.com/gin-gonic/gin"
+)
+
+func main() {
+
+    router := gin.Default()
+
+    router.GET("/cookie", func(c *gin.Context) {
+
+        cookie, err := c.Cookie("gin_cookie")
+
+        if err != nil {
+            cookie = "NotSet"
+            c.SetCookie("gin_cookie", "test", 3600, "/", "localhost", false, true)
+        }
+
+        fmt.Printf("Cookie value: %s \n", cookie)
+    })
+
+    router.Run()
 }
 ```
 
