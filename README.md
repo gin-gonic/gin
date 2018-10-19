@@ -60,6 +60,7 @@ Gin is a web framework written in Go (Golang). It features a martini-like API wi
     - [Try to bind body into different structs](#try-to-bind-body-into-different-structs)
     - [http2 server push](#http2-server-push)
     - [Define format for the log of routes](#define-format-for-the-log-of-routes)
+    - [Set and get a cookie](#set-and-get-a-cookie)
 - [Testing](#testing)
 - [Users](#users)
 
@@ -1721,11 +1722,11 @@ type StructX struct {
 }
 
 type StructY struct {
-    Y StructX `form:"name_y"` // HERE hava form
+    Y StructX `form:"name_y"` // HERE have form
 }
 
 type StructZ struct {
-    Z *StructZ `form:"name_z"` // HERE hava form
+    Z *StructZ `form:"name_z"` // HERE have form
 }
 ```
 
@@ -1880,6 +1881,35 @@ func main() {
 }
 ```
 
+### Set and get a cookie
+
+```go
+import (
+    "fmt"
+
+    "github.com/gin-gonic/gin"
+)
+
+func main() {
+
+    router := gin.Default()
+
+    router.GET("/cookie", func(c *gin.Context) {
+
+        cookie, err := c.Cookie("gin_cookie")
+
+        if err != nil {
+            cookie = "NotSet"
+            c.SetCookie("gin_cookie", "test", 3600, "/", "localhost", false, true)
+        }
+
+        fmt.Printf("Cookie value: %s \n", cookie)
+    })
+
+    router.Run()
+}
+```
+
 
 ## Testing
 
@@ -1934,3 +1964,4 @@ Awesome project lists using [Gin](https://github.com/gin-gonic/gin) web framewor
 * [drone](https://github.com/drone/drone): Drone is a Continuous Delivery platform built on Docker, written in Go.
 * [gorush](https://github.com/appleboy/gorush): A push notification server written in Go.
 * [fnproject](https://github.com/fnproject/fn): The container native, cloud agnostic serverless platform.
+* [photoprism](https://github.com/photoprism/photoprism): Personal photo management powered by Go and Google TensorFlow.

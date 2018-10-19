@@ -336,7 +336,6 @@ func (engine *Engine) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 func (engine *Engine) HandleContext(c *Context) {
 	c.reset()
 	engine.handleHTTPRequest(c)
-	engine.pool.Put(c)
 }
 
 func (engine *Engine) handleHTTPRequest(c *Context) {

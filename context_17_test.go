@@ -23,5 +23,5 @@ func TestContextRenderPureJSON(t *testing.T) {
 	c.PureJSON(http.StatusCreated, H{"foo": "bar", "html": "<b>"})
 	assert.Equal(t, http.StatusCreated, w.Code)
 	assert.Equal(t, "{\"foo\":\"bar\",\"html\":\"<b>\"}\n", w.Body.String())
-	assert.Equal(t, "application/json; charset=utf-8", w.HeaderMap.Get("Content-Type"))
+	assert.Equal(t, "application/json; charset=utf-8", w.Header().Get("Content-Type"))
 }
