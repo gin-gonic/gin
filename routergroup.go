@@ -17,7 +17,7 @@ type IRouter interface {
 	Group(string, ...HandlerFunc) *RouterGroup
 }
 
-// Iroutes defins all router handle interface.
+// IRoutes defines all router handle interface.
 type IRoutes interface {
 	Use(...HandlerFunc) IRoutes
 
