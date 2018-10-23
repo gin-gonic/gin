@@ -480,7 +480,7 @@ func TestRenderReader(t *testing.T) {
 
 	assert.NoError(t, err)
 	assert.Equal(t, body, w.Body.String())
-	assert.Equal(t, "image/png", w.HeaderMap.Get("Content-Type"))
-	assert.Equal(t, strconv.Itoa(len(body)), w.HeaderMap.Get("Content-Length"))
-	assert.Equal(t, headers["Content-Disposition"], w.HeaderMap.Get("Content-Disposition"))
+	assert.Equal(t, "image/png", w.Header().Get("Content-Type"))
+	assert.Equal(t, strconv.Itoa(len(body)), w.Header().Get("Content-Length"))
+	assert.Equal(t, headers["Content-Disposition"], w.Header().Get("Content-Disposition"))
 }
