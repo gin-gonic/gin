@@ -38,9 +38,10 @@ func (c HandlersChain) Last() HandlerFunc {
 
 // RouteInfo represents a request route's specification which contains method and path and its handler.
 type RouteInfo struct {
-	Method  string
-	Path    string
-	Handler string
+	Method      string
+	Path        string
+	Handler     string
+	HandlerFunc HandlerFunc
 }
 
 // RoutesInfo defines a RouteInfo array.
@@ -266,10 +267,12 @@ func (engine *Engine) Routes() (routes RoutesInfo) {
 func iterate(path, method string, routes RoutesInfo, root *node) RoutesInfo {
 	path += root.path
 	if len(root.handlers) > 0 {
+		handlerFunc := root.handlers.Last()
 		routes = append(routes, RouteInfo{
-			Method:  method,
-			Path:    path,
-			Handler: nameOfFunction(root.handlers.Last()),
+			Method:      method,
+			Path:        path,
+			Handler:     nameOfFunction(handlerFunc),
+			HandlerFunc: handlerFunc,
 		})
 	}
 	for _, child := range root.children {
