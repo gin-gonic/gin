@@ -49,7 +49,7 @@ func checkRequests(t *testing.T, tree *node, requests testRequests, unescapes ..
 				t.Errorf("handle mismatch for route '%s': Wrong handle (%s != %s)", request.path, fakeHandlerValue, request.route)
 			}
 			if route != request.route {
-				t.Errorf("handle mismatch for route '%s': Wrong route (%s != %s)", request.path, route, request.route)
+				t.Errorf("route mismatch for route '%s': Wrong route (%s != %s)", request.path, route, request.route)
 			}
 		}
 
