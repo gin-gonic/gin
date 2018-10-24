@@ -7,6 +7,7 @@ package gin
 import (
 	"fmt"
 	"io"
+	"net/http"
 	"os"
 	"time"
 
@@ -16,7 +17,7 @@ import (
 var (
 	green        = string([]byte{27, 91, 57, 55, 59, 52, 50, 109})
 	white        = string([]byte{27, 91, 57, 48, 59, 52, 55, 109})
-	yellow       = string([]byte{27, 91, 57, 55, 59, 52, 51, 109})
+	yellow       = string([]byte{27, 91, 57, 48, 59, 52, 51, 109})
 	red          = string([]byte{27, 91, 57, 55, 59, 52, 49, 109})
 	blue         = string([]byte{27, 91, 57, 55, 59, 52, 52, 109})
 	magenta      = string([]byte{27, 91, 57, 55, 59, 52, 53, 109})
@@ -118,11 +119,11 @@ func LoggerWithWriter(out io.Writer, notlogged ...string) HandlerFunc {
 
 func colorForStatus(code int) string {
 	switch {
-	case code >= 200 && code < 300:
+	case code >= http.StatusOK && code < http.StatusMultipleChoices:
 		return green
-	case code >= 300 && code < 400:
+	case code >= http.StatusMultipleChoices && code < http.StatusBadRequest:
 		return white
-	case code >= 400 && code < 500:
+	case code >= http.StatusBadRequest && code < http.StatusInternalServerError:
 		return yellow
 	default:
 		return red

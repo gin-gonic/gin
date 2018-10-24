@@ -17,19 +17,20 @@ func (protobufBinding) Name() string {
 	return "protobuf"
 }
 
-func (protobufBinding) Bind(req *http.Request, obj interface{}) error {
-
+func (b protobufBinding) Bind(req *http.Request, obj interface{}) error {
 	buf, err := ioutil.ReadAll(req.Body)
 	if err != nil {
 		return err
 	}
+	return b.BindBody(buf, obj)
+}
 
-	if err = proto.Unmarshal(buf, obj.(proto.Message)); err != nil {
+func (protobufBinding) BindBody(body []byte, obj interface{}) error {
+	if err := proto.Unmarshal(body, obj.(proto.Message)); err != nil {
 		return err
 	}
-
-	//Here it's same to return validate(obj), but util now we cann't add `binding:""` to the struct
-	//which automatically generate by gen-proto
+	// Here it's same to return validate(obj), but util now we cann't add
+	// `binding:""` to the struct which automatically generate by gen-proto
 	return nil
-	//return validate(obj)
+	// return validate(obj)
 }

@@ -5,7 +5,9 @@
 package gin
 
 import (
+	"fmt"
 	"reflect"
+	"regexp"
 	"strings"
 	"testing"
 )
@@ -125,8 +127,6 @@ func TestTreeAddAndGet(t *testing.T) {
 		tree.addRoute(route, fakeHandler(route))
 	}
 
-	//printChildren(tree, "")
-
 	checkRequests(t, tree, testRequests{
 		{"/a", false, "/a", nil},
 		{"/", true, "", nil},
@@ -168,8 +168,6 @@ func TestTreeWildcard(t *testing.T) {
 		tree.addRoute(route, fakeHandler(route))
 	}
 
-	//printChildren(tree, "")
-
 	checkRequests(t, tree, testRequests{
 		{"/", false, "/", nil},
 		{"/cmd/test/", false, "/cmd/:tool/", Params{Param{"tool", "test"}}},
@@ -208,7 +206,6 @@ func TestUnescapeParameters(t *testing.T) {
 		tree.addRoute(route, fakeHandler(route))
 	}
 
-	//printChildren(tree, "")
 	unescape := true
 	checkRequests(t, tree, testRequests{
 		{"/", false, "/", nil},
@@ -260,8 +257,6 @@ func testRoutes(t *testing.T, routes []testRoute) {
 			t.Errorf("unexpected panic for route '%s': %v", route.path, recv)
 		}
 	}
-
-	//printChildren(tree, "")
 }
 
 func TestTreeWildcardConflict(t *testing.T) {
@@ -327,8 +322,6 @@ func TestTreeDupliatePath(t *testing.T) {
 			t.Fatalf("no panic while inserting duplicate route '%s", route)
 		}
 	}
-
-	//printChildren(tree, "")
 
 	checkRequests(t, tree, testRequests{
 		{"/", false, "/", nil},
@@ -443,8 +436,6 @@ func TestTreeTrailingSlashRedirect(t *testing.T) {
 			t.Fatalf("panic inserting route '%s': %v", route, recv)
 		}
 	}
-
-	//printChildren(tree, "")
 
 	tsrRoutes := [...]string{
 		"/hi/",
@@ -662,5 +653,45 @@ func TestTreeInvalidNodeType(t *testing.T) {
 	})
 	if rs, ok := recv.(string); !ok || rs != panicMsg {
 		t.Fatalf("Expected panic '"+panicMsg+"', got '%v'", recv)
+	}
+}
+
+func TestTreeWildcardConflictEx(t *testing.T) {
+	conflicts := [...]struct {
+		route        string
+		segPath      string
+		existPath    string
+		existSegPath string
+	}{
+		{"/who/are/foo", "/foo", `/who/are/\*you`, `/\*you`},
+		{"/who/are/foo/", "/foo/", `/who/are/\*you`, `/\*you`},
+		{"/who/are/foo/bar", "/foo/bar", `/who/are/\*you`, `/\*you`},
+		{"/conxxx", "xxx", `/con:tact`, `:tact`},
+		{"/conooo/xxx", "ooo", `/con:tact`, `:tact`},
+	}
+
+	for _, conflict := range conflicts {
+		// I have to re-create a 'tree', because the 'tree' will be
+		// in an inconsistent state when the loop recovers from the
+		// panic which threw by 'addRoute' function.
+		tree := &node{}
+		routes := [...]string{
+			"/con:tact",
+			"/who/are/*you",
+			"/who/foo/hello",
+		}
+
+		for _, route := range routes {
+			tree.addRoute(route, fakeHandler(route))
+		}
+
+		recv := catchPanic(func() {
+			tree.addRoute(conflict.route, fakeHandler(conflict.route))
+		})
+
+		if !regexp.MustCompile(fmt.Sprintf("'%s' in new path .* conflicts with existing wildcard '%s' in existing prefix '%s'",
+			conflict.segPath, conflict.existSegPath, conflict.existPath)).MatchString(fmt.Sprint(recv)) {
+			t.Fatalf("invalid wildcard conflict error (%v)", recv)
+		}
 	}
 }
