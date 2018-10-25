@@ -483,3 +483,42 @@ func assertRoutePresent(t *testing.T, gotRoutes RoutesInfo, wantRoute RouteInfo)
 
 func handlerTest1(c *Context) {}
 func handlerTest2(c *Context) {}
+
+func TestRegistredRouteInContext(t *testing.T) {
+	tt := []struct {
+		Route string
+		Paths []string
+	}{
+		{"/", []string{"/"}},
+		{"/user", []string{"/user"}},
+		{"/user/:id", []string{"/user/123", "/user/abc"}},
+		{"/user/:id/profile/:p_id", []string{"/user/123/profile/123", "/user/abc/profile/abc"}},
+	}
+
+	r := New()
+	h := func(p string) HandlerFunc {
+		return func(c *Context) {
+			if p == c.Route {
+				c.JSON(http.StatusOK, H{"message": "route matched"})
+				return
+			}
+			c.JSON(http.StatusInternalServerError, H{
+				"message":  "route missmatch",
+				"expected": p,
+				"found":    c.Route,
+			})
+		}
+	}
+	for _, tc := range tt {
+		r.GET(tc.Route, h(tc.Route))
+	}
+
+	for _, tc := range tt {
+		for _, path := range tc.Paths {
+			w := httptest.NewRecorder()
+			req, _ := http.NewRequest("GET", path, nil)
+			r.ServeHTTP(w, req)
+			assert.Equal(t, 200, w.Code, w.Body.String())
+		}
+	}
+}
