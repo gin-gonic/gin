@@ -4,7 +4,11 @@
 
 package binding
 
-import "net/http"
+import (
+	"net/http"
+
+	"github.com/gin-gonic/gin/internal"
+)
 
 // Content-Type MIME of the most common data formats.
 const (
@@ -33,6 +37,13 @@ type Binding interface {
 type BindingBody interface {
 	Binding
 	BindBody([]byte, interface{}) error
+}
+
+// BindingUri adds BindUri method to Binding. BindUri is similar with Bind,
+// but it read the Params.
+type BindingUri interface {
+	Name() string
+	BindUri(internal.Params, interface{}) error
 }
 
 // StructValidator is the minimal interface which needs to be implemented in
@@ -68,6 +79,7 @@ var (
 	FormMultipart = formMultipartBinding{}
 	ProtoBuf      = protobufBinding{}
 	MsgPack       = msgpackBinding{}
+	Uri           = uriBinding{}
 )
 
 // Default returns the appropriate Binding instance based on the HTTP method

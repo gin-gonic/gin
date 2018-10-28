@@ -10,7 +10,13 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/gin-gonic/gin/internal"
 )
+
+func mapUri(ptr interface{}, ps internal.Params) error {
+	return nil
+}
 
 func mapForm(ptr interface{}, form map[string][]string) error {
 	typ := reflect.TypeOf(ptr).Elem()

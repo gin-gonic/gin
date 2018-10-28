@@ -20,6 +20,7 @@ import (
 
 	"github.com/gin-contrib/sse"
 	"github.com/gin-gonic/gin/binding"
+	"github.com/gin-gonic/gin/internal"
 	"github.com/golang/protobuf/proto"
 	"github.com/stretchr/testify/assert"
 	"golang.org/x/net/context"
@@ -158,7 +159,7 @@ func TestContextReset(t *testing.T) {
 
 	c.index = 2
 	c.Writer = &responseWriter{ResponseWriter: httptest.NewRecorder()}
-	c.Params = Params{Param{}}
+	c.Params = internal.Params{internal.Param{}}
 	c.Error(errors.New("test"))
 	c.Set("foo", "bar")
 	c.reset()
@@ -316,7 +317,7 @@ func TestContextCopy(t *testing.T) {
 	c.index = 2
 	c.Request, _ = http.NewRequest("POST", "/hola", nil)
 	c.handlers = HandlersChain{func(c *Context) {}}
-	c.Params = Params{Param{Key: "foo", Value: "bar"}}
+	c.Params = internal.Params{internal.Param{Key: "foo", Value: "bar"}}
 	c.Set("foo", "bar")
 
 	cp := c.Copy()

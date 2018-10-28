@@ -14,6 +14,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+
+	"github.com/gin-gonic/gin/internal"
 )
 
 type route struct {
@@ -316,9 +318,9 @@ func TestGithubAPI(t *testing.T) {
 	}
 }
 
-func exampleFromPath(path string) (string, Params) {
+func exampleFromPath(path string) (string, internal.Params) {
 	output := new(bytes.Buffer)
-	params := make(Params, 0, 6)
+	params := make(internal.Params, 0, 6)
 	start := -1
 	for i, c := range path {
 		if c == ':' {
@@ -327,7 +329,7 @@ func exampleFromPath(path string) (string, Params) {
 		if start >= 0 {
 			if c == '/' {
 				value := fmt.Sprint(rand.Intn(100000))
-				params = append(params, Param{
+				params = append(params, internal.Param{
 					Key:   path[start:i],
 					Value: value,
 				})
@@ -341,7 +343,7 @@ func exampleFromPath(path string) (string, Params) {
 	}
 	if start >= 0 {
 		value := fmt.Sprint(rand.Intn(100000))
-		params = append(params, Param{
+		params = append(params, internal.Param{
 			Key:   path[start:],
 			Value: value,
 		})
