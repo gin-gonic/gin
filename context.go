@@ -686,7 +686,7 @@ func (c *Context) GetRawData() ([]byte, error) {
 // SetCookie adds a Set-Cookie header to the ResponseWriter's headers.
 // The provided cookie must have a valid Name. Invalid cookies may be
 // silently dropped.
-func (c *Context) SetCookie(name, value string, maxAge int, path, domain string, secure, httpOnly bool, sameSite string) {
+func (c *Context) SetCookie(name, value string, maxAge int, path, domain string, sameSite string, secure, httpOnly bool) {
 	if path == "" {
 		path = "/"
 	}
@@ -696,9 +696,9 @@ func (c *Context) SetCookie(name, value string, maxAge int, path, domain string,
 		MaxAge:   maxAge,
 		Path:     path,
 		Domain:   domain,
+		SameSite: sameSite,
 		Secure:   secure,
 		HttpOnly: httpOnly,
-		SameSite: sameSite,
 	})
 }
 
