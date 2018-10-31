@@ -32,6 +32,7 @@ const (
 	MIMEPOSTForm          = binding.MIMEPOSTForm
 	MIMEMultipartPOSTForm = binding.MIMEMultipartPOSTForm
 	BodyBytesKey          = "_gin-gonic/gin/bodybyteskey"
+	MIMEYAML              = binding.MIMEYAML
 )
 
 const abortIndex int8 = math.MaxInt8 / 2
@@ -524,6 +525,11 @@ func (c *Context) BindQuery(obj interface{}) error {
 	return c.MustBindWith(obj, binding.Query)
 }
 
+// BindYAML is a shortcut for c.MustBindWith(obj, binding.YAML).
+func (c *Context) BindYAML(obj interface{}) error {
+	return c.MustBindWith(obj, binding.YAML)
+}
+
 // MustBindWith binds the passed struct pointer using the specified binding engine.
 // It will abort the request with HTTP 400 if any error ocurrs.
 // See the binding package.
@@ -561,6 +567,11 @@ func (c *Context) ShouldBindXML(obj interface{}) error {
 // ShouldBindQuery is a shortcut for c.ShouldBindWith(obj, binding.Query).
 func (c *Context) ShouldBindQuery(obj interface{}) error {
 	return c.ShouldBindWith(obj, binding.Query)
+}
+
+// ShouldBindYAML is a shortcut for c.ShouldBindWith(obj, binding.YAML).
+func (c *Context) ShouldBindYAML(obj interface{}) error {
+	return c.ShouldBindWith(obj, binding.YAML)
 }
 
 // ShouldBindWith binds the passed struct pointer using the specified binding engine.
