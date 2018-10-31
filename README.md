@@ -1160,7 +1160,7 @@ You may use custom delims
 ```go
 	r := gin.Default()
 	r.Delims("{[{", "}]}")
-	r.LoadHTMLGlob("/path/to/templates"))
+	r.LoadHTMLGlob("/path/to/templates")
 ```
 
 #### Custom Template Funcs
