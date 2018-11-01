@@ -824,12 +824,12 @@ form.html
 <form action="/" method="POST">
     <p>Check some colors</p>
     <label for="red">Red</label>
-    <input type="checkbox" name="colors[]" value="red" id="red" />
+    <input type="checkbox" name="colors[]" value="red" id="red">
     <label for="green">Green</label>
-    <input type="checkbox" name="colors[]" value="green" id="green" />
+    <input type="checkbox" name="colors[]" value="green" id="green">
     <label for="blue">Blue</label>
-    <input type="checkbox" name="colors[]" value="blue" id="blue" />
-    <input type="submit" />
+    <input type="checkbox" name="colors[]" value="blue" id="blue">
+    <input type="submit">
 </form>
 ```
 
