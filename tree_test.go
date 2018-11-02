@@ -172,19 +172,19 @@ func TestTreeWildcard(t *testing.T) {
 
 	checkRequests(t, tree, testRequests{
 		{"/", false, "/", nil},
-		{"/cmd/test/", false, "/cmd/:tool/", internal.Params{internal.Param{Key:"tool", Value:"test"}}},
-		{"/cmd/test", true, "", internal.Params{internal.Param{Key:"tool", Value:"test"}}},
-		{"/cmd/test/3", false, "/cmd/:tool/:sub", internal.Params{internal.Param{Key:"tool", Value:"test"}, internal.Param{Key:"sub", Value:"3"}}},
-		{"/src/", false, "/src/*filepath", internal.Params{internal.Param{Key:"filepath", Value:"/"}}},
-		{"/src/some/file.png", false, "/src/*filepath", internal.Params{internal.Param{Key:"filepath", Value:"/some/file.png"}}},
+		{"/cmd/test/", false, "/cmd/:tool/", internal.Params{internal.Param{Key: "tool", Value: "test"}}},
+		{"/cmd/test", true, "", internal.Params{internal.Param{Key: "tool", Value: "test"}}},
+		{"/cmd/test/3", false, "/cmd/:tool/:sub", internal.Params{internal.Param{Key: "tool", Value: "test"}, internal.Param{Key: "sub", Value: "3"}}},
+		{"/src/", false, "/src/*filepath", internal.Params{internal.Param{Key: "filepath", Value: "/"}}},
+		{"/src/some/file.png", false, "/src/*filepath", internal.Params{internal.Param{Key: "filepath", Value: "/some/file.png"}}},
 		{"/search/", false, "/search/", nil},
-		{"/search/someth!ng+in+ünìcodé", false, "/search/:query", internal.Params{internal.Param{Key:"query", Value:"someth!ng+in+ünìcodé"}}},
-		{"/search/someth!ng+in+ünìcodé/", true, "", internal.Params{internal.Param{Key:"query", Value:"someth!ng+in+ünìcodé"}}},
-		{"/user_gopher", false, "/user_:name", internal.Params{internal.Param{Key:"name", Value:"gopher"}}},
-		{"/user_gopher/about", false, "/user_:name/about", internal.Params{internal.Param{Key:"name", Value:"gopher"}}},
-		{"/files/js/inc/framework.js", false, "/files/:dir/*filepath", internal.Params{internal.Param{Key:"dir", Value:"js"}, internal.Param{Key:"filepath", Value:"/inc/framework.js"}}},
-		{"/info/gordon/public", false, "/info/:user/public", internal.Params{internal.Param{Key:"user", Value:"gordon"}}},
-		{"/info/gordon/project/go", false, "/info/:user/project/:project", internal.Params{internal.Param{Key:"user", Value:"gordon"}, internal.Param{Key:"project", Value:"go"}}},
+		{"/search/someth!ng+in+ünìcodé", false, "/search/:query", internal.Params{internal.Param{Key: "query", Value: "someth!ng+in+ünìcodé"}}},
+		{"/search/someth!ng+in+ünìcodé/", true, "", internal.Params{internal.Param{Key: "query", Value: "someth!ng+in+ünìcodé"}}},
+		{"/user_gopher", false, "/user_:name", internal.Params{internal.Param{Key: "name", Value: "gopher"}}},
+		{"/user_gopher/about", false, "/user_:name/about", internal.Params{internal.Param{Key: "name", Value: "gopher"}}},
+		{"/files/js/inc/framework.js", false, "/files/:dir/*filepath", internal.Params{internal.Param{Key: "dir", Value: "js"}, internal.Param{Key: "filepath", Value: "/inc/framework.js"}}},
+		{"/info/gordon/public", false, "/info/:user/public", internal.Params{internal.Param{Key: "user", Value: "gordon"}}},
+		{"/info/gordon/project/go", false, "/info/:user/project/:project", internal.Params{internal.Param{Key: "user", Value: "gordon"}, internal.Param{Key: "project", Value: "go"}}},
 	})
 
 	checkPriorities(t, tree)
@@ -211,18 +211,18 @@ func TestUnescapeParameters(t *testing.T) {
 	unescape := true
 	checkRequests(t, tree, testRequests{
 		{"/", false, "/", nil},
-		{"/cmd/test/", false, "/cmd/:tool/", internal.Params{internal.Param{Key:"tool", Value:"test"}}},
-		{"/cmd/test", true, "", internal.Params{internal.Param{Key:"tool", Value:"test"}}},
-		{"/src/some/file.png", false, "/src/*filepath", internal.Params{internal.Param{Key:"filepath", Value:"/some/file.png"}}},
-		{"/src/some/file+test.png", false, "/src/*filepath", internal.Params{internal.Param{Key:"filepath", Value:"/some/file test.png"}}},
-		{"/src/some/file++++%%%%test.png", false, "/src/*filepath", internal.Params{internal.Param{Key:"filepath", Value:"/some/file++++%%%%test.png"}}},
-		{"/src/some/file%2Ftest.png", false, "/src/*filepath", internal.Params{internal.Param{Key:"filepath", Value:"/some/file/test.png"}}},
-		{"/search/someth!ng+in+ünìcodé", false, "/search/:query", internal.Params{internal.Param{Key:"query", Value:"someth!ng in ünìcodé"}}},
-		{"/info/gordon/project/go", false, "/info/:user/project/:project", internal.Params{internal.Param{Key:"user", Value:"gordon"}, internal.Param{Key:"project", Value:"go"}}},
-		{"/info/slash%2Fgordon", false, "/info/:user", internal.Params{internal.Param{Key:"user", Value:"slash/gordon"}}},
-		{"/info/slash%2Fgordon/project/Project%20%231", false, "/info/:user/project/:project", internal.Params{internal.Param{Key:"user", Value:"slash/gordon"}, internal.Param{Key:"project", Value:"Project #1"}}},
-		{"/info/slash%%%%", false, "/info/:user", internal.Params{internal.Param{Key:"user", Value:"slash%%%%"}}},
-		{"/info/slash%%%%2Fgordon/project/Project%%%%20%231", false, "/info/:user/project/:project", internal.Params{internal.Param{Key:"user", Value:"slash%%%%2Fgordon"}, internal.Param{Key:"project", Value:"Project%%%%20%231"}}},
+		{"/cmd/test/", false, "/cmd/:tool/", internal.Params{internal.Param{Key: "tool", Value: "test"}}},
+		{"/cmd/test", true, "", internal.Params{internal.Param{Key: "tool", Value: "test"}}},
+		{"/src/some/file.png", false, "/src/*filepath", internal.Params{internal.Param{Key: "filepath", Value: "/some/file.png"}}},
+		{"/src/some/file+test.png", false, "/src/*filepath", internal.Params{internal.Param{Key: "filepath", Value: "/some/file test.png"}}},
+		{"/src/some/file++++%%%%test.png", false, "/src/*filepath", internal.Params{internal.Param{Key: "filepath", Value: "/some/file++++%%%%test.png"}}},
+		{"/src/some/file%2Ftest.png", false, "/src/*filepath", internal.Params{internal.Param{Key: "filepath", Value: "/some/file/test.png"}}},
+		{"/search/someth!ng+in+ünìcodé", false, "/search/:query", internal.Params{internal.Param{Key: "query", Value: "someth!ng in ünìcodé"}}},
+		{"/info/gordon/project/go", false, "/info/:user/project/:project", internal.Params{internal.Param{Key: "user", Value: "gordon"}, internal.Param{Key: "project", Value: "go"}}},
+		{"/info/slash%2Fgordon", false, "/info/:user", internal.Params{internal.Param{Key: "user", Value: "slash/gordon"}}},
+		{"/info/slash%2Fgordon/project/Project%20%231", false, "/info/:user/project/:project", internal.Params{internal.Param{Key: "user", Value: "slash/gordon"}, internal.Param{Key: "project", Value: "Project #1"}}},
+		{"/info/slash%%%%", false, "/info/:user", internal.Params{internal.Param{Key: "user", Value: "slash%%%%"}}},
+		{"/info/slash%%%%2Fgordon/project/Project%%%%20%231", false, "/info/:user/project/:project", internal.Params{internal.Param{Key: "user", Value: "slash%%%%2Fgordon"}, internal.Param{Key: "project", Value: "Project%%%%20%231"}}},
 	}, unescape)
 
 	checkPriorities(t, tree)
@@ -328,9 +328,9 @@ func TestTreeDupliatePath(t *testing.T) {
 	checkRequests(t, tree, testRequests{
 		{"/", false, "/", nil},
 		{"/doc/", false, "/doc/", nil},
-		{"/src/some/file.png", false, "/src/*filepath", internal.Params{internal.Param{Key:"filepath", Value:"/some/file.png"}}},
-		{"/search/someth!ng+in+ünìcodé", false, "/search/:query", internal.Params{internal.Param{Key:"query", Value:"someth!ng+in+ünìcodé"}}},
-		{"/user_gopher", false, "/user_:name", internal.Params{internal.Param{Key:"name", Value:"gopher"}}},
+		{"/src/some/file.png", false, "/src/*filepath", internal.Params{internal.Param{Key: "filepath", Value: "/some/file.png"}}},
+		{"/search/someth!ng+in+ünìcodé", false, "/search/:query", internal.Params{internal.Param{Key: "query", Value: "someth!ng+in+ünìcodé"}}},
+		{"/user_gopher", false, "/user_:name", internal.Params{internal.Param{Key: "name", Value: "gopher"}}},
 	})
 }
 
