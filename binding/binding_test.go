@@ -646,7 +646,7 @@ func TestExistsFails(t *testing.T) {
 	assert.Error(t, err)
 }
 
-func testUriBinding(t *testing.T, method, path, badPath, body, badBody string) {
+func TestUriBinding(t *testing.T, method, path, badPath, body, badBody string) {
 	b := Uri
 	assert.Equal(t, "uri", b.Name())
 
