@@ -14,6 +14,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/gin-gonic/gin/internal"
 	"github.com/gin-gonic/gin/testdata/protoexample"
 	"github.com/golang/protobuf/proto"
 	"github.com/stretchr/testify/assert"
@@ -643,6 +644,19 @@ func TestExistsFails(t *testing.T) {
 	req := requestWithBody("POST", "/", `{"boen": 0}`)
 	err := JSON.Bind(req, &obj)
 	assert.Error(t, err)
+}
+
+func testUriBinding(t *testing.T, method, path, badPath, body, badBody string) {
+	b := Uri
+	assert.Equal(t, "uri", b.Name())
+
+	type Tag struct {
+		Name string `uri:"name"`
+	}
+	var tag Tag
+	params := internal.Params{internal.Param{Key: "name", Value: "thinkerou"}}
+	assert.Nil(t, b.BindUri(params, &tag))
+	assert.Equal(t, "thinkerou", tag.Name)
 }
 
 func testFormBinding(t *testing.T, method, path, badPath, body, badBody string) {

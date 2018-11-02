@@ -15,10 +15,19 @@ import (
 )
 
 func mapUri(ptr interface{}, ps internal.Params) error {
-	return nil
+	var m map[string][]string
+	m = make(map[string][]string)
+	for _, v := range ps {
+		m[v.Key] = []string{v.Value}
+	}
+	return mapFormByTag(ptr, m, "uri")
 }
 
 func mapForm(ptr interface{}, form map[string][]string) error {
+	return mapFormByTag(ptr, form, "form")
+}
+
+func mapFormByTag(ptr interface{}, form map[string][]string, tag string) error {
 	typ := reflect.TypeOf(ptr).Elem()
 	val := reflect.ValueOf(ptr).Elem()
 	for i := 0; i < typ.NumField(); i++ {
@@ -29,7 +38,7 @@ func mapForm(ptr interface{}, form map[string][]string) error {
 		}
 
 		structFieldKind := structField.Kind()
-		inputFieldName := typeField.Tag.Get("form")
+		inputFieldName := typeField.Tag.Get(tag)
 		inputFieldNameList := strings.Split(inputFieldName, ",")
 		inputFieldName = inputFieldNameList[0]
 		var defaultValue string
