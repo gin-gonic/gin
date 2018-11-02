@@ -1229,3 +1229,12 @@ func requestWithBody(method, path, body string) (req *http.Request) {
 	req, _ = http.NewRequest(method, path, bytes.NewBufferString(body))
 	return
 }
+
+func TestCanSet(t *testing.T) {
+	type CanSetStruct struct {
+		lowerStart string `form:"lower"`
+	}
+
+	var c CanSetStruct
+	assert.Nil(t, mapForm(&c, nil))
+}
