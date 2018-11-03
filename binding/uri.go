@@ -4,16 +4,14 @@
 
 package binding
 
-import "github.com/gin-gonic/gin/internal"
-
 type uriBinding struct{}
 
 func (uriBinding) Name() string {
 	return "uri"
 }
 
-func (uriBinding) BindUri(p internal.Params, obj interface{}) error {
-	if err := mapUri(obj, p); err != nil {
+func (uriBinding) BindUri(m map[string][]string, obj interface{}) error {
+	if err := mapUri(obj, m); err != nil {
 		return err
 	}
 	return validate(obj)

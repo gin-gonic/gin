@@ -10,15 +10,9 @@ import (
 	"strconv"
 	"strings"
 	"time"
-
-	"github.com/gin-gonic/gin/internal"
 )
 
-func mapUri(ptr interface{}, ps internal.Params) error {
-	m := make(map[string][]string)
-	for _, v := range ps {
-		m[v.Key] = []string{v.Value}
-	}
+func mapUri(ptr interface{}, m map[string][]string) error {
 	return mapFormByTag(ptr, m, "uri")
 }
 

@@ -4,11 +4,7 @@
 
 package binding
 
-import (
-	"net/http"
-
-	"github.com/gin-gonic/gin/internal"
-)
+import "net/http"
 
 // Content-Type MIME of the most common data formats.
 const (
@@ -43,7 +39,7 @@ type BindingBody interface {
 // but it read the Params.
 type BindingUri interface {
 	Name() string
-	BindUri(internal.Params, interface{}) error
+	BindUri(map[string][]string, interface{}) error
 }
 
 // StructValidator is the minimal interface which needs to be implemented in

@@ -19,7 +19,6 @@ import (
 
 	"github.com/gin-contrib/sse"
 	"github.com/gin-gonic/gin/binding"
-	"github.com/gin-gonic/gin/internal"
 	"github.com/gin-gonic/gin/render"
 )
 
@@ -44,7 +43,7 @@ type Context struct {
 	Request   *http.Request
 	Writer    ResponseWriter
 
-	Params   internal.Params
+	Params   Params
 	handlers HandlersChain
 	index    int8
 
@@ -566,7 +565,11 @@ func (c *Context) ShouldBindQuery(obj interface{}) error {
 
 // ShouldBindUri binds the passed struct pointer using the specified binding engine.
 func (c *Context) ShouldBindUri(obj interface{}) error {
-	return binding.Uri.BindUri(c.Params, obj)
+	m := make(map[string][]string)
+	for _, v := range c.Params {
+		m[v.Key] = []string{v.Value}
+	}
+	return binding.Uri.BindUri(m, obj)
 }
 
 // ShouldBindWith binds the passed struct pointer using the specified binding engine.

@@ -14,7 +14,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/gin-gonic/gin/internal"
 	"github.com/gin-gonic/gin/testdata/protoexample"
 	"github.com/golang/protobuf/proto"
 	"github.com/stretchr/testify/assert"
@@ -654,8 +653,9 @@ func TestUriBinding(t *testing.T) {
 		Name string `uri:"name"`
 	}
 	var tag Tag
-	params := internal.Params{internal.Param{Key: "name", Value: "thinkerou"}}
-	assert.NoError(t, b.BindUri(params, &tag))
+	m := make(map[string][]string)
+	m["name"] = []string{"thinkerou"}
+	assert.NoError(t, b.BindUri(m, &tag))
 	assert.Equal(t, "thinkerou", tag.Name)
 }
 
