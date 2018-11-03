@@ -655,7 +655,7 @@ func TestUriBinding(t *testing.T) {
 	}
 	var tag Tag
 	params := internal.Params{internal.Param{Key: "name", Value: "thinkerou"}}
-	assert.Nil(t, b.BindUri(params, &tag))
+	assert.NoError(t, b.BindUri(params, &tag))
 	assert.Equal(t, "thinkerou", tag.Name)
 }
 

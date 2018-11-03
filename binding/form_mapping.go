@@ -15,8 +15,7 @@ import (
 )
 
 func mapUri(ptr interface{}, ps internal.Params) error {
-	var m map[string][]string
-	m = make(map[string][]string)
+	m := make(map[string][]string)
 	for _, v := range ps {
 		m[v.Key] = []string{v.Value}
 	}
