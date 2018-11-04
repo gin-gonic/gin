@@ -8,6 +8,8 @@ import (
 	"bytes"
 	"io"
 	"net/http"
+
+	"gopkg.in/yaml.v2"
 )
 
 type yamlBinding struct{}
