@@ -4,9 +4,9 @@
 
 The middleware has two parts:
 
-  - part one is what is executed once, when you initalize your middleware. That's where you set up all the global objects, logicals etc. Everything that happens one per application lifetime.
+  - part one is what is executed once, when you initialize your middleware. That's where you set up all the global objects, logicals etc. Everything that happens one per application lifetime.
 
-  - part two is what executes on every request. For example, a database middleware you simply inject your "global" database object into the context. Once it's inside the context, you can retrieve it from within other middlewares and your handler furnction.
+  - part two is what executes on every request. For example, a database middleware you simply inject your "global" database object into the context. Once it's inside the context, you can retrieve it from within other middlewares and your handler function.
 
 ```go
 func funcName(params string) gin.HandlerFunc {
