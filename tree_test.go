@@ -12,7 +12,7 @@ import (
 	"testing"
 )
 
-// Used as a workaround since we can't compare functions or their addressses
+// Used as a workaround since we can't compare functions or their addresses
 var fakeHandlerValue string
 
 func fakeHandler(val string) HandlersChain {

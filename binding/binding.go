@@ -37,7 +37,7 @@ type BindingBody interface {
 
 // StructValidator is the minimal interface which needs to be implemented in
 // order for it to be used as the validator engine for ensuring the correctness
-// of the reqest. Gin provides a default implementation for this using
+// of the request. Gin provides a default implementation for this using
 // https://github.com/go-playground/validator/tree/v8.18.2.
 type StructValidator interface {
 	// ValidateStruct can receive any kind of type and it should never panic, even if the configuration is not right.
