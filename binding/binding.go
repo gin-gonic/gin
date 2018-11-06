@@ -18,6 +18,7 @@ const (
 	MIMEPROTOBUF          = "application/x-protobuf"
 	MIMEMSGPACK           = "application/x-msgpack"
 	MIMEMSGPACK2          = "application/msgpack"
+	MIMEYAML              = "application/x-yaml"
 )
 
 // Binding describes the interface which needs to be implemented for binding the
@@ -68,6 +69,7 @@ var (
 	FormMultipart = formMultipartBinding{}
 	ProtoBuf      = protobufBinding{}
 	MsgPack       = msgpackBinding{}
+	YAML          = yamlBinding{}
 )
 
 // Default returns the appropriate Binding instance based on the HTTP method
@@ -86,6 +88,8 @@ func Default(method, contentType string) Binding {
 		return ProtoBuf
 	case MIMEMSGPACK, MIMEMSGPACK2:
 		return MsgPack
+	case MIMEYAML:
+		return YAML
 	default: //case MIMEPOSTForm, MIMEMultipartPOSTForm:
 		return Form
 	}
