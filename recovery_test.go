@@ -2,11 +2,16 @@
 // Use of this source code is governed by a MIT style
 // license that can be found in the LICENSE file.
 
+// +build go1.7
+
 package gin
 
 import (
 	"bytes"
+	"net"
 	"net/http"
+	"os"
+	"syscall"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -71,4 +76,39 @@ func TestSource(t *testing.T) {
 func TestFunction(t *testing.T) {
 	bs := function(1)
 	assert.Equal(t, []byte("???"), bs)
+}
+
+// TestPanicWithBrokenPipe asserts that recovery specifically handles
+// writing responses to broken pipes
+func TestPanicWithBrokenPipe(t *testing.T) {
+	const expectCode = 204
+
+	expectMsgs := map[syscall.Errno]string{
+		syscall.EPIPE:      "broken pipe",
+		syscall.ECONNRESET: "connection reset",
+	}
+
+	for errno, expectMsg := range expectMsgs {
+		t.Run(expectMsg, func(t *testing.T) {
+
+			var buf bytes.Buffer
+
+			router := New()
+			router.Use(RecoveryWithWriter(&buf))
+			router.GET("/recovery", func(c *Context) {
+				// Start writing response
+				c.Header("X-Test", "Value")
+				c.Status(expectCode)
+
+				// Oops. Client connection closed
+				e := &net.OpError{Err: &os.SyscallError{Err: errno}}
+				panic(e)
+			})
+			// RUN
+			w := performRequest(router, "GET", "/recovery")
+			// TEST
+			assert.Equal(t, expectCode, w.Code)
+			assert.Contains(t, buf.String(), expectMsg)
+		})
+	}
 }
