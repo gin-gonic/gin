@@ -190,6 +190,9 @@ func TestBindingDefault(t *testing.T) {
 
 	assert.Equal(t, MsgPack, Default("POST", MIMEMSGPACK))
 	assert.Equal(t, MsgPack, Default("PUT", MIMEMSGPACK2))
+
+	assert.Equal(t, YAML, Default("POST", MIMEYAML))
+	assert.Equal(t, YAML, Default("PUT", MIMEYAML))
 }
 
 func TestBindingJSON(t *testing.T) {
@@ -471,6 +474,20 @@ func TestBindingXMLFail(t *testing.T) {
 		XML, "xml",
 		"/", "/",
 		"<map><foo>bar<foo></map>", "<map><bar>foo</bar></map>")
+}
+
+func TestBindingYAML(t *testing.T) {
+	testBodyBinding(t,
+		YAML, "yaml",
+		"/", "/",
+		`foo: bar`, `bar: foo`)
+}
+
+func TestBindingYAMLFail(t *testing.T) {
+	testBodyBindingFail(t,
+		YAML, "yaml",
+		"/", "/",
+		`foo:\nbar`, `bar: foo`)
 }
 
 func createFormPostRequest() *http.Request {
