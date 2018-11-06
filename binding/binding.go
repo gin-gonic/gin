@@ -18,6 +18,7 @@ const (
 	MIMEPROTOBUF          = "application/x-protobuf"
 	MIMEMSGPACK           = "application/x-msgpack"
 	MIMEMSGPACK2          = "application/msgpack"
+	MIMEYAML              = "application/x-yaml"
 )
 
 // Binding describes the interface which needs to be implemented for binding the
@@ -37,7 +38,7 @@ type BindingBody interface {
 
 // StructValidator is the minimal interface which needs to be implemented in
 // order for it to be used as the validator engine for ensuring the correctness
-// of the reqest. Gin provides a default implementation for this using
+// of the request. Gin provides a default implementation for this using
 // https://github.com/go-playground/validator/tree/v8.18.2.
 type StructValidator interface {
 	// ValidateStruct can receive any kind of type and it should never panic, even if the configuration is not right.
@@ -68,6 +69,7 @@ var (
 	FormMultipart = formMultipartBinding{}
 	ProtoBuf      = protobufBinding{}
 	MsgPack       = msgpackBinding{}
+	YAML          = yamlBinding{}
 )
 
 // Default returns the appropriate Binding instance based on the HTTP method
@@ -86,6 +88,8 @@ func Default(method, contentType string) Binding {
 		return ProtoBuf
 	case MIMEMSGPACK, MIMEMSGPACK2:
 		return MsgPack
+	case MIMEYAML:
+		return YAML
 	default: //case MIMEPOSTForm, MIMEMultipartPOSTForm:
 		return Form
 	}
