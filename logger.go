@@ -53,7 +53,7 @@ func Logger() HandlerFunc {
 	return LoggerWithWriter(DefaultWriter)
 }
 
-// LoggerWithWriter instance a Logger middleware with the specified writter buffer.
+// LoggerWithWriter instance a Logger middleware with the specified writer buffer.
 // Example: os.Stdout, a file opened in write mode, a socket...
 func LoggerWithWriter(out io.Writer, notlogged ...string) HandlerFunc {
 	isTerm := true
