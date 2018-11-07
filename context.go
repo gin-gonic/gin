@@ -787,6 +787,12 @@ func (c *Context) AsciiJSON(code int, obj interface{}) {
 	c.Render(code, render.AsciiJSON{Data: obj})
 }
 
+// PureJSON serializes the given struct as JSON into the response body.
+// PureJSON, unlike JSON, does not replace special html characters with their unicode entities.
+func (c *Context) PureJSON(code int, obj interface{}) {
+	c.Render(code, render.PureJSON{Data: obj})
+}
+
 // XML serializes the given struct as XML into the response body.
 // It also sets the Content-Type as "application/xml".
 func (c *Context) XML(code int, obj interface{}) {
