@@ -438,13 +438,7 @@ func (c *Context) PostFormMap(key string) map[string]string {
 func (c *Context) GetPostFormMap(key string) (map[string]string, bool) {
 	req := c.Request
 	req.ParseMultipartForm(c.engine.MaxMultipartMemory)
-	dicts, exist := c.get(req.PostForm, key)
-
-	if !exist && req.MultipartForm != nil && req.MultipartForm.File != nil {
-		dicts, exist = c.get(req.MultipartForm.Value, key)
-	}
-
-	return dicts, exist
+	return c.get(req.PostForm, key)
 }
 
 // get is an internal method and returns a map which satisfy conditions.
