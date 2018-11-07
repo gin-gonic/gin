@@ -601,8 +601,7 @@ func TestContextGetCookie(t *testing.T) {
 }
 
 func TestContextBodyAllowedForStatus(t *testing.T) {
-	// todo(thinkerou): go1.6 not support StatusProcessing
-	assert.False(t, false, bodyAllowedForStatus(102))
+	assert.False(t, false, bodyAllowedForStatus(http.StatusProcessing))
 	assert.False(t, false, bodyAllowedForStatus(http.StatusNoContent))
 	assert.False(t, false, bodyAllowedForStatus(http.StatusNotModified))
 	assert.True(t, true, bodyAllowedForStatus(http.StatusInternalServerError))
@@ -1070,9 +1069,7 @@ func TestContextRenderRedirectAll(t *testing.T) {
 	assert.Panics(t, func() { c.Redirect(299, "/resource") })
 	assert.Panics(t, func() { c.Redirect(309, "/resource") })
 	assert.NotPanics(t, func() { c.Redirect(http.StatusMultipleChoices, "/resource") })
-	// todo(thinkerou): go1.6 not support StatusPermanentRedirect(308)
-	// when we upgrade go version we can use http.StatusPermanentRedirect
-	assert.NotPanics(t, func() { c.Redirect(308, "/resource") })
+	assert.NotPanics(t, func() { c.Redirect(http.StatusPermanentRedirect, "/resource") })
 }
 
 func TestContextNegotiationWithJSON(t *testing.T) {
