@@ -195,6 +195,13 @@ func TestBindingDefault(t *testing.T) {
 	assert.Equal(t, YAML, Default("PUT", MIMEYAML))
 }
 
+func TestBindingJSONNilBody(t *testing.T) {
+	var obj FooStruct
+	req, _ := http.NewRequest(http.MethodPost, "/", nil)
+	err := JSON.Bind(req, &obj)
+	assert.Error(t, err)
+}
+
 func TestBindingJSON(t *testing.T) {
 	testBodyBinding(t,
 		JSON, "json",
