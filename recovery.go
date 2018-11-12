@@ -45,7 +45,7 @@ func RecoveryWithWriter(out io.Writer) HandlerFunc {
 				var brokenPipe bool
 				if ne, ok := err.(*net.OpError); ok {
 					if se, ok := ne.Err.(*os.SyscallError); ok {
-						if strings.Contains(se.Error(), "broken pipe") || strings.Contains(se.Error(), "connection reset") {
+						if strings.Contains(strings.ToLower(se.Error()), "broken pipe") || strings.Contains(strings.ToLower(se.Error()), "connection reset") {
 							brokenPipe = true
 						}
 					}
