@@ -10,6 +10,8 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"path"
+	"strings"
 	"sync"
 
 	"github.com/gin-gonic/gin/render"
@@ -361,7 +363,7 @@ func (engine *Engine) HandleContext(c *Context) {
 
 func (engine *Engine) handleHTTPRequest(c *Context) {
 	httpMethod := c.Request.Method
-	path := c.Request.URL.Path
+	path := cleanPath(c.Request.URL.Path)
 	unescape := false
 	if engine.UseRawPath && len(c.Request.URL.RawPath) > 0 {
 		path = c.Request.URL.RawPath
@@ -462,4 +464,26 @@ func redirectFixedPath(c *Context, root *node, trailingSlash bool) bool {
 		return true
 	}
 	return false
+}
+
+// cleanPath returns the canonical path for p, eliminating . and .. elements.
+func cleanPath(p string) string {
+	if p == "" {
+		return "/"
+	}
+	if p[0] != '/' {
+		p = "/" + p
+	}
+	np := path.Clean(p)
+	// path.Clean removes trailing slash except for root;
+	// put the trailing slash back if necessary.
+	if p[len(p)-1] == '/' && np != "/" {
+		// Fast path for common case of p being the string we want:
+		if len(p) == len(np)+1 && strings.HasPrefix(p, np) {
+			np = p
+		} else {
+			np += "/"
+		}
+	}
+	return np
 }
