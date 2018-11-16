@@ -11,6 +11,8 @@ go:
 
 matrix:
   fast_finish: true
+  allow_failures:
+  - go: master
   include:
   - go: 1.11.x
     env: GO111MODULE=on
