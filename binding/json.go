@@ -17,6 +17,10 @@ import (
 // interface{} as a Number instead of as a float64.
 var EnableDecoderUseNumber = false
 
+// EnableDecoderKnownFieldsOnly is used to toggle DisallowUnknownFields
+// which is disabled by default
+var EnableDecoderKnownFieldsOnly = false
+
 type jsonBinding struct{}
 
 func (jsonBinding) Name() string {
@@ -35,6 +39,9 @@ func decodeJSON(r io.Reader, obj interface{}) error {
 	decoder := json.NewDecoder(r)
 	if EnableDecoderUseNumber {
 		decoder.UseNumber()
+	}
+	if EnableDecoderKnownFieldsOnly {
+		decoder.DisallowUnknownFields()
 	}
 	if err := decoder.Decode(obj); err != nil {
 		return err
