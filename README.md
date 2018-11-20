@@ -1545,8 +1545,6 @@ If you are using Go 1.8, you may not need to use this library! Consider using ht
 
 [embedmd]:# (examples/graceful-shutdown/graceful-shutdown/server.go go)
 ```go
-// +build go1.8
-
 package main
 
 import (
