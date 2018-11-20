@@ -67,7 +67,10 @@ func WriteJSON(w http.ResponseWriter, obj interface{}) error {
 	if err != nil {
 		return err
 	}
-	w.Write(jsonBytes)
+	_, err = w.Write(jsonBytes)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
