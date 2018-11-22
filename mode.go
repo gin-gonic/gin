@@ -17,7 +17,7 @@ const ENV_GIN_MODE = "GIN_MODE"
 const (
 	// DebugMode indicates gin mode is debug.
 	DebugMode = "debug"
-	// ReleaseMode indicates gin mode is relase.
+	// ReleaseMode indicates gin mode is release.
 	ReleaseMode = "release"
 	// TestMode indicates gin mode is test.
 	TestMode = "test"
