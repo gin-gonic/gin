@@ -84,8 +84,8 @@ func TestPanicWithBrokenPipe(t *testing.T) {
 	const expectCode = 204
 
 	expectMsgs := map[syscall.Errno]string{
-		syscall.EPIPE:      "broken pipe",
-		syscall.ECONNRESET: "connection reset",
+		syscall.EPIPE:      "Broken pipe",
+		syscall.ECONNRESET: "connection reset by peer",
 	}
 
 	for errno, expectMsg := range expectMsgs {
