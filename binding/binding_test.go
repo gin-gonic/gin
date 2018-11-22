@@ -662,6 +662,27 @@ func TestExistsFails(t *testing.T) {
 	assert.Error(t, err)
 }
 
+func TestUriBinding(t *testing.T) {
+	b := Uri
+	assert.Equal(t, "uri", b.Name())
+
+	type Tag struct {
+		Name string `uri:"name"`
+	}
+	var tag Tag
+	m := make(map[string][]string)
+	m["name"] = []string{"thinkerou"}
+	assert.NoError(t, b.BindUri(m, &tag))
+	assert.Equal(t, "thinkerou", tag.Name)
+
+	type NotSupportStruct struct {
+		Name map[string]interface{} `uri:"name"`
+	}
+	var not NotSupportStruct
+	assert.Error(t, b.BindUri(m, &not))
+	assert.Equal(t, "", not.Name)
+}
+
 func testFormBinding(t *testing.T, method, path, badPath, body, badBody string) {
 	b := Form
 	assert.Equal(t, "form", b.Name())
@@ -1231,4 +1252,13 @@ func testMsgPackBodyBinding(t *testing.T, b Binding, name, path, badPath, body, 
 func requestWithBody(method, path, body string) (req *http.Request) {
 	req, _ = http.NewRequest(method, path, bytes.NewBufferString(body))
 	return
+}
+
+func TestCanSet(t *testing.T) {
+	type CanSetStruct struct {
+		lowerStart string `form:"lower"`
+	}
+
+	var c CanSetStruct
+	assert.Nil(t, mapForm(&c, nil))
 }
