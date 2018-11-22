@@ -6,6 +6,7 @@ package gin
 
 import (
 	"bufio"
+	"crypto/tls"
 	"fmt"
 	"io/ioutil"
 	"net"
@@ -20,7 +21,14 @@ import (
 )
 
 func testRequest(t *testing.T, url string) {
-	resp, err := http.Get(url)
+	tr := &http.Transport{
+		TLSClientConfig: &tls.Config{
+			InsecureSkipVerify: true,
+		},
+	}
+	client := &http.Client{Transport: tr}
+
+	resp, err := client.Get(url)
 	assert.NoError(t, err)
 	defer resp.Body.Close()
 
@@ -43,6 +51,22 @@ func TestRunEmpty(t *testing.T) {
 
 	assert.Error(t, router.Run(":8080"))
 	testRequest(t, "http://localhost:8080/example")
+}
+
+func TestRunTLS(t *testing.T) {
+	router := New()
+	go func() {
+		router.GET("/example", func(c *Context) { c.String(http.StatusOK, "it worked") })
+
+		assert.NoError(t, router.RunTLS(":8443", "./testdata/certificate/cert.pem", "./testdata/certificate/key.pem"))
+	}()
+
+	// have to wait for the goroutine to start and run the server
+	// otherwise the main thread will complete
+	time.Sleep(5 * time.Millisecond)
+
+	assert.Error(t, router.RunTLS(":8443", "./testdata/certificate/cert.pem", "./testdata/certificate/key.pem"))
+	testRequest(t, "https://localhost:8443/example")
 }
 
 func TestRunEmptyWithEnv(t *testing.T) {
@@ -108,6 +132,42 @@ func TestUnixSocket(t *testing.T) {
 func TestBadUnixSocket(t *testing.T) {
 	router := New()
 	assert.Error(t, router.RunUnix("#/tmp/unix_unit_test"))
+}
+
+func TestFileDescriptor(t *testing.T) {
+	router := New()
+
+	addr, err := net.ResolveTCPAddr("tcp", ":8000")
+	assert.NoError(t, err)
+	listener, err := net.ListenTCP("tcp", addr)
+	assert.NoError(t, err)
+	socketFile, err := listener.File()
+	assert.NoError(t, err)
+
+	go func() {
+		router.GET("/example", func(c *Context) { c.String(http.StatusOK, "it worked") })
+		assert.NoError(t, router.RunFd(int(socketFile.Fd())))
+	}()
+	// have to wait for the goroutine to start and run the server
+	// otherwise the main thread will complete
+	time.Sleep(5 * time.Millisecond)
+
+	c, err := net.Dial("tcp", "localhost:8000")
+	assert.NoError(t, err)
+
+	fmt.Fprintf(c, "GET /example HTTP/1.0\r\n\r\n")
+	scanner := bufio.NewScanner(c)
+	var response string
+	for scanner.Scan() {
+		response += scanner.Text()
+	}
+	assert.Contains(t, response, "HTTP/1.0 200", "should get a 200")
+	assert.Contains(t, response, "it worked", "resp body should match")
+}
+
+func TestBadFileDescriptor(t *testing.T) {
+	router := New()
+	assert.Error(t, router.RunFd(0))
 }
 
 func TestWithHttptestWithAutoSelectedPort(t *testing.T) {

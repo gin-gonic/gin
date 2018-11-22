@@ -285,6 +285,27 @@ var githubAPI = []route{
 	{"DELETE", "/user/keys/:id"},
 }
 
+func TestShouldBindUri(t *testing.T) {
+	DefaultWriter = os.Stdout
+	router := Default()
+
+	type Person struct {
+		Name string `uri:"name"`
+		Id   string `uri:"id"`
+	}
+	router.Handle("GET", "/rest/:name/:id", func(c *Context) {
+		var person Person
+		assert.NoError(t, c.ShouldBindUri(&person))
+		assert.True(t, "" != person.Name)
+		assert.True(t, "" != person.Id)
+		c.String(http.StatusOK, "ShouldBindUri test OK")
+	})
+
+	path, _ := exampleFromPath("/rest/:name/:id")
+	w := performRequest(router, "GET", path)
+	assert.Equal(t, "ShouldBindUri test OK", w.Body.String())
+}
+
 func githubConfigRouter(router *Engine) {
 	for _, route := range githubAPI {
 		router.Handle(route.method, route.path, func(c *Context) {
