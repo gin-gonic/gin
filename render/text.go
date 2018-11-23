@@ -10,6 +10,7 @@ import (
 	"net/http"
 )
 
+// String contains the given interface object slice and its format.
 type String struct {
 	Format string
 	Data   []interface{}
@@ -17,20 +18,23 @@ type String struct {
 
 var plainContentType = []string{"text/plain; charset=utf-8"}
 
+// Render (String) writes data with custom ContentType.
 func (r String) Render(w http.ResponseWriter) error {
 	WriteString(w, r.Format, r.Data)
 	return nil
 }
 
+// WriteContentType (String) writes Plain ContentType.
 func (r String) WriteContentType(w http.ResponseWriter) {
 	writeContentType(w, plainContentType)
 }
 
+// WriteString writes data according to its format and write custom ContentType.
 func WriteString(w http.ResponseWriter, format string, data []interface{}) {
 	writeContentType(w, plainContentType)
 	if len(data) > 0 {
 		fmt.Fprintf(w, format, data...)
-	} else {
-		io.WriteString(w, format)
+		return
 	}
+	io.WriteString(w, format)
 }

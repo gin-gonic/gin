@@ -11,11 +11,13 @@ import (
 	"strings"
 )
 
+// IRouter defines all router handle interface includes single and group router.
 type IRouter interface {
 	IRoutes
 	Group(string, ...HandlerFunc) *RouterGroup
 }
 
+// IRoutes defines all router handle interface.
 type IRoutes interface {
 	Use(...HandlerFunc) IRoutes
 
@@ -34,8 +36,8 @@ type IRoutes interface {
 	StaticFS(string, http.FileSystem) IRoutes
 }
 
-// RouterGroup is used internally to configure router, a RouterGroup is associated with a prefix
-// and an array of handlers (middleware).
+// RouterGroup is used internally to configure router, a RouterGroup is associated with
+// a prefix and an array of handlers (middleware).
 type RouterGroup struct {
 	Handlers HandlersChain
 	basePath string
@@ -51,8 +53,8 @@ func (group *RouterGroup) Use(middleware ...HandlerFunc) IRoutes {
 	return group.returnObj()
 }
 
-// Group creates a new router group. You should add all the routes that have common middlwares or the same path prefix.
-// For example, all the routes that use a common middlware for authorization could be grouped.
+// Group creates a new router group. You should add all the routes that have common middlewares or the same path prefix.
+// For example, all the routes that use a common middleware for authorization could be grouped.
 func (group *RouterGroup) Group(relativePath string, handlers ...HandlerFunc) *RouterGroup {
 	return &RouterGroup{
 		Handlers: group.combineHandlers(handlers),
@@ -61,6 +63,8 @@ func (group *RouterGroup) Group(relativePath string, handlers ...HandlerFunc) *R
 	}
 }
 
+// BasePath returns the base path of router group.
+// For example, if v := router.Group("/rest/n/v1/api"), v.BasePath() is "/rest/n/v1/api".
 func (group *RouterGroup) BasePath() string {
 	return group.basePath
 }
@@ -184,7 +188,7 @@ func (group *RouterGroup) createStaticHandler(relativePath string, fs http.FileS
 	_, nolisting := fs.(*onlyfilesFS)
 	return func(c *Context) {
 		if nolisting {
-			c.Writer.WriteHeader(404)
+			c.Writer.WriteHeader(http.StatusNotFound)
 		}
 		fileServer.ServeHTTP(c.Writer, c.Request)
 	}

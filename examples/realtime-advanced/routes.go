@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"html"
 	"io"
+	"net/http"
 	"strings"
 	"time"
 
@@ -21,12 +22,12 @@ func rateLimit(c *gin.Context) {
 			fmt.Println("ip blocked")
 		}
 		c.Abort()
-		c.String(503, "you were automatically banned :)")
+		c.String(http.StatusServiceUnavailable, "you were automatically banned :)")
 	}
 }
 
 func index(c *gin.Context) {
-	c.Redirect(301, "/room/hn")
+	c.Redirect(http.StatusMovedPermanently, "/room/hn")
 }
 
 func roomGET(c *gin.Context) {
@@ -38,7 +39,7 @@ func roomGET(c *gin.Context) {
 	if len(nick) > 13 {
 		nick = nick[0:12] + "..."
 	}
-	c.HTML(200, "room_login.templ.html", gin.H{
+	c.HTML(http.StatusOK, "room_login.templ.html", gin.H{
 		"roomid":    roomid,
 		"nick":      nick,
 		"timestamp": time.Now().Unix(),
@@ -55,7 +56,7 @@ func roomPOST(c *gin.Context) {
 	validMessage := len(message) > 1 && len(message) < 200
 	validNick := len(nick) > 1 && len(nick) < 14
 	if !validMessage || !validNick {
-		c.JSON(400, gin.H{
+		c.JSON(http.StatusBadRequest, gin.H{
 			"status": "failed",
 			"error":  "the message or nickname is too long",
 		})
@@ -68,7 +69,7 @@ func roomPOST(c *gin.Context) {
 	}
 	messages.Add("inbound", 1)
 	room(roomid).Submit(post)
-	c.JSON(200, post)
+	c.JSON(http.StatusOK, post)
 }
 
 func streamRoom(c *gin.Context) {
