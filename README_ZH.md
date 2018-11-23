@@ -79,7 +79,7 @@ $ go get -u github.com/gin-gonic/gin
 import "github.com/gin-gonic/gin"
 ```
 
-3. （可选）如果使用诸如`http.StatusOK`之类的常量，则需要引入 `net / http` 包。
+3. （可选）如果使用诸如`http.StatusOK`之类的常量，则需要引入 `net/http` 包。
 
 ```go
 import "net/http"
@@ -200,7 +200,7 @@ BenchmarkVulcan_GithubAll                   |    5000    |   394253    |   19894
 
 ## 使用 [jsoniter](https://github.com/json-iterator/go) 构建
 
-Gin使用`encoding / json`作为默认的json包，但您可以通过其他标签的构建更改为[jsoniter]（https://github.com/json-iterator/go）。
+Gin使用`encoding/json`作为默认的json包，但您可以通过其他标签的构建更改为[jsoniter](https://github.com/json-iterator/go)。
 
 ```sh
 $ go build -tags=jsoniter .
@@ -359,7 +359,7 @@ ids: map[b:hello a:1234], names: map[second:tianou first:thinkerou]
 
 #### 单个文件上传
 
-参考问题[＃774]（https://github.com/gin-gonic/gin/issues/774）和详细[示例代码]（examples / upload-file / single）。
+参考问题[＃774](https://github.com/gin-gonic/gin/issues/774)和详细[示例代码](examples/upload-file/single)。
 
 ```go
 func main() {
@@ -390,7 +390,7 @@ curl -X POST http://localhost:8080/upload \
 
 #### 多文件上传
 
-查看详细信息[示例代码]（examples / upload-file / multiple）。
+查看详细信息[示例代码](examples/upload-file/multiple)。
 
 ```go
 func main() {
@@ -530,14 +530,14 @@ func main() {
 
 要将请求主体绑定到类型中，请使用模型绑定。我们目前支持JSON，XML和标准表单值的绑定（foo = bar＆boo = baz）。
 
-Gin使用[** go-playground / validator.v8 **]（https://github.com/go-playground/validator）进行验证。检查有关标签用法的完整文档[此处]（http://godoc.org/gopkg.in/go-playground/validator.v8#hdr-Baked_In_Validators_and_Tags）。
+Gin使用[** go-playground/validator.v8 **](https://github.com/go-playground/validator)进行验证。检查有关标签用法的完整文档[此处](http://godoc.org/gopkg.in/go-playground/validator.v8#hdr-Baked_In_Validators_and_Tags)。
 
 请注意，您需要在要绑定的所有字段上设置相应的绑定标记。例如，从JSON绑定时，设置`json：“fieldname”`。
 
 此外，Gin提供了两组绑定方法：
 - **类型** - 必须绑定
    - **方法** - `Bind`，`BindJSON`，`BindXML`，`BindQuery`
-   - **行为** - 这些方法在引擎盖下使用`MustBindWith`。如果存在绑定错误，则使用`c.AbortWithError（400，err）.SetType（ErrorTypeBind）`中止请求。这将响应状态代码设置为400，并将`Content-Type`标头设置为`text / plain;字符集= UTF-8`。请注意，如果您在此之后尝试设置响应代码，则会发出警告“[GIN-debug] [警告]标题已经写入。想用422`覆盖状态代码400。如果您希望更好地控制行为，请考虑使用`ShouldBind`等效方法。
+   - **行为** - 这些方法在引擎盖下使用`MustBindWith`。如果存在绑定错误，则使用`c.AbortWithError(400，err).SetType(ErrorTypeBind)`中止请求。这将响应状态代码设置为400，并将`Content-Type`标头设置为`text/plain;字符集= UTF-8`。请注意，如果您在此之后尝试设置响应代码，则会发出警告“[GIN-debug] [警告]标题已经写入。想用422`覆盖状态代码400。如果您希望更好地控制行为，请考虑使用`ShouldBind`等效方法。
 - **类型** - 应该绑定
    - **方法** - `ShouldBind`，`ShouldBindJSON`，`ShouldBindXML`，`ShouldBindQuery`
    - **行为** - 这些方法在引擎盖下使用`ShouldBindWith`。如果存在绑定错误，则返回错误，开发人员有责任正确处理请求和错误。
@@ -643,9 +643,9 @@ $ curl -v -X POST \
 
 ### 自定义验证器
 
-也可以注册自定义验证器。 请参阅[示例代码]（examples / custom-validation / server.go）。
+也可以注册自定义验证器。 请参阅[示例代码](examples/custom-validation/server.go)。
 
-[embedmd]：＃（examples / custom-validation / server.go go）
+[embedmd]：＃(examples/custom-validation/server.go go)
 ```go
 package main
 
@@ -707,12 +707,12 @@ $ curl "localhost:8085/bookable?check_in=2018-03-08&check_out=2018-03-09"
 {"error":"Key: 'Booking.CheckIn' Error:Field validation for 'CheckIn' failed on the 'bookabledate' tag"}
 ```
 
-[结构级验证]（https://github.com/go-playground/validator/releases/tag/v8.7）也可以这种方式注册。
-请参阅[struct-lvl-validation示例]（examples / struct-lvl-validations）以了解更多信息。
+[结构级验证](https://github.com/go-playground/validator/releases/tag/v8.7)也可以这种方式注册。
+请参阅[struct-lvl-validation示例](examples/struct-lvl-validations)以了解更多信息。
 
 ### 只绑定查询字符串
 
-`ShouldBindQuery` 函数只绑定查询参数而不是后期数据。 请参阅[详细信息]（https://github.com/gin-gonic/gin/issues/742#issuecomment-315953017）。
+`ShouldBindQuery` 函数只绑定查询参数而不是后期数据。 请参阅[详细信息](https://github.com/gin-gonic/gin/issues/742#issuecomment-315953017)。
 
 ```go
 package main
@@ -748,7 +748,7 @@ func startPage(c *gin.Context) {
 
 ### 绑定查询字符串或发布数据
 
-请参阅[详细信息]（https://github.com/gin-gonic/gin/issues/742#issuecomment-264681292）。
+请参阅[详细信息](https://github.com/gin-gonic/gin/issues/742#issuecomment-264681292)。
 
 ```go
 package main
@@ -794,7 +794,7 @@ $ curl -X GET "localhost:8085/testing?name=appleboy&address=xyz&birthday=1992-03
 
 ### 绑定 HTML 复选框
 
-参见[详细信息]（https://github.com/gin-gonic/gin/issues/129#issuecomment-124260092）
+参见[详细信息](https://github.com/gin-gonic/gin/issues/129#issuecomment-124260092)
 
 main.go
 
@@ -931,7 +931,7 @@ func main() {
 
 #### SecureJSON
 
-使用 SecureJSON 来防止 json 劫持。 如果给定的结构是数组值，则默认预 置`“while（1），”` 到响应体。
+使用 SecureJSON 来防止 json 劫持。 如果给定的结构是数组值，则默认预 置`“while(1)，”` 到响应体。
 
 ```go
 func main() {
@@ -1067,7 +1067,7 @@ func main() {
 
 ### HTML 渲染
 
-使用LoadHTMLGlob（）或LoadHTMLFiles（）
+使用LoadHTMLGlob()或LoadHTMLFiles()
 
 ```go
 func main() {
@@ -1159,12 +1159,12 @@ func main() {
 ```go
 	r := gin.Default()
 	r.Delims("{[{", "}]}")
-	r.LoadHTMLGlob("/path/to/templates"))
+	r.LoadHTMLGlob("/path/to/templates")
 ```
 
 #### 自定义模板功能
 
-查看详细信息[示例代码]（示例/模板）。
+查看详细信息[示例代码](examples/template)。
 
 main.go
 
@@ -1215,7 +1215,7 @@ Date: 2017/07/01
 
 ### 多模板
 
-Gin 允许默认只使用一个 html 模板。 检查[多模板渲染]（https://github.com/gin-contrib/multitemplate）以使用 go 1.6 `block template` 等功能。
+Gin 允许默认只使用一个 html 模板。 检查[多模板渲染](https://github.com/gin-contrib/multitemplate)以使用 go 1.6 `block template` 等功能。
 
 ### 重定向
 
@@ -1355,7 +1355,7 @@ func main() {
 
 ### 自定义 HTTP 配置
 
-直接使用`http.ListenAndServe（）`，如下所示：
+直接使用`http.ListenAndServe()`，如下所示：
 
 ```go
 func main() {
@@ -1441,7 +1441,7 @@ func main() {
 
 ### 使用 Gin 运行多个服务
 
-请参阅[问题]（https://github.com/gin-gonic/gin/issues/346）并尝试以下示例：
+请参阅[问题](https://github.com/gin-gonic/gin/issues/346)并尝试以下示例：
 
 [embedmd]:# (examples/multiple-service/main.go go)
 ```go
@@ -1526,7 +1526,7 @@ func main() {
 您想要优雅地重启或停止您的Web服务器吗？
 有一些方法可以做到这一点。
 
-我们可以使用[fvbock / endless]（https://github.com/fvbock/endless）来替换默认的`ListenAndServe`。 有关更多详细信息，请参阅问题[＃296]（https://github.com/gin-gonic/gin/issues/296）。
+我们可以使用[fvbock/endless](https://github.com/fvbock/endless)来替换默认的`ListenAndServe`。 有关更多详细信息，请参阅问题[＃296](https://github.com/gin-gonic/gin/issues/296)。
 
 ```go
 router := gin.Default()
@@ -1537,11 +1537,11 @@ endless.ListenAndServe(":4242", router)
 
 另一种替代方案：
 
-* [manners]（https://github.com/braintree/manners）：礼貌的Go HTTP服务器，可以正常关闭。
-* [graceful]（https://github.com/tylerb/graceful）：Graceful是一个Go包，可以正常关闭http.Handler服务器。
-* [grace]（https://github.com/facebookgo/grace）：Go服务器的平滑重启和零停机时间部署。
+* [manners](https://github.com/braintree/manners)：礼貌的Go HTTP服务器，可以正常关闭。
+* [graceful](https://github.com/tylerb/graceful)：Graceful是一个Go包，可以正常关闭http.Handler服务器。
+* [grace](https://github.com/facebookgo/grace)：Go服务器的平滑重启和零停机时间部署。
 
-如果您使用的是Go 1.8，则可能不需要使用此库！ 考虑使用http.Server的内置[Shutdown（）]（https://golang.org/pkg/net/http/#Server.Shutdown）方法进行正常关机。 请参阅gin的完整[graceful-shutdown]（./ examples / graceful-shutdown）示例。
+如果您使用的是Go 1.8，则可能不需要使用此库！ 考虑使用http.Server的内置[Shutdown()](https://golang.org/pkg/net/http/#Server.Shutdown)方法进行正常关机。 请参阅gin的完整[graceful-shutdown](./examples /graceful-shutdown)示例。
 
 [embedmd]:# (examples/graceful-shutdown/graceful-shutdown/server.go go)
 ```go
@@ -1637,7 +1637,7 @@ func loadTemplate() (*template.Template, error) {
 }
 ```
 
-请参阅`examples / assets-in-binary`目录中的完整示例。
+请参阅`examples/assets-in-binary`目录中的完整示例。
 
 ### Bind form-data request with custom struct
 
@@ -1788,13 +1788,13 @@ func SomeHandler(c *gin.Context) {
 足以立刻调用绑定。
 *只有某些格式需要此功能 - “JSON”，“XML”，“MsgPack”，
 `ProtoBuf`。 对于其他格式，`Query`，`Form`，`FormPost`，`FormMultipart`，
-可以被`c.ShouldBind（）`多次调用而不会造成任何损害
-表现（见[＃1341]（https://github.com/gin-gonic/gin/pull/1341））。
+可以被`c.ShouldBind()`多次调用而不会造成任何损害
+表现（见[＃1341](https://github.com/gin-gonic/gin/pull/1341)。
 
 ### http2 server 推送
 
 
-http.Pusher仅支持** go1.8 + **。 有关详细信息，请参阅[golang blog]（https://blog.golang.org/h2push）。
+http.Pusher仅支持** go1.8 + **。 有关详细信息，请参阅[golang blog](https://blog.golang.org/h2push)。
 
 [embedmd]:# (examples/http-pusher/main.go go)
 ```go
@@ -1886,7 +1886,7 @@ func main() {
 
 ## 测试
 
-`net / http / httptest`包是HTTP测试的首选方式。
+`net/http/httptest`包是HTTP测试的首选方式。
 
 ```go
 package main
@@ -1933,8 +1933,8 @@ func TestPingRoute(t *testing.T) {
 ## 用户
 
 
-使用[Gin]（https://github.com/gin-gonic/gin）Web框架的令人敬畏的项目列表。
+使用[Gin](https://github.com/gin-gonic/gin)Web框架的令人尊敬的项目列表。
 
-* [drone]（https://github.com/drone/drone）：drone，用Go编写。
-* [gorush]（https://github.com/appleboy/gorush）：用Go编写的推送通知服务器。
-* [fnproject]（https://github.com/fnproject/fn）：容器本机，云无关的无服务器平台。
+* [drone](https://github.com/drone/drone)：drone，用Go编写。
+* [gorush](https://github.com/appleboy/gorush)：用Go编写的推送通知服务器。
+* [fnproject](https://github.com/fnproject/fn)：容器本机，云无关的无服务器平台。
