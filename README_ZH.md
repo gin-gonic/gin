@@ -25,20 +25,20 @@ Gin 是一个 Go (Golang) 语言框架。 它是一个拥有更好性能的 mart
 - [使用 jsoniter 构建](#使用-jsoniter-构建)
 - [API 示例](#api-示例)
     - [GET,POST,PUT,PATCH,DELETE,OPTIONS 使用](#get-post-put-patch-delete-options-使用)
-    - [路由参数](#路由参数)
-    - [查询字符串参数](#查询字符串参数)
+    - [获取路由参数](#获取路由参数)
+    - [获取url查询参数](#获取url查询参数)
     - [Multipart Urlencoded 表单](#multipart-urlencoded-表单)
-    - [另一个实列 query + post form](#另一个实列:-query-+-post-form)
+    - [获取post表单数据（url带查询参数）](#获取post表单数据（url带查询参数）)
     - [映射参数 表单参数](#映射参数-表单参数)
     - [上传文件](#上传文件)
     - [路由组](#路由组)
     - [默认初始化 Gin](#默认初始化-gin)
-    - [中间件使用](#中间件使用)
+    - [使用中间件](#使用中间件)
     - [如何记录日志](#如何记录日志)
     - [模型绑定和验证](#模型绑定和验证)
     - [自定义验证器](#自定义验证器)
-    - [只绑定查询字符串](#只绑定查询字符串)
-    - [绑定查询字符串或发布数据](#绑定查询字符串或发布数据)
+    - [只绑定url查询参数](#只绑定url查询参数)
+    - [url查询参数绑定到struct（或POST表单数据）](#url查询参数绑定到struct（或POST表单数据）)
     - [绑定 HTML 复选框](#绑定-html-复选框)
     - [Multipart Urlencoded 绑定](#multipart-urlencoded-绑定)
     - [XML JSON YAML ProtoBuf 渲染](#xml-json-yaml-protobuf-渲染)
@@ -56,8 +56,8 @@ Gin 是一个 Go (Golang) 语言框架。 它是一个拥有更好性能的 mart
     - [使用 Gin 运行多个服务](使用-gin-运行多个服务)
     - [优雅重启或停止](#优雅重启或停止)
     - [使用模板构建单个二进制文件](#使用模板构建单个二进制文件)
-    - [使用自定义结构绑定表单数据请求](#使用自定义结构绑定表单数据请求)
-    - [尝试将body绑定到不同的结构中](#尝试将-body-绑定到不同的结构中)
+    - [表单数据绑定到自定义结构体](#表单数据绑定到自定义结构体)
+    - [将request body绑定到不同的结构体中](#将request body绑定到不同的结构体中)
     - [http2 server 推送](#http2-server-推送)
     - [定义路由日志的格式](#定义路由日志的格式)
 - [测试](#测试)
@@ -105,7 +105,7 @@ $ govendor init
 $ govendor fetch github.com/gin-gonic/gin@v1.3
 ```
 
-4. 复制一个启动文件模板到项目目录中
+4. 复制启动文件模板到项目目录中
 
 ```sh
 $ curl https://raw.githubusercontent.com/gin-gonic/gin/master/examples/basic/main.go > main.go
@@ -119,7 +119,7 @@ $ go run main.go
 
 ## 前提条件
 
-新版本的 Gin 需要 Go 1.6 或者更高版本并且很快就会升级到 Go 1.7.
+新版本的 Gin 需要 Go 1.6 或者更高版本，并且很快就会升级到 Go 1.7.
 
 ## 快速启动
  
@@ -234,7 +234,7 @@ func main() {
 }
 ```
 
-### 路由参数
+### 获取路由参数
 
 ```go
 func main() {
@@ -259,7 +259,7 @@ func main() {
 }
 ```
 
-### 查询字符串参数
+### 获取url查询参数
 
 ```go
 func main() {
@@ -297,7 +297,7 @@ func main() {
 }
 ```
 
-### 另一个实列 query + post form
+### 获取post表单数据（url带查询参数）
 
 ```
 POST /post?id=1234&page=1 HTTP/1.1
@@ -380,7 +380,7 @@ func main() {
 }
 ```
 
-如何 `curl`:
+`curl`示例:
 
 ```bash
 curl -X POST http://localhost:8080/upload \
@@ -414,7 +414,7 @@ func main() {
 }
 ```
 
-如何 `curl`:
+`curl`示例:
 
 ```bash
 curl -X POST http://localhost:8080/upload \
@@ -465,7 +465,7 @@ r := gin.Default()
 ```
 
 
-### 中间件使用
+### 使用中间件
 ```go
 func main() {
 	// Creates a router without any middleware by default
@@ -710,9 +710,9 @@ $ curl "localhost:8085/bookable?check_in=2018-03-08&check_out=2018-03-09"
 [结构级验证](https://github.com/go-playground/validator/releases/tag/v8.7)也可以这种方式注册。
 请参阅[struct-lvl-validation示例](examples/struct-lvl-validations)以了解更多信息。
 
-### 只绑定查询字符串
+### 只绑定url查询参数
 
-`ShouldBindQuery` 函数只绑定查询参数而不是后期数据。 请参阅[详细信息](https://github.com/gin-gonic/gin/issues/742#issuecomment-315953017)。
+`ShouldBindQuery` 函数只绑定url查询参数而不是post字段。 请参阅[详细信息](https://github.com/gin-gonic/gin/issues/742#issuecomment-315953017)。
 
 ```go
 package main
@@ -746,7 +746,7 @@ func startPage(c *gin.Context) {
 
 ```
 
-### 绑定查询字符串或发布数据
+### url查询参数绑定到struct（或POST表单数据）
 
 请参阅[详细信息](https://github.com/gin-gonic/gin/issues/742#issuecomment-264681292)。
 
@@ -872,7 +872,7 @@ func main() {
 }
 ```
 
-Test it with:
+测试:
 ```sh
 $ curl -v --form user=user --form password=password http://localhost:8080/login
 ```
@@ -999,8 +999,8 @@ func main() {
 
 #### PureJSON
 
-通常，JSON 用其 unicod e实体替换特殊 HTML 字符，例如 `<` 变为 `\ u003c`。 如果要按字面意思对这些字符进行编码，则可以使用 PureJSON。
-Go 1.6 及更低版本无法使用此功能。
+通常，JSON使用unicode替换特殊HTML字符，例如 `<` 变为 `\ u003c`。 如果要按字面意思对这些字符进行编码，则可以使用 PureJSON。
+Go 1.6及更低版本无法使用此功能。
 
 ```go
 func main() {
@@ -1382,7 +1382,7 @@ func main() {
 
 ###  Let's Encrypt 支持
 
-单行 LetsEncrypt HTTPS 服务器的示例。
+一行代码支持 LetsEncrypt HTTPS示例。
 
 [embedmd]:# (examples/auto-tls/example1/main.go go)
 ```go
@@ -1407,7 +1407,7 @@ func main() {
 }
 ```
 
-自定义autocert管理器的示例。
+autocert使用示例。
 
 [embedmd]:# (examples/auto-tls/example2/main.go go)
 ```go
@@ -1535,13 +1535,13 @@ router.GET("/", handler)
 endless.ListenAndServe(":4242", router)
 ```
 
-另一种替代方案：
+替代方案：
 
 * [manners](https://github.com/braintree/manners)：礼貌的Go HTTP服务器，可以正常关闭。
 * [graceful](https://github.com/tylerb/graceful)：Graceful是一个Go包，可以正常关闭http.Handler服务器。
 * [grace](https://github.com/facebookgo/grace)：Go服务器的平滑重启和零停机时间部署。
 
-如果您使用的是Go 1.8，则可能不需要使用此库！ 考虑使用http.Server的内置[Shutdown()](https://golang.org/pkg/net/http/#Server.Shutdown)方法进行正常关机。 请参阅gin的完整[graceful-shutdown](./examples /graceful-shutdown)示例。
+如果您使用的是Go 1.8，可以考虑使用http.Server内置[Shutdown()](https://golang.org/pkg/net/http/#Server.Shutdown)方法进行正常关机。 请参阅gin的完整[graceful-shutdown](./examples /graceful-shutdown)示例。
 
 [embedmd]:# (examples/graceful-shutdown/graceful-shutdown/server.go go)
 ```go
@@ -1597,7 +1597,7 @@ func main() {
 
 ### 使用模板构建单个二进制文件
 
-您可以使用[go-assets] []将服务器构建到包含模板的单个二进制文件中。
+您可以使用[go-assets]将服务器打包为包含模板的单个二进制可执行文件。
 
 [go-assets]：https：//github.com/jessevdk/go-assets
 
@@ -1639,7 +1639,7 @@ func loadTemplate() (*template.Template, error) {
 
 请参阅`examples/assets-in-binary`目录中的完整示例。
 
-### Bind form-data request with custom struct
+### 表单数据绑定到自定义结构体
 
 以下示例使用自定义结构：
 
@@ -1731,10 +1731,9 @@ type StructZ struct {
 
 总之，只支持现在没有`form`的嵌套自定义结构。
 
-### 尝试将 body 绑定到不同的结构中
+### 将request body绑定到不同的结构体中
 
-绑定请求体的常规方法使用`c.Request.Body`和它们
-不能多次调用。
+一般通过调用`c.Request.Body`方法绑定数据，但不能多次调用这个方法。
 
 ```go
 type formA struct {
@@ -1760,7 +1759,7 @@ func SomeHandler(c *gin.Context) {
 }
 ```
 
-为此，您可以使用`c.ShouldBindBodyWith`.
+为此，要想多次绑定，需要使用`c.ShouldBindBodyWith`.
 
 ```go
 func SomeHandler(c *gin.Context) {
@@ -1782,14 +1781,11 @@ func SomeHandler(c *gin.Context) {
 ```
 
 
-482/5000
-*`c.ShouldBindBodyWith`在绑定之前将body存储到上下文中。 这有
-对性能有轻微影响，所以如果你这样做，你不应该使用这种方法
-足以立刻调用绑定。
-*只有某些格式需要此功能 - “JSON”，“XML”，“MsgPack”，
-`ProtoBuf`。 对于其他格式，`Query`，`Form`，`FormPost`，`FormMultipart`，
-可以被`c.ShouldBind()`多次调用而不会造成任何损害
-表现（见[＃1341](https://github.com/gin-gonic/gin/pull/1341)。
+*`c.ShouldBindBodyWith`会在绑定之前将body存储到上下文中。 这会
+对性能造成轻微影响，如果调用一次就能完成绑定的话，那就不要用这个方法。
+*只有某些格式需要此功能 ，如“JSON”，“XML”，“MsgPack”，
+`ProtoBuf`。 对于其他格式，如`Query`，`Form`，`FormPost`，`FormMultipart`，
+可以多次调用`c.ShouldBind()`而不会造成任任何性能损失（见[＃1341](https://github.com/gin-gonic/gin/pull/1341)）。
 
 ### http2 server 推送
 
@@ -1843,15 +1839,15 @@ func main() {
 
 ### 定义路由日志的格式
 
-路由的默认日志是：
+默认的路由日志格式：
 ```
 [GIN-debug] POST   /foo                      --> main.main.func1 (3 handlers)
 [GIN-debug] GET    /bar                      --> main.main.func2 (3 handlers)
 [GIN-debug] GET    /status                   --> main.main.func3 (3 handlers)
 ```
 
-如果要以给定格式记录此信息（例如JSON，键值或其他内容），则可以使用`gin.DebugPrintRouteFunc`定义此格式。
-在下面的示例中，我们使用标准日志包记录所有路由，但您可以使用其他适合您需求的日志工具。
+如果要以指的格式（例如JSON，Key Values或其他格式）记录信息，则可以使用`gin.DebugPrintRouteFunc`指定格式。
+在下面的示例中，我们使用标准日志包记录所有路由，但您可以使用其他满足需求的日志工具。
 ```go
 import (
 	"log"
@@ -1886,7 +1882,7 @@ func main() {
 
 ## 测试
 
-`net/http/httptest`包是HTTP测试的首选方式。
+HTTP测试首选`net/http/httptest`包。
 
 ```go
 package main
@@ -1905,7 +1901,7 @@ func main() {
 }
 ```
 
-测试上面的代码示例：
+上面这段代码的测试用例：
 
 ```go
 package main
@@ -1933,8 +1929,9 @@ func TestPingRoute(t *testing.T) {
 ## 用户
 
 
-使用[Gin](https://github.com/gin-gonic/gin)Web框架的令人尊敬的项目列表。
+使用[Gin](https://github.com/gin-gonic/gin)框架的著名项目。
 
-* [drone](https://github.com/drone/drone)：drone，用Go编写。
-* [gorush](https://github.com/appleboy/gorush)：用Go编写的推送通知服务器。
-* [fnproject](https://github.com/fnproject/fn)：容器本机，云无关的无服务器平台。
+* [drone](https://github.com/drone/drone)：用Go编写的基于docker的持续集成平台。
+* [gorush](https://github.com/appleboy/gorush)：用Go编写的推送通知服务。
+* [fnproject](https://github.com/fnproject/fn)：容器驱动、云无关的无服务器平台。
+* [photoprism](https://github.com/photoprism/photoprism): 用Go编写的基于TensorFlow的个人相册管理系统.
