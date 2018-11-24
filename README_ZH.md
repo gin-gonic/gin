@@ -1,4 +1,4 @@
-# Gin Web Framework
+# Gin Web 框架中文文档
 
 <img align="right" width="159px" src="https://raw.githubusercontent.com/gin-gonic/logo/master/color.png">
 
@@ -11,119 +11,117 @@
 [![Open Source Helpers](https://www.codetriage.com/gin-gonic/gin/badges/users.svg)](https://www.codetriage.com/gin-gonic/gin)
 [![Release](https://img.shields.io/github/release/gin-gonic/gin.svg?style=flat-square)](https://github.com/gin-gonic/gin/releases)
 
-Gin is a web framework written in Go (Golang). It features a martini-like API with much better performance, up to 40 times faster thanks to [httprouter](https://github.com/julienschmidt/httprouter). If you need performance and good productivity, you will love Gin.
+Gin 是一个 Go (Golang) 语言框架。 它是一个拥有更好性能的 martini-like API 框架, 比 [httprouter](https://github.com/julienschmidt/httprouter) 的速度快了40倍. 如果你是性能和高效的追求者, 那么你会爱上 Gin.
 
 ![Gin console logger](https://gin-gonic.github.io/gin/other/console.png)
 
 ## Contents
 
-- [Installation](#installation)
-- [Prerequisite](#prerequisite)
-- [Quick start](#quick-start)
-- [Benchmarks](#benchmarks)
-- [Gin v1.stable](#gin-v1-stable)
-- [Build with jsoniter](#build-with-jsoniter)
-- [API Examples](#api-examples)
-    - [Using GET,POST,PUT,PATCH,DELETE and OPTIONS](#using-get-post-put-patch-delete-and-options)
-    - [Parameters in path](#parameters-in-path)
-    - [Querystring parameters](#querystring-parameters)
-    - [Multipart/Urlencoded Form](#multiparturlencoded-form)
-    - [Another example: query + post form](#another-example-query--post-form)
-    - [Map as querystring or postform parameters](#map-as-querystring-or-postform-parameters)
-    - [Upload files](#upload-files)
-    - [Grouping routes](#grouping-routes)
-    - [Blank Gin without middleware by default](#blank-gin-without-middleware-by-default)
-    - [Using middleware](#using-middleware)
-    - [How to write log file](#how-to-write-log-file)
-    - [Model binding and validation](#model-binding-and-validation)
-    - [Custom Validators](#custom-validators)
-    - [Only Bind Query String](#only-bind-query-string)
-    - [Bind Query String or Post Data](#bind-query-string-or-post-data)
-    - [Bind Uri](#bind-uri)
-    - [Bind HTML checkboxes](#bind-html-checkboxes)
-    - [Multipart/Urlencoded binding](#multiparturlencoded-binding)
-    - [XML, JSON, YAML and ProtoBuf rendering](#xml-json-yaml-and-protobuf-rendering)
-    - [JSONP rendering](#jsonp)
-    - [Serving static files](#serving-static-files)
-    - [Serving data from reader](#serving-data-from-reader)
-    - [HTML rendering](#html-rendering)
-    - [Multitemplate](#multitemplate)
-    - [Redirects](#redirects)
-    - [Custom Middleware](#custom-middleware)
-    - [Using BasicAuth() middleware](#using-basicauth-middleware)
-    - [Goroutines inside a middleware](#goroutines-inside-a-middleware)
-    - [Custom HTTP configuration](#custom-http-configuration)
-    - [Support Let's Encrypt](#support-lets-encrypt)
-    - [Run multiple service using Gin](#run-multiple-service-using-gin)
-    - [Graceful restart or stop](#graceful-restart-or-stop)
-    - [Build a single binary with templates](#build-a-single-binary-with-templates)
-    - [Bind form-data request with custom struct](#bind-form-data-request-with-custom-struct)
-    - [Try to bind body into different structs](#try-to-bind-body-into-different-structs)
-    - [http2 server push](#http2-server-push)
-    - [Define format for the log of routes](#define-format-for-the-log-of-routes)
-    - [Set and get a cookie](#set-and-get-a-cookie)
-- [Testing](#testing)
-- [Users](#users)
+- [安装](#安装)
+- [前提条件](#前提条件)
+- [快速启动](#快速启动)
+- [性能测试](#性能测试)
+- [Gin v1 稳定版](#gin-v1-稳定版)
+- [使用 jsoniter 构建](#使用-jsoniter-构建)
+- [API 示例](#api-示例)
+    - [GET,POST,PUT,PATCH,DELETE,OPTIONS 使用](#get-post-put-patch-delete-options-使用)
+    - [路由参数](#路由参数)
+    - [查询字符串参数](#查询字符串参数)
+    - [Multipart Urlencoded 表单](#multipart-urlencoded-表单)
+    - [另一个实列 query + post form](#另一个实列:-query-+-post-form)
+    - [映射参数 表单参数](#映射参数-表单参数)
+    - [上传文件](#上传文件)
+    - [路由组](#路由组)
+    - [默认初始化 Gin](#默认初始化-gin)
+    - [中间件使用](#中间件使用)
+    - [如何记录日志](#如何记录日志)
+    - [模型绑定和验证](#模型绑定和验证)
+    - [自定义验证器](#自定义验证器)
+    - [只绑定查询字符串](#只绑定查询字符串)
+    - [绑定查询字符串或发布数据](#绑定查询字符串或发布数据)
+    - [绑定 HTML 复选框](#绑定-html-复选框)
+    - [Multipart Urlencoded 绑定](#multipart-urlencoded-绑定)
+    - [XML JSON YAML ProtoBuf 渲染](#xml-json-yaml-protobuf-渲染)
+    - [SecureJSON](#SecureJSON)
+    - [静态文件服务](#静态文件服务)
+    - [从读者服务数据](#从读者服务数据)
+    - [HTML 渲染](#html-渲染)
+    - [多模板](#多模板)
+    - [重定向](#重定向)
+    - [自定义中间件](#自定义中间件)
+    - [使用 BasicAuth() 中间件](#使用-basicauth()-中间件)
+    - [Goroutines](#goroutines)
+    - [自定义 HTTP 配置](#自定义-http-配置)
+    - [Let's Encrypt 支持](#lets-encrypt-支持)
+    - [使用 Gin 运行多个服务](使用-gin-运行多个服务)
+    - [优雅重启或停止](#优雅重启或停止)
+    - [使用模板构建单个二进制文件](#使用模板构建单个二进制文件)
+    - [使用自定义结构绑定表单数据请求](#使用自定义结构绑定表单数据请求)
+    - [尝试将body绑定到不同的结构中](#尝试将-body-绑定到不同的结构中)
+    - [http2 server 推送](#http2-server-推送)
+    - [定义路由日志的格式](#定义路由日志的格式)
+- [测试](#测试)
+- [用户](#用户)
 
-## Installation
+## 安装
 
-To install Gin package, you need to install Go and set your Go workspace first.
+要安装 Gin 软件包，需要先安装 Go 并设置 Go 工作区。
 
-1. Download and install it:
+1. 下载并安装 gin:
 
 ```sh
 $ go get -u github.com/gin-gonic/gin
 ```
 
-2. Import it in your code:
+2. 将 gin 引入到代码中:
 
 ```go
 import "github.com/gin-gonic/gin"
 ```
 
-3. (Optional) Import `net/http`. This is required for example if using constants such as `http.StatusOK`.
+3. （可选）如果使用诸如`http.StatusOK`之类的常量，则需要引入 `net/http` 包。
 
 ```go
 import "net/http"
 ```
 
-### Use a vendor tool like [Govendor](https://github.com/kardianos/govendor)
+### 使用 [Govendor](https://github.com/kardianos/govendor) 工具创建项目
 
 1. `go get` govendor
 
 ```sh
 $ go get github.com/kardianos/govendor
 ```
-2. Create your project folder and `cd` inside
+2.创建项目并且 `cd` 到项目目录中
 
 ```sh
 $ mkdir -p $GOPATH/src/github.com/myusername/project && cd "$_"
 ```
 
-3. Vendor init your project and add gin
+3. 使用 govendor 初始化项目,并且引入gin
 
 ```sh
 $ govendor init
 $ govendor fetch github.com/gin-gonic/gin@v1.3
 ```
 
-4. Copy a starting template inside your project
+4. 复制一个启动文件模板到项目目录中
 
 ```sh
 $ curl https://raw.githubusercontent.com/gin-gonic/gin/master/examples/basic/main.go > main.go
 ```
 
-5. Run your project
+5.启动项目
 
 ```sh
 $ go run main.go
 ```
 
-## Prerequisite
+## 前提条件
 
-Now Gin requires Go 1.6 or later and Go 1.7 will be required soon.
+新版本的 Gin 需要 Go 1.6 或者更高版本并且很快就会升级到 Go 1.7.
 
-## Quick start
+## 快速启动
  
 ```sh
 # assume the following codes in example.go file
@@ -151,11 +149,11 @@ func main() {
 $ go run example.go
 ```
 
-## Benchmarks
+## 性能测试
 
-Gin uses a custom version of [HttpRouter](https://github.com/julienschmidt/httprouter)
+Gin 使用自定义版本的 [HttpRouter](https://github.com/julienschmidt/httprouter)
 
-[See all benchmarks](/BENCHMARKS.md)
+[所有性能测试](/BENCHMARKS.md)
 
 Benchmark name                              | (1)        | (2)         | (3) 		    | (4)
 --------------------------------------------|-----------:|------------:|-----------:|---------:
@@ -187,30 +185,30 @@ BenchmarkTigerTonic_GithubAll               |    1000    |  1439483    |  239104
 BenchmarkTraffic_GithubAll                  |     100    | 11383067    | 2659329    | 21848
 BenchmarkVulcan_GithubAll                   |    5000    |   394253    |   19894    |   609
 
-- (1): Total Repetitions achieved in constant time, higher means more confident result
-- (2): Single Repetition Duration (ns/op), lower is better
-- (3): Heap Memory (B/op), lower is better
-- (4): Average Allocations per Repetition (allocs/op), lower is better
+- (1): 在不断的时间内实现总重复，更高意味着更自信的结果
+- (2): 单次重复持续时间（ns / op），越低越好
+- (3): 堆内存（B / op），越低越好
+- (4): 每次重复的平均分配（allocs / op）越低越好
 
-## Gin v1. stable
+## Gin v1 稳定版
 
-- [x] Zero allocation router.
-- [x] Still the fastest http router and framework. From routing to writing.
-- [x] Complete suite of unit tests
-- [x] Battle tested
-- [x] API frozen, new releases will not break your code.
+- [x] 零分配路由器。
+- [x] 仍然是最快的http路由器和框架。
+- [x] 完整的单元测试套件
+- [x] 对战测试
+- [x] API冻结，新版本不会破坏您的代码。
 
-## Build with [jsoniter](https://github.com/json-iterator/go)
+## 使用 [jsoniter](https://github.com/json-iterator/go) 构建
 
-Gin uses `encoding/json` as default json package but you can change to [jsoniter](https://github.com/json-iterator/go) by build from other tags.
+Gin使用`encoding/json`作为默认的json包，但您可以通过其他标签的构建更改为[jsoniter](https://github.com/json-iterator/go)。
 
 ```sh
 $ go build -tags=jsoniter .
 ```
 
-## API Examples
+## API 示例
 
-### Using GET, POST, PUT, PATCH, DELETE and OPTIONS
+### GET, POST, PUT, PATCH, DELETE , OPTIONS 使用
 
 ```go
 func main() {
@@ -236,7 +234,7 @@ func main() {
 }
 ```
 
-### Parameters in path
+### 路由参数
 
 ```go
 func main() {
@@ -261,7 +259,7 @@ func main() {
 }
 ```
 
-### Querystring parameters
+### 查询字符串参数
 
 ```go
 func main() {
@@ -279,7 +277,7 @@ func main() {
 }
 ```
 
-### Multipart/Urlencoded Form
+### Multipart Urlencoded 表单
 
 ```go
 func main() {
@@ -299,7 +297,7 @@ func main() {
 }
 ```
 
-### Another example: query + post form
+### 另一个实列 query + post form
 
 ```
 POST /post?id=1234&page=1 HTTP/1.1
@@ -329,7 +327,7 @@ func main() {
 id: 1234; page: 1; name: manu; message: this_is_great
 ```
 
-### Map as querystring or postform parameters
+### 映射参数 表单参数
 
 ```
 POST /post?ids[a]=1234&ids[b]=hello HTTP/1.1
@@ -357,11 +355,11 @@ func main() {
 ids: map[b:hello a:1234], names: map[second:tianou first:thinkerou]
 ```
 
-### Upload files
+### 上传文件
 
-#### Single file
+#### 单个文件上传
 
-References issue [#774](https://github.com/gin-gonic/gin/issues/774) and detail [example code](examples/upload-file/single).
+参考问题[＃774](https://github.com/gin-gonic/gin/issues/774)和详细[示例代码](examples/upload-file/single)。
 
 ```go
 func main() {
@@ -382,7 +380,7 @@ func main() {
 }
 ```
 
-How to `curl`:
+如何 `curl`:
 
 ```bash
 curl -X POST http://localhost:8080/upload \
@@ -390,9 +388,9 @@ curl -X POST http://localhost:8080/upload \
   -H "Content-Type: multipart/form-data"
 ```
 
-#### Multiple files
+#### 多文件上传
 
-See the detail [example code](examples/upload-file/multiple).
+查看详细信息[示例代码](examples/upload-file/multiple)。
 
 ```go
 func main() {
@@ -416,7 +414,7 @@ func main() {
 }
 ```
 
-How to `curl`:
+如何 `curl`:
 
 ```bash
 curl -X POST http://localhost:8080/upload \
@@ -425,7 +423,7 @@ curl -X POST http://localhost:8080/upload \
   -H "Content-Type: multipart/form-data"
 ```
 
-### Grouping routes
+### 路由组
 
 ```go
 func main() {
@@ -451,15 +449,15 @@ func main() {
 }
 ```
 
-### Blank Gin without middleware by default
+### 默认初始化 Gin
 
-Use
+用
 
 ```go
 r := gin.New()
 ```
 
-instead of
+代替
 
 ```go
 // Default With the Logger and Recovery middleware already attached
@@ -467,7 +465,7 @@ r := gin.Default()
 ```
 
 
-### Using middleware
+### 中间件使用
 ```go
 func main() {
 	// Creates a router without any middleware by default
@@ -506,7 +504,7 @@ func main() {
 }
 ```
 
-### How to write log file
+### 如何记录日志
 ```go
 func main() {
     // Disable Console Color, you don't need console color when writing the logs to file.
@@ -528,25 +526,25 @@ func main() {
 }
 ```
 
-### Model binding and validation
+### 模型绑定和验证
 
-To bind a request body into a type, use model binding. We currently support binding of JSON, XML, YAML and standard form values (foo=bar&boo=baz).
+要将请求主体绑定到类型中，请使用模型绑定。我们目前支持JSON，XML和标准表单值的绑定（foo = bar＆boo = baz）。
 
-Gin uses [**go-playground/validator.v8**](https://github.com/go-playground/validator) for validation. Check the full docs on tags usage [here](http://godoc.org/gopkg.in/go-playground/validator.v8#hdr-Baked_In_Validators_and_Tags).
+Gin使用[** go-playground/validator.v8 **](https://github.com/go-playground/validator)进行验证。检查有关标签用法的完整文档[此处](http://godoc.org/gopkg.in/go-playground/validator.v8#hdr-Baked_In_Validators_and_Tags)。
 
-Note that you need to set the corresponding binding tag on all fields you want to bind. For example, when binding from JSON, set `json:"fieldname"`.
+请注意，您需要在要绑定的所有字段上设置相应的绑定标记。例如，从JSON绑定时，设置`json：“fieldname”`。
 
-Also, Gin provides two sets of methods for binding:
-- **Type** - Must bind
-  - **Methods** - `Bind`, `BindJSON`, `BindXML`, `BindQuery`, `BindYAML`
-  - **Behavior** - These methods use `MustBindWith` under the hood. If there is a binding error, the request is aborted with `c.AbortWithError(400, err).SetType(ErrorTypeBind)`. This sets the response status code to 400 and the `Content-Type` header is set to `text/plain; charset=utf-8`. Note that if you try to set the response code after this, it will result in a warning `[GIN-debug] [WARNING] Headers were already written. Wanted to override status code 400 with 422`. If you wish to have greater control over the behavior, consider using the `ShouldBind` equivalent method.
-- **Type** - Should bind
-  - **Methods** - `ShouldBind`, `ShouldBindJSON`, `ShouldBindXML`, `ShouldBindQuery`, `ShouldBindYAML`
-  - **Behavior** - These methods use `ShouldBindWith` under the hood. If there is a binding error, the error is returned and it is the developer's responsibility to handle the request and error appropriately.
+此外，Gin提供了两组绑定方法：
+- **类型** - 必须绑定
+   - **方法** - `Bind`，`BindJSON`，`BindXML`，`BindQuery`
+   - **行为** - 这些方法在引擎盖下使用`MustBindWith`。如果存在绑定错误，则使用`c.AbortWithError(400，err).SetType(ErrorTypeBind)`中止请求。这将响应状态代码设置为400，并将`Content-Type`标头设置为`text/plain;字符集= UTF-8`。请注意，如果您在此之后尝试设置响应代码，则会发出警告“[GIN-debug] [警告]标题已经写入。想用422`覆盖状态代码400。如果您希望更好地控制行为，请考虑使用`ShouldBind`等效方法。
+- **类型** - 应该绑定
+   - **方法** - `ShouldBind`，`ShouldBindJSON`，`ShouldBindXML`，`ShouldBindQuery`
+   - **行为** - 这些方法在引擎盖下使用`ShouldBindWith`。如果存在绑定错误，则返回错误，开发人员有责任正确处理请求和错误。
 
-When using the Bind-method, Gin tries to infer the binder depending on the Content-Type header. If you are sure what you are binding, you can use `MustBindWith` or `ShouldBindWith`.
+使用Bind方法时，Gin会尝试根据Content-Type标头推断出绑定器。如果你确定你绑定了什么，你可以使用 `MustBindWith` 或 `ShouldBindWith`。
 
-You can also specify that specific fields are required. If a field is decorated with `binding:"required"` and has a empty value when binding, an error will be returned.
+您还可以指定需要特定字段。如果字段用 `binding：“必需”` 来装饰，并且在绑定时具有空值，则会返回错误。
 
 ```go
 // Binding from JSON
@@ -617,7 +615,7 @@ func main() {
 }
 ```
 
-**Sample request**
+**简单请求**
 ```shell
 $ curl -v -X POST \
   http://localhost:8080/loginJSON \
@@ -639,15 +637,15 @@ $ curl -v -X POST \
 {"error":"Key: 'Login.Password' Error:Field validation for 'Password' failed on the 'required' tag"}
 ```
 
-**Skip validate**
+**跳过验证**
 
-When running the above example using the above the `curl` command, it returns error. Because the example use `binding:"required"` for `Password`. If use `binding:"-"` for `Password`, then it will not return error when running the above example again.
+使用上面 的`curl` 命令运行上面的例子时，它返回错误。 因为这个例子使用 `binding：'需要``````。 如果使用 `binding：“ - ``````，那么在再次运行上面的例子时它不会返回错误。
 
-### Custom Validators
+### 自定义验证器
 
-It is also possible to register custom validators. See the [example code](examples/custom-validation/server.go).
+也可以注册自定义验证器。 请参阅[示例代码](examples/custom-validation/server.go)。
 
-[embedmd]:# (examples/custom-validation/server.go go)
+[embedmd]：＃(examples/custom-validation/server.go go)
 ```go
 package main
 
@@ -709,12 +707,12 @@ $ curl "localhost:8085/bookable?check_in=2018-03-08&check_out=2018-03-09"
 {"error":"Key: 'Booking.CheckIn' Error:Field validation for 'CheckIn' failed on the 'bookabledate' tag"}
 ```
 
-[Struct level validations](https://github.com/go-playground/validator/releases/tag/v8.7) can also be registered this way.
-See the [struct-lvl-validation example](examples/struct-lvl-validations) to learn more.
+[结构级验证](https://github.com/go-playground/validator/releases/tag/v8.7)也可以这种方式注册。
+请参阅[struct-lvl-validation示例](examples/struct-lvl-validations)以了解更多信息。
 
-### Only Bind Query String
+### 只绑定查询字符串
 
-`ShouldBindQuery` function only binds the query params and not the post data. See the [detail information](https://github.com/gin-gonic/gin/issues/742#issuecomment-315953017).
+`ShouldBindQuery` 函数只绑定查询参数而不是后期数据。 请参阅[详细信息](https://github.com/gin-gonic/gin/issues/742#issuecomment-315953017)。
 
 ```go
 package main
@@ -748,9 +746,9 @@ func startPage(c *gin.Context) {
 
 ```
 
-### Bind Query String or Post Data
+### 绑定查询字符串或发布数据
 
-See the [detail information](https://github.com/gin-gonic/gin/issues/742#issuecomment-264681292).
+请参阅[详细信息](https://github.com/gin-gonic/gin/issues/742#issuecomment-264681292)。
 
 ```go
 package main
@@ -789,48 +787,14 @@ func startPage(c *gin.Context) {
 }
 ```
 
-Test it with:
+测试:
 ```sh
 $ curl -X GET "localhost:8085/testing?name=appleboy&address=xyz&birthday=1992-03-15"
 ```
 
-### Bind Uri
+### 绑定 HTML 复选框
 
-See the [detail information](https://github.com/gin-gonic/gin/issues/846).
-
-```go
-package main
-
-import "github.com/gin-gonic/gin"
-
-type Person struct {
-	ID string `uri:"id" binding:"required,uuid"`
-	Name string `uri:"name" binding:"required"`
-}
-
-func main() {
-	route := gin.Default()
-	route.GET("/:name/:id", func(c *gin.Context) {
-		var person Person
-		if err := c.ShouldBindUri(&person); err != nil {
-			c.JSON(400, gin.H{"msg": err})
-			return
-		}
-		c.JSON(200, gin.H{"name": person.Name, "uuid": person.ID})
-	})
-	route.Run(":8088")
-}
-```
-
-Test it with:
-```sh
-$ curl -v localhost:8088/thinkerou/987fbc97-4bed-5078-9f07-9141ba07c9f3
-$ curl -v localhost:8088/thinkerou/not-uuid
-```
-
-### Bind HTML checkboxes
-
-See the [detail information](https://github.com/gin-gonic/gin/issues/129#issuecomment-124260092)
+参见[详细信息](https://github.com/gin-gonic/gin/issues/129#issuecomment-124260092)
 
 main.go
 
@@ -859,12 +823,12 @@ form.html
 <form action="/" method="POST">
     <p>Check some colors</p>
     <label for="red">Red</label>
-    <input type="checkbox" name="colors[]" value="red" id="red">
+    <input type="checkbox" name="colors[]" value="red" id="red" />
     <label for="green">Green</label>
-    <input type="checkbox" name="colors[]" value="green" id="green">
+    <input type="checkbox" name="colors[]" value="green" id="green" />
     <label for="blue">Blue</label>
-    <input type="checkbox" name="colors[]" value="blue" id="blue">
-    <input type="submit">
+    <input type="checkbox" name="colors[]" value="blue" id="blue" />
+    <input type="submit" />
 </form>
 ```
 
@@ -874,7 +838,7 @@ result:
 {"color":["red","green","blue"]}
 ```
 
-### Multipart/Urlencoded binding
+### Multipart Urlencoded 绑定
 
 ```go
 package main
@@ -913,7 +877,7 @@ Test it with:
 $ curl -v --form user=user --form password=password http://localhost:8080/login
 ```
 
-### XML, JSON, YAML and ProtoBuf rendering
+### XML JSON YAML ProtoBuf 渲染
 
 ```go
 func main() {
@@ -967,7 +931,7 @@ func main() {
 
 #### SecureJSON
 
-Using SecureJSON to prevent json hijacking. Default prepends `"while(1),"` to response body if the given struct is array values.
+使用 SecureJSON 来防止 json 劫持。 如果给定的结构是数组值，则默认预 置`“while(1)，”` 到响应体。
 
 ```go
 func main() {
@@ -989,7 +953,7 @@ func main() {
 ```
 #### JSONP
 
-Using JSONP to request data from a server  in a different domain. Add callback to response body if the query parameter callback exists.
+使用 JSONP 从不同域中的服务器请求数据。 如果查询参数回调存在，则将回调添加到响应正文。
 
 ```go
 func main() {
@@ -1012,7 +976,7 @@ func main() {
 
 #### AsciiJSON
 
-Using AsciiJSON to Generates ASCII-only JSON with escaped non-ASCII chracters.
+使用 Ascii JSON 生成具有转义的非 ASCII 字符的仅 ASCII JSON。
 
 ```go
 func main() {
@@ -1035,8 +999,8 @@ func main() {
 
 #### PureJSON
 
-Normally, JSON replaces special HTML characters with their unicode entities, e.g. `<` becomes  `\u003c`. If you want to encode such characters literally, you can use PureJSON instead.
-This feature is unavailable in Go 1.6 and lower.
+通常，JSON 用其 unicod e实体替换特殊 HTML 字符，例如 `<` 变为 `\ u003c`。 如果要按字面意思对这些字符进行编码，则可以使用 PureJSON。
+Go 1.6 及更低版本无法使用此功能。
 
 ```go
 func main() {
@@ -1057,11 +1021,11 @@ func main() {
 	})
 	
 	// listen and serve on 0.0.0.0:8080
-	r.Run(":8080")
+	r.Run(":8080)
 }
 ```
 
-### Serving static files
+### 静态文件服务
 
 ```go
 func main() {
@@ -1075,7 +1039,7 @@ func main() {
 }
 ```
 
-### Serving data from reader
+### 从 reader 读取数据
 
 ```go
 func main() {
@@ -1101,9 +1065,9 @@ func main() {
 }
 ```
 
-### HTML rendering
+### HTML 渲染
 
-Using LoadHTMLGlob() or LoadHTMLFiles()
+使用LoadHTMLGlob()或LoadHTMLFiles()
 
 ```go
 func main() {
@@ -1129,7 +1093,7 @@ templates/index.tmpl
 </html>
 ```
 
-Using templates with same name in different directories
+在不同目录中使用具有相同名称的模板
 
 ```go
 func main() {
@@ -1173,9 +1137,9 @@ templates/users/index.tmpl
 {{ end }}
 ```
 
-#### Custom Template renderer
+#### 自定义模板渲染器
 
-You can also use your own html template render
+您还可以使用自己的 html 模板渲染
 
 ```go
 import "html/template"
@@ -1188,9 +1152,9 @@ func main() {
 }
 ```
 
-#### Custom Delimiters
+#### 自定义分隔符
 
-You may use custom delims
+您可以使用自定义分隔
 
 ```go
 	r := gin.Default()
@@ -1198,9 +1162,9 @@ You may use custom delims
 	r.LoadHTMLGlob("/path/to/templates")
 ```
 
-#### Custom Template Funcs
+#### 自定义模板功能
 
-See the detail [example code](examples/template).
+查看详细信息[示例代码](examples/template)。
 
 main.go
 
@@ -1241,19 +1205,19 @@ func main() {
 raw.tmpl
 
 ```html
-Date: {[{.now | formatAsDate}]}
+日期: {[{.now | formatAsDate}]}
 ```
 
-Result:
+结果:
 ```
 Date: 2017/07/01
 ```
 
-### Multitemplate
+### 多模板
 
-Gin allow by default use only one html.Template. Check [a multitemplate render](https://github.com/gin-contrib/multitemplate) for using features like go 1.6 `block template`.
+Gin 允许默认只使用一个 html 模板。 检查[多模板渲染](https://github.com/gin-contrib/multitemplate)以使用 go 1.6 `block template` 等功能。
 
-### Redirects
+### 重定向
 
 Issuing a HTTP redirect is easy. Both internal and external locations are supported.
 
@@ -1264,7 +1228,7 @@ r.GET("/test", func(c *gin.Context) {
 ```
 
 
-Issuing a Router redirect, use `HandleContext` like below.
+发出路由器重定向，使用如下的“HandleContext”。
 
 ``` go
 r.GET("/test", func(c *gin.Context) {
@@ -1277,7 +1241,7 @@ r.GET("/test2", func(c *gin.Context) {
 ```
 
 
-### Custom Middleware
+###  自定义中间件
 
 ```go
 func Logger() gin.HandlerFunc {
@@ -1317,7 +1281,7 @@ func main() {
 }
 ```
 
-### Using BasicAuth() middleware
+### BasicAuth() 中间件
 
 ```go
 // simulate some private data
@@ -1356,9 +1320,9 @@ func main() {
 }
 ```
 
-### Goroutines inside a middleware
+###  Goroutines
 
-When starting new Goroutines inside a middleware or handler, you **SHOULD NOT** use the original context inside it, you have to use a read-only copy.
+当在中间件或处理程序中启动新的 Goroutines 时，你不应该**使用其中的原始上下文，你必须使用只读副本。
 
 ```go
 func main() {
@@ -1389,9 +1353,9 @@ func main() {
 }
 ```
 
-### Custom HTTP configuration
+### 自定义 HTTP 配置
 
-Use `http.ListenAndServe()` directly, like this:
+直接使用`http.ListenAndServe()`，如下所示：
 
 ```go
 func main() {
@@ -1416,9 +1380,9 @@ func main() {
 }
 ```
 
-### Support Let's Encrypt
+###  Let's Encrypt 支持
 
-example for 1-line LetsEncrypt HTTPS servers.
+单行 LetsEncrypt HTTPS 服务器的示例。
 
 [embedmd]:# (examples/auto-tls/example1/main.go go)
 ```go
@@ -1443,7 +1407,7 @@ func main() {
 }
 ```
 
-example for custom autocert manager.
+自定义autocert管理器的示例。
 
 [embedmd]:# (examples/auto-tls/example2/main.go go)
 ```go
@@ -1475,9 +1439,9 @@ func main() {
 }
 ```
 
-### Run multiple service using Gin
+### 使用 Gin 运行多个服务
 
-See the [question](https://github.com/gin-gonic/gin/issues/346) and try the following example:
+请参阅[问题](https://github.com/gin-gonic/gin/issues/346)并尝试以下示例：
 
 [embedmd]:# (examples/multiple-service/main.go go)
 ```go
@@ -1557,12 +1521,12 @@ func main() {
 }
 ```
 
-### Graceful restart or stop
+### 优雅重启或停止
 
-Do you want to graceful restart or stop your web server?
-There are some ways this can be done.
+您想要优雅地重启或停止您的Web服务器吗？
+有一些方法可以做到这一点。
 
-We can use [fvbock/endless](https://github.com/fvbock/endless) to replace the default `ListenAndServe`. Refer issue [#296](https://github.com/gin-gonic/gin/issues/296) for more details.
+我们可以使用[fvbock/endless](https://github.com/fvbock/endless)来替换默认的`ListenAndServe`。 有关更多详细信息，请参阅问题[＃296](https://github.com/gin-gonic/gin/issues/296)。
 
 ```go
 router := gin.Default()
@@ -1571,13 +1535,13 @@ router.GET("/", handler)
 endless.ListenAndServe(":4242", router)
 ```
 
-An alternative to endless:
+另一种替代方案：
 
-* [manners](https://github.com/braintree/manners): A polite Go HTTP server that shuts down gracefully.
-* [graceful](https://github.com/tylerb/graceful): Graceful is a Go package enabling graceful shutdown of an http.Handler server.
-* [grace](https://github.com/facebookgo/grace): Graceful restart & zero downtime deploy for Go servers.
+* [manners](https://github.com/braintree/manners)：礼貌的Go HTTP服务器，可以正常关闭。
+* [graceful](https://github.com/tylerb/graceful)：Graceful是一个Go包，可以正常关闭http.Handler服务器。
+* [grace](https://github.com/facebookgo/grace)：Go服务器的平滑重启和零停机时间部署。
 
-If you are using Go 1.8, you may not need to use this library! Consider using http.Server's built-in [Shutdown()](https://golang.org/pkg/net/http/#Server.Shutdown) method for graceful shutdowns. See the full [graceful-shutdown](./examples/graceful-shutdown) example with gin.
+如果您使用的是Go 1.8，则可能不需要使用此库！ 考虑使用http.Server的内置[Shutdown()](https://golang.org/pkg/net/http/#Server.Shutdown)方法进行正常关机。 请参阅gin的完整[graceful-shutdown](./examples /graceful-shutdown)示例。
 
 [embedmd]:# (examples/graceful-shutdown/graceful-shutdown/server.go go)
 ```go
@@ -1631,11 +1595,11 @@ func main() {
 }
 ```
 
-### Build a single binary with templates
+### 使用模板构建单个二进制文件
 
-You can build a server into a single binary containing templates by using [go-assets][].
+您可以使用[go-assets] []将服务器构建到包含模板的单个二进制文件中。
 
-[go-assets]: https://github.com/jessevdk/go-assets
+[go-assets]：https：//github.com/jessevdk/go-assets
 
 ```go
 func main() {
@@ -1673,11 +1637,11 @@ func loadTemplate() (*template.Template, error) {
 }
 ```
 
-See a complete example in the `examples/assets-in-binary` directory.
+请参阅`examples/assets-in-binary`目录中的完整示例。
 
 ### Bind form-data request with custom struct
 
-The follow example using custom struct:
+以下示例使用自定义结构：
 
 ```go
 type StructA struct {
@@ -1738,7 +1702,7 @@ func main() {
 }
 ```
 
-Using the command `curl` command result:
+使用命令`curl`命令结果：
 
 ```
 $ curl "http://localhost:8080/getb?field_a=hello&field_b=world"
@@ -1749,7 +1713,7 @@ $ curl "http://localhost:8080/getd?field_x=hello&field_d=world"
 {"d":"world","x":{"FieldX":"hello"}}
 ```
 
-**NOTE**: NOT support the follow style struct:
+**注意**:不支持以下样式结构：
 
 ```go
 type StructX struct {
@@ -1765,12 +1729,12 @@ type StructZ struct {
 }
 ```
 
-In a word, only support nested custom struct which have no `form` now.
+总之，只支持现在没有`form`的嵌套自定义结构。
 
-### Try to bind body into different structs
+### 尝试将 body 绑定到不同的结构中
 
-The normal methods for binding request body consumes `c.Request.Body` and they
-cannot be called multiple times.
+绑定请求体的常规方法使用`c.Request.Body`和它们
+不能多次调用。
 
 ```go
 type formA struct {
@@ -1796,7 +1760,7 @@ func SomeHandler(c *gin.Context) {
 }
 ```
 
-For this, you can use `c.ShouldBindBodyWith`.
+为此，您可以使用`c.ShouldBindBodyWith`.
 
 ```go
 func SomeHandler(c *gin.Context) {
@@ -1817,17 +1781,20 @@ func SomeHandler(c *gin.Context) {
 }
 ```
 
-* `c.ShouldBindBodyWith` stores body into the context before binding. This has
-a slight impact to performance, so you should not use this method if you are
-enough to call binding at once.
-* This feature is only needed for some formats -- `JSON`, `XML`, `MsgPack`,
-`ProtoBuf`. For other formats, `Query`, `Form`, `FormPost`, `FormMultipart`,
-can be called by `c.ShouldBind()` multiple times without any damage to
-performance (See [#1341](https://github.com/gin-gonic/gin/pull/1341)).
 
-### http2 server push
+482/5000
+*`c.ShouldBindBodyWith`在绑定之前将body存储到上下文中。 这有
+对性能有轻微影响，所以如果你这样做，你不应该使用这种方法
+足以立刻调用绑定。
+*只有某些格式需要此功能 - “JSON”，“XML”，“MsgPack”，
+`ProtoBuf`。 对于其他格式，`Query`，`Form`，`FormPost`，`FormMultipart`，
+可以被`c.ShouldBind()`多次调用而不会造成任何损害
+表现（见[＃1341](https://github.com/gin-gonic/gin/pull/1341)。
 
-http.Pusher is supported only **go1.8+**. See the [golang blog](https://blog.golang.org/h2push) for detail information.
+### http2 server 推送
+
+
+http.Pusher仅支持** go1.8 + **。 有关详细信息，请参阅[golang blog](https://blog.golang.org/h2push)。
 
 [embedmd]:# (examples/http-pusher/main.go go)
 ```go
@@ -1874,17 +1841,17 @@ func main() {
 }
 ```
 
-### Define format for the log of routes
+### 定义路由日志的格式
 
-The default log of routes is:
+路由的默认日志是：
 ```
 [GIN-debug] POST   /foo                      --> main.main.func1 (3 handlers)
 [GIN-debug] GET    /bar                      --> main.main.func2 (3 handlers)
 [GIN-debug] GET    /status                   --> main.main.func3 (3 handlers)
 ```
 
-If you want to log this information in given format (e.g. JSON, key values or something else), then you can define this format with `gin.DebugPrintRouteFunc`.
-In the example below, we log all routes with standard log package but you can use another log tools that suits of your needs.
+如果要以给定格式记录此信息（例如JSON，键值或其他内容），则可以使用`gin.DebugPrintRouteFunc`定义此格式。
+在下面的示例中，我们使用标准日志包记录所有路由，但您可以使用其他适合您需求的日志工具。
 ```go
 import (
 	"log"
@@ -1916,39 +1883,10 @@ func main() {
 }
 ```
 
-### Set and get a cookie
 
-```go
-import (
-    "fmt"
+## 测试
 
-    "github.com/gin-gonic/gin"
-)
-
-func main() {
-
-    router := gin.Default()
-
-    router.GET("/cookie", func(c *gin.Context) {
-
-        cookie, err := c.Cookie("gin_cookie")
-
-        if err != nil {
-            cookie = "NotSet"
-            c.SetCookie("gin_cookie", "test", 3600, "/", "localhost", false, true)
-        }
-
-        fmt.Printf("Cookie value: %s \n", cookie)
-    })
-
-    router.Run()
-}
-```
-
-
-## Testing
-
-The `net/http/httptest` package is preferable way for HTTP testing.
+`net/http/httptest`包是HTTP测试的首选方式。
 
 ```go
 package main
@@ -1967,7 +1905,7 @@ func main() {
 }
 ```
 
-Test for code example above:
+测试上面的代码示例：
 
 ```go
 package main
@@ -1992,11 +1930,11 @@ func TestPingRoute(t *testing.T) {
 }
 ```
 
-## Users
+## 用户
 
-Awesome project lists using [Gin](https://github.com/gin-gonic/gin) web framework.
 
-* [drone](https://github.com/drone/drone): Drone is a Continuous Delivery platform built on Docker, written in Go.
-* [gorush](https://github.com/appleboy/gorush): A push notification server written in Go.
-* [fnproject](https://github.com/fnproject/fn): The container native, cloud agnostic serverless platform.
-* [photoprism](https://github.com/photoprism/photoprism): Personal photo management powered by Go and Google TensorFlow.
+使用[Gin](https://github.com/gin-gonic/gin)Web框架的令人尊敬的项目列表。
+
+* [drone](https://github.com/drone/drone)：drone，用Go编写。
+* [gorush](https://github.com/appleboy/gorush)：用Go编写的推送通知服务器。
+* [fnproject](https://github.com/fnproject/fn)：容器本机，云无关的无服务器平台。
