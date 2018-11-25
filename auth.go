@@ -7,6 +7,7 @@ package gin
 import (
 	"crypto/subtle"
 	"encoding/base64"
+	"fmt"
 	"net/http"
 	"strconv"
 )
@@ -83,7 +84,7 @@ func processAccounts(accounts Accounts) authPairs {
 }
 
 func authorizationHeader(user, password string) string {
-	base := user + ":" + password
+	base := fmt.Sprintf("%s:%s", user, password)
 	return "Basic " + base64.StdEncoding.EncodeToString([]byte(base))
 }
 
