@@ -189,7 +189,7 @@ func (group *RouterGroup) createStaticHandler(relativePath string, fs http.FileS
 	return func(c *Context) {
 		if nolisting {
 			c.Writer.WriteHeader(http.StatusNotFound)
-			
+
 			c.handlers = group.engine.allNoRoute
 			c.index = -1
 			return
