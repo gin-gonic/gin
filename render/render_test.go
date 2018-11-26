@@ -32,7 +32,7 @@ func TestRenderMsgPack(t *testing.T) {
 	}
 
 	(MsgPack{data}).WriteContentType(w)
-	assert.Equal(t, "application/msgpack; charset=utf-8", w.Header().Get("Content-Type"))
+	assert.Equal(t, "xxxapplication/msgpack; charset=utf-8", w.Header().Get("Content-Type"))
 
 	err := (MsgPack{data}).Render(w)
 
