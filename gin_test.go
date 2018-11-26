@@ -14,6 +14,7 @@ import (
 	"reflect"
 	"testing"
 	"time"
+	"sync"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -483,3 +484,35 @@ func assertRoutePresent(t *testing.T, gotRoutes RoutesInfo, wantRoute RouteInfo)
 
 func handlerTest1(c *Context) {}
 func handlerTest2(c *Context) {}
+
+func TestContext_JSONErrorContentLength(t *testing.T) {
+	router := New()
+	wg := sync.WaitGroup{}
+	wg.Add(1)
+	var globalError HandlerFunc = func(c *Context) {
+		defer func() {
+			if err := recover(); err != nil {
+				// catch c.JSON panic
+				assert.Equal(t, err, http.ErrContentLength)
+			}
+			wg.Done()
+		}()
+		c.Next()
+	}
+	router.Use(globalError)
+	router.GET("/testJson", func(c *Context) {
+		data := map[string]string{"name": "world"}
+		// write wrong content length number
+		// c.JSON will panic
+		c.Writer.Header().Set("Content-Length", "1")
+		c.JSON(http.StatusOK, data)
+	})
+	ts := httptest.NewServer(router)
+	defer ts.Close()
+
+	_, err := http.Get(fmt.Sprintf("%s/testJson", ts.URL))
+	if err != nil {
+		fmt.Println(err)
+	}
+	wg.Wait()
+}
