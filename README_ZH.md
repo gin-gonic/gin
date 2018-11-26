@@ -1253,7 +1253,7 @@ Gin 允许默认只使用一个 html 模板。 检查[多模板渲染](https://g
 
 ### 重定向
 
-Issuing a HTTP redirect is easy. Both internal and external locations are supported.
+发起HTTP重定向很简单。支持内部和外部重定向。
 
 ```go
 r.GET("/test", func(c *gin.Context) {
@@ -1262,7 +1262,7 @@ r.GET("/test", func(c *gin.Context) {
 ```
 
 
-发出路由器重定向，使用如下的“HandleContext”。
+发起路由器内部重定向，使用如下的`HandleContext`。
 
 ``` go
 r.GET("/test", func(c *gin.Context) {
