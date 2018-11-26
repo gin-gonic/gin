@@ -12,9 +12,9 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"reflect"
+	"sync"
 	"testing"
 	"time"
-	"sync"
 
 	"github.com/stretchr/testify/assert"
 )
