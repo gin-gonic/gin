@@ -485,7 +485,7 @@ func assertRoutePresent(t *testing.T, gotRoutes RoutesInfo, wantRoute RouteInfo)
 func handlerTest1(c *Context) {}
 func handlerTest2(c *Context) {}
 
-func TestContext_JSONErrorContentLength(t *testing.T) {
+func TestJSONErrorWrongContentLength(t *testing.T) {
 	router := New()
 	wg := sync.WaitGroup{}
 	wg.Add(1)
