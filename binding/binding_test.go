@@ -687,7 +687,7 @@ func TestUriBinding(t *testing.T) {
 	}
 	var not NotSupportStruct
 	assert.Error(t, b.BindUri(m, &not))
-	assert.Equal(t, "", not.Name)
+	assert.Equal(t, map[string]interface{}(nil), not.Name)
 }
 
 func testFormBinding(t *testing.T, method, path, badPath, body, badBody string) {
