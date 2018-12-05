@@ -53,8 +53,8 @@ func (group *RouterGroup) Use(middleware ...HandlerFunc) IRoutes {
 	return group.returnObj()
 }
 
-// Group creates a new router group. You should add all the routes that have common middlwares or the same path prefix.
-// For example, all the routes that use a common middlware for authorization could be grouped.
+// Group creates a new router group. You should add all the routes that have common middlewares or the same path prefix.
+// For example, all the routes that use a common middleware for authorization could be grouped.
 func (group *RouterGroup) Group(relativePath string, handlers ...HandlerFunc) *RouterGroup {
 	return &RouterGroup{
 		Handlers: group.combineHandlers(handlers),
@@ -185,11 +185,22 @@ func (group *RouterGroup) StaticFS(relativePath string, fs http.FileSystem) IRou
 func (group *RouterGroup) createStaticHandler(relativePath string, fs http.FileSystem) HandlerFunc {
 	absolutePath := group.calculateAbsolutePath(relativePath)
 	fileServer := http.StripPrefix(absolutePath, http.FileServer(fs))
-	_, nolisting := fs.(*onlyfilesFS)
+
 	return func(c *Context) {
-		if nolisting {
+		if _, nolisting := fs.(*onlyfilesFS); nolisting {
 			c.Writer.WriteHeader(http.StatusNotFound)
 		}
+
+		file := c.Param("filepath")
+		// Check if file exists and/or if we have permission to access it
+		if _, err := fs.Open(file); err != nil {
+			c.Writer.WriteHeader(http.StatusNotFound)
+			c.handlers = group.engine.allNoRoute
+			// Reset index
+			c.index = -1
+			return
+		}
+
 		fileServer.ServeHTTP(c.Writer, c.Request)
 	}
 }
