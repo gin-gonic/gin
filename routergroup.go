@@ -187,8 +187,11 @@ func (group *RouterGroup) createStaticHandler(relativePath string, fs http.FileS
 	fileServer := http.StripPrefix(absolutePath, http.FileServer(fs))
 
 	return func(c *Context) {
-		file := c.Param("filepath")
+		if _, nolisting := fs.(*onlyfilesFS); nolisting {
+			c.Writer.WriteHeader(http.StatusNotFound)
+		}
 
+		file := c.Param("filepath")
 		// Check if file exists and/or if we have permission to access it
 		if _, err := fs.Open(file); err != nil {
 			c.Writer.WriteHeader(http.StatusNotFound)
