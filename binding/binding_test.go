@@ -14,7 +14,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/gin-gonic/gin/binding/example"
+	"github.com/gin-gonic/gin/testdata/protoexample"
 	"github.com/golang/protobuf/proto"
 	"github.com/stretchr/testify/assert"
 	"github.com/ugorji/go/codec"
@@ -190,6 +190,16 @@ func TestBindingDefault(t *testing.T) {
 
 	assert.Equal(t, MsgPack, Default("POST", MIMEMSGPACK))
 	assert.Equal(t, MsgPack, Default("PUT", MIMEMSGPACK2))
+
+	assert.Equal(t, YAML, Default("POST", MIMEYAML))
+	assert.Equal(t, YAML, Default("PUT", MIMEYAML))
+}
+
+func TestBindingJSONNilBody(t *testing.T) {
+	var obj FooStruct
+	req, _ := http.NewRequest(http.MethodPost, "/", nil)
+	err := JSON.Bind(req, &obj)
+	assert.Error(t, err)
 }
 
 func TestBindingJSON(t *testing.T) {
@@ -473,6 +483,20 @@ func TestBindingXMLFail(t *testing.T) {
 		"<map><foo>bar<foo></map>", "<map><bar>foo</bar></map>")
 }
 
+func TestBindingYAML(t *testing.T) {
+	testBodyBinding(t,
+		YAML, "yaml",
+		"/", "/",
+		`foo: bar`, `bar: foo`)
+}
+
+func TestBindingYAMLFail(t *testing.T) {
+	testBodyBindingFail(t,
+		YAML, "yaml",
+		"/", "/",
+		`foo:\nbar`, `bar: foo`)
+}
+
 func createFormPostRequest() *http.Request {
 	req, _ := http.NewRequest("POST", "/?foo=getfoo&bar=getbar", bytes.NewBufferString("foo=bar&bar=foo"))
 	req.Header.Set("Content-Type", MIMEPOSTForm)
@@ -562,7 +586,7 @@ func TestBindingFormMultipartFail(t *testing.T) {
 }
 
 func TestBindingProtoBuf(t *testing.T) {
-	test := &example.Test{
+	test := &protoexample.Test{
 		Label: proto.String("yes"),
 	}
 	data, _ := proto.Marshal(test)
@@ -574,7 +598,7 @@ func TestBindingProtoBuf(t *testing.T) {
 }
 
 func TestBindingProtoBufFail(t *testing.T) {
-	test := &example.Test{
+	test := &protoexample.Test{
 		Label: proto.String("yes"),
 	}
 	data, _ := proto.Marshal(test)
@@ -643,6 +667,27 @@ func TestExistsFails(t *testing.T) {
 	req := requestWithBody("POST", "/", `{"boen": 0}`)
 	err := JSON.Bind(req, &obj)
 	assert.Error(t, err)
+}
+
+func TestUriBinding(t *testing.T) {
+	b := Uri
+	assert.Equal(t, "uri", b.Name())
+
+	type Tag struct {
+		Name string `uri:"name"`
+	}
+	var tag Tag
+	m := make(map[string][]string)
+	m["name"] = []string{"thinkerou"}
+	assert.NoError(t, b.BindUri(m, &tag))
+	assert.Equal(t, "thinkerou", tag.Name)
+
+	type NotSupportStruct struct {
+		Name map[string]interface{} `uri:"name"`
+	}
+	var not NotSupportStruct
+	assert.Error(t, b.BindUri(m, &not))
+	assert.Equal(t, map[string]interface{}(nil), not.Name)
 }
 
 func testFormBinding(t *testing.T, method, path, badPath, body, badBody string) {
@@ -1156,14 +1201,14 @@ func testBodyBindingFail(t *testing.T, b Binding, name, path, badPath, body, bad
 func testProtoBodyBinding(t *testing.T, b Binding, name, path, badPath, body, badBody string) {
 	assert.Equal(t, name, b.Name())
 
-	obj := example.Test{}
+	obj := protoexample.Test{}
 	req := requestWithBody("POST", path, body)
 	req.Header.Add("Content-Type", MIMEPROTOBUF)
 	err := b.Bind(req, &obj)
 	assert.NoError(t, err)
 	assert.Equal(t, "yes", *obj.Label)
 
-	obj = example.Test{}
+	obj = protoexample.Test{}
 	req = requestWithBody("POST", badPath, badBody)
 	req.Header.Add("Content-Type", MIMEPROTOBUF)
 	err = ProtoBuf.Bind(req, &obj)
@@ -1179,7 +1224,7 @@ func (h hook) Read([]byte) (int, error) {
 func testProtoBodyBindingFail(t *testing.T, b Binding, name, path, badPath, body, badBody string) {
 	assert.Equal(t, name, b.Name())
 
-	obj := example.Test{}
+	obj := protoexample.Test{}
 	req := requestWithBody("POST", path, body)
 
 	req.Body = ioutil.NopCloser(&hook{})
@@ -1187,7 +1232,7 @@ func testProtoBodyBindingFail(t *testing.T, b Binding, name, path, badPath, body
 	err := b.Bind(req, &obj)
 	assert.Error(t, err)
 
-	obj = example.Test{}
+	obj = protoexample.Test{}
 	req = requestWithBody("POST", badPath, badBody)
 	req.Header.Add("Content-Type", MIMEPROTOBUF)
 	err = ProtoBuf.Bind(req, &obj)
@@ -1214,4 +1259,13 @@ func testMsgPackBodyBinding(t *testing.T, b Binding, name, path, badPath, body, 
 func requestWithBody(method, path, body string) (req *http.Request) {
 	req, _ = http.NewRequest(method, path, bytes.NewBufferString(body))
 	return
+}
+
+func TestCanSet(t *testing.T) {
+	type CanSetStruct struct {
+		lowerStart string `form:"lower"`
+	}
+
+	var c CanSetStruct
+	assert.Nil(t, mapForm(&c, nil))
 }

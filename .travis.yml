@@ -6,13 +6,25 @@ go:
   - 1.8.x
   - 1.9.x
   - 1.10.x
+  - 1.11.x
   - master
+
+matrix:
+  fast_finish: true
+  include:
+  - go: 1.11.x
+    env: GO111MODULE=on
 
 git:
   depth: 10
 
+before_install:
+  - if [[ "${GO111MODULE}" = "on" ]]; then mkdir "${HOME}/go"; export GOPATH="${HOME}/go"; fi
+
 install:
-  - make install
+  - if [[ "${GO111MODULE}" = "on" ]]; then go mod download; else make install; fi
+  - if [[ "${GO111MODULE}" = "on" ]]; then export PATH="${GOPATH}/bin:${GOROOT}/bin:${PATH}"; fi
+  - if [[ "${GO111MODULE}" = "on" ]]; then make tools; fi
 
 go_import_path: github.com/gin-gonic/gin
 
