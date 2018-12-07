@@ -495,6 +495,7 @@ func TestJSONErrorWrongContentLength(t *testing.T) {
 				// catch c.JSON panic
 				assert.Equal(t, err, http.ErrContentLength)
 			}
+			c.JSON(http.StatusInternalServerError, "internal error")
 			wg.Done()
 		}()
 		c.Next()
