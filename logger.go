@@ -26,6 +26,7 @@ var (
 	disableColor = false
 )
 
+// LoggerConfig defines the config for Logger middleware.
 type LoggerConfig struct {
 	// Optional. Default value is gin.DefaultLogFormatter
 	Formatter LogFormatter
@@ -55,6 +56,7 @@ type LogFormatterParams struct {
 	IsTerm       bool
 }
 
+// DefaultLogFormatter is the default log format function Logger middleware uses.
 var DefaultLogFormatter = func(param LogFormatterParams) string {
 	var statusColor, methodColor, resetColor string
 	if param.IsTerm {
@@ -117,6 +119,7 @@ func LoggerWithWriter(out io.Writer, notlogged ...string) HandlerFunc {
 	})
 }
 
+// LoggerWithConfig instance a Logger middleware with config.
 func LoggerWithConfig(conf LoggerConfig) HandlerFunc {
 	formatter := conf.Formatter
 	if formatter == nil {
