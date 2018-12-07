@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"net/http"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -223,6 +224,36 @@ func TestLoggerWithConfigFormatting(t *testing.T) {
 	assert.Equal(t, "/example?a=100", gotParam.Path)
 	assert.Empty(t, gotParam.ErrorMessage)
 
+}
+
+func TestDefaultLogFormatter(t *testing.T) {
+	timeStamp := time.Unix(1544173902, 0).UTC()
+
+	termFalseParam := LogFormatterParams{
+		TimeStamp:    timeStamp,
+		StatusCode:   200,
+		Latency:      time.Second * 5,
+		ClientIP:     "20.20.20.20",
+		Method:       "GET",
+		Path:         "/",
+		ErrorMessage: "",
+		IsTerm:       false,
+	}
+
+	termTrueParam := LogFormatterParams{
+		TimeStamp:    timeStamp,
+		StatusCode:   200,
+		Latency:      time.Second * 5,
+		ClientIP:     "20.20.20.20",
+		Method:       "GET",
+		Path:         "/",
+		ErrorMessage: "",
+		IsTerm:       true,
+	}
+
+	assert.Equal(t, "[GIN] 2018/12/07 - 09:11:42 | 200 |            5s |     20.20.20.20 | GET      /\n", DefaultLogFormatter(termFalseParam))
+
+	assert.Equal(t, "[GIN] 2018/12/07 - 09:11:42 |\x1b[97;42m 200 \x1b[0m|            5s |     20.20.20.20 |\x1b[97;44m GET     \x1b[0m /\n", DefaultLogFormatter(termTrueParam))
 }
 
 func TestColorForMethod(t *testing.T) {
