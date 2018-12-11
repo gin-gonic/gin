@@ -40,6 +40,7 @@ Gin is a web framework written in Go (Golang). It features a martini-like API wi
     - [Custom Validators](#custom-validators)
     - [Only Bind Query String](#only-bind-query-string)
     - [Bind Query String or Post Data](#bind-query-string-or-post-data)
+    - [Bind Uri](#bind-uri)
     - [Bind HTML checkboxes](#bind-html-checkboxes)
     - [Multipart/Urlencoded binding](#multiparturlencoded-binding)
     - [XML, JSON, YAML and ProtoBuf rendering](#xml-json-yaml-and-protobuf-rendering)
@@ -829,6 +830,40 @@ func startPage(c *gin.Context) {
 Test it with:
 ```sh
 $ curl -X GET "localhost:8085/testing?name=appleboy&address=xyz&birthday=1992-03-15"
+```
+
+### Bind Uri
+
+See the [detail information](https://github.com/gin-gonic/gin/issues/846).
+
+```go
+package main
+
+import "github.com/gin-gonic/gin"
+
+type Person struct {
+	ID string `uri:"id" binding:"required,uuid"`
+	Name string `uri:"name" binding:"required"`
+}
+
+func main() {
+	route := gin.Default()
+	route.GET("/:name/:id", func(c *gin.Context) {
+		var person Person
+		if err := c.ShouldBindUri(&person); err != nil {
+			c.JSON(400, gin.H{"msg": err})
+			return
+		}
+		c.JSON(200, gin.H{"name": person.Name, "uuid": person.ID})
+	})
+	route.Run(":8088")
+}
+```
+
+Test it with:
+```sh
+$ curl -v localhost:8088/thinkerou/987fbc97-4bed-5078-9f07-9141ba07c9f3
+$ curl -v localhost:8088/thinkerou/not-uuid
 ```
 
 ### Bind HTML checkboxes
@@ -2003,3 +2038,5 @@ Awesome project lists using [Gin](https://github.com/gin-gonic/gin) web framewor
 * [gorush](https://github.com/appleboy/gorush): A push notification server written in Go.
 * [fnproject](https://github.com/fnproject/fn): The container native, cloud agnostic serverless platform.
 * [photoprism](https://github.com/photoprism/photoprism): Personal photo management powered by Go and Google TensorFlow.
+* [krakend](https://github.com/devopsfaith/krakend): Ultra performant API Gateway with middlewares.
+* [picfit](https://github.com/thoas/picfit): An image resizing server written in Go.

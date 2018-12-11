@@ -11,6 +11,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"strings"
 	"syscall"
 	"testing"
 
@@ -85,7 +86,7 @@ func TestPanicWithBrokenPipe(t *testing.T) {
 
 	expectMsgs := map[syscall.Errno]string{
 		syscall.EPIPE:      "broken pipe",
-		syscall.ECONNRESET: "connection reset",
+		syscall.ECONNRESET: "connection reset by peer",
 	}
 
 	for errno, expectMsg := range expectMsgs {
@@ -108,7 +109,7 @@ func TestPanicWithBrokenPipe(t *testing.T) {
 			w := performRequest(router, "GET", "/recovery")
 			// TEST
 			assert.Equal(t, expectCode, w.Code)
-			assert.Contains(t, buf.String(), expectMsg)
+			assert.Contains(t, strings.ToLower(buf.String()), expectMsg)
 		})
 	}
 }
