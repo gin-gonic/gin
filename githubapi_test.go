@@ -334,7 +334,7 @@ func TestBindUriError(t *testing.T) {
 	router := Default()
 
 	type Member struct {
-		number string `uri:"num" binding:"required,uuid"`
+		Number string `uri:"num" binding:"required,uuid"`
 	}
 	router.Handle("GET", "/new/rest/:num", func(c *Context) {
 		var m Member
