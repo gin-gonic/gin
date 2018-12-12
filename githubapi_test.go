@@ -313,7 +313,7 @@ func TestBindUri(t *testing.T) {
 
 	type Person struct {
 		Name string `uri:"name" binding:"required"`
-		Id string `uri:"id" binding:"required"`
+		Id   string `uri:"id" binding:"required"`
 	}
 	router.Handle("GET", "/rest/:name/:id", func(c *Context) {
 		var person Person
