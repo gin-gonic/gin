@@ -530,15 +530,25 @@ func (c *Context) BindYAML(obj interface{}) error {
 	return c.MustBindWith(obj, binding.YAML)
 }
 
+// BindUri binds the passed struct pointer using binding.Uri.
+// It will abort the request with HTTP 400 if any error occurs.
+func (c *Context) BindUri(obj interface{}) error {
+	if err := c.ShouldBindUri(obj); err != nil {
+		c.AbortWithError(http.StatusBadRequest, err).SetType(ErrorTypeBind)
+		return err
+	}
+	return nil
+}
+
 // MustBindWith binds the passed struct pointer using the specified binding engine.
 // It will abort the request with HTTP 400 if any error occurs.
 // See the binding package.
-func (c *Context) MustBindWith(obj interface{}, b binding.Binding) (err error) {
-	if err = c.ShouldBindWith(obj, b); err != nil {
+func (c *Context) MustBindWith(obj interface{}, b binding.Binding) error {
+	if err := c.ShouldBindWith(obj, b); err != nil {
 		c.AbortWithError(http.StatusBadRequest, err).SetType(ErrorTypeBind)
+		return err
 	}
-
-	return
+	return nil
 }
 
 // ShouldBind checks the Content-Type to select a binding engine automatically,
