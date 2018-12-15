@@ -364,6 +364,10 @@ ids: map[b:hello a:1234], names: map[second:tianou first:thinkerou]
 
 References issue [#774](https://github.com/gin-gonic/gin/issues/774) and detail [example code](examples/upload-file/single).
 
+`file.Filename` **SHOULD NOT** be trusted. See [`Content-Disposition` on MDN](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Disposition#Directives) and [#1693](https://github.com/gin-gonic/gin/issues/1693)
+
+> The filename is always optional and must not be used blindly by the application: path information should be stripped, and conversion to the server file system rules should be done.
+
 ```go
 func main() {
 	router := gin.Default()
