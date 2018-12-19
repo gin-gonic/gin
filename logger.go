@@ -26,6 +26,56 @@ var (
 	disableColor = false
 )
 
+// LoggerConfig defines the config for Logger middleware.
+type LoggerConfig struct {
+	// Optional. Default value is gin.defaultLogFormatter
+	Formatter LogFormatter
+
+	// Output is a writer where logs are written.
+	// Optional. Default value is gin.DefaultWriter.
+	Output io.Writer
+
+	// SkipPathes is a url path array which logs are not written.
+	// Optional.
+	SkipPathes []string
+}
+
+// LogFormatter gives the signature of the formatter function passed to LoggerWithFormatter
+type LogFormatter func(params LogFormatterParams) string
+
+// LogFormatterParams is the structure any formatter will be handed when time to log comes
+type LogFormatterParams struct {
+	Request      *http.Request
+	TimeStamp    time.Time
+	StatusCode   int
+	Latency      time.Duration
+	ClientIP     string
+	Method       string
+	Path         string
+	ErrorMessage string
+	IsTerm       bool
+}
+
+// defaultLogFormatter is the default log format function Logger middleware uses.
+var defaultLogFormatter = func(param LogFormatterParams) string {
+	var statusColor, methodColor, resetColor string
+	if param.IsTerm {
+		statusColor = colorForStatus(param.StatusCode)
+		methodColor = colorForMethod(param.Method)
+		resetColor = reset
+	}
+
+	return fmt.Sprintf("[GIN] %v |%s %3d %s| %13v | %15s |%s %-7s %s %s\n%s",
+		param.TimeStamp.Format("2006/01/02 - 15:04:05"),
+		statusColor, param.StatusCode, resetColor,
+		param.Latency,
+		param.ClientIP,
+		methodColor, param.Method, resetColor,
+		param.Path,
+		param.ErrorMessage,
+	)
+}
+
 // DisableConsoleColor disables color output in the console.
 func DisableConsoleColor() {
 	disableColor = true
@@ -50,12 +100,39 @@ func ErrorLoggerT(typ ErrorType) HandlerFunc {
 // Logger instances a Logger middleware that will write the logs to gin.DefaultWriter.
 // By default gin.DefaultWriter = os.Stdout.
 func Logger() HandlerFunc {
-	return LoggerWithWriter(DefaultWriter)
+	return LoggerWithConfig(LoggerConfig{})
+}
+
+// LoggerWithFormatter instance a Logger middleware with the specified log format function.
+func LoggerWithFormatter(f LogFormatter) HandlerFunc {
+	return LoggerWithConfig(LoggerConfig{
+		Formatter: f,
+	})
 }
 
 // LoggerWithWriter instance a Logger middleware with the specified writer buffer.
 // Example: os.Stdout, a file opened in write mode, a socket...
 func LoggerWithWriter(out io.Writer, notlogged ...string) HandlerFunc {
+	return LoggerWithConfig(LoggerConfig{
+		Output:     out,
+		SkipPathes: notlogged,
+	})
+}
+
+// LoggerWithConfig instance a Logger middleware with config.
+func LoggerWithConfig(conf LoggerConfig) HandlerFunc {
+	formatter := conf.Formatter
+	if formatter == nil {
+		formatter = defaultLogFormatter
+	}
+
+	out := conf.Output
+	if out == nil {
+		out = DefaultWriter
+	}
+
+	notlogged := conf.SkipPathes
+
 	isTerm := true
 
 	if w, ok := out.(*os.File); !ok ||
@@ -85,34 +162,27 @@ func LoggerWithWriter(out io.Writer, notlogged ...string) HandlerFunc {
 
 		// Log only when path is not being skipped
 		if _, ok := skip[path]; !ok {
-			// Stop timer
-			end := time.Now()
-			latency := end.Sub(start)
-
-			clientIP := c.ClientIP()
-			method := c.Request.Method
-			statusCode := c.Writer.Status()
-			var statusColor, methodColor, resetColor string
-			if isTerm {
-				statusColor = colorForStatus(statusCode)
-				methodColor = colorForMethod(method)
-				resetColor = reset
+			param := LogFormatterParams{
+				Request: c.Request,
+				IsTerm:  isTerm,
 			}
-			comment := c.Errors.ByType(ErrorTypePrivate).String()
+
+			// Stop timer
+			param.TimeStamp = time.Now()
+			param.Latency = param.TimeStamp.Sub(start)
+
+			param.ClientIP = c.ClientIP()
+			param.Method = c.Request.Method
+			param.StatusCode = c.Writer.Status()
+			param.ErrorMessage = c.Errors.ByType(ErrorTypePrivate).String()
 
 			if raw != "" {
 				path = path + "?" + raw
 			}
 
-			fmt.Fprintf(out, "[GIN] %v |%s %3d %s| %13v | %15s |%s %-7s %s %s\n%s",
-				end.Format("2006/01/02 - 15:04:05"),
-				statusColor, statusCode, resetColor,
-				latency,
-				clientIP,
-				methodColor, method, resetColor,
-				path,
-				comment,
-			)
+			param.Path = path
+
+			fmt.Fprintf(out, formatter(param))
 		}
 	}
 }

@@ -524,15 +524,25 @@ func (c *Context) BindYAML(obj interface{}) error {
 	return c.MustBindWith(obj, binding.YAML)
 }
 
+// BindUri binds the passed struct pointer using binding.Uri.
+// It will abort the request with HTTP 400 if any error occurs.
+func (c *Context) BindUri(obj interface{}) error {
+	if err := c.ShouldBindUri(obj); err != nil {
+		c.AbortWithError(http.StatusBadRequest, err).SetType(ErrorTypeBind)
+		return err
+	}
+	return nil
+}
+
 // MustBindWith binds the passed struct pointer using the specified binding engine.
 // It will abort the request with HTTP 400 if any error occurs.
 // See the binding package.
-func (c *Context) MustBindWith(obj interface{}, b binding.Binding) (err error) {
-	if err = c.ShouldBindWith(obj, b); err != nil {
+func (c *Context) MustBindWith(obj interface{}, b binding.Binding) error {
+	if err := c.ShouldBindWith(obj, b); err != nil {
 		c.AbortWithError(http.StatusBadRequest, err).SetType(ErrorTypeBind)
+		return err
 	}
-
-	return
+	return nil
 }
 
 // ShouldBind checks the Content-Type to select a binding engine automatically,
@@ -568,6 +578,15 @@ func (c *Context) ShouldBindYAML(obj interface{}) error {
 	return c.ShouldBindWith(obj, binding.YAML)
 }
 
+// ShouldBindUri binds the passed struct pointer using the specified binding engine.
+func (c *Context) ShouldBindUri(obj interface{}) error {
+	m := make(map[string][]string)
+	for _, v := range c.Params {
+		m[v.Key] = []string{v.Value}
+	}
+	return binding.Uri.BindUri(m, obj)
+}
+
 // ShouldBindWith binds the passed struct pointer using the specified binding engine.
 // See the binding package.
 func (c *Context) ShouldBindWith(obj interface{}, b binding.Binding) error {
@@ -579,9 +598,7 @@ func (c *Context) ShouldBindWith(obj interface{}, b binding.Binding) error {
 //
 // NOTE: This method reads the body before binding. So you should use
 // ShouldBindWith for better performance if you need to call only once.
-func (c *Context) ShouldBindBodyWith(
-	obj interface{}, bb binding.BindingBody,
-) (err error) {
+func (c *Context) ShouldBindBodyWith(obj interface{}, bb binding.BindingBody) (err error) {
 	var body []byte
 	if cb, ok := c.Get(BodyBytesKey); ok {
 		if cbb, ok := cb.([]byte); ok {
@@ -932,15 +949,15 @@ func (c *Context) SetAccepted(formats ...string) {
 // Deadline returns the time when work done on behalf of this context
 // should be canceled. Deadline returns ok==false when no deadline is
 // set. Successive calls to Deadline return the same results.
-func (c *Context) Deadline() (deadline time.Time, ok bool) {
-	return
+func (c *Context) Deadline() (time.Time, bool) {
+	return c.Request.Context().Deadline()
 }
 
 // Done returns a channel that's closed when work done on behalf of this
 // context should be canceled. Done may return nil if this context can
 // never be canceled. Successive calls to Done return the same value.
 func (c *Context) Done() <-chan struct{} {
-	return nil
+	return c.Request.Context().Done()
 }
 
 // Err returns a non-nil error value after Done is closed,
@@ -950,7 +967,7 @@ func (c *Context) Done() <-chan struct{} {
 // Canceled if the context was canceled
 // or DeadlineExceeded if the context's deadline passed.
 func (c *Context) Err() error {
-	return nil
+	return c.Request.Context().Err()
 }
 
 // Value returns the value associated with this context for key, or nil
