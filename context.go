@@ -419,11 +419,11 @@ func (c *Context) GetPostFormArray(key string) ([]string, bool) {
 	if values := req.PostForm[key]; len(values) > 0 {
 		return values, true
 	}
-	if req.MultipartForm != nil && req.MultipartForm.File != nil {
+	/*if req.MultipartForm != nil && req.MultipartForm.File != nil {
 		if values := req.MultipartForm.Value[key]; len(values) > 0 {
 			return values, true
 		}
-	}
+	}*/
 	return []string{}, false
 }
 
