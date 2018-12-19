@@ -19,7 +19,7 @@ test:
 		if grep -q "^--- FAIL" tmp.out; then \
 			rm tmp.out; \
 			exit 1; \
-		elif grep -q "build fail" tmp.out; then \
+		elif grep -q "build failed" tmp.out; then \
 			rm tmp.out; \
 			exit; \
 		fi; \
