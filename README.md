@@ -68,9 +68,11 @@ Gin is a web framework written in Go (Golang). It features a martini-like API wi
 
 ## Installation
 
-To install Gin package, you need to install Go and set your Go workspace first.
+To install Gin, you'll first need to [install Go and set up your Go workspace](https://golang.org/doc/install).
 
-1. Download and install it:
+### Installing with `go-get`
+
+1. Download and install Gin:
 
 ```sh
 $ go get -u github.com/gin-gonic/gin
@@ -81,14 +83,13 @@ $ go get -u github.com/gin-gonic/gin
 ```go
 import "github.com/gin-gonic/gin"
 ```
-
-3. (Optional) Import `net/http`. This is required for example if using constants such as `http.StatusOK`.
+3. (Optional) Import `net/http`. This is required if you want to use constants such as `http.StatusOK`.
 
 ```go
 import "net/http"
 ```
 
-### Use a vendor tool like [Govendor](https://github.com/kardianos/govendor)
+### Installing with [Govendor](https://github.com/kardianos/govendor)
 
 1. `go get` govendor
 
@@ -120,16 +121,19 @@ $ curl https://raw.githubusercontent.com/gin-gonic/gin/master/examples/basic/mai
 $ go run main.go
 ```
 
-## Prerequisite
+## Requisites
 
-Now Gin requires Go 1.6 or later and Go 1.7 will be required soon.
+For now, Gin will run on Go 1.6 or later. Using go 1.7 is highly recommended as it will become the minimum supported version soon.
+To check the version of your Go installation, type in your Terminal emulator:
 
-## Quick start
- 
-```sh
-# assume the following codes in example.go file
-$ cat example.go
-```
+`$ go version`
+
+## Quickstart project ("Ping, pong")
+
+This example code responds "Pong" when a user `GET`s 0.0.0.0t:8080/ping.
+
+To start, `cd` into your `$GOPATH/src` and create a new folder for your project.
+After that, create a new file called `example.go` with the following contents:
 
 ```go
 package main
@@ -140,17 +144,20 @@ func main() {
 	r := gin.Default()
 	r.GET("/ping", func(c *gin.Context) {
 		c.JSON(200, gin.H{
-			"message": "pong",
+			"message": "Pong!",
 		})
 	})
 	r.Run() // listen and serve on 0.0.0.0:8080
 }
 ```
 
+Save that file. In that same directory, run:
+
 ```
-# run example.go and visit 0.0.0.0:8080/ping on browser
 $ go run example.go
 ```
+
+Now, open your favorite browser and go to `0.0.0.0:8080/ping`. If you see `Pong!`, congratulations! You have just finished your first Gin project.
 
 ## Benchmarks
 
@@ -2035,8 +2042,7 @@ func TestPingRoute(t *testing.T) {
 ```
 
 ## Users
-
-Awesome project lists using [Gin](https://github.com/gin-gonic/gin) web framework.
+List of awesome projects made with the [Gin](https://github.com/gin-gonic/gin) web framework.
 
 * [drone](https://github.com/drone/drone): Drone is a Continuous Delivery platform built on Docker, written in Go.
 * [gorush](https://github.com/appleboy/gorush): A push notification server written in Go.
