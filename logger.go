@@ -35,9 +35,9 @@ type LoggerConfig struct {
 	// Optional. Default value is gin.DefaultWriter.
 	Output io.Writer
 
-	// SkipPathes is a url path array which logs are not written.
+	// SkipPaths is a url path array which logs are not written.
 	// Optional.
-	SkipPathes []string
+	SkipPaths []string
 }
 
 // LogFormatter gives the signature of the formatter function passed to LoggerWithFormatter
@@ -114,8 +114,8 @@ func LoggerWithFormatter(f LogFormatter) HandlerFunc {
 // Example: os.Stdout, a file opened in write mode, a socket...
 func LoggerWithWriter(out io.Writer, notlogged ...string) HandlerFunc {
 	return LoggerWithConfig(LoggerConfig{
-		Output:     out,
-		SkipPathes: notlogged,
+		Output:    out,
+		SkipPaths: notlogged,
 	})
 }
 
@@ -131,7 +131,7 @@ func LoggerWithConfig(conf LoggerConfig) HandlerFunc {
 		out = DefaultWriter
 	}
 
-	notlogged := conf.SkipPathes
+	notlogged := conf.SkipPaths
 
 	isTerm := true
 
