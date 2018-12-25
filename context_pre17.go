@@ -2,21 +2,13 @@
 // Use of this source code is governed by a MIT style
 // license that can be found in the LICENSE file.
 
-// +build go1.7
+// +build !go1.7
 
 package gin
 
 import (
 	"time"
-
-	"github.com/gin-gonic/gin/render"
 )
-
-// PureJSON serializes the given struct as JSON into the response body.
-// PureJSON, unlike JSON, does not replace special html characters with their unicode entities.
-func (c *Context) PureJSON(code int, obj interface{}) {
-	c.Render(code, render.PureJSON{Data: obj})
-}
 
 /************************************/
 /***** GOLANG.ORG/X/NET/CONTEXT *****/
@@ -25,15 +17,15 @@ func (c *Context) PureJSON(code int, obj interface{}) {
 // Deadline returns the time when work done on behalf of this context
 // should be canceled. Deadline returns ok==false when no deadline is
 // set. Successive calls to Deadline return the same results.
-func (c *Context) Deadline() (time.Time, bool) {
-	return c.Request.Context().Deadline()
+func (c *Context) Deadline() (deadline time.Time, ok bool) {
+	return
 }
 
 // Done returns a channel that's closed when work done on behalf of this
 // context should be canceled. Done may return nil if this context can
 // never be canceled. Successive calls to Done return the same value.
 func (c *Context) Done() <-chan struct{} {
-	return c.Request.Context().Done()
+	return nil
 }
 
 // Err returns a non-nil error value after Done is closed,
@@ -43,5 +35,5 @@ func (c *Context) Done() <-chan struct{} {
 // Canceled if the context was canceled
 // or DeadlineExceeded if the context's deadline passed.
 func (c *Context) Err() error {
-	return c.Request.Context().Err()
+	return nil
 }
