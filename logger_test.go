@@ -320,8 +320,8 @@ func TestLoggerWithConfigSkippingPaths(t *testing.T) {
 	buffer := new(bytes.Buffer)
 	router := New()
 	router.Use(LoggerWithConfig(LoggerConfig{
-		Output:     buffer,
-		SkipPathes: []string{"/skipped"},
+		Output:    buffer,
+		SkipPaths: []string{"/skipped"},
 	}))
 	router.GET("/logged", func(c *Context) {})
 	router.GET("/skipped", func(c *Context) {})
