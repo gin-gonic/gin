@@ -55,7 +55,7 @@ func mapFormByTag(ptr interface{}, form map[string][]string, tag string) error {
 				structFieldKind = structField.Kind()
 			}
 			if structFieldKind == reflect.Struct {
-				err := mapForm(structField.Addr().Interface(), form)
+				err := mapFormByTag(structField.Addr().Interface(), form, tag)
 				if err != nil {
 					return err
 				}
