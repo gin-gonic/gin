@@ -137,7 +137,7 @@ func TestBadUnixSocket(t *testing.T) {
 func TestFileDescriptor(t *testing.T) {
 	router := New()
 
-	addr, err := net.ResolveTCPAddr("tcp", ":8000")
+	addr, err := net.ResolveTCPAddr("tcp", "localhost:0")
 	assert.NoError(t, err)
 	listener, err := net.ListenTCP("tcp", addr)
 	assert.NoError(t, err)
@@ -152,7 +152,7 @@ func TestFileDescriptor(t *testing.T) {
 	// otherwise the main thread will complete
 	time.Sleep(5 * time.Millisecond)
 
-	c, err := net.Dial("tcp", "localhost:8000")
+	c, err := net.Dial("tcp", listener.Addr().String())
 	assert.NoError(t, err)
 
 	fmt.Fprintf(c, "GET /example HTTP/1.0\r\n\r\n")
