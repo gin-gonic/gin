@@ -25,6 +25,23 @@ import (
 // TODO unit tests
 // test errors
 
+func TestRenderEmpty(t *testing.T) {
+	w := httptest.NewRecorder()
+	data := "empty data"
+	r := Default(EmptyRenderType)
+	r.Setup(data)
+	err := r.Render(w)
+	Recycle(EmptyRenderType, r)
+	assert.EqualError(t, err, "empty render,you need register one first")
+}
+
+// test not registered render type
+func TestRenderUnknown(t *testing.T) {
+	r := Default(unknownRenderType)
+	_, ok := r.(*EmptyRender)
+	assert.True(t, ok)
+}
+
 func TestRenderMsgPack(t *testing.T) {
 	w := httptest.NewRecorder()
 	data := map[string]interface{}{

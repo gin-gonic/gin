@@ -19,21 +19,22 @@ func (EmptyRenderFactory) Instance() RenderRecycler {
 }
 
 // Render writes data with custom ContentType.
-func (*EmptyRender) Render(http.ResponseWriter) error {
+func (r *EmptyRender) Render(w http.ResponseWriter) error {
+	r.WriteContentType(w)
 	return fmt.Errorf("empty render,you need register one first")
 }
 
 // WriteContentType writes custom ContentType.
-func (*EmptyRender) WriteContentType(w http.ResponseWriter) {
+func (r *EmptyRender) WriteContentType(w http.ResponseWriter) {
 	// Empty
 }
 
 // Setup set data and opts
-func (*EmptyRender) Setup(data interface{}, opts ...interface{}) {
+func (r *EmptyRender) Setup(data interface{}, opts ...interface{}) {
 	// Empty
 }
 
 // Reset clean data and opts
-func (*EmptyRender) Reset() {
+func (r *EmptyRender) Reset() {
 	// Empty
 }

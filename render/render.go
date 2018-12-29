@@ -22,6 +22,7 @@ const (
 	MsgPackRenderType             // MsgPack Render Type
 	ProtoBufRenderType            // ProtoBuf Render Type
 	EmptyRenderType               // Empty Render Type
+	unknownRenderType             // Unknown Render Type,just used for test
 )
 
 var (

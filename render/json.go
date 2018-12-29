@@ -168,11 +168,7 @@ func (r *SecureJSON) WriteContentType(w http.ResponseWriter) {
 func (r *JsonpJSON) Setup(data interface{}, opts ...interface{}) {
 	r.Data = data
 	if len(opts) == 1 {
-		if callback, ok := opts[0].(string); ok {
-			r.Callback = callback
-		} else {
-			r.Callback = ""
-		}
+		r.Callback, _ = opts[0].(string)
 	}
 }
 
