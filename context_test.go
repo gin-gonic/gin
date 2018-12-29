@@ -1457,7 +1457,7 @@ func TestContextShouldBindWithXML(t *testing.T) {
 	c.Request, _ = http.NewRequest("POST", "/", bytes.NewBufferString(`<?xml version="1.0" encoding="UTF-8"?>
 		<root>
 			<foo>FOO</foo>
-		   	<bar>BAR</bar>
+			<bar>BAR</bar>
 		</root>`))
 	c.Request.Header.Add("Content-Type", MIMEXML) // set fake content-type
 
@@ -1475,15 +1475,19 @@ func TestContextShouldBindWithQuery(t *testing.T) {
 	w := httptest.NewRecorder()
 	c, _ := CreateTestContext(w)
 
-	c.Request, _ = http.NewRequest("POST", "/?foo=bar&bar=foo", bytes.NewBufferString("foo=unused"))
+	c.Request, _ = http.NewRequest("POST", "/?foo=bar&bar=foo&Foo=bar1&Bar=foo1", bytes.NewBufferString("foo=unused"))
 
 	var obj struct {
-		Foo string `form:"foo"`
-		Bar string `form:"bar"`
+		Foo  string `form:"foo"`
+		Bar  string `form:"bar"`
+		Foo1 string `form:"Foo"`
+		Bar1 string `form:"Bar"`
 	}
 	assert.NoError(t, c.ShouldBindQuery(&obj))
 	assert.Equal(t, "foo", obj.Bar)
 	assert.Equal(t, "bar", obj.Foo)
+	assert.Equal(t, "foo1", obj.Bar1)
+	assert.Equal(t, "bar1", obj.Foo1)
 	assert.Equal(t, 0, w.Body.Len())
 }
 
