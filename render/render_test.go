@@ -470,6 +470,7 @@ func TestRenderReader(t *testing.T) {
 	body := "#!PNG some raw data"
 	headers := make(map[string]string)
 	headers["Content-Disposition"] = `attachment; filename="filename.png"`
+	headers["x-request-id"] = "requestId"
 
 	err := (Reader{
 		ContentLength: int64(len(body)),
@@ -483,4 +484,5 @@ func TestRenderReader(t *testing.T) {
 	assert.Equal(t, "image/png", w.Header().Get("Content-Type"))
 	assert.Equal(t, strconv.Itoa(len(body)), w.Header().Get("Content-Length"))
 	assert.Equal(t, headers["Content-Disposition"], w.Header().Get("Content-Disposition"))
+	assert.Equal(t, headers["x-request-id"], w.Header().Get("x-request-id"))
 }
