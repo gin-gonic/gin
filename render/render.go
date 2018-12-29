@@ -69,9 +69,6 @@ func (p *RenderPool) get(name int) RenderRecycler {
 		pool, _ = p.renderPools[EmptyRenderType]
 		render, _ = pool.Get().(RenderRecycler)
 	}
-	if render == nil {
-		render = &EmptyRender{}
-	}
 	return render
 }
 
