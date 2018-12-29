@@ -42,6 +42,28 @@ func TestRenderUnknown(t *testing.T) {
 	assert.True(t, ok)
 }
 
+func TestRenderRegisterNil(t *testing.T) {
+	defer func() {
+		if err := recover(); err != nil {
+			msg, _ := err.(string)
+			assert.Equal(t, msg, "gin: Register RenderFactory is nil")
+		}
+	}()
+
+	Register(unknownRenderType, nil)
+}
+
+func TestRenderRegisterDup(t *testing.T) {
+	defer func() {
+		if err := recover(); err != nil {
+			msg, _ := err.(string)
+			assert.Equal(t, msg, "gin: Register called twice for RenderFactory")
+		}
+	}()
+
+	Register(EmptyRenderType, EmptyRenderFactory{})
+}
+
 func TestRenderMsgPack(t *testing.T) {
 	w := httptest.NewRecorder()
 	data := map[string]interface{}{
