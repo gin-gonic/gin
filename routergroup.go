@@ -47,7 +47,7 @@ type RouterGroup struct {
 
 var _ IRouter = &RouterGroup{}
 
-// Use adds middleware to the group, see example code in github.
+// Use adds middleware to the group, see example code in GitHub.
 func (group *RouterGroup) Use(middleware ...HandlerFunc) IRoutes {
 	group.Handlers = append(group.Handlers, middleware...)
 	return group.returnObj()
@@ -78,7 +78,7 @@ func (group *RouterGroup) handle(httpMethod, relativePath string, handlers Handl
 
 // Handle registers a new request handle and middleware with the given path and method.
 // The last handler should be the real handler, the other ones should be middleware that can and should be shared among different routes.
-// See the example code in github.
+// See the example code in GitHub.
 //
 // For GET, POST, PUT, PATCH and DELETE requests the respective shortcut
 // functions can be used.
