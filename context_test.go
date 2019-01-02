@@ -337,7 +337,20 @@ func TestContextHandlerName(t *testing.T) {
 	assert.Regexp(t, "^(.*/vendor/)?github.com/gin-gonic/gin.handlerNameTest$", c.HandlerName())
 }
 
+func TestContextHandlerNames(t *testing.T) {
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	c.handlers = HandlersChain{func(c *Context) {}, handlerNameTest, func(c *Context) {}, handlerNameTest2}
+
+	for _, val := range c.HandlerNames() {
+		assert.Regexp(t, "^(.*/vendor/)?github.com/gin-gonic/gin.handlerNameTest$", val)
+	}
+}
+
 func handlerNameTest(c *Context) {
+
+}
+
+func handlerNameTest2(c *Context) {
 
 }
 
