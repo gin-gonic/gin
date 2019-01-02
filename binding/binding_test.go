@@ -11,6 +11,7 @@ import (
 	"io/ioutil"
 	"mime/multipart"
 	"net/http"
+	"strconv"
 	"testing"
 	"time"
 
@@ -688,6 +689,28 @@ func TestUriBinding(t *testing.T) {
 	var not NotSupportStruct
 	assert.Error(t, b.BindUri(m, &not))
 	assert.Equal(t, map[string]interface{}(nil), not.Name)
+}
+
+func TestUriInnerBinding(t *testing.T) {
+	type Tag struct {
+		Name string `uri:"name"`
+		S    struct {
+			Age int `uri:"age"`
+		}
+	}
+
+	expectedName := "mike"
+	expectedAge := 25
+
+	m := map[string][]string{
+		"name": {expectedName},
+		"age":  {strconv.Itoa(expectedAge)},
+	}
+
+	var tag Tag
+	assert.NoError(t, Uri.BindUri(m, &tag))
+	assert.Equal(t, tag.Name, expectedName)
+	assert.Equal(t, tag.S.Age, expectedAge)
 }
 
 func testFormBinding(t *testing.T, method, path, badPath, body, badBody string) {
