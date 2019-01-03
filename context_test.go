@@ -341,8 +341,14 @@ func TestContextHandlerNames(t *testing.T) {
 	c, _ := CreateTestContext(httptest.NewRecorder())
 	c.handlers = HandlersChain{func(c *Context) {}, handlerNameTest, func(c *Context) {}, handlerNameTest2}
 
-	for _, val := range c.HandlerNames() {
-		assert.Regexp(t, "^(.*/vendor/)?github.com/gin-gonic/gin.handlerNameTest$", val)
+	names := c.HandlerNames()
+
+	assert.True(t, len(names) == 4)
+	if len(names) == 4 {
+		assert.Regexp(t, "^(.*/vendor/)?github.com/gin-gonic/gin.TestContextHandlerNames.func1$", names[0])
+		assert.Regexp(t, "^(.*/vendor/)?github.com/gin-gonic/gin.TestContextHandlerNames.func2$", names[2])
+		assert.Regexp(t, "^(.*/vendor/)?github.com/gin-gonic/gin.handlerNameTest$", names[1])
+		assert.Regexp(t, "^(.*/vendor/)?github.com/gin-gonic/gin.handlerNameTest2$", names[3])
 	}
 }
 
