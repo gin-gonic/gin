@@ -61,6 +61,10 @@ type FooStructForMapType struct {
 	MapFoo map[string]interface{} `form:"map_foo"`
 }
 
+type FooStructForIgnoreFormTag struct {
+	Foo *string `form:"-"`
+}
+
 type InvalidNameType struct {
 	TestName string `invalid_name:"test_name"`
 }
@@ -276,6 +280,12 @@ func TestBindingFormForTime2(t *testing.T) {
 	testFormBindingForTimeFailLocation(t, "GET",
 		"/?time_foo=2017-11-15", "/?bar2=foo",
 		"", "")
+}
+
+func TestFormBindingIgnoreField(t *testing.T) {
+	testFormBindingIgnoreField(t, "POST",
+		"/", "/",
+		"-=bar", "")
 }
 
 func TestBindingFormInvalidName(t *testing.T) {
@@ -858,6 +868,21 @@ func testFormBindingForTimeFailLocation(t *testing.T, method, path, badPath, bod
 	req = requestWithBody(method, badPath, badBody)
 	err = JSON.Bind(req, &obj)
 	assert.Error(t, err)
+}
+
+func testFormBindingIgnoreField(t *testing.T, method, path, badPath, body, badBody string) {
+	b := Form
+	assert.Equal(t, "form", b.Name())
+
+	obj := FooStructForIgnoreFormTag{}
+	req := requestWithBody(method, path, body)
+	if method == "POST" {
+		req.Header.Add("Content-Type", MIMEPOSTForm)
+	}
+	err := b.Bind(req, &obj)
+	assert.NoError(t, err)
+
+	assert.Nil(t, obj.Foo)
 }
 
 func testFormBindingInvalidName(t *testing.T, method, path, badPath, body, badBody string) {
