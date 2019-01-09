@@ -25,17 +25,60 @@ import (
 // TODO unit tests
 // test errors
 
+func TestRenderEmpty(t *testing.T) {
+	w := httptest.NewRecorder()
+	data := "empty data"
+	r := Default(EmptyRenderType)
+	r.Setup(data)
+	err := r.Render(w)
+	Recycle(EmptyRenderType, r)
+	assert.EqualError(t, err, "empty render,you need register one first")
+}
+
+// test not registered render type
+func TestRenderUnknown(t *testing.T) {
+	r := Default(unknownRenderType)
+	_, ok := r.(*EmptyRender)
+	assert.True(t, ok)
+}
+
+func TestRenderRegisterNil(t *testing.T) {
+	defer func() {
+		if err := recover(); err != nil {
+			msg, _ := err.(string)
+			assert.Equal(t, msg, "gin: Register RenderFactory is nil")
+		}
+	}()
+
+	Register(unknownRenderType, nil)
+}
+
+func TestRenderRegisterDup(t *testing.T) {
+	defer func() {
+		if err := recover(); err != nil {
+			msg, _ := err.(string)
+			assert.Equal(t, msg, "gin: Register called twice for RenderFactory")
+		}
+	}()
+
+	Register(EmptyRenderType, EmptyRenderFactory{})
+}
+
 func TestRenderMsgPack(t *testing.T) {
 	w := httptest.NewRecorder()
 	data := map[string]interface{}{
 		"foo": "bar",
 	}
 
-	(MsgPack{data}).WriteContentType(w)
+	r := Default(MsgPackRenderType)
+	r.Setup(data)
+	r.WriteContentType(w)
 	assert.Equal(t, "application/msgpack; charset=utf-8", w.Header().Get("Content-Type"))
 
-	err := (MsgPack{data}).Render(w)
-
+	r.Reset()
+	r.Setup(data)
+	err := r.Render(w)
+	Recycle(MsgPackRenderType, r)
 	assert.NoError(t, err)
 
 	h := new(codec.MsgpackHandle)
@@ -56,10 +99,15 @@ func TestRenderJSON(t *testing.T) {
 		"html": "<b>",
 	}
 
-	(JSON{data}).WriteContentType(w)
+	r := Default(JSONRenderType)
+	r.Setup(data)
+	r.WriteContentType(w)
 	assert.Equal(t, "application/json; charset=utf-8", w.Header().Get("Content-Type"))
 
-	err := (JSON{data}).Render(w)
+	r.Reset()
+	r.Setup(data)
+	err := r.Render(w)
+	Recycle(JSONRenderType, r)
 
 	assert.NoError(t, err)
 	assert.Equal(t, "{\"foo\":\"bar\",\"html\":\"\\u003cb\\u003e\"}", w.Body.String())
@@ -71,7 +119,12 @@ func TestRenderJSONPanics(t *testing.T) {
 	data := make(chan int)
 
 	// json: unsupported type: chan int
-	assert.Panics(t, func() { (JSON{data}).Render(w) })
+	assert.Panics(t, func() {
+		r := Default(JSONRenderType)
+		r.Setup(data)
+		r.Render(w)
+		Recycle(JSONRenderType, r)
+	})
 }
 
 func TestRenderIndentedJSON(t *testing.T) {
@@ -81,7 +134,10 @@ func TestRenderIndentedJSON(t *testing.T) {
 		"bar": "foo",
 	}
 
-	err := (IndentedJSON{data}).Render(w)
+	r := Default(IntendedJSONRenderType)
+	r.Setup(data)
+	err := r.Render(w)
+	Recycle(IntendedJSONRenderType, r)
 
 	assert.NoError(t, err)
 	assert.Equal(t, "{\n    \"bar\": \"foo\",\n    \"foo\": \"bar\"\n}", w.Body.String())
@@ -93,7 +149,11 @@ func TestRenderIndentedJSONPanics(t *testing.T) {
 	data := make(chan int)
 
 	// json: unsupported type: chan int
-	err := (IndentedJSON{data}).Render(w)
+	r := Default(IntendedJSONRenderType)
+	r.Setup(data)
+	err := r.Render(w)
+	Recycle(IntendedJSONRenderType, r)
+
 	assert.Error(t, err)
 }
 
@@ -103,10 +163,17 @@ func TestRenderSecureJSON(t *testing.T) {
 		"foo": "bar",
 	}
 
-	(SecureJSON{"while(1);", data}).WriteContentType(w1)
+	r := Default(SecureJSONRenderType)
+	r.Setup(data, "while(1);")
+	r.WriteContentType(w1)
+	Recycle(SecureJSONRenderType, r)
+
 	assert.Equal(t, "application/json; charset=utf-8", w1.Header().Get("Content-Type"))
 
-	err1 := (SecureJSON{"while(1);", data}).Render(w1)
+	r1 := Default(SecureJSONRenderType)
+	r1.Setup(data, "while(1);")
+	err1 := r1.Render(w1)
+	Recycle(SecureJSONRenderType, r1)
 
 	assert.NoError(t, err1)
 	assert.Equal(t, "{\"foo\":\"bar\"}", w1.Body.String())
@@ -119,7 +186,11 @@ func TestRenderSecureJSON(t *testing.T) {
 		"bar": "foo",
 	}}
 
-	err2 := (SecureJSON{"while(1);", datas}).Render(w2)
+	r2 := Default(SecureJSONRenderType)
+	r2.Setup(datas, "while(1);")
+	err2 := r2.Render(w2)
+	Recycle(SecureJSONRenderType, r2)
+
 	assert.NoError(t, err2)
 	assert.Equal(t, "while(1);[{\"foo\":\"bar\"},{\"bar\":\"foo\"}]", w2.Body.String())
 	assert.Equal(t, "application/json; charset=utf-8", w2.Header().Get("Content-Type"))
@@ -130,20 +201,31 @@ func TestRenderSecureJSONFail(t *testing.T) {
 	data := make(chan int)
 
 	// json: unsupported type: chan int
-	err := (SecureJSON{"while(1);", data}).Render(w)
+	r := Default(SecureJSONRenderType)
+	r.Setup(data, "while(1);")
+	err := r.Render(w)
+	Recycle(SecureJSONRenderType, r)
+
 	assert.Error(t, err)
 }
 
 func TestRenderJsonpJSON(t *testing.T) {
-	w1 := httptest.NewRecorder()
+	w := httptest.NewRecorder()
 	data := map[string]interface{}{
 		"foo": "bar",
 	}
 
-	(JsonpJSON{"x", data}).WriteContentType(w1)
-	assert.Equal(t, "application/javascript; charset=utf-8", w1.Header().Get("Content-Type"))
+	r := Default(JsonpJSONRenderType)
+	r.Setup(data, "x")
+	r.WriteContentType(w)
+	Recycle(JsonpJSONRenderType, r)
+	assert.Equal(t, "application/javascript; charset=utf-8", w.Header().Get("Content-Type"))
 
-	err1 := (JsonpJSON{"x", data}).Render(w1)
+	w1 := httptest.NewRecorder()
+	r1 := Default(JsonpJSONRenderType)
+	r1.Setup(data, "x")
+	err1 := r1.Render(w1)
+	// Recycle(JsonpJSONRenderType, r1)
 
 	assert.NoError(t, err1)
 	assert.Equal(t, "x({\"foo\":\"bar\"})", w1.Body.String())
@@ -156,7 +238,10 @@ func TestRenderJsonpJSON(t *testing.T) {
 		"bar": "foo",
 	}}
 
-	err2 := (JsonpJSON{"x", datas}).Render(w2)
+	r2 := Default(JsonpJSONRenderType)
+	r2.Setup(datas, "x")
+	err2 := r2.Render(w2)
+	Recycle(JsonpJSONRenderType, r2)
 	assert.NoError(t, err2)
 	assert.Equal(t, "x([{\"foo\":\"bar\"},{\"bar\":\"foo\"}])", w2.Body.String())
 	assert.Equal(t, "application/javascript; charset=utf-8", w2.Header().Get("Content-Type"))
@@ -167,10 +252,15 @@ func TestRenderJsonpJSONError2(t *testing.T) {
 	data := map[string]interface{}{
 		"foo": "bar",
 	}
-	(JsonpJSON{"", data}).WriteContentType(w)
+	r := Default(JsonpJSONRenderType)
+	r.Setup(data, "")
+	r.WriteContentType(w)
 	assert.Equal(t, "application/javascript; charset=utf-8", w.Header().Get("Content-Type"))
 
-	e := (JsonpJSON{"", data}).Render(w)
+	r.Reset()
+	r.Setup(data, "")
+	e := r.Render(w)
+	Recycle(JsonpJSONRenderType, r)
 	assert.NoError(t, e)
 
 	assert.Equal(t, "{\"foo\":\"bar\"}", w.Body.String())
@@ -181,8 +271,11 @@ func TestRenderJsonpJSONFail(t *testing.T) {
 	w := httptest.NewRecorder()
 	data := make(chan int)
 
+	r := Default(JsonpJSONRenderType)
+	r.Setup(data, "x")
 	// json: unsupported type: chan int
-	err := (JsonpJSON{"x", data}).Render(w)
+	err := r.Render(w)
+	Recycle(JsonpJSONRenderType, r)
 	assert.Error(t, err)
 }
 
@@ -193,7 +286,9 @@ func TestRenderAsciiJSON(t *testing.T) {
 		"tag":  "<br>",
 	}
 
-	err := (AsciiJSON{data1}).Render(w1)
+	r := Default(AsciiJSONRenderType)
+	r.Setup(data1)
+	err := r.Render(w1)
 
 	assert.NoError(t, err)
 	assert.Equal(t, "{\"lang\":\"GO\\u8bed\\u8a00\",\"tag\":\"\\u003cbr\\u003e\"}", w1.Body.String())
@@ -202,7 +297,10 @@ func TestRenderAsciiJSON(t *testing.T) {
 	w2 := httptest.NewRecorder()
 	data2 := float64(3.1415926)
 
-	err = (AsciiJSON{data2}).Render(w2)
+	r.Reset()
+	r.Setup(data2)
+	err = r.Render(w2)
+	Recycle(AsciiJSONRenderType, r)
 	assert.NoError(t, err)
 	assert.Equal(t, "3.1415926", w2.Body.String())
 }
@@ -211,8 +309,11 @@ func TestRenderAsciiJSONFail(t *testing.T) {
 	w := httptest.NewRecorder()
 	data := make(chan int)
 
+	r := Default(AsciiJSONRenderType)
+	r.Setup(data)
 	// json: unsupported type: chan int
-	assert.Error(t, (AsciiJSON{data}).Render(w))
+	assert.Error(t, r.Render(w))
+	Recycle(AsciiJSONRenderType, r)
 }
 
 type xmlmap map[string]interface{}
@@ -247,10 +348,15 @@ b:
 	c: 2
 	d: [3, 4]
 	`
-	(YAML{data}).WriteContentType(w)
+	r := Default(YAMLRenderType)
+	r.Setup(data)
+	r.WriteContentType(w)
 	assert.Equal(t, "application/x-yaml; charset=utf-8", w.Header().Get("Content-Type"))
 
-	err := (YAML{data}).Render(w)
+	r.Reset()
+	r.Setup(data)
+	err := r.Render(w)
+	Recycle(YAMLRenderType, r)
 	assert.NoError(t, err)
 	assert.Equal(t, "\"\\na : Easy!\\nb:\\n\\tc: 2\\n\\td: [3, 4]\\n\\t\"\n", w.Body.String())
 	assert.Equal(t, "application/x-yaml; charset=utf-8", w.Header().Get("Content-Type"))
@@ -265,7 +371,10 @@ func (ft *fail) MarshalYAML() (interface{}, error) {
 
 func TestRenderYAMLFail(t *testing.T) {
 	w := httptest.NewRecorder()
-	err := (YAML{&fail{}}).Render(w)
+	r := Default(YAMLRenderType)
+	r.Setup(&fail{})
+	err := r.Render(w)
+	Recycle(YAMLRenderType, r)
 	assert.Error(t, err)
 }
 
@@ -279,12 +388,17 @@ func TestRenderProtoBuf(t *testing.T) {
 		Reps:  reps,
 	}
 
-	(ProtoBuf{data}).WriteContentType(w)
+	r := Default(ProtoBufRenderType)
+	r.Setup(data)
+	r.WriteContentType(w)
 	protoData, err := proto.Marshal(data)
 	assert.NoError(t, err)
 	assert.Equal(t, "application/x-protobuf", w.Header().Get("Content-Type"))
 
-	err = (ProtoBuf{data}).Render(w)
+	r.Reset()
+	r.Setup(data)
+	err = r.Render(w)
+	Recycle(ProtoBufRenderType, r)
 
 	assert.NoError(t, err)
 	assert.Equal(t, string(protoData), w.Body.String())
@@ -294,7 +408,10 @@ func TestRenderProtoBuf(t *testing.T) {
 func TestRenderProtoBufFail(t *testing.T) {
 	w := httptest.NewRecorder()
 	data := &testdata.Test{}
-	err := (ProtoBuf{data}).Render(w)
+	r := Default(ProtoBufRenderType)
+	r.Setup(data)
+	err := r.Render(w)
+	Recycle(ProtoBufRenderType, r)
 	assert.Error(t, err)
 }
 
@@ -304,10 +421,15 @@ func TestRenderXML(t *testing.T) {
 		"foo": "bar",
 	}
 
-	(XML{data}).WriteContentType(w)
+	r := Default(XMLRenderType)
+	r.Setup(data)
+	r.WriteContentType(w)
 	assert.Equal(t, "application/xml; charset=utf-8", w.Header().Get("Content-Type"))
 
-	err := (XML{data}).Render(w)
+	r.Reset()
+	r.Setup(data)
+	err := r.Render(w)
+	Recycle(XMLRenderType, r)
 
 	assert.NoError(t, err)
 	assert.Equal(t, "<map><foo>bar</foo></map>", w.Body.String())

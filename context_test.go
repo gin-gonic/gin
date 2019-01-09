@@ -8,6 +8,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"github.com/ugorji/go/codec"
 	"html/template"
 	"io"
 	"mime/multipart"
@@ -838,6 +839,25 @@ func TestContextRenderXML(t *testing.T) {
 	assert.Equal(t, http.StatusCreated, w.Code)
 	assert.Equal(t, "<map><foo>bar</foo></map>", w.Body.String())
 	assert.Equal(t, "application/xml; charset=utf-8", w.Header().Get("Content-Type"))
+}
+
+func TestContextRenderMsgPack(t *testing.T) {
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
+	data := H{"foo": "bar"}
+
+	c.MsgPack(http.StatusCreated, H{"foo": "bar"})
+
+	h := new(codec.MsgpackHandle)
+	assert.NotNil(t, h)
+	buf := bytes.NewBuffer([]byte{})
+	assert.NotNil(t, buf)
+	err := codec.NewEncoder(buf, h).Encode(data)
+
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusCreated, w.Code)
+	assert.Equal(t, w.Body.String(), string(buf.Bytes()))
+	assert.Equal(t, "application/msgpack; charset=utf-8", w.Header().Get("Content-Type"))
 }
 
 // Tests that no XML is rendered if code is 204

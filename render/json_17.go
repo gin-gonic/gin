@@ -12,10 +12,27 @@ import (
 	"github.com/gin-gonic/gin/internal/json"
 )
 
+func init() {
+	Register(PureJSONRenderType, &PureJsonFactory{})
+}
+
 // PureJSON contains the given interface object.
 type PureJSON struct {
 	Data interface{}
 }
+
+// Setup set data and opts
+func (r *PureJSON) Setup(data interface{}, opts ...interface{}) {
+	r.Data = data
+}
+
+// Reset clean data and opts
+func (r *PureJSON) Reset() {
+	r.Data = nil
+}
+
+// JSONFactory instance the PureJson object.
+type PureJsonFactory struct{}
 
 // Render (PureJSON) writes custom ContentType and encodes the given interface object.
 func (r PureJSON) Render(w http.ResponseWriter) error {
@@ -28,4 +45,9 @@ func (r PureJSON) Render(w http.ResponseWriter) error {
 // WriteContentType (PureJSON) writes custom ContentType.
 func (r PureJSON) WriteContentType(w http.ResponseWriter) {
 	writeContentType(w, jsonContentType)
+}
+
+// Instance a new Render instance
+func (PureJsonFactory) Instance() RenderRecycler {
+	return &PureJSON{}
 }
