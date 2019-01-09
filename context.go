@@ -415,7 +415,11 @@ func (c *Context) PostFormArray(key string) []string {
 // a boolean value whether at least one value exists for the given key.
 func (c *Context) GetPostFormArray(key string) ([]string, bool) {
 	req := c.Request
-	req.ParseMultipartForm(c.engine.MaxMultipartMemory)
+	if err := req.ParseMultipartForm(c.engine.MaxMultipartMemory); err != nil {
+		if err != http.ErrNotMultipart {
+			debugPrint("error on parse multipart form array: %v", err)
+		}
+	}
 	if values := req.PostForm[key]; len(values) > 0 {
 		return values, true
 	}
@@ -437,7 +441,11 @@ func (c *Context) PostFormMap(key string) map[string]string {
 // whether at least one value exists for the given key.
 func (c *Context) GetPostFormMap(key string) (map[string]string, bool) {
 	req := c.Request
-	req.ParseMultipartForm(c.engine.MaxMultipartMemory)
+	if err := req.ParseMultipartForm(c.engine.MaxMultipartMemory); err != nil {
+		if err != http.ErrNotMultipart {
+			debugPrint("error on parse multipart form map: %v", err)
+		}
+	}
 	dicts, exist := c.get(req.PostForm, key)
 
 	if !exist && req.MultipartForm != nil && req.MultipartForm.File != nil {
@@ -493,8 +501,8 @@ func (c *Context) SaveUploadedFile(file *multipart.FileHeader, dst string) error
 	}
 	defer out.Close()
 
-	io.Copy(out, src)
-	return nil
+	_, err = io.Copy(out, src)
+	return err
 }
 
 // Bind checks the Content-Type to select a binding engine automatically,
@@ -534,7 +542,7 @@ func (c *Context) BindYAML(obj interface{}) error {
 // It will abort the request with HTTP 400 if any error occurs.
 func (c *Context) BindUri(obj interface{}) error {
 	if err := c.ShouldBindUri(obj); err != nil {
-		c.AbortWithError(http.StatusBadRequest, err).SetType(ErrorTypeBind)
+		c.AbortWithError(http.StatusBadRequest, err).SetType(ErrorTypeBind) // nolint: errcheck
 		return err
 	}
 	return nil
@@ -545,7 +553,7 @@ func (c *Context) BindUri(obj interface{}) error {
 // See the binding package.
 func (c *Context) MustBindWith(obj interface{}, b binding.Binding) error {
 	if err := c.ShouldBindWith(obj, b); err != nil {
-		c.AbortWithError(http.StatusBadRequest, err).SetType(ErrorTypeBind)
+		c.AbortWithError(http.StatusBadRequest, err).SetType(ErrorTypeBind) // nolint: errcheck
 		return err
 	}
 	return nil
@@ -913,7 +921,7 @@ func (c *Context) Negotiate(code int, config Negotiate) {
 		c.XML(code, data)
 
 	default:
-		c.AbortWithError(http.StatusNotAcceptable, errors.New("the accepted formats are not offered by the server"))
+		c.AbortWithError(http.StatusNotAcceptable, errors.New("the accepted formats are not offered by the server")) // nolint: errcheck
 	}
 }
 
