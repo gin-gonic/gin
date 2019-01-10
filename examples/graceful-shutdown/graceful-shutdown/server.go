@@ -35,7 +35,10 @@ func main() {
 	// Wait for interrupt signal to gracefully shutdown the server with
 	// a timeout of 5 seconds.
 	quit := make(chan os.Signal)
-	signal.Notify(quit, os.Interrupt)
+	// kill (no param) default send syscanll.SIGTERM
+	// kill -2 is syscall.SIGINT
+	// kill -9 is syscall. SIGKILL but can"t be catch
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
 	log.Println("Shutdown Server ...")
 
