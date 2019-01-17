@@ -105,7 +105,7 @@ func (c *Context) Handler() HandlerFunc {
 // See example in GitHub.
 func (c *Context) Next() {
 	c.index++
-	for s := int8(len(c.handlers)); c.index < s; c.index++ {
+	for ; c.index < int8(len(c.handlers)); c.index++ {
 		c.handlers[c.index](c)
 	}
 }
