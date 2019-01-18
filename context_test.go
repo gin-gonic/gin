@@ -70,7 +70,8 @@ func TestContextFormFile(t *testing.T) {
 	mw := multipart.NewWriter(buf)
 	w, err := mw.CreateFormFile("file", "test")
 	if assert.NoError(t, err) {
-		w.Write([]byte("test"))
+		_, err = w.Write([]byte("test"))
+		assert.NoError(t, err)
 	}
 	mw.Close()
 	c, _ := CreateTestContext(httptest.NewRecorder())
@@ -100,10 +101,11 @@ func TestContextFormFileFailed(t *testing.T) {
 func TestContextMultipartForm(t *testing.T) {
 	buf := new(bytes.Buffer)
 	mw := multipart.NewWriter(buf)
-	mw.WriteField("foo", "bar")
+	assert.NoError(t, mw.WriteField("foo", "bar"))
 	w, err := mw.CreateFormFile("file", "test")
 	if assert.NoError(t, err) {
-		w.Write([]byte("test"))
+		_, err = w.Write([]byte("test"))
+		assert.NoError(t, err)
 	}
 	mw.Close()
 	c, _ := CreateTestContext(httptest.NewRecorder())
@@ -137,7 +139,8 @@ func TestSaveUploadedCreateFailed(t *testing.T) {
 	mw := multipart.NewWriter(buf)
 	w, err := mw.CreateFormFile("file", "test")
 	if assert.NoError(t, err) {
-		w.Write([]byte("test"))
+		_, err = w.Write([]byte("test"))
+		assert.NoError(t, err)
 	}
 	mw.Close()
 	c, _ := CreateTestContext(httptest.NewRecorder())
@@ -159,7 +162,7 @@ func TestContextReset(t *testing.T) {
 	c.index = 2
 	c.Writer = &responseWriter{ResponseWriter: httptest.NewRecorder()}
 	c.Params = Params{Param{}}
-	c.Error(errors.New("test"))
+	c.Error(errors.New("test")) // nolint: errcheck
 	c.Set("foo", "bar")
 	c.reset()
 
@@ -798,7 +801,7 @@ func TestContextRenderHTML2(t *testing.T) {
 	assert.Len(t, router.trees, 1)
 
 	templ := template.Must(template.New("t").Parse(`Hello {{.name}}`))
-	re := captureOutput(func() {
+	re := captureOutput(t, func() {
 		SetMode(DebugMode)
 		router.SetHTMLTemplate(templ)
 		SetMode(TestMode)
@@ -1211,7 +1214,8 @@ func TestContextAbortWithStatusJSON(t *testing.T) {
 	assert.Equal(t, "application/json; charset=utf-8", contentType)
 
 	buf := new(bytes.Buffer)
-	buf.ReadFrom(w.Body)
+	_, err := buf.ReadFrom(w.Body)
+	assert.NoError(t, err)
 	jsonStringBody := buf.String()
 	assert.Equal(t, fmt.Sprint(`{"foo":"fooValue","bar":"barValue"}`), jsonStringBody)
 }
@@ -1220,11 +1224,11 @@ func TestContextError(t *testing.T) {
 	c, _ := CreateTestContext(httptest.NewRecorder())
 	assert.Empty(t, c.Errors)
 
-	c.Error(errors.New("first error"))
+	c.Error(errors.New("first error")) // nolint: errcheck
 	assert.Len(t, c.Errors, 1)
 	assert.Equal(t, "Error #01: first error\n", c.Errors.String())
 
-	c.Error(&Error{
+	c.Error(&Error{ // nolint: errcheck
 		Err:  errors.New("second error"),
 		Meta: "some data 2",
 		Type: ErrorTypePublic,
@@ -1246,13 +1250,13 @@ func TestContextError(t *testing.T) {
 			t.Error("didn't panic")
 		}
 	}()
-	c.Error(nil)
+	c.Error(nil) // nolint: errcheck
 }
 
 func TestContextTypedError(t *testing.T) {
 	c, _ := CreateTestContext(httptest.NewRecorder())
-	c.Error(errors.New("externo 0")).SetType(ErrorTypePublic)
-	c.Error(errors.New("interno 0")).SetType(ErrorTypePrivate)
+	c.Error(errors.New("externo 0")).SetType(ErrorTypePublic)  // nolint: errcheck
+	c.Error(errors.New("interno 0")).SetType(ErrorTypePrivate) // nolint: errcheck
 
 	for _, err := range c.Errors.ByType(ErrorTypePublic) {
 		assert.Equal(t, ErrorTypePublic, err.Type)
@@ -1267,7 +1271,7 @@ func TestContextAbortWithError(t *testing.T) {
 	w := httptest.NewRecorder()
 	c, _ := CreateTestContext(w)
 
-	c.AbortWithError(http.StatusUnauthorized, errors.New("bad input")).SetMeta("some input")
+	c.AbortWithError(http.StatusUnauthorized, errors.New("bad input")).SetMeta("some input") // nolint: errcheck
 
 	assert.Equal(t, http.StatusUnauthorized, w.Code)
 	assert.Equal(t, abortIndex, c.index)
@@ -1713,7 +1717,8 @@ func TestContextStream(t *testing.T) {
 			stopStream = false
 		}()
 
-		w.Write([]byte("test"))
+		_, err := w.Write([]byte("test"))
+		assert.NoError(t, err)
 
 		return stopStream
 	})
@@ -1730,7 +1735,8 @@ func TestContextStreamWithClientGone(t *testing.T) {
 			w.closeClient()
 		}()
 
-		writer.Write([]byte("test"))
+		_, err := writer.Write([]byte("test"))
+		assert.NoError(t, err)
 
 		return true
 	})
