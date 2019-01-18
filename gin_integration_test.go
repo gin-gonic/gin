@@ -87,7 +87,7 @@ func TestRunEmptyWithEnv(t *testing.T) {
 func TestRunTooMuchParams(t *testing.T) {
 	router := New()
 	assert.Panics(t, func() {
-		router.Run("2", "2")
+		assert.NoError(t, router.Run("2", "2"))
 	})
 }
 
