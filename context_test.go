@@ -1743,3 +1743,15 @@ func TestContextStreamWithClientGone(t *testing.T) {
 
 	assert.Equal(t, "test", w.Body.String())
 }
+
+func TestContextResetInHandler(t *testing.T) {
+	w := CreateTestResponseRecorder()
+	c, _ := CreateTestContext(w)
+
+	c.handlers = []HandlerFunc{
+		func(c *Context) { c.reset() },
+	}
+	assert.NotPanics(t, func() {
+		c.Next()
+	})
+}

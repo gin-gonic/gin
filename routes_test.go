@@ -427,6 +427,16 @@ func TestRouterStaticFSNotFound(t *testing.T) {
 	assert.Equal(t, "non existent", w.Body.String())
 }
 
+func TestRouterStaticFSFileNotFound(t *testing.T) {
+	router := New()
+
+	router.StaticFS("/", http.FileSystem(http.Dir(".")))
+
+	assert.NotPanics(t, func() {
+		performRequest(router, "GET", "/nonexistent")
+	})
+}
+
 func TestRouteRawPath(t *testing.T) {
 	route := New()
 	route.UseRawPath = true
