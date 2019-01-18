@@ -70,7 +70,8 @@ func TestContextFormFile(t *testing.T) {
 	mw := multipart.NewWriter(buf)
 	w, err := mw.CreateFormFile("file", "test")
 	if assert.NoError(t, err) {
-		w.Write([]byte("test"))
+		_, err = w.Write([]byte("test"))
+		assert.NoError(t, err)
 	}
 	mw.Close()
 	c, _ := CreateTestContext(httptest.NewRecorder())
@@ -100,10 +101,11 @@ func TestContextFormFileFailed(t *testing.T) {
 func TestContextMultipartForm(t *testing.T) {
 	buf := new(bytes.Buffer)
 	mw := multipart.NewWriter(buf)
-	mw.WriteField("foo", "bar")
+	assert.NoError(t, mw.WriteField("foo", "bar"))
 	w, err := mw.CreateFormFile("file", "test")
 	if assert.NoError(t, err) {
-		w.Write([]byte("test"))
+		_, err = w.Write([]byte("test"))
+		assert.NoError(t, err)
 	}
 	mw.Close()
 	c, _ := CreateTestContext(httptest.NewRecorder())
@@ -137,7 +139,8 @@ func TestSaveUploadedCreateFailed(t *testing.T) {
 	mw := multipart.NewWriter(buf)
 	w, err := mw.CreateFormFile("file", "test")
 	if assert.NoError(t, err) {
-		w.Write([]byte("test"))
+		_, err = w.Write([]byte("test"))
+		assert.NoError(t, err)
 	}
 	mw.Close()
 	c, _ := CreateTestContext(httptest.NewRecorder())
@@ -159,7 +162,7 @@ func TestContextReset(t *testing.T) {
 	c.index = 2
 	c.Writer = &responseWriter{ResponseWriter: httptest.NewRecorder()}
 	c.Params = Params{Param{}}
-	c.Error(errors.New("test"))
+	c.Error(errors.New("test")) // nolint: errcheck
 	c.Set("foo", "bar")
 	c.reset()
 
@@ -809,7 +812,7 @@ func TestContextRenderHTML2(t *testing.T) {
 	assert.Len(t, router.trees, 1)
 
 	templ := template.Must(template.New("t").Parse(`Hello {{.name}}`))
-	re := captureOutput(func() {
+	re := captureOutput(t, func() {
 		SetMode(DebugMode)
 		router.SetHTMLTemplate(templ)
 		SetMode(TestMode)
@@ -1220,7 +1223,8 @@ func TestContextAbortWithStatusJSON(t *testing.T) {
 	assert.Equal(t, "application/json; charset=utf-8", contentType)
 
 	buf := new(bytes.Buffer)
-	buf.ReadFrom(w.Body)
+	_, err := buf.ReadFrom(w.Body)
+	assert.NoError(t, err)
 	jsonStringBody := buf.String()
 	assert.Equal(t, fmt.Sprint(`{"foo":"fooValue","bar":"barValue"}`), jsonStringBody)
 }
@@ -1229,11 +1233,11 @@ func TestContextError(t *testing.T) {
 	c, _ := CreateTestContext(httptest.NewRecorder())
 	assert.Empty(t, c.Errors)
 
-	c.Error(errors.New("first error"))
+	c.Error(errors.New("first error")) // nolint: errcheck
 	assert.Len(t, c.Errors, 1)
 	assert.Equal(t, "Error #01: first error\n", c.Errors.String())
 
-	c.Error(&Error{
+	c.Error(&Error{ // nolint: errcheck
 		Err:  errors.New("second error"),
 		Meta: "some data 2",
 		Type: ErrorTypePublic,
@@ -1255,13 +1259,13 @@ func TestContextError(t *testing.T) {
 			t.Error("didn't panic")
 		}
 	}()
-	c.Error(nil)
+	c.Error(nil) // nolint: errcheck
 }
 
 func TestContextTypedError(t *testing.T) {
 	c, _ := CreateTestContext(httptest.NewRecorder())
-	c.Error(errors.New("externo 0")).SetType(ErrorTypePublic)
-	c.Error(errors.New("interno 0")).SetType(ErrorTypePrivate)
+	c.Error(errors.New("externo 0")).SetType(ErrorTypePublic)  // nolint: errcheck
+	c.Error(errors.New("interno 0")).SetType(ErrorTypePrivate) // nolint: errcheck
 
 	for _, err := range c.Errors.ByType(ErrorTypePublic) {
 		assert.Equal(t, ErrorTypePublic, err.Type)
@@ -1276,7 +1280,7 @@ func TestContextAbortWithError(t *testing.T) {
 	w := httptest.NewRecorder()
 	c, _ := CreateTestContext(w)
 
-	c.AbortWithError(http.StatusUnauthorized, errors.New("bad input")).SetMeta("some input")
+	c.AbortWithError(http.StatusUnauthorized, errors.New("bad input")).SetMeta("some input") // nolint: errcheck
 
 	assert.Equal(t, http.StatusUnauthorized, w.Code)
 	assert.Equal(t, abortIndex, c.index)
@@ -1466,7 +1470,7 @@ func TestContextShouldBindWithXML(t *testing.T) {
 	c.Request, _ = http.NewRequest("POST", "/", bytes.NewBufferString(`<?xml version="1.0" encoding="UTF-8"?>
 		<root>
 			<foo>FOO</foo>
-		   	<bar>BAR</bar>
+			<bar>BAR</bar>
 		</root>`))
 	c.Request.Header.Add("Content-Type", MIMEXML) // set fake content-type
 
@@ -1484,15 +1488,19 @@ func TestContextShouldBindWithQuery(t *testing.T) {
 	w := httptest.NewRecorder()
 	c, _ := CreateTestContext(w)
 
-	c.Request, _ = http.NewRequest("POST", "/?foo=bar&bar=foo", bytes.NewBufferString("foo=unused"))
+	c.Request, _ = http.NewRequest("POST", "/?foo=bar&bar=foo&Foo=bar1&Bar=foo1", bytes.NewBufferString("foo=unused"))
 
 	var obj struct {
-		Foo string `form:"foo"`
-		Bar string `form:"bar"`
+		Foo  string `form:"foo"`
+		Bar  string `form:"bar"`
+		Foo1 string `form:"Foo"`
+		Bar1 string `form:"Bar"`
 	}
 	assert.NoError(t, c.ShouldBindQuery(&obj))
 	assert.Equal(t, "foo", obj.Bar)
 	assert.Equal(t, "bar", obj.Foo)
+	assert.Equal(t, "foo1", obj.Bar1)
+	assert.Equal(t, "bar1", obj.Foo1)
 	assert.Equal(t, 0, w.Body.Len())
 }
 
@@ -1718,7 +1726,8 @@ func TestContextStream(t *testing.T) {
 			stopStream = false
 		}()
 
-		w.Write([]byte("test"))
+		_, err := w.Write([]byte("test"))
+		assert.NoError(t, err)
 
 		return stopStream
 	})
@@ -1735,7 +1744,8 @@ func TestContextStreamWithClientGone(t *testing.T) {
 			w.closeClient()
 		}()
 
-		writer.Write([]byte("test"))
+		_, err := writer.Write([]byte("test"))
+		assert.NoError(t, err)
 
 		return true
 	})
@@ -1743,48 +1753,14 @@ func TestContextStreamWithClientGone(t *testing.T) {
 	assert.Equal(t, "test", w.Body.String())
 }
 
-func TestContextHTTPContext(t *testing.T) {
-	c, _ := CreateTestContext(httptest.NewRecorder())
-	req, _ := http.NewRequest("POST", "/", bytes.NewBufferString("{\"foo\":\"bar\", \"bar\":\"foo\"}"))
-	ctx, cancelFunc := context.WithCancel(context.Background())
-	defer cancelFunc()
-	c.Request = req.WithContext(ctx)
+func TestContextResetInHandler(t *testing.T) {
+	w := CreateTestResponseRecorder()
+	c, _ := CreateTestContext(w)
 
-	assert.NoError(t, c.Err())
-	assert.NotNil(t, c.Done())
-	select {
-	case <-c.Done():
-		assert.Fail(t, "context should not be canceled")
-	default:
+	c.handlers = []HandlerFunc{
+		func(c *Context) { c.reset() },
 	}
-
-	ti, ok := c.Deadline()
-	assert.Equal(t, ti, time.Time{})
-	assert.False(t, ok)
-	assert.Equal(t, c.Value(0), c.Request)
-
-	cancelFunc()
-	assert.NotNil(t, c.Done())
-	select {
-	case <-c.Done():
-	default:
-		assert.Fail(t, "context should be canceled")
-	}
-}
-
-func TestContextHTTPContextWithDeadline(t *testing.T) {
-	c, _ := CreateTestContext(httptest.NewRecorder())
-	req, _ := http.NewRequest("POST", "/", bytes.NewBufferString("{\"foo\":\"bar\", \"bar\":\"foo\"}"))
-	location, _ := time.LoadLocation("Europe/Paris")
-	assert.NotNil(t, location)
-	date := time.Date(2031, 12, 27, 16, 00, 00, 00, location)
-	ctx, cancelFunc := context.WithDeadline(context.Background(), date)
-	defer cancelFunc()
-	c.Request = req.WithContext(ctx)
-
-	assert.NoError(t, c.Err())
-
-	ti, ok := c.Deadline()
-	assert.Equal(t, ti, date)
-	assert.True(t, ok)
+	assert.NotPanics(t, func() {
+		c.Next()
+	})
 }

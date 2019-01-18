@@ -11,6 +11,7 @@ import (
 	"io/ioutil"
 	"mime/multipart"
 	"net/http"
+	"strconv"
 	"testing"
 	"time"
 
@@ -515,28 +516,28 @@ func createFormPostRequestFail() *http.Request {
 	return req
 }
 
-func createFormMultipartRequest() *http.Request {
+func createFormMultipartRequest(t *testing.T) *http.Request {
 	boundary := "--testboundary"
 	body := new(bytes.Buffer)
 	mw := multipart.NewWriter(body)
 	defer mw.Close()
 
-	mw.SetBoundary(boundary)
-	mw.WriteField("foo", "bar")
-	mw.WriteField("bar", "foo")
+	assert.NoError(t, mw.SetBoundary(boundary))
+	assert.NoError(t, mw.WriteField("foo", "bar"))
+	assert.NoError(t, mw.WriteField("bar", "foo"))
 	req, _ := http.NewRequest("POST", "/?foo=getfoo&bar=getbar", body)
 	req.Header.Set("Content-Type", MIMEMultipartPOSTForm+"; boundary="+boundary)
 	return req
 }
 
-func createFormMultipartRequestFail() *http.Request {
+func createFormMultipartRequestFail(t *testing.T) *http.Request {
 	boundary := "--testboundary"
 	body := new(bytes.Buffer)
 	mw := multipart.NewWriter(body)
 	defer mw.Close()
 
-	mw.SetBoundary(boundary)
-	mw.WriteField("map_foo", "bar")
+	assert.NoError(t, mw.SetBoundary(boundary))
+	assert.NoError(t, mw.WriteField("map_foo", "bar"))
 	req, _ := http.NewRequest("POST", "/?map_foo=getfoo", body)
 	req.Header.Set("Content-Type", MIMEMultipartPOSTForm+"; boundary="+boundary)
 	return req
@@ -545,7 +546,7 @@ func createFormMultipartRequestFail() *http.Request {
 func TestBindingFormPost(t *testing.T) {
 	req := createFormPostRequest()
 	var obj FooBarStruct
-	FormPost.Bind(req, &obj)
+	assert.NoError(t, FormPost.Bind(req, &obj))
 
 	assert.Equal(t, "form-urlencoded", FormPost.Name())
 	assert.Equal(t, "bar", obj.Foo)
@@ -555,7 +556,7 @@ func TestBindingFormPost(t *testing.T) {
 func TestBindingDefaultValueFormPost(t *testing.T) {
 	req := createDefaultFormPostRequest()
 	var obj FooDefaultBarStruct
-	FormPost.Bind(req, &obj)
+	assert.NoError(t, FormPost.Bind(req, &obj))
 
 	assert.Equal(t, "bar", obj.Foo)
 	assert.Equal(t, "hello", obj.Bar)
@@ -569,9 +570,9 @@ func TestBindingFormPostFail(t *testing.T) {
 }
 
 func TestBindingFormMultipart(t *testing.T) {
-	req := createFormMultipartRequest()
+	req := createFormMultipartRequest(t)
 	var obj FooBarStruct
-	FormMultipart.Bind(req, &obj)
+	assert.NoError(t, FormMultipart.Bind(req, &obj))
 
 	assert.Equal(t, "multipart/form-data", FormMultipart.Name())
 	assert.Equal(t, "bar", obj.Foo)
@@ -579,7 +580,7 @@ func TestBindingFormMultipart(t *testing.T) {
 }
 
 func TestBindingFormMultipartFail(t *testing.T) {
-	req := createFormMultipartRequestFail()
+	req := createFormMultipartRequestFail(t)
 	var obj FooStructForMapType
 	err := FormMultipart.Bind(req, &obj)
 	assert.Error(t, err)
@@ -688,6 +689,28 @@ func TestUriBinding(t *testing.T) {
 	var not NotSupportStruct
 	assert.Error(t, b.BindUri(m, &not))
 	assert.Equal(t, map[string]interface{}(nil), not.Name)
+}
+
+func TestUriInnerBinding(t *testing.T) {
+	type Tag struct {
+		Name string `uri:"name"`
+		S    struct {
+			Age int `uri:"age"`
+		}
+	}
+
+	expectedName := "mike"
+	expectedAge := 25
+
+	m := map[string][]string{
+		"name": {expectedName},
+		"age":  {strconv.Itoa(expectedAge)},
+	}
+
+	var tag Tag
+	assert.NoError(t, Uri.BindUri(m, &tag))
+	assert.Equal(t, tag.Name, expectedName)
+	assert.Equal(t, tag.S.Age, expectedAge)
 }
 
 func testFormBinding(t *testing.T, method, path, badPath, body, badBody string) {

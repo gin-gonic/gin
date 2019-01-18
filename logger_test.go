@@ -278,13 +278,13 @@ func TestErrorLogger(t *testing.T) {
 	router := New()
 	router.Use(ErrorLogger())
 	router.GET("/error", func(c *Context) {
-		c.Error(errors.New("this is an error"))
+		c.Error(errors.New("this is an error")) // nolint: errcheck
 	})
 	router.GET("/abort", func(c *Context) {
-		c.AbortWithError(http.StatusUnauthorized, errors.New("no authorized"))
+		c.AbortWithError(http.StatusUnauthorized, errors.New("no authorized")) // nolint: errcheck
 	})
 	router.GET("/print", func(c *Context) {
-		c.Error(errors.New("this is an error"))
+		c.Error(errors.New("this is an error")) // nolint: errcheck
 		c.String(http.StatusInternalServerError, "hola!")
 	})
 
@@ -320,8 +320,8 @@ func TestLoggerWithConfigSkippingPaths(t *testing.T) {
 	buffer := new(bytes.Buffer)
 	router := New()
 	router.Use(LoggerWithConfig(LoggerConfig{
-		Output:     buffer,
-		SkipPathes: []string{"/skipped"},
+		Output:    buffer,
+		SkipPaths: []string{"/skipped"},
 	}))
 	router.GET("/logged", func(c *Context) {})
 	router.GET("/skipped", func(c *Context) {})
