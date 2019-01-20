@@ -68,10 +68,7 @@ func WriteJSON(w http.ResponseWriter, obj interface{}) error {
 		return err
 	}
 	_, err = w.Write(jsonBytes)
-	if err != nil {
-		return err
-	}
-	return nil
+	return err
 }
 
 // Render (IndentedJSON) marshals the given interface object and writes it with custom ContentType.
@@ -140,7 +137,11 @@ func (r JsonpJSON) Render(w http.ResponseWriter) (err error) {
 		return err
 	}
 	_, err = w.Write([]byte(")"))
-	return err
+	if err != nil {
+		return err
+	}
+	
+	return nil
 }
 
 // WriteContentType (JsonpJSON) writes Javascript ContentType.
