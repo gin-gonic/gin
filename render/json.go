@@ -140,7 +140,7 @@ func (r JsonpJSON) Render(w http.ResponseWriter) (err error) {
 	if err != nil {
 		return err
 	}
-	
+
 	return nil
 }
 
