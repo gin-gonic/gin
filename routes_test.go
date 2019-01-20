@@ -251,7 +251,8 @@ func TestRouteStaticFile(t *testing.T) {
 		t.Error(err)
 	}
 	defer os.Remove(f.Name())
-	f.WriteString("Gin Web Framework")
+	_, err = f.WriteString("Gin Web Framework")
+	assert.NoError(t, err)
 	f.Close()
 
 	dir, filename := filepath.Split(f.Name())
@@ -424,6 +425,16 @@ func TestRouterStaticFSNotFound(t *testing.T) {
 
 	w = performRequest(router, "HEAD", "/nonexistent")
 	assert.Equal(t, "non existent", w.Body.String())
+}
+
+func TestRouterStaticFSFileNotFound(t *testing.T) {
+	router := New()
+
+	router.StaticFS("/", http.FileSystem(http.Dir(".")))
+
+	assert.NotPanics(t, func() {
+		performRequest(router, "GET", "/nonexistent")
+	})
 }
 
 func TestRouteRawPath(t *testing.T) {

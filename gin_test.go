@@ -471,6 +471,23 @@ func TestListOfRoutes(t *testing.T) {
 	})
 }
 
+func TestEngineHandleContext(t *testing.T) {
+	r := New()
+	r.GET("/", func(c *Context) {
+		c.Request.URL.Path = "/v2"
+		r.HandleContext(c)
+	})
+	v2 := r.Group("/v2")
+	{
+		v2.GET("/", func(c *Context) {})
+	}
+
+	assert.NotPanics(t, func() {
+		w := performRequest(r, "GET", "/")
+		assert.Equal(t, 301, w.Code)
+	})
+}
+
 func assertRoutePresent(t *testing.T, gotRoutes RoutesInfo, wantRoute RouteInfo) {
 	for _, gotRoute := range gotRoutes {
 		if gotRoute.Path == wantRoute.Path && gotRoute.Method == wantRoute.Method {

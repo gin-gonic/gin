@@ -338,7 +338,7 @@ func TestBindUriError(t *testing.T) {
 	}
 	router.Handle("GET", "/new/rest/:num", func(c *Context) {
 		var m Member
-		c.BindUri(&m)
+		assert.Error(t, c.BindUri(&m))
 	})
 
 	path1, _ := exampleFromPath("/new/rest/:num")
