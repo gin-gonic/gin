@@ -191,7 +191,7 @@ func LoggerWithConfig(conf LoggerConfig) HandlerFunc {
 
 			param.Path = path
 
-			fmt.Fprintf(out, formatter(param))
+			fmt.Fprint(out, formatter(param))
 		}
 	}
 }
