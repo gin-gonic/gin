@@ -140,11 +140,7 @@ func (r JsonpJSON) Render(w http.ResponseWriter) (err error) {
 		return err
 	}
 	_, err = w.Write([]byte(")"))
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return err
 }
 
 // WriteContentType (JsonpJSON) writes Javascript ContentType.
