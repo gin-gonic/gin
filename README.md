@@ -35,10 +35,12 @@ Gin is a web framework written in Go (Golang). It features a martini-like API wi
     - [Blank Gin without middleware by default](#blank-gin-without-middleware-by-default)
     - [Using middleware](#using-middleware)
     - [How to write log file](#how-to-write-log-file)
+    - [Custom Log Format](#custom-log-format)
     - [Model binding and validation](#model-binding-and-validation)
     - [Custom Validators](#custom-validators)
     - [Only Bind Query String](#only-bind-query-string)
     - [Bind Query String or Post Data](#bind-query-string-or-post-data)
+    - [Bind Uri](#bind-uri)
     - [Bind HTML checkboxes](#bind-html-checkboxes)
     - [Multipart/Urlencoded binding](#multiparturlencoded-binding)
     - [XML, JSON, YAML and ProtoBuf rendering](#xml-json-yaml-and-protobuf-rendering)
@@ -362,6 +364,10 @@ ids: map[b:hello a:1234], names: map[second:tianou first:thinkerou]
 
 References issue [#774](https://github.com/gin-gonic/gin/issues/774) and detail [example code](examples/upload-file/single).
 
+`file.Filename` **SHOULD NOT** be trusted. See [`Content-Disposition` on MDN](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Disposition#Directives) and [#1693](https://github.com/gin-gonic/gin/issues/1693)
+
+> The filename is always optional and must not be used blindly by the application: path information should be stripped, and conversion to the server file system rules should be done.
+
 ```go
 func main() {
 	router := gin.Default()
@@ -527,9 +533,46 @@ func main() {
 }
 ```
 
+### Custom Log Format
+```go
+func main() {
+	router := gin.New()
+
+	// LoggerWithFormatter middleware will write the logs to gin.DefaultWriter
+	// By default gin.DefaultWriter = os.Stdout
+	router.Use(gin.LoggerWithFormatter(func(param gin.LogFormatterParams) string {
+
+		// your custom format
+		return fmt.Sprintf("%s - [%s] \"%s %s %s %d %s \"%s\" %s\"\n",
+				param.ClientIP,
+				param.TimeStamp.Format(time.RFC1123),
+				param.Method,
+				param.Path,
+				param.Request.Proto,
+				param.StatusCode,
+				param.Latency,
+				param.Request.UserAgent(),
+				param.ErrorMessage,
+		)
+	}))
+	router.Use(gin.Recovery())
+
+	router.GET("/ping", func(c *gin.Context) {
+		c.String(200, "pong")
+	})
+
+	router.Run(":8080")
+}
+```
+
+**Sample Output**
+```
+::1 - [Fri, 07 Dec 2018 17:04:38 JST] "GET /ping HTTP/1.1 200 122.767µs "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/71.0.3578.80 Safari/537.36" "
+```
+
 ### Model binding and validation
 
-To bind a request body into a type, use model binding. We currently support binding of JSON, XML and standard form values (foo=bar&boo=baz).
+To bind a request body into a type, use model binding. We currently support binding of JSON, XML, YAML and standard form values (foo=bar&boo=baz).
 
 Gin uses [**go-playground/validator.v8**](https://github.com/go-playground/validator) for validation. Check the full docs on tags usage [here](http://godoc.org/gopkg.in/go-playground/validator.v8#hdr-Baked_In_Validators_and_Tags).
 
@@ -537,10 +580,10 @@ Note that you need to set the corresponding binding tag on all fields you want t
 
 Also, Gin provides two sets of methods for binding:
 - **Type** - Must bind
-  - **Methods** - `Bind`, `BindJSON`, `BindXML`, `BindQuery`
+  - **Methods** - `Bind`, `BindJSON`, `BindXML`, `BindQuery`, `BindYAML`
   - **Behavior** - These methods use `MustBindWith` under the hood. If there is a binding error, the request is aborted with `c.AbortWithError(400, err).SetType(ErrorTypeBind)`. This sets the response status code to 400 and the `Content-Type` header is set to `text/plain; charset=utf-8`. Note that if you try to set the response code after this, it will result in a warning `[GIN-debug] [WARNING] Headers were already written. Wanted to override status code 400 with 422`. If you wish to have greater control over the behavior, consider using the `ShouldBind` equivalent method.
 - **Type** - Should bind
-  - **Methods** - `ShouldBind`, `ShouldBindJSON`, `ShouldBindXML`, `ShouldBindQuery`
+  - **Methods** - `ShouldBind`, `ShouldBindJSON`, `ShouldBindXML`, `ShouldBindQuery`, `ShouldBindYAML`
   - **Behavior** - These methods use `ShouldBindWith` under the hood. If there is a binding error, the error is returned and it is the developer's responsibility to handle the request and error appropriately.
 
 When using the Bind-method, Gin tries to infer the binder depending on the Content-Type header. If you are sure what you are binding, you can use `MustBindWith` or `ShouldBindWith`.
@@ -577,7 +620,7 @@ func main() {
 	//	<?xml version="1.0" encoding="UTF-8"?>
 	//	<root>
 	//		<user>user</user>
-	//		<password>123</user>
+	//		<password>123</password>
 	//	</root>)
 	router.POST("/loginXML", func(c *gin.Context) {
 		var xml Login
@@ -793,6 +836,40 @@ Test it with:
 $ curl -X GET "localhost:8085/testing?name=appleboy&address=xyz&birthday=1992-03-15"
 ```
 
+### Bind Uri
+
+See the [detail information](https://github.com/gin-gonic/gin/issues/846).
+
+```go
+package main
+
+import "github.com/gin-gonic/gin"
+
+type Person struct {
+	ID string `uri:"id" binding:"required,uuid"`
+	Name string `uri:"name" binding:"required"`
+}
+
+func main() {
+	route := gin.Default()
+	route.GET("/:name/:id", func(c *gin.Context) {
+		var person Person
+		if err := c.ShouldBindUri(&person); err != nil {
+			c.JSON(400, gin.H{"msg": err})
+			return
+		}
+		c.JSON(200, gin.H{"name": person.Name, "uuid": person.ID})
+	})
+	route.Run(":8088")
+}
+```
+
+Test it with:
+```sh
+$ curl -v localhost:8088/thinkerou/987fbc97-4bed-5078-9f07-9141ba07c9f3
+$ curl -v localhost:8088/thinkerou/not-uuid
+```
+
 ### Bind HTML checkboxes
 
 See the [detail information](https://github.com/gin-gonic/gin/issues/129#issuecomment-124260092)
@@ -824,12 +901,12 @@ form.html
 <form action="/" method="POST">
     <p>Check some colors</p>
     <label for="red">Red</label>
-    <input type="checkbox" name="colors[]" value="red" id="red" />
+    <input type="checkbox" name="colors[]" value="red" id="red">
     <label for="green">Green</label>
-    <input type="checkbox" name="colors[]" value="green" id="green" />
+    <input type="checkbox" name="colors[]" value="green" id="green">
     <label for="blue">Blue</label>
-    <input type="checkbox" name="colors[]" value="blue" id="blue" />
-    <input type="submit" />
+    <input type="checkbox" name="colors[]" value="blue" id="blue">
+    <input type="submit">
 </form>
 ```
 
@@ -1022,7 +1099,7 @@ func main() {
 	})
 	
 	// listen and serve on 0.0.0.0:8080
-	r.Run(":8080)
+	r.Run(":8080")
 }
 ```
 
@@ -1160,7 +1237,7 @@ You may use custom delims
 ```go
 	r := gin.Default()
 	r.Delims("{[{", "}]}")
-	r.LoadHTMLGlob("/path/to/templates"))
+	r.LoadHTMLGlob("/path/to/templates")
 ```
 
 #### Custom Template Funcs
@@ -1965,3 +2042,5 @@ Awesome project lists using [Gin](https://github.com/gin-gonic/gin) web framewor
 * [gorush](https://github.com/appleboy/gorush): A push notification server written in Go.
 * [fnproject](https://github.com/fnproject/fn): The container native, cloud agnostic serverless platform.
 * [photoprism](https://github.com/photoprism/photoprism): Personal photo management powered by Go and Google TensorFlow.
+* [krakend](https://github.com/devopsfaith/krakend): Ultra performant API Gateway with middlewares.
+* [picfit](https://github.com/thoas/picfit): An image resizing server written in Go.

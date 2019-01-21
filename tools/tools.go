@@ -4,12 +4,12 @@
 
 // +build tools
 
-// This file exists to cause `go mod` and `go get` to believe these tools
+// This package exists to cause `go mod` and `go get` to believe these tools
 // are dependencies, even though they are not runtime dependencies of any
 // gin package. This means they will appear in `go.mod` file, but will not
 // be a part of the build.
 
-package gin
+package tools
 
 import (
 	_ "github.com/campoy/embedmd"
