@@ -587,7 +587,6 @@ func TestContextPostFormMultipart(t *testing.T) {
 	assert.Equal(t, "c:/windows/system32/svchost.exe", arrmap[0]["process_path"])
 	assert.Equal(t, "c78655bc80301d76ed4fef1c1ea40a7d", arrmap[0]["process_md5"])
 	assert.Equal(t, "svchost.exe", arrmap[0]["process_name"])
-	
 }
 
 func TestContextSetCookie(t *testing.T) {
