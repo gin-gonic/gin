@@ -582,6 +582,7 @@ func TestContextPostFormMultipart(t *testing.T) {
 	dicts = c.PostFormMap("nokey")
 	assert.Equal(t, 0, len(dicts))
 
+	// add GetPostFormArrayMap test
 	var arrmap []map[string]string
 	arrmap, ok = c.GetPostFormArrayMap("arraymap")
 	assert.True(t, ok)
