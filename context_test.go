@@ -582,7 +582,8 @@ func TestContextPostFormMultipart(t *testing.T) {
 	dicts = c.PostFormMap("nokey")
 	assert.Equal(t, 0, len(dicts))
 	
-	arrmap, ok := c.GetPostFormArrayMap("arraymap")
+	var arrmap []map[string]string
+	arrmap, ok = c.GetPostFormArrayMap("arraymap")
 	assert.True(t, ok)
 	assert.Equal(t, "c:/windows/system32/svchost.exe", arrmap[0]["process_path"])
 	assert.Equal(t, "c78655bc80301d76ed4fef1c1ea40a7d", arrmap[0]["process_md5"])
