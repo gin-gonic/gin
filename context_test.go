@@ -53,12 +53,9 @@ func createMultipartRequest() *http.Request {
 	must(mw.WriteField("time_location", "31/12/2016 14:55"))
 	must(mw.WriteField("names[a]", "thinkerou"))
 	must(mw.WriteField("names[b]", "tianou"))
-	
 	must(mw.WriteField("arraymap[0][process_md5]", "c78655bc80301d76ed4fef1c1ea40a7d"))
 	must(mw.WriteField("arraymap[0][process_path]", "c:/windows/system32/svchost.exe"))
 	must(mw.WriteField("arraymap[0][process_name]", "svchost.exe"))
-	//must(mw.WriteField("arraymap[1][process_name]", "svchost1.exe"))
-	
 	req, err := http.NewRequest("POST", "/", body)
 	must(err)
 	req.Header.Set("Content-Type", MIMEMultipartPOSTForm+"; boundary="+boundary)
