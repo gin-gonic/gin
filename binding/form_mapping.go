@@ -13,8 +13,7 @@ import (
 	"time"
 )
 
-// ErrUnknownType - not available type for mapping
-var ErrUnknownType = errors.New("Unknown type")
+var errUnknownType = errors.New("Unknown type")
 
 func mapUri(ptr interface{}, m map[string][]string) error {
 	return mapFormByTag(ptr, m, "uri")
@@ -34,7 +33,6 @@ func mapFormByTag(ptr interface{}, form map[string][]string, tag string) error {
 func mapping(value reflect.Value, field reflect.StructField, form map[string][]string, tag string) (bool, error) {
 	var vKind = value.Kind()
 
-	// Ptr
 	if vKind == reflect.Ptr {
 		var isNew bool
 		vPtr := value
@@ -52,7 +50,6 @@ func mapping(value reflect.Value, field reflect.StructField, form map[string][]s
 		return isSetted, nil
 	}
 
-	// Try to set value
 	ok, err := tryToSetValue(value, field, form, tag)
 	if err != nil {
 		return false, err
@@ -61,7 +58,6 @@ func mapping(value reflect.Value, field reflect.StructField, form map[string][]s
 		return true, nil
 	}
 
-	// Struct
 	if vKind == reflect.Struct {
 		tValue := value.Type()
 
@@ -173,7 +169,7 @@ func setWithProperType(val string, value reflect.Value, field reflect.StructFiel
 	case reflect.Map:
 		return json.Unmarshal([]byte(val), value.Addr().Interface())
 	default:
-		return ErrUnknownType
+		return errUnknownType
 	}
 	return nil
 }
