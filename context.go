@@ -78,7 +78,6 @@ func (c *Context) reset() {
 // This has to be used when the context has to be passed to a goroutine.
 func (c *Context) Copy() *Context {
 	var cp = *c
-	cp.writermem.ResponseWriter = nil
 	cp.Writer = &cp.writermem
 	cp.index = abortIndex
 	cp.handlers = nil
