@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"strings"
 	"unicode"
+	"fmt"
 )
 
 // Param is a single URL parameter, consisting of a key and a value.
@@ -379,12 +380,12 @@ walk: // Outer loop for walking the tree
 				// If this node does not have a wildcard (param or catchAll)
 				// child,  we can just look up the next child node and continue
 				// to walk down the tree
+				relativePath+=n.path
 				if !n.wildChild {
 					c := path[0]
 					for i := 0; i < len(n.indices); i++ {
 						if c == n.indices[i] {
 							n = n.children[i]
-							relativePath+=n.path
 							continue walk
 						}
 					}
