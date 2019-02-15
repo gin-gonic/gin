@@ -5,12 +5,12 @@
 package gin
 
 import (
+	"fmt"
 	"html/template"
 	"net"
 	"net/http"
 	"os"
 	"sync"
-	"fmt"
 
 	"github.com/gin-gonic/gin/render"
 )

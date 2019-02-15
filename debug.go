@@ -6,12 +6,12 @@ package gin
 
 import (
 	"bytes"
+	"fmt"
 	"html/template"
 	"os"
 	"runtime"
 	"strconv"
 	"strings"
-	"fmt"
 )
 
 const ginSupportMinGoVer = 6

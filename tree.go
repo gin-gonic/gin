@@ -94,7 +94,6 @@ type node struct {
 	nType     nodeType
 	maxParams uint8
 	wildChild bool
-	allPath string
 }
 
 // increments priority of the given child and reorders if necessary.
@@ -154,7 +153,6 @@ func (n *node) addRoute(path string, handlers HandlersChain) {
 					indices:   n.indices,
 					children:  n.children,
 					handlers:  n.handlers,
-					allPath:path,
 					priority:  n.priority - 1,
 				}
 
@@ -170,7 +168,6 @@ func (n *node) addRoute(path string, handlers HandlersChain) {
 				n.indices = string([]byte{n.path[i]})
 				n.path = path[:i]
 				n.handlers = nil
-			n.allPath=path
 				n.wildChild = false
 			}
 
@@ -238,14 +235,12 @@ func (n *node) addRoute(path string, handlers HandlersChain) {
 					n = child
 				}
 				n.insertChild(numParams, path, fullPath, handlers)
-				n.allPath=path
 				return
 
 			} else if i == len(path) { // Make node a (in-path) leaf
 				if n.handlers != nil {
 					panic("handlers are already registered for path '" + fullPath + "'")
 				}
-				n.allPath=path
 				n.handlers = handlers
 			}
 			return
@@ -253,7 +248,6 @@ func (n *node) addRoute(path string, handlers HandlersChain) {
 	} else { // Empty tree
 		n.insertChild(numParams, path, fullPath, handlers)
 		n.nType = root
-		n.allPath=path
 	}
 }
 
