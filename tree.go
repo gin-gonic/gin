@@ -8,7 +8,6 @@ import (
 	"net/url"
 	"strings"
 	"unicode"
-	"fmt"
 )
 
 // Param is a single URL parameter, consisting of a key and a value.
