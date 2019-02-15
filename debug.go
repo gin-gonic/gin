@@ -6,12 +6,12 @@ package gin
 
 import (
 	"bytes"
-	"fmt"
 	"html/template"
 	"os"
 	"runtime"
 	"strconv"
 	"strings"
+	"fmt"
 )
 
 const ginSupportMinGoVer = 6
@@ -30,7 +30,6 @@ func debugPrintRoute(httpMethod, absolutePath string, handlers HandlersChain) {
 		nuHandlers := len(handlers)
 		handlerName := nameOfFunction(handlers.Last())
 		if DebugPrintRouteFunc == nil {
-			fmt.Println("wsh1:",absolutePath)
 			debugPrint("%-6s %-25s --> %s (%d handlers)\n", httpMethod, absolutePath, handlerName, nuHandlers)
 		} else {
 			DebugPrintRouteFunc(httpMethod, absolutePath, handlerName, nuHandlers)

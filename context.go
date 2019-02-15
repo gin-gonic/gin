@@ -20,7 +20,6 @@ import (
 	"github.com/gin-contrib/sse"
 	"github.com/gin-gonic/gin/binding"
 	"github.com/gin-gonic/gin/render"
-	"fmt"
 )
 
 // Content-Type MIME of the most common data formats.
@@ -53,6 +52,8 @@ type Context struct {
 
 	// Keys is a key/value pair exclusively for the context of each request.
 	Keys map[string]interface{}
+
+	RelativePath string
 
 	// Errors is a list of errors attached to all the handlers/middlewares who used this context.
 	Errors errorMsgs
@@ -635,10 +636,6 @@ func (c *Context) ShouldBindBodyWith(obj interface{}, bb binding.BindingBody) (e
 // X-Real-IP and X-Forwarded-For in order to work properly with reverse-proxies such us: nginx or haproxy.
 // Use X-Forwarded-For before X-Real-Ip as nginx uses X-Real-Ip with the proxy's IP.
 func (c *Context) ClientIP() string {
-	root:=c.engine.trees[0].root
-	fmt.Println("wsh2:",(*root.children[0]).allPath,root.indices)
-	fmt.Println("wsh002:",(*(root.children[1])),root.indices)
-	fmt.Println("wsh02:",len(root.children))
 	if c.engine.ForwardedByClientIP {
 		clientIP := c.requestHeader("X-Forwarded-For")
 		clientIP = strings.TrimSpace(strings.Split(clientIP, ",")[0])

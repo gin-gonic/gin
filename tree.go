@@ -8,7 +8,6 @@ import (
 	"net/url"
 	"strings"
 	"unicode"
-	"fmt"
 )
 
 // Param is a single URL parameter, consisting of a key and a value.
@@ -125,7 +124,6 @@ func (n *node) incrementChildPrio(pos int) int {
 // addRoute adds a node with the given handle to the path.
 // Not concurrency-safe!
 func (n *node) addRoute(path string, handlers HandlersChain) {
-	fmt.Println("wsh66:",path)
 	fullPath := path
 	n.priority++
 	numParams := countParams(path)
@@ -368,7 +366,6 @@ func (n *node) insertChild(numParams uint8, path string, fullPath string, handle
 	}
 
 	// insert remaining path part and handle to the leaf
-	fmt.Println("wsh21:",path[offset:])
 	n.path = path[offset:]
 	n.handlers = handlers
 }
@@ -378,11 +375,7 @@ func (n *node) insertChild(numParams uint8, path string, fullPath string, handle
 // If no handle can be found, a TSR (trailing slash redirect) recommendation is
 // made if a handle exists with an extra (without the) trailing slash for the
 // given path.
-func (n *node) getValue(path string, po Params, unescape bool) (handlers HandlersChain, p Params, tsr bool,regPath string) {
-	regPath=""
-	defer func() {
-		fmt.Println("tsr:",tsr,"regpath:",regPath)
-	}()
+func (n *node) getValue(path string, po Params, unescape bool) (handlers HandlersChain, p Params, tsr bool,relativePath string) {
 	p = po
 walk: // Outer loop for walking the tree
 	for {
@@ -397,8 +390,7 @@ walk: // Outer loop for walking the tree
 					for i := 0; i < len(n.indices); i++ {
 						if c == n.indices[i] {
 							n = n.children[i]
-							regPath+=n.path
-							fmt.Println("path4:",n.path,regPath)
+							relativePath+=n.path
 							continue walk
 						}
 					}
@@ -430,8 +422,7 @@ walk: // Outer loop for walking the tree
 
 					val := path[:end]
 
-					regPath+=n.path
-					fmt.Println("path6:",n.path,regPath)
+					relativePath+=n.path
 					if unescape {
 						var err error
 						if p[i].Value, err = url.QueryUnescape(val); err != nil {
@@ -475,7 +466,6 @@ walk: // Outer loop for walking the tree
 					i := len(p)
 					p = p[:i+1] // expand slice within preallocated capacity
 					p[i].Key = n.path[2:]
-					fmt.Println("path5:",n.path,n.allPath)
 					if unescape {
 						var err error
 						if p[i].Value, err = url.QueryUnescape(path); err != nil {
@@ -493,8 +483,7 @@ walk: // Outer loop for walking the tree
 				}
 			}
 		} else if path == n.path {
-			fmt.Println("path2:",n.path)
-			regPath+=n.path
+			relativePath+=n.path
 			// We should have reached the node containing the handle.
 			// Check if this node has a handle registered.
 			if handlers = n.handlers; handlers != nil {
@@ -510,7 +499,6 @@ walk: // Outer loop for walking the tree
 			// trailing slash exists for trailing slash recommendation
 			for i := 0; i < len(n.indices); i++ {
 				if n.indices[i] == '/' {
-					fmt.Println("path3:",n.children[i].path)
 					n = n.children[i]
 					tsr = (len(n.path) == 1 && n.handlers != nil) ||
 						(n.nType == catchAll && n.children[0].handlers != nil)
