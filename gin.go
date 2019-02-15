@@ -376,11 +376,11 @@ func (engine *Engine) handleHTTPRequest(c *Context) {
 		}
 		root := t[i].root
 		// Find route in tree
-		handlers, params, tsr,_ := root.getValue(path, c.Params, unescape)
+		handlers, params, tsr,relativePath := root.getValue(path, c.Params, unescape)
 		if handlers != nil {
 			c.handlers = handlers
 			c.Params = params
-			fmt.Println("params:",params)
+			c.RelativePath=relativePath
 			c.Next()
 			c.writermem.WriteHeaderNow()
 			return
