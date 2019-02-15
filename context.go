@@ -72,6 +72,7 @@ func (c *Context) reset() {
 	c.handlers = nil
 	c.index = -1
 	c.Keys = nil
+	c.RelativePath=""
 	c.Errors = c.Errors[0:0]
 	c.Accepted = nil
 }
