@@ -27,18 +27,23 @@ func formatAsDate(t time.Time) string {
 
 func setupHTMLFiles(t *testing.T, mode string, tls bool, loadMethod func(*Engine)) *httptest.Server {
 	SetMode(mode)
-	router := New()
-	router.Delims("{[{", "}]}")
-	router.SetFuncMap(template.FuncMap{
-		"formatAsDate": formatAsDate,
-	})
-	loadMethod(router)
-	router.GET("/test", func(c *Context) {
-		c.HTML(http.StatusOK, "hello.tmpl", map[string]string{"name": "world"})
-	})
-	router.GET("/raw", func(c *Context) {
-		c.HTML(http.StatusOK, "raw.tmpl", map[string]interface{}{
-			"now": time.Date(2017, 07, 01, 0, 0, 0, 0, time.UTC),
+	defer SetMode(TestMode)
+
+	var router *Engine
+	captureOutput(t, func() {
+		router = New()
+		router.Delims("{[{", "}]}")
+		router.SetFuncMap(template.FuncMap{
+			"formatAsDate": formatAsDate,
+		})
+		loadMethod(router)
+		router.GET("/test", func(c *Context) {
+			c.HTML(http.StatusOK, "hello.tmpl", map[string]string{"name": "world"})
+		})
+		router.GET("/raw", func(c *Context) {
+			c.HTML(http.StatusOK, "raw.tmpl", map[string]interface{}{
+				"now": time.Date(2017, 07, 01, 0, 0, 0, 0, time.UTC),
+			})
 		})
 	})
 
