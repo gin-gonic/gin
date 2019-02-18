@@ -12,6 +12,8 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"reflect"
+	"strconv"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -486,6 +488,43 @@ func TestEngineHandleContext(t *testing.T) {
 		w := performRequest(r, "GET", "/")
 		assert.Equal(t, 301, w.Code)
 	})
+}
+
+func TestEngineHandleContextManyReEntries(t *testing.T) {
+	expectValue := 10000
+
+	var handlerCounter, middlewareCounter int64
+
+	r := New()
+	r.Use(func(c *Context) {
+		atomic.AddInt64(&middlewareCounter, 1)
+	})
+	r.GET("/:count", func(c *Context) {
+		countStr := c.Param("count")
+		count, err := strconv.Atoi(countStr)
+		assert.NoError(t, err)
+
+		n, err := c.Writer.Write([]byte("."))
+		assert.NoError(t, err)
+		assert.Equal(t, 1, n)
+
+		switch {
+		case count > 0:
+			c.Request.URL.Path = "/" + strconv.Itoa(count-1)
+			r.HandleContext(c)
+		}
+	}, func(c *Context) {
+		atomic.AddInt64(&handlerCounter, 1)
+	})
+
+	assert.NotPanics(t, func() {
+		w := performRequest(r, "GET", "/"+strconv.Itoa(expectValue-1)) // include 0 value
+		assert.Equal(t, 200, w.Code)
+		assert.Equal(t, expectValue, w.Body.Len())
+	})
+
+	assert.Equal(t, int64(expectValue), handlerCounter)
+	assert.Equal(t, int64(expectValue), middlewareCounter)
 }
 
 func assertRoutePresent(t *testing.T, gotRoutes RoutesInfo, wantRoute RouteInfo) {
