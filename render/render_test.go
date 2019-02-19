@@ -71,7 +71,7 @@ func TestRenderJSONPanics(t *testing.T) {
 	data := make(chan int)
 
 	// json: unsupported type: chan int
-	assert.Panics(t, func() { (JSON{data}).Render(w) })
+	assert.Panics(t, func() { assert.NoError(t, (JSON{data}).Render(w)) })
 }
 
 func TestRenderIndentedJSON(t *testing.T) {
@@ -287,7 +287,7 @@ func TestRenderProtoBuf(t *testing.T) {
 	err = (ProtoBuf{data}).Render(w)
 
 	assert.NoError(t, err)
-	assert.Equal(t, string(protoData[:]), w.Body.String())
+	assert.Equal(t, string(protoData), w.Body.String())
 	assert.Equal(t, "application/x-protobuf", w.Header().Get("Content-Type"))
 }
 
@@ -335,7 +335,7 @@ func TestRenderRedirect(t *testing.T) {
 	}
 
 	w = httptest.NewRecorder()
-	assert.Panics(t, func() { data2.Render(w) })
+	assert.Panics(t, func() { assert.NoError(t, data2.Render(w)) })
 
 	// only improve coverage
 	data2.WriteContentType(w)
@@ -480,7 +480,7 @@ func TestRenderReader(t *testing.T) {
 
 	assert.NoError(t, err)
 	assert.Equal(t, body, w.Body.String())
-	assert.Equal(t, "image/png", w.HeaderMap.Get("Content-Type"))
-	assert.Equal(t, strconv.Itoa(len(body)), w.HeaderMap.Get("Content-Length"))
-	assert.Equal(t, headers["Content-Disposition"], w.HeaderMap.Get("Content-Disposition"))
+	assert.Equal(t, "image/png", w.Header().Get("Content-Type"))
+	assert.Equal(t, strconv.Itoa(len(body)), w.Header().Get("Content-Length"))
+	assert.Equal(t, headers["Content-Disposition"], w.Header().Get("Content-Disposition"))
 }
