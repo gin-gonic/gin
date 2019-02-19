@@ -71,7 +71,7 @@ func TestRenderJSONPanics(t *testing.T) {
 	data := make(chan int)
 
 	// json: unsupported type: chan int
-	assert.Panics(t, func() { (JSON{data}).Render(w) })
+	assert.Panics(t, func() { assert.NoError(t, (JSON{data}).Render(w)) })
 }
 
 func TestRenderIndentedJSON(t *testing.T) {
@@ -335,7 +335,7 @@ func TestRenderRedirect(t *testing.T) {
 	}
 
 	w = httptest.NewRecorder()
-	assert.Panics(t, func() { data2.Render(w) })
+	assert.Panics(t, func() { assert.NoError(t, data2.Render(w)) })
 
 	// only improve coverage
 	data2.WriteContentType(w)

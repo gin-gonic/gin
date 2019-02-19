@@ -355,8 +355,11 @@ func (engine *Engine) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 // This can be done by setting c.Request.URL.Path to your new target.
 // Disclaimer: You can loop yourself to death with this, use wisely.
 func (engine *Engine) HandleContext(c *Context) {
+	oldIndexValue := c.index
 	c.reset()
 	engine.handleHTTPRequest(c)
+
+	c.index = oldIndexValue
 }
 
 func (engine *Engine) handleHTTPRequest(c *Context) {
@@ -422,7 +425,10 @@ func serveError(c *Context, code int, defaultMessage []byte) {
 	}
 	if c.writermem.Status() == code {
 		c.writermem.Header()["Content-Type"] = mimePlain
-		c.Writer.Write(defaultMessage)
+		_, err := c.Writer.Write(defaultMessage)
+		if err != nil {
+			debugPrint("cannot write message to writer during serve error: %v", err)
+		}
 		return
 	}
 	c.writermem.WriteHeaderNow()
