@@ -24,7 +24,9 @@ func TestBindWith(t *testing.T) {
 		Foo string `form:"foo"`
 		Bar string `form:"bar"`
 	}
-	assert.NoError(t, c.BindWith(&obj, binding.Form))
+	captureOutput(t, func() {
+		assert.NoError(t, c.BindWith(&obj, binding.Form))
+	})
 	assert.Equal(t, "foo", obj.Bar)
 	assert.Equal(t, "bar", obj.Foo)
 	assert.Equal(t, 0, w.Body.Len())

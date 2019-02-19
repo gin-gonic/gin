@@ -251,7 +251,8 @@ func TestRouteStaticFile(t *testing.T) {
 		t.Error(err)
 	}
 	defer os.Remove(f.Name())
-	f.WriteString("Gin Web Framework")
+	_, err = f.WriteString("Gin Web Framework")
+	assert.NoError(t, err)
 	f.Close()
 
 	dir, filename := filepath.Split(f.Name())
@@ -267,7 +268,7 @@ func TestRouteStaticFile(t *testing.T) {
 	assert.Equal(t, w, w2)
 	assert.Equal(t, http.StatusOK, w.Code)
 	assert.Equal(t, "Gin Web Framework", w.Body.String())
-	assert.Equal(t, "text/plain; charset=utf-8", w.HeaderMap.Get("Content-Type"))
+	assert.Equal(t, "text/plain; charset=utf-8", w.Header().Get("Content-Type"))
 
 	w3 := performRequest(router, "HEAD", "/using_static/"+filename)
 	w4 := performRequest(router, "HEAD", "/result")
@@ -285,7 +286,7 @@ func TestRouteStaticListingDir(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, w.Code)
 	assert.Contains(t, w.Body.String(), "gin.go")
-	assert.Equal(t, "text/html; charset=utf-8", w.HeaderMap.Get("Content-Type"))
+	assert.Equal(t, "text/html; charset=utf-8", w.Header().Get("Content-Type"))
 }
 
 // TestHandleHeadToDir - ensure the root/sub dir handles properly
@@ -312,10 +313,10 @@ func TestRouterMiddlewareAndStatic(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, w.Code)
 	assert.Contains(t, w.Body.String(), "package gin")
-	assert.Equal(t, "text/plain; charset=utf-8", w.HeaderMap.Get("Content-Type"))
-	assert.NotEqual(t, w.HeaderMap.Get("Last-Modified"), "Mon, 02 Jan 2006 15:04:05 MST")
-	assert.Equal(t, "Mon, 02 Jan 2006 15:04:05 MST", w.HeaderMap.Get("Expires"))
-	assert.Equal(t, "Gin Framework", w.HeaderMap.Get("x-GIN"))
+	assert.Equal(t, "text/plain; charset=utf-8", w.Header().Get("Content-Type"))
+	assert.NotEqual(t, w.Header().Get("Last-Modified"), "Mon, 02 Jan 2006 15:04:05 MST")
+	assert.Equal(t, "Mon, 02 Jan 2006 15:04:05 MST", w.Header().Get("Expires"))
+	assert.Equal(t, "Gin Framework", w.Header().Get("x-GIN"))
 }
 
 func TestRouteNotAllowedEnabled(t *testing.T) {
@@ -409,6 +410,31 @@ func TestRouterNotFound(t *testing.T) {
 	router.GET("/a", func(c *Context) {})
 	w = performRequest(router, "GET", "/")
 	assert.Equal(t, http.StatusNotFound, w.Code)
+}
+
+func TestRouterStaticFSNotFound(t *testing.T) {
+	router := New()
+
+	router.StaticFS("/", http.FileSystem(http.Dir("/thisreallydoesntexist/")))
+	router.NoRoute(func(c *Context) {
+		c.String(404, "non existent")
+	})
+
+	w := performRequest(router, "GET", "/nonexistent")
+	assert.Equal(t, "non existent", w.Body.String())
+
+	w = performRequest(router, "HEAD", "/nonexistent")
+	assert.Equal(t, "non existent", w.Body.String())
+}
+
+func TestRouterStaticFSFileNotFound(t *testing.T) {
+	router := New()
+
+	router.StaticFS("/", http.FileSystem(http.Dir(".")))
+
+	assert.NotPanics(t, func() {
+		performRequest(router, "GET", "/nonexistent")
+	})
 }
 
 func TestRouteRawPath(t *testing.T) {
