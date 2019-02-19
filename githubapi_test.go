@@ -287,7 +287,7 @@ var githubAPI = []route{
 
 func TestShouldBindUri(t *testing.T) {
 	DefaultWriter = os.Stdout
-	router := Default()
+	router := New()
 
 	type Person struct {
 		Name string `uri:"name" binding:"required"`
@@ -309,7 +309,7 @@ func TestShouldBindUri(t *testing.T) {
 
 func TestBindUri(t *testing.T) {
 	DefaultWriter = os.Stdout
-	router := Default()
+	router := New()
 
 	type Person struct {
 		Name string `uri:"name" binding:"required"`
@@ -331,7 +331,7 @@ func TestBindUri(t *testing.T) {
 
 func TestBindUriError(t *testing.T) {
 	DefaultWriter = os.Stdout
-	router := Default()
+	router := New()
 
 	type Member struct {
 		Number string `uri:"num" binding:"required,uuid"`
@@ -361,7 +361,7 @@ func githubConfigRouter(router *Engine) {
 
 func TestGithubAPI(t *testing.T) {
 	DefaultWriter = os.Stdout
-	router := Default()
+	router := New()
 	githubConfigRouter(router)
 
 	for _, route := range githubAPI {
@@ -436,7 +436,7 @@ func BenchmarkParallelGithub(b *testing.B) {
 
 func BenchmarkParallelGithubDefault(b *testing.B) {
 	DefaultWriter = os.Stdout
-	router := Default()
+	router := New()
 	githubConfigRouter(router)
 
 	req, _ := http.NewRequest("POST", "/repos/manucorporat/sse/git/blobs", nil)
