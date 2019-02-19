@@ -11,6 +11,8 @@ import (
 	"io"
 	"log"
 	"os"
+	"runtime"
+	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -30,86 +32,122 @@ func TestIsDebugging(t *testing.T) {
 }
 
 func TestDebugPrint(t *testing.T) {
-	var w bytes.Buffer
-	setup(&w)
-	defer teardown()
-
-	SetMode(ReleaseMode)
-	debugPrint("DEBUG this!")
-	SetMode(TestMode)
-	debugPrint("DEBUG this!")
-	assert.Empty(t, w.String())
-
-	SetMode(DebugMode)
-	debugPrint("these are %d %s\n", 2, "error messages")
-	assert.Equal(t, "[GIN-debug] these are 2 error messages\n", w.String())
+	re := captureOutput(t, func() {
+		SetMode(DebugMode)
+		SetMode(ReleaseMode)
+		debugPrint("DEBUG this!")
+		SetMode(TestMode)
+		debugPrint("DEBUG this!")
+		SetMode(DebugMode)
+		debugPrint("these are %d %s", 2, "error messages")
+		SetMode(TestMode)
+	})
+	assert.Equal(t, "[GIN-debug] these are 2 error messages\n", re)
 }
 
 func TestDebugPrintError(t *testing.T) {
-	var w bytes.Buffer
-	setup(&w)
-	defer teardown()
-
-	SetMode(DebugMode)
-	debugPrintError(nil)
-	assert.Empty(t, w.String())
-
-	debugPrintError(errors.New("this is an error"))
-	assert.Equal(t, "[GIN-debug] [ERROR] this is an error\n", w.String())
+	re := captureOutput(t, func() {
+		SetMode(DebugMode)
+		debugPrintError(nil)
+		debugPrintError(errors.New("this is an error"))
+		SetMode(TestMode)
+	})
+	assert.Equal(t, "[GIN-debug] [ERROR] this is an error\n", re)
 }
 
 func TestDebugPrintRoutes(t *testing.T) {
-	var w bytes.Buffer
-	setup(&w)
-	defer teardown()
-
-	debugPrintRoute("GET", "/path/to/route/:param", HandlersChain{func(c *Context) {}, handlerNameTest})
-	assert.Regexp(t, `^\[GIN-debug\] GET    /path/to/route/:param     --> (.*/vendor/)?github.com/gin-gonic/gin.handlerNameTest \(2 handlers\)\n$`, w.String())
+	re := captureOutput(t, func() {
+		SetMode(DebugMode)
+		debugPrintRoute("GET", "/path/to/route/:param", HandlersChain{func(c *Context) {}, handlerNameTest})
+		SetMode(TestMode)
+	})
+	assert.Regexp(t, `^\[GIN-debug\] GET    /path/to/route/:param     --> (.*/vendor/)?github.com/gin-gonic/gin.handlerNameTest \(2 handlers\)\n$`, re)
 }
 
 func TestDebugPrintLoadTemplate(t *testing.T) {
-	var w bytes.Buffer
-	setup(&w)
-	defer teardown()
-
-	templ := template.Must(template.New("").Delims("{[{", "}]}").ParseGlob("./fixtures/basic/hello.tmpl"))
-	debugPrintLoadTemplate(templ)
-	assert.Regexp(t, `^\[GIN-debug\] Loaded HTML Templates \(2\): \n(\t- \n|\t- hello\.tmpl\n){2}\n`, w.String())
+	re := captureOutput(t, func() {
+		SetMode(DebugMode)
+		templ := template.Must(template.New("").Delims("{[{", "}]}").ParseGlob("./testdata/template/hello.tmpl"))
+		debugPrintLoadTemplate(templ)
+		SetMode(TestMode)
+	})
+	assert.Regexp(t, `^\[GIN-debug\] Loaded HTML Templates \(2\): \n(\t- \n|\t- hello\.tmpl\n){2}\n`, re)
 }
 
 func TestDebugPrintWARNINGSetHTMLTemplate(t *testing.T) {
-	var w bytes.Buffer
-	setup(&w)
-	defer teardown()
-
-	debugPrintWARNINGSetHTMLTemplate()
-	assert.Equal(t, "[GIN-debug] [WARNING] Since SetHTMLTemplate() is NOT thread-safe. It should only be called\nat initialization. ie. before any route is registered or the router is listening in a socket:\n\n\trouter := gin.Default()\n\trouter.SetHTMLTemplate(template) // << good place\n\n", w.String())
+	re := captureOutput(t, func() {
+		SetMode(DebugMode)
+		debugPrintWARNINGSetHTMLTemplate()
+		SetMode(TestMode)
+	})
+	assert.Equal(t, "[GIN-debug] [WARNING] Since SetHTMLTemplate() is NOT thread-safe. It should only be called\nat initialization. ie. before any route is registered or the router is listening in a socket:\n\n\trouter := gin.Default()\n\trouter.SetHTMLTemplate(template) // << good place\n\n", re)
 }
 
 func TestDebugPrintWARNINGDefault(t *testing.T) {
-	var w bytes.Buffer
-	setup(&w)
-	defer teardown()
-
-	debugPrintWARNINGDefault()
-	assert.Equal(t, "[GIN-debug] [WARNING] Now Gin requires Go 1.6 or later and Go 1.7 will be required soon.\n\n[GIN-debug] [WARNING] Creating an Engine instance with the Logger and Recovery middleware already attached.\n\n", w.String())
+	re := captureOutput(t, func() {
+		SetMode(DebugMode)
+		debugPrintWARNINGDefault()
+		SetMode(TestMode)
+	})
+	m, e := getMinVer(runtime.Version())
+	if e == nil && m <= ginSupportMinGoVer {
+		assert.Equal(t, "[GIN-debug] [WARNING] Now Gin requires Go 1.6 or later and Go 1.7 will be required soon.\n\n[GIN-debug] [WARNING] Creating an Engine instance with the Logger and Recovery middleware already attached.\n\n", re)
+	} else {
+		assert.Equal(t, "[GIN-debug] [WARNING] Creating an Engine instance with the Logger and Recovery middleware already attached.\n\n", re)
+	}
 }
 
 func TestDebugPrintWARNINGNew(t *testing.T) {
-	var w bytes.Buffer
-	setup(&w)
-	defer teardown()
-
-	debugPrintWARNINGNew()
-	assert.Equal(t, "[GIN-debug] [WARNING] Running in \"debug\" mode. Switch to \"release\" mode in production.\n - using env:\texport GIN_MODE=release\n - using code:\tgin.SetMode(gin.ReleaseMode)\n\n", w.String())
+	re := captureOutput(t, func() {
+		SetMode(DebugMode)
+		debugPrintWARNINGNew()
+		SetMode(TestMode)
+	})
+	assert.Equal(t, "[GIN-debug] [WARNING] Running in \"debug\" mode. Switch to \"release\" mode in production.\n - using env:\texport GIN_MODE=release\n - using code:\tgin.SetMode(gin.ReleaseMode)\n\n", re)
 }
 
-func setup(w io.Writer) {
-	SetMode(DebugMode)
-	log.SetOutput(w)
+func captureOutput(t *testing.T, f func()) string {
+	reader, writer, err := os.Pipe()
+	if err != nil {
+		panic(err)
+	}
+	stdout := os.Stdout
+	stderr := os.Stderr
+	defer func() {
+		os.Stdout = stdout
+		os.Stderr = stderr
+		log.SetOutput(os.Stderr)
+	}()
+	os.Stdout = writer
+	os.Stderr = writer
+	log.SetOutput(writer)
+	out := make(chan string)
+	wg := new(sync.WaitGroup)
+	wg.Add(1)
+	go func() {
+		var buf bytes.Buffer
+		wg.Done()
+		_, err := io.Copy(&buf, reader)
+		assert.NoError(t, err)
+		out <- buf.String()
+	}()
+	wg.Wait()
+	f()
+	writer.Close()
+	return <-out
 }
 
-func teardown() {
-	SetMode(TestMode)
-	log.SetOutput(os.Stdout)
+func TestGetMinVer(t *testing.T) {
+	var m uint64
+	var e error
+	_, e = getMinVer("go1")
+	assert.NotNil(t, e)
+	m, e = getMinVer("go1.1")
+	assert.Equal(t, uint64(1), m)
+	assert.Nil(t, e)
+	m, e = getMinVer("go1.1.1")
+	assert.Nil(t, e)
+	assert.Equal(t, uint64(1), m)
+	_, e = getMinVer("go1.1.1.1")
+	assert.NotNil(t, e)
 }

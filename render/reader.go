@@ -1,3 +1,7 @@
+// Copyright 2018 Gin Core Team.  All rights reserved.
+// Use of this source code is governed by a MIT style
+// license that can be found in the LICENSE file.
+
 package render
 
 import (
@@ -6,6 +10,7 @@ import (
 	"strconv"
 )
 
+// Reader contains the IO reader and its length, and custom ContentType and other headers.
 type Reader struct {
 	ContentType   string
 	ContentLength int64
@@ -22,10 +27,12 @@ func (r Reader) Render(w http.ResponseWriter) (err error) {
 	return
 }
 
+// WriteContentType (Reader) writes custom ContentType.
 func (r Reader) WriteContentType(w http.ResponseWriter) {
 	writeContentType(w, []string{r.ContentType})
 }
 
+// writeHeaders writes custom Header.
 func (r Reader) writeHeaders(w http.ResponseWriter, headers map[string]string) {
 	header := w.Header()
 	for k, v := range headers {
