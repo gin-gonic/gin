@@ -187,9 +187,11 @@ func (n *node) addRoute(path string, handlers HandlersChain) {
 					numParams--
 
 					// Check if the wildcard matches
-					if len(path) >= len(n.path) && n.path == path[:len(n.path)] && (len(n.path) >= len(path) || path[len(n.path)] == '/') {
+					if len(path) >= len(n.path) && n.path == path[:len(n.path)] {
 						// check for longer wildcard, e.g. :name and :names
-						continue walk
+						if len(n.path) >= len(path) || path[len(n.path)] == '/' {
+							continue walk
+						}
 					} else {
 						// Wildcard conflict
 						pathSeg := path
