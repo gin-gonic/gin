@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"net/http"
+	"path/filepath"
 
 	"github.com/gin-gonic/gin"
 )
@@ -25,7 +26,8 @@ func main() {
 		files := form.File["files"]
 
 		for _, file := range files {
-			if err := c.SaveUploadedFile(file, file.Filename); err != nil {
+			filename := filepath.Base(file.Filename)
+			if err := c.SaveUploadedFile(file, filename); err != nil {
 				c.String(http.StatusBadRequest, fmt.Sprintf("upload file err: %s", err.Error()))
 				return
 			}

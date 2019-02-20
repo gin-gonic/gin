@@ -18,7 +18,10 @@ test:
 		cat tmp.out; \
 		if grep -q "^--- FAIL" tmp.out; then \
 			rm tmp.out; \
-			exit 1;\
+			exit 1; \
+		elif grep -q "build failed" tmp.out; then \
+			rm tmp.out; \
+			exit; \
 		fi; \
 		if [ -f profile.out ]; then \
 			cat profile.out | grep -v "mode:" >> coverage.out; \
