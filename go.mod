@@ -24,6 +24,7 @@ exclude (
 	github.com/gin-gonic/autotls v0.0.0-20190119125636-0b5f4fc15768
 	github.com/jessevdk/go-assets v0.0.0-20160921144138-4f4301a06e15
 	github.com/manucorporat/stats v0.0.0-20180402194714-3ba42d56d227
+	github.com/newrelic/go-agent v2.5.0+incompatible
 	github.com/thinkerou/favicon v0.1.0
 	golang.org/x/crypto v0.0.0-20190123085648-057139ce5d2b
 	golang.org/x/lint v0.0.0-20181217174547-8f45f776aaf1
