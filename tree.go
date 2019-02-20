@@ -192,7 +192,7 @@ func (n *node) addRoute(path string, handlers HandlersChain) {
 						continue walk
 					} else {
 						// Wildcard conflict
-            pathSeg := path
+						pathSeg := path
 						if n.nType != catchAll {
 							pathSeg = strings.SplitN(path, "/", 2)[0]
 						}
