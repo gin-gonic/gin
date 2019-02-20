@@ -1678,7 +1678,7 @@ func main() {
 	case <-ctx.Done():
 		log.Println("timeout of 5 seconds.")
 	}
- 	log.Println("Server exiting")
+	log.Println("Server exiting")
 }
 ```
 
