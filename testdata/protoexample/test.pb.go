@@ -3,7 +3,7 @@
 // DO NOT EDIT!
 
 /*
-Package example is a generated protocol buffer package.
+Package protoexample is a generated protocol buffer package.
 
 It is generated from these files:
 	test.proto
@@ -11,7 +11,7 @@ It is generated from these files:
 It has these top-level messages:
 	Test
 */
-package example
+package protoexample
 
 import proto "github.com/golang/protobuf/proto"
 import math "math"
@@ -109,5 +109,5 @@ func (m *Test_OptionalGroup) GetRequiredField() string {
 }
 
 func init() {
-	proto.RegisterEnum("example.FOO", FOO_name, FOO_value)
+	proto.RegisterEnum("protoexample.FOO", FOO_name, FOO_value)
 }

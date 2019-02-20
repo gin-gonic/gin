@@ -14,8 +14,10 @@ import (
 	"strings"
 )
 
+// BindKey indicates a default bind key.
 const BindKey = "_gin-gonic/gin/bindkey"
 
+// Bind is a helper function for given interface object and returns a Gin middleware.
 func Bind(val interface{}) HandlerFunc {
 	value := reflect.ValueOf(val)
 	if value.Kind() == reflect.Ptr {
@@ -33,18 +35,21 @@ func Bind(val interface{}) HandlerFunc {
 	}
 }
 
+// WrapF is a helper function for wrapping http.HandlerFunc and returns a Gin middleware.
 func WrapF(f http.HandlerFunc) HandlerFunc {
 	return func(c *Context) {
 		f(c.Writer, c.Request)
 	}
 }
 
+// WrapH is a helper function for wrapping http.Handler and returns a Gin middleware.
 func WrapH(h http.Handler) HandlerFunc {
 	return func(c *Context) {
 		h.ServeHTTP(c.Writer, c.Request)
 	}
 }
 
+// H is a shortcut for map[string]interface{}
 type H map[string]interface{}
 
 // MarshalXML allows type H to be used with xml.Marshal.
@@ -65,10 +70,8 @@ func (h H) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
 			return err
 		}
 	}
-	if err := e.EncodeToken(xml.EndElement{Name: start.Name}); err != nil {
-		return err
-	}
-	return nil
+
+	return e.EncodeToken(xml.EndElement{Name: start.Name})
 }
 
 func assert1(guard bool, text string) {
@@ -100,10 +103,7 @@ func parseAccept(acceptHeader string) []string {
 	parts := strings.Split(acceptHeader, ",")
 	out := make([]string, 0, len(parts))
 	for _, part := range parts {
-		if index := strings.IndexByte(part, ';'); index >= 0 {
-			part = part[0:index]
-		}
-		if part = strings.TrimSpace(part); part != "" {
+		if part = strings.TrimSpace(strings.Split(part, ";")[0]); part != "" {
 			out = append(out, part)
 		}
 	}

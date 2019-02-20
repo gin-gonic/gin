@@ -87,13 +87,13 @@ const (
 
 type node struct {
 	path      string
-	wildChild bool
-	nType     nodeType
-	maxParams uint8
 	indices   string
 	children  []*node
 	handlers  HandlersChain
 	priority  uint32
+	nType     nodeType
+	maxParams uint8
+	wildChild bool
 }
 
 // increments priority of the given child and reorders if necessary.
@@ -193,9 +193,16 @@ func (n *node) addRoute(path string, handlers HandlersChain) {
 						}
 					}
 
-					panic("path segment '" + path +
+					pathSeg := path
+					if n.nType != catchAll {
+						pathSeg = strings.SplitN(path, "/", 2)[0]
+					}
+					prefix := fullPath[:strings.Index(fullPath, pathSeg)] + n.path
+					panic("'" + pathSeg +
+						"' in new path '" + fullPath +
 						"' conflicts with existing wildcard '" + n.path +
-						"' in path '" + fullPath + "'")
+						"' in existing prefix '" + prefix +
+						"'")
 				}
 
 				c := path[0]
@@ -232,7 +239,7 @@ func (n *node) addRoute(path string, handlers HandlersChain) {
 
 			} else if i == len(path) { // Make node a (in-path) leaf
 				if n.handlers != nil {
-					panic("handlers are already registered for path ''" + fullPath + "'")
+					panic("handlers are already registered for path '" + fullPath + "'")
 				}
 				n.handlers = handlers
 			}
@@ -247,7 +254,7 @@ func (n *node) addRoute(path string, handlers HandlersChain) {
 func (n *node) insertChild(numParams uint8, path string, fullPath string, handlers HandlersChain) {
 	var offset int // already handled bytes of the path
 
-	// find prefix until first wildcard (beginning with ':'' or '*'')
+	// find prefix until first wildcard (beginning with ':' or '*')
 	for i, max := 0, len(path); numParams > 0; i++ {
 		c := path[i]
 		if c != ':' && c != '*' {
@@ -384,7 +391,7 @@ walk: // Outer loop for walking the tree
 					// Nothing found.
 					// We can recommend to redirect to the same URL without a
 					// trailing slash if a leaf exists for that path.
-					tsr = (path == "/" && n.handlers != nil)
+					tsr = path == "/" && n.handlers != nil
 					return
 				}
 
@@ -424,7 +431,7 @@ walk: // Outer loop for walking the tree
 						}
 
 						// ... but we can't
-						tsr = (len(path) == end+1)
+						tsr = len(path) == end+1
 						return
 					}
 
@@ -435,7 +442,7 @@ walk: // Outer loop for walking the tree
 						// No handle found. Check if a handle for this path + a
 						// trailing slash exists for TSR recommendation
 						n = n.children[0]
-						tsr = (n.path == "/" && n.handlers != nil)
+						tsr = n.path == "/" && n.handlers != nil
 					}
 
 					return
@@ -530,7 +537,7 @@ func (n *node) findCaseInsensitivePath(path string, fixTrailingSlash bool) (ciPa
 
 				// Nothing found. We can recommend to redirect to the same URL
 				// without a trailing slash if a leaf exists for that path
-				found = (fixTrailingSlash && path == "/" && n.handlers != nil)
+				found = fixTrailingSlash && path == "/" && n.handlers != nil
 				return
 			}
 

@@ -29,8 +29,8 @@ func statsWorker() {
 			"timestamp":  uint64(time.Now().Unix()),
 			"HeapInuse":  stats.HeapInuse,
 			"StackInuse": stats.StackInuse,
-			"Mallocs":    (stats.Mallocs - lastMallocs),
-			"Frees":      (stats.Frees - lastFrees),
+			"Mallocs":    stats.Mallocs - lastMallocs,
+			"Frees":      stats.Frees - lastFrees,
 			"Inbound":    uint64(messages.Get("inbound")),
 			"Outbound":   uint64(messages.Get("outbound")),
 			"Connected":  connectedUsers(),
@@ -50,6 +50,7 @@ func connectedUsers() uint64 {
 	return uint64(connected)
 }
 
+// Stats returns savedStats data.
 func Stats() map[string]uint64 {
 	mutexStats.RLock()
 	defer mutexStats.RUnlock()

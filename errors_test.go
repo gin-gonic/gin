@@ -8,7 +8,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/gin-gonic/gin/json"
+	"github.com/gin-gonic/gin/internal/json"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -19,47 +19,47 @@ func TestError(t *testing.T) {
 		Type: ErrorTypePrivate,
 	}
 	assert.Equal(t, err.Error(), baseError.Error())
-	assert.Equal(t, err.JSON(), H{"error": baseError.Error()})
+	assert.Equal(t, H{"error": baseError.Error()}, err.JSON())
 
 	assert.Equal(t, err.SetType(ErrorTypePublic), err)
-	assert.Equal(t, err.Type, ErrorTypePublic)
+	assert.Equal(t, ErrorTypePublic, err.Type)
 
 	assert.Equal(t, err.SetMeta("some data"), err)
-	assert.Equal(t, err.Meta, "some data")
-	assert.Equal(t, err.JSON(), H{
+	assert.Equal(t, "some data", err.Meta)
+	assert.Equal(t, H{
 		"error": baseError.Error(),
 		"meta":  "some data",
-	})
+	}, err.JSON())
 
 	jsonBytes, _ := json.Marshal(err)
 	assert.Equal(t, "{\"error\":\"test error\",\"meta\":\"some data\"}", string(jsonBytes))
 
-	err.SetMeta(H{
+	err.SetMeta(H{ // nolint: errcheck
 		"status": "200",
 		"data":   "some data",
 	})
-	assert.Equal(t, err.JSON(), H{
+	assert.Equal(t, H{
 		"error":  baseError.Error(),
 		"status": "200",
 		"data":   "some data",
-	})
+	}, err.JSON())
 
-	err.SetMeta(H{
+	err.SetMeta(H{ // nolint: errcheck
 		"error":  "custom error",
 		"status": "200",
 		"data":   "some data",
 	})
-	assert.Equal(t, err.JSON(), H{
+	assert.Equal(t, H{
 		"error":  "custom error",
 		"status": "200",
 		"data":   "some data",
-	})
+	}, err.JSON())
 
 	type customError struct {
 		status string
 		data   string
 	}
-	err.SetMeta(customError{status: "200", data: "other data"})
+	err.SetMeta(customError{status: "200", data: "other data"}) // nolint: errcheck
 	assert.Equal(t, customError{status: "200", data: "other data"}, err.JSON())
 }
 
