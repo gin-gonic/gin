@@ -105,8 +105,9 @@ func (c *Context) Handler() HandlerFunc {
 // See example in GitHub.
 func (c *Context) Next() {
 	c.index++
-	for s := int8(len(c.handlers)); c.index < s; c.index++ {
+	for c.index < int8(len(c.handlers)) {
 		c.handlers[c.index](c)
+		c.index++
 	}
 }
 
@@ -415,7 +416,11 @@ func (c *Context) PostFormArray(key string) []string {
 // a boolean value whether at least one value exists for the given key.
 func (c *Context) GetPostFormArray(key string) ([]string, bool) {
 	req := c.Request
-	req.ParseMultipartForm(c.engine.MaxMultipartMemory)
+	if err := req.ParseMultipartForm(c.engine.MaxMultipartMemory); err != nil {
+		if err != http.ErrNotMultipart {
+			debugPrint("error on parse multipart form array: %v", err)
+		}
+	}
 	if values := req.PostForm[key]; len(values) > 0 {
 		return values, true
 	}
@@ -437,7 +442,11 @@ func (c *Context) PostFormMap(key string) map[string]string {
 // whether at least one value exists for the given key.
 func (c *Context) GetPostFormMap(key string) (map[string]string, bool) {
 	req := c.Request
-	req.ParseMultipartForm(c.engine.MaxMultipartMemory)
+	if err := req.ParseMultipartForm(c.engine.MaxMultipartMemory); err != nil {
+		if err != http.ErrNotMultipart {
+			debugPrint("error on parse multipart form map: %v", err)
+		}
+	}
 	dicts, exist := c.get(req.PostForm, key)
 
 	if !exist && req.MultipartForm != nil && req.MultipartForm.File != nil {
@@ -493,8 +502,8 @@ func (c *Context) SaveUploadedFile(file *multipart.FileHeader, dst string) error
 	}
 	defer out.Close()
 
-	io.Copy(out, src)
-	return nil
+	_, err = io.Copy(out, src)
+	return err
 }
 
 // Bind checks the Content-Type to select a binding engine automatically,
@@ -534,7 +543,7 @@ func (c *Context) BindYAML(obj interface{}) error {
 // It will abort the request with HTTP 400 if any error occurs.
 func (c *Context) BindUri(obj interface{}) error {
 	if err := c.ShouldBindUri(obj); err != nil {
-		c.AbortWithError(http.StatusBadRequest, err).SetType(ErrorTypeBind)
+		c.AbortWithError(http.StatusBadRequest, err).SetType(ErrorTypeBind) // nolint: errcheck
 		return err
 	}
 	return nil
@@ -545,7 +554,7 @@ func (c *Context) BindUri(obj interface{}) error {
 // See the binding package.
 func (c *Context) MustBindWith(obj interface{}, b binding.Binding) error {
 	if err := c.ShouldBindWith(obj, b); err != nil {
-		c.AbortWithError(http.StatusBadRequest, err).SetType(ErrorTypeBind)
+		c.AbortWithError(http.StatusBadRequest, err).SetType(ErrorTypeBind) // nolint: errcheck
 		return err
 	}
 	return nil
@@ -913,7 +922,7 @@ func (c *Context) Negotiate(code int, config Negotiate) {
 		c.XML(code, data)
 
 	default:
-		c.AbortWithError(http.StatusNotAcceptable, errors.New("the accepted formats are not offered by the server"))
+		c.AbortWithError(http.StatusNotAcceptable, errors.New("the accepted formats are not offered by the server")) // nolint: errcheck
 	}
 }
 
@@ -940,6 +949,34 @@ func (c *Context) NegotiateFormat(offered ...string) string {
 // SetAccepted sets Accept header data.
 func (c *Context) SetAccepted(formats ...string) {
 	c.Accepted = formats
+}
+
+/************************************/
+/***** GOLANG.ORG/X/NET/CONTEXT *****/
+/************************************/
+
+// Deadline returns the time when work done on behalf of this context
+// should be canceled. Deadline returns ok==false when no deadline is
+// set. Successive calls to Deadline return the same results.
+func (c *Context) Deadline() (deadline time.Time, ok bool) {
+	return
+}
+
+// Done returns a channel that's closed when work done on behalf of this
+// context should be canceled. Done may return nil if this context can
+// never be canceled. Successive calls to Done return the same value.
+func (c *Context) Done() <-chan struct{} {
+	return nil
+}
+
+// Err returns a non-nil error value after Done is closed,
+// successive calls to Err return the same error.
+// If Done is not yet closed, Err returns nil.
+// If Done is closed, Err returns a non-nil error explaining why:
+// Canceled if the context was canceled
+// or DeadlineExceeded if the context's deadline passed.
+func (c *Context) Err() error {
+	return nil
 }
 
 // Value returns the value associated with this context for key, or nil
