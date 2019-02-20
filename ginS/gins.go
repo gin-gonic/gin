@@ -47,8 +47,8 @@ func NoMethod(handlers ...gin.HandlerFunc) {
 	engine().NoMethod(handlers...)
 }
 
-// Group creates a new router group. You should add all the routes that have common middlwares or the same path prefix.
-// For example, all the routes that use a common middlware for authorization could be grouped.
+// Group creates a new router group. You should add all the routes that have common middlewares or the same path prefix.
+// For example, all the routes that use a common middleware for authorization could be grouped.
 func Group(relativePath string, handlers ...gin.HandlerFunc) *gin.RouterGroup {
 	return engine().Group(relativePath, handlers...)
 }
@@ -127,21 +127,21 @@ func Use(middlewares ...gin.HandlerFunc) gin.IRoutes {
 
 // Run : The router is attached to a http.Server and starts listening and serving HTTP requests.
 // It is a shortcut for http.ListenAndServe(addr, router)
-// Note: this method will block the calling goroutine undefinitelly unless an error happens.
+// Note: this method will block the calling goroutine indefinitely unless an error happens.
 func Run(addr ...string) (err error) {
 	return engine().Run(addr...)
 }
 
 // RunTLS : The router is attached to a http.Server and starts listening and serving HTTPS requests.
 // It is a shortcut for http.ListenAndServeTLS(addr, certFile, keyFile, router)
-// Note: this method will block the calling goroutine undefinitelly unless an error happens.
+// Note: this method will block the calling goroutine indefinitely unless an error happens.
 func RunTLS(addr, certFile, keyFile string) (err error) {
 	return engine().RunTLS(addr, certFile, keyFile)
 }
 
 // RunUnix : The router is attached to a http.Server and starts listening and serving HTTP requests
 // through the specified unix socket (ie. a file)
-// Note: this method will block the calling goroutine undefinitelly unless an error happens.
+// Note: this method will block the calling goroutine indefinitely unless an error happens.
 func RunUnix(file string) (err error) {
 	return engine().RunUnix(file)
 }

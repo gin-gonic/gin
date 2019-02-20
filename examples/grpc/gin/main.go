@@ -19,7 +19,7 @@ func main() {
 	defer conn.Close()
 	client := pb.NewGreeterClient(conn)
 
-	// Set up a http setver.
+	// Set up a http server.
 	r := gin.Default()
 	r.GET("/rest/n/:name", func(c *gin.Context) {
 		name := c.Param("name")
