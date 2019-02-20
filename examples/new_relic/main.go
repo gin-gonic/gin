@@ -40,4 +40,3 @@ func main() {
 	})
 	router.Run()
 }
-
