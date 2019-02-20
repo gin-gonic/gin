@@ -193,7 +193,7 @@ func (n *node) addRoute(path string, handlers HandlersChain) {
 							continue walk
 						}
 					}
-					
+
 					// Wildcard conflict
 					pathSeg := path
 					if n.nType != catchAll {
