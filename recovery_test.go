@@ -11,6 +11,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"strings"
 	"syscall"
 	"testing"
 
@@ -42,6 +43,7 @@ func TestPanicInHandler(t *testing.T) {
 	assert.Equal(t, http.StatusInternalServerError, w.Code)
 	assert.Contains(t, buffer.String(), "GET /recovery")
 
+	SetMode(TestMode)
 }
 
 // TestPanicWithAbort assert that panic has been recovered even if context.Abort was used.
@@ -84,7 +86,7 @@ func TestPanicWithBrokenPipe(t *testing.T) {
 	const expectCode = 204
 
 	expectMsgs := map[syscall.Errno]string{
-		syscall.EPIPE:      "Broken pipe",
+		syscall.EPIPE:      "broken pipe",
 		syscall.ECONNRESET: "connection reset by peer",
 	}
 
@@ -108,7 +110,7 @@ func TestPanicWithBrokenPipe(t *testing.T) {
 			w := performRequest(router, "GET", "/recovery")
 			// TEST
 			assert.Equal(t, expectCode, w.Code)
-			assert.Contains(t, buf.String(), expectMsg)
+			assert.Contains(t, strings.ToLower(buf.String()), expectMsg)
 		})
 	}
 }

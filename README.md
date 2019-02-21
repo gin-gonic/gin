@@ -35,6 +35,7 @@ Gin is a web framework written in Go (Golang). It features a martini-like API wi
     - [Blank Gin without middleware by default](#blank-gin-without-middleware-by-default)
     - [Using middleware](#using-middleware)
     - [How to write log file](#how-to-write-log-file)
+    - [Custom Log Format](#custom-log-format)
     - [Model binding and validation](#model-binding-and-validation)
     - [Custom Validators](#custom-validators)
     - [Only Bind Query String](#only-bind-query-string)
@@ -214,9 +215,6 @@ $ go build -tags=jsoniter .
 
 ```go
 func main() {
-	// Disable Console Color
-	// gin.DisableConsoleColor()
-
 	// Creates a gin router with default middleware:
 	// logger and recovery (crash-free) middleware
 	router := gin.Default()
@@ -362,6 +360,10 @@ ids: map[b:hello a:1234], names: map[second:tianou first:thinkerou]
 #### Single file
 
 References issue [#774](https://github.com/gin-gonic/gin/issues/774) and detail [example code](examples/upload-file/single).
+
+`file.Filename` **SHOULD NOT** be trusted. See [`Content-Disposition` on MDN](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Disposition#Directives) and [#1693](https://github.com/gin-gonic/gin/issues/1693)
+
+> The filename is always optional and must not be used blindly by the application: path information should be stripped, and conversion to the server file system rules should be done.
 
 ```go
 func main() {
@@ -528,6 +530,85 @@ func main() {
 }
 ```
 
+### Custom Log Format
+```go
+func main() {
+	router := gin.New()
+
+	// LoggerWithFormatter middleware will write the logs to gin.DefaultWriter
+	// By default gin.DefaultWriter = os.Stdout
+	router.Use(gin.LoggerWithFormatter(func(param gin.LogFormatterParams) string {
+
+		// your custom format
+		return fmt.Sprintf("%s - [%s] \"%s %s %s %d %s \"%s\" %s\"\n",
+				param.ClientIP,
+				param.TimeStamp.Format(time.RFC1123),
+				param.Method,
+				param.Path,
+				param.Request.Proto,
+				param.StatusCode,
+				param.Latency,
+				param.Request.UserAgent(),
+				param.ErrorMessage,
+		)
+	}))
+	router.Use(gin.Recovery())
+
+	router.GET("/ping", func(c *gin.Context) {
+		c.String(200, "pong")
+	})
+
+	router.Run(":8080")
+}
+```
+
+**Sample Output**
+```
+::1 - [Fri, 07 Dec 2018 17:04:38 JST] "GET /ping HTTP/1.1 200 122.767µs "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/71.0.3578.80 Safari/537.36" "
+```
+
+### Controlling Log output coloring 
+
+By default, logs output on console should be colorized depending on the detected TTY.
+
+Never colorize logs: 
+
+```go
+func main() {
+    // Disable log's color
+    gin.DisableConsoleColor()
+    
+    // Creates a gin router with default middleware:
+    // logger and recovery (crash-free) middleware
+    router := gin.Default()
+    
+    router.GET("/ping", func(c *gin.Context) {
+        c.String(200, "pong")
+    })
+    
+    router.Run(":8080")
+}
+```
+
+Always colorize logs: 
+
+```go
+func main() {
+    // Force log's color
+    gin.ForceConsoleColor()
+    
+    // Creates a gin router with default middleware:
+    // logger and recovery (crash-free) middleware
+    router := gin.Default()
+    
+    router.GET("/ping", func(c *gin.Context) {
+        c.String(200, "pong")
+    })
+    
+    router.Run(":8080")
+}
+```
+
 ### Model binding and validation
 
 To bind a request body into a type, use model binding. We currently support binding of JSON, XML, YAML and standard form values (foo=bar&boo=baz).
@@ -578,7 +659,7 @@ func main() {
 	//	<?xml version="1.0" encoding="UTF-8"?>
 	//	<root>
 	//		<user>user</user>
-	//		<password>123</user>
+	//		<password>123</password>
 	//	</root>)
 	router.POST("/loginXML", func(c *gin.Context) {
 		var xml Login
@@ -1591,6 +1672,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -1618,7 +1700,10 @@ func main() {
 	// Wait for interrupt signal to gracefully shutdown the server with
 	// a timeout of 5 seconds.
 	quit := make(chan os.Signal)
-	signal.Notify(quit, os.Interrupt)
+	// kill (no param) default send syscanll.SIGTERM
+	// kill -2 is syscall.SIGINT
+	// kill -9 is syscall. SIGKILL but can"t be catch, so don't need add it
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
 	log.Println("Shutdown Server ...")
 
@@ -1626,6 +1711,11 @@ func main() {
 	defer cancel()
 	if err := srv.Shutdown(ctx); err != nil {
 		log.Fatal("Server Shutdown:", err)
+	}
+	// catching ctx.Done(). timeout of 5 seconds.
+	select {
+	case <-ctx.Done():
+		log.Println("timeout of 5 seconds.")
 	}
 	log.Println("Server exiting")
 }
@@ -2000,3 +2090,5 @@ Awesome project lists using [Gin](https://github.com/gin-gonic/gin) web framewor
 * [gorush](https://github.com/appleboy/gorush): A push notification server written in Go.
 * [fnproject](https://github.com/fnproject/fn): The container native, cloud agnostic serverless platform.
 * [photoprism](https://github.com/photoprism/photoprism): Personal photo management powered by Go and Google TensorFlow.
+* [krakend](https://github.com/devopsfaith/krakend): Ultra performant API Gateway with middlewares.
+* [picfit](https://github.com/thoas/picfit): An image resizing server written in Go.
