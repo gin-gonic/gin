@@ -584,7 +584,7 @@ func TestBindingFormPostForMap(t *testing.T) {
 	req := createFormPostRequestForMap()
 	var obj FooStructForMapType
 	err := FormPost.Bind(req, &obj)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.Equal(t, float64(123), obj.MapFoo["bar"].(float64))
 }
 
@@ -609,7 +609,7 @@ func TestBindingFormMultipartForMap(t *testing.T) {
 	req := createFormMultipartRequestForMap(t)
 	var obj FooStructForMapType
 	err := FormMultipart.Bind(req, &obj)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.Equal(t, float64(123), obj.MapFoo["bar"].(float64))
 	assert.Equal(t, "thinkerou", obj.MapFoo["name"].(string))
 	assert.Equal(t, float64(3.14), obj.MapFoo["pai"].(float64))
@@ -1120,7 +1120,7 @@ func testFormBindingForType(t *testing.T, method, path, badPath, body, badBody s
 	case "Map":
 		obj := FooStructForMapType{}
 		err := b.Bind(req, &obj)
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 		assert.Equal(t, float64(123), obj.MapFoo["bar"].(float64))
 	case "SliceMap":
 		obj := FooStructForSliceMapType{}
@@ -1327,5 +1327,5 @@ func TestCanSet(t *testing.T) {
 	}
 
 	var c CanSetStruct
-	assert.Nil(t, mapForm(&c, nil))
+	assert.NoError(t, mapForm(&c, nil))
 }
