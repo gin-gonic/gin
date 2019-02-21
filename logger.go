@@ -24,6 +24,7 @@ var (
 	cyan         = string([]byte{27, 91, 57, 55, 59, 52, 54, 109})
 	reset        = string([]byte{27, 91, 48, 109})
 	disableColor = false
+	forceColor   = false
 )
 
 // LoggerConfig defines the config for Logger middleware.
@@ -90,6 +91,11 @@ func DisableConsoleColor() {
 	disableColor = true
 }
 
+// ForceConsoleColor force color output in the console.
+func ForceConsoleColor() {
+	forceColor = true
+}
+
 // ErrorLogger returns a handlerfunc for any error type.
 func ErrorLogger() HandlerFunc {
 	return ErrorLoggerT(ErrorTypeAny)
@@ -144,9 +150,9 @@ func LoggerWithConfig(conf LoggerConfig) HandlerFunc {
 
 	isTerm := true
 
-	if w, ok := out.(*os.File); !ok ||
+	if w, ok := out.(*os.File); (!ok ||
 		(os.Getenv("TERM") == "dumb" || (!isatty.IsTerminal(w.Fd()) && !isatty.IsCygwinTerminal(w.Fd()))) ||
-		disableColor {
+		disableColor) && !forceColor {
 		isTerm = false
 	}
 
