@@ -49,12 +49,6 @@ deps:
 	@hash govendor > /dev/null 2>&1; if [ $$? -ne 0 ]; then \
 		$(GO) get -u github.com/kardianos/govendor; \
 	fi
-	@hash embedmd > /dev/null 2>&1; if [ $$? -ne 0 ]; then \
-		$(GO) get -u github.com/campoy/embedmd; \
-	fi
-
-embedmd:
-	embedmd -d *.md
 
 .PHONY: lint
 lint:
@@ -80,5 +74,4 @@ misspell:
 .PHONY: tools
 tools:
 	go install golang.org/x/lint/golint; \
-	go install github.com/client9/misspell/cmd/misspell; \
-	go install github.com/campoy/embedmd;
+	go install github.com/client9/misspell/cmd/misspell;
