@@ -215,9 +215,6 @@ $ go build -tags=jsoniter .
 
 ```go
 func main() {
-	// Disable Console Color
-	// gin.DisableConsoleColor()
-
 	// Creates a gin router with default middleware:
 	// logger and recovery (crash-free) middleware
 	router := gin.Default()
@@ -568,6 +565,48 @@ func main() {
 **Sample Output**
 ```
 ::1 - [Fri, 07 Dec 2018 17:04:38 JST] "GET /ping HTTP/1.1 200 122.767µs "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/71.0.3578.80 Safari/537.36" "
+```
+
+### Controlling Log output coloring 
+
+By default, logs output on console should be colorized depending on the detected TTY.
+
+Never colorize logs: 
+
+```go
+func main() {
+    // Disable log's color
+    gin.DisableConsoleColor()
+    
+    // Creates a gin router with default middleware:
+    // logger and recovery (crash-free) middleware
+    router := gin.Default()
+    
+    router.GET("/ping", func(c *gin.Context) {
+        c.String(200, "pong")
+    })
+    
+    router.Run(":8080")
+}
+```
+
+Always colorize logs: 
+
+```go
+func main() {
+    // Force log's color
+    gin.ForceConsoleColor()
+    
+    // Creates a gin router with default middleware:
+    // logger and recovery (crash-free) middleware
+    router := gin.Default()
+    
+    router.GET("/ping", func(c *gin.Context) {
+        c.String(200, "pong")
+    })
+    
+    router.Run(":8080")
+}
 ```
 
 ### Model binding and validation
