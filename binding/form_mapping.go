@@ -83,6 +83,7 @@ func mapFormByTag(ptr interface{}, form map[string][]string, tag string) error {
 				}
 			}
 			val.Field(i).Set(slice)
+			continue
 		} else if structFieldKind == reflect.Map {
 			m := make(map[string]interface{})
 			err := json.Unmarshal([]byte(inputValue[0]), &m)
@@ -97,6 +98,7 @@ func mapFormByTag(ptr interface{}, form map[string][]string, tag string) error {
 			}
 
 			val.Field(i).Set(structField)
+			continue
 		} else {
 			if _, isTime := structField.Interface().(time.Time); isTime {
 				if err := setTimeField(inputValue[0], typeField, structField); err != nil {
