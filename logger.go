@@ -68,13 +68,58 @@ type LogFormatterParams struct {
 	BodySize int
 }
 
+// StatusCodeColor is the ANSI color for appropriately logging http status code to a terminal.
+func (p *LogFormatterParams) StatusCodeColor() string {
+	code := p.StatusCode
+
+	switch {
+	case code >= http.StatusOK && code < http.StatusMultipleChoices:
+		return green
+	case code >= http.StatusMultipleChoices && code < http.StatusBadRequest:
+		return white
+	case code >= http.StatusBadRequest && code < http.StatusInternalServerError:
+		return yellow
+	default:
+		return red
+	}
+}
+
+// MethodColor is the ANSI color for appropriately logging http method to a terminal.
+func (p *LogFormatterParams) MethodColor() string {
+	method := p.Method
+
+	switch method {
+	case "GET":
+		return blue
+	case "POST":
+		return cyan
+	case "PUT":
+		return yellow
+	case "DELETE":
+		return red
+	case "PATCH":
+		return green
+	case "HEAD":
+		return magenta
+	case "OPTIONS":
+		return white
+	default:
+		return reset
+	}
+}
+
+// ResetColor resets all escape attributes.
+func (p *LogFormatterParams) ResetColor() string {
+	return reset
+}
+
 // defaultLogFormatter is the default log format function Logger middleware uses.
 var defaultLogFormatter = func(param LogFormatterParams) string {
 	var statusColor, methodColor, resetColor string
 	if param.IsTerm {
-		statusColor = colorForStatus(param.StatusCode)
-		methodColor = colorForMethod(param.Method)
-		resetColor = reset
+		statusColor = param.StatusCodeColor()
+		methodColor = param.MethodColor()
+		resetColor = param.ResetColor()
 	}
 
 	return fmt.Sprintf("[GIN] %v |%s %3d %s| %13v | %15s |%s %-7s %s %s\n%s",
@@ -203,39 +248,5 @@ func LoggerWithConfig(conf LoggerConfig) HandlerFunc {
 
 			fmt.Fprint(out, formatter(param))
 		}
-	}
-}
-
-func colorForStatus(code int) string {
-	switch {
-	case code >= http.StatusOK && code < http.StatusMultipleChoices:
-		return green
-	case code >= http.StatusMultipleChoices && code < http.StatusBadRequest:
-		return white
-	case code >= http.StatusBadRequest && code < http.StatusInternalServerError:
-		return yellow
-	default:
-		return red
-	}
-}
-
-func colorForMethod(method string) string {
-	switch method {
-	case "GET":
-		return blue
-	case "POST":
-		return cyan
-	case "PUT":
-		return yellow
-	case "DELETE":
-		return red
-	case "PATCH":
-		return green
-	case "HEAD":
-		return magenta
-	case "OPTIONS":
-		return white
-	default:
-		return reset
 	}
 }
