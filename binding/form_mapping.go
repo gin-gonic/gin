@@ -41,6 +41,9 @@ func mapFormByTag(ptr interface{}, form map[string][]string, tag string) error {
 				defaultValue = defaultList[1]
 			}
 		}
+		if inputFieldName == "-" {
+			continue
+		}
 		if inputFieldName == "" {
 			inputFieldName = typeField.Name
 
