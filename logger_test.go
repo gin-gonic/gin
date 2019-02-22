@@ -359,3 +359,10 @@ func TestDisableConsoleColor(t *testing.T) {
 	DisableConsoleColor()
 	assert.True(t, disableColor)
 }
+
+func TestForceConsoleColor(t *testing.T) {
+	New()
+	assert.False(t, forceColor)
+	ForceConsoleColor()
+	assert.True(t, forceColor)
+}

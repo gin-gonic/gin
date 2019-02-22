@@ -24,6 +24,7 @@ var (
 	cyan         = string([]byte{27, 91, 57, 55, 59, 52, 54, 109})
 	reset        = string([]byte{27, 91, 48, 109})
 	disableColor = false
+	forceColor   = false
 )
 
 // LoggerConfig defines the config for Logger middleware.
@@ -63,6 +64,8 @@ type LogFormatterParams struct {
 	ErrorMessage string
 	// IsTerm shows whether does gin's output descriptor refers to a terminal.
 	IsTerm bool
+	// BodySize is the size of the Response Body
+	BodySize int
 }
 
 // StatusCodeColor is the ANSI color for appropriately logging http status code to a terminal.
@@ -135,6 +138,11 @@ func DisableConsoleColor() {
 	disableColor = true
 }
 
+// ForceConsoleColor force color output in the console.
+func ForceConsoleColor() {
+	forceColor = true
+}
+
 // ErrorLogger returns a handlerfunc for any error type.
 func ErrorLogger() HandlerFunc {
 	return ErrorLoggerT(ErrorTypeAny)
@@ -189,9 +197,9 @@ func LoggerWithConfig(conf LoggerConfig) HandlerFunc {
 
 	isTerm := true
 
-	if w, ok := out.(*os.File); !ok ||
+	if w, ok := out.(*os.File); (!ok ||
 		(os.Getenv("TERM") == "dumb" || (!isatty.IsTerminal(w.Fd()) && !isatty.IsCygwinTerminal(w.Fd()))) ||
-		disableColor {
+		disableColor) && !forceColor {
 		isTerm = false
 	}
 
@@ -229,6 +237,8 @@ func LoggerWithConfig(conf LoggerConfig) HandlerFunc {
 			param.Method = c.Request.Method
 			param.StatusCode = c.Writer.Status()
 			param.ErrorMessage = c.Errors.ByType(ErrorTypePrivate).String()
+
+			param.BodySize = c.Writer.Size()
 
 			if raw != "" {
 				path = path + "?" + raw
