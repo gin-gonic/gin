@@ -257,6 +257,13 @@ func TestDefaultLogFormatter(t *testing.T) {
 }
 
 func TestColorForMethod(t *testing.T) {
+	colorForMethod := func(method string) string {
+		p := LogFormatterParams{
+			Method: method,
+		}
+		return p.MethodColor()
+	}
+
 	assert.Equal(t, string([]byte{27, 91, 57, 55, 59, 52, 52, 109}), colorForMethod("GET"), "get should be blue")
 	assert.Equal(t, string([]byte{27, 91, 57, 55, 59, 52, 54, 109}), colorForMethod("POST"), "post should be cyan")
 	assert.Equal(t, string([]byte{27, 91, 57, 48, 59, 52, 51, 109}), colorForMethod("PUT"), "put should be yellow")
@@ -268,10 +275,22 @@ func TestColorForMethod(t *testing.T) {
 }
 
 func TestColorForStatus(t *testing.T) {
+	colorForStatus := func(code int) string {
+		p := LogFormatterParams{
+			StatusCode: code,
+		}
+		return p.StatusCodeColor()
+	}
+
 	assert.Equal(t, string([]byte{27, 91, 57, 55, 59, 52, 50, 109}), colorForStatus(http.StatusOK), "2xx should be green")
 	assert.Equal(t, string([]byte{27, 91, 57, 48, 59, 52, 55, 109}), colorForStatus(http.StatusMovedPermanently), "3xx should be white")
 	assert.Equal(t, string([]byte{27, 91, 57, 48, 59, 52, 51, 109}), colorForStatus(http.StatusNotFound), "4xx should be yellow")
 	assert.Equal(t, string([]byte{27, 91, 57, 55, 59, 52, 49, 109}), colorForStatus(2), "other things should be red")
+}
+
+func TestResetColor(t *testing.T) {
+	p := LogFormatterParams{}
+	assert.Equal(t, string([]byte{27, 91, 48, 109}), p.ResetColor())
 }
 
 func TestErrorLogger(t *testing.T) {
