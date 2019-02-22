@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
     <head>
         <meta charset="utf-8">
@@ -20,9 +20,9 @@
         <!-- Latest compiled and minified JavaScript -->
         <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/js/bootstrap.min.js"></script>
         <!-- Primjs -->
-        <link href="/static/prismjs.min.css" rel="stylesheet" />
+        <link href="/static/prismjs.min.css" rel="stylesheet">
 
-        <script type="text/javascript">
+        <script>
             $(document).ready(function() { 
               StartRealtime({{.roomid}}, {{.timestamp}});
             });
@@ -49,7 +49,7 @@
             <li><a href="http://www.w3.org/TR/2009/WD-eventsource-20091029/">W3 Standard</a></li>
             <li><a href="http://caniuse.com/#feat=eventsource">Browser Support</a></li>
             <li><a href="http://gin-gonic.github.io/gin/">Gin Framework</a></li>
-            <li><a href="https://github.com/gin-gonic/gin/tree/develop/examples/realtime-advanced">Github</a></li>
+            <li><a href="https://github.com/gin-gonic/gin/tree/develop/examples/realtime-advanced">GitHub</a></li>
           </ul>
         </div><!-- /.nav-collapse -->
       </div><!-- /.container -->
@@ -59,7 +59,7 @@
             <div class="container">
                 <h1>Server-Sent Events in Go</h1>
                 <p>Server-sent events (SSE) is a technology where a browser receives automatic updates from a server via HTTP connection. It is not websockets. <a href="http://www.html5rocks.com/en/tutorials/eventsource/basics/">Learn more.</a></p>
-                <p>The chat and the charts data is provided in realtime using the SSE implemention of <a href="https://github.com/gin-gonic/gin/blob/15b0c49da556d58a3d934b86e3aa552ff224026d/examples/realtime-chat/main.go#L23-L32">Gin Framework</a>.</p>
+                <p>The chat and the charts data is provided in realtime using the SSE implementation of <a href="https://github.com/gin-gonic/gin/blob/15b0c49da556d58a3d934b86e3aa552ff224026d/examples/realtime-chat/main.go#L23-L32">Gin Framework</a>.</p>
                 <div class="row">
                     <div class="col-md-8">
                         <div id="chat-scroll" style="overflow-y:scroll; overflow-x:scroll; height:290px">
@@ -79,19 +79,19 @@
                                 <label class="sr-only" for="chat-message">Message</label>
                                 <div class="input-group">
                                     <div class="input-group-addon">{{.nick}}</div>
-                                    <input type="text" name="message" id="chat-message" class="form-control" placeholder="a message" value="" />
+                                    <input type="text" name="message" id="chat-message" class="form-control" placeholder="a message" value="">
                                 </div>
                             </div>
-                            <input type="submit" class="btn btn-primary" value="Send" />
+                            <input type="submit" class="btn btn-primary" value="Send">
                         </form>
                         {{else}}
                         <form action="" method="get" class="form-inline">
                             <legend>Join the SSE real-time chat</legend>
                             <div class="form-group">
-                                <input value='' name="nick" id="nick" placeholder="Your Name" type="text" class="form-control" />
+                                <input value='' name="nick" id="nick" placeholder="Your Name" type="text" class="form-control">
                             </div>
                             <div class="form-group text-center">
-                                <input type="submit" class="btn btn-success btn-login-submit" value="Join" />
+                                <input type="submit" class="btn btn-success btn-login-submit" value="Join">
                             </div>
                         </form>
                         {{end}}
