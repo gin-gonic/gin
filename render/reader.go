@@ -36,8 +36,8 @@ func (r Reader) WriteContentType(w http.ResponseWriter) {
 func (r Reader) writeHeaders(w http.ResponseWriter, headers map[string]string) {
 	header := w.Header()
 	for k, v := range headers {
-		if val := header[k]; len(val) == 0 {
-			header[k] = []string{v}
+		if header.Get(k) == "" {
+			header.Set(k, v)
 		}
 	}
 }
