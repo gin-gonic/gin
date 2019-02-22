@@ -21,7 +21,10 @@ test:
 			exit 1; \
 		elif grep -q "build failed" tmp.out; then \
 			rm tmp.out; \
-			exit; \
+			exit 1; \
+		elif grep -q "setup failed" tmp.out; then \
+			rm tmp.out; \
+			exit 1; \
 		fi; \
 		if [ -f profile.out ]; then \
 			cat profile.out | grep -v "mode:" >> coverage.out; \
