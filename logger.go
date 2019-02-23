@@ -66,6 +66,8 @@ type LogFormatterParams struct {
 	IsTerm bool
 	// BodySize is the size of the Response Body
 	BodySize int
+	// Context is the Context associated with the request.
+	Context *Context
 }
 
 // StatusCodeColor is the ANSI color for appropriately logging http status code to a terminal.
@@ -227,6 +229,7 @@ func LoggerWithConfig(conf LoggerConfig) HandlerFunc {
 			param := LogFormatterParams{
 				Request: c.Request,
 				IsTerm:  isTerm,
+				Context: c,
 			}
 
 			// Stop timer
