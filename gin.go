@@ -318,6 +318,7 @@ func (engine *Engine) RunUnix(file string) (err error) {
 		return
 	}
 	defer listener.Close()
+	os.Chmod(file, 0777)
 	err = http.Serve(listener, engine)
 	return
 }
@@ -355,8 +356,11 @@ func (engine *Engine) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 // This can be done by setting c.Request.URL.Path to your new target.
 // Disclaimer: You can loop yourself to death with this, use wisely.
 func (engine *Engine) HandleContext(c *Context) {
+	oldIndexValue := c.index
 	c.reset()
 	engine.handleHTTPRequest(c)
+
+	c.index = oldIndexValue
 }
 
 func (engine *Engine) handleHTTPRequest(c *Context) {
