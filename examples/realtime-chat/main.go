@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"math/rand"
+	"net/http"
 
 	"github.com/gin-gonic/gin"
 )
@@ -34,7 +35,7 @@ func stream(c *gin.Context) {
 func roomGET(c *gin.Context) {
 	roomid := c.Param("roomid")
 	userid := fmt.Sprint(rand.Int31())
-	c.HTML(200, "chat_room", gin.H{
+	c.HTML(http.StatusOK, "chat_room", gin.H{
 		"roomid": roomid,
 		"userid": userid,
 	})
@@ -46,7 +47,7 @@ func roomPOST(c *gin.Context) {
 	message := c.PostForm("message")
 	room(roomid).Submit(userid + ": " + message)
 
-	c.JSON(200, gin.H{
+	c.JSON(http.StatusOK, gin.H{
 		"status":  "success",
 		"message": message,
 	})
