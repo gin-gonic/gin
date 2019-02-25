@@ -103,7 +103,8 @@ func TestResponseWriterHijack(t *testing.T) {
 	w := ResponseWriter(writer)
 
 	assert.Panics(t, func() {
-		w.Hijack()
+		_, _, err := w.Hijack()
+		assert.NoError(t, err)
 	})
 	assert.True(t, w.Written())
 

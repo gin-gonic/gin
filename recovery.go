@@ -66,7 +66,7 @@ func RecoveryWithWriter(out io.Writer) HandlerFunc {
 
 				// If the connection is dead, we can't write a status to it.
 				if brokenPipe {
-					c.Error(err.(error))
+					c.Error(err.(error)) // nolint: errcheck
 					c.Abort()
 				} else {
 					c.AbortWithStatus(http.StatusInternalServerError)
