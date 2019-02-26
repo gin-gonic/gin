@@ -1189,7 +1189,7 @@ func TestContextNegotiationFormatWithWildcardAccept(t *testing.T) {
 	assert.Equal(t, c.NegotiateFormat(MIMEHTML), MIMEHTML)
 }
 
-func TestContextNegotiationFormatCustum(t *testing.T) {
+func TestContextNegotiationFormatCustom(t *testing.T) {
 	c, _ := CreateTestContext(httptest.NewRecorder())
 	c.Request, _ = http.NewRequest("POST", "/", nil)
 	c.Request.Header.Add("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9;q=0.8")
