@@ -331,6 +331,8 @@ func TestContextCopy(t *testing.T) {
 	assert.Equal(t, cp.Keys, c.Keys)
 	assert.Equal(t, cp.engine, c.engine)
 	assert.Equal(t, cp.Params, c.Params)
+	cp.Set("foo", "notBar")
+	assert.False(t, cp.Keys["foo"] == c.Keys["foo"])
 }
 
 func TestContextHandlerName(t *testing.T) {

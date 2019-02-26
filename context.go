@@ -82,6 +82,10 @@ func (c *Context) Copy() *Context {
 	cp.Writer = &cp.writermem
 	cp.index = abortIndex
 	cp.handlers = nil
+	cp.Keys = map[string]interface{}{}
+	for k, v := range c.Keys {
+		cp.Keys[k] = v
+	}
 	return &cp
 }
 
