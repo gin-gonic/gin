@@ -7,6 +7,7 @@ package gin
 import (
 	"crypto/subtle"
 	"encoding/base64"
+	"net/http"
 	"strconv"
 )
 
@@ -17,19 +18,19 @@ const AuthUserKey = "user"
 type Accounts map[string]string
 
 type authPair struct {
-	Value string
-	User  string
+	value string
+	user  string
 }
 
 type authPairs []authPair
 
 func (a authPairs) searchCredential(authValue string) (string, bool) {
-	if len(authValue) == 0 {
+	if authValue == "" {
 		return "", false
 	}
 	for _, pair := range a {
-		if pair.Value == authValue {
-			return pair.User, true
+		if pair.value == authValue {
+			return pair.user, true
 		}
 	}
 	return "", false
@@ -51,7 +52,7 @@ func BasicAuthForRealm(accounts Accounts, realm string) HandlerFunc {
 		if !found {
 			// Credentials doesn't match, we return 401 and abort handlers chain.
 			c.Header("WWW-Authenticate", realm)
-			c.AbortWithStatus(401)
+			c.AbortWithStatus(http.StatusUnauthorized)
 			return
 		}
 
@@ -71,11 +72,11 @@ func processAccounts(accounts Accounts) authPairs {
 	assert1(len(accounts) > 0, "Empty list of authorized credentials")
 	pairs := make(authPairs, 0, len(accounts))
 	for user, password := range accounts {
-		assert1(len(user) > 0, "User can not be empty")
+		assert1(user != "", "User can not be empty")
 		value := authorizationHeader(user, password)
 		pairs = append(pairs, authPair{
-			Value: value,
-			User:  user,
+			value: value,
+			user:  user,
 		})
 	}
 	return pairs
