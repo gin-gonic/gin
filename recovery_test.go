@@ -43,6 +43,7 @@ func TestPanicInHandler(t *testing.T) {
 	assert.Equal(t, http.StatusInternalServerError, w.Code)
 	assert.Contains(t, buffer.String(), "GET /recovery")
 
+	SetMode(TestMode)
 }
 
 // TestPanicWithAbort assert that panic has been recovered even if context.Abort was used.
