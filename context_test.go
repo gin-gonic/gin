@@ -1242,22 +1242,24 @@ func TestContextError(t *testing.T) {
 	c, _ := CreateTestContext(httptest.NewRecorder())
 	assert.Empty(t, c.Errors)
 
-	c.Error(errors.New("first error")) // nolint: errcheck
+	firstErr := errors.New("first error")
+	c.Error(firstErr) // nolint: errcheck
 	assert.Len(t, c.Errors, 1)
 	assert.Equal(t, "Error #01: first error\n", c.Errors.String())
 
+	secondErr := errors.New("second error")
 	c.Error(&Error{ // nolint: errcheck
-		Err:  errors.New("second error"),
+		Err:  secondErr,
 		Meta: "some data 2",
 		Type: ErrorTypePublic,
 	})
 	assert.Len(t, c.Errors, 2)
 
-	assert.Equal(t, errors.New("first error"), c.Errors[0].Err)
+	assert.Equal(t, firstErr, c.Errors[0].Err)
 	assert.Nil(t, c.Errors[0].Meta)
 	assert.Equal(t, ErrorTypePrivate, c.Errors[0].Type)
 
-	assert.Equal(t, errors.New("second error"), c.Errors[1].Err)
+	assert.Equal(t, secondErr, c.Errors[1].Err)
 	assert.Equal(t, "some data 2", c.Errors[1].Meta)
 	assert.Equal(t, ErrorTypePublic, c.Errors[1].Type)
 
