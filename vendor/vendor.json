@@ -41,6 +41,12 @@
 			"versionExact": "v0.0.4"
 		},
 		{
+			"checksumSHA1": "LuFv4/jlrmFNnDb/5SCSEPAM9vU=",
+			"path": "github.com/pmezard/go-difflib/difflib",
+			"revision": "5d4384ee4fb2527b0a1256a821ebfc92f91efefc",
+			"revisionTime": "2018-12-26T10:54:42Z"
+		},
+		{
 			"checksumSHA1": "c6pbpF7eowwO59phRTpF8cQ80Z0=",
 			"path": "github.com/stretchr/testify/assert",
 			"revision": "f35b8ab0b5a2cef36673838d662e249dd9c94686",

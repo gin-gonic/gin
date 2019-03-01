@@ -728,7 +728,6 @@ When running the above example using the above the `curl` command, it returns er
 
 It is also possible to register custom validators. See the [example code](examples/custom-validation/server.go).
 
-[embedmd]:# (examples/custom-validation/server.go go)
 ```go
 package main
 
@@ -1501,7 +1500,6 @@ func main() {
 
 example for 1-line LetsEncrypt HTTPS servers.
 
-[embedmd]:# (examples/auto-tls/example1/main.go go)
 ```go
 package main
 
@@ -1526,7 +1524,6 @@ func main() {
 
 example for custom autocert manager.
 
-[embedmd]:# (examples/auto-tls/example2/main.go go)
 ```go
 package main
 
@@ -1560,7 +1557,6 @@ func main() {
 
 See the [question](https://github.com/gin-gonic/gin/issues/346) and try the following example:
 
-[embedmd]:# (examples/multiple-service/main.go go)
 ```go
 package main
 
@@ -1660,7 +1656,6 @@ An alternative to endless:
 
 If you are using Go 1.8, you may not need to use this library! Consider using http.Server's built-in [Shutdown()](https://golang.org/pkg/net/http/#Server.Shutdown) method for graceful shutdowns. See the full [graceful-shutdown](./examples/graceful-shutdown) example with gin.
 
-[embedmd]:# (examples/graceful-shutdown/graceful-shutdown/server.go go)
 ```go
 // +build go1.8
 
@@ -1919,7 +1914,6 @@ performance (See [#1341](https://github.com/gin-gonic/gin/pull/1341)).
 
 http.Pusher is supported only **go1.8+**. See the [golang blog](https://blog.golang.org/h2push) for detail information.
 
-[embedmd]:# (examples/http-pusher/main.go go)
 ```go
 package main
 
