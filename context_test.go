@@ -1158,17 +1158,41 @@ func TestContextNegotiationFormat(t *testing.T) {
 func TestContextNegotiationFormatWithAccept(t *testing.T) {
 	c, _ := CreateTestContext(httptest.NewRecorder())
 	c.Request, _ = http.NewRequest("POST", "/", nil)
-	c.Request.Header.Add("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8")
+	c.Request.Header.Add("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9;q=0.8")
 
 	assert.Equal(t, MIMEXML, c.NegotiateFormat(MIMEJSON, MIMEXML))
 	assert.Equal(t, MIMEHTML, c.NegotiateFormat(MIMEXML, MIMEHTML))
 	assert.Empty(t, c.NegotiateFormat(MIMEJSON))
 }
 
+func TestContextNegotiationFormatWithWildcardAccept(t *testing.T) {
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	c.Request, _ = http.NewRequest("POST", "/", nil)
+	c.Request.Header.Add("Accept", "*/*")
+
+	assert.Equal(t, c.NegotiateFormat("*/*"), "*/*")
+	assert.Equal(t, c.NegotiateFormat("text/*"), "text/*")
+	assert.Equal(t, c.NegotiateFormat("application/*"), "application/*")
+	assert.Equal(t, c.NegotiateFormat(MIMEJSON), MIMEJSON)
+	assert.Equal(t, c.NegotiateFormat(MIMEXML), MIMEXML)
+	assert.Equal(t, c.NegotiateFormat(MIMEHTML), MIMEHTML)
+
+	c, _ = CreateTestContext(httptest.NewRecorder())
+	c.Request, _ = http.NewRequest("POST", "/", nil)
+	c.Request.Header.Add("Accept", "text/*")
+
+	assert.Equal(t, c.NegotiateFormat("*/*"), "*/*")
+	assert.Equal(t, c.NegotiateFormat("text/*"), "text/*")
+	assert.Equal(t, c.NegotiateFormat("application/*"), "")
+	assert.Equal(t, c.NegotiateFormat(MIMEJSON), "")
+	assert.Equal(t, c.NegotiateFormat(MIMEXML), "")
+	assert.Equal(t, c.NegotiateFormat(MIMEHTML), MIMEHTML)
+}
+
 func TestContextNegotiationFormatCustom(t *testing.T) {
 	c, _ := CreateTestContext(httptest.NewRecorder())
 	c.Request, _ = http.NewRequest("POST", "/", nil)
-	c.Request.Header.Add("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8")
+	c.Request.Header.Add("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9;q=0.8")
 
 	c.Accepted = nil
 	c.SetAccepted(MIMEJSON, MIMEXML)
