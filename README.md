@@ -215,9 +215,6 @@ $ go build -tags=jsoniter .
 
 ```go
 func main() {
-	// Disable Console Color
-	// gin.DisableConsoleColor()
-
 	// Creates a gin router with default middleware:
 	// logger and recovery (crash-free) middleware
 	router := gin.Default()
@@ -570,6 +567,48 @@ func main() {
 ::1 - [Fri, 07 Dec 2018 17:04:38 JST] "GET /ping HTTP/1.1 200 122.767µs "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/71.0.3578.80 Safari/537.36" "
 ```
 
+### Controlling Log output coloring 
+
+By default, logs output on console should be colorized depending on the detected TTY.
+
+Never colorize logs: 
+
+```go
+func main() {
+    // Disable log's color
+    gin.DisableConsoleColor()
+    
+    // Creates a gin router with default middleware:
+    // logger and recovery (crash-free) middleware
+    router := gin.Default()
+    
+    router.GET("/ping", func(c *gin.Context) {
+        c.String(200, "pong")
+    })
+    
+    router.Run(":8080")
+}
+```
+
+Always colorize logs: 
+
+```go
+func main() {
+    // Force log's color
+    gin.ForceConsoleColor()
+    
+    // Creates a gin router with default middleware:
+    // logger and recovery (crash-free) middleware
+    router := gin.Default()
+    
+    router.GET("/ping", func(c *gin.Context) {
+        c.String(200, "pong")
+    })
+    
+    router.Run(":8080")
+}
+```
+
 ### Model binding and validation
 
 To bind a request body into a type, use model binding. We currently support binding of JSON, XML, YAML and standard form values (foo=bar&boo=baz).
@@ -620,7 +659,7 @@ func main() {
 	//	<?xml version="1.0" encoding="UTF-8"?>
 	//	<root>
 	//		<user>user</user>
-	//		<password>123</user>
+	//		<password>123</password>
 	//	</root>)
 	router.POST("/loginXML", func(c *gin.Context) {
 		var xml Login
@@ -689,7 +728,6 @@ When running the above example using the above the `curl` command, it returns er
 
 It is also possible to register custom validators. See the [example code](examples/custom-validation/server.go).
 
-[embedmd]:# (examples/custom-validation/server.go go)
 ```go
 package main
 
@@ -1461,7 +1499,6 @@ func main() {
 
 example for 1-line LetsEncrypt HTTPS servers.
 
-[embedmd]:# (examples/auto-tls/example1/main.go go)
 ```go
 package main
 
@@ -1486,7 +1523,6 @@ func main() {
 
 example for custom autocert manager.
 
-[embedmd]:# (examples/auto-tls/example2/main.go go)
 ```go
 package main
 
@@ -1520,7 +1556,6 @@ func main() {
 
 See the [question](https://github.com/gin-gonic/gin/issues/346) and try the following example:
 
-[embedmd]:# (examples/multiple-service/main.go go)
 ```go
 package main
 
@@ -1620,7 +1655,6 @@ An alternative to endless:
 
 If you are using Go 1.8, you may not need to use this library! Consider using http.Server's built-in [Shutdown()](https://golang.org/pkg/net/http/#Server.Shutdown) method for graceful shutdowns. See the full [graceful-shutdown](./examples/graceful-shutdown) example with gin.
 
-[embedmd]:# (examples/graceful-shutdown/graceful-shutdown/server.go go)
 ```go
 package main
 
@@ -1630,6 +1664,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -1657,7 +1692,10 @@ func main() {
 	// Wait for interrupt signal to gracefully shutdown the server with
 	// a timeout of 5 seconds.
 	quit := make(chan os.Signal)
-	signal.Notify(quit, os.Interrupt)
+	// kill (no param) default send syscanll.SIGTERM
+	// kill -2 is syscall.SIGINT
+	// kill -9 is syscall. SIGKILL but can"t be catch, so don't need add it
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
 	log.Println("Shutdown Server ...")
 
@@ -1665,6 +1703,11 @@ func main() {
 	defer cancel()
 	if err := srv.Shutdown(ctx); err != nil {
 		log.Fatal("Server Shutdown:", err)
+	}
+	// catching ctx.Done(). timeout of 5 seconds.
+	select {
+	case <-ctx.Done():
+		log.Println("timeout of 5 seconds.")
 	}
 	log.Println("Server exiting")
 }
@@ -1868,7 +1911,6 @@ performance (See [#1341](https://github.com/gin-gonic/gin/pull/1341)).
 
 http.Pusher is supported only **go1.8+**. See the [golang blog](https://blog.golang.org/h2push) for detail information.
 
-[embedmd]:# (examples/http-pusher/main.go go)
 ```go
 package main
 

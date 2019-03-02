@@ -287,7 +287,7 @@ var githubAPI = []route{
 
 func TestShouldBindUri(t *testing.T) {
 	DefaultWriter = os.Stdout
-	router := Default()
+	router := New()
 
 	type Person struct {
 		Name string `uri:"name" binding:"required"`
@@ -309,7 +309,7 @@ func TestShouldBindUri(t *testing.T) {
 
 func TestBindUri(t *testing.T) {
 	DefaultWriter = os.Stdout
-	router := Default()
+	router := New()
 
 	type Person struct {
 		Name string `uri:"name" binding:"required"`
@@ -331,7 +331,7 @@ func TestBindUri(t *testing.T) {
 
 func TestBindUriError(t *testing.T) {
 	DefaultWriter = os.Stdout
-	router := Default()
+	router := New()
 
 	type Member struct {
 		Number string `uri:"num" binding:"required,uuid"`
@@ -344,6 +344,29 @@ func TestBindUriError(t *testing.T) {
 	path1, _ := exampleFromPath("/new/rest/:num")
 	w1 := performRequest(router, "GET", path1)
 	assert.Equal(t, http.StatusBadRequest, w1.Code)
+}
+
+func TestRaceContextCopy(t *testing.T) {
+	DefaultWriter = os.Stdout
+	router := Default()
+	router.GET("/test/copy/race", func(c *Context) {
+		c.Set("1", 0)
+		c.Set("2", 0)
+
+		// Sending a copy of the Context to two separate routines
+		go readWriteKeys(c.Copy())
+		go readWriteKeys(c.Copy())
+		c.String(http.StatusOK, "run OK, no panics")
+	})
+	w := performRequest(router, "GET", "/test/copy/race")
+	assert.Equal(t, "run OK, no panics", w.Body.String())
+}
+
+func readWriteKeys(c *Context) {
+	for {
+		c.Set("1", rand.Int())
+		c.Set("2", c.Value("1"))
+	}
 }
 
 func githubConfigRouter(router *Engine) {
@@ -361,7 +384,7 @@ func githubConfigRouter(router *Engine) {
 
 func TestGithubAPI(t *testing.T) {
 	DefaultWriter = os.Stdout
-	router := Default()
+	router := New()
 	githubConfigRouter(router)
 
 	for _, route := range githubAPI {
@@ -436,7 +459,7 @@ func BenchmarkParallelGithub(b *testing.B) {
 
 func BenchmarkParallelGithubDefault(b *testing.B) {
 	DefaultWriter = os.Stdout
-	router := Default()
+	router := New()
 	githubConfigRouter(router)
 
 	req, _ := http.NewRequest("POST", "/repos/manucorporat/sse/git/blobs", nil)

@@ -6,6 +6,7 @@ package gin
 
 import (
 	"errors"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"math"
@@ -82,6 +83,10 @@ func (c *Context) Copy() *Context {
 	cp.Writer = &cp.writermem
 	cp.index = abortIndex
 	cp.handlers = nil
+	cp.Keys = map[string]interface{}{}
+	for k, v := range c.Keys {
+		cp.Keys[k] = v
+	}
 	return &cp
 }
 
@@ -89,6 +94,16 @@ func (c *Context) Copy() *Context {
 // this function will return "main.handleGetUsers".
 func (c *Context) HandlerName() string {
 	return nameOfFunction(c.handlers.Last())
+}
+
+// HandlerNames returns a list of all registered handlers for this context in descending order,
+// following the semantics of HandlerName()
+func (c *Context) HandlerNames() []string {
+	hn := make([]string, 0, len(c.handlers))
+	for _, val := range c.handlers {
+		hn = append(hn, nameOfFunction(val))
+	}
+	return hn
 }
 
 // Handler returns the main handler.
@@ -861,6 +876,13 @@ func (c *Context) File(filepath string) {
 	http.ServeFile(c.Writer, c.Request, filepath)
 }
 
+// FileAttachment writes the specified file into the body stream in an efficient way
+// On the client side, the file will typically be downloaded with the given filename
+func (c *Context) FileAttachment(filepath, filename string) {
+	c.Writer.Header().Set("content-disposition", fmt.Sprintf("attachment; filename=\"%s\"", filename))
+	http.ServeFile(c.Writer, c.Request, filepath)
+}
+
 // SSEvent writes a Server-Sent Event into the body stream.
 func (c *Context) SSEvent(name string, message interface{}) {
 	c.Render(-1, sse.Event{
@@ -933,7 +955,18 @@ func (c *Context) NegotiateFormat(offered ...string) string {
 	}
 	for _, accepted := range c.Accepted {
 		for _, offert := range offered {
-			if accepted == offert {
+			// According to RFC 2616 and RFC 2396, non-ASCII characters are not allowed in headers,
+			// therefore we can just iterate over the string without casting it into []rune
+			i := 0
+			for ; i < len(accepted); i++ {
+				if accepted[i] == '*' || offert[i] == '*' {
+					return offert
+				}
+				if accepted[i] != offert[i] {
+					break
+				}
+			}
+			if i == len(accepted) {
 				return offert
 			}
 		}

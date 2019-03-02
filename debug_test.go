@@ -39,7 +39,7 @@ func TestDebugPrint(t *testing.T) {
 		SetMode(TestMode)
 		debugPrint("DEBUG this!")
 		SetMode(DebugMode)
-		debugPrint("these are %d %s\n", 2, "error messages")
+		debugPrint("these are %d %s", 2, "error messages")
 		SetMode(TestMode)
 	})
 	assert.Equal(t, "[GIN-debug] these are 2 error messages\n", re)

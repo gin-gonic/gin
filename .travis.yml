@@ -5,12 +5,15 @@ go:
   - 1.9.x
   - 1.10.x
   - 1.11.x
+  - 1.12.x
   - master
 
 matrix:
   fast_finish: true
   include:
   - go: 1.11.x
+    env: GO111MODULE=on
+  - go: 1.12.x
     env: GO111MODULE=on
 
 git:
@@ -29,7 +32,6 @@ go_import_path: github.com/gin-gonic/gin
 script:
   - make vet
   - make fmt-check
-  - make embedmd
   - make misspell-check
   - make test
 
