@@ -211,6 +211,8 @@ $ go build -tags=jsoniter .
 
 ## API Examples
 
+You can find a number of ready-to-run examples at [Gin examples repository](https://github.com/gin-gonic/examples).
+
 ### Using GET, POST, PUT, PATCH, DELETE and OPTIONS
 
 ```go
