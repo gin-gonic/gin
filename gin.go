@@ -10,6 +10,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"path"
 	"sync"
 
 	"github.com/gin-gonic/gin/render"
@@ -438,17 +439,20 @@ func serveError(c *Context, code int, defaultMessage []byte) {
 
 func redirectTrailingSlash(c *Context) {
 	req := c.Request
-	path := req.URL.Path
+	p := req.URL.Path
+	if prefix := path.Clean(c.Request.Header.Get("X-Forwarded-Prefix")); prefix != "." {
+		p = prefix + "/" + req.URL.Path
+	}
 	code := http.StatusMovedPermanently // Permanent redirect, request with GET method
 	if req.Method != "GET" {
 		code = http.StatusTemporaryRedirect
 	}
 
-	req.URL.Path = path + "/"
-	if length := len(path); length > 1 && path[length-1] == '/' {
-		req.URL.Path = path[:length-1]
+	req.URL.Path = p + "/"
+	if length := len(p); length > 1 && p[length-1] == '/' {
+		req.URL.Path = p[:length-1]
 	}
-	debugPrint("redirecting request %d: %s --> %s", code, path, req.URL.String())
+	debugPrint("redirecting request %d: %s --> %s", code, p, req.URL.String())
 	http.Redirect(c.Writer, req, req.URL.String(), code)
 	c.writermem.WriteHeaderNow()
 }

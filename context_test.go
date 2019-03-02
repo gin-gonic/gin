@@ -331,6 +331,8 @@ func TestContextCopy(t *testing.T) {
 	assert.Equal(t, cp.Keys, c.Keys)
 	assert.Equal(t, cp.engine, c.engine)
 	assert.Equal(t, cp.Params, c.Params)
+	cp.Set("foo", "notBar")
+	assert.False(t, cp.Keys["foo"] == c.Keys["foo"])
 }
 
 func TestContextHandlerName(t *testing.T) {
@@ -340,7 +342,23 @@ func TestContextHandlerName(t *testing.T) {
 	assert.Regexp(t, "^(.*/vendor/)?github.com/gin-gonic/gin.handlerNameTest$", c.HandlerName())
 }
 
+func TestContextHandlerNames(t *testing.T) {
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	c.handlers = HandlersChain{func(c *Context) {}, handlerNameTest, func(c *Context) {}, handlerNameTest2}
+
+	names := c.HandlerNames()
+
+	assert.True(t, len(names) == 4)
+	for _, name := range names {
+		assert.Regexp(t, `^(.*/vendor/)?(github\.com/gin-gonic/gin\.){1}(TestContextHandlerNames\.func.*){0,1}(handlerNameTest.*){0,1}`, name)
+	}
+}
+
 func handlerNameTest(c *Context) {
+
+}
+
+func handlerNameTest2(c *Context) {
 
 }
 
@@ -961,6 +979,19 @@ func TestContextRenderFile(t *testing.T) {
 	assert.Equal(t, "text/plain; charset=utf-8", w.Header().Get("Content-Type"))
 }
 
+func TestContextRenderAttachment(t *testing.T) {
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
+	newFilename := "new_filename.go"
+
+	c.Request, _ = http.NewRequest("GET", "/", nil)
+	c.FileAttachment("./gin.go", newFilename)
+
+	assert.Equal(t, 200, w.Code)
+	assert.Contains(t, w.Body.String(), "func New() *Engine {")
+	assert.Equal(t, fmt.Sprintf("attachment; filename=\"%s\"", newFilename), w.HeaderMap.Get("Content-Disposition"))
+}
+
 // TestContextRenderYAML tests that the response is serialized as YAML
 // and Content-Type is set to application/x-yaml
 func TestContextRenderYAML(t *testing.T) {
@@ -1140,17 +1171,41 @@ func TestContextNegotiationFormat(t *testing.T) {
 func TestContextNegotiationFormatWithAccept(t *testing.T) {
 	c, _ := CreateTestContext(httptest.NewRecorder())
 	c.Request, _ = http.NewRequest("POST", "/", nil)
-	c.Request.Header.Add("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8")
+	c.Request.Header.Add("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9;q=0.8")
 
 	assert.Equal(t, MIMEXML, c.NegotiateFormat(MIMEJSON, MIMEXML))
 	assert.Equal(t, MIMEHTML, c.NegotiateFormat(MIMEXML, MIMEHTML))
 	assert.Empty(t, c.NegotiateFormat(MIMEJSON))
 }
 
+func TestContextNegotiationFormatWithWildcardAccept(t *testing.T) {
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	c.Request, _ = http.NewRequest("POST", "/", nil)
+	c.Request.Header.Add("Accept", "*/*")
+
+	assert.Equal(t, c.NegotiateFormat("*/*"), "*/*")
+	assert.Equal(t, c.NegotiateFormat("text/*"), "text/*")
+	assert.Equal(t, c.NegotiateFormat("application/*"), "application/*")
+	assert.Equal(t, c.NegotiateFormat(MIMEJSON), MIMEJSON)
+	assert.Equal(t, c.NegotiateFormat(MIMEXML), MIMEXML)
+	assert.Equal(t, c.NegotiateFormat(MIMEHTML), MIMEHTML)
+
+	c, _ = CreateTestContext(httptest.NewRecorder())
+	c.Request, _ = http.NewRequest("POST", "/", nil)
+	c.Request.Header.Add("Accept", "text/*")
+
+	assert.Equal(t, c.NegotiateFormat("*/*"), "*/*")
+	assert.Equal(t, c.NegotiateFormat("text/*"), "text/*")
+	assert.Equal(t, c.NegotiateFormat("application/*"), "")
+	assert.Equal(t, c.NegotiateFormat(MIMEJSON), "")
+	assert.Equal(t, c.NegotiateFormat(MIMEXML), "")
+	assert.Equal(t, c.NegotiateFormat(MIMEHTML), MIMEHTML)
+}
+
 func TestContextNegotiationFormatCustom(t *testing.T) {
 	c, _ := CreateTestContext(httptest.NewRecorder())
 	c.Request, _ = http.NewRequest("POST", "/", nil)
-	c.Request.Header.Add("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8")
+	c.Request.Header.Add("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9;q=0.8")
 
 	c.Accepted = nil
 	c.SetAccepted(MIMEJSON, MIMEXML)
@@ -1224,22 +1279,24 @@ func TestContextError(t *testing.T) {
 	c, _ := CreateTestContext(httptest.NewRecorder())
 	assert.Empty(t, c.Errors)
 
-	c.Error(errors.New("first error")) // nolint: errcheck
+	firstErr := errors.New("first error")
+	c.Error(firstErr) // nolint: errcheck
 	assert.Len(t, c.Errors, 1)
 	assert.Equal(t, "Error #01: first error\n", c.Errors.String())
 
+	secondErr := errors.New("second error")
 	c.Error(&Error{ // nolint: errcheck
-		Err:  errors.New("second error"),
+		Err:  secondErr,
 		Meta: "some data 2",
 		Type: ErrorTypePublic,
 	})
 	assert.Len(t, c.Errors, 2)
 
-	assert.Equal(t, errors.New("first error"), c.Errors[0].Err)
+	assert.Equal(t, firstErr, c.Errors[0].Err)
 	assert.Nil(t, c.Errors[0].Meta)
 	assert.Equal(t, ErrorTypePrivate, c.Errors[0].Type)
 
-	assert.Equal(t, errors.New("second error"), c.Errors[1].Err)
+	assert.Equal(t, secondErr, c.Errors[1].Err)
 	assert.Equal(t, "some data 2", c.Errors[1].Meta)
 	assert.Equal(t, ErrorTypePublic, c.Errors[1].Type)
 
