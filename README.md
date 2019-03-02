@@ -211,6 +211,8 @@ $ go build -tags=jsoniter .
 
 ## API Examples
 
+You can find a number of ready-to-run examples at [Gin examples repository](https://github.com/gin-gonic/examples).
+
 ### Using GET, POST, PUT, PATCH, DELETE and OPTIONS
 
 ```go
@@ -2080,7 +2082,6 @@ func TestPingRoute(t *testing.T) {
 
 Awesome project lists using [Gin](https://github.com/gin-gonic/gin) web framework.
 
-* [drone](https://github.com/drone/drone): Drone is a Continuous Delivery platform built on Docker, written in Go.
 * [gorush](https://github.com/appleboy/gorush): A push notification server written in Go.
 * [fnproject](https://github.com/fnproject/fn): The container native, cloud agnostic serverless platform.
 * [photoprism](https://github.com/photoprism/photoprism): Personal photo management powered by Go and Google TensorFlow.
