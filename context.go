@@ -896,19 +896,20 @@ func (c *Context) SSEvent(name string, message interface{}) {
 	})
 }
 
-// Stream sends a streaming response.
-func (c *Context) Stream(step func(w io.Writer) bool) {
+// Stream sends a streaming response and returns a boolean
+// indicates "Is client disconnected in middle of stream"
+func (c *Context) Stream(step func(w io.Writer) bool) bool {
 	w := c.Writer
 	clientGone := w.CloseNotify()
 	for {
 		select {
 		case <-clientGone:
-			return
+			return true
 		default:
 			keepOpen := step(w)
 			w.Flush()
 			if !keepOpen {
-				return
+				return false
 			}
 		}
 	}
