@@ -5,12 +5,13 @@
 package binding
 
 import (
-	"encoding/json"
 	"errors"
 	"reflect"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/gin-gonic/gin/internal/json"
 )
 
 var errUnknownType = errors.New("Unknown type")
