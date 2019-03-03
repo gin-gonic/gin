@@ -346,6 +346,29 @@ func TestBindUriError(t *testing.T) {
 	assert.Equal(t, http.StatusBadRequest, w1.Code)
 }
 
+func TestRaceContextCopy(t *testing.T) {
+	DefaultWriter = os.Stdout
+	router := Default()
+	router.GET("/test/copy/race", func(c *Context) {
+		c.Set("1", 0)
+		c.Set("2", 0)
+
+		// Sending a copy of the Context to two separate routines
+		go readWriteKeys(c.Copy())
+		go readWriteKeys(c.Copy())
+		c.String(http.StatusOK, "run OK, no panics")
+	})
+	w := performRequest(router, "GET", "/test/copy/race")
+	assert.Equal(t, "run OK, no panics", w.Body.String())
+}
+
+func readWriteKeys(c *Context) {
+	for {
+		c.Set("1", rand.Int())
+		c.Set("2", c.Value("1"))
+	}
+}
+
 func githubConfigRouter(router *Engine) {
 	for _, route := range githubAPI {
 		router.Handle(route.method, route.path, func(c *Context) {
