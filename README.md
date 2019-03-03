@@ -111,7 +111,7 @@ $ go run example.go
 
 ## Documentation
 
-All documentation is available on the [Gin website](https://gin-gonic.com/docs/).
+All documentation is available on the [Gin website](https://gin-gonic.com/docs/)([简体中文](https://gin-gonic.com/zh-cn/docs/) | [繁體中文](https://gin-gonic.com/zh-tw/docs/) | [にほんご](https://gin-gonic.com/ja/docs/)).
 
 ## Examplses
 
