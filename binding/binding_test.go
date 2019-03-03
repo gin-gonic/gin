@@ -12,6 +12,7 @@ import (
 	"mime/multipart"
 	"net/http"
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -57,7 +58,6 @@ type FooStructForTimeTypeFailLocation struct {
 }
 
 type FooStructForMapType struct {
-	// Unknown type: not support map
 	MapFoo map[string]interface{} `form:"map_foo"`
 }
 
@@ -303,7 +303,7 @@ func TestBindingFormInvalidName2(t *testing.T) {
 func TestBindingFormForType(t *testing.T) {
 	testFormBindingForType(t, "POST",
 		"/", "/",
-		"map_foo=", "bar2=1", "Map")
+		"map_foo={\"bar\":123}", "map_foo=1", "Map")
 
 	testFormBindingForType(t, "POST",
 		"/", "/",
@@ -508,20 +508,30 @@ func TestBindingYAMLFail(t *testing.T) {
 		`foo:\nbar`, `bar: foo`)
 }
 
-func createFormPostRequest() *http.Request {
-	req, _ := http.NewRequest("POST", "/?foo=getfoo&bar=getbar", bytes.NewBufferString("foo=bar&bar=foo"))
+func createFormPostRequest(t *testing.T) *http.Request {
+	req, err := http.NewRequest("POST", "/?foo=getfoo&bar=getbar", bytes.NewBufferString("foo=bar&bar=foo"))
+	assert.NoError(t, err)
 	req.Header.Set("Content-Type", MIMEPOSTForm)
 	return req
 }
 
-func createDefaultFormPostRequest() *http.Request {
-	req, _ := http.NewRequest("POST", "/?foo=getfoo&bar=getbar", bytes.NewBufferString("foo=bar"))
+func createDefaultFormPostRequest(t *testing.T) *http.Request {
+	req, err := http.NewRequest("POST", "/?foo=getfoo&bar=getbar", bytes.NewBufferString("foo=bar"))
+	assert.NoError(t, err)
 	req.Header.Set("Content-Type", MIMEPOSTForm)
 	return req
 }
 
-func createFormPostRequestFail() *http.Request {
-	req, _ := http.NewRequest("POST", "/?map_foo=getfoo", bytes.NewBufferString("map_foo=bar"))
+func createFormPostRequestForMap(t *testing.T) *http.Request {
+	req, err := http.NewRequest("POST", "/?map_foo=getfoo", bytes.NewBufferString("map_foo={\"bar\":123}"))
+	assert.NoError(t, err)
+	req.Header.Set("Content-Type", MIMEPOSTForm)
+	return req
+}
+
+func createFormPostRequestForMapFail(t *testing.T) *http.Request {
+	req, err := http.NewRequest("POST", "/?map_foo=getfoo", bytes.NewBufferString("map_foo=hello"))
+	assert.NoError(t, err)
 	req.Header.Set("Content-Type", MIMEPOSTForm)
 	return req
 }
@@ -535,26 +545,42 @@ func createFormMultipartRequest(t *testing.T) *http.Request {
 	assert.NoError(t, mw.SetBoundary(boundary))
 	assert.NoError(t, mw.WriteField("foo", "bar"))
 	assert.NoError(t, mw.WriteField("bar", "foo"))
-	req, _ := http.NewRequest("POST", "/?foo=getfoo&bar=getbar", body)
+	req, err := http.NewRequest("POST", "/?foo=getfoo&bar=getbar", body)
+	assert.NoError(t, err)
 	req.Header.Set("Content-Type", MIMEMultipartPOSTForm+"; boundary="+boundary)
 	return req
 }
 
-func createFormMultipartRequestFail(t *testing.T) *http.Request {
+func createFormMultipartRequestForMap(t *testing.T) *http.Request {
 	boundary := "--testboundary"
 	body := new(bytes.Buffer)
 	mw := multipart.NewWriter(body)
 	defer mw.Close()
 
 	assert.NoError(t, mw.SetBoundary(boundary))
-	assert.NoError(t, mw.WriteField("map_foo", "bar"))
-	req, _ := http.NewRequest("POST", "/?map_foo=getfoo", body)
+	assert.NoError(t, mw.WriteField("map_foo", "{\"bar\":123, \"name\":\"thinkerou\", \"pai\": 3.14}"))
+	req, err := http.NewRequest("POST", "/?map_foo=getfoo", body)
+	assert.NoError(t, err)
+	req.Header.Set("Content-Type", MIMEMultipartPOSTForm+"; boundary="+boundary)
+	return req
+}
+
+func createFormMultipartRequestForMapFail(t *testing.T) *http.Request {
+	boundary := "--testboundary"
+	body := new(bytes.Buffer)
+	mw := multipart.NewWriter(body)
+	defer mw.Close()
+
+	assert.NoError(t, mw.SetBoundary(boundary))
+	assert.NoError(t, mw.WriteField("map_foo", "3.14"))
+	req, err := http.NewRequest("POST", "/?map_foo=getfoo", body)
+	assert.NoError(t, err)
 	req.Header.Set("Content-Type", MIMEMultipartPOSTForm+"; boundary="+boundary)
 	return req
 }
 
 func TestBindingFormPost(t *testing.T) {
-	req := createFormPostRequest()
+	req := createFormPostRequest(t)
 	var obj FooBarStruct
 	assert.NoError(t, FormPost.Bind(req, &obj))
 
@@ -564,7 +590,7 @@ func TestBindingFormPost(t *testing.T) {
 }
 
 func TestBindingDefaultValueFormPost(t *testing.T) {
-	req := createDefaultFormPostRequest()
+	req := createDefaultFormPostRequest(t)
 	var obj FooDefaultBarStruct
 	assert.NoError(t, FormPost.Bind(req, &obj))
 
@@ -572,8 +598,16 @@ func TestBindingDefaultValueFormPost(t *testing.T) {
 	assert.Equal(t, "hello", obj.Bar)
 }
 
-func TestBindingFormPostFail(t *testing.T) {
-	req := createFormPostRequestFail()
+func TestBindingFormPostForMap(t *testing.T) {
+	req := createFormPostRequestForMap(t)
+	var obj FooStructForMapType
+	err := FormPost.Bind(req, &obj)
+	assert.NoError(t, err)
+	assert.Equal(t, float64(123), obj.MapFoo["bar"].(float64))
+}
+
+func TestBindingFormPostForMapFail(t *testing.T) {
+	req := createFormPostRequestForMapFail(t)
 	var obj FooStructForMapType
 	err := FormPost.Bind(req, &obj)
 	assert.Error(t, err)
@@ -589,8 +623,18 @@ func TestBindingFormMultipart(t *testing.T) {
 	assert.Equal(t, "foo", obj.Bar)
 }
 
-func TestBindingFormMultipartFail(t *testing.T) {
-	req := createFormMultipartRequestFail(t)
+func TestBindingFormMultipartForMap(t *testing.T) {
+	req := createFormMultipartRequestForMap(t)
+	var obj FooStructForMapType
+	err := FormMultipart.Bind(req, &obj)
+	assert.NoError(t, err)
+	assert.Equal(t, float64(123), obj.MapFoo["bar"].(float64))
+	assert.Equal(t, "thinkerou", obj.MapFoo["name"].(string))
+	assert.Equal(t, float64(3.14), obj.MapFoo["pai"].(float64))
+}
+
+func TestBindingFormMultipartForMapFail(t *testing.T) {
+	req := createFormMultipartRequestForMapFail(t)
 	var obj FooStructForMapType
 	err := FormMultipart.Bind(req, &obj)
 	assert.Error(t, err)
@@ -770,6 +814,17 @@ func TestFormBindingFail(t *testing.T) {
 	obj := FooBarStruct{}
 	req, _ := http.NewRequest("POST", "/", nil)
 	err := b.Bind(req, &obj)
+	assert.Error(t, err)
+}
+
+func TestFormBindingMultipartFail(t *testing.T) {
+	obj := FooBarStruct{}
+	req, err := http.NewRequest("POST", "/", strings.NewReader("foo=bar"))
+	assert.NoError(t, err)
+	req.Header.Set("Content-Type", MIMEMultipartPOSTForm+";boundary=testboundary")
+	_, err = req.MultipartReader()
+	assert.NoError(t, err)
+	err = Form.Bind(req, &obj)
 	assert.Error(t, err)
 }
 
@@ -1109,7 +1164,8 @@ func testFormBindingForType(t *testing.T, method, path, badPath, body, badBody s
 	case "Map":
 		obj := FooStructForMapType{}
 		err := b.Bind(req, &obj)
-		assert.Error(t, err)
+		assert.NoError(t, err)
+		assert.Equal(t, float64(123), obj.MapFoo["bar"].(float64))
 	case "SliceMap":
 		obj := FooStructForSliceMapType{}
 		err := b.Bind(req, &obj)
@@ -1316,4 +1372,44 @@ func TestCanSet(t *testing.T) {
 
 	var c CanSetStruct
 	assert.Nil(t, mapForm(&c, nil))
+}
+
+func formPostRequest(path, body string) *http.Request {
+	req := requestWithBody("POST", path, body)
+	req.Header.Add("Content-Type", MIMEPOSTForm)
+	return req
+}
+
+func TestBindingSliceDefault(t *testing.T) {
+	var s struct {
+		Friends []string `form:"friends,default=mike"`
+	}
+	req := formPostRequest("", "")
+	err := Form.Bind(req, &s)
+	assert.NoError(t, err)
+
+	assert.Len(t, s.Friends, 1)
+	assert.Equal(t, "mike", s.Friends[0])
+}
+
+func TestBindingStructField(t *testing.T) {
+	var s struct {
+		Opts struct {
+			Port int
+		} `form:"opts"`
+	}
+	req := formPostRequest("", `opts={"Port": 8000}`)
+	err := Form.Bind(req, &s)
+	assert.NoError(t, err)
+	assert.Equal(t, 8000, s.Opts.Port)
+}
+
+func TestBindingUnknownTypeChan(t *testing.T) {
+	var s struct {
+		Stop chan bool `form:"stop"`
+	}
+	req := formPostRequest("", "stop=true")
+	err := Form.Bind(req, &s)
+	assert.Error(t, err)
+	assert.Equal(t, errUnknownType, err)
 }
