@@ -1413,3 +1413,20 @@ func TestBindingUnknownTypeChan(t *testing.T) {
 	assert.Error(t, err)
 	assert.Equal(t, errUnknownType, err)
 }
+
+func TestBindingTimeDuration(t *testing.T) {
+	var s struct {
+		Timeout time.Duration `form:"timeout"`
+	}
+
+	// ok
+	req := formPostRequest("", "timeout=5s")
+	err := Form.Bind(req, &s)
+	assert.NoError(t, err)
+	assert.Equal(t, 5*time.Second, s.Timeout)
+
+	// error
+	req = formPostRequest("", "timeout=wrong")
+	err = Form.Bind(req, &s)
+	assert.Error(t, err)
+}
