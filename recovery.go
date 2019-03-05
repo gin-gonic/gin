@@ -10,9 +10,12 @@ import (
 	"io"
 	"io/ioutil"
 	"log"
+	"net"
 	"net/http"
 	"net/http/httputil"
+	"os"
 	"runtime"
+	"strings"
 	"time"
 )
 
@@ -37,12 +40,37 @@ func RecoveryWithWriter(out io.Writer) HandlerFunc {
 	return func(c *Context) {
 		defer func() {
 			if err := recover(); err != nil {
+				// Check for a broken connection, as it is not really a
+				// condition that warrants a panic stack trace.
+				var brokenPipe bool
+				if ne, ok := err.(*net.OpError); ok {
+					if se, ok := ne.Err.(*os.SyscallError); ok {
+						if strings.Contains(strings.ToLower(se.Error()), "broken pipe") || strings.Contains(strings.ToLower(se.Error()), "connection reset by peer") {
+							brokenPipe = true
+						}
+					}
+				}
 				if logger != nil {
 					stack := stack(3)
-					httprequest, _ := httputil.DumpRequest(c.Request, false)
-					logger.Printf("[Recovery] %s panic recovered:\n%s\n%s\n%s%s", timeFormat(time.Now()), string(httprequest), err, stack, reset)
+					httpRequest, _ := httputil.DumpRequest(c.Request, false)
+					if brokenPipe {
+						logger.Printf("%s\n%s%s", err, string(httpRequest), reset)
+					} else if IsDebugging() {
+						logger.Printf("[Recovery] %s panic recovered:\n%s\n%s\n%s%s",
+							timeFormat(time.Now()), string(httpRequest), err, stack, reset)
+					} else {
+						logger.Printf("[Recovery] %s panic recovered:\n%s\n%s%s",
+							timeFormat(time.Now()), err, stack, reset)
+					}
 				}
-				c.AbortWithStatus(http.StatusInternalServerError)
+
+				// If the connection is dead, we can't write a status to it.
+				if brokenPipe {
+					c.Error(err.(error)) // nolint: errcheck
+					c.Abort()
+				} else {
+					c.AbortWithStatus(http.StatusInternalServerError)
+				}
 			}
 		}()
 		c.Next()
@@ -100,8 +128,8 @@ func function(pc uintptr) []byte {
 	//	*T.ptrmethod
 	// Also the package path might contains dot (e.g. code.google.com/...),
 	// so first eliminate the path prefix
-	if lastslash := bytes.LastIndex(name, slash); lastslash >= 0 {
-		name = name[lastslash+1:]
+	if lastSlash := bytes.LastIndex(name, slash); lastSlash >= 0 {
+		name = name[lastSlash+1:]
 	}
 	if period := bytes.Index(name, dot); period >= 0 {
 		name = name[period+1:]
