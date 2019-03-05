@@ -65,10 +65,6 @@ func WriteJSON(w http.ResponseWriter, obj interface{}) error {
 	writeContentType(w, jsonContentType)
 	encoder := json.NewEncoder(w)
 	err := encoder.Encode(&obj)
-	if err != nil {
-		return err
-	}
-	_, err = w.Write(jsonBytes)
 	return err
 }
 
