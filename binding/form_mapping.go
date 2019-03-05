@@ -5,12 +5,13 @@
 package binding
 
 import (
-	"encoding/json"
 	"errors"
 	"reflect"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/gin-gonic/gin/internal/json"
 )
 
 var errUnknownType = errors.New("Unknown type")
@@ -141,6 +142,10 @@ func setWithProperType(val string, value reflect.Value, field reflect.StructFiel
 	case reflect.Int32:
 		return setIntField(val, 32, value)
 	case reflect.Int64:
+		switch value.Interface().(type) {
+		case time.Duration:
+			return setTimeDuration(val, value, field)
+		}
 		return setIntField(val, 64, value)
 	case reflect.Uint:
 		return setUintField(val, 0, value)
@@ -260,6 +265,15 @@ func setSlice(vals []string, value reflect.Value, field reflect.StructField) err
 		}
 	}
 	value.Set(slice)
+	return nil
+}
+
+func setTimeDuration(val string, value reflect.Value, field reflect.StructField) error {
+	d, err := time.ParseDuration(val)
+	if err != nil {
+		return err
+	}
+	value.Set(reflect.ValueOf(d))
 	return nil
 }
 
