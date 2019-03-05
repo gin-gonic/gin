@@ -53,7 +53,7 @@ func (msg *Error) SetMeta(data interface{}) *Error {
 	return msg
 }
 
-// JSON creates a properly formated JSON
+// JSON creates a properly formatted JSON
 func (msg *Error) JSON() interface{} {
 	json := H{}
 	if msg.Meta != nil {
