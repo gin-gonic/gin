@@ -27,66 +27,21 @@ The key features of Gin are:
 
 For more features, please see the [Gin website](https://gin-gonic.com/).
 
-## Getting start
+## Getting started
 
-To install Gin package, you need to install Go and set your Go workspace first.
+### Getting Gin
 
-1. Download and install it:
+The first need [Go](https://golang.org/) installed (recommend the newest version), then you can use the below Go command to install Gin.
 
 ```sh
 $ go get -u github.com/gin-gonic/gin
 ```
 
-2. Import it in your code:
+For more installation guides such as vendor tool, please check out [Gin quickstart](https://gin-gonic.com/docs/quickstart/).
 
-```go
-import "github.com/gin-gonic/gin"
-```
+### Running Gin
 
-3. (Optional) Import `net/http`. This is required for example if using constants such as `http.StatusOK`.
-
-```go
-import "net/http"
-```
-
-### Use a vendor tool like [Govendor](https://github.com/kardianos/govendor)
-
-1. `go get` govendor
-
-```sh
-$ go get github.com/kardianos/govendor
-```
-2. Create your project folder and `cd` inside
-
-```sh
-$ mkdir -p $GOPATH/src/github.com/myusername/project && cd "$_"
-```
-
-3. Vendor init your project and add gin
-
-```sh
-$ govendor init
-$ govendor fetch github.com/gin-gonic/gin@v1.3
-```
-
-4. Copy a starting template inside your project
-
-```sh
-$ curl https://raw.githubusercontent.com/gin-gonic/examples/master/basic/main.go > main.go
-```
-
-5. Run your project
-
-```sh
-$ go run main.go
-```
-
-## Quick start
- 
-```sh
-# assume the following codes in example.go file
-$ cat example.go
-```
+First you need to import Gin package for using Gin, one simplest example likes the follow `example.go`:
 
 ```go
 package main
@@ -104,16 +59,71 @@ func main() {
 }
 ```
 
+And use the Go command to run the demo:
+
 ```
 # run example.go and visit 0.0.0.0:8080/ping on browser
 $ go run example.go
 ```
 
+## Benchmarks
+
+Please see all benchmarks details from [Gin website](https://gin-gonic.com/docs/benchmarks/).
+
+Benchmark name                              | (1)        | (2)         | (3) 		    | (4)
+--------------------------------------------|-----------:|------------:|-----------:|---------:
+**BenchmarkGin_GithubAll**                  | **30000**  |  **48375**  |     **0**  |   **0**
+BenchmarkAce_GithubAll                      |   10000    |   134059    |   13792    |   167
+BenchmarkBear_GithubAll                     |    5000    |   534445    |   86448    |   943
+BenchmarkBeego_GithubAll                    |    3000    |   592444    |   74705    |   812
+BenchmarkBone_GithubAll                     |     200    |  6957308    |  698784    |  8453
+BenchmarkDenco_GithubAll                    |   10000    |   158819    |   20224    |   167
+BenchmarkEcho_GithubAll                     |   10000    |   154700    |    6496    |   203
+BenchmarkGocraftWeb_GithubAll               |    3000    |   570806    |  131656    |  1686
+BenchmarkGoji_GithubAll                     |    2000    |   818034    |   56112    |   334
+BenchmarkGojiv2_GithubAll                   |    2000    |  1213973    |  274768    |  3712
+BenchmarkGoJsonRest_GithubAll               |    2000    |   785796    |  134371    |  2737
+BenchmarkGoRestful_GithubAll                |     300    |  5238188    |  689672    |  4519
+BenchmarkGorillaMux_GithubAll               |     100    | 10257726    |  211840    |  2272
+BenchmarkHttpRouter_GithubAll               |   20000    |   105414    |   13792    |   167
+BenchmarkHttpTreeMux_GithubAll              |   10000    |   319934    |   65856    |   671
+BenchmarkKocha_GithubAll                    |   10000    |   209442    |   23304    |   843
+BenchmarkLARS_GithubAll                     |   20000    |    62565    |       0    |     0
+BenchmarkMacaron_GithubAll                  |    2000    |  1161270    |  204194    |  2000
+BenchmarkMartini_GithubAll                  |     200    |  9991713    |  226549    |  2325
+BenchmarkPat_GithubAll                      |     200    |  5590793    | 1499568    | 27435
+BenchmarkPossum_GithubAll                   |   10000    |   319768    |   84448    |   609
+BenchmarkR2router_GithubAll                 |   10000    |   305134    |   77328    |   979
+BenchmarkRivet_GithubAll                    |   10000    |   132134    |   16272    |   167
+BenchmarkTango_GithubAll                    |    3000    |   552754    |   63826    |  1618
+BenchmarkTigerTonic_GithubAll               |    1000    |  1439483    |  239104    |  5374
+BenchmarkTraffic_GithubAll                  |     100    | 11383067    | 2659329    | 21848
+BenchmarkVulcan_GithubAll                   |    5000    |   394253    |   19894    |   609
+
+- (1): Total Repetitions achieved in constant time, higher means more confident result
+- (2): Single Repetition Duration (ns/op), lower is better
+- (3): Heap Memory (B/op), lower is better
+- (4): Average Allocations per Repetition (allocs/op), lower is better
+
+## Middlewares
+
+You can find many Gin middlewares at [gin-contrib](https://github.com/gin-contrib).
+
 ## Documentation
 
 All documentation is available on the Gin website([English](https://gin-gonic.com/docs/) | [简体中文](https://gin-gonic.com/zh-cn/docs/) | [繁體中文](https://gin-gonic.com/zh-tw/docs/) | [にほんご](https://gin-gonic.com/ja/docs/)).
 
-## Examplses
+## Examples
 
 A number of ready-to-run examples demonstrating various use cases of Gin on the [Gin examples](https://github.com/gin-gonic/examples) repository.
+
+## Users
+
+You can find the awesome project lists using Gin web framework at [Gin website](https://gin-gonic.com/docs/users/).
+
+## Contributing
+
+Gin is the work of hundreds of contributors. We appreciate your help!
+
+Please see [CONTRIBUTING](CONTRIBUTING.md) for details on submitting patches and the contribution workflow.
 
