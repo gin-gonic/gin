@@ -52,12 +52,12 @@ func RecoveryWithWriter(out io.Writer) HandlerFunc {
 				}
 				if logger != nil {
 					stack := stack(3)
-					httprequest, _ := httputil.DumpRequest(c.Request, false)
+					httpRequest, _ := httputil.DumpRequest(c.Request, false)
 					if brokenPipe {
-						logger.Printf("%s\n%s%s", err, string(httprequest), reset)
+						logger.Printf("%s\n%s%s", err, string(httpRequest), reset)
 					} else if IsDebugging() {
 						logger.Printf("[Recovery] %s panic recovered:\n%s\n%s\n%s%s",
-							timeFormat(time.Now()), string(httprequest), err, stack, reset)
+							timeFormat(time.Now()), string(httpRequest), err, stack, reset)
 					} else {
 						logger.Printf("[Recovery] %s panic recovered:\n%s\n%s%s",
 							timeFormat(time.Now()), err, stack, reset)
@@ -128,8 +128,8 @@ func function(pc uintptr) []byte {
 	//	*T.ptrmethod
 	// Also the package path might contains dot (e.g. code.google.com/...),
 	// so first eliminate the path prefix
-	if lastslash := bytes.LastIndex(name, slash); lastslash >= 0 {
-		name = name[lastslash+1:]
+	if lastSlash := bytes.LastIndex(name, slash); lastSlash >= 0 {
+		name = name[lastSlash+1:]
 	}
 	if period := bytes.Index(name, dot); period >= 0 {
 		name = name[period+1:]
