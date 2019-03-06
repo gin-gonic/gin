@@ -111,7 +111,7 @@ $ govendor fetch github.com/gin-gonic/gin@v1.3
 4. Copy a starting template inside your project
 
 ```sh
-$ curl https://raw.githubusercontent.com/gin-gonic/gin/master/examples/basic/main.go > main.go
+$ curl https://raw.githubusercontent.com/gin-gonic/examples/master/basic/main.go > main.go
 ```
 
 5. Run your project
@@ -210,6 +210,8 @@ $ go build -tags=jsoniter .
 ```
 
 ## API Examples
+
+You can find a number of ready-to-run examples at [Gin examples repository](https://github.com/gin-gonic/examples).
 
 ### Using GET, POST, PUT, PATCH, DELETE and OPTIONS
 
@@ -359,7 +361,7 @@ ids: map[b:hello a:1234], names: map[second:tianou first:thinkerou]
 
 #### Single file
 
-References issue [#774](https://github.com/gin-gonic/gin/issues/774) and detail [example code](examples/upload-file/single).
+References issue [#774](https://github.com/gin-gonic/gin/issues/774) and detail [example code](https://github.com/gin-gonic/examples/tree/master/upload-file/single).
 
 `file.Filename` **SHOULD NOT** be trusted. See [`Content-Disposition` on MDN](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Disposition#Directives) and [#1693](https://github.com/gin-gonic/gin/issues/1693)
 
@@ -394,7 +396,7 @@ curl -X POST http://localhost:8080/upload \
 
 #### Multiple files
 
-See the detail [example code](examples/upload-file/multiple).
+See the detail [example code](https://github.com/gin-gonic/examples/tree/master/upload-file/multiple).
 
 ```go
 func main() {
@@ -726,9 +728,8 @@ When running the above example using the above the `curl` command, it returns er
 
 ### Custom Validators
 
-It is also possible to register custom validators. See the [example code](examples/custom-validation/server.go).
+It is also possible to register custom validators. See the [example code](https://github.com/gin-gonic/examples/tree/master/custom-validation/server.go).
 
-[embedmd]:# (examples/custom-validation/server.go go)
 ```go
 package main
 
@@ -791,7 +792,7 @@ $ curl "localhost:8085/bookable?check_in=2018-03-08&check_out=2018-03-09"
 ```
 
 [Struct level validations](https://github.com/go-playground/validator/releases/tag/v8.7) can also be registered this way.
-See the [struct-lvl-validation example](examples/struct-lvl-validations) to learn more.
+See the [struct-lvl-validation example](https://github.com/gin-gonic/examples/tree/master/struct-lvl-validations) to learn more.
 
 ### Only Bind Query String
 
@@ -1281,7 +1282,7 @@ You may use custom delims
 
 #### Custom Template Funcs
 
-See the detail [example code](examples/template).
+See the detail [example code](https://github.com/gin-gonic/examples/tree/master/template).
 
 main.go
 
@@ -1501,7 +1502,6 @@ func main() {
 
 example for 1-line LetsEncrypt HTTPS servers.
 
-[embedmd]:# (examples/auto-tls/example1/main.go go)
 ```go
 package main
 
@@ -1526,7 +1526,6 @@ func main() {
 
 example for custom autocert manager.
 
-[embedmd]:# (examples/auto-tls/example2/main.go go)
 ```go
 package main
 
@@ -1560,7 +1559,6 @@ func main() {
 
 See the [question](https://github.com/gin-gonic/gin/issues/346) and try the following example:
 
-[embedmd]:# (examples/multiple-service/main.go go)
 ```go
 package main
 
@@ -1658,9 +1656,8 @@ An alternative to endless:
 * [graceful](https://github.com/tylerb/graceful): Graceful is a Go package enabling graceful shutdown of an http.Handler server.
 * [grace](https://github.com/facebookgo/grace): Graceful restart & zero downtime deploy for Go servers.
 
-If you are using Go 1.8, you may not need to use this library! Consider using http.Server's built-in [Shutdown()](https://golang.org/pkg/net/http/#Server.Shutdown) method for graceful shutdowns. See the full [graceful-shutdown](./examples/graceful-shutdown) example with gin.
+If you are using Go 1.8, you may not need to use this library! Consider using http.Server's built-in [Shutdown()](https://golang.org/pkg/net/http/#Server.Shutdown) method for graceful shutdowns. See the full [graceful-shutdown](https://github.com/gin-gonic/examples/tree/master/graceful-shutdown) example with gin.
 
-[embedmd]:# (examples/graceful-shutdown/graceful-shutdown/server.go go)
 ```go
 // +build go1.8
 
@@ -1763,7 +1760,7 @@ func loadTemplate() (*template.Template, error) {
 }
 ```
 
-See a complete example in the `examples/assets-in-binary` directory.
+See a complete example in the `https://github.com/gin-gonic/examples/tree/master/assets-in-binary` directory.
 
 ### Bind form-data request with custom struct
 
@@ -1839,24 +1836,6 @@ $ curl "http://localhost:8080/getd?field_x=hello&field_d=world"
 {"d":"world","x":{"FieldX":"hello"}}
 ```
 
-**NOTE**: NOT support the follow style struct:
-
-```go
-type StructX struct {
-    X struct {} `form:"name_x"` // HERE have form
-}
-
-type StructY struct {
-    Y StructX `form:"name_y"` // HERE have form
-}
-
-type StructZ struct {
-    Z *StructZ `form:"name_z"` // HERE have form
-}
-```
-
-In a word, only support nested custom struct which have no `form` now.
-
 ### Try to bind body into different structs
 
 The normal methods for binding request body consumes `c.Request.Body` and they
@@ -1919,7 +1898,6 @@ performance (See [#1341](https://github.com/gin-gonic/gin/pull/1341)).
 
 http.Pusher is supported only **go1.8+**. See the [golang blog](https://blog.golang.org/h2push) for detail information.
 
-[embedmd]:# (examples/http-pusher/main.go go)
 ```go
 package main
 
@@ -2086,7 +2064,6 @@ func TestPingRoute(t *testing.T) {
 
 Awesome project lists using [Gin](https://github.com/gin-gonic/gin) web framework.
 
-* [drone](https://github.com/drone/drone): Drone is a Continuous Delivery platform built on Docker, written in Go.
 * [gorush](https://github.com/appleboy/gorush): A push notification server written in Go.
 * [fnproject](https://github.com/fnproject/fn): The container native, cloud agnostic serverless platform.
 * [photoprism](https://github.com/photoprism/photoprism): Personal photo management powered by Go and Google TensorFlow.
