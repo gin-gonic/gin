@@ -119,7 +119,7 @@ A number of ready-to-run examples demonstrating various use cases of Gin on the 
 
 ## Users
 
-At [Gin website](https://gin-gonic.com/docs/users/) lists some awesome projects made with Gin web framework.
+[Gin website](https://gin-gonic.com/docs/users/) lists some awesome projects made with Gin web framework.
 
 ## Contributing
 
