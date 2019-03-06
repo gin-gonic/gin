@@ -25,7 +25,7 @@ The key features of Gin are:
 - Rendering built-in
 - Extendable
 
-For more feature details, please see the [Gin website](https://gin-gonic.com/docs/introduction/).
+For more feature details, please see the [Gin website introduction](https://gin-gonic.com/docs/introduction/).
 
 ## Getting started
 
@@ -111,7 +111,12 @@ You can find many useful Gin middlewares at [gin-contrib](https://github.com/gin
 
 ## Documentation
 
-All documentation is available on the Gin website([English](https://gin-gonic.com/docs/) | [简体中文](https://gin-gonic.com/zh-cn/docs/) | [繁體中文](https://gin-gonic.com/zh-tw/docs/) | [にほんご](https://gin-gonic.com/ja/docs/)).
+All documentation is available on the Gin website.
+
+- [English](https://gin-gonic.com/docs/)
+- [简体中文](https://gin-gonic.com/zh-cn/docs/)
+- [繁體中文](https://gin-gonic.com/zh-tw/docs/)
+- [にほんご](https://gin-gonic.com/ja/docs/)
 
 ## Examples
 
