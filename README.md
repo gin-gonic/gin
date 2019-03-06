@@ -25,13 +25,13 @@ The key features of Gin are:
 - Rendering built-in
 - Extendable
 
-For more features, please see the [Gin website](https://gin-gonic.com/).
+For more feature details, please see the [Gin website](https://gin-gonic.com/docs/introduction/).
 
 ## Getting started
 
 ### Getting Gin
 
-The first need [Go](https://golang.org/) installed (recommend the newest version), then you can use the below Go command to install Gin.
+The first need [Go](https://golang.org/) installed (version 1.6+ is required), then you can use the below Go command to install Gin.
 
 ```sh
 $ go get -u github.com/gin-gonic/gin
@@ -107,7 +107,7 @@ BenchmarkVulcan_GithubAll                   |    5000    |   394253    |   19894
 
 ## Middlewares
 
-You can find many Gin middlewares at [gin-contrib](https://github.com/gin-contrib).
+You can find many useful Gin middlewares at [gin-contrib](https://github.com/gin-contrib).
 
 ## Documentation
 
