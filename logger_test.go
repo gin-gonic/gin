@@ -181,6 +181,7 @@ func TestLoggerWithFormatter(t *testing.T) {
 
 func TestLoggerWithConfigFormatting(t *testing.T) {
 	var gotParam LogFormatterParams
+	var gotKeys map[string]interface{}
 	buffer := new(bytes.Buffer)
 
 	router := New()
@@ -204,6 +205,7 @@ func TestLoggerWithConfigFormatting(t *testing.T) {
 	router.GET("/example", func(c *Context) {
 		// set dummy ClientIP
 		c.Request.Header.Set("X-Forwarded-For", "20.20.20.20")
+		gotKeys = c.Keys
 	})
 	performRequest(router, "GET", "/example?a=100")
 
@@ -223,6 +225,8 @@ func TestLoggerWithConfigFormatting(t *testing.T) {
 	assert.Equal(t, "GET", gotParam.Method)
 	assert.Equal(t, "/example?a=100", gotParam.Path)
 	assert.Empty(t, gotParam.ErrorMessage)
+	assert.Empty(t, gotParam.ErrorMessage)
+	assert.Equal(t, gotKeys, gotParam.Keys)
 
 }
 
