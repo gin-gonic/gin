@@ -225,7 +225,6 @@ func TestLoggerWithConfigFormatting(t *testing.T) {
 	assert.Equal(t, "GET", gotParam.Method)
 	assert.Equal(t, "/example?a=100", gotParam.Path)
 	assert.Empty(t, gotParam.ErrorMessage)
-	assert.Empty(t, gotParam.ErrorMessage)
 	assert.Equal(t, gotKeys, gotParam.Keys)
 
 }
