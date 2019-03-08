@@ -14,17 +14,24 @@ import (
 	"github.com/mattn/go-isatty"
 )
 
+type consoleColorModeValue int
+
+const (
+	autoColor consoleColorModeValue = iota
+	disableColor
+	forceColor
+)
+
 var (
-	green        = string([]byte{27, 91, 57, 55, 59, 52, 50, 109})
-	white        = string([]byte{27, 91, 57, 48, 59, 52, 55, 109})
-	yellow       = string([]byte{27, 91, 57, 48, 59, 52, 51, 109})
-	red          = string([]byte{27, 91, 57, 55, 59, 52, 49, 109})
-	blue         = string([]byte{27, 91, 57, 55, 59, 52, 52, 109})
-	magenta      = string([]byte{27, 91, 57, 55, 59, 52, 53, 109})
-	cyan         = string([]byte{27, 91, 57, 55, 59, 52, 54, 109})
-	reset        = string([]byte{27, 91, 48, 109})
-	disableColor = false
-	forceColor   = false
+	green            = string([]byte{27, 91, 57, 55, 59, 52, 50, 109})
+	white            = string([]byte{27, 91, 57, 48, 59, 52, 55, 109})
+	yellow           = string([]byte{27, 91, 57, 48, 59, 52, 51, 109})
+	red              = string([]byte{27, 91, 57, 55, 59, 52, 49, 109})
+	blue             = string([]byte{27, 91, 57, 55, 59, 52, 52, 109})
+	magenta          = string([]byte{27, 91, 57, 55, 59, 52, 53, 109})
+	cyan             = string([]byte{27, 91, 57, 55, 59, 52, 54, 109})
+	reset            = string([]byte{27, 91, 48, 109})
+	consoleColorMode = autoColor
 )
 
 // LoggerConfig defines the config for Logger middleware.
@@ -115,10 +122,15 @@ func (p *LogFormatterParams) ResetColor() string {
 	return reset
 }
 
+// IsOutputColor indicates whether can colors be outputted to the log.
+func (p *LogFormatterParams) IsOutputColor() bool {
+	return consoleColorMode == forceColor || (consoleColorMode == autoColor && p.IsTerm)
+}
+
 // defaultLogFormatter is the default log format function Logger middleware uses.
 var defaultLogFormatter = func(param LogFormatterParams) string {
 	var statusColor, methodColor, resetColor string
-	if param.IsTerm {
+	if param.IsOutputColor() {
 		statusColor = param.StatusCodeColor()
 		methodColor = param.MethodColor()
 		resetColor = param.ResetColor()
@@ -137,12 +149,12 @@ var defaultLogFormatter = func(param LogFormatterParams) string {
 
 // DisableConsoleColor disables color output in the console.
 func DisableConsoleColor() {
-	disableColor = true
+	consoleColorMode = disableColor
 }
 
 // ForceConsoleColor force color output in the console.
 func ForceConsoleColor() {
-	forceColor = true
+	consoleColorMode = forceColor
 }
 
 // ErrorLogger returns a handlerfunc for any error type.
@@ -199,9 +211,8 @@ func LoggerWithConfig(conf LoggerConfig) HandlerFunc {
 
 	isTerm := true
 
-	if w, ok := out.(*os.File); (!ok ||
-		(os.Getenv("TERM") == "dumb" || (!isatty.IsTerminal(w.Fd()) && !isatty.IsCygwinTerminal(w.Fd()))) ||
-		disableColor) && !forceColor {
+	if w, ok := out.(*os.File); !ok || os.Getenv("TERM") == "dumb" ||
+		(!isatty.IsTerminal(w.Fd()) && !isatty.IsCygwinTerminal(w.Fd())) {
 		isTerm = false
 	}
 
