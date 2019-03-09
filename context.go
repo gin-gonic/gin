@@ -6,6 +6,7 @@ package gin
 
 import (
 	"errors"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"math"
@@ -84,6 +85,10 @@ func (c *Context) Copy() *Context {
 	cp.Writer = &cp.writermem
 	cp.index = abortIndex
 	cp.handlers = nil
+	cp.Keys = map[string]interface{}{}
+	for k, v := range c.Keys {
+		cp.Keys[k] = v
+	}
 	return &cp
 }
 
@@ -91,6 +96,16 @@ func (c *Context) Copy() *Context {
 // this function will return "main.handleGetUsers".
 func (c *Context) HandlerName() string {
 	return nameOfFunction(c.handlers.Last())
+}
+
+// HandlerNames returns a list of all registered handlers for this context in descending order,
+// following the semantics of HandlerName()
+func (c *Context) HandlerNames() []string {
+	hn := make([]string, 0, len(c.handlers))
+	for _, val := range c.handlers {
+		hn = append(hn, nameOfFunction(val))
+	}
+	return hn
 }
 
 // Handler returns the main handler.
@@ -107,8 +122,9 @@ func (c *Context) Handler() HandlerFunc {
 // See example in GitHub.
 func (c *Context) Next() {
 	c.index++
-	for s := int8(len(c.handlers)); c.index < s; c.index++ {
+	for c.index < int8(len(c.handlers)) {
 		c.handlers[c.index](c)
+		c.index++
 	}
 }
 
@@ -417,7 +433,11 @@ func (c *Context) PostFormArray(key string) []string {
 // a boolean value whether at least one value exists for the given key.
 func (c *Context) GetPostFormArray(key string) ([]string, bool) {
 	req := c.Request
-	req.ParseMultipartForm(c.engine.MaxMultipartMemory)
+	if err := req.ParseMultipartForm(c.engine.MaxMultipartMemory); err != nil {
+		if err != http.ErrNotMultipart {
+			debugPrint("error on parse multipart form array: %v", err)
+		}
+	}
 	if values := req.PostForm[key]; len(values) > 0 {
 		return values, true
 	}
@@ -439,7 +459,11 @@ func (c *Context) PostFormMap(key string) map[string]string {
 // whether at least one value exists for the given key.
 func (c *Context) GetPostFormMap(key string) (map[string]string, bool) {
 	req := c.Request
-	req.ParseMultipartForm(c.engine.MaxMultipartMemory)
+	if err := req.ParseMultipartForm(c.engine.MaxMultipartMemory); err != nil {
+		if err != http.ErrNotMultipart {
+			debugPrint("error on parse multipart form map: %v", err)
+		}
+	}
 	dicts, exist := c.get(req.PostForm, key)
 
 	if !exist && req.MultipartForm != nil && req.MultipartForm.File != nil {
@@ -495,8 +519,8 @@ func (c *Context) SaveUploadedFile(file *multipart.FileHeader, dst string) error
 	}
 	defer out.Close()
 
-	io.Copy(out, src)
-	return nil
+	_, err = io.Copy(out, src)
+	return err
 }
 
 // Bind checks the Content-Type to select a binding engine automatically,
@@ -532,15 +556,25 @@ func (c *Context) BindYAML(obj interface{}) error {
 	return c.MustBindWith(obj, binding.YAML)
 }
 
+// BindUri binds the passed struct pointer using binding.Uri.
+// It will abort the request with HTTP 400 if any error occurs.
+func (c *Context) BindUri(obj interface{}) error {
+	if err := c.ShouldBindUri(obj); err != nil {
+		c.AbortWithError(http.StatusBadRequest, err).SetType(ErrorTypeBind) // nolint: errcheck
+		return err
+	}
+	return nil
+}
+
 // MustBindWith binds the passed struct pointer using the specified binding engine.
 // It will abort the request with HTTP 400 if any error occurs.
 // See the binding package.
-func (c *Context) MustBindWith(obj interface{}, b binding.Binding) (err error) {
-	if err = c.ShouldBindWith(obj, b); err != nil {
-		c.AbortWithError(http.StatusBadRequest, err).SetType(ErrorTypeBind)
+func (c *Context) MustBindWith(obj interface{}, b binding.Binding) error {
+	if err := c.ShouldBindWith(obj, b); err != nil {
+		c.AbortWithError(http.StatusBadRequest, err).SetType(ErrorTypeBind) // nolint: errcheck
+		return err
 	}
-
-	return
+	return nil
 }
 
 // ShouldBind checks the Content-Type to select a binding engine automatically,
@@ -849,6 +883,13 @@ func (c *Context) File(filepath string) {
 	http.ServeFile(c.Writer, c.Request, filepath)
 }
 
+// FileAttachment writes the specified file into the body stream in an efficient way
+// On the client side, the file will typically be downloaded with the given filename
+func (c *Context) FileAttachment(filepath, filename string) {
+	c.Writer.Header().Set("content-disposition", fmt.Sprintf("attachment; filename=\"%s\"", filename))
+	http.ServeFile(c.Writer, c.Request, filepath)
+}
+
 // SSEvent writes a Server-Sent Event into the body stream.
 func (c *Context) SSEvent(name string, message interface{}) {
 	c.Render(-1, sse.Event{
@@ -857,19 +898,20 @@ func (c *Context) SSEvent(name string, message interface{}) {
 	})
 }
 
-// Stream sends a streaming response.
-func (c *Context) Stream(step func(w io.Writer) bool) {
+// Stream sends a streaming response and returns a boolean
+// indicates "Is client disconnected in middle of stream"
+func (c *Context) Stream(step func(w io.Writer) bool) bool {
 	w := c.Writer
 	clientGone := w.CloseNotify()
 	for {
 		select {
 		case <-clientGone:
-			return
+			return true
 		default:
 			keepOpen := step(w)
 			w.Flush()
 			if !keepOpen {
-				return
+				return false
 			}
 		}
 	}
@@ -905,7 +947,7 @@ func (c *Context) Negotiate(code int, config Negotiate) {
 		c.XML(code, data)
 
 	default:
-		c.AbortWithError(http.StatusNotAcceptable, errors.New("the accepted formats are not offered by the server"))
+		c.AbortWithError(http.StatusNotAcceptable, errors.New("the accepted formats are not offered by the server")) // nolint: errcheck
 	}
 }
 
@@ -921,7 +963,18 @@ func (c *Context) NegotiateFormat(offered ...string) string {
 	}
 	for _, accepted := range c.Accepted {
 		for _, offert := range offered {
-			if accepted == offert {
+			// According to RFC 2616 and RFC 2396, non-ASCII characters are not allowed in headers,
+			// therefore we can just iterate over the string without casting it into []rune
+			i := 0
+			for ; i < len(accepted); i++ {
+				if accepted[i] == '*' || offert[i] == '*' {
+					return offert
+				}
+				if accepted[i] != offert[i] {
+					break
+				}
+			}
+			if i == len(accepted) {
 				return offert
 			}
 		}

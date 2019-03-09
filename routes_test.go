@@ -16,8 +16,16 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func performRequest(r http.Handler, method, path string) *httptest.ResponseRecorder {
+type header struct {
+	Key   string
+	Value string
+}
+
+func performRequest(r http.Handler, method, path string, headers ...header) *httptest.ResponseRecorder {
 	req, _ := http.NewRequest(method, path, nil)
+	for _, h := range headers {
+		req.Header.Add(h.Key, h.Value)
+	}
 	w := httptest.NewRecorder()
 	r.ServeHTTP(w, req)
 	return w
@@ -170,6 +178,13 @@ func TestRouteRedirectTrailingSlash(t *testing.T) {
 	w = performRequest(router, "PUT", "/path4/")
 	assert.Equal(t, http.StatusOK, w.Code)
 
+	w = performRequest(router, "GET", "/path2", header{Key: "X-Forwarded-Prefix", Value: "/api"})
+	assert.Equal(t, "/api/path2/", w.Header().Get("Location"))
+	assert.Equal(t, 301, w.Code)
+
+	w = performRequest(router, "GET", "/path2/", header{Key: "X-Forwarded-Prefix", Value: "/api/"})
+	assert.Equal(t, 200, w.Code)
+
 	router.RedirectTrailingSlash = false
 
 	w = performRequest(router, "GET", "/path/")
@@ -251,7 +266,8 @@ func TestRouteStaticFile(t *testing.T) {
 		t.Error(err)
 	}
 	defer os.Remove(f.Name())
-	f.WriteString("Gin Web Framework")
+	_, err = f.WriteString("Gin Web Framework")
+	assert.NoError(t, err)
 	f.Close()
 
 	dir, filename := filepath.Split(f.Name())
@@ -424,6 +440,16 @@ func TestRouterStaticFSNotFound(t *testing.T) {
 
 	w = performRequest(router, "HEAD", "/nonexistent")
 	assert.Equal(t, "non existent", w.Body.String())
+}
+
+func TestRouterStaticFSFileNotFound(t *testing.T) {
+	router := New()
+
+	router.StaticFS("/", http.FileSystem(http.Dir(".")))
+
+	assert.NotPanics(t, func() {
+		performRequest(router, "GET", "/nonexistent")
+	})
 }
 
 func TestRouteRawPath(t *testing.T) {
