@@ -6,6 +6,7 @@ package binding
 
 import (
 	"errors"
+	"fmt"
 	"reflect"
 	"strconv"
 	"strings"
@@ -121,6 +122,9 @@ func tryToSetValue(value reflect.Value, field reflect.StructField, form map[stri
 	case reflect.Array:
 		if !ok {
 			vs = []string{defaultValue}
+		}
+		if len(vs) != value.Len() {
+			return false, fmt.Errorf("%q is not valid value for %s", vs, value.Type().String())
 		}
 		return true, setArray(vs, value, field)
 	default:
