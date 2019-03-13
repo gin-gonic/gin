@@ -28,6 +28,13 @@ func (jsonBinding) Bind(req *http.Request, obj interface{}) error {
 	if req == nil || req.Body == nil {
 		return fmt.Errorf("invalid request")
 	}
+	// read the body to a variable
+	bodyBytes, _ := ioutil.ReadAll(req.Body)
+	req.Body.Close()
+	tempBody := ioutil.NopCloser(bytes.NewBuffer(bodyBytes))
+
+	//reset the body to the original unread state
+	req.Body = ioutil.NopCloser(bytes.NewBuffer(bodyBytes))
 	return decodeJSON(req.Body, obj)
 }
 
