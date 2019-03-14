@@ -195,7 +195,7 @@ func (group *RouterGroup) createStaticHandler(relativePath string, fs http.FileS
 		// Check if file exists and/or if we have permission to access it
 		if _, err := fs.Open(file); err != nil {
 			c.Writer.WriteHeader(http.StatusNotFound)
-			c.handlers = group.engine.allNoRoute
+			c.handlers = group.engine.noRoute
 			// Reset index
 			c.index = -1
 			return
