@@ -1430,3 +1430,31 @@ func TestBindingTimeDuration(t *testing.T) {
 	err = Form.Bind(req, &s)
 	assert.Error(t, err)
 }
+
+func TestBindingArray(t *testing.T) {
+	var s struct {
+		Nums [2]int `form:"nums,default=4"`
+	}
+
+	// default
+	req := formPostRequest("", "")
+	err := Form.Bind(req, &s)
+	assert.Error(t, err)
+	assert.Equal(t, [2]int{0, 0}, s.Nums)
+
+	// ok
+	req = formPostRequest("", "nums=3&nums=8")
+	err = Form.Bind(req, &s)
+	assert.NoError(t, err)
+	assert.Equal(t, [2]int{3, 8}, s.Nums)
+
+	// not enough vals
+	req = formPostRequest("", "nums=3")
+	err = Form.Bind(req, &s)
+	assert.Error(t, err)
+
+	// error
+	req = formPostRequest("", "nums=3&nums=wrong")
+	err = Form.Bind(req, &s)
+	assert.Error(t, err)
+}
