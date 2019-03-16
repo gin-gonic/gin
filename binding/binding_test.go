@@ -201,12 +201,6 @@ func TestBindingDefault(t *testing.T) {
 	assert.Equal(t, Form, Default("POST", MIMEPOSTForm))
 	assert.Equal(t, Form, Default("PUT", MIMEPOSTForm))
 
-	assert.Equal(t, Form, Default("POST", MIMEMultipartPOSTForm))
-	assert.Equal(t, Form, Default("PUT", MIMEMultipartPOSTForm))
-
-	assert.Equal(t, Default("POST", MIMEMultipartPOSTForm), FormMultipart)
-	assert.Equal(t, Default("PUT", MIMEMultipartPOSTForm), FormMultipart)
-
 	assert.Equal(t, MsgPack, Default("POST", MIMEMSGPACK))
 	assert.Equal(t, MsgPack, Default("PUT", MIMEMSGPACK2))
 
