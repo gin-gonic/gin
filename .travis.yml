@@ -1,5 +1,4 @@
 language: go
-sudo: false
 
 matrix:
   fast_finish: true
