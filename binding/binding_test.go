@@ -676,7 +676,7 @@ func TestBindingFormPostForMapFail(t *testing.T) {
 }
 
 func TestBindingFormFilesMultipart(t *testing.T) {
-	req := createFormFilesMultipartRequest()
+	req := createFormFilesMultipartRequest(t)
 	var obj FooBarFileStruct
 	FormMultipart.Bind(req, &obj)
 
@@ -697,7 +697,7 @@ func TestBindingFormFilesMultipart(t *testing.T) {
 }
 
 func TestBindingFormFilesMultipartFail(t *testing.T) {
-	req := createFormFilesMultipartRequestFail()
+	req := createFormFilesMultipartRequestFail(t)
 	var obj FooBarFileFailStruct
 	err := FormMultipart.Bind(req, &obj)
 	assert.Error(t, err)
