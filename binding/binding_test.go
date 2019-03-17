@@ -550,43 +550,50 @@ func createFormPostRequestForMapFail(t *testing.T) *http.Request {
 	return req
 }
 
-func createFormFilesMultipartRequest() *http.Request {
+func createFormFilesMultipartRequest(t *testing.T) *http.Request {
 	boundary := "--testboundary"
 	body := new(bytes.Buffer)
 	mw := multipart.NewWriter(body)
 	defer mw.Close()
 
-	mw.SetBoundary(boundary)
-	mw.WriteField("foo", "bar")
-	mw.WriteField("bar", "foo")
+	assert.NoError(t, mw.SetBoundary(boundary))
+	assert.NoError(t, mw.WriteField("foo", "bar"))
+	assert.NoError(t, mw.WriteField("bar", "foo"))
 
-	f, _ := os.Open("form.go")
+	f, err := os.Open("form.go")
+	assert.NoError(t, err)
 	defer f.Close()
-	fw, _ := mw.CreateFormFile("file", "form.go")
+	fw, err1 := mw.CreateFormFile("file", "form.go")
+	assert.NoError(t, err1)
+	
 	io.Copy(fw, f)
 
-	req, _ := http.NewRequest("POST", "/?foo=getfoo&bar=getbar", body)
+	req, err2 := http.NewRequest("POST", "/?foo=getfoo&bar=getbar", body)
+	assert.NoError(t, err2)
 	req.Header.Set("Content-Type", MIMEMultipartPOSTForm+"; boundary="+boundary)
 
 	return req
 }
 
-func createFormFilesMultipartRequestFail() *http.Request {
+func createFormFilesMultipartRequestFail(t *testing.T) *http.Request {
 	boundary := "--testboundary"
 	body := new(bytes.Buffer)
 	mw := multipart.NewWriter(body)
 	defer mw.Close()
 
-	mw.SetBoundary(boundary)
-	mw.WriteField("foo", "bar")
-	mw.WriteField("bar", "foo")
+	assert.NoError(t, mw.SetBoundary(boundary))
+	assert.NoError(t, mw.WriteField("foo", "bar"))
+	assert.NoError(t, mw.WriteField("bar", "foo"))
 
-	f, _ := os.Open("form.go")
+	f, err := os.Open("form.go")
+	assert.NoError(t, err)
 	defer f.Close()
-	fw, _ := mw.CreateFormFile("file_foo", "form_foo.go")
+	fw, err1 := mw.CreateFormFile("file_foo", "form_foo.go")
+	assert.NoError(t, err1)
 	io.Copy(fw, f)
 
-	req, _ := http.NewRequest("POST", "/?foo=getfoo&bar=getbar", body)
+	req, err2 := http.NewRequest("POST", "/?foo=getfoo&bar=getbar", body)
+	assert.NoError(t, err2)
 	req.Header.Set("Content-Type", MIMEMultipartPOSTForm+"; boundary="+boundary)
 
 	return req
