@@ -565,7 +565,6 @@ func createFormFilesMultipartRequest(t *testing.T) *http.Request {
 	defer f.Close()
 	fw, err1 := mw.CreateFormFile("file", "form.go")
 	assert.NoError(t, err1)
-	
 	io.Copy(fw, f)
 
 	req, err2 := http.NewRequest("POST", "/?foo=getfoo&bar=getbar", body)
