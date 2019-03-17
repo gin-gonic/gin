@@ -6,6 +6,7 @@ package binding
 
 import (
 	"errors"
+	"fmt"
 	"reflect"
 	"strconv"
 	"strings"
@@ -118,6 +119,14 @@ func tryToSetValue(value reflect.Value, field reflect.StructField, form map[stri
 			vs = []string{defaultValue}
 		}
 		return true, setSlice(vs, value, field)
+	case reflect.Array:
+		if !ok {
+			vs = []string{defaultValue}
+		}
+		if len(vs) != value.Len() {
+			return false, fmt.Errorf("%q is not valid value for %s", vs, value.Type().String())
+		}
+		return true, setArray(vs, value, field)
 	default:
 		var val string
 		if !ok {
@@ -256,13 +265,21 @@ func setTimeField(val string, structField reflect.StructField, value reflect.Val
 	return nil
 }
 
-func setSlice(vals []string, value reflect.Value, field reflect.StructField) error {
-	slice := reflect.MakeSlice(value.Type(), len(vals), len(vals))
+func setArray(vals []string, value reflect.Value, field reflect.StructField) error {
 	for i, s := range vals {
-		err := setWithProperType(s, slice.Index(i), field)
+		err := setWithProperType(s, value.Index(i), field)
 		if err != nil {
 			return err
 		}
+	}
+	return nil
+}
+
+func setSlice(vals []string, value reflect.Value, field reflect.StructField) error {
+	slice := reflect.MakeSlice(value.Type(), len(vals), len(vals))
+	err := setArray(vals, slice, field)
+	if err != nil {
+		return err
 	}
 	value.Set(slice)
 	return nil
