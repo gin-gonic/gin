@@ -56,5 +56,10 @@ func (formMultipartBinding) Bind(req *http.Request, obj interface{}) error {
 	if err := mapForm(obj, req.MultipartForm.Value); err != nil {
 		return err
 	}
+
+	if err := mapFiles(obj, req); err != nil {
+		return err
+	}
+
 	return validate(obj)
 }
