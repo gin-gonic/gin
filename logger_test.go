@@ -240,7 +240,7 @@ func TestDefaultLogFormatter(t *testing.T) {
 		Method:       "GET",
 		Path:         "/",
 		ErrorMessage: "",
-		IsTerm:       false,
+		isTerm:       false,
 	}
 
 	termTrueParam := LogFormatterParams{
@@ -251,7 +251,7 @@ func TestDefaultLogFormatter(t *testing.T) {
 		Method:       "GET",
 		Path:         "/",
 		ErrorMessage: "",
-		IsTerm:       true,
+		isTerm:       true,
 	}
 
 	assert.Equal(t, "[GIN] 2018/12/07 - 09:11:42 | 200 |            5s |     20.20.20.20 | GET      /\n", defaultLogFormatter(termFalseParam))
@@ -294,6 +294,39 @@ func TestColorForStatus(t *testing.T) {
 func TestResetColor(t *testing.T) {
 	p := LogFormatterParams{}
 	assert.Equal(t, string([]byte{27, 91, 48, 109}), p.ResetColor())
+}
+
+func TestIsOutputColor(t *testing.T) {
+	// test with isTerm flag true.
+	p := LogFormatterParams{
+		isTerm: true,
+	}
+
+	consoleColorMode = autoColor
+	assert.Equal(t, true, p.IsOutputColor())
+
+	ForceConsoleColor()
+	assert.Equal(t, true, p.IsOutputColor())
+
+	DisableConsoleColor()
+	assert.Equal(t, false, p.IsOutputColor())
+
+	// test with isTerm flag false.
+	p = LogFormatterParams{
+		isTerm: false,
+	}
+
+	consoleColorMode = autoColor
+	assert.Equal(t, false, p.IsOutputColor())
+
+	ForceConsoleColor()
+	assert.Equal(t, true, p.IsOutputColor())
+
+	DisableConsoleColor()
+	assert.Equal(t, false, p.IsOutputColor())
+
+	// reset console color mode.
+	consoleColorMode = autoColor
 }
 
 func TestErrorLogger(t *testing.T) {
@@ -358,14 +391,20 @@ func TestLoggerWithConfigSkippingPaths(t *testing.T) {
 
 func TestDisableConsoleColor(t *testing.T) {
 	New()
-	assert.False(t, disableColor)
+	assert.Equal(t, autoColor, consoleColorMode)
 	DisableConsoleColor()
-	assert.True(t, disableColor)
+	assert.Equal(t, disableColor, consoleColorMode)
+
+	// reset console color mode.
+	consoleColorMode = autoColor
 }
 
 func TestForceConsoleColor(t *testing.T) {
 	New()
-	assert.False(t, forceColor)
+	assert.Equal(t, autoColor, consoleColorMode)
 	ForceConsoleColor()
-	assert.True(t, forceColor)
+	assert.Equal(t, forceColor, consoleColorMode)
+
+	// reset console color mode.
+	consoleColorMode = autoColor
 }
