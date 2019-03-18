@@ -22,7 +22,7 @@ type header struct {
 }
 
 func performRequest(r http.Handler, method, path string, headers ...header) *httptest.ResponseRecorder {
-	req, _ := http.NewRequest(method, path, nil)
+	req := httptest.NewRequest(method, path, nil)
 	for _, h := range headers {
 		req.Header.Add(h.Key, h.Value)
 	}
@@ -257,6 +257,39 @@ func TestRouteParamsByName(t *testing.T) {
 	assert.Equal(t, "/is/super/great", wild)
 }
 
+// TestContextParamsGet tests that a parameter can be parsed from the URL even with extra slashes.
+func TestRouteParamsByNameWithExtraSlash(t *testing.T) {
+	name := ""
+	lastName := ""
+	wild := ""
+	router := New()
+	router.GET("/test/:name/:last_name/*wild", func(c *Context) {
+		name = c.Params.ByName("name")
+		lastName = c.Params.ByName("last_name")
+		var ok bool
+		wild, ok = c.Params.Get("wild")
+
+		assert.True(t, ok)
+		assert.Equal(t, name, c.Param("name"))
+		assert.Equal(t, name, c.Param("name"))
+		assert.Equal(t, lastName, c.Param("last_name"))
+
+		assert.Empty(t, c.Param("wtf"))
+		assert.Empty(t, c.Params.ByName("wtf"))
+
+		wtf, ok := c.Params.Get("wtf")
+		assert.Empty(t, wtf)
+		assert.False(t, ok)
+	})
+
+	w := performRequest(router, "GET", "//test//john//smith//is//super//great")
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Equal(t, "john", name)
+	assert.Equal(t, "smith", lastName)
+	assert.Equal(t, "/is/super/great", wild)
+}
+
 // TestHandleStaticFile - ensure the static file handles properly
 func TestRouteStaticFile(t *testing.T) {
 	// SETUP file
@@ -386,15 +419,14 @@ func TestRouterNotFound(t *testing.T) {
 		code     int
 		location string
 	}{
-		{"/path/", http.StatusMovedPermanently, "/path"},   // TSR -/
-		{"/dir", http.StatusMovedPermanently, "/dir/"},     // TSR +/
-		{"", http.StatusMovedPermanently, "/"},             // TSR +/
-		{"/PATH", http.StatusMovedPermanently, "/path"},    // Fixed Case
-		{"/DIR/", http.StatusMovedPermanently, "/dir/"},    // Fixed Case
-		{"/PATH/", http.StatusMovedPermanently, "/path"},   // Fixed Case -/
-		{"/DIR", http.StatusMovedPermanently, "/dir/"},     // Fixed Case +/
-		{"/../path", http.StatusMovedPermanently, "/path"}, // CleanPath
-		{"/nope", http.StatusNotFound, ""},                 // NotFound
+		{"/path/", http.StatusMovedPermanently, "/path"}, // TSR -/
+		{"/dir", http.StatusMovedPermanently, "/dir/"},   // TSR +/
+		{"/PATH", http.StatusMovedPermanently, "/path"},  // Fixed Case
+		{"/DIR/", http.StatusMovedPermanently, "/dir/"},  // Fixed Case
+		{"/PATH/", http.StatusMovedPermanently, "/path"}, // Fixed Case -/
+		{"/DIR", http.StatusMovedPermanently, "/dir/"},   // Fixed Case +/
+		{"/../path", http.StatusOK, ""},                  // CleanPath
+		{"/nope", http.StatusNotFound, ""},               // NotFound
 	}
 	for _, tr := range testRoutes {
 		w := performRequest(router, "GET", tr.route)
