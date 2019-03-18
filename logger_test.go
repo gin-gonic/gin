@@ -240,7 +240,7 @@ func TestDefaultLogFormatter(t *testing.T) {
 		Method:       "GET",
 		Path:         "/",
 		ErrorMessage: "",
-		IsTerm:       false,
+		isTerm:       false,
 	}
 
 	termTrueParam := LogFormatterParams{
@@ -251,7 +251,7 @@ func TestDefaultLogFormatter(t *testing.T) {
 		Method:       "GET",
 		Path:         "/",
 		ErrorMessage: "",
-		IsTerm:       true,
+		isTerm:       true,
 	}
 
 	assert.Equal(t, "[GIN] 2018/12/07 - 09:11:42 | 200 |            5s |     20.20.20.20 | GET      /\n", defaultLogFormatter(termFalseParam))
@@ -297,9 +297,9 @@ func TestResetColor(t *testing.T) {
 }
 
 func TestIsOutputColor(t *testing.T) {
-	// test with IsTerm flag true.
+	// test with isTerm flag true.
 	p := LogFormatterParams{
-		IsTerm: true,
+		isTerm: true,
 	}
 
 	consoleColorMode = autoColor
@@ -311,9 +311,9 @@ func TestIsOutputColor(t *testing.T) {
 	DisableConsoleColor()
 	assert.Equal(t, false, p.IsOutputColor())
 
-	// test with IsTerm flag false.
+	// test with isTerm flag false.
 	p = LogFormatterParams{
-		IsTerm: false,
+		isTerm: false,
 	}
 
 	consoleColorMode = autoColor
