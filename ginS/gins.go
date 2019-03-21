@@ -125,23 +125,35 @@ func Use(middlewares ...gin.HandlerFunc) gin.IRoutes {
 	return engine().Use(middlewares...)
 }
 
-// Run : The router is attached to a http.Server and starts listening and serving HTTP requests.
+// Routes returns a slice of registered routes.
+func Routes() gin.RoutesInfo {
+	return engine().Routes()
+}
+
+// Run attaches to a http.Server and starts listening and serving HTTP requests.
 // It is a shortcut for http.ListenAndServe(addr, router)
 // Note: this method will block the calling goroutine indefinitely unless an error happens.
 func Run(addr ...string) (err error) {
 	return engine().Run(addr...)
 }
 
-// RunTLS : The router is attached to a http.Server and starts listening and serving HTTPS requests.
+// RunTLS attaches to a http.Server and starts listening and serving HTTPS requests.
 // It is a shortcut for http.ListenAndServeTLS(addr, certFile, keyFile, router)
 // Note: this method will block the calling goroutine indefinitely unless an error happens.
 func RunTLS(addr, certFile, keyFile string) (err error) {
 	return engine().RunTLS(addr, certFile, keyFile)
 }
 
-// RunUnix : The router is attached to a http.Server and starts listening and serving HTTP requests
+// RunUnix attaches to a http.Server and starts listening and serving HTTP requests
 // through the specified unix socket (ie. a file)
 // Note: this method will block the calling goroutine indefinitely unless an error happens.
 func RunUnix(file string) (err error) {
 	return engine().RunUnix(file)
+}
+
+// RunFd attaches the router to a http.Server and starts listening and serving HTTP requests
+// through the specified file descriptor.
+// Note: thie method will block the calling goroutine indefinitely unless on error happens.
+func RunFd(fd int) (err error) {
+	return engine().RunFd(fd)
 }
