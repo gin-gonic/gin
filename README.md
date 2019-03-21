@@ -111,6 +111,8 @@ You can find many useful Gin middlewares at [gin-contrib](https://github.com/gin
 
 ## Documentation
 
+See [API documentation and descriptions](https://godoc.org/github.com/gin-gonic/gin) for package.
+
 All documentation is available on the Gin website.
 
 - [English](https://gin-gonic.com/docs/)
