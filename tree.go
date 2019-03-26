@@ -364,13 +364,19 @@ func (n *node) insertChild(numParams uint8, path string, fullPath string, handle
 	n.handlers = handlers
 }
 
+type nodeValue struct {
+	handlers HandlersChain
+	params   Params
+	tsr      bool
+}
+
 // getValue returns the handle registered with the given path (key). The values of
 // wildcards are saved to a map.
 // If no handle can be found, a TSR (trailing slash redirect) recommendation is
 // made if a handle exists with an extra (without the) trailing slash for the
 // given path.
-func (n *node) getValue(path string, po Params, unescape bool) (handlers HandlersChain, p Params, tsr bool) {
-	p = po
+func (n *node) getValue(path string, po Params, unescape bool) (value nodeValue) {
+	value.params = po
 walk: // Outer loop for walking the tree
 	for {
 		if len(path) > len(n.path) {
@@ -391,7 +397,7 @@ walk: // Outer loop for walking the tree
 					// Nothing found.
 					// We can recommend to redirect to the same URL without a
 					// trailing slash if a leaf exists for that path.
-					tsr = path == "/" && n.handlers != nil
+					value.tsr = path == "/" && n.handlers != nil
 					return
 				}
 
@@ -406,20 +412,20 @@ walk: // Outer loop for walking the tree
 					}
 
 					// save param value
-					if cap(p) < int(n.maxParams) {
-						p = make(Params, 0, n.maxParams)
+					if cap(value.params) < int(n.maxParams) {
+						value.params = make(Params, 0, n.maxParams)
 					}
-					i := len(p)
-					p = p[:i+1] // expand slice within preallocated capacity
-					p[i].Key = n.path[1:]
+					i := len(value.params)
+					value.params = value.params[:i+1] // expand slice within preallocated capacity
+					value.params[i].Key = n.path[1:]
 					val := path[:end]
 					if unescape {
 						var err error
-						if p[i].Value, err = url.QueryUnescape(val); err != nil {
-							p[i].Value = val // fallback, in case of error
+						if value.params[i].Value, err = url.QueryUnescape(val); err != nil {
+							value.params[i].Value = val // fallback, in case of error
 						}
 					} else {
-						p[i].Value = val
+						value.params[i].Value = val
 					}
 
 					// we need to go deeper!
@@ -431,40 +437,40 @@ walk: // Outer loop for walking the tree
 						}
 
 						// ... but we can't
-						tsr = len(path) == end+1
+						value.tsr = len(path) == end+1
 						return
 					}
 
-					if handlers = n.handlers; handlers != nil {
+					if value.handlers = n.handlers; value.handlers != nil {
 						return
 					}
 					if len(n.children) == 1 {
 						// No handle found. Check if a handle for this path + a
 						// trailing slash exists for TSR recommendation
 						n = n.children[0]
-						tsr = n.path == "/" && n.handlers != nil
+						value.tsr = n.path == "/" && n.handlers != nil
 					}
 
 					return
 
 				case catchAll:
 					// save param value
-					if cap(p) < int(n.maxParams) {
-						p = make(Params, 0, n.maxParams)
+					if cap(value.params) < int(n.maxParams) {
+						value.params = make(Params, 0, n.maxParams)
 					}
-					i := len(p)
-					p = p[:i+1] // expand slice within preallocated capacity
-					p[i].Key = n.path[2:]
+					i := len(value.params)
+					value.params = value.params[:i+1] // expand slice within preallocated capacity
+					value.params[i].Key = n.path[2:]
 					if unescape {
 						var err error
-						if p[i].Value, err = url.QueryUnescape(path); err != nil {
-							p[i].Value = path // fallback, in case of error
+						if value.params[i].Value, err = url.QueryUnescape(path); err != nil {
+							value.params[i].Value = path // fallback, in case of error
 						}
 					} else {
-						p[i].Value = path
+						value.params[i].Value = path
 					}
 
-					handlers = n.handlers
+					value.handlers = n.handlers
 					return
 
 				default:
@@ -474,12 +480,12 @@ walk: // Outer loop for walking the tree
 		} else if path == n.path {
 			// We should have reached the node containing the handle.
 			// Check if this node has a handle registered.
-			if handlers = n.handlers; handlers != nil {
+			if value.handlers = n.handlers; value.handlers != nil {
 				return
 			}
 
 			if path == "/" && n.wildChild && n.nType != root {
-				tsr = true
+				value.tsr = true
 				return
 			}
 
@@ -488,7 +494,7 @@ walk: // Outer loop for walking the tree
 			for i := 0; i < len(n.indices); i++ {
 				if n.indices[i] == '/' {
 					n = n.children[i]
-					tsr = (len(n.path) == 1 && n.handlers != nil) ||
+					value.tsr = (len(n.path) == 1 && n.handlers != nil) ||
 						(n.nType == catchAll && n.children[0].handlers != nil)
 					return
 				}
@@ -499,7 +505,7 @@ walk: // Outer loop for walking the tree
 
 		// Nothing found. We can recommend to redirect to the same URL with an
 		// extra trailing slash if a leaf exists for that path
-		tsr = (path == "/") ||
+		value.tsr = (path == "/") ||
 			(len(n.path) == len(path)+1 && n.path[len(path)] == '/' &&
 				path == n.path[:len(n.path)-1] && n.handlers != nil)
 		return
