@@ -252,6 +252,7 @@ func (engine *Engine) addRoute(method, path string, handlers HandlersChain) {
 	root := engine.trees.get(method)
 	if root == nil {
 		root = new(node)
+		root.fullPath = "/"
 		engine.trees = append(engine.trees, methodTree{method: method, root: root})
 	}
 	root.addRoute(path, handlers)
@@ -385,6 +386,7 @@ func (engine *Engine) handleHTTPRequest(c *Context) {
 		if value.handlers != nil {
 			c.handlers = value.handlers
 			c.Params = value.params
+			c.fullPath = value.fullPath
 			c.Next()
 			c.writermem.WriteHeaderNow()
 			return

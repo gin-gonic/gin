@@ -94,6 +94,7 @@ type node struct {
 	nType     nodeType
 	maxParams uint8
 	wildChild bool
+	fullPath  string
 }
 
 // increments priority of the given child and reorders if necessary.
@@ -154,6 +155,7 @@ func (n *node) addRoute(path string, handlers HandlersChain) {
 					children:  n.children,
 					handlers:  n.handlers,
 					priority:  n.priority - 1,
+					fullPath:  fullPath,
 				}
 
 				// Update maxParams (max of all children)
@@ -229,6 +231,7 @@ func (n *node) addRoute(path string, handlers HandlersChain) {
 					n.indices += string([]byte{c})
 					child := &node{
 						maxParams: numParams,
+						fullPath:  fullPath,
 					}
 					n.children = append(n.children, child)
 					n.incrementChildPrio(len(n.indices) - 1)
@@ -296,6 +299,7 @@ func (n *node) insertChild(numParams uint8, path string, fullPath string, handle
 			child := &node{
 				nType:     param,
 				maxParams: numParams,
+				fullPath:  fullPath,
 			}
 			n.children = []*node{child}
 			n.wildChild = true
@@ -312,6 +316,7 @@ func (n *node) insertChild(numParams uint8, path string, fullPath string, handle
 				child := &node{
 					maxParams: numParams,
 					priority:  1,
+					fullPath:  fullPath,
 				}
 				n.children = []*node{child}
 				n = child
@@ -339,6 +344,7 @@ func (n *node) insertChild(numParams uint8, path string, fullPath string, handle
 				wildChild: true,
 				nType:     catchAll,
 				maxParams: 1,
+				fullPath:  fullPath,
 			}
 			n.children = []*node{child}
 			n.indices = string(path[i])
@@ -352,6 +358,7 @@ func (n *node) insertChild(numParams uint8, path string, fullPath string, handle
 				maxParams: 1,
 				handlers:  handlers,
 				priority:  1,
+				fullPath:  fullPath,
 			}
 			n.children = []*node{child}
 
@@ -364,10 +371,12 @@ func (n *node) insertChild(numParams uint8, path string, fullPath string, handle
 	n.handlers = handlers
 }
 
+// nodeValue holds return values of (*Node).getValue method
 type nodeValue struct {
 	handlers HandlersChain
 	params   Params
 	tsr      bool
+	fullPath string
 }
 
 // getValue returns the handle registered with the given path (key). The values of
@@ -442,6 +451,7 @@ walk: // Outer loop for walking the tree
 					}
 
 					if value.handlers = n.handlers; value.handlers != nil {
+						value.fullPath = n.fullPath
 						return
 					}
 					if len(n.children) == 1 {
@@ -471,6 +481,7 @@ walk: // Outer loop for walking the tree
 					}
 
 					value.handlers = n.handlers
+					value.fullPath = n.fullPath
 					return
 
 				default:
@@ -481,6 +492,7 @@ walk: // Outer loop for walking the tree
 			// We should have reached the node containing the handle.
 			// Check if this node has a handle registered.
 			if value.handlers = n.handlers; value.handlers != nil {
+				value.fullPath = n.fullPath
 				return
 			}
 
