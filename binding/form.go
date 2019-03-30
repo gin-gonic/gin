@@ -66,6 +66,8 @@ func (formMultipartBinding) Bind(req *http.Request, obj interface{}) error {
 
 type multipartRequest http.Request
 
+var _ setter = (*multipartRequest)(nil)
+
 var (
 	multipartFileHeaderStructType = reflect.TypeOf(multipart.FileHeader{})
 )

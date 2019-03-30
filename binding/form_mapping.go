@@ -31,11 +31,14 @@ func mapFormByTag(ptr interface{}, form map[string][]string, tag string) error {
 	return mappingByPtr(ptr, formSource(form), tag)
 }
 
+// setter - try to set value on a walking by fields of a struct
 type setter interface {
 	Set(value reflect.Value, field reflect.StructField, key string, opt setOptions) (isSetted bool, err error)
 }
 
 type formSource map[string][]string
+
+var _ setter = formSource(nil)
 
 func (form formSource) Set(value reflect.Value, field reflect.StructField, tagValue string, opt setOptions) (isSetted bool, err error) {
 	return setByForm(value, field, form, tagValue, opt)
