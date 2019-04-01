@@ -72,7 +72,8 @@ var (
 	multipartFileHeaderStructType = reflect.TypeOf(multipart.FileHeader{})
 )
 
-func (r *multipartRequest) Set(value reflect.Value, field reflect.StructField, key string, opt setOptions) (isSetted bool, err error) {
+// TrySet - try to set a value by the multipart request with the binding a form file
+func (r *multipartRequest) TrySet(value reflect.Value, field reflect.StructField, key string, opt setOptions) (isSetted bool, err error) {
 	if value.Type() == multipartFileHeaderStructType {
 		_, file, err := (*http.Request)(r).FormFile(key)
 		if err != nil {

@@ -33,14 +33,15 @@ func mapFormByTag(ptr interface{}, form map[string][]string, tag string) error {
 
 // setter - try to set value on a walking by fields of a struct
 type setter interface {
-	Set(value reflect.Value, field reflect.StructField, key string, opt setOptions) (isSetted bool, err error)
+	TrySet(value reflect.Value, field reflect.StructField, key string, opt setOptions) (isSetted bool, err error)
 }
 
 type formSource map[string][]string
 
 var _ setter = formSource(nil)
 
-func (form formSource) Set(value reflect.Value, field reflect.StructField, tagValue string, opt setOptions) (isSetted bool, err error) {
+// TrySet - try to set a value by request's form source (like map[string][]string)
+func (form formSource) TrySet(value reflect.Value, field reflect.StructField, tagValue string, opt setOptions) (isSetted bool, err error) {
 	return setByForm(value, field, form, tagValue, opt)
 }
 
@@ -130,7 +131,7 @@ func tryToSetValue(value reflect.Value, field reflect.StructField, setter setter
 		}
 	}
 
-	return setter.Set(value, field, tagValue, setOpt)
+	return setter.TrySet(value, field, tagValue, setOpt)
 }
 
 func setByForm(value reflect.Value, field reflect.StructField, form map[string][]string, tagValue string, opt setOptions) (isSetted bool, err error) {
