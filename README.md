@@ -31,7 +31,7 @@ For more feature details, please see the [Gin website introduction](https://gin-
 
 ### Getting Gin
 
-The first need [Go](https://golang.org/) installed (**version 1.8+ is required**), then you can use the below Go command to install Gin.
+The first need [Go](https://golang.org/) installed (**version 1.9+ is required**), then you can use the below Go command to install Gin.
 
 ```sh
 $ go get -u github.com/gin-gonic/gin
