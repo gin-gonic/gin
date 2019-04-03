@@ -13,6 +13,7 @@ import (
 	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"reflect"
 	"strings"
 	"testing"
@@ -1811,4 +1812,21 @@ func TestContextResetInHandler(t *testing.T) {
 	assert.NotPanics(t, func() {
 		c.Next()
 	})
+}
+
+func TestRaceParamsContextCopy(t *testing.T) {
+	DefaultWriter = os.Stdout
+	router := Default()
+	nameGroup := router.Group("/:name")
+	{
+		nameGroup.GET("/api", func(c *Context) {
+			go func(c *Context, param string) {
+				time.Sleep(100 * time.Millisecond)
+				assert.Equal(t, c.Param("name"), param)
+			}(c.Copy(), c.Param("name"))
+		})
+	}
+	performRequest(router, "GET", "/name1/api")
+	performRequest(router, "GET", "/name2/api")
+	time.Sleep(200 * time.Millisecond)
 }
