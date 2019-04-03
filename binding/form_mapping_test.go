@@ -17,45 +17,46 @@ func TestMappingBaseTypes(t *testing.T) {
 		return &i
 	}
 	for _, tt := range []struct {
+		name   string
 		value  interface{}
 		form   string
 		expect interface{}
 	}{
-		{struct{ F int }{}, "9", int(9)},
-		{struct{ F int8 }{}, "9", int8(9)},
-		{struct{ F int16 }{}, "9", int16(9)},
-		{struct{ F int32 }{}, "9", int32(9)},
-		{struct{ F int64 }{}, "9", int64(9)},
-		{struct{ F uint }{}, "9", uint(9)},
-		{struct{ F uint8 }{}, "9", uint8(9)},
-		{struct{ F uint16 }{}, "9", uint16(9)},
-		{struct{ F uint32 }{}, "9", uint32(9)},
-		{struct{ F uint64 }{}, "9", uint64(9)},
-		{struct{ F bool }{}, "True", true},
-		{struct{ F float32 }{}, "9.1", float32(9.1)},
-		{struct{ F float64 }{}, "9.1", float64(9.1)},
-		{struct{ F string }{}, "test", string("test")},
-		{struct{ F *int }{}, "9", intPtr(9)},
+		{"base type", struct{ F int }{}, "9", int(9)},
+		{"base type", struct{ F int8 }{}, "9", int8(9)},
+		{"base type", struct{ F int16 }{}, "9", int16(9)},
+		{"base type", struct{ F int32 }{}, "9", int32(9)},
+		{"base type", struct{ F int64 }{}, "9", int64(9)},
+		{"base type", struct{ F uint }{}, "9", uint(9)},
+		{"base type", struct{ F uint8 }{}, "9", uint8(9)},
+		{"base type", struct{ F uint16 }{}, "9", uint16(9)},
+		{"base type", struct{ F uint32 }{}, "9", uint32(9)},
+		{"base type", struct{ F uint64 }{}, "9", uint64(9)},
+		{"base type", struct{ F bool }{}, "True", true},
+		{"base type", struct{ F float32 }{}, "9.1", float32(9.1)},
+		{"base type", struct{ F float64 }{}, "9.1", float64(9.1)},
+		{"base type", struct{ F string }{}, "test", string("test")},
+		{"base type", struct{ F *int }{}, "9", intPtr(9)},
 
 		// zero values
-		{struct{ F int }{}, "", int(0)},
-		{struct{ F uint }{}, "", uint(0)},
-		{struct{ F bool }{}, "", false},
-		{struct{ F float32 }{}, "", float32(0)},
+		{"zero value", struct{ F int }{}, "", int(0)},
+		{"zero value", struct{ F uint }{}, "", uint(0)},
+		{"zero value", struct{ F bool }{}, "", false},
+		{"zero value", struct{ F float32 }{}, "", float32(0)},
 	} {
 		tp := reflect.TypeOf(tt.value)
-		t.Run("base type:"+tp.Field(0).Type.String(), func(t *testing.T) {
-			val := reflect.New(reflect.TypeOf(tt.value))
-			val.Elem().Set(reflect.ValueOf(tt.value))
+		testName := tt.name + ":" + tp.Field(0).Type.String()
 
-			field := val.Elem().Type().Field(0)
+		val := reflect.New(reflect.TypeOf(tt.value))
+		val.Elem().Set(reflect.ValueOf(tt.value))
 
-			_, err := mapping(val, emptyField, formSource{field.Name: {tt.form}}, "form")
-			assert.NoError(t, err)
+		field := val.Elem().Type().Field(0)
 
-			actual := val.Elem().Field(0).Interface()
-			assert.Equal(t, tt.expect, actual)
-		})
+		_, err := mapping(val, emptyField, formSource{field.Name: {tt.form}}, "form")
+		assert.NoError(t, err, testName)
+
+		actual := val.Elem().Field(0).Interface()
+		assert.Equal(t, tt.expect, actual, testName)
 	}
 }
 
