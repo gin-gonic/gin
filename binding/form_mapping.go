@@ -6,6 +6,7 @@ package binding
 
 import (
 	"errors"
+	"fmt"
 	"reflect"
 	"strconv"
 	"strings"
@@ -27,11 +28,29 @@ func mapForm(ptr interface{}, form map[string][]string) error {
 var emptyField = reflect.StructField{}
 
 func mapFormByTag(ptr interface{}, form map[string][]string, tag string) error {
-	_, err := mapping(reflect.ValueOf(ptr), emptyField, form, tag)
+	return mappingByPtr(ptr, formSource(form), tag)
+}
+
+// setter tries to set value on a walking by fields of a struct
+type setter interface {
+	TrySet(value reflect.Value, field reflect.StructField, key string, opt setOptions) (isSetted bool, err error)
+}
+
+type formSource map[string][]string
+
+var _ setter = formSource(nil)
+
+// TrySet tries to set a value by request's form source (like map[string][]string)
+func (form formSource) TrySet(value reflect.Value, field reflect.StructField, tagValue string, opt setOptions) (isSetted bool, err error) {
+	return setByForm(value, field, form, tagValue, opt)
+}
+
+func mappingByPtr(ptr interface{}, setter setter, tag string) error {
+	_, err := mapping(reflect.ValueOf(ptr), emptyField, setter, tag)
 	return err
 }
 
-func mapping(value reflect.Value, field reflect.StructField, form map[string][]string, tag string) (bool, error) {
+func mapping(value reflect.Value, field reflect.StructField, setter setter, tag string) (bool, error) {
 	var vKind = value.Kind()
 
 	if vKind == reflect.Ptr {
@@ -41,7 +60,7 @@ func mapping(value reflect.Value, field reflect.StructField, form map[string][]s
 			isNew = true
 			vPtr = reflect.New(value.Type().Elem())
 		}
-		isSetted, err := mapping(vPtr.Elem(), field, form, tag)
+		isSetted, err := mapping(vPtr.Elem(), field, setter, tag)
 		if err != nil {
 			return false, err
 		}
@@ -51,7 +70,7 @@ func mapping(value reflect.Value, field reflect.StructField, form map[string][]s
 		return isSetted, nil
 	}
 
-	ok, err := tryToSetValue(value, field, form, tag)
+	ok, err := tryToSetValue(value, field, setter, tag)
 	if err != nil {
 		return false, err
 	}
@@ -67,7 +86,7 @@ func mapping(value reflect.Value, field reflect.StructField, form map[string][]s
 			if !value.Field(i).CanSet() {
 				continue
 			}
-			ok, err := mapping(value.Field(i), tValue.Field(i), form, tag)
+			ok, err := mapping(value.Field(i), tValue.Field(i), setter, tag)
 			if err != nil {
 				return false, err
 			}
@@ -78,9 +97,14 @@ func mapping(value reflect.Value, field reflect.StructField, form map[string][]s
 	return false, nil
 }
 
-func tryToSetValue(value reflect.Value, field reflect.StructField, form map[string][]string, tag string) (bool, error) {
-	var tagValue, defaultValue string
-	var isDefaultExists bool
+type setOptions struct {
+	isDefaultExists bool
+	defaultValue    string
+}
+
+func tryToSetValue(value reflect.Value, field reflect.StructField, setter setter, tag string) (bool, error) {
+	var tagValue string
+	var setOpt setOptions
 
 	tagValue = field.Tag.Get(tag)
 	tagValue, opts := head(tagValue, ",")
@@ -102,26 +126,38 @@ func tryToSetValue(value reflect.Value, field reflect.StructField, form map[stri
 		k, v := head(opt, "=")
 		switch k {
 		case "default":
-			isDefaultExists = true
-			defaultValue = v
+			setOpt.isDefaultExists = true
+			setOpt.defaultValue = v
 		}
 	}
 
+	return setter.TrySet(value, field, tagValue, setOpt)
+}
+
+func setByForm(value reflect.Value, field reflect.StructField, form map[string][]string, tagValue string, opt setOptions) (isSetted bool, err error) {
 	vs, ok := form[tagValue]
-	if !ok && !isDefaultExists {
+	if !ok && !opt.isDefaultExists {
 		return false, nil
 	}
 
 	switch value.Kind() {
 	case reflect.Slice:
 		if !ok {
-			vs = []string{defaultValue}
+			vs = []string{opt.defaultValue}
 		}
 		return true, setSlice(vs, value, field)
+	case reflect.Array:
+		if !ok {
+			vs = []string{opt.defaultValue}
+		}
+		if len(vs) != value.Len() {
+			return false, fmt.Errorf("%q is not valid value for %s", vs, value.Type().String())
+		}
+		return true, setArray(vs, value, field)
 	default:
 		var val string
 		if !ok {
-			val = defaultValue
+			val = opt.defaultValue
 		}
 
 		if len(vs) > 0 {
@@ -256,13 +292,21 @@ func setTimeField(val string, structField reflect.StructField, value reflect.Val
 	return nil
 }
 
-func setSlice(vals []string, value reflect.Value, field reflect.StructField) error {
-	slice := reflect.MakeSlice(value.Type(), len(vals), len(vals))
+func setArray(vals []string, value reflect.Value, field reflect.StructField) error {
 	for i, s := range vals {
-		err := setWithProperType(s, slice.Index(i), field)
+		err := setWithProperType(s, value.Index(i), field)
 		if err != nil {
 			return err
 		}
+	}
+	return nil
+}
+
+func setSlice(vals []string, value reflect.Value, field reflect.StructField) error {
+	slice := reflect.MakeSlice(value.Type(), len(vals), len(vals))
+	err := setArray(vals, slice, field)
+	if err != nil {
+		return err
 	}
 	value.Set(slice)
 	return nil
