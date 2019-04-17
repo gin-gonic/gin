@@ -20,11 +20,23 @@ import (
 
 	"github.com/gin-contrib/sse"
 	"github.com/gin-gonic/gin/binding"
+	commonB "github.com/gin-gonic/gin/binding/common"
 	"github.com/golang/protobuf/proto"
 	"github.com/stretchr/testify/assert"
+	"github.com/ugorji/go/codec"
 	"golang.org/x/net/context"
 
 	testdata "github.com/gin-gonic/gin/testdata/protoexample"
+
+	_ "github.com/gin-gonic/gin/binding/json"
+	_ "github.com/gin-gonic/gin/binding/xml"
+	_ "github.com/gin-gonic/gin/binding/yaml"
+
+	_ "github.com/gin-gonic/gin/render/json"
+	_ "github.com/gin-gonic/gin/render/msgpack"
+	_ "github.com/gin-gonic/gin/render/protobuf"
+	_ "github.com/gin-gonic/gin/render/xml"
+	_ "github.com/gin-gonic/gin/render/yaml"
 )
 
 var _ context.Context = &Context{}
@@ -55,7 +67,7 @@ func createMultipartRequest() *http.Request {
 	must(mw.WriteField("names[b]", "tianou"))
 	req, err := http.NewRequest("POST", "/", body)
 	must(err)
-	req.Header.Set("Content-Type", MIMEMultipartPOSTForm+"; boundary="+boundary)
+	req.Header.Set("Content-Type", commonB.MIMEMultipartPOSTForm+"; boundary="+boundary)
 	return req
 }
 
@@ -413,7 +425,7 @@ func TestContextQueryAndPostForm(t *testing.T) {
 	body := bytes.NewBufferString("foo=bar&page=11&both=&foo=second")
 	c.Request, _ = http.NewRequest("POST",
 		"/?both=GET&id=main&id=omit&array[]=first&array[]=second&ids[a]=hi&ids[b]=3.14", body)
-	c.Request.Header.Add("Content-Type", MIMEPOSTForm)
+	c.Request.Header.Add("Content-Type", commonB.MIMEPOSTForm)
 
 	assert.Equal(t, "bar", c.DefaultPostForm("foo", "none"))
 	assert.Equal(t, "bar", c.PostForm("foo"))
@@ -1005,6 +1017,32 @@ func TestContextRenderYAML(t *testing.T) {
 	assert.Equal(t, "application/x-yaml; charset=utf-8", w.Header().Get("Content-Type"))
 }
 
+// TestContextRenderMsgPack tests that the response is serialized as MsgPack
+// and Content-Type is set to application/msgpack; charset=utf-8
+// and we just use the example MsgPack to check if the response is correct
+func TestContextRenderMsgPack(t *testing.T) {
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
+
+	reps := []int64{int64(1), int64(2)}
+	label := "test"
+	data := &testdata.Test{
+		Label: &label,
+		Reps:  reps,
+	}
+
+	c.MsgPack(http.StatusCreated, data)
+
+	var mh codec.MsgpackHandle
+	var msgData bytes.Buffer
+	err := codec.NewEncoder(&msgData, &mh).Encode(data)
+	assert.NoError(t, err)
+
+	assert.Equal(t, http.StatusCreated, w.Code)
+	assert.Equal(t, msgData.String(), w.Body.String())
+	assert.Equal(t, "application/msgpack; charset=utf-8", w.Header().Get("Content-Type"))
+}
+
 // TestContextRenderProtoBuf tests that the response is serialized as ProtoBuf
 // and Content-Type is set to application/x-protobuf
 // and we just use the example protobuf to check if the response is correct
@@ -1103,7 +1141,7 @@ func TestContextNegotiationWithJSON(t *testing.T) {
 	c.Request, _ = http.NewRequest("POST", "", nil)
 
 	c.Negotiate(http.StatusOK, Negotiate{
-		Offered: []string{MIMEJSON, MIMEXML},
+		Offered: []string{commonB.MIMEJSON, commonB.MIMEXML},
 		Data:    H{"foo": "bar"},
 	})
 
@@ -1118,7 +1156,7 @@ func TestContextNegotiationWithXML(t *testing.T) {
 	c.Request, _ = http.NewRequest("POST", "", nil)
 
 	c.Negotiate(http.StatusOK, Negotiate{
-		Offered: []string{MIMEXML, MIMEJSON},
+		Offered: []string{commonB.MIMEXML, commonB.MIMEJSON},
 		Data:    H{"foo": "bar"},
 	})
 
@@ -1135,7 +1173,7 @@ func TestContextNegotiationWithHTML(t *testing.T) {
 	router.SetHTMLTemplate(templ)
 
 	c.Negotiate(http.StatusOK, Negotiate{
-		Offered:  []string{MIMEHTML},
+		Offered:  []string{commonB.MIMEHTML},
 		Data:     H{"name": "gin"},
 		HTMLName: "t",
 	})
@@ -1151,7 +1189,7 @@ func TestContextNegotiationNotSupport(t *testing.T) {
 	c.Request, _ = http.NewRequest("POST", "", nil)
 
 	c.Negotiate(http.StatusOK, Negotiate{
-		Offered: []string{MIMEPOSTForm},
+		Offered: []string{commonB.MIMEPOSTForm},
 	})
 
 	assert.Equal(t, http.StatusNotAcceptable, w.Code)
@@ -1164,8 +1202,8 @@ func TestContextNegotiationFormat(t *testing.T) {
 	c.Request, _ = http.NewRequest("POST", "", nil)
 
 	assert.Panics(t, func() { c.NegotiateFormat() })
-	assert.Equal(t, MIMEJSON, c.NegotiateFormat(MIMEJSON, MIMEXML))
-	assert.Equal(t, MIMEHTML, c.NegotiateFormat(MIMEHTML, MIMEJSON))
+	assert.Equal(t, commonB.MIMEJSON, c.NegotiateFormat(commonB.MIMEJSON, commonB.MIMEXML))
+	assert.Equal(t, commonB.MIMEHTML, c.NegotiateFormat(commonB.MIMEHTML, commonB.MIMEJSON))
 }
 
 func TestContextNegotiationFormatWithAccept(t *testing.T) {
@@ -1173,9 +1211,9 @@ func TestContextNegotiationFormatWithAccept(t *testing.T) {
 	c.Request, _ = http.NewRequest("POST", "/", nil)
 	c.Request.Header.Add("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9;q=0.8")
 
-	assert.Equal(t, MIMEXML, c.NegotiateFormat(MIMEJSON, MIMEXML))
-	assert.Equal(t, MIMEHTML, c.NegotiateFormat(MIMEXML, MIMEHTML))
-	assert.Empty(t, c.NegotiateFormat(MIMEJSON))
+	assert.Equal(t, commonB.MIMEXML, c.NegotiateFormat(commonB.MIMEJSON, commonB.MIMEXML))
+	assert.Equal(t, commonB.MIMEHTML, c.NegotiateFormat(commonB.MIMEXML, commonB.MIMEHTML))
+	assert.Empty(t, c.NegotiateFormat(commonB.MIMEJSON))
 }
 
 func TestContextNegotiationFormatWithWildcardAccept(t *testing.T) {
@@ -1186,9 +1224,9 @@ func TestContextNegotiationFormatWithWildcardAccept(t *testing.T) {
 	assert.Equal(t, c.NegotiateFormat("*/*"), "*/*")
 	assert.Equal(t, c.NegotiateFormat("text/*"), "text/*")
 	assert.Equal(t, c.NegotiateFormat("application/*"), "application/*")
-	assert.Equal(t, c.NegotiateFormat(MIMEJSON), MIMEJSON)
-	assert.Equal(t, c.NegotiateFormat(MIMEXML), MIMEXML)
-	assert.Equal(t, c.NegotiateFormat(MIMEHTML), MIMEHTML)
+	assert.Equal(t, c.NegotiateFormat(commonB.MIMEJSON), commonB.MIMEJSON)
+	assert.Equal(t, c.NegotiateFormat(commonB.MIMEXML), commonB.MIMEXML)
+	assert.Equal(t, c.NegotiateFormat(commonB.MIMEHTML), commonB.MIMEHTML)
 
 	c, _ = CreateTestContext(httptest.NewRecorder())
 	c.Request, _ = http.NewRequest("POST", "/", nil)
@@ -1197,9 +1235,9 @@ func TestContextNegotiationFormatWithWildcardAccept(t *testing.T) {
 	assert.Equal(t, c.NegotiateFormat("*/*"), "*/*")
 	assert.Equal(t, c.NegotiateFormat("text/*"), "text/*")
 	assert.Equal(t, c.NegotiateFormat("application/*"), "")
-	assert.Equal(t, c.NegotiateFormat(MIMEJSON), "")
-	assert.Equal(t, c.NegotiateFormat(MIMEXML), "")
-	assert.Equal(t, c.NegotiateFormat(MIMEHTML), MIMEHTML)
+	assert.Equal(t, c.NegotiateFormat(commonB.MIMEJSON), "")
+	assert.Equal(t, c.NegotiateFormat(commonB.MIMEXML), "")
+	assert.Equal(t, c.NegotiateFormat(commonB.MIMEHTML), commonB.MIMEHTML)
 }
 
 func TestContextNegotiationFormatCustom(t *testing.T) {
@@ -1208,11 +1246,11 @@ func TestContextNegotiationFormatCustom(t *testing.T) {
 	c.Request.Header.Add("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9;q=0.8")
 
 	c.Accepted = nil
-	c.SetAccepted(MIMEJSON, MIMEXML)
+	c.SetAccepted(commonB.MIMEJSON, commonB.MIMEXML)
 
-	assert.Equal(t, MIMEJSON, c.NegotiateFormat(MIMEJSON, MIMEXML))
-	assert.Equal(t, MIMEXML, c.NegotiateFormat(MIMEXML, MIMEHTML))
-	assert.Equal(t, MIMEJSON, c.NegotiateFormat(MIMEJSON))
+	assert.Equal(t, commonB.MIMEJSON, c.NegotiateFormat(commonB.MIMEJSON, commonB.MIMEXML))
+	assert.Equal(t, commonB.MIMEXML, c.NegotiateFormat(commonB.MIMEXML, commonB.MIMEHTML))
+	assert.Equal(t, commonB.MIMEJSON, c.NegotiateFormat(commonB.MIMEJSON))
 }
 
 func TestContextIsAborted(t *testing.T) {
@@ -1376,7 +1414,7 @@ func TestContextContentType(t *testing.T) {
 func TestContextAutoBindJSON(t *testing.T) {
 	c, _ := CreateTestContext(httptest.NewRecorder())
 	c.Request, _ = http.NewRequest("POST", "/", bytes.NewBufferString("{\"foo\":\"bar\", \"bar\":\"foo\"}"))
-	c.Request.Header.Add("Content-Type", MIMEJSON)
+	c.Request.Header.Add("Content-Type", commonB.MIMEJSON)
 
 	var obj struct {
 		Foo string `json:"foo"`
@@ -1393,7 +1431,7 @@ func TestContextBindWithJSON(t *testing.T) {
 	c, _ := CreateTestContext(w)
 
 	c.Request, _ = http.NewRequest("POST", "/", bytes.NewBufferString("{\"foo\":\"bar\", \"bar\":\"foo\"}"))
-	c.Request.Header.Add("Content-Type", MIMEXML) // set fake content-type
+	c.Request.Header.Add("Content-Type", commonB.MIMEXML) // set fake content-type
 
 	var obj struct {
 		Foo string `json:"foo"`
@@ -1413,7 +1451,7 @@ func TestContextBindWithXML(t *testing.T) {
 			<foo>FOO</foo>
 		   	<bar>BAR</bar>
 		</root>`))
-	c.Request.Header.Add("Content-Type", MIMEXML) // set fake content-type
+	c.Request.Header.Add("Content-Type", commonB.MIMEXML) // set fake content-type
 
 	var obj struct {
 		Foo string `xml:"foo"`
@@ -1446,7 +1484,7 @@ func TestContextBindWithYAML(t *testing.T) {
 	c, _ := CreateTestContext(w)
 
 	c.Request, _ = http.NewRequest("POST", "/", bytes.NewBufferString("foo: bar\nbar: foo"))
-	c.Request.Header.Add("Content-Type", MIMEXML) // set fake content-type
+	c.Request.Header.Add("Content-Type", commonB.MIMEXML) // set fake content-type
 
 	var obj struct {
 		Foo string `yaml:"foo"`
@@ -1463,7 +1501,7 @@ func TestContextBadAutoBind(t *testing.T) {
 	c, _ := CreateTestContext(w)
 
 	c.Request, _ = http.NewRequest("POST", "http://example.com", bytes.NewBufferString("\"foo\":\"bar\", \"bar\":\"foo\"}"))
-	c.Request.Header.Add("Content-Type", MIMEJSON)
+	c.Request.Header.Add("Content-Type", commonB.MIMEJSON)
 	var obj struct {
 		Foo string `json:"foo"`
 		Bar string `json:"bar"`
@@ -1482,7 +1520,7 @@ func TestContextBadAutoBind(t *testing.T) {
 func TestContextAutoShouldBindJSON(t *testing.T) {
 	c, _ := CreateTestContext(httptest.NewRecorder())
 	c.Request, _ = http.NewRequest("POST", "/", bytes.NewBufferString("{\"foo\":\"bar\", \"bar\":\"foo\"}"))
-	c.Request.Header.Add("Content-Type", MIMEJSON)
+	c.Request.Header.Add("Content-Type", commonB.MIMEJSON)
 
 	var obj struct {
 		Foo string `json:"foo"`
@@ -1499,7 +1537,7 @@ func TestContextShouldBindWithJSON(t *testing.T) {
 	c, _ := CreateTestContext(w)
 
 	c.Request, _ = http.NewRequest("POST", "/", bytes.NewBufferString("{\"foo\":\"bar\", \"bar\":\"foo\"}"))
-	c.Request.Header.Add("Content-Type", MIMEXML) // set fake content-type
+	c.Request.Header.Add("Content-Type", commonB.MIMEXML) // set fake content-type
 
 	var obj struct {
 		Foo string `json:"foo"`
@@ -1520,7 +1558,7 @@ func TestContextShouldBindWithXML(t *testing.T) {
 			<foo>FOO</foo>
 			<bar>BAR</bar>
 		</root>`))
-	c.Request.Header.Add("Content-Type", MIMEXML) // set fake content-type
+	c.Request.Header.Add("Content-Type", commonB.MIMEXML) // set fake content-type
 
 	var obj struct {
 		Foo string `xml:"foo"`
@@ -1557,7 +1595,7 @@ func TestContextShouldBindWithYAML(t *testing.T) {
 	c, _ := CreateTestContext(w)
 
 	c.Request, _ = http.NewRequest("POST", "/", bytes.NewBufferString("foo: bar\nbar: foo"))
-	c.Request.Header.Add("Content-Type", MIMEXML) // set fake content-type
+	c.Request.Header.Add("Content-Type", commonB.MIMEXML) // set fake content-type
 
 	var obj struct {
 		Foo string `yaml:"foo"`
@@ -1574,7 +1612,7 @@ func TestContextBadAutoShouldBind(t *testing.T) {
 	c, _ := CreateTestContext(w)
 
 	c.Request, _ = http.NewRequest("POST", "http://example.com", bytes.NewBufferString("\"foo\":\"bar\", \"bar\":\"foo\"}"))
-	c.Request.Header.Add("Content-Type", MIMEJSON)
+	c.Request.Header.Add("Content-Type", commonB.MIMEJSON)
 	var obj struct {
 		Foo string `json:"foo"`
 		Bar string `json:"bar"`
@@ -1597,20 +1635,20 @@ func TestContextShouldBindBodyWith(t *testing.T) {
 	}
 	for _, tt := range []struct {
 		name               string
-		bindingA, bindingB binding.BindingBody
+		bindingA, bindingB commonB.BindingBody
 		bodyA, bodyB       string
 	}{
 		{
 			name:     "JSON & JSON",
-			bindingA: binding.JSON,
-			bindingB: binding.JSON,
+			bindingA: binding.JSON(),
+			bindingB: binding.JSON(),
 			bodyA:    `{"foo":"FOO"}`,
 			bodyB:    `{"bar":"BAR"}`,
 		},
 		{
 			name:     "JSON & XML",
-			bindingA: binding.JSON,
-			bindingB: binding.XML,
+			bindingA: binding.JSON(),
+			bindingB: binding.XML(),
 			bodyA:    `{"foo":"FOO"}`,
 			bodyB: `<?xml version="1.0" encoding="UTF-8"?>
 <root>
@@ -1619,8 +1657,8 @@ func TestContextShouldBindBodyWith(t *testing.T) {
 		},
 		{
 			name:     "XML & XML",
-			bindingA: binding.XML,
-			bindingB: binding.XML,
+			bindingA: binding.XML(),
+			bindingB: binding.XML(),
 			bodyA: `<?xml version="1.0" encoding="UTF-8"?>
 <root>
    <foo>FOO</foo>
@@ -1718,7 +1756,7 @@ func TestContextGetRawData(t *testing.T) {
 	c, _ := CreateTestContext(httptest.NewRecorder())
 	body := bytes.NewBufferString("Fetch binary post data")
 	c.Request, _ = http.NewRequest("POST", "/", body)
-	c.Request.Header.Add("Content-Type", MIMEPOSTForm)
+	c.Request.Header.Add("Content-Type", commonB.MIMEPOSTForm)
 
 	data, err := c.GetRawData()
 	assert.Nil(t, err)

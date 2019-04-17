@@ -4,7 +4,11 @@
 
 package binding
 
-import "net/http"
+import (
+	"net/http"
+
+	"github.com/gin-gonic/gin/binding/common"
+)
 
 type queryBinding struct{}
 
@@ -17,5 +21,5 @@ func (queryBinding) Bind(req *http.Request, obj interface{}) error {
 	if err := mapForm(obj, values); err != nil {
 		return err
 	}
-	return validate(obj)
+	return common.Validate(obj)
 }

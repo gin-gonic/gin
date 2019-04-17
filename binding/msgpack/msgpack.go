@@ -2,15 +2,22 @@
 // Use of this source code is governed by a MIT style
 // license that can be found in the LICENSE file.
 
-package binding
+package msgpack
 
 import (
 	"bytes"
 	"io"
 	"net/http"
 
+	"github.com/gin-gonic/gin/binding/common"
 	"github.com/ugorji/go/codec"
 )
+
+func init() {
+	msgPack := msgpackBinding{}
+	common.List[common.MIMEMSGPACK] = msgPack
+	common.List[common.MIMEMSGPACK2] = msgPack
+}
 
 type msgpackBinding struct{}
 
@@ -31,5 +38,5 @@ func decodeMsgPack(r io.Reader, obj interface{}) error {
 	if err := codec.NewDecoder(r, cdc).Decode(&obj); err != nil {
 		return err
 	}
-	return validate(obj)
+	return common.Validate(obj)
 }

@@ -18,22 +18,16 @@ import (
 	"strings"
 	"time"
 
+	commonB "github.com/gin-gonic/gin/binding/common"
+	"github.com/gin-gonic/gin/render/common"
+
 	"github.com/gin-contrib/sse"
 	"github.com/gin-gonic/gin/binding"
 	"github.com/gin-gonic/gin/render"
 )
 
-// Content-Type MIME of the most common data formats.
 const (
-	MIMEJSON              = binding.MIMEJSON
-	MIMEHTML              = binding.MIMEHTML
-	MIMEXML               = binding.MIMEXML
-	MIMEXML2              = binding.MIMEXML2
-	MIMEPlain             = binding.MIMEPlain
-	MIMEPOSTForm          = binding.MIMEPOSTForm
-	MIMEMultipartPOSTForm = binding.MIMEMultipartPOSTForm
-	MIMEYAML              = binding.MIMEYAML
-	BodyBytesKey          = "_gin-gonic/gin/bodybyteskey"
+	BodyBytesKey = "_gin-gonic/gin/bodybyteskey"
 )
 
 const abortIndex int8 = math.MaxInt8 / 2
@@ -536,12 +530,12 @@ func (c *Context) Bind(obj interface{}) error {
 
 // BindJSON is a shortcut for c.MustBindWith(obj, binding.JSON).
 func (c *Context) BindJSON(obj interface{}) error {
-	return c.MustBindWith(obj, binding.JSON)
+	return c.MustBindWith(obj, binding.JSON())
 }
 
 // BindXML is a shortcut for c.MustBindWith(obj, binding.BindXML).
 func (c *Context) BindXML(obj interface{}) error {
-	return c.MustBindWith(obj, binding.XML)
+	return c.MustBindWith(obj, binding.XML())
 }
 
 // BindQuery is a shortcut for c.MustBindWith(obj, binding.Query).
@@ -551,7 +545,7 @@ func (c *Context) BindQuery(obj interface{}) error {
 
 // BindYAML is a shortcut for c.MustBindWith(obj, binding.YAML).
 func (c *Context) BindYAML(obj interface{}) error {
-	return c.MustBindWith(obj, binding.YAML)
+	return c.MustBindWith(obj, binding.YAML())
 }
 
 // BindUri binds the passed struct pointer using binding.Uri.
@@ -567,7 +561,7 @@ func (c *Context) BindUri(obj interface{}) error {
 // MustBindWith binds the passed struct pointer using the specified binding engine.
 // It will abort the request with HTTP 400 if any error occurs.
 // See the binding package.
-func (c *Context) MustBindWith(obj interface{}, b binding.Binding) error {
+func (c *Context) MustBindWith(obj interface{}, b commonB.Binding) error {
 	if err := c.ShouldBindWith(obj, b); err != nil {
 		c.AbortWithError(http.StatusBadRequest, err).SetType(ErrorTypeBind) // nolint: errcheck
 		return err
@@ -590,12 +584,12 @@ func (c *Context) ShouldBind(obj interface{}) error {
 
 // ShouldBindJSON is a shortcut for c.ShouldBindWith(obj, binding.JSON).
 func (c *Context) ShouldBindJSON(obj interface{}) error {
-	return c.ShouldBindWith(obj, binding.JSON)
+	return c.ShouldBindWith(obj, binding.JSON())
 }
 
 // ShouldBindXML is a shortcut for c.ShouldBindWith(obj, binding.XML).
 func (c *Context) ShouldBindXML(obj interface{}) error {
-	return c.ShouldBindWith(obj, binding.XML)
+	return c.ShouldBindWith(obj, binding.XML())
 }
 
 // ShouldBindQuery is a shortcut for c.ShouldBindWith(obj, binding.Query).
@@ -605,7 +599,7 @@ func (c *Context) ShouldBindQuery(obj interface{}) error {
 
 // ShouldBindYAML is a shortcut for c.ShouldBindWith(obj, binding.YAML).
 func (c *Context) ShouldBindYAML(obj interface{}) error {
-	return c.ShouldBindWith(obj, binding.YAML)
+	return c.ShouldBindWith(obj, binding.YAML())
 }
 
 // ShouldBindUri binds the passed struct pointer using the specified binding engine.
@@ -619,7 +613,7 @@ func (c *Context) ShouldBindUri(obj interface{}) error {
 
 // ShouldBindWith binds the passed struct pointer using the specified binding engine.
 // See the binding package.
-func (c *Context) ShouldBindWith(obj interface{}, b binding.Binding) error {
+func (c *Context) ShouldBindWith(obj interface{}, b commonB.Binding) error {
 	return b.Bind(c.Request, obj)
 }
 
@@ -628,7 +622,7 @@ func (c *Context) ShouldBindWith(obj interface{}, b binding.Binding) error {
 //
 // NOTE: This method reads the body before binding. So you should use
 // ShouldBindWith for better performance if you need to call only once.
-func (c *Context) ShouldBindBodyWith(obj interface{}, bb binding.BindingBody) (err error) {
+func (c *Context) ShouldBindBodyWith(obj interface{}, bb commonB.BindingBody) (err error) {
 	var body []byte
 	if cb, ok := c.Get(BodyBytesKey); ok {
 		if cbb, ok := cb.([]byte); ok {
@@ -767,7 +761,7 @@ func (c *Context) Cookie(name string) (string, error) {
 }
 
 // Render writes the response headers and calls render.Render to render data.
-func (c *Context) Render(code int, r render.Render) {
+func (c *Context) Render(code int, r common.Render) {
 	c.Status(code)
 
 	if !bodyAllowedForStatus(code) {
@@ -794,14 +788,14 @@ func (c *Context) HTML(code int, name string, obj interface{}) {
 // WARNING: we recommend to use this only for development purposes since printing pretty JSON is
 // more CPU and bandwidth consuming. Use Context.JSON() instead.
 func (c *Context) IndentedJSON(code int, obj interface{}) {
-	c.Render(code, render.IndentedJSON{Data: obj})
+	c.Render(code, render.IndentedJSON(obj))
 }
 
 // SecureJSON serializes the given struct as Secure JSON into the response body.
 // Default prepends "while(1)," to response body if the given struct is array values.
 // It also sets the Content-Type as "application/json".
 func (c *Context) SecureJSON(code int, obj interface{}) {
-	c.Render(code, render.SecureJSON{Prefix: c.engine.secureJsonPrefix, Data: obj})
+	c.Render(code, render.SecureJSON(c.engine.secureJsonPrefix, obj))
 }
 
 // JSONP serializes the given struct as JSON into the response body.
@@ -810,38 +804,43 @@ func (c *Context) SecureJSON(code int, obj interface{}) {
 func (c *Context) JSONP(code int, obj interface{}) {
 	callback := c.DefaultQuery("callback", "")
 	if callback == "" {
-		c.Render(code, render.JSON{Data: obj})
+		c.Render(code, render.JSON(obj))
 		return
 	}
-	c.Render(code, render.JsonpJSON{Callback: callback, Data: obj})
+	c.Render(code, render.JsonpJSON(callback, obj))
 }
 
 // JSON serializes the given struct as JSON into the response body.
 // It also sets the Content-Type as "application/json".
 func (c *Context) JSON(code int, obj interface{}) {
-	c.Render(code, render.JSON{Data: obj})
+	c.Render(code, render.JSON(obj))
 }
 
 // AsciiJSON serializes the given struct as JSON into the response body with unicode to ASCII string.
 // It also sets the Content-Type as "application/json".
 func (c *Context) AsciiJSON(code int, obj interface{}) {
-	c.Render(code, render.AsciiJSON{Data: obj})
+	c.Render(code, render.AsciiJSON(obj))
 }
 
 // XML serializes the given struct as XML into the response body.
 // It also sets the Content-Type as "application/xml".
 func (c *Context) XML(code int, obj interface{}) {
-	c.Render(code, render.XML{Data: obj})
+	c.Render(code, render.XML(obj))
 }
 
 // YAML serializes the given struct as YAML into the response body.
 func (c *Context) YAML(code int, obj interface{}) {
-	c.Render(code, render.YAML{Data: obj})
+	c.Render(code, render.YAML(obj))
 }
 
 // ProtoBuf serializes the given struct as ProtoBuf into the response body.
 func (c *Context) ProtoBuf(code int, obj interface{}) {
-	c.Render(code, render.ProtoBuf{Data: obj})
+	c.Render(code, render.ProtoBuf(obj))
+}
+
+// MsgPack serializes the given struct as MsgPack into the response body.
+func (c *Context) MsgPack(code int, obj interface{}) {
+	c.Render(code, render.MsgPack(obj))
 }
 
 // String writes the given string into the response body.
@@ -932,15 +931,15 @@ type Negotiate struct {
 // Negotiate calls different Render according acceptable Accept format.
 func (c *Context) Negotiate(code int, config Negotiate) {
 	switch c.NegotiateFormat(config.Offered...) {
-	case binding.MIMEJSON:
+	case commonB.MIMEJSON:
 		data := chooseData(config.JSONData, config.Data)
 		c.JSON(code, data)
 
-	case binding.MIMEHTML:
+	case commonB.MIMEHTML:
 		data := chooseData(config.HTMLData, config.Data)
 		c.HTML(code, config.HTMLName, data)
 
-	case binding.MIMEXML:
+	case commonB.MIMEXML:
 		data := chooseData(config.XMLData, config.Data)
 		c.XML(code, data)
 

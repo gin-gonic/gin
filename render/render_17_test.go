@@ -19,7 +19,7 @@ func TestRenderPureJSON(t *testing.T) {
 		"foo":  "bar",
 		"html": "<b>",
 	}
-	err := (PureJSON{data}).Render(w)
+	err := PureJSON(data).Render(w)
 	assert.NoError(t, err)
 	assert.Equal(t, "{\"foo\":\"bar\",\"html\":\"<b>\"}\n", w.Body.String())
 	assert.Equal(t, "application/json; charset=utf-8", w.Header().Get("Content-Type"))

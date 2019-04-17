@@ -8,6 +8,8 @@ import (
 	"mime/multipart"
 	"net/http"
 	"reflect"
+
+	"github.com/gin-gonic/gin/binding/common"
 )
 
 const defaultMemory = 32 * 1024 * 1024
@@ -32,7 +34,7 @@ func (formBinding) Bind(req *http.Request, obj interface{}) error {
 	if err := mapForm(obj, req.Form); err != nil {
 		return err
 	}
-	return validate(obj)
+	return common.Validate(obj)
 }
 
 func (formPostBinding) Name() string {
@@ -46,7 +48,7 @@ func (formPostBinding) Bind(req *http.Request, obj interface{}) error {
 	if err := mapForm(obj, req.PostForm); err != nil {
 		return err
 	}
-	return validate(obj)
+	return common.Validate(obj)
 }
 
 func (formMultipartBinding) Name() string {
@@ -61,7 +63,7 @@ func (formMultipartBinding) Bind(req *http.Request, obj interface{}) error {
 		return err
 	}
 
-	return validate(obj)
+	return common.Validate(obj)
 }
 
 type multipartRequest http.Request

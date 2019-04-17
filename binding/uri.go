@@ -4,6 +4,8 @@
 
 package binding
 
+import "github.com/gin-gonic/gin/binding/common"
+
 type uriBinding struct{}
 
 func (uriBinding) Name() string {
@@ -14,5 +16,5 @@ func (uriBinding) BindUri(m map[string][]string, obj interface{}) error {
 	if err := mapUri(obj, m); err != nil {
 		return err
 	}
-	return validate(obj)
+	return common.Validate(obj)
 }

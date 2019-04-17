@@ -4,13 +4,23 @@
 
 // +build go1.7
 
-package render
+package json
 
 import (
 	"net/http"
 
 	"github.com/gin-gonic/gin/internal/json"
+	"github.com/gin-gonic/gin/render/common"
 )
+
+func init() {
+	common.List["PureJSON"] = NewPureJSON
+}
+
+//NewPureJSON build a new PureJSON render
+func NewPureJSON(obj interface{}, _ map[string]string) common.Render {
+	return PureJSON{Data: obj}
+}
 
 // PureJSON contains the given interface object.
 type PureJSON struct {
@@ -27,5 +37,5 @@ func (r PureJSON) Render(w http.ResponseWriter) error {
 
 // WriteContentType (PureJSON) writes custom ContentType.
 func (r PureJSON) WriteContentType(w http.ResponseWriter) {
-	writeContentType(w, jsonContentType)
+	common.WriteContentType(w, jsonContentType)
 }

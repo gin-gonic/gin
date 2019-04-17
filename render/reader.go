@@ -8,6 +8,8 @@ import (
 	"io"
 	"net/http"
 	"strconv"
+
+	"github.com/gin-gonic/gin/render/common"
 )
 
 // Reader contains the IO reader and its length, and custom ContentType and other headers.
@@ -29,7 +31,7 @@ func (r Reader) Render(w http.ResponseWriter) (err error) {
 
 // WriteContentType (Reader) writes custom ContentType.
 func (r Reader) WriteContentType(w http.ResponseWriter) {
-	writeContentType(w, []string{r.ContentType})
+	common.WriteContentType(w, []string{r.ContentType})
 }
 
 // writeHeaders writes custom Header.

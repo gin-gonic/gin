@@ -8,6 +8,8 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+
+	"github.com/gin-gonic/gin/render/common"
 )
 
 // String contains the given interface object slice and its format.
@@ -25,12 +27,12 @@ func (r String) Render(w http.ResponseWriter) error {
 
 // WriteContentType (String) writes Plain ContentType.
 func (r String) WriteContentType(w http.ResponseWriter) {
-	writeContentType(w, plainContentType)
+	common.WriteContentType(w, plainContentType)
 }
 
 // WriteString writes data according to its format and write custom ContentType.
 func WriteString(w http.ResponseWriter, format string, data []interface{}) (err error) {
-	writeContentType(w, plainContentType)
+	common.WriteContentType(w, plainContentType)
 	if len(data) > 0 {
 		_, err = fmt.Fprintf(w, format, data...)
 		return

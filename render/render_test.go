@@ -20,6 +20,12 @@ import (
 	"github.com/ugorji/go/codec"
 
 	testdata "github.com/gin-gonic/gin/testdata/protoexample"
+
+	_ "github.com/gin-gonic/gin/render/json"
+	_ "github.com/gin-gonic/gin/render/msgpack"
+	_ "github.com/gin-gonic/gin/render/protobuf"
+	_ "github.com/gin-gonic/gin/render/xml"
+	_ "github.com/gin-gonic/gin/render/yaml"
 )
 
 // TODO unit tests
@@ -31,10 +37,10 @@ func TestRenderMsgPack(t *testing.T) {
 		"foo": "bar",
 	}
 
-	(MsgPack{data}).WriteContentType(w)
+	MsgPack(data).WriteContentType(w)
 	assert.Equal(t, "application/msgpack; charset=utf-8", w.Header().Get("Content-Type"))
 
-	err := (MsgPack{data}).Render(w)
+	err := MsgPack(data).Render(w)
 
 	assert.NoError(t, err)
 
@@ -56,10 +62,10 @@ func TestRenderJSON(t *testing.T) {
 		"html": "<b>",
 	}
 
-	(JSON{data}).WriteContentType(w)
+	JSON(data).WriteContentType(w)
 	assert.Equal(t, "application/json; charset=utf-8", w.Header().Get("Content-Type"))
 
-	err := (JSON{data}).Render(w)
+	err := JSON(data).Render(w)
 
 	assert.NoError(t, err)
 	assert.Equal(t, "{\"foo\":\"bar\",\"html\":\"\\u003cb\\u003e\"}", w.Body.String())
@@ -71,7 +77,7 @@ func TestRenderJSONPanics(t *testing.T) {
 	data := make(chan int)
 
 	// json: unsupported type: chan int
-	assert.Panics(t, func() { assert.NoError(t, (JSON{data}).Render(w)) })
+	assert.Panics(t, func() { assert.NoError(t, JSON(data).Render(w)) })
 }
 
 func TestRenderIndentedJSON(t *testing.T) {
@@ -81,7 +87,7 @@ func TestRenderIndentedJSON(t *testing.T) {
 		"bar": "foo",
 	}
 
-	err := (IndentedJSON{data}).Render(w)
+	err := IndentedJSON(data).Render(w)
 
 	assert.NoError(t, err)
 	assert.Equal(t, "{\n    \"bar\": \"foo\",\n    \"foo\": \"bar\"\n}", w.Body.String())
@@ -93,7 +99,7 @@ func TestRenderIndentedJSONPanics(t *testing.T) {
 	data := make(chan int)
 
 	// json: unsupported type: chan int
-	err := (IndentedJSON{data}).Render(w)
+	err := IndentedJSON(data).Render(w)
 	assert.Error(t, err)
 }
 
@@ -103,10 +109,10 @@ func TestRenderSecureJSON(t *testing.T) {
 		"foo": "bar",
 	}
 
-	(SecureJSON{"while(1);", data}).WriteContentType(w1)
+	SecureJSON("while(1);", data).WriteContentType(w1)
 	assert.Equal(t, "application/json; charset=utf-8", w1.Header().Get("Content-Type"))
 
-	err1 := (SecureJSON{"while(1);", data}).Render(w1)
+	err1 := SecureJSON("while(1);", data).Render(w1)
 
 	assert.NoError(t, err1)
 	assert.Equal(t, "{\"foo\":\"bar\"}", w1.Body.String())
@@ -119,7 +125,7 @@ func TestRenderSecureJSON(t *testing.T) {
 		"bar": "foo",
 	}}
 
-	err2 := (SecureJSON{"while(1);", datas}).Render(w2)
+	err2 := SecureJSON("while(1);", datas).Render(w2)
 	assert.NoError(t, err2)
 	assert.Equal(t, "while(1);[{\"foo\":\"bar\"},{\"bar\":\"foo\"}]", w2.Body.String())
 	assert.Equal(t, "application/json; charset=utf-8", w2.Header().Get("Content-Type"))
@@ -130,7 +136,7 @@ func TestRenderSecureJSONFail(t *testing.T) {
 	data := make(chan int)
 
 	// json: unsupported type: chan int
-	err := (SecureJSON{"while(1);", data}).Render(w)
+	err := SecureJSON("while(1);", data).Render(w)
 	assert.Error(t, err)
 }
 
@@ -140,10 +146,10 @@ func TestRenderJsonpJSON(t *testing.T) {
 		"foo": "bar",
 	}
 
-	(JsonpJSON{"x", data}).WriteContentType(w1)
+	JsonpJSON("x", data).WriteContentType(w1)
 	assert.Equal(t, "application/javascript; charset=utf-8", w1.Header().Get("Content-Type"))
 
-	err1 := (JsonpJSON{"x", data}).Render(w1)
+	err1 := JsonpJSON("x", data).Render(w1)
 
 	assert.NoError(t, err1)
 	assert.Equal(t, "x({\"foo\":\"bar\"})", w1.Body.String())
@@ -156,7 +162,7 @@ func TestRenderJsonpJSON(t *testing.T) {
 		"bar": "foo",
 	}}
 
-	err2 := (JsonpJSON{"x", datas}).Render(w2)
+	err2 := JsonpJSON("x", datas).Render(w2)
 	assert.NoError(t, err2)
 	assert.Equal(t, "x([{\"foo\":\"bar\"},{\"bar\":\"foo\"}])", w2.Body.String())
 	assert.Equal(t, "application/javascript; charset=utf-8", w2.Header().Get("Content-Type"))
@@ -167,10 +173,10 @@ func TestRenderJsonpJSONError2(t *testing.T) {
 	data := map[string]interface{}{
 		"foo": "bar",
 	}
-	(JsonpJSON{"", data}).WriteContentType(w)
+	JsonpJSON("", data).WriteContentType(w)
 	assert.Equal(t, "application/javascript; charset=utf-8", w.Header().Get("Content-Type"))
 
-	e := (JsonpJSON{"", data}).Render(w)
+	e := JsonpJSON("", data).Render(w)
 	assert.NoError(t, e)
 
 	assert.Equal(t, "{\"foo\":\"bar\"}", w.Body.String())
@@ -182,7 +188,7 @@ func TestRenderJsonpJSONFail(t *testing.T) {
 	data := make(chan int)
 
 	// json: unsupported type: chan int
-	err := (JsonpJSON{"x", data}).Render(w)
+	err := JsonpJSON("x", data).Render(w)
 	assert.Error(t, err)
 }
 
@@ -193,7 +199,7 @@ func TestRenderAsciiJSON(t *testing.T) {
 		"tag":  "<br>",
 	}
 
-	err := (AsciiJSON{data1}).Render(w1)
+	err := AsciiJSON(data1).Render(w1)
 
 	assert.NoError(t, err)
 	assert.Equal(t, "{\"lang\":\"GO\\u8bed\\u8a00\",\"tag\":\"\\u003cbr\\u003e\"}", w1.Body.String())
@@ -202,7 +208,7 @@ func TestRenderAsciiJSON(t *testing.T) {
 	w2 := httptest.NewRecorder()
 	data2 := float64(3.1415926)
 
-	err = (AsciiJSON{data2}).Render(w2)
+	err = AsciiJSON(data2).Render(w2)
 	assert.NoError(t, err)
 	assert.Equal(t, "3.1415926", w2.Body.String())
 }
@@ -212,7 +218,7 @@ func TestRenderAsciiJSONFail(t *testing.T) {
 	data := make(chan int)
 
 	// json: unsupported type: chan int
-	assert.Error(t, (AsciiJSON{data}).Render(w))
+	assert.Error(t, AsciiJSON(data).Render(w))
 }
 
 type xmlmap map[string]interface{}
@@ -247,10 +253,10 @@ b:
 	c: 2
 	d: [3, 4]
 	`
-	(YAML{data}).WriteContentType(w)
+	YAML(data).WriteContentType(w)
 	assert.Equal(t, "application/x-yaml; charset=utf-8", w.Header().Get("Content-Type"))
 
-	err := (YAML{data}).Render(w)
+	err := YAML(data).Render(w)
 	assert.NoError(t, err)
 	assert.Equal(t, "\"\\na : Easy!\\nb:\\n\\tc: 2\\n\\td: [3, 4]\\n\\t\"\n", w.Body.String())
 	assert.Equal(t, "application/x-yaml; charset=utf-8", w.Header().Get("Content-Type"))
@@ -265,7 +271,7 @@ func (ft *fail) MarshalYAML() (interface{}, error) {
 
 func TestRenderYAMLFail(t *testing.T) {
 	w := httptest.NewRecorder()
-	err := (YAML{&fail{}}).Render(w)
+	err := YAML(&fail{}).Render(w)
 	assert.Error(t, err)
 }
 
@@ -279,12 +285,12 @@ func TestRenderProtoBuf(t *testing.T) {
 		Reps:  reps,
 	}
 
-	(ProtoBuf{data}).WriteContentType(w)
+	ProtoBuf(data).WriteContentType(w)
 	protoData, err := proto.Marshal(data)
 	assert.NoError(t, err)
 	assert.Equal(t, "application/x-protobuf", w.Header().Get("Content-Type"))
 
-	err = (ProtoBuf{data}).Render(w)
+	err = ProtoBuf(data).Render(w)
 
 	assert.NoError(t, err)
 	assert.Equal(t, string(protoData), w.Body.String())
@@ -294,7 +300,7 @@ func TestRenderProtoBuf(t *testing.T) {
 func TestRenderProtoBufFail(t *testing.T) {
 	w := httptest.NewRecorder()
 	data := &testdata.Test{}
-	err := (ProtoBuf{data}).Render(w)
+	err := ProtoBuf(data).Render(w)
 	assert.Error(t, err)
 }
 
@@ -304,10 +310,10 @@ func TestRenderXML(t *testing.T) {
 		"foo": "bar",
 	}
 
-	(XML{data}).WriteContentType(w)
+	XML(data).WriteContentType(w)
 	assert.Equal(t, "application/xml; charset=utf-8", w.Header().Get("Content-Type"))
 
-	err := (XML{data}).Render(w)
+	err := XML(data).Render(w)
 
 	assert.NoError(t, err)
 	assert.Equal(t, "<map><foo>bar</foo></map>", w.Body.String())
@@ -485,4 +491,15 @@ func TestRenderReader(t *testing.T) {
 	assert.Equal(t, strconv.Itoa(len(body)), w.Header().Get("Content-Length"))
 	assert.Equal(t, headers["Content-Disposition"], w.Header().Get("Content-Disposition"))
 	assert.Equal(t, headers["x-request-id"], w.Header().Get("x-request-id"))
+}
+
+func TestRenderPanic(t *testing.T) {
+	defer func() {
+		if r := recover(); r == nil {
+			t.Errorf("retRender did not panic")
+		}
+	}()
+
+	//Should panic
+	retRender("NotKnowRender", nil, nil)
 }

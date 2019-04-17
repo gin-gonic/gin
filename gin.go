@@ -13,6 +13,8 @@ import (
 	"path"
 	"sync"
 
+	"github.com/gin-gonic/gin/binding/common"
+
 	"github.com/gin-gonic/gin/render"
 )
 
@@ -417,7 +419,7 @@ func (engine *Engine) handleHTTPRequest(c *Context) {
 	serveError(c, http.StatusNotFound, default404Body)
 }
 
-var mimePlain = []string{MIMEPlain}
+var mimePlain = []string{common.MIMEPlain}
 
 func serveError(c *Context, code int, defaultMessage []byte) {
 	c.writermem.status = code

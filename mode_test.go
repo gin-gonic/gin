@@ -8,7 +8,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/gin-gonic/gin/binding"
+	"github.com/gin-gonic/gin/binding/common"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -41,7 +41,15 @@ func TestSetMode(t *testing.T) {
 }
 
 func TestEnableJsonDecoderUseNumber(t *testing.T) {
-	assert.False(t, binding.EnableDecoderUseNumber)
+	assert.False(t, common.EnableDecoderUseNumber)
 	EnableJsonDecoderUseNumber()
-	assert.True(t, binding.EnableDecoderUseNumber)
+	assert.True(t, common.EnableDecoderUseNumber)
+}
+
+func TestDisableBindValidation(t *testing.T) {
+	bckp := common.Validator
+	assert.NotNil(t, common.Validator)
+	DisableBindValidation()
+	assert.Nil(t, common.Validator)
+	common.Validator = bckp
 }

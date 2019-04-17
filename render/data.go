@@ -4,7 +4,11 @@
 
 package render
 
-import "net/http"
+import (
+	"net/http"
+
+	"github.com/gin-gonic/gin/render/common"
+)
 
 // Data contains ContentType and bytes data.
 type Data struct {
@@ -21,5 +25,5 @@ func (r Data) Render(w http.ResponseWriter) (err error) {
 
 // WriteContentType (Data) writes custom ContentType.
 func (r Data) WriteContentType(w http.ResponseWriter) {
-	writeContentType(w, []string{r.ContentType})
+	common.WriteContentType(w, []string{r.ContentType})
 }
