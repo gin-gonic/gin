@@ -21,6 +21,10 @@ type Delims struct {
 type HTMLRender interface {
 	// Instance returns an HTML instance.
 	Instance(string, interface{}) Render
+	// Add new template files to this instance with glob
+	ParseGlob(pattern string)
+	// Add new template files to this instance
+	ParseFiles(files ...string)
 }
 
 // HTMLProduction contains template reference and its delims.
@@ -32,7 +36,7 @@ type HTMLProduction struct {
 // HTMLDebug contains template delims and pattern and function with file list.
 type HTMLDebug struct {
 	Files   []string
-	Glob    string
+	Globs   []string
 	Delims  Delims
 	FuncMap template.FuncMap
 }
@@ -55,6 +59,16 @@ func (r HTMLProduction) Instance(name string, data interface{}) Render {
 	}
 }
 
+// Add new template files to this instance (HTMLProduction) with glob
+func (r *HTMLProduction) ParseGlob(pattern string) {
+	template.Must(r.Template.ParseGlob(pattern))
+}
+
+// Add new template files to this instance (HTMLProduction) with glob
+func (r *HTMLProduction) ParseFiles(files ...string) {
+	template.Must(r.Template.ParseFiles(files...))
+}
+
 // Instance (HTMLDebug) returns an HTML instance which it realizes Render interface.
 func (r HTMLDebug) Instance(name string, data interface{}) Render {
 	return HTML{
@@ -63,17 +77,32 @@ func (r HTMLDebug) Instance(name string, data interface{}) Render {
 		Data:     data,
 	}
 }
+
+// Add new template files to this instance (HTMLProduction) with glob
+func (r *HTMLDebug) ParseGlob(pattern string) {
+	r.Globs = append(r.Globs, pattern)
+}
+
+// Add new template files to this instance (HTMLDebug) with glob
+func (r *HTMLDebug) ParseFiles(files ...string) {
+	r.Files = append(r.Files, files...)
+}
+
 func (r HTMLDebug) loadTemplate() *template.Template {
 	if r.FuncMap == nil {
 		r.FuncMap = template.FuncMap{}
 	}
+	if len(r.Files) == 0 && len(r.Globs) == 0 {
+		panic("the HTML debug render was created without files or glob pattern")
+	}
+	t := template.New("").Delims(r.Delims.Left, r.Delims.Right).Funcs(r.FuncMap)
 	if len(r.Files) > 0 {
-		return template.Must(template.New("").Delims(r.Delims.Left, r.Delims.Right).Funcs(r.FuncMap).ParseFiles(r.Files...))
+		template.Must(t.ParseFiles(r.Files...))
 	}
-	if r.Glob != "" {
-		return template.Must(template.New("").Delims(r.Delims.Left, r.Delims.Right).Funcs(r.FuncMap).ParseGlob(r.Glob))
+	for _, glob := range r.Globs {
+		template.Must(t.ParseGlob(glob))
 	}
-	panic("the HTML debug render was created without files or glob pattern")
+	return t
 }
 
 // Render (HTML) executes template and writes its result with custom ContentType for response.

@@ -180,7 +180,7 @@ func (engine *Engine) LoadHTMLGlob(pattern string) {
 
 	if IsDebugging() {
 		debugPrintLoadTemplate(templ)
-		engine.HTMLRender = render.HTMLDebug{Glob: pattern, FuncMap: engine.FuncMap, Delims: engine.delims}
+		engine.HTMLRender = &render.HTMLDebug{Globs: []string{pattern}, FuncMap: engine.FuncMap, Delims: engine.delims}
 		return
 	}
 
@@ -191,12 +191,58 @@ func (engine *Engine) LoadHTMLGlob(pattern string) {
 // and associates the result with HTML renderer.
 func (engine *Engine) LoadHTMLFiles(files ...string) {
 	if IsDebugging() {
-		engine.HTMLRender = render.HTMLDebug{Files: files, FuncMap: engine.FuncMap, Delims: engine.delims}
+		engine.HTMLRender = &render.HTMLDebug{Files: files, FuncMap: engine.FuncMap, Delims: engine.delims}
 		return
 	}
 
 	templ := template.Must(template.New("").Delims(engine.delims.Left, engine.delims.Right).Funcs(engine.FuncMap).ParseFiles(files...))
 	engine.SetHTMLTemplate(templ)
+}
+
+// loadHTMLGlobAppend loads HTML files identified by a glob pattern
+// and append the result to HTML renderer.
+// loadHTMLGlobAppend will merge new files with previous template files.
+// LoadHTMLGlob will forget old templates and create a new template object.
+func (engine *Engine) loadHTMLGlobAppend(pattern string) {
+	if engine.HTMLRender == nil {
+		engine.LoadHTMLGlob(pattern)
+		return
+	}
+
+	if IsDebugging() {
+		left := engine.delims.Left
+		right := engine.delims.Right
+		templ := template.Must(template.New("").Delims(left, right).Funcs(engine.FuncMap).ParseGlob(pattern))
+		debugPrintLoadTemplate(templ)
+	}
+
+	engine.HTMLRender.ParseGlob(pattern)
+}
+
+// LoadHTMLGlobAppend loads HTML files identified by glob patterns
+// and append each result to HTML renderer.
+// LoadHTMLGlobAppend will merge new files with previous template files.
+// LoadHTMLGlob will forget old templates and create a new template object.
+func (engine *Engine) LoadHTMLGlobAppend(patterns ...string) {
+	if len(patterns) <= 0 {
+		panic("LoadHTMLGlobAppend must have at least 1 arguments")
+	}
+	for _, pattern := range patterns {
+		engine.loadHTMLGlobAppend(pattern)
+	}
+}
+
+// LoadHTMLFiles loads a slice of HTML files
+// and append the result to HTML renderer.
+// LoadHTMLFilesAppend will merge new files with previous template files.
+// LoadHTMLFiles will forget old templates and create a new template object.
+func (engine *Engine) LoadHTMLFilesAppend(files ...string) {
+	if engine.HTMLRender == nil {
+		engine.LoadHTMLFiles(files...)
+		return
+	}
+
+	engine.HTMLRender.ParseFiles(files...)
 }
 
 // SetHTMLTemplate associate a template with HTML renderer.
@@ -205,7 +251,7 @@ func (engine *Engine) SetHTMLTemplate(templ *template.Template) {
 		debugPrintWARNINGSetHTMLTemplate()
 	}
 
-	engine.HTMLRender = render.HTMLProduction{Template: templ.Funcs(engine.FuncMap)}
+	engine.HTMLRender = &render.HTMLProduction{Template: templ.Funcs(engine.FuncMap)}
 }
 
 // SetFuncMap sets the FuncMap used for template.FuncMap.

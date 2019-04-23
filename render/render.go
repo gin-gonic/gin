@@ -24,8 +24,8 @@ var (
 	_ Render     = Redirect{}
 	_ Render     = Data{}
 	_ Render     = HTML{}
-	_ HTMLRender = HTMLDebug{}
-	_ HTMLRender = HTMLProduction{}
+	_ HTMLRender = &HTMLDebug{}
+	_ HTMLRender = &HTMLProduction{}
 	_ Render     = YAML{}
 	_ Render     = MsgPack{}
 	_ Render     = Reader{}

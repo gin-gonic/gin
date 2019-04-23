@@ -118,6 +118,48 @@ func TestLoadHTMLGlobReleaseMode(t *testing.T) {
 	assert.Equal(t, "<h1>Hello world</h1>", string(resp))
 }
 
+func TestLoadHTMLGlobAppendDebugMode(t *testing.T) {
+	ts := setupHTMLFiles(
+		t,
+		DebugMode,
+		false,
+		func(router *Engine) {
+			router.LoadHTMLGlobAppend("./testdata/template/hello*")
+			router.LoadHTMLGlobAppend("./testdata/template/raw*")
+		},
+	)
+	defer ts.Close()
+
+	res, err := http.Get(fmt.Sprintf("%s/test", ts.URL))
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	resp, _ := ioutil.ReadAll(res.Body)
+	assert.Equal(t, "<h1>Hello world</h1>", string(resp))
+}
+
+func TestLoadHTMLGlobAppendReleaseMode(t *testing.T) {
+	ts := setupHTMLFiles(
+		t,
+		ReleaseMode,
+		false,
+		func(router *Engine) {
+			router.LoadHTMLGlobAppend("./testdata/template/hello*")
+			router.LoadHTMLGlobAppend("./testdata/template/raw*")
+		},
+	)
+	defer ts.Close()
+
+	res, err := http.Get(fmt.Sprintf("%s/test", ts.URL))
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	resp, _ := ioutil.ReadAll(res.Body)
+	assert.Equal(t, "<h1>Hello world</h1>", string(resp))
+}
+
 func TestLoadHTMLGlobUsingTLS(t *testing.T) {
 	ts := setupHTMLFiles(
 		t,
@@ -223,6 +265,48 @@ func TestLoadHTMLFilesReleaseMode(t *testing.T) {
 		false,
 		func(router *Engine) {
 			router.LoadHTMLFiles("./testdata/template/hello.tmpl", "./testdata/template/raw.tmpl")
+		},
+	)
+	defer ts.Close()
+
+	res, err := http.Get(fmt.Sprintf("%s/test", ts.URL))
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	resp, _ := ioutil.ReadAll(res.Body)
+	assert.Equal(t, "<h1>Hello world</h1>", string(resp))
+}
+
+func TestLoadHTMLFilesAppendDebugMode(t *testing.T) {
+	ts := setupHTMLFiles(
+		t,
+		DebugMode,
+		false,
+		func(router *Engine) {
+			router.LoadHTMLFilesAppend("./testdata/template/raw.tmpl")
+			router.LoadHTMLFilesAppend("./testdata/template/hello.tmpl")
+		},
+	)
+	defer ts.Close()
+
+	res, err := http.Get(fmt.Sprintf("%s/test", ts.URL))
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	resp, _ := ioutil.ReadAll(res.Body)
+	assert.Equal(t, "<h1>Hello world</h1>", string(resp))
+}
+
+func TestLoadHTMLFilesAppendReleaseMode(t *testing.T) {
+	ts := setupHTMLFiles(
+		t,
+		ReleaseMode,
+		false,
+		func(router *Engine) {
+			router.LoadHTMLFilesAppend("./testdata/template/raw.tmpl")
+			router.LoadHTMLFilesAppend("./testdata/template/hello.tmpl")
 		},
 	)
 	defer ts.Close()
