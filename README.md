@@ -1254,6 +1254,70 @@ templates/users/index.tmpl
 {{ end }}
 ```
 
+Using LoadHTMLGlobAppend() or LoadHTMLFilesAppend()
+
+```go
+func main() {
+	router := gin.Default()
+	router.LoadHTMLGlobAppend("templates/posts/*.tmpl")
+	router.LoadHTMLGlobAppend("templates/users/*.tmpl")
+	router.LoadHTMLFilesAppend("templates/index.tmpl")
+	router.LoadHTMLFilesAppend("templates/header.tmpl", "templates/footer.tmpl")
+	// You can also load them in one line.
+	// router.LoadHTMLGlobAppend("templates/posts/*.tmpl", "templates/users/*.tmpl")
+	// router.LoadHTMLFilesAppend("templates/index.tmpl", "templates/header.tmpl", "templates/footer.tmpl")
+	router.GET("/posts/index", func(c *gin.Context) {
+		c.HTML(http.StatusOK, "posts/index.tmpl", gin.H{
+			"title": "Posts",
+		})
+	})
+	router.GET("/users/index", func(c *gin.Context) {
+		c.HTML(http.StatusOK, "users/index.tmpl", gin.H{
+			"title": "Users",
+		})
+	})
+	router.GET("/", func(c *gin.Context) {
+		c.HTML(http.StatusOK, "index.tmpl", gin.H{
+			"title": "Home Page",
+		})
+	})
+	router.Run(":8080")
+}
+```
+
+templates/index.tmpl
+
+```html
+{{ define "index.tmpl" }}
+<html>
+{{ template "header.tmpl" . }}
+<h1>
+	{{ .title }}
+</h1>
+<p>Using index.tmpl</p>
+{{ template "footer.tmpl" . }}
+</html>
+{{ end }}
+```
+
+templates/header.tmpl
+
+```html
+{{ define "header.tmpl" }}
+<p>Using header.tmpl</p>
+{{ end }}
+```
+
+templates/footer.tmpl
+
+```html
+{{ define "footer.tmpl" }}
+<p>Using footer.tmpl</p>
+{{ end }}
+```
+
+**Be careful: DON'T USE SAME TEMPLATE NAME IN MULTIPLE FILES!** The file has a default template name same as its filename. You had better define a new identical name for each template. Template with same name will be set to lastest loaded one, so if you use them, you may get unexpected result.
+
 #### Custom Template renderer
 
 You can also use your own html template render
