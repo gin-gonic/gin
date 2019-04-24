@@ -30,7 +30,6 @@ type HTMLRender interface {
 // HTMLProduction contains template reference and its delims.
 type HTMLProduction struct {
 	Template *template.Template
-	Delims   Delims
 }
 
 // HTMLDebug contains template delims and pattern and function with file list.
