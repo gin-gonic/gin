@@ -160,6 +160,20 @@ func TestLoadHTMLGlobAppendReleaseMode(t *testing.T) {
 	assert.Equal(t, "<h1>Hello world</h1>", string(resp))
 }
 
+func TestLoadHTMLGlobAppendZeroParamsPanics(t *testing.T) {
+	assert.Panics(t, func() {
+		ts := setupHTMLFiles(
+			t,
+			DebugMode,
+			false,
+			func(router *Engine) {
+				router.LoadHTMLGlobAppend()
+			},
+		)
+		defer ts.Close()
+	})
+}
+
 func TestLoadHTMLGlobUsingTLS(t *testing.T) {
 	ts := setupHTMLFiles(
 		t,

@@ -422,7 +422,7 @@ func TestRenderHTMLTemplateEmptyName(t *testing.T) {
 func TestRenderHTMLDebugFiles(t *testing.T) {
 	w := httptest.NewRecorder()
 	htmlRender := HTMLDebug{Files: []string{"../testdata/template/hello.tmpl"},
-		Globs:   []string{},
+		Globs:   nil,
 		Delims:  Delims{Left: "{[{", Right: "}]}"},
 		FuncMap: nil,
 	}
@@ -457,11 +457,91 @@ func TestRenderHTMLDebugGlob(t *testing.T) {
 
 func TestRenderHTMLDebugPanics(t *testing.T) {
 	htmlRender := HTMLDebug{Files: nil,
-		Globs:   []string{},
+		Globs:   nil,
 		Delims:  Delims{"{{", "}}"},
 		FuncMap: nil,
 	}
 	assert.Panics(t, func() { htmlRender.Instance("", nil) })
+}
+
+func TestRenderHTMLDebugParseFiles(t *testing.T) {
+	w := httptest.NewRecorder()
+
+	htmlRender := HTMLDebug{Files: nil,
+		Globs:   nil,
+		Delims:  Delims{Left: "{[{", Right: "}]}"},
+		FuncMap: nil,
+	}
+	htmlRender.ParseFiles("../testdata/template/hello.tmpl")
+
+	instance := htmlRender.Instance("hello.tmpl", map[string]interface{}{
+		"name": "thinkerou",
+	})
+
+	err := instance.Render(w)
+
+	assert.NoError(t, err)
+	assert.Equal(t, "<h1>Hello thinkerou</h1>", w.Body.String())
+	assert.Equal(t, "text/html; charset=utf-8", w.Header().Get("Content-Type"))
+}
+
+func TestRenderHTMLDebugParseGlob(t *testing.T) {
+	w := httptest.NewRecorder()
+
+	htmlRender := HTMLDebug{Files: nil,
+		Globs:   nil,
+		Delims:  Delims{Left: "{[{", Right: "}]}"},
+		FuncMap: nil,
+	}
+	htmlRender.ParseGlob("../testdata/template/hello*")
+
+	instance := htmlRender.Instance("hello.tmpl", map[string]interface{}{
+		"name": "thinkerou",
+	})
+
+	err := instance.Render(w)
+
+	assert.NoError(t, err)
+	assert.Equal(t, "<h1>Hello thinkerou</h1>", w.Body.String())
+	assert.Equal(t, "text/html; charset=utf-8", w.Header().Get("Content-Type"))
+}
+
+func TestRenderHTMLProductionParseFiles(t *testing.T) {
+	w := httptest.NewRecorder()
+
+	htmlRender := HTMLProduction{
+		Template: template.New("").Delims("{[{", "}]}"),
+	}
+	htmlRender.ParseFiles("../testdata/template/hello.tmpl")
+
+	instance := htmlRender.Instance("hello.tmpl", map[string]interface{}{
+		"name": "thinkerou",
+	})
+
+	err := instance.Render(w)
+
+	assert.NoError(t, err)
+	assert.Equal(t, "<h1>Hello thinkerou</h1>", w.Body.String())
+	assert.Equal(t, "text/html; charset=utf-8", w.Header().Get("Content-Type"))
+}
+
+func TestRenderHTMLProductionParseGlob(t *testing.T) {
+	w := httptest.NewRecorder()
+
+	htmlRender := HTMLProduction{
+		Template: template.New("").Delims("{[{", "}]}"),
+	}
+	htmlRender.ParseGlob("../testdata/template/hello*")
+
+	instance := htmlRender.Instance("hello.tmpl", map[string]interface{}{
+		"name": "thinkerou",
+	})
+
+	err := instance.Render(w)
+
+	assert.NoError(t, err)
+	assert.Equal(t, "<h1>Hello thinkerou</h1>", w.Body.String())
+	assert.Equal(t, "text/html; charset=utf-8", w.Header().Get("Content-Type"))
 }
 
 func TestRenderReader(t *testing.T) {
