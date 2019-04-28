@@ -82,15 +82,27 @@ type gin_context string
 
 const gin_context_key gin_context = "gin_real_context"
 
-func MustGinContext(ctx context.Context) *Context {
+// GinContext try to Get gin.Context from context.Context
+func GinContext(ctx context.Context) (*Context, error) {
 	v := ctx.Value(gin_context_key)
 	if gc, ok := v.(*Context); ok {
-		return gc
+		return gc, nil
 	} else {
-		panic(fmt.Sprintf("MustGinContext fail,TypeOf(v):%s", reflect.TypeOf(v)))
+		return nil, fmt.Errorf("GinContext fail,TypeOf(v):%s", reflect.TypeOf(v))
 	}
 }
 
+// MustGinContext try to gin.Context from context.Context
+// Will panic if fail
+func MustGinContext(ctx context.Context) *Context {
+	if gc, err := GinContext(ctx); err == nil {
+		return gc
+	} else {
+		panic(fmt.Sprintf("MustGinContext fail:%s", err))
+	}
+}
+
+// NewContext wrap gin.Context with context.Context
 func NewContext(e *Engine) *Context {
 	c := &Context{engine: e}
 	c.Context = context.WithValue(context.Background(), gin_context_key, c) //With a value point to gin.Context

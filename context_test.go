@@ -1823,6 +1823,13 @@ func UserFunc2Mock(ctx context.Context, t *testing.T) {
 	})
 }
 
+func UserFunc3Mock(ctx context.Context, t *testing.T) {
+	assert.Panics(t, func() {
+		gc := MustGinContext(ctx) //get gin.Context back as need
+		assert.Equal(t, gc, nil)
+	})
+}
+
 func UserFunc1Mock(ctx context.Context, t *testing.T) {
 	//add user defined value
 	ctx = context.WithValue(ctx, "user_self_defined_value", "vvvvv")
@@ -1834,4 +1841,9 @@ func UserFunc1Mock(ctx context.Context, t *testing.T) {
 func TestNewContextMustGin(t *testing.T) {
 	ctx := NewContext(nil)
 	UserFunc1Mock(ctx, t) //use gin.Context as standard context
+}
+
+func TestStandardContext(t *testing.T) {
+	ctx := context.Background()
+	UserFunc3Mock(ctx, t)
 }
