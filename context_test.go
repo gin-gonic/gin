@@ -1812,3 +1812,26 @@ func TestContextResetInHandler(t *testing.T) {
 		c.Next()
 	})
 }
+
+func UserFunc2Mock(ctx context.Context, t *testing.T) {
+	v, ok := ctx.Value("user_self_defined_value").(string)
+	assert.Equal(t, true, ok)
+	assert.Equal(t, "vvvvv", v)
+	assert.NotPanics(t, func() {
+		gc := MustGinContext(ctx) //get gin.Context back as need
+		assert.NotEqual(t, gc, nil)
+	})
+}
+
+func UserFunc1Mock(ctx context.Context, t *testing.T) {
+	//add user defined value
+	ctx = context.WithValue(ctx, "user_self_defined_value", "vvvvv")
+
+	//do user's business
+	UserFunc2Mock(ctx, t)
+}
+
+func TestNewContextMustGin(t *testing.T) {
+	ctx := NewContext(nil)
+	UserFunc1Mock(ctx, t) //use gin.Context as standard context
+}
