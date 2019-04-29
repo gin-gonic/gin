@@ -2,14 +2,22 @@
 // Use of this source code is governed by a MIT style
 // license that can be found in the LICENSE file.
 
-package binding
+package xml
 
 import (
 	"bytes"
 	"encoding/xml"
 	"io"
 	"net/http"
+
+	"github.com/gin-gonic/gin/binding/common"
 )
+
+func init() {
+	xml := xmlBinding{}
+	common.List[common.MIMEXML] = xml
+	common.List[common.MIMEXML2] = xml
+}
 
 type xmlBinding struct{}
 
@@ -29,5 +37,5 @@ func decodeXML(r io.Reader, obj interface{}) error {
 	if err := decoder.Decode(obj); err != nil {
 		return err
 	}
-	return validate(obj)
+	return common.Validate(obj)
 }

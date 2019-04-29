@@ -2,15 +2,20 @@
 // Use of this source code is governed by a MIT style
 // license that can be found in the LICENSE file.
 
-package binding
+package yaml
 
 import (
 	"bytes"
 	"io"
 	"net/http"
 
+	"github.com/gin-gonic/gin/binding/common"
 	"gopkg.in/yaml.v2"
 )
+
+func init() {
+	common.List[common.MIMEYAML] = yamlBinding{}
+}
 
 type yamlBinding struct{}
 
@@ -31,5 +36,5 @@ func decodeYAML(r io.Reader, obj interface{}) error {
 	if err := decoder.Decode(obj); err != nil {
 		return err
 	}
-	return validate(obj)
+	return common.Validate(obj)
 }

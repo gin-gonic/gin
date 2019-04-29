@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"testing"
 
+	"github.com/gin-gonic/gin/binding/common"
 	"github.com/gin-gonic/gin/testdata/protoexample"
 	"github.com/golang/protobuf/proto"
 	"github.com/stretchr/testify/assert"
@@ -14,18 +15,18 @@ import (
 func TestBindingBody(t *testing.T) {
 	for _, tt := range []struct {
 		name    string
-		binding BindingBody
+		binding common.BindingBody
 		body    string
 		want    string
 	}{
 		{
 			name:    "JSON binding",
-			binding: JSON,
+			binding: JSON(),
 			body:    `{"foo":"FOO"}`,
 		},
 		{
 			name:    "XML binding",
-			binding: XML,
+			binding: XML(),
 			body: `<?xml version="1.0" encoding="UTF-8"?>
 <root>
    <foo>FOO</foo>
@@ -33,12 +34,12 @@ func TestBindingBody(t *testing.T) {
 		},
 		{
 			name:    "MsgPack binding",
-			binding: MsgPack,
+			binding: MsgPack(),
 			body:    msgPackBody(t),
 		},
 		{
 			name:    "YAML binding",
-			binding: YAML,
+			binding: YAML(),
 			body:    `foo: FOO`,
 		},
 	} {
@@ -67,6 +68,6 @@ func TestBindingBodyProto(t *testing.T) {
 	req := requestWithBody("POST", "/", string(data))
 	form := protoexample.Test{}
 	body, _ := ioutil.ReadAll(req.Body)
-	assert.NoError(t, ProtoBuf.BindBody(body, &form))
+	assert.NoError(t, ProtoBuf().BindBody(body, &form))
 	assert.Equal(t, test, form)
 }

@@ -7,6 +7,8 @@ package render
 import (
 	"html/template"
 	"net/http"
+
+	"github.com/gin-gonic/gin/render/common"
 )
 
 // Delims represents a set of Left and Right delimiters for HTML template rendering.
@@ -20,7 +22,7 @@ type Delims struct {
 // HTMLRender interface is to be implemented by HTMLProduction and HTMLDebug.
 type HTMLRender interface {
 	// Instance returns an HTML instance.
-	Instance(string, interface{}) Render
+	Instance(string, interface{}) HTML
 }
 
 // HTMLProduction contains template reference and its delims.
@@ -47,7 +49,7 @@ type HTML struct {
 var htmlContentType = []string{"text/html; charset=utf-8"}
 
 // Instance (HTMLProduction) returns an HTML instance which it realizes Render interface.
-func (r HTMLProduction) Instance(name string, data interface{}) Render {
+func (r HTMLProduction) Instance(name string, data interface{}) HTML {
 	return HTML{
 		Template: r.Template,
 		Name:     name,
@@ -56,7 +58,7 @@ func (r HTMLProduction) Instance(name string, data interface{}) Render {
 }
 
 // Instance (HTMLDebug) returns an HTML instance which it realizes Render interface.
-func (r HTMLDebug) Instance(name string, data interface{}) Render {
+func (r HTMLDebug) Instance(name string, data interface{}) HTML {
 	return HTML{
 		Template: r.loadTemplate(),
 		Name:     name,
@@ -88,5 +90,5 @@ func (r HTML) Render(w http.ResponseWriter) error {
 
 // WriteContentType (HTML) writes HTML ContentType.
 func (r HTML) WriteContentType(w http.ResponseWriter) {
-	writeContentType(w, htmlContentType)
+	common.WriteContentType(w, htmlContentType)
 }

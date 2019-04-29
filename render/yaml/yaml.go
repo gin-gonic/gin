@@ -2,13 +2,18 @@
 // Use of this source code is governed by a MIT style
 // license that can be found in the LICENSE file.
 
-package render
+package yaml
 
 import (
 	"net/http"
 
+	"github.com/gin-gonic/gin/render/common"
 	"gopkg.in/yaml.v2"
 )
+
+func init() {
+	common.List["YAML"] = NewYAML
+}
 
 // YAML contains the given interface object.
 type YAML struct {
@@ -32,5 +37,10 @@ func (r YAML) Render(w http.ResponseWriter) error {
 
 // WriteContentType (YAML) writes YAML ContentType for response.
 func (r YAML) WriteContentType(w http.ResponseWriter) {
-	writeContentType(w, yamlContentType)
+	common.WriteContentType(w, yamlContentType)
+}
+
+//NewYAML build a new yaml render
+func NewYAML(obj interface{}, _ map[string]string) common.Render {
+	return YAML{Data: obj}
 }

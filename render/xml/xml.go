@@ -2,12 +2,18 @@
 // Use of this source code is governed by a MIT style
 // license that can be found in the LICENSE file.
 
-package render
+package xml
 
 import (
 	"encoding/xml"
 	"net/http"
+
+	"github.com/gin-gonic/gin/render/common"
 )
+
+func init() {
+	common.List["XML"] = NewXML
+}
 
 // XML contains the given interface object.
 type XML struct {
@@ -24,5 +30,10 @@ func (r XML) Render(w http.ResponseWriter) error {
 
 // WriteContentType (XML) writes XML ContentType for response.
 func (r XML) WriteContentType(w http.ResponseWriter) {
-	writeContentType(w, xmlContentType)
+	common.WriteContentType(w, xmlContentType)
+}
+
+//NewXML build a new xml render
+func NewXML(obj interface{}, _ map[string]string) common.Render {
+	return XML{Data: obj}
 }

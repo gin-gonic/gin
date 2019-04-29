@@ -2,7 +2,7 @@
 // Use of this source code is governed by a MIT style
 // license that can be found in the LICENSE file.
 
-package render
+package json
 
 import (
 	"bytes"
@@ -11,7 +11,41 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin/internal/json"
+	"github.com/gin-gonic/gin/render/common"
 )
+
+func init() {
+	common.List["JSON"] = NewJSON
+	common.List["IndentedJSON"] = NewIndentedJSON
+	common.List["SecureJSON"] = NewSecureJSON
+	common.List["JsonpJSON"] = NewJsonpJSON
+	common.List["AsciiJSON"] = NewAsciiJSON
+}
+
+//NewJSON build a new JSON render
+func NewJSON(obj interface{}, _ map[string]string) common.Render {
+	return JSON{Data: obj}
+}
+
+//NewIndentedJSON build a new IndentedJSON render
+func NewIndentedJSON(obj interface{}, _ map[string]string) common.Render {
+	return IndentedJSON{Data: obj}
+}
+
+//NewSecureJSON build a new SecureJSON render
+func NewSecureJSON(obj interface{}, opts map[string]string) common.Render {
+	return SecureJSON{Prefix: opts["Prefix"], Data: obj}
+}
+
+//NewJsonpJSON build a new JsonpJSON render
+func NewJsonpJSON(obj interface{}, opts map[string]string) common.Render {
+	return JsonpJSON{Callback: opts["Callback"], Data: obj}
+}
+
+//NewAsciiJSON build a new AsciiJSON render
+func NewAsciiJSON(obj interface{}, _ map[string]string) common.Render {
+	return AsciiJSON{Data: obj}
+}
 
 // JSON contains the given interface object.
 type JSON struct {
@@ -57,12 +91,12 @@ func (r JSON) Render(w http.ResponseWriter) (err error) {
 
 // WriteContentType (JSON) writes JSON ContentType.
 func (r JSON) WriteContentType(w http.ResponseWriter) {
-	writeContentType(w, jsonContentType)
+	common.WriteContentType(w, jsonContentType)
 }
 
 // WriteJSON marshals the given interface object and writes it with custom ContentType.
 func WriteJSON(w http.ResponseWriter, obj interface{}) error {
-	writeContentType(w, jsonContentType)
+	common.WriteContentType(w, jsonContentType)
 	jsonBytes, err := json.Marshal(obj)
 	if err != nil {
 		return err
@@ -84,7 +118,7 @@ func (r IndentedJSON) Render(w http.ResponseWriter) error {
 
 // WriteContentType (IndentedJSON) writes JSON ContentType.
 func (r IndentedJSON) WriteContentType(w http.ResponseWriter) {
-	writeContentType(w, jsonContentType)
+	common.WriteContentType(w, jsonContentType)
 }
 
 // Render (SecureJSON) marshals the given interface object and writes it with custom ContentType.
@@ -107,7 +141,7 @@ func (r SecureJSON) Render(w http.ResponseWriter) error {
 
 // WriteContentType (SecureJSON) writes JSON ContentType.
 func (r SecureJSON) WriteContentType(w http.ResponseWriter) {
-	writeContentType(w, jsonContentType)
+	common.WriteContentType(w, jsonContentType)
 }
 
 // Render (JsonpJSON) marshals the given interface object and writes it and its callback with custom ContentType.
@@ -146,7 +180,7 @@ func (r JsonpJSON) Render(w http.ResponseWriter) (err error) {
 
 // WriteContentType (JsonpJSON) writes Javascript ContentType.
 func (r JsonpJSON) WriteContentType(w http.ResponseWriter) {
-	writeContentType(w, jsonpContentType)
+	common.WriteContentType(w, jsonpContentType)
 }
 
 // Render (AsciiJSON) marshals the given interface object and writes it with custom ContentType.
@@ -172,5 +206,5 @@ func (r AsciiJSON) Render(w http.ResponseWriter) (err error) {
 
 // WriteContentType (AsciiJSON) writes JSON ContentType.
 func (r AsciiJSON) WriteContentType(w http.ResponseWriter) {
-	writeContentType(w, jsonAsciiContentType)
+	common.WriteContentType(w, jsonAsciiContentType)
 }

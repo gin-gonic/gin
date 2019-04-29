@@ -8,7 +8,7 @@ import (
 	"io"
 	"os"
 
-	"github.com/gin-gonic/gin/binding"
+	"github.com/gin-gonic/gin/binding/common"
 )
 
 // EnvGinMode indicates environment name for gin mode.
@@ -68,13 +68,13 @@ func SetMode(value string) {
 
 // DisableBindValidation closes the default validator.
 func DisableBindValidation() {
-	binding.Validator = nil
+	common.Validator = nil
 }
 
 // EnableJsonDecoderUseNumber sets true for binding.EnableDecoderUseNumberto to
 // call the UseNumber method on the JSON Decoder instance.
 func EnableJsonDecoderUseNumber() {
-	binding.EnableDecoderUseNumber = true
+	common.EnableDecoderUseNumber = true
 }
 
 // Mode returns currently gin mode.

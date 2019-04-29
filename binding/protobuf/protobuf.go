@@ -2,14 +2,19 @@
 // Use of this source code is governed by a MIT style
 // license that can be found in the LICENSE file.
 
-package binding
+package protobuf
 
 import (
 	"io/ioutil"
 	"net/http"
 
+	"github.com/gin-gonic/gin/binding/common"
 	"github.com/golang/protobuf/proto"
 )
+
+func init() {
+	common.List[common.MIMEPROTOBUF] = protobufBinding{}
+}
 
 type protobufBinding struct{}
 
