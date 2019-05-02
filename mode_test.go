@@ -14,13 +14,13 @@ import (
 )
 
 func init() {
-	os.Setenv(ENV_GIN_MODE, TestMode)
+	os.Setenv(EnvGinMode, TestMode)
 }
 
 func TestSetMode(t *testing.T) {
 	assert.Equal(t, int32(testCode), atomic.LoadInt32(&ginMode))
 	assert.Equal(t, TestMode, Mode())
-	os.Unsetenv(ENV_GIN_MODE)
+	os.Unsetenv(EnvGinMode)
 
 	SetMode("")
 	assert.Equal(t, int32(debugCode), atomic.LoadInt32(&ginMode))

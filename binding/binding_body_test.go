@@ -19,12 +19,12 @@ func TestBindingBody(t *testing.T) {
 		want    string
 	}{
 		{
-			name:    "JSON bidning",
+			name:    "JSON binding",
 			binding: JSON,
 			body:    `{"foo":"FOO"}`,
 		},
 		{
-			name:    "XML bidning",
+			name:    "XML binding",
 			binding: XML,
 			body: `<?xml version="1.0" encoding="UTF-8"?>
 <root>
@@ -35,6 +35,11 @@ func TestBindingBody(t *testing.T) {
 			name:    "MsgPack binding",
 			binding: MsgPack,
 			body:    msgPackBody(t),
+		},
+		{
+			name:    "YAML binding",
+			binding: YAML,
+			body:    `foo: FOO`,
 		},
 	} {
 		t.Logf("testing: %s", tt.name)

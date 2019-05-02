@@ -24,9 +24,10 @@ const (
 	ErrorTypePrivate ErrorType = 1 << 0
 	// ErrorTypePublic indicates a public error.
 	ErrorTypePublic ErrorType = 1 << 1
-	// ErrorTypeAny indicates other any error.
+	// ErrorTypeAny indicates any other error.
 	ErrorTypeAny ErrorType = 1<<64 - 1
-	ErrorTypeNu            = 2
+	// ErrorTypeNu indicates any other error.
+	ErrorTypeNu = 2
 )
 
 // Error represents a error's specification.
@@ -52,6 +53,7 @@ func (msg *Error) SetMeta(data interface{}) *Error {
 	return msg
 }
 
+// JSON creates a properly formatted JSON
 func (msg *Error) JSON() interface{} {
 	json := H{}
 	if msg.Meta != nil {

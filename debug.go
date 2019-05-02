@@ -52,6 +52,9 @@ func debugPrintLoadTemplate(tmpl *template.Template) {
 
 func debugPrint(format string, values ...interface{}) {
 	if IsDebugging() {
+		if !strings.HasSuffix(format, "\n") {
+			format += "\n"
+		}
 		fmt.Fprintf(os.Stderr, "[GIN-debug] "+format, values...)
 	}
 }
