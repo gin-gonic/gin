@@ -858,6 +858,13 @@ func (c *Context) Redirect(code int, location string) {
 	})
 }
 
+// Forward re-enter a context that has been rewritten.
+// This can be done by setting c.Request.URL.Path to your new target.
+// Disclaimer: You can loop yourself to death with this, use wisely.
+func (c *Context) Forward() {
+	c.engine.HandleContext(c)
+}
+
 // Data writes some data into the body stream and updates the HTTP code.
 func (c *Context) Data(code int, contentType string, data []byte) {
 	c.Render(code, render.Data{
