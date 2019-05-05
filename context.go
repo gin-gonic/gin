@@ -13,6 +13,7 @@ import (
 	"mime/multipart"
 	"net"
 	"net/http"
+	"net/http/httputil"
 	"net/url"
 	"os"
 	"strings"
@@ -1025,4 +1026,24 @@ func (c *Context) Value(key interface{}) interface{} {
 		return val
 	}
 	return nil
+}
+
+// ReverseProxy is an HTTP Handler that takes an incoming request and
+// sends it to another server, proxying the response back to the client.
+// You can use it to forward.
+func (c *Context) Forward(target string) {
+	host := c.Request.Host
+	scheme := c.Request.URL.Scheme
+	if scheme == "" {
+		scheme = "http"
+	}
+	var proxy = httputil.ReverseProxy{
+		Director: func(req *http.Request) {
+			req.URL.Scheme = scheme
+			req.URL.Host = host
+			req.Host = host
+		},
+	}
+	c.Request.URL.Path = target
+	proxy.ServeHTTP(c.Writer, c.Request)
 }

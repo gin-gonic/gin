@@ -10,21 +10,22 @@ import (
 	"fmt"
 	"html/template"
 	"io"
+	"io/ioutil"
 	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
 	"reflect"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
 	"github.com/gin-contrib/sse"
 	"github.com/gin-gonic/gin/binding"
+	testdata "github.com/gin-gonic/gin/testdata/protoexample"
 	"github.com/golang/protobuf/proto"
 	"github.com/stretchr/testify/assert"
 	"golang.org/x/net/context"
-
-	testdata "github.com/gin-gonic/gin/testdata/protoexample"
 )
 
 var _ context.Context = &Context{}
@@ -1811,4 +1812,37 @@ func TestContextResetInHandler(t *testing.T) {
 	assert.NotPanics(t, func() {
 		c.Next()
 	})
+}
+
+func TestContext_Forward(t *testing.T) {
+	g := sync.WaitGroup{}
+	g.Add(1)
+	go func(g *sync.WaitGroup) {
+		g.Done()
+		e := Default()
+		e.GET("/test", func(c *Context) {
+			c.Forward("/test2")
+		})
+		e.GET("/test2", func(c *Context) {
+			p := c.Query("p")
+			c.String(http.StatusOK, p)
+
+		})
+		e.Run(":9998")
+
+	}(&g)
+
+	g.Wait()
+
+	p := "test"
+	resp, err := http.Get("http://127.0.0.1:9998/test?p=" + p)
+	assert.NoError(t, err)
+	defer resp.Body.Close()
+
+	bytes, err := ioutil.ReadAll(resp.Body)
+
+	assert.NoError(t, err)
+
+	assert.Equal(t, p, string(bytes))
+
 }
