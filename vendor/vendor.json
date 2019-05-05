@@ -68,7 +68,7 @@
 		},
 		{
 			"checksumSHA1": "csplo594qomjp2IZj82y7mTueOw=",
-			"path": "github.com/ugorji/go",
+			"path": "github.com/ugorji/go/codec",
 			"revision": "2adff0894ba3bc2eeb9f9aea45fefd49802e1a13",
 			"revisionTime": "2019-04-08T19:08:48Z",
 			"version": "v1.1",
