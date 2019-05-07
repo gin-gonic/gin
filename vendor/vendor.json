@@ -1,5 +1,5 @@
 {
-	"comment": "v1.3.0",
+	"comment": "v1.4.0",
 	"ignore": "test",
 	"package": [
 		{
@@ -17,12 +17,12 @@
 			"revisionTime": "2019-03-01T06:25:29Z"
 		},
 		{
-			"checksumSHA1": "mE9XW26JSpe4meBObM6J/Oeq0eg=",
+			"checksumSHA1": "Y2MOwzNZfl4NRNDbLCZa6sgx7O0=",
 			"path": "github.com/golang/protobuf/proto",
-			"revision": "aa810b61a9c79d51363740d207bb46cf8e620ed5",
-			"revisionTime": "2018-08-14T21:14:27Z",
-			"version": "v1.2",
-			"versionExact": "v1.2.0"
+			"revision": "c823c79ea1570fb5ff454033735a8e68575d1d0f",
+			"revisionTime": "2019-02-05T22:20:52Z",
+			"version": "v1.3",
+			"versionExact": "v1.3.0"
 		},
 		{
 			"checksumSHA1": "TB2vxux9xQbvsTHOVt4aRTuvSn4=",
@@ -57,6 +57,20 @@
 			"path": "github.com/pmezard/go-difflib/difflib",
 			"revision": "5d4384ee4fb2527b0a1256a821ebfc92f91efefc",
 			"revisionTime": "2018-12-26T10:54:42Z"
+		},
+		{
+			"checksumSHA1": "cpNsoLqBprpKh+VZTBOZNVXzBEk=",
+			"path": "github.com/stretchr/objx",
+			"revision": "c61a9dfcced1815e7d40e214d00d1a8669a9f58c",
+			"revisionTime": "2019-02-11T16:23:28Z"
+		},
+		{
+			"checksumSHA1": "DBdcVxnvaINHhWyyGgih/Mel6gE=",
+			"path": "github.com/stretchr/testify",
+			"revision": "ffdc059bfe9ce6a4e144ba849dbedead332c6053",
+			"revisionTime": "2018-12-05T02:12:43Z",
+			"version": "v1.3",
+			"versionExact": "v1.3.0"
 		},
 		{
 			"checksumSHA1": "c6pbpF7eowwO59phRTpF8cQ80Z0=",

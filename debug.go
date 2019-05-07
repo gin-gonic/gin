@@ -14,7 +14,7 @@ import (
 	"strings"
 )
 
-const ginSupportMinGoVer = 6
+const ginSupportMinGoVer = 8
 
 // IsDebugging returns true if the framework is running in debug mode.
 // Use SetMode(gin.ReleaseMode) to disable debug mode.
@@ -69,7 +69,7 @@ func getMinVer(v string) (uint64, error) {
 
 func debugPrintWARNINGDefault() {
 	if v, e := getMinVer(runtime.Version()); e == nil && v <= ginSupportMinGoVer {
-		debugPrint(`[WARNING] Now Gin requires Go 1.6 or later and Go 1.7 will be required soon.
+		debugPrint(`[WARNING] Now Gin requires Go 1.8 or later and Go 1.9 will be required soon.
 
 `)
 	}
