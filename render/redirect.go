@@ -18,9 +18,7 @@ type Redirect struct {
 
 // Render (Redirect) redirects the http request to new location and writes redirect response.
 func (r Redirect) Render(w http.ResponseWriter) error {
-	// todo(thinkerou): go1.6 not support StatusPermanentRedirect(308)
-	// when we upgrade go version we can use http.StatusPermanentRedirect
-	if (r.Code < 300 || r.Code > 308) && r.Code != 201 {
+	if (r.Code < http.StatusMultipleChoices || r.Code > http.StatusPermanentRedirect) && r.Code != http.StatusCreated {
 		panic(fmt.Sprintf("Cannot redirect with status code %d", r.Code))
 	}
 	http.Redirect(w, r.Request, r.Location, r.Code)
