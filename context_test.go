@@ -622,8 +622,7 @@ func TestContextGetCookie(t *testing.T) {
 }
 
 func TestContextBodyAllowedForStatus(t *testing.T) {
-	// todo(thinkerou): go1.6 not support StatusProcessing
-	assert.False(t, false, bodyAllowedForStatus(102))
+	assert.False(t, false, bodyAllowedForStatus(http.StatusProcessing))
 	assert.False(t, false, bodyAllowedForStatus(http.StatusNoContent))
 	assert.False(t, false, bodyAllowedForStatus(http.StatusNotModified))
 	assert.True(t, true, bodyAllowedForStatus(http.StatusInternalServerError))
@@ -792,6 +791,18 @@ func TestContextRenderNoContentAsciiJSON(t *testing.T) {
 	assert.Equal(t, http.StatusNoContent, w.Code)
 	assert.Empty(t, w.Body.String())
 	assert.Equal(t, "application/json", w.Header().Get("Content-Type"))
+}
+
+// Tests that the response is serialized as JSON
+// and Content-Type is set to application/json
+// and special HTML characters are preserved
+func TestContextRenderPureJSON(t *testing.T) {
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
+	c.PureJSON(http.StatusCreated, H{"foo": "bar", "html": "<b>"})
+	assert.Equal(t, http.StatusCreated, w.Code)
+	assert.Equal(t, "{\"foo\":\"bar\",\"html\":\"<b>\"}\n", w.Body.String())
+	assert.Equal(t, "application/json; charset=utf-8", w.Header().Get("Content-Type"))
 }
 
 // Tests that the response executes the templates
@@ -1092,9 +1103,7 @@ func TestContextRenderRedirectAll(t *testing.T) {
 	assert.Panics(t, func() { c.Redirect(299, "/resource") })
 	assert.Panics(t, func() { c.Redirect(309, "/resource") })
 	assert.NotPanics(t, func() { c.Redirect(http.StatusMultipleChoices, "/resource") })
-	// todo(thinkerou): go1.6 not support StatusPermanentRedirect(308)
-	// when we upgrade go version we can use http.StatusPermanentRedirect
-	assert.NotPanics(t, func() { c.Redirect(308, "/resource") })
+	assert.NotPanics(t, func() { c.Redirect(http.StatusPermanentRedirect, "/resource") })
 }
 
 func TestContextNegotiationWithJSON(t *testing.T) {
