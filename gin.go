@@ -372,6 +372,7 @@ func (engine *Engine) handleHTTPRequest(c *Context) {
 		rPath = c.Request.URL.RawPath
 		unescape = engine.UnescapePathValues
 	}
+	rPath = cleanPath(rPath)
 
 	// Find root of the tree for the given HTTP method
 	t := engine.trees
