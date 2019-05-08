@@ -91,7 +91,7 @@ func TestDebugPrintWARNINGDefault(t *testing.T) {
 	})
 	m, e := getMinVer(runtime.Version())
 	if e == nil && m <= ginSupportMinGoVer {
-		assert.Equal(t, "[GIN-debug] [WARNING] Now Gin requires Go 1.6 or later and Go 1.7 will be required soon.\n\n[GIN-debug] [WARNING] Creating an Engine instance with the Logger and Recovery middleware already attached.\n\n", re)
+		assert.Equal(t, "[GIN-debug] [WARNING] Now Gin requires Go 1.8 or later and Go 1.9 will be required soon.\n\n[GIN-debug] [WARNING] Creating an Engine instance with the Logger and Recovery middleware already attached.\n\n", re)
 	} else {
 		assert.Equal(t, "[GIN-debug] [WARNING] Creating an Engine instance with the Logger and Recovery middleware already attached.\n\n", re)
 	}
