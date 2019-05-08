@@ -121,7 +121,7 @@ $ go run main.go
 
 ## Prerequisite
 
-Now Gin requires Go 1.6 or later and Go 1.7 will be required soon.
+Now Gin requires Go 1.8 or later and Go 1.10 will be required next major version.
 
 ## Quick start
  
