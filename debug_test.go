@@ -111,15 +111,15 @@ func captureOutput(t *testing.T, f func()) string {
 	if err != nil {
 		panic(err)
 	}
-	stdout := os.Stdout
-	stderr := os.Stderr
+	defaultWriter := DefaultWriter
+	defaultErrorWriter := DefaultErrorWriter
 	defer func() {
-		os.Stdout = stdout
-		os.Stderr = stderr
+		DefaultWriter = defaultWriter
+		DefaultErrorWriter = defaultErrorWriter
 		log.SetOutput(os.Stderr)
 	}()
-	os.Stdout = writer
-	os.Stderr = writer
+	DefaultWriter = writer
+	DefaultErrorWriter = writer
 	log.SetOutput(writer)
 	out := make(chan string)
 	wg := new(sync.WaitGroup)
