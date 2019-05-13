@@ -24,6 +24,16 @@ import (
 	"github.com/ugorji/go/codec"
 )
 
+type appkey struct {
+	Appkey string `json:"appkey" form:"appkey"`
+}
+
+type QueryTest struct {
+	Page int `json:"page" form:"page"`
+	Size int `json:"size" form:"size"`
+	appkey
+}
+
 type FooStruct struct {
 	Foo string `msgpack:"foo" json:"foo" form:"foo" xml:"foo" binding:"required"`
 }
@@ -186,6 +196,18 @@ func TestBindingForm(t *testing.T) {
 func TestBindingForm2(t *testing.T) {
 	testFormBinding(t, "GET",
 		"/?foo=bar&bar=foo", "/?bar2=foo",
+		"", "")
+}
+
+func TestBindingFormEmbeddedStruct(t *testing.T) {
+	testFormBindingEmbeddedStruct(t, "POST",
+		"/", "/",
+		"page=1&size=2&appkey=test-appkey", "bar2=foo")
+}
+
+func TestBindingFormEmbeddedStruct2(t *testing.T) {
+	testFormBindingEmbeddedStruct(t, "GET",
+		"/?page=1&size=2&appkey=test-appkey", "/?bar2=foo",
 		"", "")
 }
 
@@ -686,6 +708,23 @@ func TestUriInnerBinding(t *testing.T) {
 	assert.NoError(t, Uri.BindUri(m, &tag))
 	assert.Equal(t, tag.Name, expectedName)
 	assert.Equal(t, tag.S.Age, expectedAge)
+}
+
+func testFormBindingEmbeddedStruct(t *testing.T, method, path, badPath, body, badBody string) {
+	b := Form
+	assert.Equal(t, "form", b.Name())
+
+	obj := QueryTest{}
+	req := requestWithBody(method, path, body)
+	if method == "POST" {
+		req.Header.Add("Content-Type", MIMEPOSTForm)
+	}
+	err := b.Bind(req, &obj)
+	assert.NoError(t, err)
+	assert.Equal(t, 1, obj.Page)
+	assert.Equal(t, 2, obj.Size)
+	assert.Equal(t, "test-appkey", obj.Appkey)
+
 }
 
 func testFormBinding(t *testing.T, method, path, badPath, body, badBody string) {

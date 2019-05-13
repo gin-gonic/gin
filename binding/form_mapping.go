@@ -70,12 +70,14 @@ func mapping(value reflect.Value, field reflect.StructField, setter setter, tag 
 		return isSetted, nil
 	}
 
-	ok, err := tryToSetValue(value, field, setter, tag)
-	if err != nil {
-		return false, err
-	}
-	if ok {
-		return true, nil
+	if vKind != reflect.Struct || !field.Anonymous {
+		ok, err := tryToSetValue(value, field, setter, tag)
+		if err != nil {
+			return false, err
+		}
+		if ok {
+			return true, nil
+		}
 	}
 
 	if vKind == reflect.Struct {
@@ -83,7 +85,8 @@ func mapping(value reflect.Value, field reflect.StructField, setter setter, tag 
 
 		var isSetted bool
 		for i := 0; i < value.NumField(); i++ {
-			if !value.Field(i).CanSet() {
+			sf := tValue.Field(i)
+			if sf.PkgPath != "" && !sf.Anonymous { // unexported
 				continue
 			}
 			ok, err := mapping(value.Field(i), tValue.Field(i), setter, tag)
