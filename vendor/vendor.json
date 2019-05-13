@@ -104,7 +104,9 @@
 			"checksumSHA1": "ACzc7AkwLtNgKhqtj8V7SGUJgnw=",
 			"path": "gopkg.in/go-playground/validator.v9",
 			"revision": "46b4b1e301c24cac870ffcb4ba5c8a703d1ef475",
-			"revisionTime": "2019-03-31T13:31:25Z"
+			"revisionTime": "2019-03-31T13:31:25Z",
+			"version": "v9.28",
+			"versionExact": "v9.28.0"
 		},
 		{
 			"checksumSHA1": "QqDq2x8XOU7IoOR98Cx1eiV5QY8=",
