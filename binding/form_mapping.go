@@ -70,7 +70,7 @@ func mapping(value reflect.Value, field reflect.StructField, setter setter, tag 
 		return isSetted, nil
 	}
 
-	if !(vKind == reflect.Struct && field.Anonymous) {
+	if vKind != reflect.Struct || !field.Anonymous {
 		ok, err := tryToSetValue(value, field, setter, tag)
 		if err != nil {
 			return false, err
