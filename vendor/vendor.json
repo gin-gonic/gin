@@ -47,6 +47,14 @@
 			"versionExact": "v1.3.0"
 		},
 		{
+			"checksumSHA1": "zNo6yGy/bCJuzkEcP70oEBtOB2M=",
+			"path": "github.com/leodido/go-urn",
+			"revision": "70078a794e8ea4b497ba7c19a78cd60f90ccf0f4",
+			"revisionTime": "2018-05-24T03:26:21Z",
+			"version": "v1.1",
+			"versionExact": "v1.1.0"
+		},
+		{
 			"checksumSHA1": "TB2vxux9xQbvsTHOVt4aRTuvSn4=",
 			"path": "github.com/json-iterator/go",
 			"revision": "0ff49de124c6f76f8494e194af75bde0f1a49a29",
