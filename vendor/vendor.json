@@ -17,6 +17,28 @@
 			"revisionTime": "2019-03-01T06:25:29Z"
 		},
 		{
+			"checksumSHA1": "b4DmyMT9bicTRVJw1hJXHLhIH+0=",
+			"path": "github.com/go-playground/locales",
+			"revision": "f63010822830b6fe52288ee52d5a1151088ce039",
+			"revisionTime": "2018-03-23T16:04:04Z",
+			"version": "v0.12",
+			"versionExact": "v0.12.1"
+		},
+		{
+			"checksumSHA1": "JgF260rC9YpWyY5WEljjimWLUXs=",
+			"path": "github.com/go-playground/locales/currency",
+			"revision": "630ebbb602847eba93e75ae38bbc7bb7abcf1ff3",
+			"revisionTime": "2019-04-30T15:33:29Z"
+		},
+		{
+			"checksumSHA1": "9pKcUHBaVS+360X6h4IowhmOPjk=",
+			"path": "github.com/go-playground/universal-translator",
+			"revision": "b32fa301c9fe55953584134cb6853a13c87ec0a1",
+			"revisionTime": "2017-02-09T16:11:52Z",
+			"version": "v0.16",
+			"versionExact": "v0.16.0"
+		},
+		{
 			"checksumSHA1": "Y2MOwzNZfl4NRNDbLCZa6sgx7O0=",
 			"path": "github.com/golang/protobuf/proto",
 			"revision": "c823c79ea1570fb5ff454033735a8e68575d1d0f",
