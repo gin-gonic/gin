@@ -304,7 +304,7 @@ func (engine *Engine) RunServer(server *http.Server, addr ...string) (err error)
   
   address := resolveAddress(addr)
   debugPrint("Listening and serving HTTP on %s\n", address)
-  if len(addr) > 0{
+  if len(addr) > 0 || server.Addr == ""{
     server.Addr = address
   }
   server.Handler = engine
