@@ -324,7 +324,6 @@ func TestContextCopy(t *testing.T) {
 
 	cp := c.Copy()
 	assert.Nil(t, cp.handlers)
-	assert.Nil(t, cp.writermem.ResponseWriter)
 	assert.Equal(t, &cp.writermem, cp.Writer.(*responseWriter))
 	assert.Equal(t, cp.Request, c.Request)
 	assert.Equal(t, cp.index, abortIndex)
@@ -1820,4 +1819,30 @@ func TestContextResetInHandler(t *testing.T) {
 	assert.NotPanics(t, func() {
 		c.Next()
 	})
+}
+
+func TestContextStreamToCopyOfContext(t *testing.T) {
+	w := CreateTestResponseRecorder()
+	c, _ := CreateTestContext(w)
+
+	h := func(c *Context) {
+		nc := c.Copy()
+		nc.Stream(func(w io.Writer) bool {
+			w.Write([]byte("1"))
+			return false
+		})
+		c.String(http.StatusOK, "%s", "2")
+		w.closeClient()
+
+		nc.Stream(func(w io.Writer) bool {
+			w.Write([]byte("3"))
+			return false
+		})
+	}
+
+	assert.NotPanics(t, func() {
+		h(c)
+	})
+
+	assert.Equal(t, "12", w.Body.String())
 }
