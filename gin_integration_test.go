@@ -60,14 +60,14 @@ func TestRunServer(t *testing.T) {
 	service := &http.Server{}
 	go func() {
 		router.GET("/example", func(c *Context) { c.String(http.StatusOK, "it worked") })
-		assert.NoError(t, router.RunServer(service),":8080")
+		assert.NoError(t, router.RunServer(service,":8090"))
 	}()
 	// have to wait for the goroutine to start and run the server
 	// otherwise the main thread will complete
 	time.Sleep(5 * time.Millisecond)
 	
-	assert.Error(t, router.RunServer(service),":8080")
-	testRequest(t, "http://localhost:8080/example")
+	assert.Error(t, router.RunServer(service,":8090"))
+	testRequest(t, "http://localhost:8090/example")
 }
 
 func TestRunTLS(t *testing.T) {
