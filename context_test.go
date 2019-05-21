@@ -1272,7 +1272,7 @@ func TestContextAbortWithStatusJSON(t *testing.T) {
 	_, err := buf.ReadFrom(w.Body)
 	assert.NoError(t, err)
 	jsonStringBody := buf.String()
-	assert.Equal(t, fmt.Sprint(`{"foo":"fooValue","bar":"barValue"}\\n`), jsonStringBody)
+	assert.Equal(t, fmt.Sprint("{\"foo\":\"fooValue\",\"bar\":\"barValue\"}\n"), jsonStringBody)
 }
 
 func TestContextError(t *testing.T) {
