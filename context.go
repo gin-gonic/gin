@@ -671,7 +671,7 @@ func (c *Context) ContentType() string {
 // handshake is being initiated by the client.
 func (c *Context) IsWebsocket() bool {
 	if strings.Contains(strings.ToLower(c.requestHeader("Connection")), "upgrade") &&
-		strings.ToLower(c.requestHeader("Upgrade")) == "websocket" {
+		strings.EqualFold(c.requestHeader("Upgrade"), "websocket") {
 		return true
 	}
 	return false
