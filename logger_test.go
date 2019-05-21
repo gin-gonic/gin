@@ -181,6 +181,7 @@ func TestLoggerWithFormatter(t *testing.T) {
 
 func TestLoggerWithConfigFormatting(t *testing.T) {
 	var gotParam LogFormatterParams
+	var gotKeys map[string]interface{}
 	buffer := new(bytes.Buffer)
 
 	router := New()
@@ -204,6 +205,7 @@ func TestLoggerWithConfigFormatting(t *testing.T) {
 	router.GET("/example", func(c *Context) {
 		// set dummy ClientIP
 		c.Request.Header.Set("X-Forwarded-For", "20.20.20.20")
+		gotKeys = c.Keys
 	})
 	performRequest(router, "GET", "/example?a=100")
 
@@ -223,6 +225,7 @@ func TestLoggerWithConfigFormatting(t *testing.T) {
 	assert.Equal(t, "GET", gotParam.Method)
 	assert.Equal(t, "/example?a=100", gotParam.Path)
 	assert.Empty(t, gotParam.ErrorMessage)
+	assert.Equal(t, gotKeys, gotParam.Keys)
 
 }
 
@@ -237,7 +240,7 @@ func TestDefaultLogFormatter(t *testing.T) {
 		Method:       "GET",
 		Path:         "/",
 		ErrorMessage: "",
-		IsTerm:       false,
+		isTerm:       false,
 	}
 
 	termTrueParam := LogFormatterParams{
@@ -248,12 +251,36 @@ func TestDefaultLogFormatter(t *testing.T) {
 		Method:       "GET",
 		Path:         "/",
 		ErrorMessage: "",
-		IsTerm:       true,
+		isTerm:       true,
+	}
+	termTrueLongDurationParam := LogFormatterParams{
+		TimeStamp:    timeStamp,
+		StatusCode:   200,
+		Latency:      time.Millisecond * 9876543210,
+		ClientIP:     "20.20.20.20",
+		Method:       "GET",
+		Path:         "/",
+		ErrorMessage: "",
+		isTerm:       true,
+	}
+
+	termFalseLongDurationParam := LogFormatterParams{
+		TimeStamp:    timeStamp,
+		StatusCode:   200,
+		Latency:      time.Millisecond * 9876543210,
+		ClientIP:     "20.20.20.20",
+		Method:       "GET",
+		Path:         "/",
+		ErrorMessage: "",
+		isTerm:       false,
 	}
 
 	assert.Equal(t, "[GIN] 2018/12/07 - 09:11:42 | 200 |            5s |     20.20.20.20 | GET      /\n", defaultLogFormatter(termFalseParam))
+	assert.Equal(t, "[GIN] 2018/12/07 - 09:11:42 | 200 |    2743h29m3s |     20.20.20.20 | GET      /\n", defaultLogFormatter(termFalseLongDurationParam))
 
 	assert.Equal(t, "[GIN] 2018/12/07 - 09:11:42 |\x1b[97;42m 200 \x1b[0m|            5s |     20.20.20.20 |\x1b[97;44m GET     \x1b[0m /\n", defaultLogFormatter(termTrueParam))
+	assert.Equal(t, "[GIN] 2018/12/07 - 09:11:42 |\x1b[97;42m 200 \x1b[0m|    2743h29m3s |     20.20.20.20 |\x1b[97;44m GET     \x1b[0m /\n", defaultLogFormatter(termTrueLongDurationParam))
+
 }
 
 func TestColorForMethod(t *testing.T) {
@@ -291,6 +318,39 @@ func TestColorForStatus(t *testing.T) {
 func TestResetColor(t *testing.T) {
 	p := LogFormatterParams{}
 	assert.Equal(t, string([]byte{27, 91, 48, 109}), p.ResetColor())
+}
+
+func TestIsOutputColor(t *testing.T) {
+	// test with isTerm flag true.
+	p := LogFormatterParams{
+		isTerm: true,
+	}
+
+	consoleColorMode = autoColor
+	assert.Equal(t, true, p.IsOutputColor())
+
+	ForceConsoleColor()
+	assert.Equal(t, true, p.IsOutputColor())
+
+	DisableConsoleColor()
+	assert.Equal(t, false, p.IsOutputColor())
+
+	// test with isTerm flag false.
+	p = LogFormatterParams{
+		isTerm: false,
+	}
+
+	consoleColorMode = autoColor
+	assert.Equal(t, false, p.IsOutputColor())
+
+	ForceConsoleColor()
+	assert.Equal(t, true, p.IsOutputColor())
+
+	DisableConsoleColor()
+	assert.Equal(t, false, p.IsOutputColor())
+
+	// reset console color mode.
+	consoleColorMode = autoColor
 }
 
 func TestErrorLogger(t *testing.T) {
@@ -355,14 +415,20 @@ func TestLoggerWithConfigSkippingPaths(t *testing.T) {
 
 func TestDisableConsoleColor(t *testing.T) {
 	New()
-	assert.False(t, disableColor)
+	assert.Equal(t, autoColor, consoleColorMode)
 	DisableConsoleColor()
-	assert.True(t, disableColor)
+	assert.Equal(t, disableColor, consoleColorMode)
+
+	// reset console color mode.
+	consoleColorMode = autoColor
 }
 
 func TestForceConsoleColor(t *testing.T) {
 	New()
-	assert.False(t, forceColor)
+	assert.Equal(t, autoColor, consoleColorMode)
 	ForceConsoleColor()
-	assert.True(t, forceColor)
+	assert.Equal(t, forceColor, consoleColorMode)
+
+	// reset console color mode.
+	consoleColorMode = autoColor
 }

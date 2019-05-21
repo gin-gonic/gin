@@ -1,3 +1,3 @@
 # Gin Examples
 
-⚠️  **NOTICE:** All gin examples has moved as alone repository to [here](https://github.com/gin-gonic/examples).
+⚠️  **NOTICE:** All gin examples have been moved as standalone repository to [here](https://github.com/gin-gonic/examples).
