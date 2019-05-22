@@ -514,7 +514,7 @@ func (n *node) findCaseInsensitivePath(path string, fixTrailingSlash bool) (ciPa
 	ciPath = make([]byte, 0, len(path)+1) // preallocate enough memory
 
 	// Outer loop for walking the tree
-	for len(path) >= len(n.path) && strings.ToLower(path[:len(n.path)]) == strings.ToLower(n.path) {
+	for len(path) >= len(n.path) && strings.EqualFold(path[:len(n.path)], n.path) {
 		path = path[len(n.path):]
 		ciPath = append(ciPath, n.path...)
 
@@ -618,7 +618,7 @@ func (n *node) findCaseInsensitivePath(path string, fixTrailingSlash bool) (ciPa
 			return ciPath, true
 		}
 		if len(path)+1 == len(n.path) && n.path[len(path)] == '/' &&
-			strings.ToLower(path) == strings.ToLower(n.path[:len(path)]) &&
+			strings.EqualFold(path, n.path[:len(path)]) &&
 			n.handlers != nil {
 			return append(ciPath, n.path...), true
 		}

@@ -8,13 +8,12 @@ import (
 	"bytes"
 	"fmt"
 	"html/template"
-	"os"
 	"runtime"
 	"strconv"
 	"strings"
 )
 
-const ginSupportMinGoVer = 6
+const ginSupportMinGoVer = 8
 
 // IsDebugging returns true if the framework is running in debug mode.
 // Use SetMode(gin.ReleaseMode) to disable debug mode.
@@ -54,7 +53,7 @@ func debugPrint(format string, values ...interface{}) {
 		if !strings.HasSuffix(format, "\n") {
 			format += "\n"
 		}
-		fmt.Fprintf(os.Stderr, "[GIN-debug] "+format, values...)
+		fmt.Fprintf(DefaultWriter, "[GIN-debug] "+format, values...)
 	}
 }
 
@@ -69,7 +68,7 @@ func getMinVer(v string) (uint64, error) {
 
 func debugPrintWARNINGDefault() {
 	if v, e := getMinVer(runtime.Version()); e == nil && v <= ginSupportMinGoVer {
-		debugPrint(`[WARNING] Now Gin requires Go 1.6 or later and Go 1.7 will be required soon.
+		debugPrint(`[WARNING] Now Gin requires Go 1.8 or later and Go 1.9 will be required soon.
 
 `)
 	}
@@ -98,6 +97,8 @@ at initialization. ie. before any route is registered or the router is listening
 
 func debugPrintError(err error) {
 	if err != nil {
-		debugPrint("[ERROR] %v\n", err)
+		if IsDebugging() {
+			fmt.Fprintf(DefaultErrorWriter, "[GIN-debug] [ERROR] %v\n", err)
+		}
 	}
 }
