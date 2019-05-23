@@ -252,6 +252,11 @@ func main() {
 		c.String(http.StatusOK, message)
 	})
 
+	// For each matched request Context will hold the route definition
+	router.POST("/user/:name/*action", func(c *gin.Context) {
+		c.FullPath() == "/user/:name/*action" // true
+	})
+
 	router.Run(":8080")
 }
 ```
