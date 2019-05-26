@@ -554,3 +554,38 @@ func TestRouteServeErrorWithWriteHeader(t *testing.T) {
 	assert.Equal(t, 421, w.Code)
 	assert.Equal(t, 0, w.Body.Len())
 }
+
+func TestRouteContextHoldsFullPath(t *testing.T) {
+	router := New()
+
+	// Test routes
+	routes := []string{
+		"/",
+		"/simple",
+		"/project/:name",
+		"/project/:name/build/*params",
+	}
+
+	for _, route := range routes {
+		actualRoute := route
+		router.GET(route, func(c *Context) {
+			// For each defined route context should contain its full path
+			assert.Equal(t, actualRoute, c.FullPath())
+			c.AbortWithStatus(http.StatusOK)
+		})
+	}
+
+	for _, route := range routes {
+		w := performRequest(router, "GET", route)
+		assert.Equal(t, http.StatusOK, w.Code)
+	}
+
+	// Test not found
+	router.Use(func(c *Context) {
+		// For not found routes full path is empty
+		assert.Equal(t, "", c.FullPath())
+	})
+
+	w := performRequest(router, "GET", "/not-found")
+	assert.Equal(t, http.StatusNotFound, w.Code)
+}

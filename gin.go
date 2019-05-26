@@ -252,6 +252,7 @@ func (engine *Engine) addRoute(method, path string, handlers HandlersChain) {
 	root := engine.trees.get(method)
 	if root == nil {
 		root = new(node)
+		root.fullPath = "/"
 		engine.trees = append(engine.trees, methodTree{method: method, root: root})
 	}
 	root.addRoute(path, handlers)
@@ -382,16 +383,17 @@ func (engine *Engine) handleHTTPRequest(c *Context) {
 		}
 		root := t[i].root
 		// Find route in tree
-		handlers, params, tsr := root.getValue(rPath, c.Params, unescape)
-		if handlers != nil {
-			c.handlers = handlers
-			c.Params = params
+		value := root.getValue(rPath, c.Params, unescape)
+		if value.handlers != nil {
+			c.handlers = value.handlers
+			c.Params = value.params
+			c.fullPath = value.fullPath
 			c.Next()
 			c.writermem.WriteHeaderNow()
 			return
 		}
 		if httpMethod != "CONNECT" && rPath != "/" {
-			if tsr && engine.RedirectTrailingSlash {
+			if value.tsr && engine.RedirectTrailingSlash {
 				redirectTrailingSlash(c)
 				return
 			}
@@ -407,7 +409,7 @@ func (engine *Engine) handleHTTPRequest(c *Context) {
 			if tree.method == httpMethod {
 				continue
 			}
-			if handlers, _, _ := tree.root.getValue(rPath, nil, unescape); handlers != nil {
+			if value := tree.root.getValue(rPath, nil, unescape); value.handlers != nil {
 				c.handlers = engine.allNoMethod
 				serveError(c, http.StatusMethodNotAllowed, default405Body)
 				return

@@ -252,6 +252,11 @@ func main() {
 		c.String(http.StatusOK, message)
 	})
 
+	// For each matched request Context will hold the route definition
+	router.POST("/user/:name/*action", func(c *gin.Context) {
+		c.FullPath() == "/user/:name/*action" // true
+	})
+
 	router.Run(":8080")
 }
 ```
@@ -1694,7 +1699,7 @@ func main() {
 	quit := make(chan os.Signal)
 	// kill (no param) default send syscall.SIGTERM
 	// kill -2 is syscall.SIGINT
-	// kill -9 is syscall.SIGKILL but can"t be catch, so don't need add it
+	// kill -9 is syscall.SIGKILL but can't be catch, so don't need add it
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
 	log.Println("Shutdown Server ...")
