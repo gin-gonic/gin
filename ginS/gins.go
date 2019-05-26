@@ -118,7 +118,7 @@ func StaticFS(relativePath string, fs http.FileSystem) gin.IRoutes {
 	return engine().StaticFS(relativePath, fs)
 }
 
-// Use attachs a global middleware to the router. ie. the middlewares attached though Use() will be
+// Use attaches a global middleware to the router. ie. the middlewares attached though Use() will be
 // included in the handlers chain for every single request. Even 404, 405, static files...
 // For example, this is the right place for a logger or error management middleware.
 func Use(middlewares ...gin.HandlerFunc) gin.IRoutes {
@@ -153,7 +153,7 @@ func RunUnix(file string) (err error) {
 
 // RunFd attaches the router to a http.Server and starts listening and serving HTTP requests
 // through the specified file descriptor.
-// Note: thie method will block the calling goroutine indefinitely unless on error happens.
+// Note: the method will block the calling goroutine indefinitely unless on error happens.
 func RunFd(fd int) (err error) {
 	return engine().RunFd(fd)
 }

@@ -69,7 +69,7 @@ Gin is a web framework written in Go (Golang). It features a martini-like API wi
 
 To install Gin package, you need to install Go and set your Go workspace first.
 
-1. Download and install it:
+1. The first need [Go](https://golang.org/) installed (**version 1.8+ is required**), then you can use the below Go command to install Gin.
 
 ```sh
 $ go get -u github.com/gin-gonic/gin
@@ -118,10 +118,6 @@ $ curl https://raw.githubusercontent.com/gin-gonic/examples/master/basic/main.go
 ```sh
 $ go run main.go
 ```
-
-## Prerequisite
-
-Now Gin requires Go 1.6 or later and Go 1.7 will be required soon.
 
 ## Quick start
  
@@ -254,6 +250,11 @@ func main() {
 		action := c.Param("action")
 		message := name + " is " + action
 		c.String(http.StatusOK, message)
+	})
+
+	// For each matched request Context will hold the route definition
+	router.POST("/user/:name/*action", func(c *gin.Context) {
+		c.FullPath() == "/user/:name/*action" // true
 	})
 
 	router.Run(":8080")
@@ -1696,9 +1697,9 @@ func main() {
 	// Wait for interrupt signal to gracefully shutdown the server with
 	// a timeout of 5 seconds.
 	quit := make(chan os.Signal)
-	// kill (no param) default send syscanll.SIGTERM
+	// kill (no param) default send syscall.SIGTERM
 	// kill -2 is syscall.SIGINT
-	// kill -9 is syscall. SIGKILL but can"t be catch, so don't need add it
+	// kill -9 is syscall.SIGKILL but can't be catch, so don't need add it
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
 	log.Println("Shutdown Server ...")

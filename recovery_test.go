@@ -2,12 +2,11 @@
 // Use of this source code is governed by a MIT style
 // license that can be found in the LICENSE file.
 
-// +build go1.7
-
 package gin
 
 import (
 	"bytes"
+	"fmt"
 	"net"
 	"net/http"
 	"os"
@@ -17,6 +16,37 @@ import (
 
 	"github.com/stretchr/testify/assert"
 )
+
+func TestPanicClean(t *testing.T) {
+	buffer := new(bytes.Buffer)
+	router := New()
+	password := "my-super-secret-password"
+	router.Use(RecoveryWithWriter(buffer))
+	router.GET("/recovery", func(c *Context) {
+		c.AbortWithStatus(http.StatusBadRequest)
+		panic("Oupps, Houston, we have a problem")
+	})
+	// RUN
+	w := performRequest(router, "GET", "/recovery",
+		header{
+			Key:   "Host",
+			Value: "www.google.com",
+		},
+		header{
+			Key:   "Authorization",
+			Value: fmt.Sprintf("Bearer %s", password),
+		},
+		header{
+			Key:   "Content-Type",
+			Value: "application/json",
+		},
+	)
+	// TEST
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+
+	// Check the buffer does not have the secret key
+	assert.NotContains(t, buffer.String(), password)
+}
 
 // TestPanicInHandler assert that panic has been recovered.
 func TestPanicInHandler(t *testing.T) {

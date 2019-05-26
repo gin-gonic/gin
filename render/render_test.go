@@ -62,7 +62,7 @@ func TestRenderJSON(t *testing.T) {
 	err := (JSON{data}).Render(w)
 
 	assert.NoError(t, err)
-	assert.Equal(t, "{\"foo\":\"bar\",\"html\":\"\\u003cb\\u003e\"}", w.Body.String())
+	assert.Equal(t, "{\"foo\":\"bar\",\"html\":\"\\u003cb\\u003e\"}\n", w.Body.String())
 	assert.Equal(t, "application/json; charset=utf-8", w.Header().Get("Content-Type"))
 }
 
@@ -213,6 +213,18 @@ func TestRenderAsciiJSONFail(t *testing.T) {
 
 	// json: unsupported type: chan int
 	assert.Error(t, (AsciiJSON{data}).Render(w))
+}
+
+func TestRenderPureJSON(t *testing.T) {
+	w := httptest.NewRecorder()
+	data := map[string]interface{}{
+		"foo":  "bar",
+		"html": "<b>",
+	}
+	err := (PureJSON{data}).Render(w)
+	assert.NoError(t, err)
+	assert.Equal(t, "{\"foo\":\"bar\",\"html\":\"<b>\"}\n", w.Body.String())
+	assert.Equal(t, "application/json; charset=utf-8", w.Header().Get("Content-Type"))
 }
 
 type xmlmap map[string]interface{}
