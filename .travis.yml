@@ -1,25 +1,34 @@
 language: go
-sudo: false
-go:
-  - 1.6.x
-  - 1.7.x
-  - 1.8.x
-  - 1.9.x
-  - 1.10.x
-  - master
+
+matrix:
+  fast_finish: true
+  include:
+  - go: 1.8.x
+  - go: 1.9.x
+  - go: 1.10.x
+  - go: 1.11.x
+    env: GO111MODULE=on
+  - go: 1.12.x
+    env: GO111MODULE=on
+  - go: master
+    env: GO111MODULE=on
 
 git:
   depth: 10
 
+before_install:
+  - if [[ "${GO111MODULE}" = "on" ]]; then mkdir "${HOME}/go"; export GOPATH="${HOME}/go"; fi
+
 install:
-  - make install
+  - if [[ "${GO111MODULE}" = "on" ]]; then go mod download; else make install; fi
+  - if [[ "${GO111MODULE}" = "on" ]]; then export PATH="${GOPATH}/bin:${GOROOT}/bin:${PATH}"; fi
+  - if [[ "${GO111MODULE}" = "on" ]]; then make tools; fi
 
 go_import_path: github.com/gin-gonic/gin
 
 script:
   - make vet
   - make fmt-check
-  - make embedmd
   - make misspell-check
   - make test
 

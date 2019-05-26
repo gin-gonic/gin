@@ -16,7 +16,8 @@ const (
 	defaultStatus = http.StatusOK
 )
 
-type responseWriterBase interface {
+// ResponseWriter ...
+type ResponseWriter interface {
 	http.ResponseWriter
 	http.Hijacker
 	http.Flusher
@@ -37,6 +38,9 @@ type responseWriterBase interface {
 
 	// Forces to write the http header (status code + headers).
 	WriteHeaderNow()
+
+	// get the http.Pusher for server push
+	Pusher() http.Pusher
 }
 
 type responseWriter struct {
@@ -110,5 +114,13 @@ func (w *responseWriter) CloseNotify() <-chan bool {
 
 // Flush implements the http.Flush interface.
 func (w *responseWriter) Flush() {
+	w.WriteHeaderNow()
 	w.ResponseWriter.(http.Flusher).Flush()
+}
+
+func (w *responseWriter) Pusher() (pusher http.Pusher) {
+	if pusher, ok := w.ResponseWriter.(http.Pusher); ok {
+		return pusher
+	}
+	return nil
 }

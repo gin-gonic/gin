@@ -5,6 +5,7 @@
 package gin
 
 import (
+	"net/http"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -50,7 +51,7 @@ func performRequestInGroup(t *testing.T, method string) {
 	assert.Equal(t, "/v1/login/", login.BasePath())
 
 	handler := func(c *Context) {
-		c.String(400, "the method was %s and index %d", c.Request.Method, c.index)
+		c.String(http.StatusBadRequest, "the method was %s and index %d", c.Request.Method, c.index)
 	}
 
 	switch method {
@@ -80,11 +81,11 @@ func performRequestInGroup(t *testing.T, method string) {
 	}
 
 	w := performRequest(router, method, "/v1/login/test")
-	assert.Equal(t, 400, w.Code)
+	assert.Equal(t, http.StatusBadRequest, w.Code)
 	assert.Equal(t, "the method was "+method+" and index 3", w.Body.String())
 
 	w = performRequest(router, method, "/v1/test")
-	assert.Equal(t, 400, w.Code)
+	assert.Equal(t, http.StatusBadRequest, w.Code)
 	assert.Equal(t, "the method was "+method+" and index 1", w.Body.String())
 }
 

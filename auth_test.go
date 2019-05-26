@@ -93,7 +93,7 @@ func TestBasicAuthSucceed(t *testing.T) {
 	router := New()
 	router.Use(BasicAuth(accounts))
 	router.GET("/login", func(c *Context) {
-		c.String(200, c.MustGet(AuthUserKey).(string))
+		c.String(http.StatusOK, c.MustGet(AuthUserKey).(string))
 	})
 
 	w := httptest.NewRecorder()
@@ -101,7 +101,7 @@ func TestBasicAuthSucceed(t *testing.T) {
 	req.Header.Set("Authorization", authorizationHeader("admin", "password"))
 	router.ServeHTTP(w, req)
 
-	assert.Equal(t, 200, w.Code)
+	assert.Equal(t, http.StatusOK, w.Code)
 	assert.Equal(t, "admin", w.Body.String())
 }
 
@@ -112,7 +112,7 @@ func TestBasicAuth401(t *testing.T) {
 	router.Use(BasicAuth(accounts))
 	router.GET("/login", func(c *Context) {
 		called = true
-		c.String(200, c.MustGet(AuthUserKey).(string))
+		c.String(http.StatusOK, c.MustGet(AuthUserKey).(string))
 	})
 
 	w := httptest.NewRecorder()
@@ -121,8 +121,8 @@ func TestBasicAuth401(t *testing.T) {
 	router.ServeHTTP(w, req)
 
 	assert.False(t, called)
-	assert.Equal(t, 401, w.Code)
-	assert.Equal(t, "Basic realm=\"Authorization Required\"", w.HeaderMap.Get("WWW-Authenticate"))
+	assert.Equal(t, http.StatusUnauthorized, w.Code)
+	assert.Equal(t, "Basic realm=\"Authorization Required\"", w.Header().Get("WWW-Authenticate"))
 }
 
 func TestBasicAuth401WithCustomRealm(t *testing.T) {
@@ -132,7 +132,7 @@ func TestBasicAuth401WithCustomRealm(t *testing.T) {
 	router.Use(BasicAuthForRealm(accounts, "My Custom \"Realm\""))
 	router.GET("/login", func(c *Context) {
 		called = true
-		c.String(200, c.MustGet(AuthUserKey).(string))
+		c.String(http.StatusOK, c.MustGet(AuthUserKey).(string))
 	})
 
 	w := httptest.NewRecorder()
@@ -141,6 +141,6 @@ func TestBasicAuth401WithCustomRealm(t *testing.T) {
 	router.ServeHTTP(w, req)
 
 	assert.False(t, called)
-	assert.Equal(t, 401, w.Code)
-	assert.Equal(t, "Basic realm=\"My Custom \\\"Realm\\\"\"", w.HeaderMap.Get("WWW-Authenticate"))
+	assert.Equal(t, http.StatusUnauthorized, w.Code)
+	assert.Equal(t, "Basic realm=\"My Custom \\\"Realm\\\"\"", w.Header().Get("WWW-Authenticate"))
 }

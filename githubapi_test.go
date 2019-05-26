@@ -285,6 +285,90 @@ var githubAPI = []route{
 	{"DELETE", "/user/keys/:id"},
 }
 
+func TestShouldBindUri(t *testing.T) {
+	DefaultWriter = os.Stdout
+	router := New()
+
+	type Person struct {
+		Name string `uri:"name" binding:"required"`
+		Id   string `uri:"id" binding:"required"`
+	}
+	router.Handle("GET", "/rest/:name/:id", func(c *Context) {
+		var person Person
+		assert.NoError(t, c.ShouldBindUri(&person))
+		assert.True(t, "" != person.Name)
+		assert.True(t, "" != person.Id)
+		c.String(http.StatusOK, "ShouldBindUri test OK")
+	})
+
+	path, _ := exampleFromPath("/rest/:name/:id")
+	w := performRequest(router, "GET", path)
+	assert.Equal(t, "ShouldBindUri test OK", w.Body.String())
+	assert.Equal(t, http.StatusOK, w.Code)
+}
+
+func TestBindUri(t *testing.T) {
+	DefaultWriter = os.Stdout
+	router := New()
+
+	type Person struct {
+		Name string `uri:"name" binding:"required"`
+		Id   string `uri:"id" binding:"required"`
+	}
+	router.Handle("GET", "/rest/:name/:id", func(c *Context) {
+		var person Person
+		assert.NoError(t, c.BindUri(&person))
+		assert.True(t, "" != person.Name)
+		assert.True(t, "" != person.Id)
+		c.String(http.StatusOK, "BindUri test OK")
+	})
+
+	path, _ := exampleFromPath("/rest/:name/:id")
+	w := performRequest(router, "GET", path)
+	assert.Equal(t, "BindUri test OK", w.Body.String())
+	assert.Equal(t, http.StatusOK, w.Code)
+}
+
+func TestBindUriError(t *testing.T) {
+	DefaultWriter = os.Stdout
+	router := New()
+
+	type Member struct {
+		Number string `uri:"num" binding:"required,uuid"`
+	}
+	router.Handle("GET", "/new/rest/:num", func(c *Context) {
+		var m Member
+		assert.Error(t, c.BindUri(&m))
+	})
+
+	path1, _ := exampleFromPath("/new/rest/:num")
+	w1 := performRequest(router, "GET", path1)
+	assert.Equal(t, http.StatusBadRequest, w1.Code)
+}
+
+func TestRaceContextCopy(t *testing.T) {
+	DefaultWriter = os.Stdout
+	router := Default()
+	router.GET("/test/copy/race", func(c *Context) {
+		c.Set("1", 0)
+		c.Set("2", 0)
+
+		// Sending a copy of the Context to two separate routines
+		go readWriteKeys(c.Copy())
+		go readWriteKeys(c.Copy())
+		c.String(http.StatusOK, "run OK, no panics")
+	})
+	w := performRequest(router, "GET", "/test/copy/race")
+	assert.Equal(t, "run OK, no panics", w.Body.String())
+}
+
+func readWriteKeys(c *Context) {
+	for {
+		c.Set("1", rand.Int())
+		c.Set("2", c.Value("1"))
+	}
+}
+
 func githubConfigRouter(router *Engine) {
 	for _, route := range githubAPI {
 		router.Handle(route.method, route.path, func(c *Context) {
@@ -293,14 +377,14 @@ func githubConfigRouter(router *Engine) {
 			for _, param := range c.Params {
 				output[param.Key] = param.Value
 			}
-			c.JSON(200, output)
+			c.JSON(http.StatusOK, output)
 		})
 	}
 }
 
 func TestGithubAPI(t *testing.T) {
 	DefaultWriter = os.Stdout
-	router := Default()
+	router := New()
 	githubConfigRouter(router)
 
 	for _, route := range githubAPI {
@@ -375,7 +459,7 @@ func BenchmarkParallelGithub(b *testing.B) {
 
 func BenchmarkParallelGithubDefault(b *testing.B) {
 	DefaultWriter = os.Stdout
-	router := Default()
+	router := New()
 	githubConfigRouter(router)
 
 	req, _ := http.NewRequest("POST", "/repos/manucorporat/sse/git/blobs", nil)

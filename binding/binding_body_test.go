@@ -5,7 +5,7 @@ import (
 	"io/ioutil"
 	"testing"
 
-	"github.com/gin-gonic/gin/binding/example"
+	"github.com/gin-gonic/gin/testdata/protoexample"
 	"github.com/golang/protobuf/proto"
 	"github.com/stretchr/testify/assert"
 	"github.com/ugorji/go/codec"
@@ -19,12 +19,12 @@ func TestBindingBody(t *testing.T) {
 		want    string
 	}{
 		{
-			name:    "JSON bidning",
+			name:    "JSON binding",
 			binding: JSON,
 			body:    `{"foo":"FOO"}`,
 		},
 		{
-			name:    "XML bidning",
+			name:    "XML binding",
 			binding: XML,
 			body: `<?xml version="1.0" encoding="UTF-8"?>
 <root>
@@ -35,6 +35,11 @@ func TestBindingBody(t *testing.T) {
 			name:    "MsgPack binding",
 			binding: MsgPack,
 			body:    msgPackBody(t),
+		},
+		{
+			name:    "YAML binding",
+			binding: YAML,
+			body:    `foo: FOO`,
 		},
 	} {
 		t.Logf("testing: %s", tt.name)
@@ -55,12 +60,12 @@ func msgPackBody(t *testing.T) string {
 }
 
 func TestBindingBodyProto(t *testing.T) {
-	test := example.Test{
+	test := protoexample.Test{
 		Label: proto.String("FOO"),
 	}
 	data, _ := proto.Marshal(&test)
 	req := requestWithBody("POST", "/", string(data))
-	form := example.Test{}
+	form := protoexample.Test{}
 	body, _ := ioutil.ReadAll(req.Body)
 	assert.NoError(t, ProtoBuf.BindBody(body, &form))
 	assert.Equal(t, test, form)
