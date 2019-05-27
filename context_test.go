@@ -13,8 +13,10 @@ import (
 	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"reflect"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -1820,4 +1822,25 @@ func TestContextResetInHandler(t *testing.T) {
 	assert.NotPanics(t, func() {
 		c.Next()
 	})
+}
+
+func TestRaceParamsContextCopy(t *testing.T) {
+	DefaultWriter = os.Stdout
+	router := Default()
+	nameGroup := router.Group("/:name")
+	var wg sync.WaitGroup
+	wg.Add(2)
+	{
+		nameGroup.GET("/api", func(c *Context) {
+			go func(c *Context, param string) {
+				defer wg.Done()
+				// First assert must be executed after the second request
+				time.Sleep(50 * time.Millisecond)
+				assert.Equal(t, c.Param("name"), param)
+			}(c.Copy(), c.Param("name"))
+		})
+	}
+	performRequest(router, "GET", "/name1/api")
+	performRequest(router, "GET", "/name2/api")
+	wg.Wait()
 }

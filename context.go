@@ -89,6 +89,9 @@ func (c *Context) Copy() *Context {
 	for k, v := range c.Keys {
 		cp.Keys[k] = v
 	}
+	paramCopy := make([]Param, len(cp.Params))
+	copy(paramCopy, cp.Params)
+	cp.Params = paramCopy
 	return &cp
 }
 
