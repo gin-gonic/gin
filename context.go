@@ -60,6 +60,9 @@ type Context struct {
 
 	// Accepted defines a list of manually accepted formats for content negotiation.
 	Accepted []string
+
+	// queryCache use url.ParseQuery cached the param query result from  c.Request.URL.Query()
+	queryCache url.Values
 }
 
 /************************************/
@@ -75,6 +78,7 @@ func (c *Context) reset() {
 	c.Keys = nil
 	c.Errors = c.Errors[0:0]
 	c.Accepted = nil
+	c.queryCache = nil
 }
 
 // Copy returns a copy of the current context that can be safely used outside the request's scope.
@@ -385,7 +389,13 @@ func (c *Context) QueryArray(key string) []string {
 // GetQueryArray returns a slice of strings for a given query key, plus
 // a boolean value whether at least one value exists for the given key.
 func (c *Context) GetQueryArray(key string) ([]string, bool) {
-	if values, ok := c.Request.URL.Query()[key]; ok && len(values) > 0 {
+
+	if c.queryCache == nil {
+		c.queryCache = make(url.Values)
+		c.queryCache, _ = url.ParseQuery(c.Request.URL.RawQuery)
+	}
+
+	if values, ok := c.queryCache[key]; ok && len(values) > 0 {
 		return values, true
 	}
 	return []string{}, false
