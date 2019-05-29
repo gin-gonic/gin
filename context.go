@@ -386,15 +386,17 @@ func (c *Context) QueryArray(key string) []string {
 	return values
 }
 
-// GetQueryArray returns a slice of strings for a given query key, plus
-// a boolean value whether at least one value exists for the given key.
-func (c *Context) GetQueryArray(key string) ([]string, bool) {
-
+func (c *Context) getQueryCache() {
 	if c.queryCache == nil {
 		c.queryCache = make(url.Values)
 		c.queryCache, _ = url.ParseQuery(c.Request.URL.RawQuery)
 	}
+}
 
+// GetQueryArray returns a slice of strings for a given query key, plus
+// a boolean value whether at least one value exists for the given key.
+func (c *Context) GetQueryArray(key string) ([]string, bool) {
+	c.getQueryCache()
 	if values, ok := c.queryCache[key]; ok && len(values) > 0 {
 		return values, true
 	}
@@ -410,7 +412,8 @@ func (c *Context) QueryMap(key string) map[string]string {
 // GetQueryMap returns a map for a given query key, plus a boolean value
 // whether at least one value exists for the given key.
 func (c *Context) GetQueryMap(key string) (map[string]string, bool) {
-	return c.get(c.Request.URL.Query(), key)
+	c.getQueryCache()
+	return c.get(c.queryCache, key)
 }
 
 // PostForm returns the specified key from a POST urlencoded form or multipart form
