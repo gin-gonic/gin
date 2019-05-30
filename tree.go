@@ -128,6 +128,8 @@ func (n *node) addRoute(path string, handlers HandlersChain) {
 	n.priority++
 	numParams := countParams(path)
 
+	parentFullPathIndex := 0
+
 	// non-empty tree
 	if len(n.path) > 0 || len(n.children) > 0 {
 	walk:
@@ -155,7 +157,7 @@ func (n *node) addRoute(path string, handlers HandlersChain) {
 					children:  n.children,
 					handlers:  n.handlers,
 					priority:  n.priority - 1,
-					fullPath:  fullPath,
+					fullPath:  n.fullPath,
 				}
 
 				// Update maxParams (max of all children)
@@ -171,6 +173,7 @@ func (n *node) addRoute(path string, handlers HandlersChain) {
 				n.path = path[:i]
 				n.handlers = nil
 				n.wildChild = false
+				n.fullPath = fullPath[:parentFullPathIndex+i]
 			}
 
 			// Make new node a child of this node
@@ -178,6 +181,7 @@ func (n *node) addRoute(path string, handlers HandlersChain) {
 				path = path[i:]
 
 				if n.wildChild {
+					parentFullPathIndex += len(n.path)
 					n = n.children[0]
 					n.priority++
 
@@ -211,6 +215,7 @@ func (n *node) addRoute(path string, handlers HandlersChain) {
 
 				// slash after param
 				if n.nType == param && c == '/' && len(n.children) == 1 {
+					parentFullPathIndex += len(n.path)
 					n = n.children[0]
 					n.priority++
 					continue walk
@@ -219,6 +224,7 @@ func (n *node) addRoute(path string, handlers HandlersChain) {
 				// Check if a child with the next path byte exists
 				for i := 0; i < len(n.indices); i++ {
 					if c == n.indices[i] {
+						parentFullPathIndex += len(n.path)
 						i = n.incrementChildPrio(i)
 						n = n.children[i]
 						continue walk
@@ -369,6 +375,7 @@ func (n *node) insertChild(numParams uint8, path string, fullPath string, handle
 	// insert remaining path part and handle to the leaf
 	n.path = path[offset:]
 	n.handlers = handlers
+	n.fullPath = fullPath
 }
 
 // nodeValue holds return values of (*Node).getValue method
