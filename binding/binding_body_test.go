@@ -41,4 +41,3 @@ func TestBindingBody(t *testing.T) {
 		assert.Equal(t, FooStruct{"FOO"}, form)
 	}
 }
-
