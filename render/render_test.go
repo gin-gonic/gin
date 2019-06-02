@@ -5,7 +5,6 @@
 package render
 
 import (
-	"bytes"
 	"encoding/xml"
 	"errors"
 	"html/template"
@@ -15,39 +14,11 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/golang/protobuf/proto"
 	"github.com/stretchr/testify/assert"
-	"github.com/ugorji/go/codec"
-
-	testdata "github.com/gin-gonic/gin/testdata/protoexample"
 )
 
 // TODO unit tests
 // test errors
-
-func TestRenderMsgPack(t *testing.T) {
-	w := httptest.NewRecorder()
-	data := map[string]interface{}{
-		"foo": "bar",
-	}
-
-	(MsgPack{data}).WriteContentType(w)
-	assert.Equal(t, "application/msgpack; charset=utf-8", w.Header().Get("Content-Type"))
-
-	err := (MsgPack{data}).Render(w)
-
-	assert.NoError(t, err)
-
-	h := new(codec.MsgpackHandle)
-	assert.NotNil(t, h)
-	buf := bytes.NewBuffer([]byte{})
-	assert.NotNil(t, buf)
-	err = codec.NewEncoder(buf, h).Encode(data)
-
-	assert.NoError(t, err)
-	assert.Equal(t, w.Body.String(), string(buf.Bytes()))
-	assert.Equal(t, "application/msgpack; charset=utf-8", w.Header().Get("Content-Type"))
-}
 
 func TestRenderJSON(t *testing.T) {
 	w := httptest.NewRecorder()
@@ -278,35 +249,6 @@ func (ft *fail) MarshalYAML() (interface{}, error) {
 func TestRenderYAMLFail(t *testing.T) {
 	w := httptest.NewRecorder()
 	err := (YAML{&fail{}}).Render(w)
-	assert.Error(t, err)
-}
-
-// test Protobuf rendering
-func TestRenderProtoBuf(t *testing.T) {
-	w := httptest.NewRecorder()
-	reps := []int64{int64(1), int64(2)}
-	label := "test"
-	data := &testdata.Test{
-		Label: &label,
-		Reps:  reps,
-	}
-
-	(ProtoBuf{data}).WriteContentType(w)
-	protoData, err := proto.Marshal(data)
-	assert.NoError(t, err)
-	assert.Equal(t, "application/x-protobuf", w.Header().Get("Content-Type"))
-
-	err = (ProtoBuf{data}).Render(w)
-
-	assert.NoError(t, err)
-	assert.Equal(t, string(protoData), w.Body.String())
-	assert.Equal(t, "application/x-protobuf", w.Header().Get("Content-Type"))
-}
-
-func TestRenderProtoBufFail(t *testing.T) {
-	w := httptest.NewRecorder()
-	data := &testdata.Test{}
-	err := (ProtoBuf{data}).Render(w)
 	assert.Error(t, err)
 }
 

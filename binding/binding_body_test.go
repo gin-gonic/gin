@@ -1,14 +1,10 @@
 package binding
 
 import (
-	"bytes"
 	"io/ioutil"
 	"testing"
 
-	"github.com/gin-gonic/gin/testdata/protoexample"
-	"github.com/golang/protobuf/proto"
 	"github.com/stretchr/testify/assert"
-	"github.com/ugorji/go/codec"
 )
 
 func TestBindingBody(t *testing.T) {
@@ -32,11 +28,6 @@ func TestBindingBody(t *testing.T) {
 </root>`,
 		},
 		{
-			name:    "MsgPack binding",
-			binding: MsgPack,
-			body:    msgPackBody(t),
-		},
-		{
 			name:    "YAML binding",
 			binding: YAML,
 			body:    `foo: FOO`,
@@ -51,22 +42,3 @@ func TestBindingBody(t *testing.T) {
 	}
 }
 
-func msgPackBody(t *testing.T) string {
-	test := FooStruct{"FOO"}
-	h := new(codec.MsgpackHandle)
-	buf := bytes.NewBuffer(nil)
-	assert.NoError(t, codec.NewEncoder(buf, h).Encode(test))
-	return buf.String()
-}
-
-func TestBindingBodyProto(t *testing.T) {
-	test := protoexample.Test{
-		Label: proto.String("FOO"),
-	}
-	data, _ := proto.Marshal(&test)
-	req := requestWithBody("POST", "/", string(data))
-	form := protoexample.Test{}
-	body, _ := ioutil.ReadAll(req.Body)
-	assert.NoError(t, ProtoBuf.BindBody(body, &form))
-	assert.Equal(t, test, form)
-}

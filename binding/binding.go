@@ -15,9 +15,6 @@ const (
 	MIMEPlain             = "text/plain"
 	MIMEPOSTForm          = "application/x-www-form-urlencoded"
 	MIMEMultipartPOSTForm = "multipart/form-data"
-	MIMEPROTOBUF          = "application/x-protobuf"
-	MIMEMSGPACK           = "application/x-msgpack"
-	MIMEMSGPACK2          = "application/msgpack"
 	MIMEYAML              = "application/x-yaml"
 )
 
@@ -74,8 +71,6 @@ var (
 	Query         = queryBinding{}
 	FormPost      = formPostBinding{}
 	FormMultipart = formMultipartBinding{}
-	ProtoBuf      = protobufBinding{}
-	MsgPack       = msgpackBinding{}
 	YAML          = yamlBinding{}
 	Uri           = uriBinding{}
 )
@@ -92,10 +87,6 @@ func Default(method, contentType string) Binding {
 		return JSON
 	case MIMEXML, MIMEXML2:
 		return XML
-	case MIMEPROTOBUF:
-		return ProtoBuf
-	case MIMEMSGPACK, MIMEMSGPACK2:
-		return MsgPack
 	case MIMEYAML:
 		return YAML
 	case MIMEMultipartPOSTForm:
