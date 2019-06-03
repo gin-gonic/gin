@@ -91,12 +91,6 @@
 			"versionExact": "v1.1.4"
 		},
 		{
-			"checksumSHA1": "GtamqiJoL7PGHsN454AoffBFMa8=",
-			"path": "golang.org/x/net/context",
-			"revision": "f4e77d36d62c17c2336347bb2670ddbd02d092b7",
-			"revisionTime": "2019-05-02T22:26:14Z"
-		},
-		{
 			"checksumSHA1": "2gaep1KNRDNyDA3O+KgPTQsGWvs=",
 			"path": "golang.org/x/sys/unix",
 			"revision": "a43fa875dd822b81eb6d2ad538bc1f4caba169bd",
