@@ -61,8 +61,12 @@ type Context struct {
 	// Accepted defines a list of manually accepted formats for content negotiation.
 	Accepted []string
 
-	// queryCache use url.ParseQuery cached the param query result from  c.Request.URL.Query()
+	// queryCache use url.ParseQuery cached the param query result from c.Request.URL.Query()
 	queryCache url.Values
+
+	// formCache use url.ParseQuery cached PostForm contains the parsed form data from POST, PATCH,
+	// or PUT body parameters.
+	formCache url.Values
 }
 
 /************************************/
@@ -454,16 +458,24 @@ func (c *Context) PostFormArray(key string) []string {
 	return values
 }
 
+func (c *Context) getFormCache() {
+	if c.formCache == nil {
+		c.formCache = make(url.Values)
+		req := c.Request
+		if err := req.ParseMultipartForm(c.engine.MaxMultipartMemory); err != nil {
+			if err != http.ErrNotMultipart {
+				debugPrint("error on parse multipart form array: %v", err)
+			}
+		}
+		c.formCache = req.PostForm
+	}
+}
+
 // GetPostFormArray returns a slice of strings for a given form key, plus
 // a boolean value whether at least one value exists for the given key.
 func (c *Context) GetPostFormArray(key string) ([]string, bool) {
-	req := c.Request
-	if err := req.ParseMultipartForm(c.engine.MaxMultipartMemory); err != nil {
-		if err != http.ErrNotMultipart {
-			debugPrint("error on parse multipart form array: %v", err)
-		}
-	}
-	if values := req.PostForm[key]; len(values) > 0 {
+	c.getFormCache()
+	if values := c.formCache[key]; len(values) > 0 {
 		return values, true
 	}
 	return []string{}, false
