@@ -3,7 +3,7 @@ module github.com/gin-gonic/gin
 go 1.12
 
 require (
-	github.com/gin-contrib/sse v0.0.0-20190301062529-5545eab6dad3
+	github.com/gin-contrib/sse v0.1.0
 	github.com/golang/protobuf v1.3.1
 	github.com/json-iterator/go v1.1.6
 	github.com/mattn/go-isatty v0.0.7
