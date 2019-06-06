@@ -83,6 +83,7 @@ func (c *Context) reset() {
 	c.Errors = c.Errors[0:0]
 	c.Accepted = nil
 	c.queryCache = nil
+	c.formCache = nil
 }
 
 // Copy returns a copy of the current context that can be safely used outside the request's scope.
