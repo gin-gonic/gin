@@ -5,11 +5,10 @@
 package gin
 
 import (
-	"bytes"
 	"fmt"
-	"reflect"
-
 	"github.com/gin-gonic/gin/internal/json"
+	"reflect"
+	"strings"
 )
 
 // ErrorType is an unsigned 64-bit error code as defined in the gin spec.
@@ -158,7 +157,7 @@ func (a errorMsgs) String() string {
 	if len(a) == 0 {
 		return ""
 	}
-	var buffer bytes.Buffer
+	var buffer strings.Builder
 	for i, msg := range a {
 		fmt.Fprintf(&buffer, "Error #%02d: %s\n", i+1, msg.Err)
 		if msg.Meta != nil {
