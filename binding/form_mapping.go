@@ -51,6 +51,10 @@ func mappingByPtr(ptr interface{}, setter setter, tag string) error {
 }
 
 func mapping(value reflect.Value, field reflect.StructField, setter setter, tag string) (bool, error) {
+	if field.Tag.Get(tag) == "-" { // just ignoring this field
+		return false, nil
+	}
+
 	var vKind = value.Kind()
 
 	if vKind == reflect.Ptr {
@@ -112,9 +116,6 @@ func tryToSetValue(value reflect.Value, field reflect.StructField, setter setter
 	tagValue = field.Tag.Get(tag)
 	tagValue, opts := head(tagValue, ",")
 
-	if tagValue == "-" { // just ignoring this field
-		return false, nil
-	}
 	if tagValue == "" { // default value is FieldName
 		tagValue = field.Name
 	}
