@@ -15,6 +15,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"reflect"
 	"strings"
 	"time"
 
@@ -352,6 +353,64 @@ func (c *Context) Param(key string) string {
 func (c *Context) Query(key string) string {
 	value, _ := c.GetQuery(key)
 	return value
+}
+
+// GET /?bool=true&int=3&slice=1&slice=2&slice=3
+// var i int
+// err = c.QueryVar("int", &i)
+// i == 3
+
+// var ss []string
+// err = c.QueryVar("slice", &ss)
+// ss == []string{"1", "2", "3"}
+
+// var b bool
+// err = c.QueryVar("bool", &b)
+// b == true
+
+// var f float64
+// err = c.QueryVar("f", &f)
+// f == 0.0
+func (c *Context) QueryVar(key string, val interface{}) error {
+	rv := reflect.ValueOf(val)
+	if rv.Kind() != reflect.Ptr || rv.IsNil() {
+		return errors.New("Invalid parameter")
+	}
+
+	values, ok := c.GetQueryArray(key)
+	return binding.SetValue(rv, rv.Elem(), values, ok)
+}
+
+// GET /?bool=true&int=3&slice=1&slice=2&slice=3
+// var i int
+// err = c.DefaultQueryVar("int", &i, -1)
+// i == 3
+
+// var ss []string
+// err = c.DefaultQueryVar("slice", &ss, []string{})
+// ss == []string{"1", "2", "3"}
+
+// var b bool
+// err = c.DefaultQueryVar("bool", &b, false)
+// b == true
+
+// var f float64
+// err = c.DefaultQueryVar("f", &f, 3.14)
+// f == 3.14
+
+func (c *Context) DefaultQueryVar(key string, val interface{}, defaultValue interface{}) error {
+	rv := reflect.ValueOf(val)
+	if rv.Kind() != reflect.Ptr || rv.IsNil() {
+		return errors.New("Invalid parameter")
+	}
+
+	if rv.Elem().Type() != reflect.TypeOf(defaultValue) {
+		return fmt.Errorf("type fail: defautValue type is %v: value type is %v:",
+			reflect.TypeOf(defaultValue), rv.Elem().Type())
+	}
+
+	values, ok := c.GetQueryArray(key)
+	return binding.SetValue(rv, reflect.ValueOf(defaultValue), values, ok)
 }
 
 // DefaultQuery returns the keyed url query value if it exists,
