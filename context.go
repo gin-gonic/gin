@@ -328,6 +328,31 @@ func (c *Context) GetStringMapStringSlice(key string) (smss map[string][]string)
 	return
 }
 
+// ParamVar get the value of the URL param.
+//     curl -X GET 127.0.0.1:8080/1/test/3.14/true/1s
+//
+//     router.GET("/:int/:string/:float/:bool/:duration", func(c *gin.Context) {
+// 	        var i int
+//		var b bool
+//		var f float64
+//		var s string
+//		var d time.Duration
+
+//		err = c.ParamVar("int", &i)        // int == 1
+//		err = c.ParamVar("bool", &b)       // bool == true
+//		err = c.ParamVar("float", &f)      // float ==  3.14
+//		err = c.ParamVar("string", &s)     // string == test
+//		err = c.ParamVar("duration", &d)   // duration == time.Second
+//     })
+func (c *Context) ParamVar(key string, val interface{}) error {
+	rv := reflect.ValueOf(val)
+	if rv.Kind() != reflect.Ptr || rv.IsNil() {
+		return errors.New("Invalid parameter")
+	}
+
+	return binding.SetValue(rv, rv.Elem(), []string{c.Param(key)}, true)
+}
+
 /************************************/
 /************ INPUT DATA ************/
 /************************************/
