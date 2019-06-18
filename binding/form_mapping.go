@@ -21,6 +21,10 @@ func mapUri(ptr interface{}, m map[string][]string) error {
 	return mapFormByTag(ptr, m, "uri")
 }
 
+func mapHeader(ptr interface{}, m map[string][]string) error {
+	return mapFormByTag(ptr, m, "header")
+}
+
 func mapForm(ptr interface{}, form map[string][]string) error {
 	return mapFormByTag(ptr, form, "form")
 }
