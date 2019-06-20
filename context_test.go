@@ -1436,6 +1436,25 @@ func TestContextBindWithXML(t *testing.T) {
 	assert.Equal(t, 0, w.Body.Len())
 }
 
+func TestContextBindHeader(t *testing.T) {
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
+
+	c.Request, _ = http.NewRequest("POST", "/", nil)
+	c.Request.Header.Add("rate", "8000")
+	c.Request.Header.Add("domain", "music")
+
+	var testHeader struct {
+		Rate   int    `header:"Rate"`
+		Domain string `header:"Domain"`
+	}
+
+	assert.NoError(t, c.BindHeader(&testHeader))
+	assert.Equal(t, 8000, testHeader.Rate)
+	assert.Equal(t, "music", testHeader.Domain)
+	assert.Equal(t, 0, w.Body.Len())
+}
+
 func TestContextBindWithQuery(t *testing.T) {
 	w := httptest.NewRecorder()
 	c, _ := CreateTestContext(w)
@@ -1540,6 +1559,25 @@ func TestContextShouldBindWithXML(t *testing.T) {
 	assert.NoError(t, c.ShouldBindXML(&obj))
 	assert.Equal(t, "FOO", obj.Foo)
 	assert.Equal(t, "BAR", obj.Bar)
+	assert.Equal(t, 0, w.Body.Len())
+}
+
+func TestContextShouldBindHeader(t *testing.T) {
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
+
+	c.Request, _ = http.NewRequest("POST", "/", nil)
+	c.Request.Header.Add("rate", "8000")
+	c.Request.Header.Add("domain", "music")
+
+	var testHeader struct {
+		Rate   int    `header:"Rate"`
+		Domain string `header:"Domain"`
+	}
+
+	assert.NoError(t, c.ShouldBindHeader(&testHeader))
+	assert.Equal(t, 8000, testHeader.Rate)
+	assert.Equal(t, "music", testHeader.Domain)
 	assert.Equal(t, 0, w.Body.Len())
 }
 
