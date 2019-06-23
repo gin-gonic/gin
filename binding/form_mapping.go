@@ -7,6 +7,7 @@ package binding
 import (
 	"errors"
 	"fmt"
+	"net/textproto"
 	"reflect"
 	"strconv"
 	"strings"
@@ -106,6 +107,7 @@ func mapping(value reflect.Value, field reflect.StructField, setter setter, tag 
 
 type setOptions struct {
 	isDefaultExists bool
+	isHeader        bool
 	defaultValue    string
 }
 
@@ -127,6 +129,7 @@ func tryToSetValue(value reflect.Value, field reflect.StructField, setter setter
 	}
 
 	var opt string
+	setOpt.isHeader = tag == "header"
 	for len(opts) > 0 {
 		opt, opts = head(opts, ",")
 
@@ -140,7 +143,17 @@ func tryToSetValue(value reflect.Value, field reflect.StructField, setter setter
 }
 
 func setByForm(value reflect.Value, field reflect.StructField, form map[string][]string, tagValue string, opt setOptions) (isSetted bool, err error) {
-	vs, ok := form[tagValue]
+	var (
+		vs []string
+		ok bool
+	)
+
+	if opt.isHeader {
+		vs, ok = form[textproto.CanonicalMIMEHeaderKey(tagValue)]
+	} else {
+		vs, ok = form[tagValue]
+	}
+
 	if !ok && !opt.isDefaultExists {
 		return false, nil
 	}
