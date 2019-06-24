@@ -959,32 +959,36 @@ result:
 ### Multipart/Urlencoded binding
 
 ```go
-package main
+type ProfileForm struct {
+	Name   string                `form:"name" binding:"required"`
+	Avatar *multipart.FileHeader `form:"avatar" binding:"required"`
 
-import (
-	"github.com/gin-gonic/gin"
-)
-
-type LoginForm struct {
-	User     string `form:"user" binding:"required"`
-	Password string `form:"password" binding:"required"`
+	// or for multiple files
+	// Avatars []*multipart.FileHeader `form:"avatar" binding:"required"`
 }
 
 func main() {
 	router := gin.Default()
-	router.POST("/login", func(c *gin.Context) {
+	router.POST("/profile", func(c *gin.Context) {
 		// you can bind multipart form with explicit binding declaration:
 		// c.ShouldBindWith(&form, binding.Form)
 		// or you can simply use autobinding with ShouldBind method:
-		var form LoginForm
+		var form ProfileForm
 		// in this case proper binding will be automatically selected
-		if c.ShouldBind(&form) == nil {
-			if form.User == "user" && form.Password == "password" {
-				c.JSON(200, gin.H{"status": "you are logged in"})
-			} else {
-				c.JSON(401, gin.H{"status": "unauthorized"})
-			}
+		if err := c.ShouldBind(&form); err != nil {
+			c.String(http.StatusBadRequest, "bad request")
+			return
 		}
+
+		err := c.SaveUploadedFile(form.Avatar, form.Avatar.Filename)
+		if err != nil {
+			c.String(http.StatusInternalServerError, "unknown error")
+			return
+		}
+
+		// db.Save(&form)
+
+		c.String(http.StatusOK, "ok")
 	})
 	router.Run(":8080")
 }
@@ -992,7 +996,7 @@ func main() {
 
 Test it with:
 ```sh
-$ curl -v --form user=user --form password=password http://localhost:8080/login
+$ curl -X POST -v --form name=user --form "avatar=@./avatar.png" http://localhost:8080/profile
 ```
 
 ### XML, JSON, YAML and ProtoBuf rendering
