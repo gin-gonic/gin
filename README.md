@@ -1081,8 +1081,8 @@ Using JSONP to request data from a server  in a different domain. Add callback t
 func main() {
 	r := gin.Default()
 
-	r.GET("/JSONP?callback=x", func(c *gin.Context) {
-		data := map[string]interface{}{
+	r.GET("/JSONP", func(c *gin.Context) {
+		data := gin.H{
 			"foo": "bar",
 		}
 		
@@ -1093,6 +1093,9 @@ func main() {
 
 	// Listen and serve on 0.0.0.0:8080
 	r.Run(":8080")
+
+        // client
+        // curl http://127.0.0.1:8080/JSONP?callback=x
 }
 ```
 
@@ -1105,7 +1108,7 @@ func main() {
 	r := gin.Default()
 
 	r.GET("/someJSON", func(c *gin.Context) {
-		data := map[string]interface{}{
+		data := gin.H{
 			"lang": "GO语言",
 			"tag":  "<br>",
 		}
@@ -1314,7 +1317,7 @@ func main() {
     router.LoadHTMLFiles("./testdata/template/raw.tmpl")
 
     router.GET("/raw", func(c *gin.Context) {
-        c.HTML(http.StatusOK, "raw.tmpl", map[string]interface{}{
+        c.HTML(http.StatusOK, "raw.tmpl", gin.H{
             "now": time.Date(2017, 07, 01, 0, 0, 0, 0, time.UTC),
         })
     })
