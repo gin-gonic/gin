@@ -38,6 +38,8 @@ type setter interface {
 
 type formSource map[string][]string
 
+var _ setter = formSource(nil)
+
 // TrySet tries to set a value by request's form source (like map[string][]string)
 func (form formSource) TrySet(value reflect.Value, field reflect.StructField, tagValue string, opt setOptions) (isSetted bool, err error) {
 	return setByForm(value, field, form, tagValue, opt)
