@@ -40,6 +40,7 @@ Gin is a web framework written in Go (Golang). It features a martini-like API wi
     - [Only Bind Query String](#only-bind-query-string)
     - [Bind Query String or Post Data](#bind-query-string-or-post-data)
     - [Bind Uri](#bind-uri)
+    - [Bind Header](#bind-header)
     - [Bind HTML checkboxes](#bind-html-checkboxes)
     - [Multipart/Urlencoded binding](#multiparturlencoded-binding)
     - [XML, JSON, YAML and ProtoBuf rendering](#xml-json-yaml-and-protobuf-rendering)
@@ -908,6 +909,43 @@ Test it with:
 ```sh
 $ curl -v localhost:8088/thinkerou/987fbc97-4bed-5078-9f07-9141ba07c9f3
 $ curl -v localhost:8088/thinkerou/not-uuid
+```
+
+### Bind Header
+
+```go
+package main
+
+import (
+	"fmt"
+	"github.com/gin-gonic/gin"
+)
+
+type testHeader struct {
+	Rate   int    `header:"Rate"`
+	Domain string `header:"Domain"`
+}
+
+func main() {
+	r := gin.Default()
+	r.GET("/", func(c *gin.Context) {
+		h := testHeader{}
+
+		if err := c.ShouldBindHeader(&h); err != nil {
+			c.JSON(200, err)
+		}
+
+		fmt.Printf("%#v\n", h)
+		c.JSON(200, gin.H{"Rate": h.Rate, "Domain": h.Domain})
+	})
+
+	r.Run()
+
+// client
+// curl -H "rate:300" -H "domain:music" 127.0.0.1:8080/
+// output
+// {"Domain":"music","Rate":300}
+}
 ```
 
 ### Bind HTML checkboxes
