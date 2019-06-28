@@ -2114,3 +2114,4 @@ Awesome project lists using [Gin](https://github.com/gin-gonic/gin) web framewor
 * [photoprism](https://github.com/photoprism/photoprism): Personal photo management powered by Go and Google TensorFlow.
 * [krakend](https://github.com/devopsfaith/krakend): Ultra performant API Gateway with middlewares.
 * [picfit](https://github.com/thoas/picfit): An image resizing server written in Go.
+* [brigade](https://github.com/brigadecore/brigade): Event-based Scripting for Kubernetes.
