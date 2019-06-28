@@ -40,6 +40,7 @@ Gin is a web framework written in Go (Golang). It features a martini-like API wi
     - [Only Bind Query String](#only-bind-query-string)
     - [Bind Query String or Post Data](#bind-query-string-or-post-data)
     - [Bind Uri](#bind-uri)
+    - [Bind Header](#bind-header)
     - [Bind HTML checkboxes](#bind-html-checkboxes)
     - [Multipart/Urlencoded binding](#multiparturlencoded-binding)
     - [XML, JSON, YAML and ProtoBuf rendering](#xml-json-yaml-and-protobuf-rendering)
@@ -69,7 +70,7 @@ Gin is a web framework written in Go (Golang). It features a martini-like API wi
 
 To install Gin package, you need to install Go and set your Go workspace first.
 
-1. The first need [Go](https://golang.org/) installed (**version 1.8+ is required**), then you can use the below Go command to install Gin.
+1. The first need [Go](https://golang.org/) installed (**version 1.10+ is required**), then you can use the below Go command to install Gin.
 
 ```sh
 $ go get -u github.com/gin-gonic/gin
@@ -755,7 +756,7 @@ func bookableDate(
 ) bool {
 	if date, ok := field.Interface().(time.Time); ok {
 		today := time.Now()
-		if today.Year() > date.Year() || today.YearDay() > date.YearDay() {
+		if today.After(date) {
 			return false
 		}
 	}
@@ -910,6 +911,43 @@ $ curl -v localhost:8088/thinkerou/987fbc97-4bed-5078-9f07-9141ba07c9f3
 $ curl -v localhost:8088/thinkerou/not-uuid
 ```
 
+### Bind Header
+
+```go
+package main
+
+import (
+	"fmt"
+	"github.com/gin-gonic/gin"
+)
+
+type testHeader struct {
+	Rate   int    `header:"Rate"`
+	Domain string `header:"Domain"`
+}
+
+func main() {
+	r := gin.Default()
+	r.GET("/", func(c *gin.Context) {
+		h := testHeader{}
+
+		if err := c.ShouldBindHeader(&h); err != nil {
+			c.JSON(200, err)
+		}
+
+		fmt.Printf("%#v\n", h)
+		c.JSON(200, gin.H{"Rate": h.Rate, "Domain": h.Domain})
+	})
+
+	r.Run()
+
+// client
+// curl -H "rate:300" -H "domain:music" 127.0.0.1:8080/
+// output
+// {"Domain":"music","Rate":300}
+}
+```
+
 ### Bind HTML checkboxes
 
 See the [detail information](https://github.com/gin-gonic/gin/issues/129#issuecomment-124260092)
@@ -959,32 +997,36 @@ result:
 ### Multipart/Urlencoded binding
 
 ```go
-package main
+type ProfileForm struct {
+	Name   string                `form:"name" binding:"required"`
+	Avatar *multipart.FileHeader `form:"avatar" binding:"required"`
 
-import (
-	"github.com/gin-gonic/gin"
-)
-
-type LoginForm struct {
-	User     string `form:"user" binding:"required"`
-	Password string `form:"password" binding:"required"`
+	// or for multiple files
+	// Avatars []*multipart.FileHeader `form:"avatar" binding:"required"`
 }
 
 func main() {
 	router := gin.Default()
-	router.POST("/login", func(c *gin.Context) {
+	router.POST("/profile", func(c *gin.Context) {
 		// you can bind multipart form with explicit binding declaration:
 		// c.ShouldBindWith(&form, binding.Form)
 		// or you can simply use autobinding with ShouldBind method:
-		var form LoginForm
+		var form ProfileForm
 		// in this case proper binding will be automatically selected
-		if c.ShouldBind(&form) == nil {
-			if form.User == "user" && form.Password == "password" {
-				c.JSON(200, gin.H{"status": "you are logged in"})
-			} else {
-				c.JSON(401, gin.H{"status": "unauthorized"})
-			}
+		if err := c.ShouldBind(&form); err != nil {
+			c.String(http.StatusBadRequest, "bad request")
+			return
 		}
+
+		err := c.SaveUploadedFile(form.Avatar, form.Avatar.Filename)
+		if err != nil {
+			c.String(http.StatusInternalServerError, "unknown error")
+			return
+		}
+
+		// db.Save(&form)
+
+		c.String(http.StatusOK, "ok")
 	})
 	router.Run(":8080")
 }
@@ -992,7 +1034,7 @@ func main() {
 
 Test it with:
 ```sh
-$ curl -v --form user=user --form password=password http://localhost:8080/login
+$ curl -X POST -v --form name=user --form "avatar=@./avatar.png" http://localhost:8080/profile
 ```
 
 ### XML, JSON, YAML and ProtoBuf rendering
@@ -1077,8 +1119,8 @@ Using JSONP to request data from a server  in a different domain. Add callback t
 func main() {
 	r := gin.Default()
 
-	r.GET("/JSONP?callback=x", func(c *gin.Context) {
-		data := map[string]interface{}{
+	r.GET("/JSONP", func(c *gin.Context) {
+		data := gin.H{
 			"foo": "bar",
 		}
 		
@@ -1089,6 +1131,9 @@ func main() {
 
 	// Listen and serve on 0.0.0.0:8080
 	r.Run(":8080")
+
+        // client
+        // curl http://127.0.0.1:8080/JSONP?callback=x
 }
 ```
 
@@ -1101,7 +1146,7 @@ func main() {
 	r := gin.Default()
 
 	r.GET("/someJSON", func(c *gin.Context) {
-		data := map[string]interface{}{
+		data := gin.H{
 			"lang": "GO语言",
 			"tag":  "<br>",
 		}
@@ -1310,7 +1355,7 @@ func main() {
     router.LoadHTMLFiles("./testdata/template/raw.tmpl")
 
     router.GET("/raw", func(c *gin.Context) {
-        c.HTML(http.StatusOK, "raw.tmpl", map[string]interface{}{
+        c.HTML(http.StatusOK, "raw.tmpl", gin.H{
             "now": time.Date(2017, 07, 01, 0, 0, 0, 0, time.UTC),
         })
     })
