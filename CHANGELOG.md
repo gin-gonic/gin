@@ -2,7 +2,7 @@
 ### Gin 1.4.0
 
 - [NEW] Support for [Go Modules](https://github.com/golang/go/wiki/Modules)  [#1569](https://github.com/gin-gonic/gin/pull/1569)
-- [NEW] Refactor of form mapping multipart requesta [#1829](https://github.com/gin-gonic/gin/pull/1829)
+- [NEW] Refactor of form mapping multipart request [#1829](https://github.com/gin-gonic/gin/pull/1829)
 - [FIX] Truncate Latency precision in long running request [#1830](https://github.com/gin-gonic/gin/pull/1830)
 - [FIX] IsTerm flag should not be affected by DisableConsoleColor method. [#1802](https://github.com/gin-gonic/gin/pull/1802)
 - [NEW] Supporting file binding [#1264](https://github.com/gin-gonic/gin/pull/1264)
