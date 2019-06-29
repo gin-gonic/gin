@@ -5,7 +5,6 @@
 package gin
 
 import (
-	"bytes"
 	"fmt"
 	"html/template"
 	"runtime"
@@ -38,7 +37,7 @@ func debugPrintRoute(httpMethod, absolutePath string, handlers HandlersChain) {
 
 func debugPrintLoadTemplate(tmpl *template.Template) {
 	if IsDebugging() {
-		var buf bytes.Buffer
+		var buf strings.Builder
 		for _, tmpl := range tmpl.Templates() {
 			buf.WriteString("\t- ")
 			buf.WriteString(tmpl.Name())
