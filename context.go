@@ -83,6 +83,7 @@ func (c *Context) reset() {
 	c.Errors = c.Errors[0:0]
 	c.Accepted = nil
 	c.queryCache = nil
+	c.formCache = nil
 }
 
 // Copy returns a copy of the current context that can be safely used outside the request's scope.
@@ -582,6 +583,11 @@ func (c *Context) BindYAML(obj interface{}) error {
 	return c.MustBindWith(obj, binding.YAML)
 }
 
+// BindHeader is a shortcut for c.MustBindWith(obj, binding.Header).
+func (c *Context) BindHeader(obj interface{}) error {
+	return c.MustBindWith(obj, binding.Header)
+}
+
 // BindUri binds the passed struct pointer using binding.Uri.
 // It will abort the request with HTTP 400 if any error occurs.
 func (c *Context) BindUri(obj interface{}) error {
@@ -634,6 +640,11 @@ func (c *Context) ShouldBindQuery(obj interface{}) error {
 // ShouldBindYAML is a shortcut for c.ShouldBindWith(obj, binding.YAML).
 func (c *Context) ShouldBindYAML(obj interface{}) error {
 	return c.ShouldBindWith(obj, binding.YAML)
+}
+
+// ShouldBindHeader is a shortcut for c.ShouldBindWith(obj, binding.Header).
+func (c *Context) ShouldBindHeader(obj interface{}) error {
+	return c.ShouldBindWith(obj, binding.Header)
 }
 
 // ShouldBindUri binds the passed struct pointer using the specified binding engine.
