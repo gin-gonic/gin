@@ -455,9 +455,7 @@ func redirectTrailingSlash(c *Context) {
 	if length := len(p); length > 1 && p[length-1] == '/' {
 		req.URL.Path = p[:length-1]
 	}
-	debugPrint("redirecting request %d: %s --> %s", code, p, req.URL.String())
-	http.Redirect(c.Writer, req, req.URL.String(), code)
-	c.writermem.WriteHeaderNow()
+	redirectRequest(c, code)
 }
 
 func redirectFixedPath(c *Context, root *node, trailingSlash bool) bool {
@@ -470,10 +468,16 @@ func redirectFixedPath(c *Context, root *node, trailingSlash bool) bool {
 			code = http.StatusTemporaryRedirect
 		}
 		req.URL.Path = string(fixedPath)
-		debugPrint("redirecting request %d: %s --> %s", code, rPath, req.URL.String())
-		http.Redirect(c.Writer, req, req.URL.String(), code)
-		c.writermem.WriteHeaderNow()
+		redirectRequest(c, code)
 		return true
 	}
 	return false
+}
+
+func redirectRequest(c *Context, code int) {
+	rPath := c.Request.URL.Path
+	rURL := c.Request.URL.String()
+	debugPrint("redirecting request %d: %s --> %s", code, rPath, rURL)
+	http.Redirect(c.Writer, c.Request, rURL, code)
+	c.writermem.WriteHeaderNow()
 }
