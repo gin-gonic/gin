@@ -7,7 +7,7 @@ package render
 import (
 	"net/http"
 
-	"github.com/ugorji/go/codec"
+	"github.com/vmihailenco/msgpack"
 )
 
 // MsgPack contains the given interface object.
@@ -30,6 +30,5 @@ func (r MsgPack) Render(w http.ResponseWriter) error {
 // WriteMsgPack writes MsgPack ContentType and encodes the given interface object.
 func WriteMsgPack(w http.ResponseWriter, obj interface{}) error {
 	writeContentType(w, msgpackContentType)
-	var mh codec.MsgpackHandle
-	return codec.NewEncoder(w, &mh).Encode(obj)
+	return msgpack.NewEncoder(w).Encode(obj)
 }

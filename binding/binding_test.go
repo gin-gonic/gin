@@ -21,7 +21,7 @@ import (
 	"github.com/gin-gonic/gin/testdata/protoexample"
 	"github.com/golang/protobuf/proto"
 	"github.com/stretchr/testify/assert"
-	"github.com/ugorji/go/codec"
+	"github.com/vmihailenco/msgpack"
 )
 
 type appkey struct {
@@ -612,11 +612,9 @@ func TestBindingMsgPack(t *testing.T) {
 		Foo: "bar",
 	}
 
-	h := new(codec.MsgpackHandle)
-	assert.NotNil(t, h)
 	buf := bytes.NewBuffer([]byte{})
 	assert.NotNil(t, buf)
-	err := codec.NewEncoder(buf, h).Encode(test)
+	err := msgpack.NewEncoder(buf).Encode(test)
 	assert.NoError(t, err)
 
 	data := buf.Bytes()
