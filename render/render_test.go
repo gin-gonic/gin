@@ -17,7 +17,7 @@ import (
 
 	"github.com/golang/protobuf/proto"
 	"github.com/stretchr/testify/assert"
-	"github.com/ugorji/go/codec"
+	"github.com/vmihailenco/msgpack"
 
 	testdata "github.com/gin-gonic/gin/testdata/protoexample"
 )
@@ -38,11 +38,9 @@ func TestRenderMsgPack(t *testing.T) {
 
 	assert.NoError(t, err)
 
-	h := new(codec.MsgpackHandle)
-	assert.NotNil(t, h)
 	buf := bytes.NewBuffer([]byte{})
 	assert.NotNil(t, buf)
-	err = codec.NewEncoder(buf, h).Encode(data)
+	err = msgpack.NewEncoder(buf).Encode(data)
 
 	assert.NoError(t, err)
 	assert.Equal(t, w.Body.String(), string(buf.Bytes()))

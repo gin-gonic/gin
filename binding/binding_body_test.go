@@ -8,7 +8,7 @@ import (
 	"github.com/gin-gonic/gin/testdata/protoexample"
 	"github.com/golang/protobuf/proto"
 	"github.com/stretchr/testify/assert"
-	"github.com/ugorji/go/codec"
+	"github.com/vmihailenco/msgpack"
 )
 
 func TestBindingBody(t *testing.T) {
@@ -53,9 +53,8 @@ func TestBindingBody(t *testing.T) {
 
 func msgPackBody(t *testing.T) string {
 	test := FooStruct{"FOO"}
-	h := new(codec.MsgpackHandle)
 	buf := bytes.NewBuffer(nil)
-	assert.NoError(t, codec.NewEncoder(buf, h).Encode(test))
+	assert.NoError(t, msgpack.NewEncoder(buf).Encode(test))
 	return buf.String()
 }
 
