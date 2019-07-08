@@ -498,3 +498,26 @@ func TestRenderReader(t *testing.T) {
 	assert.Equal(t, headers["Content-Disposition"], w.Header().Get("Content-Disposition"))
 	assert.Equal(t, headers["x-request-id"], w.Header().Get("x-request-id"))
 }
+
+func TestRenderReaderNoContentLength(t *testing.T) {
+	w := httptest.NewRecorder()
+
+	body := "#!PNG some raw data"
+	headers := make(map[string]string)
+	headers["Content-Disposition"] = `attachment; filename="filename.png"`
+	headers["x-request-id"] = "requestId"
+
+	err := (Reader{
+		ContentLength: -1,
+		ContentType:   "image/png",
+		Reader:        strings.NewReader(body),
+		Headers:       headers,
+	}).Render(w)
+
+	assert.NoError(t, err)
+	assert.Equal(t, body, w.Body.String())
+	assert.Equal(t, "image/png", w.Header().Get("Content-Type"))
+	assert.NotContains(t, "Content-Length", w.Header())
+	assert.Equal(t, headers["Content-Disposition"], w.Header().Get("Content-Disposition"))
+	assert.Equal(t, headers["x-request-id"], w.Header().Get("x-request-id"))
+}
