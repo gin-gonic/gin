@@ -83,12 +83,12 @@
 			"versionExact": "v1.2.2"
 		},
 		{
-			"checksumSHA1": "csplo594qomjp2IZj82y7mTueOw=",
+			"checksumSHA1": "S4ei9eSqVThDio0Jn2sav6yUbvg=",
 			"path": "github.com/ugorji/go/codec",
-			"revision": "2adff0894ba3bc2eeb9f9aea45fefd49802e1a13",
-			"revisionTime": "2019-04-08T19:08:48Z",
+			"revision": "82dbfaf494e3b01d2d481376f11f6a5c8cf9599f",
+			"revisionTime": "2019-07-02T14:15:27Z",
 			"version": "v1.1",
-			"versionExact": "v1.1.4"
+			"versionExact": "v1.1.6"
 		},
 		{
 			"checksumSHA1": "2gaep1KNRDNyDA3O+KgPTQsGWvs=",
