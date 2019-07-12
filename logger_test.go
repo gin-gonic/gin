@@ -369,15 +369,15 @@ func TestErrorLogger(t *testing.T) {
 
 	w := performRequest(router, "GET", "/error")
 	assert.Equal(t, http.StatusOK, w.Code)
-	assert.Equal(t, "{\"error\":\"this is an error\"}", w.Body.String())
+	assert.Equal(t, "{\"error\":\"this is an error\"}\n", w.Body.String())
 
 	w = performRequest(router, "GET", "/abort")
 	assert.Equal(t, http.StatusUnauthorized, w.Code)
-	assert.Equal(t, "{\"error\":\"no authorized\"}", w.Body.String())
+	assert.Equal(t, "{\"error\":\"no authorized\"}\n", w.Body.String())
 
 	w = performRequest(router, "GET", "/print")
 	assert.Equal(t, http.StatusInternalServerError, w.Code)
-	assert.Equal(t, "hola!{\"error\":\"this is an error\"}", w.Body.String())
+	assert.Equal(t, "hola!{\"error\":\"this is an error\"}\n", w.Body.String())
 }
 
 func TestLoggerWithWriterSkippingPaths(t *testing.T) {
