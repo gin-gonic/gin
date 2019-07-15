@@ -1177,6 +1177,20 @@ func testBodyBindingFail(t *testing.T, b Binding, name, path, badPath, body, bad
 	assert.Error(t, err)
 }
 
+type Identifier struct {
+	Assigner *Reference `json:"assigner,omitempty"`
+}
+
+type Reference struct {
+	Identifier *Identifier `json:"identifier,omitempty"`
+}
+
+func TestLoopReference(t *testing.T) {
+	r := Reference{}
+	err := mapForm(&r, map[string][]string{})
+	assert.Error(t, err)
+}
+
 func testProtoBodyBinding(t *testing.T, b Binding, name, path, badPath, body, badBody string) {
 	assert.Equal(t, name, b.Name())
 

@@ -18,6 +18,7 @@ import (
 var LimitMappingCallNumber = 10000
 
 var errUnknownType = errors.New("Unknown type")
+var ErrMaybeCircularReference = errors.New("Maybe entering a circular reference")
 
 func mapUri(ptr interface{}, m map[string][]string) error {
 	return mapFormByTag(ptr, m, "uri")
@@ -73,7 +74,7 @@ func mapping(value reflect.Value, field reflect.StructField, setter setter, tag 
 	}
 
 	if callNumber > LimitMappingCallNumber {
-		return false, errors.New("Maybe entering a circular reference")
+		return false, ErrMaybeCircularReference
 	}
 
 	if vKind != reflect.Struct || !field.Anonymous {
