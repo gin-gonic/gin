@@ -107,6 +107,9 @@ type Engine struct {
 	noMethod         HandlersChain
 	pool             sync.Pool
 	trees            methodTrees
+
+	// Use http.Server under the hood
+	server *http.Server
 }
 
 var _ IRouter = &Engine{}
@@ -139,6 +142,7 @@ func New() *Engine {
 		trees:                  make(methodTrees, 0, 9),
 		delims:                 render.Delims{Left: "{{", Right: "}}"},
 		secureJsonPrefix:       "while(1);",
+		server:                 &http.Server{},
 	}
 	engine.RouterGroup.engine = engine
 	engine.pool.New = func() interface{} {
@@ -292,7 +296,9 @@ func (engine *Engine) Run(addr ...string) (err error) {
 
 	address := resolveAddress(addr)
 	debugPrint("Listening and serving HTTP on %s\n", address)
-	err = http.ListenAndServe(address, engine)
+	engine.server.Addr = address
+	engine.server.Handler = engine
+	err = engine.server.ListenAndServe()
 	return
 }
 
@@ -303,7 +309,9 @@ func (engine *Engine) RunTLS(addr, certFile, keyFile string) (err error) {
 	debugPrint("Listening and serving HTTPS on %s\n", addr)
 	defer func() { debugPrintError(err) }()
 
-	err = http.ListenAndServeTLS(addr, certFile, keyFile, engine)
+	engine.server.Addr = addr
+	engine.server.Handler = engine
+	err = engine.server.ListenAndServeTLS(certFile, keyFile)
 	return
 }
 
@@ -321,7 +329,9 @@ func (engine *Engine) RunUnix(file string) (err error) {
 	}
 	defer listener.Close()
 	os.Chmod(file, 0777)
-	err = http.Serve(listener, engine)
+
+	engine.server.Handler = engine
+	err = engine.server.Serve(listener)
 	return
 }
 
@@ -338,7 +348,8 @@ func (engine *Engine) RunFd(fd int) (err error) {
 		return
 	}
 	defer listener.Close()
-	err = http.Serve(listener, engine)
+	engine.server.Handler = engine
+	err = engine.server.Serve(listener)
 	return
 }
 
@@ -352,6 +363,13 @@ func (engine *Engine) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	engine.handleHTTPRequest(c)
 
 	engine.pool.Put(c)
+}
+
+// SetServer customize the http.Server under the hood.
+func (engine *Engine) SetServer(server *http.Server) {
+	if server != nil {
+		engine.server = server
+	}
 }
 
 // HandleContext re-enter a context that has been rewritten.
