@@ -176,6 +176,14 @@ func TestCreateEngine(t *testing.T) {
 	assert.Empty(t, router.Handlers)
 }
 
+func TestSetServer(t *testing.T) {
+	router := New()
+	router.SetServer(&http.Server{IdleTimeout: 5 * time.Second})
+	assert.Equal(t, "/", router.basePath)
+	assert.Equal(t, router.engine, router)
+	assert.Empty(t, router.Handlers)
+}
+
 func TestLoadHTMLFilesTestMode(t *testing.T) {
 	ts := setupHTMLFiles(
 		t,
