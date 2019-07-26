@@ -437,7 +437,6 @@ func serveError(c *Context, code int, defaultMessage []byte) {
 		return
 	}
 	c.writermem.WriteHeaderNow()
-	return
 }
 
 func redirectTrailingSlash(c *Context) {
