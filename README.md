@@ -101,6 +101,12 @@ $ go get github.com/kardianos/govendor
 $ mkdir -p $GOPATH/src/github.com/myusername/project && cd "$_"
 ```
 
+If you are on a Mac and you're installing Go 1.8 (released: Feb 2017) or later, GOPATH is automatically determined by the Go toolchain for you. It defaults to $HOME/go on macOS so you can create your project like this
+
+```sh
+$ mkdir -p $HOME/go/src/github.com/myusername/project && cd "$_"
+```
+
 3. Vendor init your project and add gin
 
 ```sh
