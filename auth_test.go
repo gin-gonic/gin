@@ -81,13 +81,6 @@ func TestBasicAuthAuthorizationHeader(t *testing.T) {
 	assert.Equal(t, "Basic YWRtaW46cGFzc3dvcmQ=", authorizationHeader("admin", "password"))
 }
 
-func TestBasicAuthSecureCompare(t *testing.T) {
-	assert.True(t, secureCompare("1234567890", "1234567890"))
-	assert.False(t, secureCompare("123456789", "1234567890"))
-	assert.False(t, secureCompare("12345678900", "1234567890"))
-	assert.False(t, secureCompare("1234567891", "1234567890"))
-}
-
 func TestBasicAuthSucceed(t *testing.T) {
 	accounts := Accounts{"admin": "password"}
 	router := New()
