@@ -14,6 +14,19 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestFormMultipartBindingOneFileToBytesArrayFail(t *testing.T) {
+	var test struct {
+		Voice []byte `form:"voice"`
+	}
+
+	file := testFile{"voice", "test.pcm", []byte("pcm pcm pcm")}
+	req := createRequestMultipartFiles(t, file)
+	err := FormMultipart.Bind(req, &test)
+	assert.NoError(t, err)
+
+	assert.Equal(t, test.Voice, []byte("pcm pcm pcm"))
+}
+
 func TestFormMultipartBindingBindOneFile(t *testing.T) {
 	var s struct {
 		FileValue   multipart.FileHeader     `form:"file"`
