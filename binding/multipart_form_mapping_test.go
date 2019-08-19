@@ -32,6 +32,24 @@ func TestFormMultipartBindingOneFileToBytesFail1(t *testing.T) {
 	assert.Error(t, err)
 }
 
+func TestFormMultipartBindingOneFileToBytesFail2(t *testing.T) {
+	var test struct {
+		Voice []byte `form:"voice"`
+	}
+
+	file := testFile{"voice", "test.pcm", []byte("pcm pcm pcm")}
+	req := createRequestMultipartFiles(t, file)
+
+	ConstructionFailure = true
+
+	err := req.ParseMultipartForm(3)
+	assert.NoError(t, err)
+
+	err = mappingByPtr(&test, (*multipartRequest)(req), "form")
+	assert.Error(t, err)
+	ConstructionFailure = false
+}
+
 func TestFormMultipartBindingOneFileToBytesArray(t *testing.T) {
 	var test struct {
 		Voice []byte `form:"voice"`

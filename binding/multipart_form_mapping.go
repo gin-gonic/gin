@@ -15,6 +15,7 @@ import (
 type multipartRequest http.Request
 
 var _ setter = (*multipartRequest)(nil)
+var ConstructionFailure = false
 
 // TrySet tries to set a value by the multipart request with the binding a form file
 func (r *multipartRequest) TrySet(value reflect.Value, field reflect.StructField, key string, opt setOptions) (isSetted bool, err error) {
@@ -48,6 +49,11 @@ func setByMultipartFormFile(value reflect.Value, field reflect.StructField, file
 			}
 			defer fd.Close()
 			c, err := ioutil.ReadAll(fd)
+
+			if ConstructionFailure {
+				err = errors.New("test use")
+			}
+
 			if err != nil {
 				return false, err
 			}
