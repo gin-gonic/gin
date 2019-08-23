@@ -1038,14 +1038,14 @@ func (c *Context) SetAccepted(formats ...string) {
 // should be canceled. Deadline returns ok==false when no deadline is
 // set. Successive calls to Deadline return the same results.
 func (c *Context) Deadline() (deadline time.Time, ok bool) {
-	return
+	return c.Request.Context().Deadline()
 }
 
 // Done returns a channel that's closed when work done on behalf of this
 // context should be canceled. Done may return nil if this context can
 // never be canceled. Successive calls to Done return the same value.
 func (c *Context) Done() <-chan struct{} {
-	return nil
+	return c.Request.Context().Done()
 }
 
 // Err returns a non-nil error value after Done is closed,
@@ -1055,7 +1055,7 @@ func (c *Context) Done() <-chan struct{} {
 // Canceled if the context was canceled
 // or DeadlineExceeded if the context's deadline passed.
 func (c *Context) Err() error {
-	return nil
+	return c.Request.Context().Err()
 }
 
 // Value returns the value associated with this context for key, or nil
@@ -1066,8 +1066,9 @@ func (c *Context) Value(key interface{}) interface{} {
 		return c.Request
 	}
 	if keyAsString, ok := key.(string); ok {
-		val, _ := c.Get(keyAsString)
-		return val
+		if val, ok := c.Get(keyAsString); ok {
+			return val
+		}
 	}
-	return nil
+	return c.Request.Context().Value(key)
 }
