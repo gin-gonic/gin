@@ -16,6 +16,7 @@ import (
 	"net/url"
 	"os"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/gin-contrib/sse"
@@ -37,6 +38,9 @@ const (
 )
 
 const abortIndex int8 = math.MaxInt8 / 2
+
+//  RWMutex is a optimization for Context can be safely called in multiple goroutine.
+var keysRWLock sync.RWMutex = sync.RWMutex{}
 
 // Context is the most important part of gin. It allows us to pass variables between middleware,
 // manage the flow, validate the JSON of a request and render a JSON response for example.
@@ -95,9 +99,11 @@ func (c *Context) Copy() *Context {
 	cp.index = abortIndex
 	cp.handlers = nil
 	cp.Keys = map[string]interface{}{}
+	keysRWLock.RLock()
 	for k, v := range c.Keys {
 		cp.Keys[k] = v
 	}
+	keysRWLock.RUnlock()
 	paramCopy := make([]Param, len(cp.Params))
 	copy(paramCopy, cp.Params)
 	cp.Params = paramCopy
@@ -219,16 +225,20 @@ func (c *Context) Error(err error) *Error {
 // Set is used to store a new key/value pair exclusively for this context.
 // It also lazy initializes  c.Keys if it was not used previously.
 func (c *Context) Set(key string, value interface{}) {
+	keysRWLock.Lock()
 	if c.Keys == nil {
 		c.Keys = make(map[string]interface{})
 	}
 	c.Keys[key] = value
+	keysRWLock.Unlock()
 }
 
 // Get returns the value for the given key, ie: (value, true).
 // If the value does not exists it returns (nil, false)
 func (c *Context) Get(key string) (value interface{}, exists bool) {
+	keysRWLock.RLock()
 	value, exists = c.Keys[key]
+	keysRWLock.RUnlock()
 	return
 }
 
