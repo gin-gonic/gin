@@ -146,7 +146,7 @@ func TestRenderJsonpJSON(t *testing.T) {
 	err1 := (JsonpJSON{"x", data}).Render(w1)
 
 	assert.NoError(t, err1)
-	assert.Equal(t, "x({\"foo\":\"bar\"})", w1.Body.String())
+	assert.Equal(t, "x({\"foo\":\"bar\"});", w1.Body.String())
 	assert.Equal(t, "application/javascript; charset=utf-8", w1.Header().Get("Content-Type"))
 
 	w2 := httptest.NewRecorder()
@@ -158,7 +158,7 @@ func TestRenderJsonpJSON(t *testing.T) {
 
 	err2 := (JsonpJSON{"x", datas}).Render(w2)
 	assert.NoError(t, err2)
-	assert.Equal(t, "x([{\"foo\":\"bar\"},{\"bar\":\"foo\"}])", w2.Body.String())
+	assert.Equal(t, "x([{\"foo\":\"bar\"},{\"bar\":\"foo\"}]);", w2.Body.String())
 	assert.Equal(t, "application/javascript; charset=utf-8", w2.Header().Get("Content-Type"))
 }
 
