@@ -5,14 +5,14 @@
 package gin
 
 import (
-	"bytes"
+	"fmt"
 	"html/template"
-	"log"
+	"runtime"
+	"strconv"
+	"strings"
 )
 
-func init() {
-	log.SetFlags(0)
-}
+const ginSupportMinGoVer = 10
 
 // IsDebugging returns true if the framework is running in debug mode.
 // Use SetMode(gin.ReleaseMode) to disable debug mode.
@@ -20,17 +20,24 @@ func IsDebugging() bool {
 	return ginMode == debugCode
 }
 
+// DebugPrintRouteFunc indicates debug log output format.
+var DebugPrintRouteFunc func(httpMethod, absolutePath, handlerName string, nuHandlers int)
+
 func debugPrintRoute(httpMethod, absolutePath string, handlers HandlersChain) {
 	if IsDebugging() {
 		nuHandlers := len(handlers)
 		handlerName := nameOfFunction(handlers.Last())
-		debugPrint("%-6s %-25s --> %s (%d handlers)\n", httpMethod, absolutePath, handlerName, nuHandlers)
+		if DebugPrintRouteFunc == nil {
+			debugPrint("%-6s %-25s --> %s (%d handlers)\n", httpMethod, absolutePath, handlerName, nuHandlers)
+		} else {
+			DebugPrintRouteFunc(httpMethod, absolutePath, handlerName, nuHandlers)
+		}
 	}
 }
 
 func debugPrintLoadTemplate(tmpl *template.Template) {
 	if IsDebugging() {
-		var buf bytes.Buffer
+		var buf strings.Builder
 		for _, tmpl := range tmpl.Templates() {
 			buf.WriteString("\t- ")
 			buf.WriteString(tmpl.Name())
@@ -42,14 +49,28 @@ func debugPrintLoadTemplate(tmpl *template.Template) {
 
 func debugPrint(format string, values ...interface{}) {
 	if IsDebugging() {
-		log.Printf("[GIN-debug] "+format, values...)
+		if !strings.HasSuffix(format, "\n") {
+			format += "\n"
+		}
+		fmt.Fprintf(DefaultWriter, "[GIN-debug] "+format, values...)
 	}
 }
 
+func getMinVer(v string) (uint64, error) {
+	first := strings.IndexByte(v, '.')
+	last := strings.LastIndexByte(v, '.')
+	if first == last {
+		return strconv.ParseUint(v[first+1:], 10, 64)
+	}
+	return strconv.ParseUint(v[first+1:last], 10, 64)
+}
+
 func debugPrintWARNINGDefault() {
-	debugPrint(`[WARNING] Now Gin requires Go 1.6 or later and Go 1.7 will be required soon.
+	if v, e := getMinVer(runtime.Version()); e == nil && v <= ginSupportMinGoVer {
+		debugPrint(`[WARNING] Now Gin requires Go 1.10 or later and Go 1.11 will be required soon.
 
 `)
+	}
 	debugPrint(`[WARNING] Creating an Engine instance with the Logger and Recovery middleware already attached.
 
 `)
@@ -75,6 +96,8 @@ at initialization. ie. before any route is registered or the router is listening
 
 func debugPrintError(err error) {
 	if err != nil {
-		debugPrint("[ERROR] %v\n", err)
+		if IsDebugging() {
+			fmt.Fprintf(DefaultErrorWriter, "[GIN-debug] [ERROR] %v\n", err)
+		}
 	}
 }

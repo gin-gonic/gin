@@ -208,7 +208,7 @@ func TestMiddlewareFailHandlersChain(t *testing.T) {
 	router := New()
 	router.Use(func(context *Context) {
 		signature += "A"
-		context.AbortWithError(http.StatusInternalServerError, errors.New("foo"))
+		context.AbortWithError(http.StatusInternalServerError, errors.New("foo")) // nolint: errcheck
 	})
 	router.Use(func(context *Context) {
 		signature += "B"
@@ -246,5 +246,5 @@ func TestMiddlewareWrite(t *testing.T) {
 	w := performRequest(router, "GET", "/")
 
 	assert.Equal(t, http.StatusBadRequest, w.Code)
-	assert.Equal(t, strings.Replace("hola\n<map><foo>bar</foo></map>{\"foo\":\"bar\"}{\"foo\":\"bar\"}event:test\ndata:message\n\n", " ", "", -1), strings.Replace(w.Body.String(), " ", "", -1))
+	assert.Equal(t, strings.Replace("hola\n<map><foo>bar</foo></map>{\"foo\":\"bar\"}\n{\"foo\":\"bar\"}\nevent:test\ndata:message\n\n", " ", "", -1), strings.Replace(w.Body.String(), " ", "", -1))
 }

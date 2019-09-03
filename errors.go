@@ -5,9 +5,9 @@
 package gin
 
 import (
-	"bytes"
 	"fmt"
 	"reflect"
+	"strings"
 
 	"github.com/gin-gonic/gin/internal/json"
 )
@@ -24,9 +24,10 @@ const (
 	ErrorTypePrivate ErrorType = 1 << 0
 	// ErrorTypePublic indicates a public error.
 	ErrorTypePublic ErrorType = 1 << 1
-	// ErrorTypeAny indicates other any error.
+	// ErrorTypeAny indicates any other error.
 	ErrorTypeAny ErrorType = 1<<64 - 1
-	ErrorTypeNu            = 2
+	// ErrorTypeNu indicates any other error.
+	ErrorTypeNu = 2
 )
 
 // Error represents a error's specification.
@@ -52,6 +53,7 @@ func (msg *Error) SetMeta(data interface{}) *Error {
 	return msg
 }
 
+// JSON creates a properly formatted JSON
 func (msg *Error) JSON() interface{} {
 	json := H{}
 	if msg.Meta != nil {
@@ -156,7 +158,7 @@ func (a errorMsgs) String() string {
 	if len(a) == 0 {
 		return ""
 	}
-	var buffer bytes.Buffer
+	var buffer strings.Builder
 	for i, msg := range a {
 		fmt.Fprintf(&buffer, "Error #%02d: %s\n", i+1, msg.Err)
 		if msg.Meta != nil {

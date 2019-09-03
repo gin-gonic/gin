@@ -11,13 +11,13 @@ import (
 	"github.com/gin-gonic/gin/binding"
 )
 
-// ENV_GIN_MODE indicates environment name for gin mode.
-const ENV_GIN_MODE = "GIN_MODE"
+// EnvGinMode indicates environment name for gin mode.
+const EnvGinMode = "GIN_MODE"
 
 const (
 	// DebugMode indicates gin mode is debug.
 	DebugMode = "debug"
-	// ReleaseMode indicates gin mode is relase.
+	// ReleaseMode indicates gin mode is release.
 	ReleaseMode = "release"
 	// TestMode indicates gin mode is test.
 	TestMode = "test"
@@ -28,7 +28,7 @@ const (
 	testCode
 )
 
-// DefaultWriter is the default io.Writer used the Gin for debug output and
+// DefaultWriter is the default io.Writer used by Gin for debug output and
 // middleware output like Logger() or Recovery().
 // Note that both Logger and Recovery provides custom ways to configure their
 // output io.Writer.
@@ -36,13 +36,15 @@ const (
 // 		import "github.com/mattn/go-colorable"
 // 		gin.DefaultWriter = colorable.NewColorableStdout()
 var DefaultWriter io.Writer = os.Stdout
+
+// DefaultErrorWriter is the default io.Writer used by Gin to debug errors
 var DefaultErrorWriter io.Writer = os.Stderr
 
 var ginMode = debugCode
 var modeName = DebugMode
 
 func init() {
-	mode := os.Getenv(ENV_GIN_MODE)
+	mode := os.Getenv(EnvGinMode)
 	SetMode(mode)
 }
 
