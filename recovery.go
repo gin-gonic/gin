@@ -10,8 +10,13 @@ import (
 	"io"
 	"io/ioutil"
 	"log"
+	"net"
+	"net/http"
 	"net/http/httputil"
+	"os"
 	"runtime"
+	"strings"
+	"time"
 )
 
 var (
@@ -26,6 +31,7 @@ func Recovery() HandlerFunc {
 	return RecoveryWithWriter(DefaultErrorWriter)
 }
 
+// RecoveryWithWriter returns a middleware for a given writer that recovers from any panics and writes a 500 if there was one.
 func RecoveryWithWriter(out io.Writer) HandlerFunc {
 	var logger *log.Logger
 	if out != nil {
@@ -34,19 +40,51 @@ func RecoveryWithWriter(out io.Writer) HandlerFunc {
 	return func(c *Context) {
 		defer func() {
 			if err := recover(); err != nil {
+				// Check for a broken connection, as it is not really a
+				// condition that warrants a panic stack trace.
+				var brokenPipe bool
+				if ne, ok := err.(*net.OpError); ok {
+					if se, ok := ne.Err.(*os.SyscallError); ok {
+						if strings.Contains(strings.ToLower(se.Error()), "broken pipe") || strings.Contains(strings.ToLower(se.Error()), "connection reset by peer") {
+							brokenPipe = true
+						}
+					}
+				}
 				if logger != nil {
 					stack := stack(3)
-					httprequest, _ := httputil.DumpRequest(c.Request, false)
-					logger.Printf("[Recovery] panic recovered:\n%s\n%s\n%s%s", string(httprequest), err, stack, reset)
+					httpRequest, _ := httputil.DumpRequest(c.Request, false)
+					headers := strings.Split(string(httpRequest), "\r\n")
+					for idx, header := range headers {
+						current := strings.Split(header, ":")
+						if current[0] == "Authorization" {
+							headers[idx] = current[0] + ": *"
+						}
+					}
+					if brokenPipe {
+						logger.Printf("%s\n%s%s", err, string(httpRequest), reset)
+					} else if IsDebugging() {
+						logger.Printf("[Recovery] %s panic recovered:\n%s\n%s\n%s%s",
+							timeFormat(time.Now()), strings.Join(headers, "\r\n"), err, stack, reset)
+					} else {
+						logger.Printf("[Recovery] %s panic recovered:\n%s\n%s%s",
+							timeFormat(time.Now()), err, stack, reset)
+					}
 				}
-				c.AbortWithStatus(500)
+
+				// If the connection is dead, we can't write a status to it.
+				if brokenPipe {
+					c.Error(err.(error)) // nolint: errcheck
+					c.Abort()
+				} else {
+					c.AbortWithStatus(http.StatusInternalServerError)
+				}
 			}
 		}()
 		c.Next()
 	}
 }
 
-// stack returns a nicely formated stack frame, skipping skip frames
+// stack returns a nicely formatted stack frame, skipping skip frames.
 func stack(skip int) []byte {
 	buf := new(bytes.Buffer) // the returned data
 	// As we loop, we open files and read them. These variables record the currently
@@ -97,12 +135,17 @@ func function(pc uintptr) []byte {
 	//	*T.ptrmethod
 	// Also the package path might contains dot (e.g. code.google.com/...),
 	// so first eliminate the path prefix
-	if lastslash := bytes.LastIndex(name, slash); lastslash >= 0 {
-		name = name[lastslash+1:]
+	if lastSlash := bytes.LastIndex(name, slash); lastSlash >= 0 {
+		name = name[lastSlash+1:]
 	}
 	if period := bytes.Index(name, dot); period >= 0 {
 		name = name[period+1:]
 	}
 	name = bytes.Replace(name, centerDot, dot, -1)
 	return name
+}
+
+func timeFormat(t time.Time) string {
+	var timeString = t.Format("2006/01/02 - 15:04:05")
+	return timeString
 }

@@ -13,9 +13,10 @@ import (
 
 const (
 	noWritten     = -1
-	defaultStatus = 200
+	defaultStatus = http.StatusOK
 )
 
+// ResponseWriter ...
 type ResponseWriter interface {
 	http.ResponseWriter
 	http.Hijacker
@@ -37,6 +38,9 @@ type ResponseWriter interface {
 
 	// Forces to write the http header (status code + headers).
 	WriteHeaderNow()
+
+	// get the http.Pusher for server push
+	Pusher() http.Pusher
 }
 
 type responseWriter struct {
@@ -95,7 +99,7 @@ func (w *responseWriter) Written() bool {
 	return w.size != noWritten
 }
 
-// Hijack implements the http.Hijacker interface
+// Hijack implements the http.Hijacker interface.
 func (w *responseWriter) Hijack() (net.Conn, *bufio.ReadWriter, error) {
 	if w.size < 0 {
 		w.size = 0
@@ -103,12 +107,20 @@ func (w *responseWriter) Hijack() (net.Conn, *bufio.ReadWriter, error) {
 	return w.ResponseWriter.(http.Hijacker).Hijack()
 }
 
-// CloseNotify implements the http.CloseNotify interface
+// CloseNotify implements the http.CloseNotify interface.
 func (w *responseWriter) CloseNotify() <-chan bool {
 	return w.ResponseWriter.(http.CloseNotifier).CloseNotify()
 }
 
-// Flush implements the http.Flush interface
+// Flush implements the http.Flush interface.
 func (w *responseWriter) Flush() {
+	w.WriteHeaderNow()
 	w.ResponseWriter.(http.Flusher).Flush()
+}
+
+func (w *responseWriter) Pusher() (pusher http.Pusher) {
+	if pusher, ok := w.ResponseWriter.(http.Pusher); ok {
+		return pusher
+	}
+	return nil
 }

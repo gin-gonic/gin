@@ -17,7 +17,7 @@ package gin
 //	4. Eliminate .. elements that begin a rooted path:
 //	   that is, replace "/.." by "/" at the beginning of a path.
 //
-// If the result of this process is an empty string, "/" is returned
+// If the result of this process is an empty string, "/" is returned.
 func cleanPath(p string) string {
 	// Turn empty string into "/"
 	if p == "" {
@@ -41,7 +41,7 @@ func cleanPath(p string) string {
 		buf[0] = '/'
 	}
 
-	trailing := n > 2 && p[n-1] == '/'
+	trailing := n > 1 && p[n-1] == '/'
 
 	// A bit more clunky without a 'lazybuf' like the path package, but the loop
 	// gets completely inlined (bufApp). So in contrast to the path package this
@@ -59,11 +59,11 @@ func cleanPath(p string) string {
 
 		case p[r] == '.' && p[r+1] == '/':
 			// . element
-			r++
+			r += 2
 
 		case p[r] == '.' && p[r+1] == '.' && (r+2 == n || p[r+2] == '/'):
 			// .. element: remove to last /
-			r += 2
+			r += 3
 
 			if w > 1 {
 				// can backtrack
@@ -109,7 +109,7 @@ func cleanPath(p string) string {
 	return string(buf[:w])
 }
 
-// internal helper to lazily create a buffer if necessary
+// internal helper to lazily create a buffer if necessary.
 func bufApp(buf *[]byte, s string, w int, c byte) {
 	if *buf == nil {
 		if s[w] == c {
