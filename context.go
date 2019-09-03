@@ -583,6 +583,11 @@ func (c *Context) BindYAML(obj interface{}) error {
 	return c.MustBindWith(obj, binding.YAML)
 }
 
+// BindHeader is a shortcut for c.MustBindWith(obj, binding.Plain).
+func (c *Context) BindPlain(obj interface{}) error {
+	return c.MustBindWith(obj, binding.Plain)
+}
+
 // BindHeader is a shortcut for c.MustBindWith(obj, binding.Header).
 func (c *Context) BindHeader(obj interface{}) error {
 	return c.MustBindWith(obj, binding.Header)
@@ -640,6 +645,11 @@ func (c *Context) ShouldBindQuery(obj interface{}) error {
 // ShouldBindYAML is a shortcut for c.ShouldBindWith(obj, binding.YAML).
 func (c *Context) ShouldBindYAML(obj interface{}) error {
 	return c.ShouldBindWith(obj, binding.YAML)
+}
+
+// ShouldBindPlain is a shortcut for c.ShouldBindWith(obj, binding.Header).
+func (c *Context) ShouldBindPlain(obj interface{}) error {
+	return c.ShouldBindWith(obj, binding.Plain)
 }
 
 // ShouldBindHeader is a shortcut for c.ShouldBindWith(obj, binding.Header).

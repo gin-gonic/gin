@@ -1436,6 +1436,30 @@ func TestContextBindWithXML(t *testing.T) {
 	assert.Equal(t, 0, w.Body.Len())
 }
 
+func TestContextBindPlain(t *testing.T) {
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
+	c.Request, _ = http.NewRequest("POST", "/", bytes.NewBufferString(`test string`))
+	c.Request.Header.Add("Content-Type", MIMEPlain)
+
+	var s string
+
+	assert.NoError(t, c.BindPlain(&s))
+	assert.Equal(t, "test string", s)
+	assert.Equal(t, 0, w.Body.Len())
+	// ========================
+
+	c.Request, _ = http.NewRequest("POST", "/", bytes.NewBufferString(`test []byte`))
+	c.Request.Header.Add("Content-Type", MIMEPlain)
+
+	var bs []byte
+
+	assert.NoError(t, c.BindPlain(&bs))
+	assert.Equal(t, []byte("test []byte"), bs)
+	assert.Equal(t, 0, w.Body.Len())
+
+}
+
 func TestContextBindHeader(t *testing.T) {
 	w := httptest.NewRecorder()
 	c, _ := CreateTestContext(w)
@@ -1565,6 +1589,29 @@ func TestContextShouldBindWithXML(t *testing.T) {
 	assert.Equal(t, 0, w.Body.Len())
 }
 
+func TestContextShouldBindPlain(t *testing.T) {
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
+	c.Request, _ = http.NewRequest("POST", "/", bytes.NewBufferString(`test string`))
+	c.Request.Header.Add("Content-Type", MIMEPlain)
+
+	var s string
+
+	assert.NoError(t, c.ShouldBindPlain(&s))
+	assert.Equal(t, "test string", s)
+	assert.Equal(t, 0, w.Body.Len())
+	// ========================
+
+	c.Request, _ = http.NewRequest("POST", "/", bytes.NewBufferString(`test []byte`))
+	c.Request.Header.Add("Content-Type", MIMEPlain)
+
+	var bs []byte
+
+	assert.NoError(t, c.BindPlain(&bs))
+	assert.Equal(t, []byte("test []byte"), bs)
+	assert.Equal(t, 0, w.Body.Len())
+
+}
 func TestContextShouldBindHeader(t *testing.T) {
 	w := httptest.NewRecorder()
 	c, _ := CreateTestContext(w)

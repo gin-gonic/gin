@@ -79,6 +79,7 @@ var (
 	YAML          = yamlBinding{}
 	Uri           = uriBinding{}
 	Header        = headerBinding{}
+	Plain         = plainBinding{}
 )
 
 // Default returns the appropriate Binding instance based on the HTTP method
@@ -101,6 +102,8 @@ func Default(method, contentType string) Binding {
 		return YAML
 	case MIMEMultipartPOSTForm:
 		return FormMultipart
+	case MIMEPlain:
+		return Plain
 	default: // case MIMEPOSTForm:
 		return Form
 	}

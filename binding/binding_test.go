@@ -156,6 +156,9 @@ func TestBindingDefault(t *testing.T) {
 	assert.Equal(t, FormMultipart, Default("POST", MIMEMultipartPOSTForm))
 	assert.Equal(t, FormMultipart, Default("PUT", MIMEMultipartPOSTForm))
 
+	assert.Equal(t, Plain, Default("POST", MIMEPlain))
+	assert.Equal(t, Plain, Default("PUT", MIMEPlain))
+
 	assert.Equal(t, ProtoBuf, Default("POST", MIMEPROTOBUF))
 	assert.Equal(t, ProtoBuf, Default("PUT", MIMEPROTOBUF))
 
@@ -678,6 +681,46 @@ func TestExistsFails(t *testing.T) {
 	req := requestWithBody("POST", "/", `{"boen": 0}`)
 	err := JSON.Bind(req, &obj)
 	assert.Error(t, err)
+}
+
+type failRead struct{}
+
+func (f *failRead) Read(b []byte) (n int, err error) {
+	return 0, errors.New("my fail")
+}
+
+func (f *failRead) Close() error {
+	return nil
+}
+
+func TestPlainBinding(t *testing.T) {
+	p := Plain
+	assert.Equal(t, "plain", p.Name())
+
+	var s string
+	req := requestWithBody("POST", "/", "test string")
+	assert.NoError(t, p.Bind(req, &s))
+	assert.Equal(t, s, "test string")
+
+	var bs []byte
+	req = requestWithBody("POST", "/", "test []byte")
+	assert.NoError(t, p.Bind(req, &bs))
+	assert.Equal(t, bs, []byte("test []byte"))
+
+	var i int
+	req = requestWithBody("POST", "/", "test fail")
+	assert.Error(t, p.Bind(req, &i))
+
+	req = requestWithBody("POST", "/", "")
+	req.Body = &failRead{}
+	assert.Error(t, p.Bind(req, &s))
+
+	req = requestWithBody("POST", "/", "")
+	assert.Nil(t, p.Bind(req, nil))
+
+	var ptr *string
+	req = requestWithBody("POST", "/", "")
+	assert.Nil(t, p.Bind(req, ptr))
 }
 
 func TestHeaderBinding(t *testing.T) {
