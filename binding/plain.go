@@ -43,5 +43,5 @@ func (plainBinding) Bind(req *http.Request, obj interface{}) error {
 		return nil
 	}
 
-	return fmt.Errorf("type (%T) unkown type", v)
+	return fmt.Errorf("type (%T) unknown type", v)
 }
