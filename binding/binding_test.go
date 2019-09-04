@@ -65,8 +65,15 @@ type FooStructUseNumber struct {
 }
 
 type FooBarStructForTimeType struct {
-	TimeFoo time.Time `form:"time_foo" time_format:"2006-01-02" time_utc:"1" time_location:"Asia/Chongqing"`
-	TimeBar time.Time `form:"time_bar" time_format:"2006-01-02" time_utc:"1"`
+	TimeFoo    time.Time `form:"time_foo" time_format:"2006-01-02" time_utc:"1" time_location:"Asia/Chongqing"`
+	TimeBar    time.Time `form:"time_bar" time_format:"2006-01-02" time_utc:"1"`
+	CreateTime time.Time `form:"createTime" time_format:"unixNano"`
+	UnixTime   time.Time `form:"unixTime" time_format:"unix"`
+}
+
+type FooStructForTimeTypeNotUnixFormat struct {
+	CreateTime time.Time `form:"createTime" time_format:"unixNano"`
+	UnixTime   time.Time `form:"unixTime" time_format:"unix"`
 }
 
 type FooStructForTimeTypeNotFormat struct {
@@ -226,7 +233,10 @@ func TestBindingFormDefaultValue2(t *testing.T) {
 func TestBindingFormForTime(t *testing.T) {
 	testFormBindingForTime(t, "POST",
 		"/", "/",
-		"time_foo=2017-11-15&time_bar=", "bar2=foo")
+		"time_foo=2017-11-15&time_bar=&createTime=1562400033000000123&unixTime=1562400033", "bar2=foo")
+	testFormBindingForTimeNotUnixFormat(t, "POST",
+		"/", "/",
+		"time_foo=2017-11-15&createTime=bad&unixTime=bad", "bar2=foo")
 	testFormBindingForTimeNotFormat(t, "POST",
 		"/", "/",
 		"time_foo=2017-11-15", "bar2=foo")
@@ -240,8 +250,11 @@ func TestBindingFormForTime(t *testing.T) {
 
 func TestBindingFormForTime2(t *testing.T) {
 	testFormBindingForTime(t, "GET",
-		"/?time_foo=2017-11-15&time_bar=", "/?bar2=foo",
+		"/?time_foo=2017-11-15&time_bar=&createTime=1562400033000000123&unixTime=1562400033", "/?bar2=foo",
 		"", "")
+	testFormBindingForTimeNotUnixFormat(t, "POST",
+		"/", "/",
+		"time_foo=2017-11-15&createTime=bad&unixTime=bad", "bar2=foo")
 	testFormBindingForTimeNotFormat(t, "GET",
 		"/?time_foo=2017-11-15", "/?bar2=foo",
 		"", "")
@@ -849,8 +862,28 @@ func testFormBindingForTime(t *testing.T, method, path, badPath, body, badBody s
 	assert.Equal(t, "Asia/Chongqing", obj.TimeFoo.Location().String())
 	assert.Equal(t, int64(-62135596800), obj.TimeBar.Unix())
 	assert.Equal(t, "UTC", obj.TimeBar.Location().String())
+	assert.Equal(t, int64(1562400033000000123), obj.CreateTime.UnixNano())
+	assert.Equal(t, int64(1562400033), obj.UnixTime.Unix())
 
 	obj = FooBarStructForTimeType{}
+	req = requestWithBody(method, badPath, badBody)
+	err = JSON.Bind(req, &obj)
+	assert.Error(t, err)
+}
+
+func testFormBindingForTimeNotUnixFormat(t *testing.T, method, path, badPath, body, badBody string) {
+	b := Form
+	assert.Equal(t, "form", b.Name())
+
+	obj := FooStructForTimeTypeNotUnixFormat{}
+	req := requestWithBody(method, path, body)
+	if method == "POST" {
+		req.Header.Add("Content-Type", MIMEPOSTForm)
+	}
+	err := b.Bind(req, &obj)
+	assert.Error(t, err)
+
+	obj = FooStructForTimeTypeNotUnixFormat{}
 	req = requestWithBody(method, badPath, badBody)
 	err = JSON.Bind(req, &obj)
 	assert.Error(t, err)

@@ -622,10 +622,10 @@ Note that you need to set the corresponding binding tag on all fields you want t
 
 Also, Gin provides two sets of methods for binding:
 - **Type** - Must bind
-  - **Methods** - `Bind`, `BindJSON`, `BindXML`, `BindQuery`, `BindYAML`
+  - **Methods** - `Bind`, `BindJSON`, `BindXML`, `BindQuery`, `BindYAML`, `BindHeader`
   - **Behavior** - These methods use `MustBindWith` under the hood. If there is a binding error, the request is aborted with `c.AbortWithError(400, err).SetType(ErrorTypeBind)`. This sets the response status code to 400 and the `Content-Type` header is set to `text/plain; charset=utf-8`. Note that if you try to set the response code after this, it will result in a warning `[GIN-debug] [WARNING] Headers were already written. Wanted to override status code 400 with 422`. If you wish to have greater control over the behavior, consider using the `ShouldBind` equivalent method.
 - **Type** - Should bind
-  - **Methods** - `ShouldBind`, `ShouldBindJSON`, `ShouldBindXML`, `ShouldBindQuery`, `ShouldBindYAML`
+  - **Methods** - `ShouldBind`, `ShouldBindJSON`, `ShouldBindXML`, `ShouldBindQuery`, `ShouldBindYAML`, `ShouldBindHeader`
   - **Behavior** - These methods use `ShouldBindWith` under the hood. If there is a binding error, the error is returned and it is the developer's responsibility to handle the request and error appropriately.
 
 When using the Bind-method, Gin tries to infer the binder depending on the Content-Type header. If you are sure what you are binding, you can use `MustBindWith` or `ShouldBindWith`.
@@ -846,9 +846,11 @@ import (
 )
 
 type Person struct {
-	Name     string    `form:"name"`
-	Address  string    `form:"address"`
-	Birthday time.Time `form:"birthday" time_format:"2006-01-02" time_utc:"1"`
+        Name       string    `form:"name"`
+        Address    string    `form:"address"`
+        Birthday   time.Time `form:"birthday" time_format:"2006-01-02" time_utc:"1"`
+        CreateTime time.Time `form:"createTime" time_format:"unixNano"`
+        UnixTime   time.Time `form:"unixTime" time_format:"unix"`
 }
 
 func main() {
@@ -862,11 +864,13 @@ func startPage(c *gin.Context) {
 	// If `GET`, only `Form` binding engine (`query`) used.
 	// If `POST`, first checks the `content-type` for `JSON` or `XML`, then uses `Form` (`form-data`).
 	// See more at https://github.com/gin-gonic/gin/blob/master/binding/binding.go#L48
-	if c.ShouldBind(&person) == nil {
-		log.Println(person.Name)
-		log.Println(person.Address)
-		log.Println(person.Birthday)
-	}
+        if c.ShouldBind(&person) == nil {
+                log.Println(person.Name)
+                log.Println(person.Address)
+                log.Println(person.Birthday)
+                log.Println(person.CreateTime)
+                log.Println(person.UnixTime)
+        }
 
 	c.String(200, "Success")
 }
@@ -874,7 +878,7 @@ func startPage(c *gin.Context) {
 
 Test it with:
 ```sh
-$ curl -X GET "localhost:8085/testing?name=appleboy&address=xyz&birthday=1992-03-15"
+$ curl -X GET "localhost:8085/testing?name=appleboy&address=xyz&birthday=1992-03-15&createTime=1562400033000000123&unixTime=1562400033"
 ```
 
 ### Bind Uri
