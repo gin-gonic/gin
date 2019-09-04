@@ -146,6 +146,6 @@ func resolveAddress(addr []string) string {
 	case 1:
 		return addr[0]
 	default:
-		panic("too much parameters")
+		panic("too many parameters")
 	}
 }
