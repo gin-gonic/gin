@@ -89,6 +89,7 @@ func cleanPath(p string) string {
 					}
 				}
 			}
+			fallthrough
 
 		default:
 			// real path element.
