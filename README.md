@@ -63,6 +63,7 @@ Gin is a web framework written in Go (Golang). It features a martini-like API wi
     - [http2 server push](#http2-server-push)
     - [Define format for the log of routes](#define-format-for-the-log-of-routes)
     - [Set and get a cookie](#set-and-get-a-cookie)
+    - [websocket server handler](#websocket-server-handler)
 - [Testing](#testing)
 - [Users](#users)
 
@@ -2060,6 +2061,55 @@ func main() {
 
     router.Run()
 }
+```
+### websocket server handler
+
+``` go
+package main
+
+import (
+	"fmt"
+	"github.com/gorilla/websocket"
+	"net/http"
+
+	"github.com/gin-gonic/gin"
+)
+
+func main() {
+
+	router := gin.Default()
+	var upgrader = websocket.Upgrader{
+		CheckOrigin: func(r *http.Request) bool {
+			return true
+		},
+	}
+	router.GET("/ws", func(c *gin.Context) {
+		func(w http.ResponseWriter, r *http.Request) {
+			c, err := upgrader.Upgrade(w, r, nil)
+			if err != nil {
+				fmt.Println("upgrade:", err)
+				return
+			}
+			defer c.Close()
+			for {
+				mt, message, err := c.ReadMessage()
+				if err != nil {
+					fmt.Println(err.Error())
+					break
+				}
+				fmt.Printf("recv: %s\n", message)
+				err = c.WriteMessage(mt, message)
+				if err != nil {
+					fmt.Println(err.Error())
+					break
+				}
+			}
+		}(c.Writer, c.Request)
+	})
+
+	router.Run()
+}
+
 ```
 
 
