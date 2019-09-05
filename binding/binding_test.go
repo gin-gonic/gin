@@ -658,9 +658,9 @@ func TestValidationDisabled(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func TestExistsSucceeds(t *testing.T) {
+func TestRequiredSucceeds(t *testing.T) {
 	type HogeStruct struct {
-		Hoge *int `json:"hoge" binding:"exists"`
+		Hoge *int `json:"hoge" binding:"required"`
 	}
 
 	var obj HogeStruct
@@ -669,9 +669,9 @@ func TestExistsSucceeds(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func TestExistsFails(t *testing.T) {
+func TestRequiredFails(t *testing.T) {
 	type HogeStruct struct {
-		Hoge *int `json:"foo" binding:"exists"`
+		Hoge *int `json:"foo" binding:"required"`
 	}
 
 	var obj HogeStruct
