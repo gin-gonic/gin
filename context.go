@@ -57,7 +57,7 @@ type Context struct {
 	Keys map[string]interface{}
 
 	//  RWMutex for Keys Set and Get Goroutine safe
-	m   sync.RWMutex
+	m sync.RWMutex
 
 	// Errors is a list of errors attached to all the handlers/middlewares who used this context.
 	Errors errorMsgs
