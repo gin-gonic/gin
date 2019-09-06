@@ -45,3 +45,9 @@ func TestEnableJsonDecoderUseNumber(t *testing.T) {
 	EnableJsonDecoderUseNumber()
 	assert.True(t, binding.EnableDecoderUseNumber)
 }
+
+func TestEnableJsonDecoderDisallowUnknownFields(t *testing.T) {
+	assert.False(t, binding.EnableDecoderDisallowUnknownFields)
+	EnableJsonDecoderDisallowUnknownFields()
+	assert.True(t, binding.EnableDecoderDisallowUnknownFields)
+}

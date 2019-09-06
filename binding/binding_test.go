@@ -64,6 +64,10 @@ type FooStructUseNumber struct {
 	Foo interface{} `json:"foo" binding:"required"`
 }
 
+type FooStructDisallowUnknownFields struct {
+	Foo interface{} `json:"foo" binding:"required"`
+}
+
 type FooBarStructForTimeType struct {
 	TimeFoo    time.Time `form:"time_foo" time_format:"2006-01-02" time_utc:"1" time_location:"Asia/Chongqing"`
 	TimeBar    time.Time `form:"time_bar" time_format:"2006-01-02" time_utc:"1"`
@@ -192,6 +196,12 @@ func TestBindingJSONUseNumber2(t *testing.T) {
 		JSON, "json",
 		"/", "/",
 		`{"foo": 123}`, `{"bar": "foo"}`)
+}
+
+func TestBindingJSONDisallowUnknownFields(t *testing.T) {
+	testBodyBindingDisallowUnknownFields(t, JSON,
+		"/", "/",
+		`{"foo": "bar"}`, `{"foo": "bar", "what": "this"}`)
 }
 
 func TestBindingForm(t *testing.T) {
@@ -1160,6 +1170,25 @@ func testBodyBindingUseNumber2(t *testing.T, b Binding, name, path, badPath, bod
 	req = requestWithBody("POST", badPath, badBody)
 	err = JSON.Bind(req, &obj)
 	assert.Error(t, err)
+}
+
+func testBodyBindingDisallowUnknownFields(t *testing.T, b Binding, path, badPath, body, badBody string) {
+	EnableDecoderDisallowUnknownFields = true
+	defer func() {
+		EnableDecoderDisallowUnknownFields = false
+	}()
+
+	obj := FooStructDisallowUnknownFields{}
+	req := requestWithBody("POST", path, body)
+	err := b.Bind(req, &obj)
+	assert.NoError(t, err)
+	assert.Equal(t, "bar", obj.Foo)
+
+	obj = FooStructDisallowUnknownFields{}
+	req = requestWithBody("POST", badPath, badBody)
+	err = JSON.Bind(req, &obj)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "what")
 }
 
 func testBodyBindingFail(t *testing.T, b Binding, name, path, badPath, body, badBody string) {
