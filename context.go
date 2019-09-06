@@ -15,6 +15,7 @@ import (
 	"net/url"
 	"os"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/gin-contrib/sse"
@@ -52,6 +53,9 @@ type Context struct {
 
 	// Keys is a key/value pair exclusively for the context of each request.
 	Keys map[string]interface{}
+
+	//  RWMutex for Keys Set and Get Goroutine safe
+	m   sync.RWMutex
 
 	// Errors is a list of errors attached to all the handlers/middlewares who used this context.
 	Errors errorMsgs
@@ -182,6 +186,8 @@ func (c *Context) Error(err error) *Error {
 // Set is used to store a new key/value pair exclusively for this context.
 // It also lazy initializes  c.Keys if it was not used previously.
 func (c *Context) Set(key string, value interface{}) {
+	c.m.Lock()
+	defer c.m.Unlock()
 	if c.Keys == nil {
 		c.Keys = make(map[string]interface{})
 	}
@@ -191,6 +197,8 @@ func (c *Context) Set(key string, value interface{}) {
 // Get returns the value for the given key, ie: (value, true).
 // If the value does not exists it returns (nil, false)
 func (c *Context) Get(key string) (value interface{}, exists bool) {
+	c.m.RLock()
+	defer c.m.RUnlock()
 	value, exists = c.Keys[key]
 	return
 }
