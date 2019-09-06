@@ -116,7 +116,9 @@ func BenchmarkCleanPath(b *testing.B) {
 		"/abc/def/..", "/abc/def/../..",
 		"/abc/def/../../..", "/abc/def/../../..",
 		"/abc/def/../../../ghi/jkl/../../../mno",
+		"abc/..def", "abc/./...", "abc/a../...", "abc/a..z",
 		"abc/./../def", "abc//./../def", "abc/../../././../def",
+		"abc/./../..def", "abc/../.../..def", "abc/.//../..def",
 	}
 
 	for _, function := range functions {

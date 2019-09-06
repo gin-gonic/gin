@@ -60,10 +60,20 @@ var cleanTests = []struct {
 	{"/abc/def/../../..", "/"},
 	{"/abc/def/../../../ghi/jkl/../../../mno", "/mno"},
 
+	// Keep .. elements
+	{"abc/..def", "/abc/..def"},
+	{"abc/./...", "/abc/..."},
+	{"abc/a../...", "/abc/a../..."},
+	{"abc/a..z", "/abc/a..z"},
+
 	// Combinations
 	{"abc/./../def", "/def"},
 	{"abc//./../def", "/def"},
 	{"abc/../../././../def", "/def"},
+	{"abc/../../././../...", "/..."},
+	{"abc/./../..def", "/..def"},
+	{"abc/../.../..def", "/.../..def"},
+	{"abc/.//../..def", "/..def"},
 }
 
 func TestPathClean(t *testing.T) {
