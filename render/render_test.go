@@ -347,7 +347,17 @@ func TestRenderRedirect(t *testing.T) {
 	}
 
 	w = httptest.NewRecorder()
-	assert.Panics(t, func() { assert.NoError(t, data2.Render(w)) })
+	assert.PanicsWithValue(t, "Cannot redirect with status code 200", func() { data2.Render(w) })
+
+	data3 := Redirect{
+		Code:     http.StatusCreated,
+		Request:  req,
+		Location: "/new/location",
+	}
+
+	w = httptest.NewRecorder()
+	err = data3.Render(w)
+	assert.NoError(t, err)
 
 	// only improve coverage
 	data2.WriteContentType(w)
