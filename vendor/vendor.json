@@ -19,12 +19,42 @@
 			"versionExact": "v0.1.0"
 		},
 		{
+			"checksumSHA1": "b4DmyMT9bicTRVJw1hJXHLhIH+0=",
+			"path": "github.com/go-playground/locales",
+			"revision": "f63010822830b6fe52288ee52d5a1151088ce039",
+			"revisionTime": "2018-03-23T16:04:04Z",
+			"version": "v0.12",
+			"versionExact": "v0.12.1"
+		},
+		{
+			"checksumSHA1": "JgF260rC9YpWyY5WEljjimWLUXs=",
+			"path": "github.com/go-playground/locales/currency",
+			"revision": "630ebbb602847eba93e75ae38bbc7bb7abcf1ff3",
+			"revisionTime": "2019-04-30T15:33:29Z"
+		},
+		{
+			"checksumSHA1": "9pKcUHBaVS+360X6h4IowhmOPjk=",
+			"path": "github.com/go-playground/universal-translator",
+			"revision": "b32fa301c9fe55953584134cb6853a13c87ec0a1",
+			"revisionTime": "2017-02-09T16:11:52Z",
+			"version": "v0.16",
+			"versionExact": "v0.16.0"
+		},
+		{
 			"checksumSHA1": "Y2MOwzNZfl4NRNDbLCZa6sgx7O0=",
 			"path": "github.com/golang/protobuf/proto",
 			"revision": "c823c79ea1570fb5ff454033735a8e68575d1d0f",
 			"revisionTime": "2019-02-05T22:20:52Z",
 			"version": "v1.3",
 			"versionExact": "v1.3.0"
+		},
+		{
+			"checksumSHA1": "zNo6yGy/bCJuzkEcP70oEBtOB2M=",
+			"path": "github.com/leodido/go-urn",
+			"revision": "70078a794e8ea4b497ba7c19a78cd60f90ccf0f4",
+			"revisionTime": "2018-05-24T03:26:21Z",
+			"version": "v1.1",
+			"versionExact": "v1.1.0"
 		},
 		{
 			"checksumSHA1": "TB2vxux9xQbvsTHOVt4aRTuvSn4=",
@@ -97,12 +127,12 @@
 			"revisionTime": "2019-05-02T15:41:39Z"
 		},
 		{
-			"checksumSHA1": "P/k5ZGf0lEBgpKgkwy++F7K1PSg=",
-			"path": "gopkg.in/go-playground/validator.v8",
-			"revision": "5f1438d3fca68893a817e4a66806cea46a9e4ebf",
-			"revisionTime": "2017-07-30T05:02:35Z",
-			"version": "v8.18.2",
-			"versionExact": "v8.18.2"
+			"checksumSHA1": "ACzc7AkwLtNgKhqtj8V7SGUJgnw=",
+			"path": "gopkg.in/go-playground/validator.v9",
+			"revision": "46b4b1e301c24cac870ffcb4ba5c8a703d1ef475",
+			"revisionTime": "2019-03-31T13:31:25Z",
+			"version": "v9.28",
+			"versionExact": "v9.28.0"
 		},
 		{
 			"checksumSHA1": "QqDq2x8XOU7IoOR98Cx1eiV5QY8=",

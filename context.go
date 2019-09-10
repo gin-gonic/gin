@@ -491,13 +491,8 @@ func (c *Context) PostFormMap(key string) map[string]string {
 // GetPostFormMap returns a map for a given form key, plus a boolean value
 // whether at least one value exists for the given key.
 func (c *Context) GetPostFormMap(key string) (map[string]string, bool) {
-	req := c.Request
-	if err := req.ParseMultipartForm(c.engine.MaxMultipartMemory); err != nil {
-		if err != http.ErrNotMultipart {
-			debugPrint("error on parse multipart form map: %v", err)
-		}
-	}
-	return c.get(req.PostForm, key)
+	c.getFormCache()
+	return c.get(c.formCache, key)
 }
 
 // get is an internal method and returns a map which satisfy conditions.
