@@ -251,7 +251,7 @@ func main() {
 	})
 
 	// However, this one will match /user/john/ and also /user/john/send
-	// If no other routers match /user/john, it will redirect to /user/john/
+	// If no other routers match /user/john, it will return 404 page not found information
 	router.GET("/user/:name/*action", func(c *gin.Context) {
 		name := c.Param("name")
 		action := c.Param("action")
