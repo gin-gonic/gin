@@ -393,8 +393,7 @@ func (c *Context) QueryArray(key string) []string {
 
 func (c *Context) getQueryCache() {
 	if c.queryCache == nil {
-		c.queryCache = make(url.Values)
-		c.queryCache, _ = url.ParseQuery(c.Request.URL.RawQuery)
+		c.queryCache = c.Request.URL.Query()
 	}
 }
 
