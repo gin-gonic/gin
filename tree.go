@@ -395,7 +395,8 @@ func (n *node) getValue(path string, po Params, unescape bool) (value nodeValue)
 walk: // Outer loop for walking the tree
 	for {
 		if len(path) > len(n.path) {
-			if path[:len(n.path)] == n.path {
+			if strings.ToLower(path[:len(n.path)]) == strings.ToLower(n.path) {
+				//if path[:len(n.path)] == n.path {
 				path = path[len(n.path):]
 				// If this node does not have a wildcard (param or catchAll)
 				// child,  we can just look up the next child node and continue
@@ -494,7 +495,8 @@ walk: // Outer loop for walking the tree
 					panic("invalid node type")
 				}
 			}
-		} else if path == n.path {
+		} else if strings.ToLower(path) == strings.ToLower(n.path) {
+			//} else if path == n.path {
 			// We should have reached the node containing the handle.
 			// Check if this node has a handle registered.
 			if value.handlers = n.handlers; value.handlers != nil {
