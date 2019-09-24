@@ -1807,6 +1807,7 @@ func main() {
 func loadTemplate() (*template.Template, error) {
 	t := template.New("")
 	for name, file := range Assets.Files {
+		defer file.Close()
 		if file.IsDir() || !strings.HasSuffix(name, ".tmpl") {
 			continue
 		}
