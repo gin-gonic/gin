@@ -1678,11 +1678,19 @@ func main() {
 	}
 
 	g.Go(func() error {
-		return server01.ListenAndServe()
+		err := server01.ListenAndServe()
+		if err != nil && err != http.ErrServerClosed {
+			log.Fatal(err)
+		}
+		return err
 	})
 
 	g.Go(func() error {
-		return server02.ListenAndServe()
+		err := server02.ListenAndServe()
+		if err != nil && err != http.ErrServerClosed {
+			log.Fatal(err)
+		}
+		return err
 	})
 
 	if err := g.Wait(); err != nil {
@@ -1799,6 +1807,7 @@ func main() {
 func loadTemplate() (*template.Template, error) {
 	t := template.New("")
 	for name, file := range Assets.Files {
+		defer file.Close()
 		if file.IsDir() || !strings.HasSuffix(name, ".tmpl") {
 			continue
 		}
