@@ -113,6 +113,14 @@
 			"versionExact": "v1.2.2"
 		},
 		{
+			"checksumSHA1": "WmBSFdqpdYRIkp0I408JIZ3LDMY=",
+			"path": "github.com/stretchr/testify/mock",
+			"revision": "f35b8ab0b5a2cef36673838d662e249dd9c94686",
+			"revisionTime": "2018-05-06T18:05:49Z",
+			"version": "v1.2.2",
+			"versionExact": "v1.2.2"
+		},
+		{
 			"checksumSHA1": "S4ei9eSqVThDio0Jn2sav6yUbvg=",
 			"path": "github.com/ugorji/go/codec",
 			"revision": "82dbfaf494e3b01d2d481376f11f6a5c8cf9599f",

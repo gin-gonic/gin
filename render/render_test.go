@@ -17,6 +17,7 @@ import (
 
 	"github.com/golang/protobuf/proto"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/ugorji/go/codec"
 
 	testdata "github.com/gin-gonic/gin/testdata/protoexample"
@@ -123,6 +124,46 @@ func TestRenderSecureJSON(t *testing.T) {
 	assert.NoError(t, err2)
 	assert.Equal(t, "while(1);[{\"foo\":\"bar\"},{\"bar\":\"foo\"}]", w2.Body.String())
 	assert.Equal(t, "application/json; charset=utf-8", w2.Header().Get("Content-Type"))
+}
+
+type mockResponseRecorder struct {
+	mock.Mock
+	httptest.ResponseRecorder
+}
+
+func (m *mockResponseRecorder) Write(content []byte) (int, error) {
+	args := m.Called(content)
+	return args.Int(0), args.Error(1)
+}
+
+func TestRenderJsonpError3(t *testing.T) {
+	var m *mockResponseRecorder
+
+	data := map[string]interface{}{
+		"foo": "bar",
+	}
+
+	m = new(mockResponseRecorder)
+	m.On("Write", []byte("x")).Return(1, errors.New("mock callback write error"))
+	assert.Error(t, (JsonpJSON{"x", data}).Render(m), "mock callback write error")
+
+	m = new(mockResponseRecorder)
+	m.On("Write", []byte("x")).Return(1, nil)
+	m.On("Write", []byte("(")).Return(1, errors.New("mock ( write error"))
+	assert.Error(t, (JsonpJSON{"x", data}).Render(m), "mock ( write error")
+
+	m = new(mockResponseRecorder)
+	m.On("Write", []byte("x")).Return(1, nil)
+	m.On("Write", []byte("(")).Return(1, nil)
+	m.On("Write", []byte("{\"foo\":\"bar\"}")).Return(1, errors.New("mock ret write error"))
+	assert.Error(t, (JsonpJSON{"x", data}).Render(m), "mock ret write error")
+
+	m = new(mockResponseRecorder)
+	m.On("Write", []byte("x")).Return(1, nil)
+	m.On("Write", []byte("(")).Return(1, nil)
+	m.On("Write", []byte("{\"foo\":\"bar\"}")).Return(1, nil)
+	m.On("Write", []byte(");")).Return(1, errors.New("mock ); write error"))
+	assert.Error(t, (JsonpJSON{"x", data}).Render(m), "mock ); write error")
 }
 
 func TestRenderSecureJSONFail(t *testing.T) {
