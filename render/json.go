@@ -138,7 +138,7 @@ func (r JsonpJSON) Render(w http.ResponseWriter) (err error) {
 	if err != nil {
 		return err
 	}
-	_, err = w.Write([]byte(")"))
+	_, err = w.Write([]byte(");"))
 	if err != nil {
 		return err
 	}

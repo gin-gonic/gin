@@ -65,10 +65,9 @@ func min(a, b int) int {
 func countParams(path string) uint8 {
 	var n uint
 	for i := 0; i < len(path); i++ {
-		if path[i] != ':' && path[i] != '*' {
-			continue
+		if path[i] == ':' || path[i] == '*' {
+			n++
 		}
-		n++
 	}
 	if n >= 255 {
 		return 255
