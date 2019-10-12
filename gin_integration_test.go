@@ -90,7 +90,8 @@ func TestPusher(t *testing.T) {
 	go func() {
 		router.GET("/pusher", func(c *Context) {
 			if pusher := c.Writer.Pusher(); pusher != nil {
-				pusher.Push("/assets/app.js", nil)
+				err := pusher.Push("/assets/app.js", nil)
+				assert.NoError(t, err)
 			}
 			c.String(http.StatusOK, "it worked")
 		})
@@ -239,6 +240,7 @@ func TestBadListener(t *testing.T) {
 	addr, err := net.ResolveTCPAddr("tcp", "localhost:10086")
 	assert.NoError(t, err)
 	listener, err := net.ListenTCP("tcp", addr)
+	assert.NoError(t, err)
 	listener.Close()
 	assert.Error(t, router.RunListener(listener))
 }

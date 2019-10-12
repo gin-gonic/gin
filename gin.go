@@ -320,7 +320,10 @@ func (engine *Engine) RunUnix(file string) (err error) {
 		return
 	}
 	defer listener.Close()
-	os.Chmod(file, 0777)
+	err = os.Chmod(file, 0777)
+	if err != nil {
+		return
+	}
 	err = http.Serve(listener, engine)
 	return
 }
