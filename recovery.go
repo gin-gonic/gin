@@ -44,6 +44,7 @@ func RecoveryWithWriter(out io.Writer) HandlerFunc {
 	})
 }
 
+// RecoveryWithWriterAndCallback returns a middleware for a given writer that recovers from any panics and call the custom function if there was one.
 func RecoveryWithWriterAndCallback(out io.Writer, fn func(c *Context, err interface{}, brokenPipe bool)) HandlerFunc {
 	var logger *log.Logger
 	if out != nil {
