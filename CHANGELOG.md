@@ -15,7 +15,7 @@
 - [NEW] Refactor form mappings [#1749](https://github.com/gin-gonic/gin/pull/1749)
 - [NEW] Added flag to context.Stream indicates if client disconnected in middle of stream [#1252](https://github.com/gin-gonic/gin/pull/1252)
 - [FIX] Moved [examples](https://github.com/gin-gonic/examples) to stand alone Repo [#1775](https://github.com/gin-gonic/gin/pull/1775)
-- [NEW] Extend context.File to allow for the content-dispositon attachments via a new method context.Attachment [#1260](https://github.com/gin-gonic/gin/pull/1260)
+- [NEW] Extend context.File to allow for the content-disposition attachments via a new method context.Attachment [#1260](https://github.com/gin-gonic/gin/pull/1260)
 - [FIX] Support HTTP content negotiation wildcards [#1112](https://github.com/gin-gonic/gin/pull/1112)
 - [NEW] Add prefix from X-Forwarded-Prefix in redirectTrailingSlash [#1238](https://github.com/gin-gonic/gin/pull/1238)
 - [FIX] context.Copy() race condition [#1020](https://github.com/gin-gonic/gin/pull/1020)
@@ -231,7 +231,7 @@
 - [PERFORMANCE] Improve context's memory locality, reduce CPU cache faults.
 - [NEW] Flexible rendering API
 - [NEW] Add Context.File()
-- [NEW] Add shorcut RunTLS() for http.ListenAndServeTLS
+- [NEW] Add shortcut RunTLS() for http.ListenAndServeTLS
 - [FIX] Rename NotFound404() to NoRoute()
 - [FIX] Errors in context are purged
 - [FIX] Adds HEAD method in Static file serving
@@ -254,7 +254,7 @@
 - [NEW] New Bind() and BindWith() methods for parsing request body.
 - [NEW] Add Content.Copy()
 - [NEW] Add context.LastError()
-- [NEW] Add shorcut for OPTIONS HTTP method
+- [NEW] Add shortcut for OPTIONS HTTP method
 - [FIX] Tons of README fixes
 - [FIX] Header is written before body
 - [FIX] BasicAuth() and changes API a little bit
