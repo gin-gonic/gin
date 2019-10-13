@@ -432,3 +432,20 @@ func TestForceConsoleColor(t *testing.T) {
 	// reset console color mode.
 	consoleColorMode = autoColor
 }
+
+func TestStyleLogger_Fprintln(t *testing.T) {
+	buffer := new(bytes.Buffer)
+	ginStyleLogger := NewGinStyleLogger(buffer, nil)
+	router := New()
+	router.GET("/gin_style_log", func(c *Context) {
+		ginStyleLogger.Fprintln(c, 200, "[gin style log information]")
+	})
+
+	performRequest(router, "GET", "/gin_style_log")
+
+	// output test
+	assert.Contains(t, buffer.String(), "[gin style log information]")
+	assert.Contains(t, buffer.String(), "200")
+	assert.Contains(t, buffer.String(), "/gin_style_log")
+	assert.Contains(t, buffer.String(), "ginStyleLog")
+}

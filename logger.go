@@ -269,3 +269,78 @@ func LoggerWithConfig(conf LoggerConfig) HandlerFunc {
 		}
 	}
 }
+
+// Logger for output the custom log information with gin style in the gin.HandlerFunc.
+type StyleLogger struct {
+	// Optional. Default value is gin.defaultGinStyleLogFormatter
+	Formatter LogFormatter
+
+	// Output is a writer where logs are written.
+	// Optional. Default value is gin.DefaultWriter.
+	Output io.Writer
+}
+
+// Output the log information with custom status code and message.
+func (p *StyleLogger) Fprintln(c *Context, statusCode int, message string) {
+	path := c.Request.URL.Path
+	raw := c.Request.URL.RawQuery
+
+	isTerm := true
+
+	if w, ok := p.Output.(*os.File); !ok || os.Getenv("TERM") == "dumb" ||
+		(!isatty.IsTerminal(w.Fd()) && !isatty.IsCygwinTerminal(w.Fd())) {
+		isTerm = false
+	}
+
+	param := LogFormatterParams{
+		Request: c.Request,
+		isTerm:  isTerm,
+		Keys:    c.Keys,
+	}
+	param.TimeStamp = time.Now()
+	param.ClientIP = c.ClientIP()
+	param.Method = c.Request.Method
+	param.StatusCode = statusCode
+	param.ErrorMessage = message
+
+	if raw != "" {
+		path = path + "?" + raw
+	}
+	param.Path = path
+	fmt.Fprintln(p.Output, p.Formatter(param))
+}
+
+// defaultGinStyleLogFormatter is the default log format function gin.StyleLogger uses.
+var defaultGinStyleLogFormatter = func(param LogFormatterParams) string {
+	var statusColor, methodColor, resetColor string
+	if param.IsOutputColor() {
+		statusColor = param.StatusCodeColor()
+		methodColor = param.MethodColor()
+		resetColor = param.ResetColor()
+	}
+
+	if param.Latency > time.Minute {
+		// Truncate in a golang < 1.8 safe way
+		param.Latency = param.Latency - param.Latency%time.Second
+	}
+	return fmt.Sprintf("[GIN] %v |%s %3d %s| %13v | %15s |%s %-7s %s %s | %s",
+		param.TimeStamp.Format("2006/01/02 - 15:04:05"),
+		statusColor, param.StatusCode, resetColor,
+		"ginStyleLog",
+		param.ClientIP,
+		methodColor, param.Method, resetColor,
+		param.Path,
+		param.ErrorMessage,
+	)
+}
+
+// return a StyleLogger instance with the params. when the param is nil, will use the default value.
+func NewGinStyleLogger(out io.Writer, formatter LogFormatter) *StyleLogger {
+	if out == nil {
+		out = DefaultWriter
+	}
+	if formatter == nil {
+		formatter = defaultGinStyleLogFormatter
+	}
+	return &StyleLogger{Output: out, Formatter: formatter}
+}
