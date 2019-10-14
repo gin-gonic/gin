@@ -113,6 +113,12 @@
 			"versionExact": "v1.2.2"
 		},
 		{
+			"checksumSHA1": "wnEANt4k5X/KGwoFyfSSnpxULm4=",
+			"path": "github.com/stretchr/testify/require",
+			"revision": "f35b8ab0b5a2cef36673838d662e249dd9c94686",
+			"revisionTime": "2018-05-06T18:05:49Z"
+		},
+		{
 			"checksumSHA1": "S4ei9eSqVThDio0Jn2sav6yUbvg=",
 			"path": "github.com/ugorji/go/codec",
 			"revision": "82dbfaf494e3b01d2d481376f11f6a5c8cf9599f",
