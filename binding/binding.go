@@ -72,6 +72,7 @@ var (
 	XML           = xmlBinding{}
 	Form          = formBinding{}
 	Query         = queryBinding{}
+	Query2        = queryBinding2{}
 	FormPost      = formPostBinding{}
 	FormMultipart = formMultipartBinding{}
 	ProtoBuf      = protobufBinding{}

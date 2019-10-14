@@ -1474,6 +1474,22 @@ func TestContextBindWithQuery(t *testing.T) {
 	assert.Equal(t, 0, w.Body.Len())
 }
 
+func TestContextBindWithQuery2(t *testing.T) {
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
+
+	c.Request, _ = http.NewRequest("POST", "/?foo=bar&bar=foo", bytes.NewBufferString("foo=unused"))
+
+	var obj struct {
+		Foo string `query:"foo"`
+		Bar string `query:"bar"`
+	}
+
+	assert.NoError(t, c.BindQuery2(&obj))
+	assert.Equal(t, "foo", obj.Bar)
+	assert.Equal(t, "bar", obj.Foo)
+	assert.Equal(t, 0, w.Body.Len())
+}
 func TestContextBindWithYAML(t *testing.T) {
 	w := httptest.NewRecorder()
 	c, _ := CreateTestContext(w)
@@ -1600,6 +1616,26 @@ func TestContextShouldBindWithQuery(t *testing.T) {
 		Bar1 string `form:"Bar"`
 	}
 	assert.NoError(t, c.ShouldBindQuery(&obj))
+	assert.Equal(t, "foo", obj.Bar)
+	assert.Equal(t, "bar", obj.Foo)
+	assert.Equal(t, "foo1", obj.Bar1)
+	assert.Equal(t, "bar1", obj.Foo1)
+	assert.Equal(t, 0, w.Body.Len())
+}
+
+func TestContextShouldBindWithQuery2(t *testing.T) {
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
+
+	c.Request, _ = http.NewRequest("POST", "/?foo=bar&bar=foo&Foo=bar1&Bar=foo1", bytes.NewBufferString("foo=unused"))
+
+	var obj struct {
+		Foo  string `query:"foo"`
+		Bar  string `query:"bar"`
+		Foo1 string `query:"Foo"`
+		Bar1 string `query:"Bar"`
+	}
+	assert.NoError(t, c.ShouldBindQuery2(&obj))
 	assert.Equal(t, "foo", obj.Bar)
 	assert.Equal(t, "bar", obj.Foo)
 	assert.Equal(t, "foo1", obj.Bar1)

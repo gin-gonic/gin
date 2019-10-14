@@ -19,3 +19,18 @@ func (queryBinding) Bind(req *http.Request, obj interface{}) error {
 	}
 	return validate(obj)
 }
+
+// Support for query tag binding data
+type queryBinding2 struct{}
+
+func (queryBinding2) Name() string {
+	return "query"
+}
+
+func (queryBinding2) Bind(req *http.Request, obj interface{}) error {
+	if err := mapFormByTag(obj, req.URL.Query(), "query"); err != nil {
+		return err
+	}
+
+	return validate(obj)
+}
