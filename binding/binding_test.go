@@ -35,12 +35,12 @@ type QueryTest struct {
 }
 
 type FooStruct struct {
-	Foo string `msgpack:"foo" json:"foo" form:"foo" xml:"foo" binding:"required"`
+	Foo string `msgpack:"foo" json:"foo" form:"foo" xml:"foo" query:"foo" binding:"required"`
 }
 
 type FooBarStruct struct {
 	FooStruct
-	Bar string `msgpack:"bar" json:"bar" form:"bar" xml:"bar" binding:"required"`
+	Bar string `msgpack:"bar" json:"bar" form:"bar" xml:"bar" query:"bar" binding:"required"`
 }
 
 type FooBarFileStruct struct {
@@ -93,7 +93,7 @@ type FooStructForTimeTypeFailLocation struct {
 }
 
 type FooStructForMapType struct {
-	MapFoo map[string]interface{} `form:"map_foo"`
+	MapFoo map[string]interface{} `form:"map_foo" query:"map_foo"`
 }
 
 type FooStructForIgnoreFormTag struct {
@@ -338,6 +338,64 @@ func TestBindingFormForType(t *testing.T) {
 	testFormBindingForType(t, "GET",
 		"/?name=thinkerou", "/?name1=ou",
 		"", "", "StructPointer")
+}
+
+type testBindQuery2 struct {
+	method  string
+	path    string
+	badPath string
+	body    string
+	badBody string
+}
+
+func TestBindingQuery22(t *testing.T) {
+	td := []testBindQuery2{
+		{method: "POST", path: "/?foo=bar&bar=foo", badPath: "/", body: "foo=unused", badBody: "bar2=foo"},
+		{method: "GET", path: "/?foo=bar&bar=foo", badPath: "/?bar2=foo", body: "foo=unused", badBody: ""},
+	}
+
+	testQueryBinding2 := func(method, path, badPath, body, badBody string) {
+		b := Query2
+		assert.Equal(t, "query", b.Name())
+
+		obj := FooBarStruct{}
+		req := requestWithBody(method, path, body)
+		if method == "POST" {
+			req.Header.Add("Content-Type", MIMEPOSTForm)
+		}
+		err := b.Bind(req, &obj)
+		assert.NoError(t, err)
+		assert.Equal(t, "bar", obj.Foo)
+		assert.Equal(t, "foo", obj.Bar)
+	}
+
+	for _, v := range td {
+		testQueryBinding2(v.method, v.path, v.badPath, v.body, v.badBody)
+	}
+}
+
+func TestBindingQuery2Fail(t *testing.T) {
+	td := []testBindQuery2{
+		{method: "POST", path: "/?map_foo=", badPath: "/", body: "map_foo=unused", badBody: "bar2=foo"},
+		{method: "GET", path: "/?map_foo=o", badPath: "/?bar2=foo", body: "map_foo=unused", badBody: ""},
+	}
+
+	testQueryBindingFail2 := func(method, path, badPath, body, badBody string) {
+		b := Query2
+		assert.Equal(t, "query", b.Name())
+
+		obj := FooStructForMapType{}
+		req := requestWithBody(method, path, body)
+		if method == "POST" {
+			req.Header.Add("Content-Type", MIMEPOSTForm)
+		}
+		err := b.Bind(req, &obj)
+		assert.Error(t, err)
+	}
+
+	for _, v := range td {
+		testQueryBindingFail2(v.method, v.path, v.badPath, v.body, v.badBody)
+	}
 }
 
 func TestBindingQuery(t *testing.T) {
