@@ -48,6 +48,7 @@ type Context struct {
 	Params   Params
 	handlers HandlersChain
 	index    int8
+	fullPath string
 
 	engine *Engine
 
@@ -59,6 +60,13 @@ type Context struct {
 
 	// Accepted defines a list of manually accepted formats for content negotiation.
 	Accepted []string
+
+	// queryCache use url.ParseQuery cached the param query result from c.Request.URL.Query()
+	queryCache url.Values
+
+	// formCache use url.ParseQuery cached PostForm contains the parsed form data from POST, PATCH,
+	// or PUT body parameters.
+	formCache url.Values
 }
 
 /************************************/
@@ -70,9 +78,12 @@ func (c *Context) reset() {
 	c.Params = c.Params[0:0]
 	c.handlers = nil
 	c.index = -1
+	c.fullPath = ""
 	c.Keys = nil
 	c.Errors = c.Errors[0:0]
 	c.Accepted = nil
+	c.queryCache = nil
+	c.formCache = nil
 }
 
 // Copy returns a copy of the current context that can be safely used outside the request's scope.
@@ -87,6 +98,9 @@ func (c *Context) Copy() *Context {
 	for k, v := range c.Keys {
 		cp.Keys[k] = v
 	}
+	paramCopy := make([]Param, len(cp.Params))
+	copy(paramCopy, cp.Params)
+	cp.Params = paramCopy
 	return &cp
 }
 
@@ -109,6 +123,15 @@ func (c *Context) HandlerNames() []string {
 // Handler returns the main handler.
 func (c *Context) Handler() HandlerFunc {
 	return c.handlers.Last()
+}
+
+// FullPath returns a matched route full path. For not found routes
+// returns an empty string.
+//     router.GET("/user/:id", func(c *gin.Context) {
+//         c.FullPath() == "/user/:id" // true
+//     })
+func (c *Context) FullPath() string {
+	return c.fullPath
 }
 
 /************************************/
@@ -368,10 +391,17 @@ func (c *Context) QueryArray(key string) []string {
 	return values
 }
 
+func (c *Context) getQueryCache() {
+	if c.queryCache == nil {
+		c.queryCache = c.Request.URL.Query()
+	}
+}
+
 // GetQueryArray returns a slice of strings for a given query key, plus
 // a boolean value whether at least one value exists for the given key.
 func (c *Context) GetQueryArray(key string) ([]string, bool) {
-	if values, ok := c.Request.URL.Query()[key]; ok && len(values) > 0 {
+	c.getQueryCache()
+	if values, ok := c.queryCache[key]; ok && len(values) > 0 {
 		return values, true
 	}
 	return []string{}, false
@@ -386,7 +416,8 @@ func (c *Context) QueryMap(key string) map[string]string {
 // GetQueryMap returns a map for a given query key, plus a boolean value
 // whether at least one value exists for the given key.
 func (c *Context) GetQueryMap(key string) (map[string]string, bool) {
-	return c.get(c.Request.URL.Query(), key)
+	c.getQueryCache()
+	return c.get(c.queryCache, key)
 }
 
 // PostForm returns the specified key from a POST urlencoded form or multipart form
@@ -427,22 +458,25 @@ func (c *Context) PostFormArray(key string) []string {
 	return values
 }
 
+func (c *Context) getFormCache() {
+	if c.formCache == nil {
+		c.formCache = make(url.Values)
+		req := c.Request
+		if err := req.ParseMultipartForm(c.engine.MaxMultipartMemory); err != nil {
+			if err != http.ErrNotMultipart {
+				debugPrint("error on parse multipart form array: %v", err)
+			}
+		}
+		c.formCache = req.PostForm
+	}
+}
+
 // GetPostFormArray returns a slice of strings for a given form key, plus
 // a boolean value whether at least one value exists for the given key.
 func (c *Context) GetPostFormArray(key string) ([]string, bool) {
-	req := c.Request
-	if err := req.ParseMultipartForm(c.engine.MaxMultipartMemory); err != nil {
-		if err != http.ErrNotMultipart {
-			debugPrint("error on parse multipart form array: %v", err)
-		}
-	}
-	if values := req.PostForm[key]; len(values) > 0 {
+	c.getFormCache()
+	if values := c.formCache[key]; len(values) > 0 {
 		return values, true
-	}
-	if req.MultipartForm != nil && req.MultipartForm.File != nil {
-		if values := req.MultipartForm.Value[key]; len(values) > 0 {
-			return values, true
-		}
 	}
 	return []string{}, false
 }
@@ -456,19 +490,8 @@ func (c *Context) PostFormMap(key string) map[string]string {
 // GetPostFormMap returns a map for a given form key, plus a boolean value
 // whether at least one value exists for the given key.
 func (c *Context) GetPostFormMap(key string) (map[string]string, bool) {
-	req := c.Request
-	if err := req.ParseMultipartForm(c.engine.MaxMultipartMemory); err != nil {
-		if err != http.ErrNotMultipart {
-			debugPrint("error on parse multipart form map: %v", err)
-		}
-	}
-	dicts, exist := c.get(req.PostForm, key)
-
-	if !exist && req.MultipartForm != nil && req.MultipartForm.File != nil {
-		dicts, exist = c.get(req.MultipartForm.Value, key)
-	}
-
-	return dicts, exist
+	c.getFormCache()
+	return c.get(c.formCache, key)
 }
 
 // get is an internal method and returns a map which satisfy conditions.
@@ -554,6 +577,11 @@ func (c *Context) BindYAML(obj interface{}) error {
 	return c.MustBindWith(obj, binding.YAML)
 }
 
+// BindHeader is a shortcut for c.MustBindWith(obj, binding.Header).
+func (c *Context) BindHeader(obj interface{}) error {
+	return c.MustBindWith(obj, binding.Header)
+}
+
 // BindUri binds the passed struct pointer using binding.Uri.
 // It will abort the request with HTTP 400 if any error occurs.
 func (c *Context) BindUri(obj interface{}) error {
@@ -606,6 +634,11 @@ func (c *Context) ShouldBindQuery(obj interface{}) error {
 // ShouldBindYAML is a shortcut for c.ShouldBindWith(obj, binding.YAML).
 func (c *Context) ShouldBindYAML(obj interface{}) error {
 	return c.ShouldBindWith(obj, binding.YAML)
+}
+
+// ShouldBindHeader is a shortcut for c.ShouldBindWith(obj, binding.Header).
+func (c *Context) ShouldBindHeader(obj interface{}) error {
+	return c.ShouldBindWith(obj, binding.Header)
 }
 
 // ShouldBindUri binds the passed struct pointer using the specified binding engine.
@@ -682,7 +715,7 @@ func (c *Context) ContentType() string {
 // handshake is being initiated by the client.
 func (c *Context) IsWebsocket() bool {
 	if strings.Contains(strings.ToLower(c.requestHeader("Connection")), "upgrade") &&
-		strings.ToLower(c.requestHeader("Upgrade")) == "websocket" {
+		strings.EqualFold(c.requestHeader("Upgrade"), "websocket") {
 		return true
 	}
 	return false
@@ -826,6 +859,12 @@ func (c *Context) JSON(code int, obj interface{}) {
 // It also sets the Content-Type as "application/json".
 func (c *Context) AsciiJSON(code int, obj interface{}) {
 	c.Render(code, render.AsciiJSON{Data: obj})
+}
+
+// PureJSON serializes the given struct as JSON into the response body.
+// PureJSON, unlike JSON, does not replace special html characters with their unicode entities.
+func (c *Context) PureJSON(code int, obj interface{}) {
+	c.Render(code, render.PureJSON{Data: obj})
 }
 
 // XML serializes the given struct as XML into the response body.
