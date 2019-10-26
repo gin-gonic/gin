@@ -15,7 +15,7 @@ import (
 	"github.com/gin-gonic/gin/internal/json"
 )
 
-var errUnknownType = errors.New("Unknown type")
+var errUnknownType = errors.New("unknown type")
 
 func mapUri(ptr interface{}, m map[string][]string) error {
 	return mapFormByTag(ptr, m, "uri")
