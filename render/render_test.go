@@ -347,7 +347,10 @@ func TestRenderRedirect(t *testing.T) {
 	}
 
 	w = httptest.NewRecorder()
-	assert.PanicsWithValue(t, "Cannot redirect with status code 200", func() { data2.Render(w) })
+	assert.PanicsWithValue(t, "Cannot redirect with status code 200", func() {
+		err := data2.Render(w)
+		assert.NoError(t, err)
+	})
 
 	data3 := Redirect{
 		Code:     http.StatusCreated,
