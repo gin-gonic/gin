@@ -1,5 +1,44 @@
+### Gin v1.5.0
 
-### Gin 1.4.0
+- [FIX] Readme updates [#1855](https://github.com/gin-gonic/gin/pull/1885) [#1937](https://github.com/gin-gonic/gin/pull/1937) [#1961](https://github.com/gin-gonic/gin/pull/1961) [#1963](https://github.com/gin-gonic/gin/pull/1963) [#2011](https://github.com/gin-gonic/gin/pull/2011) [#2025](https://github.com/gin-gonic/gin/pull/2025) [#2067](https://github.com/gin-gonic/gin/pull/2067) [#2068](https://github.com/gin-gonic/gin/pull/2068)
+- [FIX] Use DefaultWriter and DefaultErrorWriter for debug messages [#1891](https://github.com/gin-gonic/gin/pull/1891)
+- [NEW] Now you can parse the inline lowercase start structure [#1893](https://github.com/gin-gonic/gin/pull/1893)
+- [FIX] Some code improvements [#1909](https://github.com/gin-gonic/gin/pull/1909)
+- [FIX] Use encode replace json marshal increase json encoder speed [#1546](https://github.com/gin-gonic/gin/pull/1546)
+- [NEW] Hold matched route full path in the Context [#1826](https://github.com/gin-gonic/gin/pull/1826)
+- [FIX] Fix context.Params race condition on Copy() [#1841](https://github.com/gin-gonic/gin/pull/1841)
+- [NEW] Add context param query cache [#1450](https://github.com/gin-gonic/gin/pull/1450)
+- [FIX] Improve GetQueryMap performance [#1918](https://github.com/gin-gonic/gin/pull/1918)
+- [FIX] Improve get post data [#1920](https://github.com/gin-gonic/gin/pull/1920)
+- [FIX] Use context instead of x/net/context [#1922](https://github.com/gin-gonic/gin/pull/1922)
+- [FIX] Attempt to fix PostForm cache bug [#1931](https://github.com/gin-gonic/gin/pull/1931)
+- [NEW] Add support of multipart multi files [#1949](https://github.com/gin-gonic/gin/pull/1949)
+- [NEW] Support bind http header param [#1957](https://github.com/gin-gonic/gin/pull/1957)
+- [FIX] Drop support for go1.8 and go1.9 [#1933](https://github.com/gin-gonic/gin/pull/1933)
+- [FIX] Bugfix for the FullPath feature [#1919](https://github.com/gin-gonic/gin/pull/1919)
+- [FIX] Gin1.5 bytes.Buffer to strings.Builder [#1939](https://github.com/gin-gonic/gin/pull/1939)
+- [FIX] Upgrade github.com/ugorji/go/codec [#1969](https://github.com/gin-gonic/gin/pull/1969)
+- [NEW] Support bind unix time [#1980](https://github.com/gin-gonic/gin/pull/1980)
+- [FIX] Simplify code [#2004](https://github.com/gin-gonic/gin/pull/2004)
+- [NEW] Support negative Content-Length in DataFromReader [#1981](https://github.com/gin-gonic/gin/pull/1981)
+- [FIX] Remove unused code [#2013](https://github.com/gin-gonic/gin/pull/2013)
+- [FIX] Bump github.com/mattn/go-isatty library to support Risc-V [#2019](https://github.com/gin-gonic/gin/pull/2019)
+- [FIX] Improve logger code [#1926](https://github.com/gin-gonic/gin/pull/1926)
+- [FIX] Fixed JSONP format (added semicolon) [#2007](https://github.com/gin-gonic/gin/pull/2007)
+- [FIX] Support go1.13 [#2038](https://github.com/gin-gonic/gin/pull/2038)
+- [FIX] Upgrade validator version to v9 [#1015](https://github.com/gin-gonic/gin/pull/1015)
+- [NEW] Add DisallowUnknownFields() in gin.Context.BindJSON() [#2028](https://github.com/gin-gonic/gin/pull/2028)
+- [FIX] Refactor(context.go): GetPostFormMap [#2051](https://github.com/gin-gonic/gin/pull/2051)
+- [FIX] Adjust Render.Redirect test case [#2053](https://github.com/gin-gonic/gin/pull/2053)
+- [FIX] Make countParams more readable [#2052](https://github.com/gin-gonic/gin/pull/2052)
+- [FIX] Use url.URL.Query instead of parsing query [#2063](https://github.com/gin-gonic/gin/pull/2063)
+- [FIX] Add TestDisableBindValidation [#2071](https://github.com/gin-gonic/gin/pull/2071)
+- [NEW] Support run HTTP server with specific net.Listener [#2023](https://github.com/gin-gonic/gin/pull/2023)
+- [FIX] Fix some typo [#2079](https://github.com/gin-gonic/gin/pull/2079) [#2080](https://github.com/gin-gonic/gin/pull/2080)
+- [FIX] Relocate binding body tests [#2086](https://github.com/gin-gonic/gin/pull/2086)
+- [FIX] Use Writer in Context.Status [#1606](https://github.com/gin-gonic/gin/pull/1606)
+
+### Gin v1.4.0
 
 - [NEW] Support for [Go Modules](https://github.com/golang/go/wiki/Modules)  [#1569](https://github.com/gin-gonic/gin/pull/1569)
 - [NEW] Refactor of form mapping multipart request [#1829](https://github.com/gin-gonic/gin/pull/1829)
@@ -56,7 +95,7 @@
 - [NEW] Upgrade dependency libraries [#1491](https://github.com/gin-gonic/gin/pull/1491)
 
 
-### Gin 1.3.0
+### Gin v1.3.0
 
 - [NEW] Add [`func (*Context) QueryMap`](https://godoc.org/github.com/gin-gonic/gin#Context.QueryMap), [`func (*Context) GetQueryMap`](https://godoc.org/github.com/gin-gonic/gin#Context.GetQueryMap), [`func (*Context) PostFormMap`](https://godoc.org/github.com/gin-gonic/gin#Context.PostFormMap) and [`func (*Context) GetPostFormMap`](https://godoc.org/github.com/gin-gonic/gin#Context.GetPostFormMap) to support `type map[string]string` as query string or form parameters, see [#1383](https://github.com/gin-gonic/gin/pull/1383)
 - [NEW] Add [`func (*Context) AsciiJSON`](https://godoc.org/github.com/gin-gonic/gin#Context.AsciiJSON), see [#1358](https://github.com/gin-gonic/gin/pull/1358)
