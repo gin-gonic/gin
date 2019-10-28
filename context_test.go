@@ -992,6 +992,19 @@ func TestContextRenderFile(t *testing.T) {
 	assert.Equal(t, "text/plain; charset=utf-8", w.Header().Get("Content-Type"))
 }
 
+func TestContextRenderFileFromFS(t *testing.T) {
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
+
+	c.Request, _ = http.NewRequest("GET", "/some/path", nil)
+	c.FileFromFS("./gin.go", Dir(".", false))
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Contains(t, w.Body.String(), "func New() *Engine {")
+	assert.Equal(t, "text/plain; charset=utf-8", w.Header().Get("Content-Type"))
+	assert.Equal(t, "/some/path", c.Request.URL.Path)
+}
+
 func TestContextRenderAttachment(t *testing.T) {
 	w := httptest.NewRecorder()
 	c, _ := CreateTestContext(w)
