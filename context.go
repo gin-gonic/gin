@@ -516,7 +516,11 @@ func (c *Context) FormFile(name string) (*multipart.FileHeader, error) {
 			return nil, err
 		}
 	}
-	_, fh, err := c.Request.FormFile(name)
+	f, fh, err := c.Request.FormFile(name)
+	if err != nil {
+		return nil, err
+	}
+	f.Close()
 	return fh, err
 }
 
