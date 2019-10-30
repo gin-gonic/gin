@@ -201,7 +201,7 @@ func (group *RouterGroup) createStaticHandler(relativePath string, fs http.FileS
 			c.index = -1
 			return
 		}
-		defer f.Close()
+		f.Close()
 
 		fileServer.ServeHTTP(c.Writer, c.Request)
 	}
