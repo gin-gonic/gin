@@ -101,6 +101,13 @@ func (w *responseWriter) Written() bool {
 
 // Hijack implements the http.Hijacker interface.
 func (w *responseWriter) Hijack() (net.Conn, *bufio.ReadWriter, error) {
+	// If the header was written but we did not write it to the
+	// underlying response writer yet, we need to.
+	// This matches the behaviour of net/http's Hijacker.
+	// See #2108.
+	if w.status != 0 && !w.Written() {
+		w.WriteHeaderNow()
+	}
 	if w.size < 0 {
 		w.size = 0
 	}
