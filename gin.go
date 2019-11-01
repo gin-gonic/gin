@@ -156,7 +156,7 @@ func Default() *Engine {
 }
 
 func (engine *Engine) allocateContext() *Context {
-	return &Context{engine: engine}
+	return NewContext(engine)
 }
 
 // Delims sets template left and right delims and returns a Engine instance.
