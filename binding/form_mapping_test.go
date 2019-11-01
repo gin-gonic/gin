@@ -269,3 +269,13 @@ func TestMappingMapField(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, map[string]int{"one": 1}, s.M)
 }
+
+func TestMappingIgnoredCircularRef(t *testing.T) {
+	type S struct {
+		S *S `form:"-"`
+	}
+	var s S
+
+	err := mappingByPtr(&s, formSource{}, "form")
+	assert.NoError(t, err)
+}

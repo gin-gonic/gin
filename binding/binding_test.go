@@ -441,7 +441,8 @@ func createFormFilesMultipartRequest(t *testing.T) *http.Request {
 	defer f.Close()
 	fw, err1 := mw.CreateFormFile("file", "form.go")
 	assert.NoError(t, err1)
-	io.Copy(fw, f)
+	_, err = io.Copy(fw, f)
+	assert.NoError(t, err)
 
 	req, err2 := http.NewRequest("POST", "/?foo=getfoo&bar=getbar", body)
 	assert.NoError(t, err2)
@@ -465,7 +466,8 @@ func createFormFilesMultipartRequestFail(t *testing.T) *http.Request {
 	defer f.Close()
 	fw, err1 := mw.CreateFormFile("file_foo", "form_foo.go")
 	assert.NoError(t, err1)
-	io.Copy(fw, f)
+	_, err = io.Copy(fw, f)
+	assert.NoError(t, err)
 
 	req, err2 := http.NewRequest("POST", "/?foo=getfoo&bar=getbar", body)
 	assert.NoError(t, err2)
@@ -554,7 +556,8 @@ func TestBindingFormPostForMapFail(t *testing.T) {
 func TestBindingFormFilesMultipart(t *testing.T) {
 	req := createFormFilesMultipartRequest(t)
 	var obj FooBarFileStruct
-	FormMultipart.Bind(req, &obj)
+	err := FormMultipart.Bind(req, &obj)
+	assert.NoError(t, err)
 
 	// file from os
 	f, _ := os.Open("form.go")
