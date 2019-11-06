@@ -1651,31 +1651,38 @@ func TestContextShouldBindBodyWith(t *testing.T) {
 		Bar string `json:"bar" xml:"bar" binding:"required"`
 	}
 	for _, tt := range []struct {
-		name               string
-		bindingA, bindingB binding.BindingBody
-		bodyA, bodyB       string
+		name                       string
+		bindingA, bindingB         binding.BindingBody
+		bodyA, bodyB               string
+		contentTypeA, contentTypeB string
 	}{
 		{
-			name:     "JSON & JSON",
-			bindingA: binding.JSON,
-			bindingB: binding.JSON,
-			bodyA:    `{"foo":"FOO"}`,
-			bodyB:    `{"bar":"BAR"}`,
+			name:         "JSON & JSON",
+			bindingA:     binding.JSON,
+			bindingB:     binding.JSON,
+			bodyA:        `{"foo":"FOO"}`,
+			bodyB:        `{"bar":"BAR"}`,
+			contentTypeA: binding.MIMEJSON,
+			contentTypeB: binding.MIMEJSON,
 		},
 		{
-			name:     "JSON & XML",
-			bindingA: binding.JSON,
-			bindingB: binding.XML,
-			bodyA:    `{"foo":"FOO"}`,
+			name:         "JSON & XML",
+			bindingA:     binding.JSON,
+			bindingB:     binding.XML,
+			contentTypeA: binding.MIMEJSON,
+			contentTypeB: binding.MIMEXML,
+			bodyA:        `{"foo":"FOO"}`,
 			bodyB: `<?xml version="1.0" encoding="UTF-8"?>
 <root>
    <bar>BAR</bar>
 </root>`,
 		},
 		{
-			name:     "XML & XML",
-			bindingA: binding.XML,
-			bindingB: binding.XML,
+			name:         "XML & XML",
+			bindingA:     binding.XML,
+			bindingB:     binding.XML,
+			contentTypeA: binding.MIMEXML,
+			contentTypeB: binding.MIMEXML,
 			bodyA: `<?xml version="1.0" encoding="UTF-8"?>
 <root>
    <foo>FOO</foo>
@@ -1694,6 +1701,7 @@ func TestContextShouldBindBodyWith(t *testing.T) {
 			c.Request, _ = http.NewRequest(
 				"POST", "http://example.com", bytes.NewBufferString(tt.bodyA),
 			)
+			c.Request.Header.Add("Content-Type", tt.contentTypeA)
 			// When it binds to typeA and typeB, it finds the body is
 			// not typeB but typeA.
 			objA := typeA{}
@@ -1702,6 +1710,9 @@ func TestContextShouldBindBodyWith(t *testing.T) {
 			objB := typeB{}
 			assert.Error(t, c.ShouldBindBodyWith(&objB, tt.bindingB))
 			assert.NotEqual(t, typeB{"BAR"}, objB)
+			objB2 := typeB{}
+			assert.Error(t, c.ShouldBind(&objB2))
+			assert.NotEqual(t, typeB{"BAR"}, objB2)
 		}
 		// bodyB to typeA and typeB
 		{
@@ -1712,12 +1723,16 @@ func TestContextShouldBindBodyWith(t *testing.T) {
 			c.Request, _ = http.NewRequest(
 				"POST", "http://example.com", bytes.NewBufferString(tt.bodyB),
 			)
+			c.Request.Header.Add("Content-Type", tt.contentTypeB)
 			objA := typeA{}
 			assert.Error(t, c.ShouldBindBodyWith(&objA, tt.bindingA))
 			assert.NotEqual(t, typeA{"FOO"}, objA)
 			objB := typeB{}
 			assert.NoError(t, c.ShouldBindBodyWith(&objB, tt.bindingB))
 			assert.Equal(t, typeB{"BAR"}, objB)
+			objB2 := typeB{}
+			assert.NoError(t, c.ShouldBind(&objB2))
+			assert.Equal(t, typeB{"BAR"}, objB2)
 		}
 	}
 }

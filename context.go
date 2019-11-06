@@ -5,6 +5,7 @@
 package gin
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"io"
@@ -33,7 +34,6 @@ const (
 	MIMEPOSTForm          = binding.MIMEPOSTForm
 	MIMEMultipartPOSTForm = binding.MIMEMultipartPOSTForm
 	MIMEYAML              = binding.MIMEYAML
-	BodyBytesKey          = "_gin-gonic/gin/bodybyteskey"
 )
 
 const abortIndex int8 = math.MaxInt8 / 2
@@ -666,19 +666,15 @@ func (c *Context) ShouldBindWith(obj interface{}, b binding.Binding) error {
 // NOTE: This method reads the body before binding. So you should use
 // ShouldBindWith for better performance if you need to call only once.
 func (c *Context) ShouldBindBodyWith(obj interface{}, bb binding.BindingBody) (err error) {
-	var body []byte
-	if cb, ok := c.Get(BodyBytesKey); ok {
-		if cbb, ok := cb.([]byte); ok {
-			body = cbb
-		}
+	var buf bytes.Buffer
+	tee := io.TeeReader(c.Request.Body, &buf)
+	body, err := ioutil.ReadAll(tee)
+	if err != nil {
+		return err
 	}
-	if body == nil {
-		body, err = ioutil.ReadAll(c.Request.Body)
-		if err != nil {
-			return err
-		}
-		c.Set(BodyBytesKey, body)
-	}
+	defer c.Request.Body.Close()
+
+	c.Request.Body = ioutil.NopCloser(&buf)
 	return bb.BindBody(body, obj)
 }
 
