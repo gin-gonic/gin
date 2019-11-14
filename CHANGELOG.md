@@ -24,7 +24,6 @@
 - [FIX] Bump github.com/mattn/go-isatty library to support Risc-V [#2019](https://github.com/gin-gonic/gin/pull/2019)
 - [FIX] Improve logger code [#1926](https://github.com/gin-gonic/gin/pull/1926)
 - [FIX] Fixed JSONP format (added semicolon) [#2007](https://github.com/gin-gonic/gin/pull/2007)
-- [FIX] Support go1.13 [#2038](https://github.com/gin-gonic/gin/pull/2038)
 - [FIX] Upgrade validator version to v9 [#1015](https://github.com/gin-gonic/gin/pull/1015)
 - [NEW] Add `DisallowUnknownFields()` in `Context.BindJSON()` [#2028](https://github.com/gin-gonic/gin/pull/2028)
 - [FIX] Refactor(context.go): GetPostFormMap [#2051](https://github.com/gin-gonic/gin/pull/2051)
