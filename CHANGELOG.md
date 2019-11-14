@@ -21,7 +21,6 @@
 - [NEW] Support bind unix time [#1980](https://github.com/gin-gonic/gin/pull/1980)
 - [FIX] Simplify code [#2004](https://github.com/gin-gonic/gin/pull/2004)
 - [NEW] Support negative Content-Length in DataFromReader [#1981](https://github.com/gin-gonic/gin/pull/1981)
-- [FIX] Remove unused code [#2013](https://github.com/gin-gonic/gin/pull/2013)
 - [FIX] Bump github.com/mattn/go-isatty library to support Risc-V [#2019](https://github.com/gin-gonic/gin/pull/2019)
 - [FIX] Improve logger code [#1926](https://github.com/gin-gonic/gin/pull/1926)
 - [FIX] Fixed JSONP format (added semicolon) [#2007](https://github.com/gin-gonic/gin/pull/2007)
