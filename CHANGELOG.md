@@ -22,7 +22,6 @@
 - [FIX] Simplify code [#2004](https://github.com/gin-gonic/gin/pull/2004)
 - [NEW] Support negative Content-Length in DataFromReader [#1981](https://github.com/gin-gonic/gin/pull/1981)
 - [FIX] Identify terminal on a RISC-V architecture for auto-colored logs [#2019](https://github.com/gin-gonic/gin/pull/2019)
-- [FIX] Improve logger code [#1926](https://github.com/gin-gonic/gin/pull/1926)
 - [FIX] Fixed JSONP format (added semicolon) [#2007](https://github.com/gin-gonic/gin/pull/2007)
 - [FIX] Upgrade validator version to v9 [#1015](https://github.com/gin-gonic/gin/pull/1015)
 - [NEW] Add `DisallowUnknownFields()` in `Context.BindJSON()` [#2028](https://github.com/gin-gonic/gin/pull/2028)
