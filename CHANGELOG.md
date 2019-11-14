@@ -23,7 +23,7 @@
 - [NEW] Support negative Content-Length in DataFromReader [#1981](https://github.com/gin-gonic/gin/pull/1981)
 - [FIX] Identify terminal on a RISC-V architecture for auto-colored logs [#2019](https://github.com/gin-gonic/gin/pull/2019)
 - [BREAKING] `Context.JSONP()` now expects a semicolon (`;`) at the end [#2007](https://github.com/gin-gonic/gin/pull/2007)
-- [FIX] Upgrade validator version to v9 [#1015](https://github.com/gin-gonic/gin/pull/1015)
+- [BREAKING] Upgrade default `binding.Validator` to v9 (see [its changelog](https://github.com/go-playground/validator/releases/tag/v9.0.0)) [#1015](https://github.com/gin-gonic/gin/pull/1015)
 - [NEW] Add `DisallowUnknownFields()` in `Context.BindJSON()` [#2028](https://github.com/gin-gonic/gin/pull/2028)
 - [FIX] Refactor(context.go): GetPostFormMap [#2051](https://github.com/gin-gonic/gin/pull/2051)
 - [FIX] Adjust Render.Redirect test case [#2053](https://github.com/gin-gonic/gin/pull/2053)
