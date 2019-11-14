@@ -35,7 +35,7 @@
 - [FIX] Relocate binding body tests [#2086](https://github.com/gin-gonic/gin/pull/2086)
 - [FIX] Use Writer in Context.Status [#1606](https://github.com/gin-gonic/gin/pull/1606)
 - [FIX] `Engine.RunUnix()` now returns the error if it can't change the file mode [#2093](https://github.com/gin-gonic/gin/pull/2093)
-- [FIX] Close files opened in static file handler [#2118](https://github.com/gin-gonic/gin/pull/2118)
+- [FIX] `RouterGroup.StaticFS()` leaked files. Now it closes them. [#2118](https://github.com/gin-gonic/gin/pull/2118)
 - [FIX] `Context.Request.FormFile` leaked file. Now it closes it. [#2114](https://github.com/gin-gonic/gin/pull/2114)
 - [FIX] Ignore walking on `form:"-"` mapping [#1943](https://github.com/gin-gonic/gin/pull/1943)
 
