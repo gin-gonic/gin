@@ -33,7 +33,7 @@
 - [FIX] Make countParams more readable [#2052](https://github.com/gin-gonic/gin/pull/2052)
 - [FIX] Use url.URL.Query instead of parsing query [#2063](https://github.com/gin-gonic/gin/pull/2063)
 - [FIX] Add TestDisableBindValidation [#2071](https://github.com/gin-gonic/gin/pull/2071)
-- [NEW] Support run HTTP server with specific net.Listener [#2023](https://github.com/gin-gonic/gin/pull/2023)
+- [NEW] Use specific `net.Listener` with `Engine.RunListener()` [#2023](https://github.com/gin-gonic/gin/pull/2023)
 - [FIX] Fix some typo [#2079](https://github.com/gin-gonic/gin/pull/2079) [#2080](https://github.com/gin-gonic/gin/pull/2080)
 - [FIX] Relocate binding body tests [#2086](https://github.com/gin-gonic/gin/pull/2086)
 - [FIX] Use Writer in Context.Status [#1606](https://github.com/gin-gonic/gin/pull/1606)
