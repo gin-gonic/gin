@@ -1,6 +1,5 @@
 ### Gin v1.5.0
 
-- [FIX] Readme updates [#1855](https://github.com/gin-gonic/gin/pull/1885) [#1937](https://github.com/gin-gonic/gin/pull/1937) [#1961](https://github.com/gin-gonic/gin/pull/1961) [#1963](https://github.com/gin-gonic/gin/pull/1963) [#2011](https://github.com/gin-gonic/gin/pull/2011) [#2025](https://github.com/gin-gonic/gin/pull/2025) [#2067](https://github.com/gin-gonic/gin/pull/2067) [#2068](https://github.com/gin-gonic/gin/pull/2068)
 - [FIX] Use DefaultWriter and DefaultErrorWriter for debug messages [#1891](https://github.com/gin-gonic/gin/pull/1891)
 - [NEW] Now you can parse the inline lowercase start structure [#1893](https://github.com/gin-gonic/gin/pull/1893)
 - [FIX] Some code improvements [#1909](https://github.com/gin-gonic/gin/pull/1909)
@@ -25,10 +24,6 @@
 - [BREAKING] `Context.JSONP()` now expects a semicolon (`;`) at the end [#2007](https://github.com/gin-gonic/gin/pull/2007)
 - [BREAKING] Upgrade default `binding.Validator` to v9 (see [its changelog](https://github.com/go-playground/validator/releases/tag/v9.0.0)) [#1015](https://github.com/gin-gonic/gin/pull/1015)
 - [NEW] Add `DisallowUnknownFields()` in `Context.BindJSON()` [#2028](https://github.com/gin-gonic/gin/pull/2028)
-- [FIX] Refactor(context.go): GetPostFormMap [#2051](https://github.com/gin-gonic/gin/pull/2051)
-- [FIX] Adjust Render.Redirect test case [#2053](https://github.com/gin-gonic/gin/pull/2053)
-- [FIX] Make countParams more readable [#2052](https://github.com/gin-gonic/gin/pull/2052)
-- [FIX] Use url.URL.Query instead of parsing query [#2063](https://github.com/gin-gonic/gin/pull/2063)
 - [NEW] Use specific `net.Listener` with `Engine.RunListener()` [#2023](https://github.com/gin-gonic/gin/pull/2023)
 - [FIX] Fix some typo [#2079](https://github.com/gin-gonic/gin/pull/2079) [#2080](https://github.com/gin-gonic/gin/pull/2080)
 - [FIX] Relocate binding body tests [#2086](https://github.com/gin-gonic/gin/pull/2086)
