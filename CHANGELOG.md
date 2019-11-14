@@ -27,7 +27,7 @@
 - [FIX] Fixed JSONP format (added semicolon) [#2007](https://github.com/gin-gonic/gin/pull/2007)
 - [FIX] Support go1.13 [#2038](https://github.com/gin-gonic/gin/pull/2038)
 - [FIX] Upgrade validator version to v9 [#1015](https://github.com/gin-gonic/gin/pull/1015)
-- [NEW] Add DisallowUnknownFields() in gin.Context.BindJSON() [#2028](https://github.com/gin-gonic/gin/pull/2028)
+- [NEW] Add `DisallowUnknownFields()` in `Context.BindJSON()` [#2028](https://github.com/gin-gonic/gin/pull/2028)
 - [FIX] Refactor(context.go): GetPostFormMap [#2051](https://github.com/gin-gonic/gin/pull/2051)
 - [FIX] Adjust Render.Redirect test case [#2053](https://github.com/gin-gonic/gin/pull/2053)
 - [FIX] Make countParams more readable [#2052](https://github.com/gin-gonic/gin/pull/2052)
