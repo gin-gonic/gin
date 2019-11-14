@@ -40,7 +40,7 @@
 - [FIX] Fix some errcheck linter warnings [#2093](https://github.com/gin-gonic/gin/pull/2093)
 - [FIX] Close files opened in static file handler [#2118](https://github.com/gin-gonic/gin/pull/2118)
 - [FIX] Fix c.Request.FormFile maybe file, need close [#2114](https://github.com/gin-gonic/gin/pull/2114)
-- [FIX] Fix ignore walking on form mapping [#1943](https://github.com/gin-gonic/gin/pull/1943)
+- [FIX] Ignore walking on `form:"-"` mapping [#1943](https://github.com/gin-gonic/gin/pull/1943)
 
 ### Gin v1.4.0
 
