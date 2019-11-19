@@ -414,7 +414,7 @@ func TestContextQueryAndPostForm(t *testing.T) {
 	c, _ := CreateTestContext(httptest.NewRecorder())
 	body := bytes.NewBufferString("foo=bar&page=11&both=&foo=second")
 	c.Request, _ = http.NewRequest("POST",
-		"/?both=GET&id=main&id=omit&array[]=first&array[]=second&ids[a]=hi&ids[b]=3.14", body)
+		"/?both=GET&id=main&id=omit&array[]=first&array[]=second&ids[a]=hi&ids[a]=bye&ids[b]=3.14", body)
 	c.Request.Header.Add("Content-Type", MIMEPOSTForm)
 
 	assert.Equal(t, "bar", c.DefaultPostForm("foo", "none"))
@@ -506,6 +506,30 @@ func TestContextQueryAndPostForm(t *testing.T) {
 
 	dicts = c.QueryMap("nokey")
 	assert.Equal(t, 0, len(dicts))
+
+	multiDicts, ok := c.GetQueryMultiMap("ids")
+	assert.True(t, ok)
+	assert.Equal(t, []string{"hi", "bye"}, multiDicts["a"])
+	assert.Equal(t, []string{"3.14"}, multiDicts["b"])
+
+	multiDicts, ok = c.GetQueryMultiMap("nokey")
+	assert.False(t, ok)
+	assert.Equal(t, 0, len(multiDicts))
+
+	multiDicts, ok = c.GetQueryMultiMap("both")
+	assert.False(t, ok)
+	assert.Equal(t, 0, len(multiDicts))
+
+	multiDicts, ok = c.GetQueryMultiMap("array")
+	assert.False(t, ok)
+	assert.Equal(t, 0, len(multiDicts))
+
+	multiDicts = c.QueryMultiMap("ids")
+	assert.Equal(t, []string{"hi", "bye"}, multiDicts["a"])
+	assert.Equal(t, []string{"3.14"}, multiDicts["b"])
+
+	multiDicts = c.QueryMultiMap("nokey")
+	assert.Equal(t, 0, len(multiDicts))
 }
 
 func TestContextPostFormMultipart(t *testing.T) {
