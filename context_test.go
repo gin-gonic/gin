@@ -6,6 +6,7 @@ package gin
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"fmt"
 	"html/template"
@@ -13,8 +14,10 @@ import (
 	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"reflect"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -22,7 +25,6 @@ import (
 	"github.com/gin-gonic/gin/binding"
 	"github.com/golang/protobuf/proto"
 	"github.com/stretchr/testify/assert"
-	"golang.org/x/net/context"
 
 	testdata "github.com/gin-gonic/gin/testdata/protoexample"
 )
@@ -622,8 +624,7 @@ func TestContextGetCookie(t *testing.T) {
 }
 
 func TestContextBodyAllowedForStatus(t *testing.T) {
-	// todo(thinkerou): go1.6 not support StatusProcessing
-	assert.False(t, false, bodyAllowedForStatus(102))
+	assert.False(t, false, bodyAllowedForStatus(http.StatusProcessing))
 	assert.False(t, false, bodyAllowedForStatus(http.StatusNoContent))
 	assert.False(t, false, bodyAllowedForStatus(http.StatusNotModified))
 	assert.True(t, true, bodyAllowedForStatus(http.StatusInternalServerError))
@@ -661,7 +662,7 @@ func TestContextRenderJSON(t *testing.T) {
 	c.JSON(http.StatusCreated, H{"foo": "bar", "html": "<b>"})
 
 	assert.Equal(t, http.StatusCreated, w.Code)
-	assert.Equal(t, "{\"foo\":\"bar\",\"html\":\"\\u003cb\\u003e\"}", w.Body.String())
+	assert.Equal(t, "{\"foo\":\"bar\",\"html\":\"\\u003cb\\u003e\"}\n", w.Body.String())
 	assert.Equal(t, "application/json; charset=utf-8", w.Header().Get("Content-Type"))
 }
 
@@ -675,7 +676,7 @@ func TestContextRenderJSONP(t *testing.T) {
 	c.JSONP(http.StatusCreated, H{"foo": "bar"})
 
 	assert.Equal(t, http.StatusCreated, w.Code)
-	assert.Equal(t, "x({\"foo\":\"bar\"})", w.Body.String())
+	assert.Equal(t, "x({\"foo\":\"bar\"});", w.Body.String())
 	assert.Equal(t, "application/javascript; charset=utf-8", w.Header().Get("Content-Type"))
 }
 
@@ -689,7 +690,7 @@ func TestContextRenderJSONPWithoutCallback(t *testing.T) {
 	c.JSONP(http.StatusCreated, H{"foo": "bar"})
 
 	assert.Equal(t, http.StatusCreated, w.Code)
-	assert.Equal(t, "{\"foo\":\"bar\"}", w.Body.String())
+	assert.Equal(t, "{\"foo\":\"bar\"}\n", w.Body.String())
 	assert.Equal(t, "application/json; charset=utf-8", w.Header().Get("Content-Type"))
 }
 
@@ -715,7 +716,7 @@ func TestContextRenderAPIJSON(t *testing.T) {
 	c.JSON(http.StatusCreated, H{"foo": "bar"})
 
 	assert.Equal(t, http.StatusCreated, w.Code)
-	assert.Equal(t, "{\"foo\":\"bar\"}", w.Body.String())
+	assert.Equal(t, "{\"foo\":\"bar\"}\n", w.Body.String())
 	assert.Equal(t, "application/vnd.api+json", w.Header().Get("Content-Type"))
 }
 
@@ -792,6 +793,18 @@ func TestContextRenderNoContentAsciiJSON(t *testing.T) {
 	assert.Equal(t, http.StatusNoContent, w.Code)
 	assert.Empty(t, w.Body.String())
 	assert.Equal(t, "application/json", w.Header().Get("Content-Type"))
+}
+
+// Tests that the response is serialized as JSON
+// and Content-Type is set to application/json
+// and special HTML characters are preserved
+func TestContextRenderPureJSON(t *testing.T) {
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
+	c.PureJSON(http.StatusCreated, H{"foo": "bar", "html": "<b>"})
+	assert.Equal(t, http.StatusCreated, w.Code)
+	assert.Equal(t, "{\"foo\":\"bar\",\"html\":\"<b>\"}\n", w.Body.String())
+	assert.Equal(t, "application/json; charset=utf-8", w.Header().Get("Content-Type"))
 }
 
 // Tests that the response executes the templates
@@ -979,6 +992,19 @@ func TestContextRenderFile(t *testing.T) {
 	assert.Equal(t, "text/plain; charset=utf-8", w.Header().Get("Content-Type"))
 }
 
+func TestContextRenderAttachment(t *testing.T) {
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
+	newFilename := "new_filename.go"
+
+	c.Request, _ = http.NewRequest("GET", "/", nil)
+	c.FileAttachment("./gin.go", newFilename)
+
+	assert.Equal(t, 200, w.Code)
+	assert.Contains(t, w.Body.String(), "func New() *Engine {")
+	assert.Equal(t, fmt.Sprintf("attachment; filename=\"%s\"", newFilename), w.HeaderMap.Get("Content-Disposition"))
+}
+
 // TestContextRenderYAML tests that the response is serialized as YAML
 // and Content-Type is set to application/x-yaml
 func TestContextRenderYAML(t *testing.T) {
@@ -1079,9 +1105,7 @@ func TestContextRenderRedirectAll(t *testing.T) {
 	assert.Panics(t, func() { c.Redirect(299, "/resource") })
 	assert.Panics(t, func() { c.Redirect(309, "/resource") })
 	assert.NotPanics(t, func() { c.Redirect(http.StatusMultipleChoices, "/resource") })
-	// todo(thinkerou): go1.6 not support StatusPermanentRedirect(308)
-	// when we upgrade go version we can use http.StatusPermanentRedirect
-	assert.NotPanics(t, func() { c.Redirect(308, "/resource") })
+	assert.NotPanics(t, func() { c.Redirect(http.StatusPermanentRedirect, "/resource") })
 }
 
 func TestContextNegotiationWithJSON(t *testing.T) {
@@ -1095,7 +1119,7 @@ func TestContextNegotiationWithJSON(t *testing.T) {
 	})
 
 	assert.Equal(t, http.StatusOK, w.Code)
-	assert.Equal(t, "{\"foo\":\"bar\"}", w.Body.String())
+	assert.Equal(t, "{\"foo\":\"bar\"}\n", w.Body.String())
 	assert.Equal(t, "application/json; charset=utf-8", w.Header().Get("Content-Type"))
 }
 
@@ -1158,17 +1182,41 @@ func TestContextNegotiationFormat(t *testing.T) {
 func TestContextNegotiationFormatWithAccept(t *testing.T) {
 	c, _ := CreateTestContext(httptest.NewRecorder())
 	c.Request, _ = http.NewRequest("POST", "/", nil)
-	c.Request.Header.Add("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8")
+	c.Request.Header.Add("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9;q=0.8")
 
 	assert.Equal(t, MIMEXML, c.NegotiateFormat(MIMEJSON, MIMEXML))
 	assert.Equal(t, MIMEHTML, c.NegotiateFormat(MIMEXML, MIMEHTML))
 	assert.Empty(t, c.NegotiateFormat(MIMEJSON))
 }
 
+func TestContextNegotiationFormatWithWildcardAccept(t *testing.T) {
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	c.Request, _ = http.NewRequest("POST", "/", nil)
+	c.Request.Header.Add("Accept", "*/*")
+
+	assert.Equal(t, c.NegotiateFormat("*/*"), "*/*")
+	assert.Equal(t, c.NegotiateFormat("text/*"), "text/*")
+	assert.Equal(t, c.NegotiateFormat("application/*"), "application/*")
+	assert.Equal(t, c.NegotiateFormat(MIMEJSON), MIMEJSON)
+	assert.Equal(t, c.NegotiateFormat(MIMEXML), MIMEXML)
+	assert.Equal(t, c.NegotiateFormat(MIMEHTML), MIMEHTML)
+
+	c, _ = CreateTestContext(httptest.NewRecorder())
+	c.Request, _ = http.NewRequest("POST", "/", nil)
+	c.Request.Header.Add("Accept", "text/*")
+
+	assert.Equal(t, c.NegotiateFormat("*/*"), "*/*")
+	assert.Equal(t, c.NegotiateFormat("text/*"), "text/*")
+	assert.Equal(t, c.NegotiateFormat("application/*"), "")
+	assert.Equal(t, c.NegotiateFormat(MIMEJSON), "")
+	assert.Equal(t, c.NegotiateFormat(MIMEXML), "")
+	assert.Equal(t, c.NegotiateFormat(MIMEHTML), MIMEHTML)
+}
+
 func TestContextNegotiationFormatCustom(t *testing.T) {
 	c, _ := CreateTestContext(httptest.NewRecorder())
 	c.Request, _ = http.NewRequest("POST", "/", nil)
-	c.Request.Header.Add("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8")
+	c.Request.Header.Add("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9;q=0.8")
 
 	c.Accepted = nil
 	c.SetAccepted(MIMEJSON, MIMEXML)
@@ -1235,29 +1283,31 @@ func TestContextAbortWithStatusJSON(t *testing.T) {
 	_, err := buf.ReadFrom(w.Body)
 	assert.NoError(t, err)
 	jsonStringBody := buf.String()
-	assert.Equal(t, fmt.Sprint(`{"foo":"fooValue","bar":"barValue"}`), jsonStringBody)
+	assert.Equal(t, fmt.Sprint("{\"foo\":\"fooValue\",\"bar\":\"barValue\"}\n"), jsonStringBody)
 }
 
 func TestContextError(t *testing.T) {
 	c, _ := CreateTestContext(httptest.NewRecorder())
 	assert.Empty(t, c.Errors)
 
-	c.Error(errors.New("first error")) // nolint: errcheck
+	firstErr := errors.New("first error")
+	c.Error(firstErr) // nolint: errcheck
 	assert.Len(t, c.Errors, 1)
 	assert.Equal(t, "Error #01: first error\n", c.Errors.String())
 
+	secondErr := errors.New("second error")
 	c.Error(&Error{ // nolint: errcheck
-		Err:  errors.New("second error"),
+		Err:  secondErr,
 		Meta: "some data 2",
 		Type: ErrorTypePublic,
 	})
 	assert.Len(t, c.Errors, 2)
 
-	assert.Equal(t, errors.New("first error"), c.Errors[0].Err)
+	assert.Equal(t, firstErr, c.Errors[0].Err)
 	assert.Nil(t, c.Errors[0].Meta)
 	assert.Equal(t, ErrorTypePrivate, c.Errors[0].Type)
 
-	assert.Equal(t, errors.New("second error"), c.Errors[1].Err)
+	assert.Equal(t, secondErr, c.Errors[1].Err)
 	assert.Equal(t, "some data 2", c.Errors[1].Meta)
 	assert.Equal(t, ErrorTypePublic, c.Errors[1].Type)
 
@@ -1386,6 +1436,28 @@ func TestContextBindWithXML(t *testing.T) {
 	assert.Equal(t, 0, w.Body.Len())
 }
 
+func TestContextBindHeader(t *testing.T) {
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
+
+	c.Request, _ = http.NewRequest("POST", "/", nil)
+	c.Request.Header.Add("rate", "8000")
+	c.Request.Header.Add("domain", "music")
+	c.Request.Header.Add("limit", "1000")
+
+	var testHeader struct {
+		Rate   int    `header:"Rate"`
+		Domain string `header:"Domain"`
+		Limit  int    `header:"limit"`
+	}
+
+	assert.NoError(t, c.BindHeader(&testHeader))
+	assert.Equal(t, 8000, testHeader.Rate)
+	assert.Equal(t, "music", testHeader.Domain)
+	assert.Equal(t, 1000, testHeader.Limit)
+	assert.Equal(t, 0, w.Body.Len())
+}
+
 func TestContextBindWithQuery(t *testing.T) {
 	w := httptest.NewRecorder()
 	c, _ := CreateTestContext(w)
@@ -1490,6 +1562,28 @@ func TestContextShouldBindWithXML(t *testing.T) {
 	assert.NoError(t, c.ShouldBindXML(&obj))
 	assert.Equal(t, "FOO", obj.Foo)
 	assert.Equal(t, "BAR", obj.Bar)
+	assert.Equal(t, 0, w.Body.Len())
+}
+
+func TestContextShouldBindHeader(t *testing.T) {
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
+
+	c.Request, _ = http.NewRequest("POST", "/", nil)
+	c.Request.Header.Add("rate", "8000")
+	c.Request.Header.Add("domain", "music")
+	c.Request.Header.Add("limit", "1000")
+
+	var testHeader struct {
+		Rate   int    `header:"Rate"`
+		Domain string `header:"Domain"`
+		Limit  int    `header:"limit"`
+	}
+
+	assert.NoError(t, c.ShouldBindHeader(&testHeader))
+	assert.Equal(t, 8000, testHeader.Rate)
+	assert.Equal(t, "music", testHeader.Domain)
+	assert.Equal(t, 1000, testHeader.Limit)
 	assert.Equal(t, 0, w.Body.Len())
 }
 
@@ -1705,6 +1799,23 @@ func TestContextRenderDataFromReader(t *testing.T) {
 	assert.Equal(t, extraHeaders["Content-Disposition"], w.Header().Get("Content-Disposition"))
 }
 
+func TestContextRenderDataFromReaderNoHeaders(t *testing.T) {
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
+
+	body := "#!PNG some raw data"
+	reader := strings.NewReader(body)
+	contentLength := int64(len(body))
+	contentType := "image/png"
+
+	c.DataFromReader(http.StatusOK, contentLength, contentType, reader, nil)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Equal(t, body, w.Body.String())
+	assert.Equal(t, contentType, w.Header().Get("Content-Type"))
+	assert.Equal(t, fmt.Sprintf("%d", contentLength), w.Header().Get("Content-Length"))
+}
+
 type TestResponseRecorder struct {
 	*httptest.ResponseRecorder
 	closeChannel chan bool
@@ -1772,4 +1883,25 @@ func TestContextResetInHandler(t *testing.T) {
 	assert.NotPanics(t, func() {
 		c.Next()
 	})
+}
+
+func TestRaceParamsContextCopy(t *testing.T) {
+	DefaultWriter = os.Stdout
+	router := Default()
+	nameGroup := router.Group("/:name")
+	var wg sync.WaitGroup
+	wg.Add(2)
+	{
+		nameGroup.GET("/api", func(c *Context) {
+			go func(c *Context, param string) {
+				defer wg.Done()
+				// First assert must be executed after the second request
+				time.Sleep(50 * time.Millisecond)
+				assert.Equal(t, c.Param("name"), param)
+			}(c.Copy(), c.Param("name"))
+		})
+	}
+	performRequest(router, "GET", "/name1/api")
+	performRequest(router, "GET", "/name2/api")
+	wg.Wait()
 }

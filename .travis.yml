@@ -1,14 +1,4 @@
 language: go
-sudo: false
-go:
-  - 1.6.x
-  - 1.7.x
-  - 1.8.x
-  - 1.9.x
-  - 1.10.x
-  - 1.11.x
-  - 1.12.x
-  - master
 
 matrix:
   fast_finish: true
@@ -17,6 +7,8 @@ matrix:
     env: GO111MODULE=on
   - go: 1.12.x
     env: GO111MODULE=on
+  - go: 1.13.x
+  - go: master
 
 git:
   depth: 10
@@ -34,7 +26,6 @@ go_import_path: github.com/gin-gonic/gin
 script:
   - make vet
   - make fmt-check
-  - make embedmd
   - make misspell-check
   - make test
 

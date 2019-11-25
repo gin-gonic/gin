@@ -30,7 +30,7 @@ type HandlerFunc func(*Context)
 // HandlersChain defines a HandlerFunc array.
 type HandlersChain []HandlerFunc
 
-// Last returns the last handler in the chain. ie. the last handler is the main own.
+// Last returns the last handler in the chain. ie. the last handler is the main one.
 func (c HandlersChain) Last() HandlerFunc {
 	if length := len(c); length > 0 {
 		return c[length-1]
@@ -225,7 +225,7 @@ func (engine *Engine) NoMethod(handlers ...HandlerFunc) {
 	engine.rebuild405Handlers()
 }
 
-// Use attachs a global middleware to the router. ie. the middleware attached though Use() will be
+// Use attaches a global middleware to the router. ie. the middleware attached though Use() will be
 // included in the handlers chain for every single request. Even 404, 405, static files...
 // For example, this is the right place for a logger or error management middleware.
 func (engine *Engine) Use(middleware ...HandlerFunc) IRoutes {
@@ -252,6 +252,7 @@ func (engine *Engine) addRoute(method, path string, handlers HandlersChain) {
 	root := engine.trees.get(method)
 	if root == nil {
 		root = new(node)
+		root.fullPath = "/"
 		engine.trees = append(engine.trees, methodTree{method: method, root: root})
 	}
 	root.addRoute(path, handlers)
@@ -319,7 +320,10 @@ func (engine *Engine) RunUnix(file string) (err error) {
 		return
 	}
 	defer listener.Close()
-	os.Chmod(file, 0777)
+	err = os.Chmod(file, 0777)
+	if err != nil {
+		return
+	}
 	err = http.Serve(listener, engine)
 	return
 }
@@ -337,6 +341,15 @@ func (engine *Engine) RunFd(fd int) (err error) {
 		return
 	}
 	defer listener.Close()
+	err = engine.RunListener(listener)
+	return
+}
+
+// RunListener attaches the router to a http.Server and starts listening and serving HTTP requests
+// through the specified net.Listener
+func (engine *Engine) RunListener(listener net.Listener) (err error) {
+	debugPrint("Listening and serving HTTP on listener what's bind with address@%s", listener.Addr())
+	defer func() { debugPrintError(err) }()
 	err = http.Serve(listener, engine)
 	return
 }
@@ -366,12 +379,13 @@ func (engine *Engine) HandleContext(c *Context) {
 
 func (engine *Engine) handleHTTPRequest(c *Context) {
 	httpMethod := c.Request.Method
-	path := c.Request.URL.Path
+	rPath := c.Request.URL.Path
 	unescape := false
 	if engine.UseRawPath && len(c.Request.URL.RawPath) > 0 {
-		path = c.Request.URL.RawPath
+		rPath = c.Request.URL.RawPath
 		unescape = engine.UnescapePathValues
 	}
+	rPath = cleanPath(rPath)
 
 	// Find root of the tree for the given HTTP method
 	t := engine.trees
@@ -381,16 +395,17 @@ func (engine *Engine) handleHTTPRequest(c *Context) {
 		}
 		root := t[i].root
 		// Find route in tree
-		handlers, params, tsr := root.getValue(path, c.Params, unescape)
-		if handlers != nil {
-			c.handlers = handlers
-			c.Params = params
+		value := root.getValue(rPath, c.Params, unescape)
+		if value.handlers != nil {
+			c.handlers = value.handlers
+			c.Params = value.params
+			c.fullPath = value.fullPath
 			c.Next()
 			c.writermem.WriteHeaderNow()
 			return
 		}
-		if httpMethod != "CONNECT" && path != "/" {
-			if tsr && engine.RedirectTrailingSlash {
+		if httpMethod != "CONNECT" && rPath != "/" {
+			if value.tsr && engine.RedirectTrailingSlash {
 				redirectTrailingSlash(c)
 				return
 			}
@@ -406,7 +421,7 @@ func (engine *Engine) handleHTTPRequest(c *Context) {
 			if tree.method == httpMethod {
 				continue
 			}
-			if handlers, _, _ := tree.root.getValue(path, nil, unescape); handlers != nil {
+			if value := tree.root.getValue(rPath, nil, unescape); value.handlers != nil {
 				c.handlers = engine.allNoMethod
 				serveError(c, http.StatusMethodNotAllowed, default405Body)
 				return
@@ -434,7 +449,6 @@ func serveError(c *Context, code int, defaultMessage []byte) {
 		return
 	}
 	c.writermem.WriteHeaderNow()
-	return
 }
 
 func redirectTrailingSlash(c *Context) {
@@ -459,15 +473,15 @@ func redirectTrailingSlash(c *Context) {
 
 func redirectFixedPath(c *Context, root *node, trailingSlash bool) bool {
 	req := c.Request
-	path := req.URL.Path
+	rPath := req.URL.Path
 
-	if fixedPath, ok := root.findCaseInsensitivePath(cleanPath(path), trailingSlash); ok {
+	if fixedPath, ok := root.findCaseInsensitivePath(cleanPath(rPath), trailingSlash); ok {
 		code := http.StatusMovedPermanently // Permanent redirect, request with GET method
 		if req.Method != "GET" {
 			code = http.StatusTemporaryRedirect
 		}
 		req.URL.Path = string(fixedPath)
-		debugPrint("redirecting request %d: %s --> %s", code, path, req.URL.String())
+		debugPrint("redirecting request %d: %s --> %s", code, rPath, req.URL.String())
 		http.Redirect(c.Writer, req, req.URL.String(), code)
 		c.writermem.WriteHeaderNow()
 		return true

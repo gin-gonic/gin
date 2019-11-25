@@ -5,9 +5,9 @@
 package gin
 
 import (
-	"bytes"
 	"fmt"
 	"reflect"
+	"strings"
 
 	"github.com/gin-gonic/gin/internal/json"
 )
@@ -53,7 +53,7 @@ func (msg *Error) SetMeta(data interface{}) *Error {
 	return msg
 }
 
-// JSON creates a properly formated JSON
+// JSON creates a properly formatted JSON
 func (msg *Error) JSON() interface{} {
 	json := H{}
 	if msg.Meta != nil {
@@ -158,7 +158,7 @@ func (a errorMsgs) String() string {
 	if len(a) == 0 {
 		return ""
 	}
-	var buffer bytes.Buffer
+	var buffer strings.Builder
 	for i, msg := range a {
 		fmt.Fprintf(&buffer, "Error #%02d: %s\n", i+1, msg.Err)
 		if msg.Meta != nil {

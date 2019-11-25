@@ -35,22 +35,22 @@ func checkRequests(t *testing.T, tree *node, requests testRequests, unescapes ..
 	}
 
 	for _, request := range requests {
-		handler, ps, _ := tree.getValue(request.path, nil, unescape)
+		value := tree.getValue(request.path, nil, unescape)
 
-		if handler == nil {
+		if value.handlers == nil {
 			if !request.nilHandler {
 				t.Errorf("handle mismatch for route '%s': Expected non-nil handle", request.path)
 			}
 		} else if request.nilHandler {
 			t.Errorf("handle mismatch for route '%s': Expected nil handle", request.path)
 		} else {
-			handler[0](nil)
+			value.handlers[0](nil)
 			if fakeHandlerValue != request.route {
 				t.Errorf("handle mismatch for route '%s': Wrong handle (%s != %s)", request.path, fakeHandlerValue, request.route)
 			}
 		}
 
-		if !reflect.DeepEqual(ps, request.ps) {
+		if !reflect.DeepEqual(value.params, request.ps) {
 			t.Errorf("Params mismatch for route '%s'", request.path)
 		}
 	}
@@ -454,10 +454,10 @@ func TestTreeTrailingSlashRedirect(t *testing.T) {
 		"/doc/",
 	}
 	for _, route := range tsrRoutes {
-		handler, _, tsr := tree.getValue(route, nil, false)
-		if handler != nil {
+		value := tree.getValue(route, nil, false)
+		if value.handlers != nil {
 			t.Fatalf("non-nil handler for TSR route '%s", route)
-		} else if !tsr {
+		} else if !value.tsr {
 			t.Errorf("expected TSR recommendation for route '%s'", route)
 		}
 	}
@@ -471,10 +471,10 @@ func TestTreeTrailingSlashRedirect(t *testing.T) {
 		"/api/world/abc",
 	}
 	for _, route := range noTsrRoutes {
-		handler, _, tsr := tree.getValue(route, nil, false)
-		if handler != nil {
+		value := tree.getValue(route, nil, false)
+		if value.handlers != nil {
 			t.Fatalf("non-nil handler for No-TSR route '%s", route)
-		} else if tsr {
+		} else if value.tsr {
 			t.Errorf("expected no TSR recommendation for route '%s'", route)
 		}
 	}
@@ -490,10 +490,10 @@ func TestTreeRootTrailingSlashRedirect(t *testing.T) {
 		t.Fatalf("panic inserting test route: %v", recv)
 	}
 
-	handler, _, tsr := tree.getValue("/", nil, false)
-	if handler != nil {
+	value := tree.getValue("/", nil, false)
+	if value.handlers != nil {
 		t.Fatalf("non-nil handler")
-	} else if tsr {
+	} else if value.tsr {
 		t.Errorf("expected no TSR recommendation")
 	}
 }
