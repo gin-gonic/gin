@@ -31,6 +31,8 @@ import (
 
 var _ context.Context = &Context{}
 
+var errTestPanicRender = errors.New("TestPanicRender")
+
 // Unit tests TODO
 // func (c *Context) File(filepath string) {
 // func (c *Context) Negotiate(code int, config Negotiate) {
@@ -634,22 +636,18 @@ type TestPanicRender struct {
 }
 
 func (*TestPanicRender) Render(http.ResponseWriter) error {
-	return errors.New("TestPanicRender")
+	return errTestPanicRender
 }
 
 func (*TestPanicRender) WriteContentType(http.ResponseWriter) {}
 
-func TestContextRenderPanicIfErr(t *testing.T) {
-	defer func() {
-		r := recover()
-		assert.Equal(t, "TestPanicRender", fmt.Sprint(r))
-	}()
+func TestContextRenderIfErr(t *testing.T) {
 	w := httptest.NewRecorder()
 	c, _ := CreateTestContext(w)
 
 	c.Render(http.StatusOK, &TestPanicRender{})
 
-	assert.Fail(t, "Panic not detected")
+	assert.Equal(t, errorMsgs{&Error{Err: errTestPanicRender, Type: 1}}, c.Errors)
 }
 
 // Tests that the response is serialized as JSON
