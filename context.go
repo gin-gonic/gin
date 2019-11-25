@@ -393,8 +393,7 @@ func (c *Context) QueryArray(key string) []string {
 
 func (c *Context) getQueryCache() {
 	if c.queryCache == nil {
-		c.queryCache = make(url.Values)
-		c.queryCache, _ = url.ParseQuery(c.Request.URL.RawQuery)
+		c.queryCache = c.Request.URL.Query()
 	}
 }
 
@@ -491,13 +490,8 @@ func (c *Context) PostFormMap(key string) map[string]string {
 // GetPostFormMap returns a map for a given form key, plus a boolean value
 // whether at least one value exists for the given key.
 func (c *Context) GetPostFormMap(key string) (map[string]string, bool) {
-	req := c.Request
-	if err := req.ParseMultipartForm(c.engine.MaxMultipartMemory); err != nil {
-		if err != http.ErrNotMultipart {
-			debugPrint("error on parse multipart form map: %v", err)
-		}
-	}
-	return c.get(req.PostForm, key)
+	c.getFormCache()
+	return c.get(c.formCache, key)
 }
 
 // get is an internal method and returns a map which satisfy conditions.
@@ -522,7 +516,11 @@ func (c *Context) FormFile(name string) (*multipart.FileHeader, error) {
 			return nil, err
 		}
 	}
-	_, fh, err := c.Request.FormFile(name)
+	f, fh, err := c.Request.FormFile(name)
+	if err != nil {
+		return nil, err
+	}
+	f.Close()
 	return fh, err
 }
 
@@ -750,7 +748,7 @@ func bodyAllowedForStatus(status int) bool {
 
 // Status sets the HTTP response code.
 func (c *Context) Status(code int) {
-	c.writermem.WriteHeader(code)
+	c.Writer.WriteHeader(code)
 }
 
 // Header is a intelligent shortcut for c.Writer.Header().Set(key, value).

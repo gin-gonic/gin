@@ -30,7 +30,7 @@ type HandlerFunc func(*Context)
 // HandlersChain defines a HandlerFunc array.
 type HandlersChain []HandlerFunc
 
-// Last returns the last handler in the chain. ie. the last handler is the main own.
+// Last returns the last handler in the chain. ie. the last handler is the main one.
 func (c HandlersChain) Last() HandlerFunc {
 	if length := len(c); length > 0 {
 		return c[length-1]
@@ -320,7 +320,10 @@ func (engine *Engine) RunUnix(file string) (err error) {
 		return
 	}
 	defer listener.Close()
-	os.Chmod(file, 0777)
+	err = os.Chmod(file, 0777)
+	if err != nil {
+		return
+	}
 	err = http.Serve(listener, engine)
 	return
 }
@@ -338,6 +341,15 @@ func (engine *Engine) RunFd(fd int) (err error) {
 		return
 	}
 	defer listener.Close()
+	err = engine.RunListener(listener)
+	return
+}
+
+// RunListener attaches the router to a http.Server and starts listening and serving HTTP requests
+// through the specified net.Listener
+func (engine *Engine) RunListener(listener net.Listener) (err error) {
+	debugPrint("Listening and serving HTTP on listener what's bind with address@%s", listener.Addr())
+	defer func() { debugPrintError(err) }()
 	err = http.Serve(listener, engine)
 	return
 }

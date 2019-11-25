@@ -11,7 +11,7 @@
 [![Open Source Helpers](https://www.codetriage.com/gin-gonic/gin/badges/users.svg)](https://www.codetriage.com/gin-gonic/gin)
 [![Release](https://img.shields.io/github/release/gin-gonic/gin.svg?style=flat-square)](https://github.com/gin-gonic/gin/releases)
 
-Gin is a web framework written in Go (Golang). It features a martini-like API with much better performance, up to 40 times faster thanks to [httprouter](https://github.com/julienschmidt/httprouter). If you need performance and good productivity, you will love Gin.
+Gin is a web framework written in Go (Golang). It features a martini-like API with performance that is up to 40 times faster thanks to [httprouter](https://github.com/julienschmidt/httprouter). If you need performance and good productivity, you will love Gin.
 
 
 ## Contents
@@ -70,7 +70,7 @@ Gin is a web framework written in Go (Golang). It features a martini-like API wi
 
 To install Gin package, you need to install Go and set your Go workspace first.
 
-1. The first need [Go](https://golang.org/) installed (**version 1.10+ is required**), then you can use the below Go command to install Gin.
+1. The first need [Go](https://golang.org/) installed (**version 1.11+ is required**), then you can use the below Go command to install Gin.
 
 ```sh
 $ go get -u github.com/gin-gonic/gin
@@ -99,6 +99,12 @@ $ go get github.com/kardianos/govendor
 
 ```sh
 $ mkdir -p $GOPATH/src/github.com/myusername/project && cd "$_"
+```
+
+If you are on a Mac and you're installing Go 1.8 (released: Feb 2017) or later, GOPATH is automatically determined by the Go toolchain for you. It defaults to $HOME/go on macOS so you can create your project like this
+
+```sh
+$ mkdir -p $HOME/go/src/github.com/myusername/project && cd "$_"
 ```
 
 3. Vendor init your project and add gin
@@ -139,12 +145,12 @@ func main() {
 			"message": "pong",
 		})
 	})
-	r.Run() // listen and serve on 0.0.0.0:8080
+	r.Run() // listen and serve on 0.0.0.0:8080 (for windows "localhost:8080")
 }
 ```
 
 ```
-# run example.go and visit 0.0.0.0:8080/ping on browser
+# run example.go and visit 0.0.0.0:8080/ping (for windows "localhost:8080/ping") on browser
 $ go run example.go
 ```
 
@@ -1143,7 +1149,7 @@ func main() {
 
 #### AsciiJSON
 
-Using AsciiJSON to Generates ASCII-only JSON with escaped non-ASCII chracters.
+Using AsciiJSON to Generates ASCII-only JSON with escaped non-ASCII characters.
 
 ```go
 func main() {
@@ -1672,11 +1678,19 @@ func main() {
 	}
 
 	g.Go(func() error {
-		return server01.ListenAndServe()
+		err := server01.ListenAndServe()
+		if err != nil && err != http.ErrServerClosed {
+			log.Fatal(err)
+		}
+		return err
 	})
 
 	g.Go(func() error {
-		return server02.ListenAndServe()
+		err := server02.ListenAndServe()
+		if err != nil && err != http.ErrServerClosed {
+			log.Fatal(err)
+		}
+		return err
 	})
 
 	if err := g.Wait(); err != nil {
@@ -1793,6 +1807,7 @@ func main() {
 func loadTemplate() (*template.Template, error) {
 	t := template.New("")
 	for name, file := range Assets.Files {
+		defer file.Close()
 		if file.IsDir() || !strings.HasSuffix(name, ".tmpl") {
 			continue
 		}
