@@ -9,8 +9,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/go-playground/validator/v10"
 	"github.com/stretchr/testify/assert"
-	"gopkg.in/go-playground/validator.v9"
 )
 
 type testInterface interface {
