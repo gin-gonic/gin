@@ -457,18 +457,11 @@ func redirectTrailingSlash(c *Context) {
 	if prefix := path.Clean(c.Request.Header.Get("X-Forwarded-Prefix")); prefix != "." {
 		p = prefix + "/" + req.URL.Path
 	}
-	code := http.StatusMovedPermanently // Permanent redirect, request with GET method
-	if req.Method != "GET" {
-		code = http.StatusTemporaryRedirect
-	}
-
 	req.URL.Path = p + "/"
 	if length := len(p); length > 1 && p[length-1] == '/' {
 		req.URL.Path = p[:length-1]
 	}
-	debugPrint("redirecting request %d: %s --> %s", code, p, req.URL.String())
-	http.Redirect(c.Writer, req, req.URL.String(), code)
-	c.writermem.WriteHeaderNow()
+	redirectRequest(c)
 }
 
 func redirectFixedPath(c *Context, root *node, trailingSlash bool) bool {
@@ -476,15 +469,23 @@ func redirectFixedPath(c *Context, root *node, trailingSlash bool) bool {
 	rPath := req.URL.Path
 
 	if fixedPath, ok := root.findCaseInsensitivePath(cleanPath(rPath), trailingSlash); ok {
-		code := http.StatusMovedPermanently // Permanent redirect, request with GET method
-		if req.Method != "GET" {
-			code = http.StatusTemporaryRedirect
-		}
 		req.URL.Path = string(fixedPath)
-		debugPrint("redirecting request %d: %s --> %s", code, rPath, req.URL.String())
-		http.Redirect(c.Writer, req, req.URL.String(), code)
-		c.writermem.WriteHeaderNow()
+		redirectRequest(c)
 		return true
 	}
 	return false
+}
+
+func redirectRequest(c *Context) {
+	req := c.Request
+	rPath := req.URL.Path
+	rURL := req.URL.String()
+
+	code := http.StatusMovedPermanently // Permanent redirect, request with GET method
+	if req.Method != "GET" {
+		code = http.StatusTemporaryRedirect
+	}
+	debugPrint("redirecting request %d: %s --> %s", code, rPath, rURL)
+	http.Redirect(c.Writer, req, rURL, code)
+	c.writermem.WriteHeaderNow()
 }
