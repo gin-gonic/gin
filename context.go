@@ -16,7 +16,6 @@ import (
 	"net/url"
 	"os"
 	"strings"
-	"syscall"
 	"time"
 
 	"github.com/gin-contrib/sse"
@@ -818,10 +817,7 @@ func (c *Context) Render(code int, r render.Render) {
 
 	if err := r.Render(c.Writer); err != nil {
 		c.Error(err)
-
-		if err == syscall.EPIPE {
-			c.AbortWithStatus(httpStatusClientClosedRequest)
-		}
+		c.Abort()
 	}
 }
 
