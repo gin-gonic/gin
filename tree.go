@@ -64,8 +64,8 @@ func min(a, b int) int {
 
 func countParams(path string) uint8 {
 	var n uint
-	for i := 0; i < len(path); i++ {
-		if path[i] == ':' || path[i] == '*' {
+	for _, m := range []byte(path) {
+		if m == ':' || m == '*' {
 			n++
 		}
 	}
@@ -221,8 +221,8 @@ func (n *node) addRoute(path string, handlers HandlersChain) {
 				}
 
 				// Check if a child with the next path byte exists
-				for i := 0; i < len(n.indices); i++ {
-					if c == n.indices[i] {
+				for i, m := range []byte(n.indices) {
+					if m == c {
 						parentFullPathIndex += len(n.path)
 						i = n.incrementChildPrio(i)
 						n = n.children[i]
