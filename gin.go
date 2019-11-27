@@ -97,6 +97,10 @@ type Engine struct {
 	// method call.
 	MaxMultipartMemory int64
 
+	// RemoveExtraSlash a parameter can be parsed from the URL even with extra slashes.
+	// See the PR #1817 and issue #1644
+	RemoveExtraSlash bool
+
 	delims           render.Delims
 	secureJsonPrefix string
 	HTMLRender       render.HTMLRender
@@ -134,6 +138,7 @@ func New() *Engine {
 		ForwardedByClientIP:    true,
 		AppEngine:              defaultAppEngine,
 		UseRawPath:             false,
+		RemoveExtraSlash:       false,
 		UnescapePathValues:     true,
 		MaxMultipartMemory:     defaultMultipartMemory,
 		trees:                  make(methodTrees, 0, 9),
@@ -385,7 +390,10 @@ func (engine *Engine) handleHTTPRequest(c *Context) {
 		rPath = c.Request.URL.RawPath
 		unescape = engine.UnescapePathValues
 	}
-	rPath = cleanPath(rPath)
+
+	if engine.RemoveExtraSlash {
+		rPath = cleanPath(rPath)
+	}
 
 	// Find root of the tree for the given HTTP method
 	t := engine.trees

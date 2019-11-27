@@ -263,6 +263,7 @@ func TestRouteParamsByNameWithExtraSlash(t *testing.T) {
 	lastName := ""
 	wild := ""
 	router := New()
+	router.RemoveExtraSlash = true
 	router.GET("/test/:name/:last_name/*wild", func(c *Context) {
 		name = c.Params.ByName("name")
 		lastName = c.Params.ByName("last_name")
