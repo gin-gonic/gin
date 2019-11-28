@@ -490,7 +490,7 @@ func redirectRequest(c *Context) {
 	rURL := req.URL.String()
 
 	code := http.StatusMovedPermanently // Permanent redirect, request with GET method
-	if req.Method != "GET" {
+	if req.Method != http.MethodGet {
 		code = http.StatusTemporaryRedirect
 	}
 	debugPrint("redirecting request %d: %s --> %s", code, rPath, rURL)
