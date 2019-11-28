@@ -107,7 +107,7 @@ func (p *LogFormatterParams) MethodColor() string {
 		return yellow
 	case http.MethodDelete:
 		return red
-	case http.Patch:
+	case http.MethodPatch:
 		return green
 	case http.MethodHead:
 		return magenta
