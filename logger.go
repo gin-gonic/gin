@@ -99,19 +99,19 @@ func (p *LogFormatterParams) MethodColor() string {
 	method := p.Method
 
 	switch method {
-	case "GET":
+	case http.MethodGet:
 		return blue
-	case "POST":
+	case http.MethodPost:
 		return cyan
-	case "PUT":
+	case http.MethodPut:
 		return yellow
-	case "DELETE":
+	case http.MethodDelete:
 		return red
-	case "PATCH":
+	case http.MethodPatch:
 		return green
-	case "HEAD":
+	case http.MethodHead:
 		return magenta
-	case "OPTIONS":
+	case http.MethodOptions:
 		return white
 	default:
 		return reset

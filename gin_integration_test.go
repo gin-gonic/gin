@@ -291,7 +291,7 @@ func TestConcurrentHandleContext(t *testing.T) {
 // }
 
 func testGetRequestHandler(t *testing.T, h http.Handler, url string) {
-	req, err := http.NewRequest("GET", url, nil)
+	req, err := http.NewRequest(http.MethodGet, url, nil)
 	assert.NoError(t, err)
 
 	w := httptest.NewRecorder()
