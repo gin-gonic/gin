@@ -40,9 +40,6 @@ fmt-check:
 		exit 1; \
 	fi;
 
-vet:
-	$(GO) vet $(VETPACKAGES)
-
 .PHONY: lint
 lint:
 	for PKG in $(PACKAGES); do golint -set_exit_status $$PKG || exit 1; done;
@@ -50,12 +47,3 @@ lint:
 .PHONY: misspell-check
 misspell-check:
 	misspell -error $(GOFILES)
-
-.PHONY: misspell
-misspell:
-	misspell -w $(GOFILES)
-
-.PHONY: tools
-tools:
-	go install golang.org/x/lint/golint; \
-	go install github.com/client9/misspell/cmd/misspell;
