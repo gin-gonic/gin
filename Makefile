@@ -46,4 +46,7 @@ lint:
 
 .PHONY: misspell-check
 misspell-check:
+	echo 'test...'
+	pwd
+	ls
 	misspell -error $(GOFILES)
