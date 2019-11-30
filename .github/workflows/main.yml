@@ -30,7 +30,6 @@ jobs:
       run: |
         go get -u golang.org/x/lint/golint
         go get -u github.com/client9/misspell/cmd/misspell
-        make vet
         make fmt-check
         make misspell-check
 
