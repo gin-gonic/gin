@@ -1,0 +1,61 @@
+name: Test
+on:
+  push:
+    branches: 
+      - master
+  pull_request:
+
+jobs:
+
+  lint:
+    name: Lint
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: true
+      matrix:
+        go_version: [1.11.x, 1.12.x, 1.13.x, master]
+        os: [ubuntu-latest, windows-latest, macOS-latest]
+    
+    steps:
+    - name: Set up Go
+      uses: actions/setup-go@v1
+      with:
+        go-version: ${{ matrix.go_version }}
+
+    - name: Check out code into the Go module directory
+      uses: actions/checkout@v1
+
+    - name: Lint Go code
+      run: |
+        go get -u golang.org/x/lint/golint
+        go get -u github.com/client9/misspell/cmd/misspell
+        make vet
+        make fmt-check
+        make misspell-check
+
+  test:
+    name: Test
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: true
+      matrix:
+        go_version: [1.11.x, 1.12.x, 1.13.x, master]
+        os: [ubuntu-latest, windows-latest, macOS-latest]
+    
+    steps:
+      - name: Set up Go
+        uses: actions/setup-go@v1
+        with:
+          go-version: ${{ matrix.go_version }}
+
+      - name: Check out code
+        uses: actions/checkout@v1
+
+      - name: Run Unit tests.
+        run: make test
+
+      - name: Upload Coverage report to CodeCov
+        uses: codecov/codecov-action@v1.0.0
+        with:
+          token: ${{secrets.CODECOV_TOKEN}}
+          file: ./coverage.txt
