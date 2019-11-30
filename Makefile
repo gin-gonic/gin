@@ -45,23 +45,14 @@ vet:
 
 .PHONY: lint
 lint:
-	@hash golint > /dev/null 2>&1; if [ $$? -ne 0 ]; then \
-		$(GO) get -u golang.org/x/lint/golint; \
-	fi
 	for PKG in $(PACKAGES); do golint -set_exit_status $$PKG || exit 1; done;
 
 .PHONY: misspell-check
 misspell-check:
-	@hash misspell > /dev/null 2>&1; if [ $$? -ne 0 ]; then \
-		$(GO) get -u github.com/client9/misspell/cmd/misspell; \
-	fi
 	misspell -error $(GOFILES)
 
 .PHONY: misspell
 misspell:
-	@hash misspell > /dev/null 2>&1; if [ $$? -ne 0 ]; then \
-		$(GO) get -u github.com/client9/misspell/cmd/misspell; \
-	fi
 	misspell -w $(GOFILES)
 
 .PHONY: tools
