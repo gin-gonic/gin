@@ -13,7 +13,8 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        go_version: [1.11.x, 1.12.x, 1.13.x, master]
+        # go_version: [1.11.x, 1.12.x, 1.13.x, master]
+        go-version: [1.13.x]
         os: [ubuntu-latest, windows-latest, macOS-latest]
     
     steps:
@@ -39,7 +40,8 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        go_version: [1.11.x, 1.12.x, 1.13.x, master]
+        # go_version: [1.11.x, 1.12.x, 1.13.x, master]
+        go_version: [1.13.x]
         os: [ubuntu-latest, windows-latest, macOS-latest]
     
     steps:
