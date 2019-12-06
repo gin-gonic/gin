@@ -1416,3 +1416,30 @@ func requestWithBody(method, path, body string) (req *http.Request) {
 	req, _ = http.NewRequest(method, path, bytes.NewBufferString(body))
 	return
 }
+
+type bindTestData struct {
+	need interface{}
+	got  interface{}
+	in   map[string][]string
+}
+
+func Test_Binding_BaseType(t *testing.T) {
+	type needFixDurationEmpty struct {
+		Duration time.Duration `form:"duration"`
+	}
+
+	type needFixUnixNanoEmpty struct {
+		CreateTime time.Time `form:"createTime" time_format:"unixNano"`
+	}
+
+	tests := []bindTestData{
+		{need: &needFixDurationEmpty{}, got: &needFixDurationEmpty{}, in: http.Header{"duration": []string{}}},
+		{need: &needFixUnixNanoEmpty{}, got: &needFixUnixNanoEmpty{}, in: http.Header{"createTime": []string{}}},
+	}
+
+	for _, v := range tests {
+		err := mapForm(v.got, v.in)
+		assert.NoError(t, err)
+		assert.Equal(t, v.need, v.got)
+	}
+}

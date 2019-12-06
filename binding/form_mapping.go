@@ -404,6 +404,11 @@ func setTimeField(val string, structField reflect.StructField, value reflect.Val
 		timeFormat = time.RFC3339
 	}
 
+	if val == "" {
+		value.Set(reflect.ValueOf(time.Time{}))
+		return nil
+	}
+
 	switch tf := strings.ToLower(timeFormat); tf {
 	case "unix", "unixmilli", "unixmicro", "unixnano":
 		tv, err := strconv.ParseInt(val, 10, 64)
@@ -424,11 +429,6 @@ func setTimeField(val string, structField reflect.StructField, value reflect.Val
 		}
 
 		value.Set(reflect.ValueOf(t))
-		return nil
-	}
-
-	if val == "" {
-		value.Set(reflect.ValueOf(time.Time{}))
 		return nil
 	}
 
@@ -475,6 +475,10 @@ func setSlice(vals []string, value reflect.Value, field reflect.StructField) err
 }
 
 func setTimeDuration(val string, value reflect.Value) error {
+	if val == "" {
+		val = "0"
+	}
+
 	d, err := time.ParseDuration(val)
 	if err != nil {
 		return err
