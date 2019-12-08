@@ -253,13 +253,13 @@ walk:
 			}
 			n.insertChild(numParams, path, fullPath, handlers)
 			return
-
-		} else if i == len(path) { // Make node a (in-path) leaf
-			if n.handlers != nil {
-				panic("handlers are already registered for path '" + fullPath + "'")
-			}
-			n.handlers = handlers
 		}
+
+		// Otherwise and handle to current node
+		if n.handlers != nil {
+			panic("handlers are already registered for path '" + fullPath + "'")
+		}
+		n.handlers = handlers
 		return
 	}
 }
@@ -267,36 +267,43 @@ walk:
 func (n *node) insertChild(numParams uint8, path string, fullPath string, handlers HandlersChain) {
 	var offset int // already handled bytes of the path
 
-	// find prefix until first wildcard (beginning with ':' or '*')
+	// Find prefix until first wildcard (beginning with ':' or '*')
 	for i, max := 0, len(path); numParams > 0; i++ {
 		c := path[i]
 		if c != ':' && c != '*' {
 			continue
 		}
 
-		// find wildcard end (either '/' or path end)
+		// Find wildcard end (either '/' or path end) and check the name for invalid characters
 		end := i + 1
-		for end < max && path[end] != '/' {
-			switch path[end] {
-			// the wildcard name must not contain ':' and '*'
-			case ':', '*':
-				panic("only one wildcard per path segment is allowed, has: '" +
-					path[i:] + "' in path '" + fullPath + "'")
-			default:
-				end++
+		invalid := false
+		for end < max {
+			c := path[end]
+			if c == '/' {
+				break
 			}
+			if c == ':' || c == '*' {
+				invalid = true
+			}
+			end++
 		}
 
-		// check if this Node existing children which would be
-		// unreachable if we insert the wildcard here
-		if len(n.children) > 0 {
-			panic("wildcard route '" + path[i:end] +
-				"' conflicts with existing children in path '" + fullPath + "'")
+		// The wildcard name must not contain ':' and '*'
+		if invalid {
+			panic("only one wildcard per path segment is allowed, has: '" +
+				path[i:end] + "' in path '" + fullPath + "'")
 		}
 
 		// check if the wildcard has a name
 		if end-i < 2 {
 			panic("wildcards must be named with a non-empty name in path '" + fullPath + "'")
+		}
+
+		// Check if this node has existing children which would be
+		// unreachable if we insert the wildcard here
+		if len(n.children) > 0 {
+			panic("wildcard route '" + path[i:end] +
+				"' conflicts with existing children in path '" + fullPath + "'")
 		}
 
 		if c == ':' { // param
