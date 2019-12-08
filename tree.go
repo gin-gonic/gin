@@ -107,16 +107,15 @@ type node struct {
 
 // increments priority of the given child and reorders if necessary.
 func (n *node) incrementChildPrio(pos int) int {
-	n.children[pos].priority++
-	prio := n.children[pos].priority
+	cs := n.children
+	cs[pos].priority++
+	prio := cs[pos].priority
 
-	// adjust position (move to front)
+	// Adjust position (move to front)
 	newPos := pos
-	for newPos > 0 && n.children[newPos-1].priority < prio {
-		// swap node positions
-		n.children[newPos-1], n.children[newPos] = n.children[newPos], n.children[newPos-1]
-
-		newPos--
+	for ; newPos > 0 && cs[newPos-1].priority < prio; newPos-- {
+		// Swap node positions
+		cs[newPos-1], cs[newPos] = cs[newPos], cs[newPos-1]
 	}
 
 	// build new index char string
@@ -231,7 +230,7 @@ walk:
 			}
 
 			// Check if a child with the next path byte exists
-			for i := 0; i < len(n.indices); i++ {
+			for i, max := 0, len(n.indices); i < max; i++ {
 				if c == n.indices[i] {
 					parentFullPathIndex += len(n.path)
 					i = n.incrementChildPrio(i)
@@ -404,17 +403,20 @@ func (n *node) getValue(path string, po Params, unescape bool) (value nodeValue)
 	value.params = po
 walk: // Outer loop for walking the tree
 	for {
-		if len(path) > len(n.path) {
-			if path[:len(n.path)] == n.path {
-				path = path[len(n.path):]
+		prefix := n.path
+		if len(path) > len(prefix) {
+			if path[:len(prefix)] == prefix {
+				path = path[len(prefix):]
 				// If this node does not have a wildcard (param or catchAll)
 				// child,  we can just look up the next child node and continue
 				// to walk down the tree
 				if !n.wildChild {
 					c := path[0]
-					for i := 0; i < len(n.indices); i++ {
-						if c == n.indices[i] {
+					indices := n.indices
+					for i, max := 0, len(indices); i < max; i++ {
+						if c == indices[i] {
 							n = n.children[i]
+							prefix = n.path
 							continue walk
 						}
 					}
@@ -458,6 +460,7 @@ walk: // Outer loop for walking the tree
 						if len(n.children) > 0 {
 							path = path[end:]
 							n = n.children[0]
+							prefix = n.path
 							continue walk
 						}
 
@@ -504,7 +507,7 @@ walk: // Outer loop for walking the tree
 					panic("invalid node type")
 				}
 			}
-		} else if path == n.path {
+		} else if path == prefix {
 			// We should have reached the node containing the handle.
 			// Check if this node has a handle registered.
 			if value.handlers = n.handlers; value.handlers != nil {
@@ -519,8 +522,9 @@ walk: // Outer loop for walking the tree
 
 			// No handle found. Check if a handle for this path + a
 			// trailing slash exists for trailing slash recommendation
-			for i := 0; i < len(n.indices); i++ {
-				if n.indices[i] == '/' {
+			indices := n.indices
+			for i, max := 0, len(indices); i < max; i++ {
+				if indices[i] == '/' {
 					n = n.children[i]
 					value.tsr = (len(n.path) == 1 && n.handlers != nil) ||
 						(n.nType == catchAll && n.children[0].handlers != nil)
@@ -534,8 +538,8 @@ walk: // Outer loop for walking the tree
 		// Nothing found. We can recommend to redirect to the same URL with an
 		// extra trailing slash if a leaf exists for that path
 		value.tsr = (path == "/") ||
-			(len(n.path) == len(path)+1 && n.path[len(path)] == '/' &&
-				path == n.path[:len(n.path)-1] && n.handlers != nil)
+			(len(prefix) == len(path)+1 && prefix[len(path)] == '/' &&
+				path == prefix[:len(prefix)-1] && n.handlers != nil)
 		return
 	}
 }
@@ -601,25 +605,25 @@ func (n *node) findCaseInsensitivePath(path string, fixTrailingSlash bool) (ciPa
 		n = n.children[0]
 		switch n.nType {
 		case param:
-			// find param end (either '/' or path end)
-			k := 0
-			for k < len(path) && path[k] != '/' {
-				k++
+			// Find param end (either '/' or path end)
+			end := 0
+			for end < len(path) && path[end] != '/' {
+				end++
 			}
 
 			// add param value to case insensitive path
-			ciPath = append(ciPath, path[:k]...)
+			ciPath = append(ciPath, path[:end]...)
 
 			// we need to go deeper!
-			if k < len(path) {
+			if end < len(path) {
 				if len(n.children) > 0 {
-					path = path[k:]
+					path = path[end:]
 					n = n.children[0]
 					continue
 				}
 
 				// ... but we can't
-				if fixTrailingSlash && len(path) == k+1 {
+				if fixTrailingSlash && len(path) == end+1 {
 					return ciPath, true
 				}
 				return
@@ -627,7 +631,8 @@ func (n *node) findCaseInsensitivePath(path string, fixTrailingSlash bool) (ciPa
 
 			if n.handlers != nil {
 				return ciPath, true
-			} else if fixTrailingSlash && len(n.children) == 1 {
+			}
+			if fixTrailingSlash && len(n.children) == 1 {
 				// No handle found. Check if a handle for this path + a
 				// trailing slash exists
 				n = n.children[0]
