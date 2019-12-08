@@ -1,4 +1,5 @@
 vendor/*
+.idea/
 !vendor/vendor.json
 coverage.out
 count.out
