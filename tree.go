@@ -264,71 +264,80 @@ walk:
 	}
 }
 
-func (n *node) insertChild(numParams uint8, path string, fullPath string, handlers HandlersChain) {
-	var offset int // already handled bytes of the path
-
-	// Find prefix until first wildcard (beginning with ':' or '*')
-	for i, max := 0, len(path); numParams > 0; i++ {
-		c := path[i]
+// Search for a wildcard segment and check the name for invalid characters.
+// Returns -1 as index, if no wildcard war found.
+func findWildcard(path string) (wildcard string, i int, valid bool) {
+	// Find start
+	for start, c := range []byte(path) {
+		// A wildcard starts with ':' (param) or '*' (catch-all)
 		if c != ':' && c != '*' {
 			continue
 		}
 
-		// Find wildcard end (either '/' or path end) and check the name for invalid characters
-		end := i + 1
-		invalid := false
-		for end < max {
-			c := path[end]
-			if c == '/' {
-				break
+		// Find end and check for invalid characters
+		valid = true
+		for end, c := range []byte(path[start+1:]) {
+			switch c {
+			case '/':
+				return path[start : start+1+end], start, valid
+			case ':', '*':
+				valid = false
 			}
-			if c == ':' || c == '*' {
-				invalid = true
-			}
-			end++
+		}
+		return path[start:], start, valid
+	}
+	return "", -1, false
+}
+
+func (n *node) insertChild(numParams uint8, path string, fullPath string, handlers HandlersChain) {
+	for numParams > 0 {
+		// Find prefix until first wildcard
+		wildcard, i, valid := findWildcard(path)
+		if i < 0 { // No wildcard found
+			break
 		}
 
 		// The wildcard name must not contain ':' and '*'
-		if invalid {
+		if !valid {
 			panic("only one wildcard per path segment is allowed, has: '" +
-				path[i:end] + "' in path '" + fullPath + "'")
+				wildcard + "' in path '" + fullPath + "'")
 		}
 
 		// check if the wildcard has a name
-		if end-i < 2 {
+		if len(wildcard) < 2 {
 			panic("wildcards must be named with a non-empty name in path '" + fullPath + "'")
 		}
 
 		// Check if this node has existing children which would be
 		// unreachable if we insert the wildcard here
 		if len(n.children) > 0 {
-			panic("wildcard route '" + path[i:end] +
+			panic("wildcard segment '" + wildcard +
 				"' conflicts with existing children in path '" + fullPath + "'")
 		}
 
-		if c == ':' { // param
-			// split path at the beginning of the wildcard
+		if wildcard[0] == ':' { // param
 			if i > 0 {
-				n.path = path[offset:i]
-				offset = i
+				// Insert prefix before the current wildcard
+				n.path = path[:i]
+				path = path[i:]
 			}
 
+			n.wildChild = true
 			child := &node{
 				nType:     param,
+				path:      wildcard,
 				maxParams: numParams,
 				fullPath:  fullPath,
 			}
 			n.children = []*node{child}
-			n.wildChild = true
 			n = child
 			n.priority++
 			numParams--
 
 			// if the path doesn't end with the wildcard, then there
 			// will be another non-wildcard subpath starting with '/'
-			if end < max {
-				n.path = path[offset:end]
-				offset = end
+			if len(wildcard) < len(path) {
+				path = path[len(wildcard):]
 
 				child := &node{
 					maxParams: numParams,
@@ -337,58 +346,63 @@ func (n *node) insertChild(numParams uint8, path string, fullPath string, handle
 				}
 				n.children = []*node{child}
 				n = child
+				continue
 			}
 
-		} else { // catchAll
-			if end != max || numParams > 1 {
-				panic("catch-all routes are only allowed at the end of the path in path '" + fullPath + "'")
-			}
-
-			if len(n.path) > 0 && n.path[len(n.path)-1] == '/' {
-				panic("catch-all conflicts with existing handle for the path segment root in path '" + fullPath + "'")
-			}
-
-			// currently fixed width 1 for '/'
-			i--
-			if path[i] != '/' {
-				panic("no / before catch-all in path '" + fullPath + "'")
-			}
-
-			n.path = path[offset:i]
-
-			// first node: catchAll node with empty path
-			child := &node{
-				wildChild: true,
-				nType:     catchAll,
-				maxParams: 1,
-				fullPath:  fullPath,
-			}
-			// update maxParams of the parent node
-			if n.maxParams < 1 {
-				n.maxParams = 1
-			}
-			n.children = []*node{child}
-			n.indices = string(path[i])
-			n = child
-			n.priority++
-
-			// second node: node holding the variable
-			child = &node{
-				path:      path[i:],
-				nType:     catchAll,
-				maxParams: 1,
-				handlers:  handlers,
-				priority:  1,
-				fullPath:  fullPath,
-			}
-			n.children = []*node{child}
-
+			// Otherwise we're done. Insert the handle in the new leaf
+			n.handlers = handlers
 			return
 		}
+
+		// catchAll
+		if i+len(wildcard) != len(path) || numParams > 1 {
+			panic("catch-all routes are only allowed at the end of the path in path '" + fullPath + "'")
+		}
+
+		if len(n.path) > 0 && n.path[len(n.path)-1] == '/' {
+			panic("catch-all conflicts with existing handle for the path segment root in path '" + fullPath + "'")
+		}
+
+		// currently fixed width 1 for '/'
+		i--
+		if path[i] != '/' {
+			panic("no / before catch-all in path '" + fullPath + "'")
+		}
+
+		n.path = path[:i]
+
+		// First node: catchAll node with empty path
+		child := &node{
+			wildChild: true,
+			nType:     catchAll,
+			maxParams: 1,
+			fullPath:  fullPath,
+		}
+		// update maxParams of the parent node
+		if n.maxParams < 1 {
+			n.maxParams = 1
+		}
+		n.children = []*node{child}
+		n.indices = string('/')
+		n = child
+		n.priority++
+
+		// second node: node holding the variable
+		child = &node{
+			path:      path[i:],
+			nType:     catchAll,
+			maxParams: 1,
+			handlers:  handlers,
+			priority:  1,
+			fullPath:  fullPath,
+		}
+		n.children = []*node{child}
+
+		return
 	}
 
-	// insert remaining path part and handle to the leaf
-	n.path = path[offset:]
+	// If no wildcard was found, simple insert the path and handle
+	n.path = path
 	n.handlers = handlers
 	n.fullPath = fullPath
 }
