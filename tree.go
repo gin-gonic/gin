@@ -425,110 +425,7 @@ func (n *node) getValue(path string, po Params, unescape bool) (value nodeValue)
 walk: // Outer loop for walking the tree
 	for {
 		prefix := n.path
-		if len(path) > len(prefix) {
-			if path[:len(prefix)] == prefix {
-				path = path[len(prefix):]
-				// If this node does not have a wildcard (param or catchAll)
-				// child,  we can just look up the next child node and continue
-				// to walk down the tree
-				if !n.wildChild {
-					c := path[0]
-					indices := n.indices
-					for i, max := 0, len(indices); i < max; i++ {
-						if c == indices[i] {
-							n = n.children[i]
-							prefix = n.path
-							continue walk
-						}
-					}
-
-					// Nothing found.
-					// We can recommend to redirect to the same URL without a
-					// trailing slash if a leaf exists for that path.
-					value.tsr = path == "/" && n.handlers != nil
-					return
-				}
-
-				// handle wildcard child
-				n = n.children[0]
-				switch n.nType {
-				case param:
-					// find param end (either '/' or path end)
-					end := 0
-					for end < len(path) && path[end] != '/' {
-						end++
-					}
-
-					// save param value
-					if cap(value.params) < int(n.maxParams) {
-						value.params = make(Params, 0, n.maxParams)
-					}
-					i := len(value.params)
-					value.params = value.params[:i+1] // expand slice within preallocated capacity
-					value.params[i].Key = n.path[1:]
-					val := path[:end]
-					if unescape {
-						var err error
-						if value.params[i].Value, err = url.QueryUnescape(val); err != nil {
-							value.params[i].Value = val // fallback, in case of error
-						}
-					} else {
-						value.params[i].Value = val
-					}
-
-					// we need to go deeper!
-					if end < len(path) {
-						if len(n.children) > 0 {
-							path = path[end:]
-							n = n.children[0]
-							prefix = n.path
-							continue walk
-						}
-
-						// ... but we can't
-						value.tsr = len(path) == end+1
-						return
-					}
-
-					if value.handlers = n.handlers; value.handlers != nil {
-						value.fullPath = n.fullPath
-						return
-					}
-					if len(n.children) == 1 {
-						// No handle found. Check if a handle for this path + a
-						// trailing slash exists for TSR recommendation
-						n = n.children[0]
-						value.tsr = n.path == "/" && n.handlers != nil
-					}
-
-					return
-
-				case catchAll:
-					// save param value
-					if cap(value.params) < int(n.maxParams) {
-						value.params = make(Params, 0, n.maxParams)
-					}
-					i := len(value.params)
-					value.params = value.params[:i+1] // expand slice within preallocated capacity
-					value.params[i].Key = n.path[2:]
-					if unescape {
-						var err error
-						if value.params[i].Value, err = url.QueryUnescape(path); err != nil {
-							value.params[i].Value = path // fallback, in case of error
-						}
-					} else {
-						value.params[i].Value = path
-					}
-
-					value.handlers = n.handlers
-					value.fullPath = n.fullPath
-					return
-
-				default:
-					panic("invalid node type")
-				}
-			}
-		} else if path == prefix {
+		if path == prefix {
 			// We should have reached the node containing the handle.
 			// Check if this node has a handle registered.
 			if value.handlers = n.handlers; value.handlers != nil {
@@ -554,6 +451,108 @@ walk: // Outer loop for walking the tree
 			}
 
 			return
+		}
+
+		if len(path) > len(prefix) && path[:len(prefix)] == prefix {
+			path = path[len(prefix):]
+			// If this node does not have a wildcard (param or catchAll)
+			// child,  we can just look up the next child node and continue
+			// to walk down the tree
+			if !n.wildChild {
+				c := path[0]
+				indices := n.indices
+				for i, max := 0, len(indices); i < max; i++ {
+					if c == indices[i] {
+						n = n.children[i]
+						prefix = n.path
+						continue walk
+					}
+				}
+
+				// Nothing found.
+				// We can recommend to redirect to the same URL without a
+				// trailing slash if a leaf exists for that path.
+				value.tsr = path == "/" && n.handlers != nil
+				return
+			}
+
+			// handle wildcard child
+			n = n.children[0]
+			switch n.nType {
+			case param:
+				// find param end (either '/' or path end)
+				end := 0
+				for end < len(path) && path[end] != '/' {
+					end++
+				}
+
+				// save param value
+				if cap(value.params) < int(n.maxParams) {
+					value.params = make(Params, 0, n.maxParams)
+				}
+				i := len(value.params)
+				value.params = value.params[:i+1] // expand slice within preallocated capacity
+				value.params[i].Key = n.path[1:]
+				val := path[:end]
+				if unescape {
+					var err error
+					if value.params[i].Value, err = url.QueryUnescape(val); err != nil {
+						value.params[i].Value = val // fallback, in case of error
+					}
+				} else {
+					value.params[i].Value = val
+				}
+
+				// we need to go deeper!
+				if end < len(path) {
+					if len(n.children) > 0 {
+						path = path[end:]
+						n = n.children[0]
+						prefix = n.path
+						continue walk
+					}
+
+					// ... but we can't
+					value.tsr = len(path) == end+1
+					return
+				}
+
+				if value.handlers = n.handlers; value.handlers != nil {
+					value.fullPath = n.fullPath
+					return
+				}
+				if len(n.children) == 1 {
+					// No handle found. Check if a handle for this path + a
+					// trailing slash exists for TSR recommendation
+					n = n.children[0]
+					value.tsr = n.path == "/" && n.handlers != nil
+				}
+				return
+
+			case catchAll:
+				// save param value
+				if cap(value.params) < int(n.maxParams) {
+					value.params = make(Params, 0, n.maxParams)
+				}
+				i := len(value.params)
+				value.params = value.params[:i+1] // expand slice within preallocated capacity
+				value.params[i].Key = n.path[2:]
+				if unescape {
+					var err error
+					if value.params[i].Value, err = url.QueryUnescape(path); err != nil {
+						value.params[i].Value = path // fallback, in case of error
+					}
+				} else {
+					value.params[i].Value = path
+				}
+
+				value.handlers = n.handlers
+				value.fullPath = n.fullPath
+				return
+
+			default:
+				panic("invalid node type")
+			}
 		}
 
 		// Nothing found. We can recommend to redirect to the same URL with an
