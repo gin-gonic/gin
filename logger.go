@@ -245,7 +245,17 @@ func LoggerWithConfig(conf LoggerConfig) HandlerFunc {
 			param := LogFormatterParams{
 				Request: c.Request,
 				isTerm:  isTerm,
-				Keys:    c.Keys,
+			}
+
+			keys := c.Keys
+			if keys != nil {
+				param.Keys = make(map[string]interface{})
+				keys.Range(func(key, value interface{}) bool {
+					if str, ok := key.(string); ok {
+						param.Keys[str] = value
+					}
+					return true
+				})
 			}
 
 			// Stop timer
