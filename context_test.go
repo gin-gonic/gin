@@ -330,11 +330,31 @@ func TestContextCopy(t *testing.T) {
 	assert.Equal(t, &cp.writermem, cp.Writer.(*responseWriter))
 	assert.Equal(t, cp.Request, c.Request)
 	assert.Equal(t, cp.index, abortIndex)
-	assert.Equal(t, cp.Keys, c.Keys)
+	toMap := func(p *sync.Map) map[string]interface{} {
+		if p == nil {
+			return nil
+		}
+		m := map[string]interface{}{}
+		p.Range(func(key, value interface{}) bool {
+			if str, ok := key.(string); ok {
+				m[str] = value
+			}
+			return true
+		})
+		return m
+	}
+	assert.Equal(t, toMap(cp.Keys), toMap(c.Keys))
 	assert.Equal(t, cp.engine, c.engine)
 	assert.Equal(t, cp.Params, c.Params)
 	cp.Set("foo", "notBar")
-	assert.False(t, cp.Keys["foo"] == c.Keys["foo"])
+	var vc, vcp interface{}
+	if c.Keys != nil {
+		vc, _ = c.Keys.Load("foo")
+	}
+	if cp.Keys != nil {
+		vcp, _ = cp.Keys.Load("foo")
+	}
+	assert.False(t, vc == vcp)
 }
 
 func TestContextHandlerName(t *testing.T) {

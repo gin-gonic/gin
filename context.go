@@ -16,6 +16,7 @@ import (
 	"net/url"
 	"os"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/gin-contrib/sse"
@@ -53,7 +54,10 @@ type Context struct {
 	engine *Engine
 
 	// Keys is a key/value pair exclusively for the context of each request.
-	Keys map[string]interface{}
+	Keys *sync.Map
+
+	// keysLocker protects the creation and reset of Keys *sync.Map
+	keysLocker sync.Mutex
 
 	// Errors is a list of errors attached to all the handlers/middlewares who used this context.
 	Errors errorMsgs
@@ -79,7 +83,9 @@ func (c *Context) reset() {
 	c.handlers = nil
 	c.index = -1
 	c.fullPath = ""
+	c.keysLocker.Lock()
 	c.Keys = nil
+	c.keysLocker.Unlock()
 	c.Errors = c.Errors[0:0]
 	c.Accepted = nil
 	c.queryCache = nil
@@ -94,10 +100,15 @@ func (c *Context) Copy() *Context {
 	cp.Writer = &cp.writermem
 	cp.index = abortIndex
 	cp.handlers = nil
-	cp.Keys = map[string]interface{}{}
-	for k, v := range c.Keys {
-		cp.Keys[k] = v
+	keys := cp.Keys
+	if keys != nil {
+		cp.Keys = new(sync.Map)
+		keys.Range(func(key, value interface{}) bool {
+			cp.Keys.Store(key, value)
+			return true
+		})
 	}
+	cp.keysLocker = sync.Mutex{}
 	paramCopy := make([]Param, len(cp.Params))
 	copy(paramCopy, cp.Params)
 	cp.Params = paramCopy
@@ -219,16 +230,25 @@ func (c *Context) Error(err error) *Error {
 // Set is used to store a new key/value pair exclusively for this context.
 // It also lazy initializes  c.Keys if it was not used previously.
 func (c *Context) Set(key string, value interface{}) {
-	if c.Keys == nil {
-		c.Keys = make(map[string]interface{})
+	keys := c.Keys
+	if keys == nil {
+		c.keysLocker.Lock()
+		if c.Keys == nil {
+			c.Keys = new(sync.Map)
+		}
+		keys = c.Keys
+		c.keysLocker.Unlock()
 	}
-	c.Keys[key] = value
+	keys.Store(key, value)
 }
 
 // Get returns the value for the given key, ie: (value, true).
 // If the value does not exists it returns (nil, false)
 func (c *Context) Get(key string) (value interface{}, exists bool) {
-	value, exists = c.Keys[key]
+	keys := c.Keys
+	if keys != nil {
+		value, exists = keys.Load(key)
+	}
 	return
 }
 
