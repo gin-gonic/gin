@@ -368,6 +368,13 @@ func TestTreeCatchAllConflictRoot(t *testing.T) {
 	testRoutes(t, routes)
 }
 
+func TestTreeCatchMaxParams(t *testing.T) {
+	tree := &node{}
+	var route = "/cmd/*filepath"
+	tree.addRoute(route, fakeHandler(route))
+	checkMaxParams(t, tree)
+}
+
 func TestTreeDoubleWildcard(t *testing.T) {
 	const panicMsg = "only one wildcard per path segment is allowed"
 
