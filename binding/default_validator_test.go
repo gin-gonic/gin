@@ -48,15 +48,15 @@ func Test_defaultValidator_Validate(t *testing.T) {
 		{"validate []struct failed-1", &defaultValidator{}, []exampleStruct{{A: "123456789", B: 1}}, true},
 		{"validate []struct failed-2", &defaultValidator{}, []exampleStruct{{A: "12345678", B: 0}}, true},
 		{"validate []struct passed", &defaultValidator{}, []exampleStruct{{A: "12345678", B: 1}}, false},
-		{"validate []*struct failed-1", &defaultValidator{}, []*exampleStruct{&exampleStruct{A: "123456789", B: 1}}, true},
-		{"validate []*struct failed-2", &defaultValidator{}, []*exampleStruct{&exampleStruct{A: "12345678", B: 0}}, true},
-		{"validate []*struct passed", &defaultValidator{}, []*exampleStruct{&exampleStruct{A: "12345678", B: 1}}, false},
+		{"validate []*struct failed-1", &defaultValidator{}, []*exampleStruct{{A: "123456789", B: 1}}, true},
+		{"validate []*struct failed-2", &defaultValidator{}, []*exampleStruct{{A: "12345678", B: 0}}, true},
+		{"validate []*struct passed", &defaultValidator{}, []*exampleStruct{{A: "12345678", B: 1}}, false},
 		{"validate *[]struct failed-1", &defaultValidator{}, &[]exampleStruct{{A: "123456789", B: 1}}, true},
 		{"validate *[]struct failed-2", &defaultValidator{}, &[]exampleStruct{{A: "12345678", B: 0}}, true},
 		{"validate *[]struct passed", &defaultValidator{}, &[]exampleStruct{{A: "12345678", B: 1}}, false},
-		{"validate *[]*struct failed-1", &defaultValidator{}, &[]*exampleStruct{&exampleStruct{A: "123456789", B: 1}}, true},
-		{"validate *[]*struct failed-2", &defaultValidator{}, &[]*exampleStruct{&exampleStruct{A: "12345678", B: 0}}, true},
-		{"validate *[]*struct passed", &defaultValidator{}, &[]*exampleStruct{&exampleStruct{A: "12345678", B: 1}}, false},
+		{"validate *[]*struct failed-1", &defaultValidator{}, &[]*exampleStruct{{A: "123456789", B: 1}}, true},
+		{"validate *[]*struct failed-2", &defaultValidator{}, &[]*exampleStruct{{A: "12345678", B: 0}}, true},
+		{"validate *[]*struct passed", &defaultValidator{}, &[]*exampleStruct{{A: "12345678", B: 1}}, false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
