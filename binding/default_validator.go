@@ -6,9 +6,13 @@ package binding
 
 import (
 	"reflect"
+	"fmt"
 	"sync"
+	"strings"
+	"log"
 
 	"github.com/go-playground/validator/v10"
+	// "github.com/ahmetb/go-linq"
 )
 
 type defaultValidator struct {
@@ -16,22 +20,63 @@ type defaultValidator struct {
 	validate *validator.Validate
 }
 
-var _ StructValidator = &defaultValidator{}
+type sliceValidateError []error 
+
+func (err sliceValidateError) Error() string {
+	var errMsgs []string
+	for i, e := range err {
+		if e == nil {
+			continue
+		}
+		errMsgs = append(errMsgs, fmt.Sprintf("[%d]: %s", i, err.Error()))
+	}
+	return strings.Join(errMsgs, "\n")
+}
+
+var _ ValidatorImp = &defaultValidator{}
 
 // ValidateStruct receives any kind of type, but only performed struct or pointer to struct type.
-func (v *defaultValidator) ValidateStruct(obj interface{}) error {
+func (v *defaultValidator) Validate(obj interface{}) error {
+	log.Println("called")
+	if obj == nil {
+		return nil
+	}
+
 	value := reflect.ValueOf(obj)
 	valueType := value.Kind()
+	log.Printf("valueType: %v, %#v\n", valueType, valueType)
 	if valueType == reflect.Ptr {
-		valueType = value.Elem().Kind()
+		value = value.Elem()
+		valueType = value.Kind()
 	}
-	if valueType == reflect.Struct {
-		v.lazyinit()
-		if err := v.validate.Struct(obj); err != nil {
-			return err
+
+	switch valueType {	
+	case reflect.Struct:
+		log.Printf("goto validateStruct: %v, %#v\n", obj, obj)
+		return v.validateStruct(obj)
+	case reflect.Slice, reflect.Array:
+		count := value.Len()
+		validateRet := make(sliceValidateError, 0)
+		for i := 0; i < count; i++ {
+			log.Println("called inside slice")
+			if err := v.Validate(value.Index(i)); err != nil {
+				validateRet = append(validateRet, err)
+			}
 		}
+		log.Println(validateRet)
+		if len(validateRet) == 0 {
+			return nil
+		}
+		return validateRet		
+	default:
+		return nil
 	}
-	return nil
+}
+
+// validateStruct receives struct type
+func (v *defaultValidator) validateStruct(obj interface{}) error {
+	v.lazyinit()
+	return v.validate.Struct(obj)
 }
 
 // Engine returns the underlying validator engine which powers the default
