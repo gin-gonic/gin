@@ -187,7 +187,8 @@ func TestBindingJSONSlice(t *testing.T) {
 	}()
 
 	testBodyBindingSlice(t, JSON, "json", "/", "/", `[]`, ``)
-	testBodyBindingSlice(t, JSON, "json", "/", "/", `[{}]`, `{}`)
+	testBodyBindingSlice(t, JSON, "json", "/", "/", `[{"foo": "123"}]`, `[{}]`)
+	testBodyBindingSlice(t, JSON, "json", "/", "/", `[{"foo": "123"}]`, `[{"foo": ""}]`)
 	testBodyBindingSlice(t, JSON, "json", "/", "/", `[{"foo": "123"}]`, `[{"foo": 123}]`)
 	testBodyBindingSlice(t, JSON, "json", "/", "/", `[{"foo": "123"}]`, `[{"bar": 123}]`)
 	testBodyBindingSlice(t, JSON, "json", "/", "/", `[{"foo": "123"}]`, `[{"foo": "123456789012345678901234567890123"}]`)

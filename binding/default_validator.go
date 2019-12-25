@@ -5,14 +5,13 @@
 package binding
 
 import (
-	"reflect"
 	"fmt"
-	"sync"
-	"strings"
 	"log"
+	"reflect"
+	"strings"
+	"sync"
 
 	"github.com/go-playground/validator/v10"
-	// "github.com/ahmetb/go-linq"
 )
 
 type defaultValidator struct {
@@ -20,7 +19,7 @@ type defaultValidator struct {
 	validate *validator.Validate
 }
 
-type sliceValidateError []error 
+type sliceValidateError []error
 
 func (err sliceValidateError) Error() string {
 	var errMsgs []string
@@ -28,7 +27,7 @@ func (err sliceValidateError) Error() string {
 		if e == nil {
 			continue
 		}
-		errMsgs = append(errMsgs, fmt.Sprintf("[%d]: %s", i, err.Error()))
+		errMsgs = append(errMsgs, fmt.Sprintf("[%d]: %s", i, e.Error()))
 	}
 	return strings.Join(errMsgs, "\n")
 }
@@ -37,29 +36,24 @@ var _ ValidatorImp = &defaultValidator{}
 
 // ValidateStruct receives any kind of type, but only performed struct or pointer to struct type.
 func (v *defaultValidator) Validate(obj interface{}) error {
-	log.Println("called")
 	if obj == nil {
 		return nil
 	}
 
 	value := reflect.ValueOf(obj)
 	valueType := value.Kind()
-	log.Printf("valueType: %v, %#v\n", valueType, valueType)
 	if valueType == reflect.Ptr {
-		value = value.Elem()
-		valueType = value.Kind()
+		return v.Validate(value.Elem().Interface())
 	}
 
-	switch valueType {	
+	switch valueType {
 	case reflect.Struct:
-		log.Printf("goto validateStruct: %v, %#v\n", obj, obj)
 		return v.validateStruct(obj)
 	case reflect.Slice, reflect.Array:
 		count := value.Len()
 		validateRet := make(sliceValidateError, 0)
 		for i := 0; i < count; i++ {
-			log.Println("called inside slice")
-			if err := v.Validate(value.Index(i)); err != nil {
+			if err := v.Validate(value.Index(i).Interface()); err != nil {
 				validateRet = append(validateRet, err)
 			}
 		}
@@ -67,7 +61,7 @@ func (v *defaultValidator) Validate(obj interface{}) error {
 		if len(validateRet) == 0 {
 			return nil
 		}
-		return validateRet		
+		return validateRet
 	default:
 		return nil
 	}
