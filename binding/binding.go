@@ -45,11 +45,11 @@ type BindingUri interface {
 	BindUri(map[string][]string, interface{}) error
 }
 
-// ValidatorImp is the minimal interface which needs to be implemented in
+// Validater is the minimal interface which needs to be implemented in
 // order for it to be used as the validator engine for ensuring the correctness
 // of the request. Gin provides a default implementation for this using
 // https://github.com/go-playground/validator/tree/v8.18.2.
-type ValidatorImp interface {
+type Validater interface {
 	// Validate can receive any kind of type and it should never panic, even if the configuration is not right.
 	// If the received type is not a struct, any validation should be skipped and nil must be returned.
 	// If the received type is a struct or pointer to a struct, the validation should be performed.
@@ -65,7 +65,7 @@ type ValidatorImp interface {
 // Validator is the default validator which implements the StructValidator
 // interface. It uses https://github.com/go-playground/validator/tree/v8.18.2
 // under the hood.
-var Validator ValidatorImp = &defaultValidator{}
+var Validator Validater = &defaultValidator{}
 
 // These implement the Binding interface and can be used to bind the data
 // present in the request to struct instances.

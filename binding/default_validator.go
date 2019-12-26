@@ -32,7 +32,7 @@ func (err sliceValidateError) Error() string {
 	return strings.Join(errMsgs, "\n")
 }
 
-var _ ValidatorImp = &defaultValidator{}
+var _ Validater = &defaultValidator{}
 
 // ValidateStruct receives any kind of type, but only performed struct or pointer to struct type.
 func (v *defaultValidator) Validate(obj interface{}) error {
