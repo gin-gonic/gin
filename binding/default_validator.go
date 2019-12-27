@@ -6,7 +6,6 @@ package binding
 
 import (
 	"fmt"
-	"log"
 	"reflect"
 	"strings"
 	"sync"
@@ -57,7 +56,6 @@ func (v *defaultValidator) Validate(obj interface{}) error {
 				validateRet = append(validateRet, err)
 			}
 		}
-		log.Println(validateRet)
 		if len(validateRet) == 0 {
 			return nil
 		}
