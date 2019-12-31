@@ -24,6 +24,27 @@ import (
 	"github.com/ugorji/go/codec"
 )
 
+func TestBindingName(t *testing.T) {
+	for _, test := range []struct {
+		name  string
+		namer interface{ Name() string }
+	}{
+		{"json", JSON},
+		{"xml", XML},
+		{"form", Form},
+		{"query", Query},
+		{"form-urlencoded", FormPost},
+		{"multipart/form-data", FormMultipart},
+		{"protobuf", ProtoBuf},
+		{"msgpack", MsgPack},
+		{"yaml", YAML},
+		{"uri", Uri},
+		{"header", Header},
+	} {
+		assert.Equal(t, test.name, test.namer.Name())
+	}
+}
+
 type appkey struct {
 	Appkey string `json:"appkey" form:"appkey"`
 }
@@ -179,21 +200,21 @@ func TestBindingJSONNilBody(t *testing.T) {
 
 func TestBindingJSON(t *testing.T) {
 	testBodyBinding(t,
-		JSON, "json",
+		JSON,
 		"/", "/",
 		`{"foo": "bar"}`, `{"bar": "foo"}`)
 }
 
 func TestBindingJSONUseNumber(t *testing.T) {
 	testBodyBindingUseNumber(t,
-		JSON, "json",
+		JSON,
 		"/", "/",
 		`{"foo": 123}`, `{"bar": "foo"}`)
 }
 
 func TestBindingJSONUseNumber2(t *testing.T) {
 	testBodyBindingUseNumber2(t,
-		JSON, "json",
+		JSON,
 		"/", "/",
 		`{"foo": 123}`, `{"bar": "foo"}`)
 }
@@ -372,28 +393,28 @@ func TestBindingQueryBoolFail(t *testing.T) {
 
 func TestBindingXML(t *testing.T) {
 	testBodyBinding(t,
-		XML, "xml",
+		XML,
 		"/", "/",
 		"<map><foo>bar</foo></map>", "<map><bar>foo</bar></map>")
 }
 
 func TestBindingXMLFail(t *testing.T) {
 	testBodyBindingFail(t,
-		XML, "xml",
+		XML,
 		"/", "/",
 		"<map><foo>bar<foo></map>", "<map><bar>foo</bar></map>")
 }
 
 func TestBindingYAML(t *testing.T) {
 	testBodyBinding(t,
-		YAML, "yaml",
+		YAML,
 		"/", "/",
 		`foo: bar`, `bar: foo`)
 }
 
 func TestBindingYAMLFail(t *testing.T) {
 	testBodyBindingFail(t,
-		YAML, "yaml",
+		YAML,
 		"/", "/",
 		`foo:\nbar`, `bar: foo`)
 }
@@ -616,7 +637,7 @@ func TestBindingProtoBuf(t *testing.T) {
 	data, _ := proto.Marshal(test)
 
 	testProtoBodyBinding(t,
-		ProtoBuf, "protobuf",
+		ProtoBuf,
 		"/", "/",
 		string(data), string(data[1:]))
 }
@@ -628,7 +649,7 @@ func TestBindingProtoBufFail(t *testing.T) {
 	data, _ := proto.Marshal(test)
 
 	testProtoBodyBindingFail(t,
-		ProtoBuf, "protobuf",
+		ProtoBuf,
 		"/", "/",
 		string(data), string(data[1:]))
 }
@@ -648,7 +669,7 @@ func TestBindingMsgPack(t *testing.T) {
 	data := buf.Bytes()
 
 	testMsgPackBodyBinding(t,
-		MsgPack, "msgpack",
+		MsgPack,
 		"/", "/",
 		string(data), string(data[1:]))
 }
@@ -1123,9 +1144,7 @@ func testQueryBindingBoolFail(t *testing.T, method, path, badPath, body, badBody
 	assert.Error(t, err)
 }
 
-func testBodyBinding(t *testing.T, b Binding, name, path, badPath, body, badBody string) {
-	assert.Equal(t, name, b.Name())
-
+func testBodyBinding(t *testing.T, b Binding, path, badPath, body, badBody string) {
 	obj := FooStruct{}
 	req := requestWithBody("POST", path, body)
 	err := b.Bind(req, &obj)
@@ -1138,9 +1157,7 @@ func testBodyBinding(t *testing.T, b Binding, name, path, badPath, body, badBody
 	assert.Error(t, err)
 }
 
-func testBodyBindingUseNumber(t *testing.T, b Binding, name, path, badPath, body, badBody string) {
-	assert.Equal(t, name, b.Name())
-
+func testBodyBindingUseNumber(t *testing.T, b Binding, path, badPath, body, badBody string) {
 	obj := FooStructUseNumber{}
 	req := requestWithBody("POST", path, body)
 	EnableDecoderUseNumber = true
@@ -1157,9 +1174,7 @@ func testBodyBindingUseNumber(t *testing.T, b Binding, name, path, badPath, body
 	assert.Error(t, err)
 }
 
-func testBodyBindingUseNumber2(t *testing.T, b Binding, name, path, badPath, body, badBody string) {
-	assert.Equal(t, name, b.Name())
-
+func testBodyBindingUseNumber2(t *testing.T, b Binding, path, badPath, body, badBody string) {
 	obj := FooStructUseNumber{}
 	req := requestWithBody("POST", path, body)
 	EnableDecoderUseNumber = false
@@ -1194,9 +1209,7 @@ func testBodyBindingDisallowUnknownFields(t *testing.T, b Binding, path, badPath
 	assert.Contains(t, err.Error(), "what")
 }
 
-func testBodyBindingFail(t *testing.T, b Binding, name, path, badPath, body, badBody string) {
-	assert.Equal(t, name, b.Name())
-
+func testBodyBindingFail(t *testing.T, b Binding, path, badPath, body, badBody string) {
 	obj := FooStruct{}
 	req := requestWithBody("POST", path, body)
 	err := b.Bind(req, &obj)
@@ -1209,9 +1222,7 @@ func testBodyBindingFail(t *testing.T, b Binding, name, path, badPath, body, bad
 	assert.Error(t, err)
 }
 
-func testProtoBodyBinding(t *testing.T, b Binding, name, path, badPath, body, badBody string) {
-	assert.Equal(t, name, b.Name())
-
+func testProtoBodyBinding(t *testing.T, b Binding, path, badPath, body, badBody string) {
 	obj := protoexample.Test{}
 	req := requestWithBody("POST", path, body)
 	req.Header.Add("Content-Type", MIMEPROTOBUF)
@@ -1232,9 +1243,7 @@ func (h hook) Read([]byte) (int, error) {
 	return 0, errors.New("error")
 }
 
-func testProtoBodyBindingFail(t *testing.T, b Binding, name, path, badPath, body, badBody string) {
-	assert.Equal(t, name, b.Name())
-
+func testProtoBodyBindingFail(t *testing.T, b Binding, path, badPath, body, badBody string) {
 	obj := protoexample.Test{}
 	req := requestWithBody("POST", path, body)
 
@@ -1250,9 +1259,7 @@ func testProtoBodyBindingFail(t *testing.T, b Binding, name, path, badPath, body
 	assert.Error(t, err)
 }
 
-func testMsgPackBodyBinding(t *testing.T, b Binding, name, path, badPath, body, badBody string) {
-	assert.Equal(t, name, b.Name())
-
+func testMsgPackBodyBinding(t *testing.T, b Binding, path, badPath, body, badBody string) {
 	obj := FooStruct{}
 	req := requestWithBody("POST", path, body)
 	req.Header.Add("Content-Type", MIMEMSGPACK)
