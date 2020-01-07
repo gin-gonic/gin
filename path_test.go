@@ -6,14 +6,17 @@
 package gin
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
 
-var cleanTests = []struct {
+type cleanPathTest struct {
 	path, result string
-}{
+}
+
+var cleanTests = []cleanPathTest{
 	// Already clean
 	{"/", "/"},
 	{"/abc", "/abc"},
@@ -84,6 +87,51 @@ func TestPathCleanMallocs(t *testing.T) {
 }
 
 func BenchmarkPathClean(b *testing.B) {
+	b.ReportAllocs()
+
+	for i := 0; i < b.N; i++ {
+		for _, test := range cleanTests {
+			cleanPath(test.path)
+		}
+	}
+}
+
+func genLongPaths() (testPaths []cleanPathTest) {
+	for i := 1; i <= 1234; i++ {
+		ss := strings.Repeat("a", i)
+
+		correctPath := "/" + ss
+		testPaths = append(testPaths, cleanPathTest{
+			path:   correctPath,
+			result: correctPath,
+		}, cleanPathTest{
+			path:   ss,
+			result: correctPath,
+		}, cleanPathTest{
+			path:   "//" + ss,
+			result: correctPath,
+		}, cleanPathTest{
+			path:   "/" + ss + "/b/..",
+			result: correctPath,
+		})
+	}
+	return
+}
+
+func TestPathCleanLong(t *testing.T) {
+	cleanTests := genLongPaths()
+
+	for _, test := range cleanTests {
+		assert.Equal(t, test.result, cleanPath(test.path))
+		assert.Equal(t, test.result, cleanPath(test.result))
+	}
+}
+
+func BenchmarkPathCleanLong(b *testing.B) {
+	cleanTests := genLongPaths()
+	b.ResetTimer()
+	b.ReportAllocs()
+
 	for i := 0; i < b.N; i++ {
 		for _, test := range cleanTests {
 			cleanPath(test.path)
