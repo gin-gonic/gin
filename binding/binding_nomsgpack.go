@@ -1,8 +1,8 @@
-// Copyright 2014 Manu Martinez-Almeida.  All rights reserved.
+// Copyright 2020 Gin Core Team. All rights reserved.
 // Use of this source code is governed by a MIT style
 // license that can be found in the LICENSE file.
 
-// +build !nomsgpack
+// +build nomsgpack
 
 package binding
 
@@ -18,8 +18,6 @@ const (
 	MIMEPOSTForm          = "application/x-www-form-urlencoded"
 	MIMEMultipartPOSTForm = "multipart/form-data"
 	MIMEPROTOBUF          = "application/x-protobuf"
-	MIMEMSGPACK           = "application/x-msgpack"
-	MIMEMSGPACK2          = "application/msgpack"
 	MIMEYAML              = "application/x-yaml"
 )
 
@@ -77,7 +75,6 @@ var (
 	FormPost      = formPostBinding{}
 	FormMultipart = formMultipartBinding{}
 	ProtoBuf      = protobufBinding{}
-	MsgPack       = msgpackBinding{}
 	YAML          = yamlBinding{}
 	Uri           = uriBinding{}
 	Header        = headerBinding{}
@@ -86,7 +83,7 @@ var (
 // Default returns the appropriate Binding instance based on the HTTP method
 // and the content type.
 func Default(method, contentType string) Binding {
-	if method == http.MethodGet {
+	if method == "GET" {
 		return Form
 	}
 
@@ -97,8 +94,6 @@ func Default(method, contentType string) Binding {
 		return XML
 	case MIMEPROTOBUF:
 		return ProtoBuf
-	case MIMEMSGPACK, MIMEMSGPACK2:
-		return MsgPack
 	case MIMEYAML:
 		return YAML
 	case MIMEMultipartPOSTForm:
