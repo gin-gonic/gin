@@ -4,12 +4,13 @@ PACKAGES ?= $(shell $(GO) list ./...)
 VETPACKAGES ?= $(shell $(GO) list ./... | grep -v /examples/)
 GOFILES := $(shell find . -name "*.go")
 TESTFOLDER := $(shell $(GO) list ./... | grep -E 'gin$$|binding$$|render$$' | grep -v examples)
+TESTTAGS ?= ""
 
 .PHONY: test
 test:
 	echo "mode: count" > coverage.out
 	for d in $(TESTFOLDER); do \
-		$(GO) test -v -covermode=count -coverprofile=profile.out $$d > tmp.out; \
+		$(GO) test -tags $(TESTTAGS) -v -covermode=count -coverprofile=profile.out $$d > tmp.out; \
 		cat tmp.out; \
 		if grep -q "^--- FAIL" tmp.out; then \
 			rm tmp.out; \
