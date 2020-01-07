@@ -48,37 +48,48 @@ func cleanPath(p string) string {
 	// loop has no expensive function calls (except 1x make)
 
 	for r < n {
-		switch {
-		case p[r] == '/':
+		switch p[r] {
+		case '/':
 			// empty path element, trailing slash is added after the end
 			r++
 
-		case p[r] == '.' && r+1 == n:
-			trailing = true
-			r++
-
-		case p[r] == '.' && p[r+1] == '/':
+		case '.':
 			// . element
-			r += 2
+			if r+1 == n {
+				trailing = true
+				r++
+				continue
 
-		case p[r] == '.' && p[r+1] == '.' && (r+2 == n || p[r+2] == '/'):
-			// .. element: remove to last /
-			r += 3
+			} else {
+				switch p[r+1] {
+				case '/':
+					r += 2
+					continue
 
-			if w > 1 {
-				// can backtrack
-				w--
+				case '.':
+					if r+2 == n || p[r+2] == '/' {
+						// .. element: remove to last /
+						r += 3
 
-				if buf == nil {
-					for w > 1 && p[w] != '/' {
-						w--
-					}
-				} else {
-					for w > 1 && buf[w] != '/' {
-						w--
+						if w > 1 {
+							// can backtrack
+							w--
+
+							if buf == nil {
+								for w > 1 && p[w] != '/' {
+									w--
+								}
+							} else {
+								for w > 1 && buf[w] != '/' {
+									w--
+								}
+							}
+						}
+						continue
 					}
 				}
 			}
+			fallthrough
 
 		default:
 			// real path element.
