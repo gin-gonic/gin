@@ -8,6 +8,8 @@ import (
 	"encoding/base64"
 	"net/http"
 	"strconv"
+
+	"github.com/gin-gonic/gin/internal/bytesconv"
 )
 
 // AuthUserKey is the cookie name for user credential in basic auth.
@@ -83,5 +85,5 @@ func processAccounts(accounts Accounts) authPairs {
 
 func authorizationHeader(user, password string) string {
 	base := user + ":" + password
-	return "Basic " + base64.StdEncoding.EncodeToString([]byte(base))
+	return "Basic " + base64.StdEncoding.EncodeToString(bytesconv.StringToBytes(base))
 }
