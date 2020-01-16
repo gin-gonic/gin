@@ -5,8 +5,6 @@
 
 package gin
 
-const stackBufSize = 128
-
 // cleanPath is the URL version of path.Clean, it returns a canonical URL path
 // for p, eliminating . and .. elements.
 //
@@ -21,6 +19,7 @@ const stackBufSize = 128
 //
 // If the result of this process is an empty string, "/" is returned.
 func cleanPath(p string) string {
+	const stackBufSize = 128
 	// Turn empty string into "/"
 	if p == "" {
 		return "/"
