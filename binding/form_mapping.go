@@ -300,6 +300,7 @@ func setByForm(value reflect.Value, field reflect.StructField, form map[string][
 }
 
 func setWithProperType(val string, value reflect.Value, field reflect.StructField) error {
+	// If it is a string type, no spaces are removed, and the user data is not modified here
 	if value.Kind() != reflect.String {
 		val = strings.TrimSpace(val)
 	}
