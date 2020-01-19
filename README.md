@@ -10,6 +10,7 @@
 [![Sourcegraph](https://sourcegraph.com/github.com/gin-gonic/gin/-/badge.svg)](https://sourcegraph.com/github.com/gin-gonic/gin?badge)
 [![Open Source Helpers](https://www.codetriage.com/gin-gonic/gin/badges/users.svg)](https://www.codetriage.com/gin-gonic/gin)
 [![Release](https://img.shields.io/github/release/gin-gonic/gin.svg?style=flat-square)](https://github.com/gin-gonic/gin/releases)
+[![err != nil](https://img.shields.io/endpoint?url=https%3A%2F%2Ferrnil.cpl.li%2Fapi%2Fbadge%3Frepo%3Dgithub.com%252Fgin-gonic%252Fgin%26style%3Dflat)](https://errnil.cpl.li/api/inspect?repo=github.com/gin-gonic/gin)
 
 Gin is a web framework written in Go (Golang). It features a martini-like API with performance that is up to 40 times faster thanks to [httprouter](https://github.com/julienschmidt/httprouter). If you need performance and good productivity, you will love Gin.
 
