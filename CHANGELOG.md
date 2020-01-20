@@ -196,7 +196,7 @@
 - [PERFORMANCE] Misc code optimizations. Inlining, tail call optimizations
 - [NEW] Built-in support for golang.org/x/net/context
 - [NEW] Any(path, handler). Create a route that matches any path
-- [NEW] Refactored rendering pipeline (faster and static typeded)
+- [NEW] Refactored rendering pipeline (faster and static typed)
 - [NEW] Refactored errors API
 - [NEW] IndentedJSON() prints pretty JSON
 - [NEW] Added gin.DefaultWriter
@@ -295,7 +295,7 @@
 - [FIX] Recovery() middleware only prints panics
 - [FIX] Context.Get() does not panic anymore. Use MustGet() instead.
 - [FIX] Multiple http.WriteHeader() in NotFound handlers
-- [FIX] Engine.Run() panics if http server can't be setted up
+- [FIX] Engine.Run() panics if http server can't be set up
 - [FIX] Crash when route path doesn't start with '/'
 - [FIX] Do not update header when status code is negative
 - [FIX] Setting response headers before calling WriteHeader in context.String()
