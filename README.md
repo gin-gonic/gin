@@ -2025,7 +2025,7 @@ func main() {
 
         if err != nil {
             cookie = "NotSet"
-            c.SetCookie("gin_cookie", "test", 3600, "/", "localhost", false, true)
+            c.SetCookie("gin_cookie", "test", 3600, "/", "localhost", http.SameSiteLaxMode, false, true)
         }
 
         fmt.Printf("Cookie value: %s \n", cookie)
