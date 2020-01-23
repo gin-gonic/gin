@@ -1114,7 +1114,7 @@ func TestContextNegotiationWithJSON(t *testing.T) {
 	c.Request, _ = http.NewRequest("POST", "", nil)
 
 	c.Negotiate(http.StatusOK, Negotiate{
-		Offered: []string{MIMEJSON, MIMEXML},
+		Offered: []string{MIMEJSON, MIMEXML, MIMEYAML},
 		Data:    H{"foo": "bar"},
 	})
 
@@ -1129,7 +1129,7 @@ func TestContextNegotiationWithXML(t *testing.T) {
 	c.Request, _ = http.NewRequest("POST", "", nil)
 
 	c.Negotiate(http.StatusOK, Negotiate{
-		Offered: []string{MIMEXML, MIMEJSON},
+		Offered: []string{MIMEXML, MIMEJSON, MIMEYAML},
 		Data:    H{"foo": "bar"},
 	})
 
