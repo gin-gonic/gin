@@ -464,7 +464,6 @@ walk: // Outer loop for walking the tree
 				for i, max := 0, len(indices); i < max; i++ {
 					if c == indices[i] {
 						n = n.children[i]
-						prefix = n.path
 						continue walk
 					}
 				}
@@ -508,7 +507,6 @@ walk: // Outer loop for walking the tree
 					if len(n.children) > 0 {
 						path = path[end:]
 						n = n.children[0]
-						prefix = n.path
 						continue walk
 					}
 
