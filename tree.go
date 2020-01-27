@@ -401,7 +401,7 @@ func (n *node) insertChild(numParams uint8, path string, fullPath string, handle
 		return
 	}
 
-	// If no wildcard was found, simple insert the path and handle
+	// If no wildcard was found, simply insert the path and handle
 	n.path = path
 	n.handlers = handlers
 	n.fullPath = fullPath
