@@ -71,7 +71,6 @@ type Context struct {
 
 	// Added zerolog support to output a more elegant json log format.
 	Logger zerolog.Logger
-
 }
 
 /************************************/
