@@ -169,9 +169,9 @@ walk:
 			}
 
 			// Update maxParams (max of all children)
-			for i := range child.children {
-				if child.children[i].maxParams > child.maxParams {
-					child.maxParams = child.children[i].maxParams
+			for _, v := range child.children {
+				if v.maxParams > child.maxParams {
+					child.maxParams = v.maxParams
 				}
 			}
 
