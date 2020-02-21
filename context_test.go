@@ -662,7 +662,7 @@ func TestContextRenderJSON(t *testing.T) {
 	c.JSON(http.StatusCreated, H{"foo": "bar", "html": "<b>"})
 
 	assert.Equal(t, http.StatusCreated, w.Code)
-	assert.Equal(t, "{\"foo\":\"bar\",\"html\":\"\\u003cb\\u003e\"}\n", w.Body.String())
+	assert.Equal(t, "{\"foo\":\"bar\",\"html\":\"\\u003cb\\u003e\"}", w.Body.String())
 	assert.Equal(t, "application/json; charset=utf-8", w.Header().Get("Content-Type"))
 }
 
@@ -690,7 +690,7 @@ func TestContextRenderJSONPWithoutCallback(t *testing.T) {
 	c.JSONP(http.StatusCreated, H{"foo": "bar"})
 
 	assert.Equal(t, http.StatusCreated, w.Code)
-	assert.Equal(t, "{\"foo\":\"bar\"}\n", w.Body.String())
+	assert.Equal(t, "{\"foo\":\"bar\"}", w.Body.String())
 	assert.Equal(t, "application/json; charset=utf-8", w.Header().Get("Content-Type"))
 }
 
@@ -716,7 +716,7 @@ func TestContextRenderAPIJSON(t *testing.T) {
 	c.JSON(http.StatusCreated, H{"foo": "bar"})
 
 	assert.Equal(t, http.StatusCreated, w.Code)
-	assert.Equal(t, "{\"foo\":\"bar\"}\n", w.Body.String())
+	assert.Equal(t, "{\"foo\":\"bar\"}", w.Body.String())
 	assert.Equal(t, "application/vnd.api+json", w.Header().Get("Content-Type"))
 }
 
@@ -1119,7 +1119,7 @@ func TestContextNegotiationWithJSON(t *testing.T) {
 	})
 
 	assert.Equal(t, http.StatusOK, w.Code)
-	assert.Equal(t, "{\"foo\":\"bar\"}\n", w.Body.String())
+	assert.Equal(t, "{\"foo\":\"bar\"}", w.Body.String())
 	assert.Equal(t, "application/json; charset=utf-8", w.Header().Get("Content-Type"))
 }
 
@@ -1283,7 +1283,7 @@ func TestContextAbortWithStatusJSON(t *testing.T) {
 	_, err := buf.ReadFrom(w.Body)
 	assert.NoError(t, err)
 	jsonStringBody := buf.String()
-	assert.Equal(t, fmt.Sprint("{\"foo\":\"fooValue\",\"bar\":\"barValue\"}\n"), jsonStringBody)
+	assert.Equal(t, fmt.Sprint("{\"foo\":\"fooValue\",\"bar\":\"barValue\"}"), jsonStringBody)
 }
 
 func TestContextError(t *testing.T) {
