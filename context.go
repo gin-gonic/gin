@@ -19,8 +19,8 @@ import (
 	"time"
 
 	"github.com/gin-contrib/sse"
-	"github.com/ptechen/gin/binding"
-	"github.com/ptechen/gin/render"
+	"github.com/gin-gonic/gin/binding"
+	"github.com/gin-gonic/gin/render"
 	"github.com/rs/zerolog"
 )
 

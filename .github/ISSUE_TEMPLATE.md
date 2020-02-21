@@ -14,7 +14,7 @@
 package main
 
 import (
-	"github.com/ptechen/gin"
+	"github.com/gin-gonic/gin"
 )
 
 func main() {
