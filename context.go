@@ -21,6 +21,7 @@ import (
 	"github.com/gin-contrib/sse"
 	"github.com/ptechen/gin/binding"
 	"github.com/ptechen/gin/render"
+	"github.com/rs/zerolog"
 )
 
 // Content-Type MIME of the most common data formats.
