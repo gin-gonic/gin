@@ -69,6 +69,7 @@ type Context struct {
 	// or PUT body parameters.
 	formCache url.Values
 
+	// Added zerolog support to output a more elegant json log format.
 	Logger zerolog.Logger
 }
 
