@@ -19,8 +19,8 @@ import (
 	"time"
 
 	"github.com/gin-contrib/sse"
-	"github.com/gin-gonic/gin/binding"
-	"github.com/gin-gonic/gin/render"
+	"github.com/ptechen/gin/binding"
+	"github.com/ptechen/gin/render"
 )
 
 // Content-Type MIME of the most common data formats.
@@ -67,6 +67,8 @@ type Context struct {
 	// formCache use url.ParseQuery cached PostForm contains the parsed form data from POST, PATCH,
 	// or PUT body parameters.
 	formCache url.Values
+
+	Logger zerolog.Logger
 }
 
 /************************************/
