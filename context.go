@@ -7,6 +7,7 @@ package gin
 import (
 	"errors"
 	"fmt"
+	"github.com/rs/zerolog"
 	"io"
 	"io/ioutil"
 	"math"
@@ -67,6 +68,9 @@ type Context struct {
 	// formCache use url.ParseQuery cached PostForm contains the parsed form data from POST, PATCH,
 	// or PUT body parameters.
 	formCache url.Values
+
+	// Logger is add zerolog support to output a more elegant json log format.
+	Logger zerolog.Logger
 }
 
 /************************************/
