@@ -106,7 +106,6 @@ func JsonLogger(conf ...JsonLoggerConfig) HandlerFunc {
 
 var once sync.Once
 var logger *zerolog.Logger
-var onceLog sync.Once
 
 type TraceParams struct {
 	StartTime time.Time
@@ -117,22 +116,13 @@ type TraceParams struct {
 
 // JsonLoggerWithConfig instance a Logger middleware with config.
 func JsonLoggerWithConfig(conf JsonLoggerConfig) HandlerFunc {
-
 	if conf.Output == nil {
 		conf.Output = DefaultWriter
 	}
 
 	once.Do(func() {
 		conf.InitLogConfig()
-		data, ok := conf.Output.(*os.File)
-		if ok && conf.IsConsole == false {
-			onceLog.Do(func() {
-				conf.logFilePath = data.Name()
-				data := strings.SplitAfter(data.Name(), "/")
-				conf.logDir, conf.logName = data[0], data[1]
-				conf.monitor()
-			})
-		}
+		conf.monitor()
 	})
 
 	notLogged := conf.SkipPaths
@@ -141,7 +131,6 @@ func JsonLoggerWithConfig(conf JsonLoggerConfig) HandlerFunc {
 
 	if length := len(notLogged); length > 0 {
 		skip = make(map[string]struct{}, length)
-
 		for _, path := range notLogged {
 			skip[path] = struct{}{}
 		}
@@ -189,9 +178,9 @@ func JsonLoggerWithConfig(conf JsonLoggerConfig) HandlerFunc {
 					Int("status", param.StatusCode).
 					Interface("keys", c.Keys).Send()
 			} else {
-				c.Logger.Info().Dur("latency", param.Latency).
+				c.Logger.Err(errors.New(param.ErrorMessage)).
+					Dur("latency", param.Latency).
 					Int("status", param.StatusCode).
-					Err(errors.New(param.ErrorMessage)).
 					Interface("keys", c.Keys).Send()
 			}
 		}
@@ -201,6 +190,7 @@ func JsonLoggerWithConfig(conf JsonLoggerConfig) HandlerFunc {
 func (p *JsonLoggerConfig) InitLogConfig() {
 	logger = &log.Logger
 	zerolog.TimeFieldFormat = p.LogTimeFieldFormat
+	p.SetFilePath2FileName()
 	p.SetLogFileSize()
 	p.SetLoglevel()
 	p.CheckLogExpDays()
@@ -260,7 +250,7 @@ func (p *JsonLoggerConfig) SetLogFileSize() {
 		n, _ := strconv.Atoi(strings.Split(p.LogLimitSize, "MB")[0])
 		p.logLimitNums = int64(n) * 1024 * 1024
 	} else {
-		panic("please input ")
+		panic("Please enter the correct LogLimitSize parameter.")
 	}
 }
 
@@ -270,7 +260,23 @@ func (p *JsonLoggerConfig) CheckLogExpDays() {
 	}
 }
 
+func (p *JsonLoggerConfig) SetFilePath2FileName()  {
+	data, ok := p.Output.(*os.File)
+	if ok && !p.IsConsole {
+		p.logFilePath = data.Name()
+		if strings.Contains(data.Name(), "/") {
+			data := strings.SplitAfter(data.Name(), "/")
+			p.logDir, p.logName = strings.Join(data[0:len(data)-1], ""), data[len(data) - 1]
+		} else {
+			p.logDir, p.logName = "./", data.Name()
+		}
+	}
+}
+
 func (p *JsonLoggerConfig) monitor() {
+	if p.logFilePath == "" || p.logName == "" {
+		return
+	}
 	t := time.NewTicker(time.Second * 3)
 	del := time.NewTicker(time.Hour * 24)
 
@@ -285,15 +291,15 @@ func (p *JsonLoggerConfig) monitor() {
 				if !isExist {
 					p.setOutput()
 				}
-				size := p.checkFileSize()
+				size := p.CheckFileSize()
 				if size > p.logLimitNums {
 					logger.Info().Msg("rename log file")
-					p.rename2File()
+					p.Rename2File()
 					p.setOutput()
 				}
 
 			case <-del.C:
-				p.deleteLogFile()
+				p.DeleteLogFile()
 			}
 		}
 	}()
@@ -304,7 +310,7 @@ func (p *JsonLoggerConfig) IsExist() bool {
 	return err == nil || os.IsExist(err)
 }
 
-func (p *JsonLoggerConfig) checkFileSize() int64 {
+func (p *JsonLoggerConfig) CheckFileSize() int64 {
 	f, e := os.Stat(p.logFilePath)
 	if e != nil {
 		return 0
@@ -312,34 +318,31 @@ func (p *JsonLoggerConfig) checkFileSize() int64 {
 	return f.Size()
 }
 
-func (p *JsonLoggerConfig) rename2File() {
+func (p *JsonLoggerConfig) Rename2File() (newLogFileName string) {
 	now := time.Now()
-	newLogFileName := fmt.Sprintf("%s.%s", p.logFilePath, now.Format("2006-01-02 15:04:05"))
-	_ = os.Rename(p.logFilePath, newLogFileName)
+	newLogFileName = fmt.Sprintf("%s.%s", p.logFilePath, now.Format("2006-01-02 15:04:05"))
+	err := os.Rename(p.logFilePath, newLogFileName)
+	if err != nil {
+		return ""
+	}
+	return
 }
 
-func (p *JsonLoggerConfig) deleteLogFile() {
+func (p *JsonLoggerConfig) DeleteLogFile(){
 	files, _ := ioutil.ReadDir(p.logDir)
 	for _, file := range files {
-		if file.IsDir() {
-			// DO
-		} else {
+		if !file.IsDir() {
 			if file.Name() != p.logName && strings.Contains(file.Name(), p.logName) {
 				createTime := strings.Split(file.Name(), p.logName+".")[1]
 				date, err := time.Parse("2006-01-02 15:04:05", createTime)
 				if err != nil {
-					logger.Err(err).Msg("log file time format err")
 					continue
 				}
 				dateUnix := date.Unix()
 				currentUnix := time.Now().Unix()
 				if currentUnix-dateUnix > p.LogExpDays*60*60*24 {
-					currentFileName := p.logDir + "/" + file.Name()
-					err = os.Remove(currentFileName)
-					if err != nil {
-						logger.Err(err).Msgf("remove %s failed", currentFileName)
-					}
-					logger.Info().Msgf("remove %s success", currentFileName)
+					currentFileName := p.logDir + file.Name()
+					_ = os.Remove(currentFileName)
 				}
 			}
 		}

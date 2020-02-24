@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"github.com/rs/zerolog/log"
 	"github.com/stretchr/testify/assert"
+	"os"
 	"testing"
 	"time"
 )
@@ -159,6 +160,41 @@ func TestJsonLoggerWithConfig(t *testing.T) {
 	assert.Contains(t, buffer.String(), "404")
 	assert.Contains(t, buffer.String(), "GET")
 	assert.Contains(t, buffer.String(), "/notfound")
+}
+
+func TestJsonLoggerConfig_SetFilePath2FileName(t *testing.T) {
+	f, _ := os.Create("gin.log")
+	conf := &JsonLoggerConfig{Output: f}
+	conf.SetFilePath2FileName()
+	if conf.logDir != "./" || conf.logName != "gin.log" {
+		t.Error("SetFilePath2FileName is failing")
+	}
+}
+
+func TestJsonLoggerConfig_Rename2File(t *testing.T) {
+	conf := JsonLoggerConfig{logFilePath: "gin.log"}
+	fileName := conf.Rename2File()
+	conf.logFilePath = fileName
+	if !conf.IsExist() {
+		t.Error("Rename2File is failing")
+	}
+}
+
+func TestJsonLoggerConfig_DeleteLogFile(t *testing.T) {
+	router := New()
+	router.Use(JsonLoggerWithConfig(JsonLoggerConfig{Output: buffer}))
+	router.GET("/example", func(c *Context) {})
+	_, _ = os.Create("gin.log.2018-01-01 01:01:01")
+	time.Sleep(time.Second)
+	conf := JsonLoggerConfig{LogExpDays: 30, logName: "gin.log", logDir:"./"}
+	conf.DeleteLogFile()
+}
+
+func TestJsonLoggerConfig_CheckFileSize(t *testing.T) {
+	conf := &JsonLoggerConfig{logFilePath: "./logger_json_test.go"}
+	if conf.CheckFileSize() == 0 {
+		t.Error("CheckFileSize is failing")
+	}
 }
 
 func TestJsonLoggerConfig_InitLogConfig(t *testing.T) {
