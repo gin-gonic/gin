@@ -97,15 +97,16 @@ type JsonLoggerConfig struct {
 
 // JsonLogger instances a Logger middleware that will write the logs to gin.DefaultWriter.
 // By default gin.DefaultWriter = os.Stdout.
-func JsonLogger(conf ...JsonLoggerConfig) HandlerFunc {
+func JsonLogger(conf ...*JsonLoggerConfig) HandlerFunc {
 	if len(conf) == 0 {
-		return JsonLoggerWithConfig(JsonLoggerConfig{})
+		return JsonLoggerWithConfig(&JsonLoggerConfig{})
 	}
 	return JsonLoggerWithConfig(conf[0])
 }
 
 var once sync.Once
 var logger *zerolog.Logger
+var skip map[string]struct{}
 
 type TraceParams struct {
 	StartTime time.Time
@@ -115,27 +116,25 @@ type TraceParams struct {
 }
 
 // JsonLoggerWithConfig instance a Logger middleware with config.
-func JsonLoggerWithConfig(conf JsonLoggerConfig) HandlerFunc {
+func JsonLoggerWithConfig(conf *JsonLoggerConfig) HandlerFunc {
 	if conf.Output == nil {
 		conf.Output = DefaultWriter
 	}
 
 	once.Do(func() {
 		conf.InitLogConfig()
-		conf.Monitor()
-	})
+		go func() {
+			conf.Monitor()
+		}()
 
-	notlogged := conf.SkipPaths
-
-	var skip map[string]struct{}
-
-	if length := len(notlogged); length > 0 {
-		skip = make(map[string]struct{}, length)
-
-		for _, path := range notlogged {
-			skip[path] = struct{}{}
+		notLogged := conf.SkipPaths
+		if length := len(notLogged); length > 0 {
+			skip = make(map[string]struct{}, length)
+			for _, path := range notLogged {
+				skip[path] = struct{}{}
+			}
 		}
-	}
+	})
 
 	return func(c *Context) {
 		// Start timer
@@ -149,7 +148,7 @@ func JsonLoggerWithConfig(conf JsonLoggerConfig) HandlerFunc {
 			Method:    c.Request.Method,
 		}
 
-		traceId := CreateUuid(params)
+		traceId, _ := CreateUuid(params)
 		c.Logger = log.With().
 			Str("trace_id", traceId).
 			Str("path", c.Request.URL.String()).
@@ -275,29 +274,28 @@ func (p *JsonLoggerConfig) Monitor() {
 		return
 	}
 
-	go func(conf *JsonLoggerConfig) {
-		t := time.NewTicker(time.Second * 3)
-		del := time.NewTicker(time.Hour * 24)
-		defer t.Stop()
-		defer del.Stop()
+	t := time.NewTicker(time.Second * 3)
+	del := time.NewTicker(time.Hour * 24)
+	defer t.Stop()
+	defer del.Stop()
 
-		for {
-			select {
-			case <-t.C:
-				isExist := conf.IsExist()
-				if !isExist {
-					conf.SetOutput()
-				}
-				size := conf.CheckFileSize()
-				if size > conf.logLimitNums {
-					conf.Rename2File()
-					conf.SetOutput()
-				}
-			case <-del.C:
-				_ = conf.DeleteLogFile()
+	for {
+		select {
+		case <-t.C:
+			isExist := p.IsExist()
+			if !isExist {
+				p.SetOutput()
 			}
+			size := p.CheckFileSize()
+			if size > p.logLimitNums {
+				p.Rename2File()
+				p.SetOutput()
+			}
+		case <-del.C:
+			_ = p.DeleteLogFile()
 		}
-	}(p)
+	}
+
 }
 
 // IsExist is a method to check if the log file exists.
@@ -350,11 +348,11 @@ func (p *JsonLoggerConfig) DeleteLogFile() error {
 }
 
 // CreateUuid is the method used to generate the tracking id.
-func CreateUuid(params interface{}) (uuidStr string) {
+func CreateUuid(params interface{}) (uuidStr string, err error) {
 	data, err := encoding.JSON.Marshal(params)
 	if err != nil {
-		return
+		return uuidStr, err
 	}
 	uuidStr = uuid.NewMD5(uuid.UUID{}, data).String()
-	return uuidStr
+	return uuidStr, err
 }

@@ -283,7 +283,8 @@ func TestJsonLoggerConfig_IsExist(t *testing.T) {
 
 func TestCreateUuid(t *testing.T) {
 	data := JsonLoggerConfig{Caller: true}
-	if CreateUuid(data) == "" {
+	_, err := CreateUuid(data)
+	if err != nil {
 		t.Error("CreateUuid is failing")
 	}
 }
