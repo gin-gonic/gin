@@ -285,15 +285,15 @@ func (p *JsonLoggerConfig) Monitor() {
 	if p.logFilePath == "" || p.logName == "" {
 		return
 	}
-	t := time.NewTicker(time.Second * 3)
-	del := time.NewTicker(time.Hour * 24)
 
 	go func() {
+		t := time.NewTicker(time.Second * 3)
+		del := time.NewTicker(time.Hour * 24)
 		defer t.Stop()
 		defer del.Stop()
+
 		for {
 			select {
-
 			case <-t.C:
 				isExist := p.IsExist()
 				if !isExist {
@@ -301,11 +301,9 @@ func (p *JsonLoggerConfig) Monitor() {
 				}
 				size := p.CheckFileSize()
 				if size > p.logLimitNums {
-					logger.Info().Msg("rename log file")
 					p.Rename2File()
 					p.SetOutput()
 				}
-
 			case <-del.C:
 				p.DeleteLogFile()
 			}
