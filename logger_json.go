@@ -177,12 +177,12 @@ func JsonLoggerWithConfig(conf JsonLoggerConfig) HandlerFunc {
 				c.Logger.Info().Dur("latency", param.Latency).
 					Int("status", param.StatusCode).
 					Interface("keys", c.Keys).Send()
-			} else {
-				c.Logger.Err(errors.New(param.ErrorMessage)).
-					Dur("latency", param.Latency).
-					Int("status", param.StatusCode).
-					Interface("keys", c.Keys).Send()
 			}
+			c.Logger.Err(errors.New(param.ErrorMessage)).
+				Dur("latency", param.Latency).
+				Int("status", param.StatusCode).
+				Interface("keys", c.Keys).Send()
+
 		}
 	}
 }
@@ -212,17 +212,15 @@ func (p *JsonLoggerConfig) SetOutput() {
 					logger.Warn().Msgf("Logger Dropped %d messages", missed)
 				})
 
-		} else {
-			w = diode.NewWriter(DefaultWriter, p.LogWriteSize, 10*time.Millisecond, func(missed int) {
-				logger.Warn().Msgf("Logger Dropped %d messages", missed)
-			})
 		}
-
-	} else {
-		w = diode.NewWriter(p.Output, p.LogWriteSize, 10*time.Millisecond, func(missed int) {
+		w = diode.NewWriter(DefaultWriter, p.LogWriteSize, 10*time.Millisecond, func(missed int) {
 			logger.Warn().Msgf("Logger Dropped %d messages", missed)
 		})
+
 	}
+	w = diode.NewWriter(p.Output, p.LogWriteSize, 10*time.Millisecond, func(missed int) {
+		logger.Warn().Msgf("Logger Dropped %d messages", missed)
+	})
 
 	*logger = logger.Output(w)
 }
@@ -272,8 +270,8 @@ func (p *JsonLoggerConfig) SetFilePath2FileName() {
 	if ok && !p.IsConsole {
 		p.logFilePath = data.Name()
 		if strings.Contains(data.Name(), "/") {
-			data := strings.SplitAfter(data.Name(), "/")
-			p.logDir, p.logName = strings.Join(data[0:len(data)-1], ""), data[len(data)-1]
+			fileInfos := strings.SplitAfter(data.Name(), "/")
+			p.logDir, p.logName = strings.Join(fileInfos[0:len(fileInfos)-1], ""), fileInfos[len(fileInfos)-1]
 		} else {
 			p.logDir, p.logName = "./", data.Name()
 		}
