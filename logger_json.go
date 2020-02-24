@@ -345,6 +345,7 @@ func (p *JsonLoggerConfig) DeleteLogFile() error {
 			}
 		}
 	}
+	return nil
 }
 
 // CreateUuid is the method used to generate the tracking id.
