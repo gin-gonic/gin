@@ -95,7 +95,7 @@ type JsonLoggerConfig struct {
 	logLimitNums int64
 }
 
-// ZeroLogger instances a Logger middleware that will write the logs to gin.DefaultWriter.
+// JsonLogger instances a Logger middleware that will write the logs to gin.DefaultWriter.
 // By default gin.DefaultWriter = os.Stdout.
 func JsonLogger(conf ...JsonLoggerConfig) HandlerFunc {
 	if len(conf) == 0 {
