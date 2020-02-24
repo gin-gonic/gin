@@ -258,10 +258,11 @@ func (p *JsonLoggerConfig) SetFilePath2FileName() {
 	data, ok := p.Output.(*os.File)
 	if ok && !p.IsConsole {
 		p.logFilePath = data.Name()
-		if strings.Contains(data.Name(), "/") {
-			fileInfo := strings.SplitAfter(data.Name(), "/")
-			p.logDir = strings.Join(fileInfo[0:len(fileInfo)-1], "")
-			p.logName = fileInfo[len(fileInfo)-1]
+		if strings.Contains(p.logFilePath, "/") {
+			fileInfo := strings.SplitAfter(p.logFilePath, "/")
+			length := len(fileInfo) - 1
+			p.logDir = strings.Join(fileInfo[: length], "")
+			p.logName = fileInfo[length]
 		} else {
 			p.logDir, p.logName = "./", data.Name()
 		}
