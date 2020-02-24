@@ -125,13 +125,14 @@ func JsonLoggerWithConfig(conf JsonLoggerConfig) HandlerFunc {
 		conf.Monitor()
 	})
 
-	notLogged := conf.SkipPaths
+	notlogged := conf.SkipPaths
 
 	var skip map[string]struct{}
 
-	if length := len(notLogged); length > 0 {
+	if length := len(notlogged); length > 0 {
 		skip = make(map[string]struct{}, length)
-		for _, path := range notLogged {
+
+		for _, path := range notlogged {
 			skip[path] = struct{}{}
 		}
 	}
@@ -204,21 +205,11 @@ func (p *JsonLoggerConfig) InitLogConfig() {
 
 // SetOutput is a method to set the log output path.
 func (p *JsonLoggerConfig) SetOutput() {
-	var w io.Writer
-	if p.IsConsole {
-		if p.LogColor {
-			w = diode.NewWriter(zerolog.ConsoleWriter{Out: DefaultWriter}, p.LogWriteSize,
-				10*time.Millisecond, func(missed int) {
-					logger.Warn().Msgf("Logger Dropped %d messages", missed)
-				})
-
-		}
-		w = diode.NewWriter(DefaultWriter, p.LogWriteSize, 10*time.Millisecond, func(missed int) {
-			logger.Warn().Msgf("Logger Dropped %d messages", missed)
-		})
+	if p.IsConsole && p.LogColor {
+		p.Output = zerolog.ConsoleWriter{Out: p.Output}
 
 	}
-	w = diode.NewWriter(p.Output, p.LogWriteSize, 10*time.Millisecond, func(missed int) {
+	w := diode.NewWriter(p.Output, p.LogWriteSize, 10*time.Millisecond, func(missed int) {
 		logger.Warn().Msgf("Logger Dropped %d messages", missed)
 	})
 
@@ -242,18 +233,16 @@ func (p *JsonLoggerConfig) CheckLogWriteSize() {
 
 // SetLogFileSize is a method for setting a limit on the size of a log file.
 func (p *JsonLoggerConfig) SetLogFileSize() {
-	if p.LogLimitSize == "" {
+	if !strings.Contains(p.LogLimitSize, "G") && !strings.Contains(p.LogLimitSize, "MB") {
 		p.LogLimitSize = "1G"
 	}
+
 	if strings.Contains(p.LogLimitSize, "G") {
 		n, _ := strconv.Atoi(strings.Split(p.LogLimitSize, "G")[0])
 		p.logLimitNums = int64(n) * 1024 * 1024 * 1024
-
-	} else if strings.Contains(p.LogLimitSize, "MB") {
+	} else {
 		n, _ := strconv.Atoi(strings.Split(p.LogLimitSize, "MB")[0])
 		p.logLimitNums = int64(n) * 1024 * 1024
-	} else {
-		panic("Please enter the correct LogLimitSize parameter.")
 	}
 }
 
@@ -270,8 +259,9 @@ func (p *JsonLoggerConfig) SetFilePath2FileName() {
 	if ok && !p.IsConsole {
 		p.logFilePath = data.Name()
 		if strings.Contains(data.Name(), "/") {
-			fileInfos := strings.SplitAfter(data.Name(), "/")
-			p.logDir, p.logName = strings.Join(fileInfos[0:len(fileInfos)-1], ""), fileInfos[len(fileInfos)-1]
+			fileInfo := strings.SplitAfter(data.Name(), "/")
+			p.logDir = strings.Join(fileInfo[0:len(fileInfo)-1], "")
+			p.logName = fileInfo[len(fileInfo)-1]
 		} else {
 			p.logDir, p.logName = "./", data.Name()
 		}
@@ -284,7 +274,7 @@ func (p *JsonLoggerConfig) Monitor() {
 		return
 	}
 
-	go func() {
+	go func(conf *JsonLoggerConfig) {
 		t := time.NewTicker(time.Second * 3)
 		del := time.NewTicker(time.Hour * 24)
 		defer t.Stop()
@@ -293,20 +283,20 @@ func (p *JsonLoggerConfig) Monitor() {
 		for {
 			select {
 			case <-t.C:
-				isExist := p.IsExist()
+				isExist := conf.IsExist()
 				if !isExist {
-					p.SetOutput()
+					conf.SetOutput()
 				}
-				size := p.CheckFileSize()
-				if size > p.logLimitNums {
-					p.Rename2File()
-					p.SetOutput()
+				size := conf.CheckFileSize()
+				if size > conf.logLimitNums {
+					conf.Rename2File()
+					conf.SetOutput()
 				}
 			case <-del.C:
-				p.DeleteLogFile()
+				_ = conf.DeleteLogFile()
 			}
 		}
-	}()
+	}(p)
 }
 
 // IsExist is a method to check if the log file exists.
@@ -336,7 +326,7 @@ func (p *JsonLoggerConfig) Rename2File() (newLogFileName string) {
 }
 
 // DeleteLogFile is a method for deleting log files.
-func (p *JsonLoggerConfig) DeleteLogFile() {
+func (p *JsonLoggerConfig) DeleteLogFile() error {
 	files, _ := ioutil.ReadDir(p.logDir)
 	for _, file := range files {
 		if !file.IsDir() {
@@ -344,7 +334,7 @@ func (p *JsonLoggerConfig) DeleteLogFile() {
 				createTime := strings.Split(file.Name(), p.logName+".")[1]
 				date, err := time.Parse("2006-01-02 15:04:05", createTime)
 				if err != nil {
-					continue
+					return err
 				}
 				dateUnix := date.Unix()
 				currentUnix := time.Now().Unix()
@@ -361,7 +351,7 @@ func (p *JsonLoggerConfig) DeleteLogFile() {
 func CreateUuid(params interface{}) (uuidStr string) {
 	data, err := encoding.JSON.Marshal(params)
 	if err != nil {
-		return uuidStr
+		return ""
 	}
 	uuidStr = uuid.NewMD5(uuid.UUID{}, data).String()
 	return uuidStr
