@@ -512,6 +512,33 @@ func main() {
 }
 ```
 
+### How to write log file in json format
+```go
+func main() {
+    // Logging to a file.
+    f, _ := os.Create("gin.log")
+    
+    // Use the following code if you need to write the logs to file and console at the same time.
+    router := gin.New()
+    
+    // The default log file configuration.
+    // router.Use(gin.JsonLogger())
+    
+    // Custom log file configuration.
+    router.Use(gin.JsonLogger(gin.JsonLoggerConfig{
+                 		Output: f,
+                 		LogColor: false,
+                 		IsConsole: false,
+                 		Caller: true,
+                 	}))
+    router.GET("/ping", func(c *gin.Context) {
+        c.String(200, "pong")
+    })
+
+    router.Run(":8080")
+}
+```
+
 ### Custom Log Format
 ```go
 func main() {
