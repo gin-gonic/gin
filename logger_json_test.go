@@ -215,7 +215,7 @@ func TestJsonLoggerConfig_DeleteLogFile(t *testing.T) {
 	_, _ = os.Create("gin.log.2018-01-01 01:01:01")
 	time.Sleep(time.Second)
 	conf := JsonLoggerConfig{LogExpDays: 30, logName: "gin.log", logDir: "./"}
-	_ = conf.DeleteLogFile()
+	conf.DeleteLogFile()
 }
 
 func TestJsonLoggerConfig_CheckFileSize(t *testing.T) {

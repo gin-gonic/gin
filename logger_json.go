@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/google/uuid"
 	"github.com/ptechen/encoding"
+	"github.com/robfig/cron/v3"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/diode"
 	"github.com/rs/zerolog/log"
@@ -107,8 +108,6 @@ func JsonLogger(conf ...*JsonLoggerConfig) HandlerFunc {
 var once sync.Once
 var logger *zerolog.Logger
 var skip map[string]struct{}
-var secondsTicker *time.Ticker
-var dayTicker *time.Ticker
 
 type TraceParams struct {
 	StartTime time.Time
@@ -125,9 +124,8 @@ func JsonLoggerWithConfig(conf *JsonLoggerConfig) HandlerFunc {
 
 	once.Do(func() {
 		conf.InitLogConfig()
-		go func() {
-			conf.Monitor()
-		}()
+
+		conf.Monitor()
 
 		notLogged := conf.SkipPaths
 		length := len(notLogged)
@@ -280,36 +278,27 @@ func parseFileInfo(fileInfo string) (logDir, logName string) {
 	return
 }
 
+func (p *JsonLoggerConfig) tab1() {
+	isExist := p.IsExist()
+	if !isExist {
+		p.SetOutput()
+	}
+	size := p.CheckFileSize()
+	if size > p.logLimitNums {
+		p.Rename2File()
+		p.SetOutput()
+	}
+}
+
 // Monitor is a method of monitoring log files.
 func (p *JsonLoggerConfig) Monitor() {
 	if p.logFilePath == "" || p.logName == "" {
 		return
 	}
-
-	secondsTicker = time.NewTicker(time.Second * 3)
-	dayTicker = time.NewTicker(time.Hour * 24)
-	defer secondsTicker.Stop()
-	defer dayTicker.Stop()
-
-	for {
-		select {
-
-		case <-secondsTicker.C:
-			isExist := p.IsExist()
-			if !isExist {
-				p.SetOutput()
-			}
-			size := p.CheckFileSize()
-			if size > p.logLimitNums {
-				p.Rename2File()
-				p.SetOutput()
-			}
-
-		case <-dayTicker.C:
-			_ = p.DeleteLogFile()
-		}
-	}
-
+	cronTab := cron.New()
+	cronTab.AddFunc("*/5 * * * * ?", p.tab1)
+	cronTab.AddFunc("0 0 1 * * ?", p.DeleteLogFile)
+	cronTab.Run()
 }
 
 // IsExist is a method to check if the log file exists.
@@ -339,7 +328,7 @@ func (p *JsonLoggerConfig) Rename2File() (newLogFileName string) {
 }
 
 // DeleteLogFile is a method for deleting log files.
-func (p *JsonLoggerConfig) DeleteLogFile() error {
+func (p *JsonLoggerConfig) DeleteLogFile() {
 	files, _ := ioutil.ReadDir(p.logDir)
 	for _, file := range files {
 		if !file.IsDir() {
@@ -347,7 +336,7 @@ func (p *JsonLoggerConfig) DeleteLogFile() error {
 				createTime := strings.Split(file.Name(), p.logName+".")[1]
 				date, err := time.Parse("2006-01-02 15:04:05", createTime)
 				if err != nil {
-					return err
+					continue
 				}
 				dateUnix := date.Unix()
 				currentUnix := time.Now().Unix()
@@ -358,7 +347,6 @@ func (p *JsonLoggerConfig) DeleteLogFile() error {
 			}
 		}
 	}
-	return nil
 }
 
 // CreateUuid is the method used to generate the tracking id.

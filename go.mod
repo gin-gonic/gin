@@ -10,6 +10,7 @@ require (
 	github.com/json-iterator/go v1.1.9
 	github.com/mattn/go-isatty v0.0.12
 	github.com/ptechen/encoding v0.0.0-20200220142351-b775f33146d7
+	github.com/robfig/cron/v3 v3.0.1
 	github.com/rs/zerolog v1.18.0
 	github.com/stretchr/testify v1.4.0
 	github.com/ugorji/go/codec v1.1.7
