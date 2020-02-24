@@ -107,6 +107,8 @@ func JsonLogger(conf ...*JsonLoggerConfig) HandlerFunc {
 var once sync.Once
 var logger *zerolog.Logger
 var skip map[string]struct{}
+var secondsTicker *time.Ticker
+var dayTicker *time.Ticker
 
 type TraceParams struct {
 	StartTime time.Time
@@ -128,10 +130,11 @@ func JsonLoggerWithConfig(conf *JsonLoggerConfig) HandlerFunc {
 		}()
 
 		notLogged := conf.SkipPaths
-		if length := len(notLogged); length > 0 {
+		length := len(notLogged)
+		if length > 0 {
 			skip = make(map[string]struct{}, length)
-			for _, path := range notLogged {
-				skip[path] = struct{}{}
+			for i := 0; i < length; i++ {
+				skip[notLogged[i]] = struct{}{}
 			}
 		}
 	})
@@ -195,19 +198,23 @@ func (p *JsonLoggerConfig) InitLogConfig() {
 	p.SetLogFileSize()
 	p.SetLoglevel()
 	p.CheckLogExpDays()
+	p.setCaller()
+	p.CheckLogWriteSize()
+	p.SetOutput()
+}
+
+func (p *JsonLoggerConfig) setCaller() {
 	if p.Caller {
 		*logger = logger.With().Caller().Logger()
 	}
-	p.CheckLogWriteSize()
-	p.SetOutput()
 }
 
 // SetOutput is a method to set the log output path.
 func (p *JsonLoggerConfig) SetOutput() {
 	if p.IsConsole && p.LogColor {
 		p.Output = zerolog.ConsoleWriter{Out: p.Output}
-
 	}
+
 	w := diode.NewWriter(p.Output, p.LogWriteSize, 10*time.Millisecond, func(missed int) {
 		logger.Warn().Msgf("Logger Dropped %d messages", missed)
 	})
@@ -257,15 +264,20 @@ func (p *JsonLoggerConfig) SetFilePath2FileName() {
 	data, ok := p.Output.(*os.File)
 	if ok && !p.IsConsole {
 		p.logFilePath = data.Name()
-		if strings.Contains(p.logFilePath, "/") {
-			fileInfo := strings.SplitAfter(p.logFilePath, "/")
-			length := len(fileInfo) - 1
-			p.logDir = strings.Join(fileInfo[:length], "")
-			p.logName = fileInfo[length]
-		} else {
-			p.logDir, p.logName = "./", data.Name()
-		}
+		p.logDir, p.logName = parseFileInfo(p.logFilePath)
 	}
+}
+
+func parseFileInfo(fileInfo string) (logDir, logName string) {
+	if strings.Contains(fileInfo, "/") {
+		fileInfo := strings.SplitAfter(fileInfo, "/")
+		length := len(fileInfo) - 1
+		logDir = strings.Join(fileInfo[:length], "")
+		logName = fileInfo[length]
+	} else {
+		logDir, logName = "./", fileInfo
+	}
+	return
 }
 
 // Monitor is a method of monitoring log files.
@@ -274,14 +286,15 @@ func (p *JsonLoggerConfig) Monitor() {
 		return
 	}
 
-	t := time.NewTicker(time.Second * 3)
-	del := time.NewTicker(time.Hour * 24)
-	defer t.Stop()
-	defer del.Stop()
+	secondsTicker = time.NewTicker(time.Second * 3)
+	dayTicker = time.NewTicker(time.Hour * 24)
+	defer secondsTicker.Stop()
+	defer dayTicker.Stop()
 
 	for {
 		select {
-		case <-t.C:
+
+		case <-secondsTicker.C:
 			isExist := p.IsExist()
 			if !isExist {
 				p.SetOutput()
@@ -291,7 +304,8 @@ func (p *JsonLoggerConfig) Monitor() {
 				p.Rename2File()
 				p.SetOutput()
 			}
-		case <-del.C:
+
+		case <-dayTicker.C:
 			_ = p.DeleteLogFile()
 		}
 	}
