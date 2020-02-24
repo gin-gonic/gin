@@ -186,7 +186,7 @@ func TestJsonLoggerConfig_DeleteLogFile(t *testing.T) {
 	router.GET("/example", func(c *Context) {})
 	_, _ = os.Create("gin.log.2018-01-01 01:01:01")
 	time.Sleep(time.Second)
-	conf := JsonLoggerConfig{LogExpDays: 30, logName: "gin.log", logDir:"./"}
+	conf := JsonLoggerConfig{LogExpDays: 30, logName: "gin.log", logDir: "./"}
 	conf.DeleteLogFile()
 }
 

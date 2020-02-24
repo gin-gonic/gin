@@ -260,13 +260,13 @@ func (p *JsonLoggerConfig) CheckLogExpDays() {
 	}
 }
 
-func (p *JsonLoggerConfig) SetFilePath2FileName()  {
+func (p *JsonLoggerConfig) SetFilePath2FileName() {
 	data, ok := p.Output.(*os.File)
 	if ok && !p.IsConsole {
 		p.logFilePath = data.Name()
 		if strings.Contains(data.Name(), "/") {
 			data := strings.SplitAfter(data.Name(), "/")
-			p.logDir, p.logName = strings.Join(data[0:len(data)-1], ""), data[len(data) - 1]
+			p.logDir, p.logName = strings.Join(data[0:len(data)-1], ""), data[len(data)-1]
 		} else {
 			p.logDir, p.logName = "./", data.Name()
 		}
@@ -328,7 +328,7 @@ func (p *JsonLoggerConfig) Rename2File() (newLogFileName string) {
 	return
 }
 
-func (p *JsonLoggerConfig) DeleteLogFile(){
+func (p *JsonLoggerConfig) DeleteLogFile() {
 	files, _ := ioutil.ReadDir(p.logDir)
 	for _, file := range files {
 		if !file.IsDir() {
