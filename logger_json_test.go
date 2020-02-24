@@ -18,7 +18,7 @@ func init() {
 
 func TestJsonLogger(t *testing.T) {
 	router := New()
-	router.Use(JsonLogger(JsonLoggerConfig{
+	router.Use(JsonLogger(&JsonLoggerConfig{
 		Output:    buffer,
 		IsConsole: false,
 		LogColor:  false,
@@ -93,7 +93,7 @@ func TestJsonLogger(t *testing.T) {
 
 func TestJsonLoggerWithConfig(t *testing.T) {
 	router := New()
-	router.Use(JsonLoggerWithConfig(JsonLoggerConfig{Output: buffer}))
+	router.Use(JsonLoggerWithConfig(&JsonLoggerConfig{Output: buffer}))
 	router.GET("/example", func(c *Context) {})
 	router.POST("/example", func(c *Context) {})
 	router.PUT("/example", func(c *Context) {})
@@ -165,7 +165,7 @@ func TestJsonLoggerWithConfig(t *testing.T) {
 func TestJsonLoggerConfig_SetOutput(t *testing.T) {
 	router := New()
 	buffer.Reset()
-	router.Use(JsonLoggerWithConfig(JsonLoggerConfig{Output: buffer}))
+	router.Use(JsonLoggerWithConfig(&JsonLoggerConfig{Output: buffer}))
 	router.GET("/example", func(c *Context) {})
 
 	performRequest(router, "GET", "/example?a=100")
@@ -179,7 +179,7 @@ func TestJsonLoggerConfig_SetOutput(t *testing.T) {
 func TestJsonLoggerConfig_Monitor(t *testing.T) {
 	router := New()
 	f, _ := os.Create("gin.log")
-	router.Use(JsonLoggerWithConfig(JsonLoggerConfig{Output: f}))
+	router.Use(JsonLoggerWithConfig(&JsonLoggerConfig{Output: f}))
 	router.GET("/example", func(c *Context) {})
 
 	performRequest(router, "GET", "/example?a=100")
@@ -210,7 +210,7 @@ func TestJsonLoggerConfig_Rename2File(t *testing.T) {
 
 func TestJsonLoggerConfig_DeleteLogFile(t *testing.T) {
 	router := New()
-	router.Use(JsonLoggerWithConfig(JsonLoggerConfig{Output: buffer}))
+	router.Use(JsonLoggerWithConfig(&JsonLoggerConfig{Output: buffer}))
 	router.GET("/example", func(c *Context) {})
 	_, _ = os.Create("gin.log.2018-01-01 01:01:01")
 	time.Sleep(time.Second)
