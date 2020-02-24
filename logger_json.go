@@ -353,7 +353,7 @@ func (p *JsonLoggerConfig) DeleteLogFile() error {
 func CreateUuid(params interface{}) (uuidStr string) {
 	data, err := encoding.JSON.Marshal(params)
 	if err != nil {
-		return ""
+		return
 	}
 	uuidStr = uuid.NewMD5(uuid.UUID{}, data).String()
 	return uuidStr
