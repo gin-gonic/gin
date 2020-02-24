@@ -162,6 +162,34 @@ func TestJsonLoggerWithConfig(t *testing.T) {
 	assert.Contains(t, buffer.String(), "/notfound")
 }
 
+func TestJsonLoggerConfig_SetOutput(t *testing.T) {
+	router := New()
+	buffer.Reset()
+	router.Use(JsonLoggerWithConfig(JsonLoggerConfig{Output: buffer}))
+	router.GET("/example", func(c *Context) {})
+
+	performRequest(router, "GET", "/example?a=100")
+	time.Sleep(time.Millisecond * 100)
+	assert.Contains(t, buffer.String(), "200")
+	assert.Contains(t, buffer.String(), "GET")
+	assert.Contains(t, buffer.String(), "/example")
+	assert.Contains(t, buffer.String(), "a=100")
+}
+
+func TestJsonLoggerConfig_Monitor(t *testing.T) {
+	router := New()
+	f, _ := os.Create("gin.log")
+	router.Use(JsonLoggerWithConfig(JsonLoggerConfig{Output: f}))
+	router.GET("/example", func(c *Context) {})
+
+	performRequest(router, "GET", "/example?a=100")
+	time.Sleep(time.Millisecond * 100)
+	assert.Contains(t, buffer.String(), "200")
+	assert.Contains(t, buffer.String(), "GET")
+	assert.Contains(t, buffer.String(), "/example")
+	assert.Contains(t, buffer.String(), "a=100")
+}
+
 func TestJsonLoggerConfig_SetFilePath2FileName(t *testing.T) {
 	f, _ := os.Create("gin.log")
 	conf := &JsonLoggerConfig{Output: f}

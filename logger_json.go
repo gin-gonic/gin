@@ -122,7 +122,7 @@ func JsonLoggerWithConfig(conf JsonLoggerConfig) HandlerFunc {
 
 	once.Do(func() {
 		conf.InitLogConfig()
-		conf.monitor()
+		conf.Monitor()
 	})
 
 	notLogged := conf.SkipPaths
@@ -187,6 +187,7 @@ func JsonLoggerWithConfig(conf JsonLoggerConfig) HandlerFunc {
 	}
 }
 
+// InitLogConfig is the method to initialize the log configuration.
 func (p *JsonLoggerConfig) InitLogConfig() {
 	logger = &log.Logger
 	zerolog.TimeFieldFormat = p.LogTimeFieldFormat
@@ -198,10 +199,11 @@ func (p *JsonLoggerConfig) InitLogConfig() {
 		*logger = logger.With().Caller().Logger()
 	}
 	p.CheckLogWriteSize()
-	p.setOutput()
+	p.SetOutput()
 }
 
-func (p *JsonLoggerConfig) setOutput() {
+// SetOutput is a method to set the log output path.
+func (p *JsonLoggerConfig) SetOutput() {
 	var w io.Writer
 	if p.IsConsole {
 		if p.LogColor {
@@ -225,6 +227,7 @@ func (p *JsonLoggerConfig) setOutput() {
 	*logger = logger.Output(w)
 }
 
+// SetLoglevel is a method to set the alarm level for checking logs.
 func (p *JsonLoggerConfig) SetLoglevel() {
 	if p.LogLevel < -1 || p.LogLevel > 7 {
 		p.LogLevel = 0
@@ -232,12 +235,14 @@ func (p *JsonLoggerConfig) SetLoglevel() {
 	*logger = logger.Level(zerolog.Level(p.LogLevel))
 }
 
+// CheckLogWriteSize is a method to set the default log write channel size.
 func (p *JsonLoggerConfig) CheckLogWriteSize() {
 	if p.LogWriteSize < 1000 {
 		p.LogWriteSize = 1000
 	}
 }
 
+// SetLogFileSize is a method for setting a limit on the size of a log file.
 func (p *JsonLoggerConfig) SetLogFileSize() {
 	if p.LogLimitSize == "" {
 		p.LogLimitSize = "1G"
@@ -254,12 +259,14 @@ func (p *JsonLoggerConfig) SetLogFileSize() {
 	}
 }
 
+// CheckLogExpDays is a method to check if the log file has an expiration time set.
 func (p *JsonLoggerConfig) CheckLogExpDays() {
 	if p.LogExpDays == 0 {
 		p.LogExpDays = 30
 	}
 }
 
+// SetFilePath2FileName is a method for the path and name of the log file.
 func (p *JsonLoggerConfig) SetFilePath2FileName() {
 	data, ok := p.Output.(*os.File)
 	if ok && !p.IsConsole {
@@ -273,7 +280,8 @@ func (p *JsonLoggerConfig) SetFilePath2FileName() {
 	}
 }
 
-func (p *JsonLoggerConfig) monitor() {
+// Monitor is a method of monitoring log files.
+func (p *JsonLoggerConfig) Monitor() {
 	if p.logFilePath == "" || p.logName == "" {
 		return
 	}
@@ -289,13 +297,13 @@ func (p *JsonLoggerConfig) monitor() {
 			case <-t.C:
 				isExist := p.IsExist()
 				if !isExist {
-					p.setOutput()
+					p.SetOutput()
 				}
 				size := p.CheckFileSize()
 				if size > p.logLimitNums {
 					logger.Info().Msg("rename log file")
 					p.Rename2File()
-					p.setOutput()
+					p.SetOutput()
 				}
 
 			case <-del.C:
@@ -305,11 +313,13 @@ func (p *JsonLoggerConfig) monitor() {
 	}()
 }
 
+// IsExist is a method to check if the log file exists.
 func (p *JsonLoggerConfig) IsExist() bool {
 	_, err := os.Stat(p.logFilePath)
 	return err == nil || os.IsExist(err)
 }
 
+// CheckFileSize is a method for checking the size of a log file.
 func (p *JsonLoggerConfig) CheckFileSize() int64 {
 	f, e := os.Stat(p.logFilePath)
 	if e != nil {
@@ -318,6 +328,7 @@ func (p *JsonLoggerConfig) CheckFileSize() int64 {
 	return f.Size()
 }
 
+// Rename2File is a method for renaming log files.
 func (p *JsonLoggerConfig) Rename2File() (newLogFileName string) {
 	now := time.Now()
 	newLogFileName = fmt.Sprintf("%s.%s", p.logFilePath, now.Format("2006-01-02 15:04:05"))
@@ -328,6 +339,7 @@ func (p *JsonLoggerConfig) Rename2File() (newLogFileName string) {
 	return
 }
 
+// DeleteLogFile is a method for deleting log files.
 func (p *JsonLoggerConfig) DeleteLogFile() {
 	files, _ := ioutil.ReadDir(p.logDir)
 	for _, file := range files {
@@ -349,6 +361,7 @@ func (p *JsonLoggerConfig) DeleteLogFile() {
 	}
 }
 
+// CreateUuid is the method used to generate the tracking id.
 func CreateUuid(params interface{}) (uuidStr string) {
 	data, err := encoding.JSON.Marshal(params)
 	if err != nil {
