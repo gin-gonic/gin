@@ -261,7 +261,7 @@ func (p *JsonLoggerConfig) SetFilePath2FileName() {
 		if strings.Contains(p.logFilePath, "/") {
 			fileInfo := strings.SplitAfter(p.logFilePath, "/")
 			length := len(fileInfo) - 1
-			p.logDir = strings.Join(fileInfo[: length], "")
+			p.logDir = strings.Join(fileInfo[:length], "")
 			p.logName = fileInfo[length]
 		} else {
 			p.logDir, p.logName = "./", data.Name()
