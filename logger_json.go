@@ -123,7 +123,7 @@ func JsonLoggerWithConfig(conf JsonLoggerConfig) HandlerFunc {
 	}
 
 	once.Do(func() {
-		conf.initLogConfig()
+		conf.InitLogConfig()
 		data, ok := conf.Output.(*os.File)
 		if ok && conf.IsConsole == false {
 			onceLog.Do(func() {
@@ -159,7 +159,7 @@ func JsonLoggerWithConfig(conf JsonLoggerConfig) HandlerFunc {
 			Method:    c.Request.Method,
 		}
 
-		traceId := createUuid(params)
+		traceId := CreateUuid(params)
 		c.Logger = log.With().
 			Str("trace_id", traceId).
 			Str("path", c.Request.URL.String()).
@@ -198,21 +198,17 @@ func JsonLoggerWithConfig(conf JsonLoggerConfig) HandlerFunc {
 	}
 }
 
-func (p *JsonLoggerConfig) initLogConfig() {
+func (p *JsonLoggerConfig) InitLogConfig() {
 	logger = &log.Logger
-	p.setLogFileSize()
-	p.setLogTimeFiledFormat()
-	p.setLoglevel()
-	p.setLogExpDays()
-	p.setCaller()
-	p.setLogWriteSize()
-	p.setOutput()
-}
-
-func (p *JsonLoggerConfig) setCaller() {
+	zerolog.TimeFieldFormat = p.LogTimeFieldFormat
+	p.SetLogFileSize()
+	p.SetLoglevel()
+	p.CheckLogExpDays()
 	if p.Caller {
 		*logger = logger.With().Caller().Logger()
 	}
+	p.CheckLogWriteSize()
+	p.setOutput()
 }
 
 func (p *JsonLoggerConfig) setOutput() {
@@ -239,20 +235,20 @@ func (p *JsonLoggerConfig) setOutput() {
 	*logger = logger.Output(w)
 }
 
-func (p *JsonLoggerConfig) setLoglevel() {
-	if p.LogLevel < -1 && p.LogLevel > 7 {
+func (p *JsonLoggerConfig) SetLoglevel() {
+	if p.LogLevel < -1 || p.LogLevel > 7 {
 		p.LogLevel = 0
 	}
 	*logger = logger.Level(zerolog.Level(p.LogLevel))
 }
 
-func (p *JsonLoggerConfig) setLogWriteSize() {
-	if p.LogWriteSize == 0 {
+func (p *JsonLoggerConfig) CheckLogWriteSize() {
+	if p.LogWriteSize < 1000 {
 		p.LogWriteSize = 1000
 	}
 }
 
-func (p *JsonLoggerConfig) setLogFileSize() {
+func (p *JsonLoggerConfig) SetLogFileSize() {
 	if p.LogLimitSize == "" {
 		p.LogLimitSize = "1G"
 	}
@@ -268,11 +264,7 @@ func (p *JsonLoggerConfig) setLogFileSize() {
 	}
 }
 
-func (p *JsonLoggerConfig) setLogTimeFiledFormat() {
-	zerolog.TimeFieldFormat = p.LogTimeFieldFormat
-}
-
-func (p *JsonLoggerConfig) setLogExpDays() {
+func (p *JsonLoggerConfig) CheckLogExpDays() {
 	if p.LogExpDays == 0 {
 		p.LogExpDays = 30
 	}
@@ -289,7 +281,7 @@ func (p *JsonLoggerConfig) monitor() {
 			select {
 
 			case <-t.C:
-				isExist := p.isExist()
+				isExist := p.IsExist()
 				if !isExist {
 					p.setOutput()
 				}
@@ -307,7 +299,7 @@ func (p *JsonLoggerConfig) monitor() {
 	}()
 }
 
-func (p *JsonLoggerConfig) isExist() bool {
+func (p *JsonLoggerConfig) IsExist() bool {
 	_, err := os.Stat(p.logFilePath)
 	return err == nil || os.IsExist(err)
 }
@@ -354,7 +346,7 @@ func (p *JsonLoggerConfig) deleteLogFile() {
 	}
 }
 
-func createUuid(params interface{}) (uuidStr string) {
+func CreateUuid(params interface{}) (uuidStr string) {
 	data, err := encoding.JSON.Marshal(params)
 	if err != nil {
 		return uuidStr

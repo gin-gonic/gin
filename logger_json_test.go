@@ -2,6 +2,7 @@ package gin
 
 import (
 	"bytes"
+	"github.com/rs/zerolog/log"
 	"github.com/stretchr/testify/assert"
 	"testing"
 	"time"
@@ -158,4 +159,67 @@ func TestJsonLoggerWithConfig(t *testing.T) {
 	assert.Contains(t, buffer.String(), "404")
 	assert.Contains(t, buffer.String(), "GET")
 	assert.Contains(t, buffer.String(), "/notfound")
+}
+
+func TestJsonLoggerConfig_InitLogConfig(t *testing.T) {
+	conf := &JsonLoggerConfig{}
+	conf.InitLogConfig()
+	if conf.LogExpDays != 30 ||
+		conf.logLimitNums != 1024*1024*1024 ||
+		conf.LogLevel != 0 {
+		t.Error("InitLogConfig is failing")
+	}
+}
+
+func TestJsonLoggerConfig_CheckLogExpDays(t *testing.T) {
+	conf := &JsonLoggerConfig{}
+	conf.CheckLogExpDays()
+	if conf.LogExpDays != 30 {
+		t.Error("CheckLogExpDays is failing")
+	}
+}
+
+func TestJsonLoggerConfig_SetLoglevel(t *testing.T) {
+	conf := &JsonLoggerConfig{LogLevel: -2}
+	logger = &log.Logger
+	conf.SetLoglevel()
+	if conf.LogLevel != 0 {
+		t.Error("SetLoglevel is failing")
+	}
+}
+
+func TestJsonLoggerConfig_CheckLogWriteSize(t *testing.T) {
+	conf := &JsonLoggerConfig{}
+	conf.CheckLogWriteSize()
+	if conf.LogWriteSize != 1000 {
+		t.Error("SetLogWriteSize is failing")
+	}
+}
+
+func TestJsonLoggerConfig_SetLogFileSize(t *testing.T) {
+	conf := &JsonLoggerConfig{LogLimitSize: "1G"}
+	conf.SetLogFileSize()
+	if conf.logLimitNums != 1024*1024*1024 {
+		t.Error("TestJsonLoggerConfig is failing")
+	}
+
+	conf = &JsonLoggerConfig{LogLimitSize: "512MB"}
+	conf.SetLogFileSize()
+	if conf.logLimitNums != 512*1024*1024 {
+		t.Error("TestJsonLoggerConfig is failing")
+	}
+}
+
+func TestJsonLoggerConfig_IsExist(t *testing.T) {
+	conf := &JsonLoggerConfig{logFilePath: "logger_json_test.go"}
+	if !conf.IsExist() {
+		t.Error("logger_json_test.go is not exist")
+	}
+}
+
+func TestCreateUuid(t *testing.T) {
+	data := JsonLoggerConfig{Caller: true}
+	if CreateUuid(data) == "" {
+		t.Error("CreateUuid is failing")
+	}
 }
