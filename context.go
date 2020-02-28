@@ -970,6 +970,7 @@ type Negotiate struct {
 	HTMLData interface{}
 	JSONData interface{}
 	XMLData  interface{}
+	YAMLData interface{}
 	Data     interface{}
 }
 
@@ -987,6 +988,10 @@ func (c *Context) Negotiate(code int, config Negotiate) {
 	case binding.MIMEXML:
 		data := chooseData(config.XMLData, config.Data)
 		c.XML(code, data)
+
+	case binding.MIMEYAML:
+		data := chooseData(config.YAMLData, config.Data)
+		c.YAML(code, data)
 
 	default:
 		c.AbortWithError(http.StatusNotAcceptable, errors.New("the accepted formats are not offered by the server")) // nolint: errcheck

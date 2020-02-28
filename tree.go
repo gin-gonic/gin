@@ -169,9 +169,9 @@ walk:
 			}
 
 			// Update maxParams (max of all children)
-			for i := range child.children {
-				if child.children[i].maxParams > child.maxParams {
-					child.maxParams = child.children[i].maxParams
+			for _, v := range child.children {
+				if v.maxParams > child.maxParams {
+					child.maxParams = v.maxParams
 				}
 			}
 
@@ -401,7 +401,7 @@ func (n *node) insertChild(numParams uint8, path string, fullPath string, handle
 		return
 	}
 
-	// If no wildcard was found, simple insert the path and handle
+	// If no wildcard was found, simply insert the path and handle
 	n.path = path
 	n.handlers = handlers
 	n.fullPath = fullPath
@@ -464,7 +464,6 @@ walk: // Outer loop for walking the tree
 				for i, max := 0, len(indices); i < max; i++ {
 					if c == indices[i] {
 						n = n.children[i]
-						prefix = n.path
 						continue walk
 					}
 				}
@@ -508,7 +507,6 @@ walk: // Outer loop for walking the tree
 					if len(n.children) > 0 {
 						path = path[end:]
 						n = n.children[0]
-						prefix = n.path
 						continue walk
 					}
 
