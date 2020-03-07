@@ -139,10 +139,10 @@ func resolveAddress(addr []string) string {
 	case 0:
 		if port := os.Getenv("PORT"); port != "" {
 			debugPrint("Environment variable PORT=\"%s\"", port)
-			return ":" + port
+			return "localhost:" + port
 		}
 		debugPrint("Environment variable PORT is undefined. Using port :8080 by default")
-		return ":8080"
+		return "localhost:8080"
 	case 1:
 		return addr[0]
 	default:
