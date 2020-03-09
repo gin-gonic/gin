@@ -1918,3 +1918,16 @@ func TestRaceParamsContextCopy(t *testing.T) {
 	performRequest(router, "GET", "/name2/api")
 	wg.Wait()
 }
+
+func TestGetRequest(t *testing.T) {
+	c, _ := CreateTestContext(CreateTestResponseRecorder())
+	c.Request, _ = http.NewRequest("POST", "/", new(bytes.Buffer))
+
+	assert.Equal(t, c.Request, c.GetRequest())
+}
+
+func TestGetResponseWriter(t *testing.T) {
+	c, _ := CreateTestContext(CreateTestResponseRecorder())
+
+	assert.Equal(t, c.Writer, c.GetWriter())
+}

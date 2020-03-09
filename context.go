@@ -70,11 +70,11 @@ type Context struct {
 }
 
 func (c Context) GetRequest() *http.Request {
-    return c.Request
+	return c.Request
 }
 
 func (c Context) GetWriter() ResponseWriter {
-    return c.Writer
+	return c.Writer
 }
 
 /************************************/
