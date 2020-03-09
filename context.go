@@ -69,6 +69,14 @@ type Context struct {
 	formCache url.Values
 }
 
+func (c Context) GetRequest() *http.Request {
+    return c.Request
+}
+
+func (c Context) GetWriter() ResponseWriter {
+    return c.Writer
+}
+
 /************************************/
 /********** CONTEXT CREATION ********/
 /************************************/
