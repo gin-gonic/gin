@@ -327,9 +327,6 @@ func (engine *Engine) RunUnix(file string) (err error) {
 	defer listener.Close()
 	defer os.Remove(file)
 
-	if err != nil {
-		return
-	}
 	err = http.Serve(listener, engine)
 	return
 }
