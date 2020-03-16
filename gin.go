@@ -320,16 +320,13 @@ func (engine *Engine) RunUnix(file string) (err error) {
 	debugPrint("Listening and serving HTTP on unix:/%s", file)
 	defer func() { debugPrintError(err) }()
 
-	os.Remove(file)
 	listener, err := net.Listen("unix", file)
 	if err != nil {
 		return
 	}
 	defer listener.Close()
-	err = os.Chmod(file, 0777)
-	if err != nil {
-		return
-	}
+	defer os.Remove(file)
+
 	err = http.Serve(listener, engine)
 	return
 }
