@@ -10,31 +10,36 @@
 [![Sourcegraph](https://sourcegraph.com/github.com/gin-gonic/gin/-/badge.svg)](https://sourcegraph.com/github.com/gin-gonic/gin?badge)
 [![Open Source Helpers](https://www.codetriage.com/gin-gonic/gin/badges/users.svg)](https://www.codetriage.com/gin-gonic/gin)
 [![Release](https://img.shields.io/github/release/gin-gonic/gin.svg?style=flat-square)](https://github.com/gin-gonic/gin/releases)
+[![TODOs](https://badgen.net/https/api.tickgit.com/badgen/github.com/gin-gonic/gin)](https://www.tickgit.com/browse?repo=github.com/gin-gonic/gin)
 
-Gin is a web framework written in Go (Golang). It features a martini-like API with much better performance, up to 40 times faster thanks to [httprouter](https://github.com/julienschmidt/httprouter). If you need performance and good productivity, you will love Gin.
+Gin is a web framework written in Go (Golang). It features a martini-like API with performance that is up to 40 times faster thanks to [httprouter](https://github.com/julienschmidt/httprouter). If you need performance and good productivity, you will love Gin.
 
 
 ## Contents
 
-- [Installation](#installation)
-- [Prerequisite](#prerequisite)
-- [Quick start](#quick-start)
-- [Benchmarks](#benchmarks)
-- [Gin v1.stable](#gin-v1-stable)
-- [Build with jsoniter](#build-with-jsoniter)
-- [API Examples](#api-examples)
-    - [Using GET,POST,PUT,PATCH,DELETE and OPTIONS](#using-get-post-put-patch-delete-and-options)
+- [Gin Web Framework](#gin-web-framework)
+  - [Contents](#contents)
+  - [Installation](#installation)
+  - [Quick start](#quick-start)
+  - [Benchmarks](#benchmarks)
+  - [Gin v1. stable](#gin-v1-stable)
+  - [Build with jsoniter](#build-with-jsoniter)
+  - [API Examples](#api-examples)
+    - [Using GET, POST, PUT, PATCH, DELETE and OPTIONS](#using-get-post-put-patch-delete-and-options)
     - [Parameters in path](#parameters-in-path)
     - [Querystring parameters](#querystring-parameters)
     - [Multipart/Urlencoded Form](#multiparturlencoded-form)
     - [Another example: query + post form](#another-example-query--post-form)
     - [Map as querystring or postform parameters](#map-as-querystring-or-postform-parameters)
     - [Upload files](#upload-files)
+      - [Single file](#single-file)
+      - [Multiple files](#multiple-files)
     - [Grouping routes](#grouping-routes)
     - [Blank Gin without middleware by default](#blank-gin-without-middleware-by-default)
     - [Using middleware](#using-middleware)
     - [How to write log file](#how-to-write-log-file)
     - [Custom Log Format](#custom-log-format)
+    - [Controlling Log output coloring](#controlling-log-output-coloring)
     - [Model binding and validation](#model-binding-and-validation)
     - [Custom Validators](#custom-validators)
     - [Only Bind Query String](#only-bind-query-string)
@@ -44,10 +49,16 @@ Gin is a web framework written in Go (Golang). It features a martini-like API wi
     - [Bind HTML checkboxes](#bind-html-checkboxes)
     - [Multipart/Urlencoded binding](#multiparturlencoded-binding)
     - [XML, JSON, YAML and ProtoBuf rendering](#xml-json-yaml-and-protobuf-rendering)
-    - [JSONP rendering](#jsonp)
+      - [SecureJSON](#securejson)
+      - [JSONP](#jsonp)
+      - [AsciiJSON](#asciijson)
+      - [PureJSON](#purejson)
     - [Serving static files](#serving-static-files)
     - [Serving data from reader](#serving-data-from-reader)
     - [HTML rendering](#html-rendering)
+      - [Custom Template renderer](#custom-template-renderer)
+      - [Custom Delimiters](#custom-delimiters)
+      - [Custom Template Funcs](#custom-template-funcs)
     - [Multitemplate](#multitemplate)
     - [Redirects](#redirects)
     - [Custom Middleware](#custom-middleware)
@@ -63,14 +74,14 @@ Gin is a web framework written in Go (Golang). It features a martini-like API wi
     - [http2 server push](#http2-server-push)
     - [Define format for the log of routes](#define-format-for-the-log-of-routes)
     - [Set and get a cookie](#set-and-get-a-cookie)
-- [Testing](#testing)
-- [Users](#users)
+  - [Testing](#testing)
+  - [Users](#users)
 
 ## Installation
 
 To install Gin package, you need to install Go and set your Go workspace first.
 
-1. The first need [Go](https://golang.org/) installed (**version 1.10+ is required**), then you can use the below Go command to install Gin.
+1. The first need [Go](https://golang.org/) installed (**version 1.11+ is required**), then you can use the below Go command to install Gin.
 
 ```sh
 $ go get -u github.com/gin-gonic/gin
@@ -86,38 +97,6 @@ import "github.com/gin-gonic/gin"
 
 ```go
 import "net/http"
-```
-
-### Use a vendor tool like [Govendor](https://github.com/kardianos/govendor)
-
-1. `go get` govendor
-
-```sh
-$ go get github.com/kardianos/govendor
-```
-2. Create your project folder and `cd` inside
-
-```sh
-$ mkdir -p $GOPATH/src/github.com/myusername/project && cd "$_"
-```
-
-3. Vendor init your project and add gin
-
-```sh
-$ govendor init
-$ govendor fetch github.com/gin-gonic/gin@v1.3
-```
-
-4. Copy a starting template inside your project
-
-```sh
-$ curl https://raw.githubusercontent.com/gin-gonic/examples/master/basic/main.go > main.go
-```
-
-5. Run your project
-
-```sh
-$ go run main.go
 ```
 
 ## Quick start
@@ -139,12 +118,12 @@ func main() {
 			"message": "pong",
 		})
 	})
-	r.Run() // listen and serve on 0.0.0.0:8080
+	r.Run() // listen and serve on 0.0.0.0:8080 (for windows "localhost:8080")
 }
 ```
 
 ```
-# run example.go and visit 0.0.0.0:8080/ping on browser
+# run example.go and visit 0.0.0.0:8080/ping (for windows "localhost:8080/ping") on browser
 $ go run example.go
 ```
 
@@ -616,7 +595,7 @@ func main() {
 
 To bind a request body into a type, use model binding. We currently support binding of JSON, XML, YAML and standard form values (foo=bar&boo=baz).
 
-Gin uses [**go-playground/validator.v8**](https://github.com/go-playground/validator) for validation. Check the full docs on tags usage [here](http://godoc.org/gopkg.in/go-playground/validator.v8#hdr-Baked_In_Validators_and_Tags).
+Gin uses [**go-playground/validator/v10**](https://github.com/go-playground/validator) for validation. Check the full docs on tags usage [here](https://godoc.org/github.com/go-playground/validator#hdr-Baked_In_Validators_and_Tags).
 
 Note that you need to set the corresponding binding tag on all fields you want to bind. For example, when binding from JSON, set `json:"fieldname"`.
 
@@ -736,25 +715,22 @@ package main
 
 import (
 	"net/http"
-	"reflect"
 	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
-	"gopkg.in/go-playground/validator.v8"
+	"gopkg.in/go-playground/validator.v10"
 )
 
 // Booking contains binded and validated data.
 type Booking struct {
-	CheckIn  time.Time `form:"check_in" binding:"required,bookabledate" time_format:"2006-01-02"`
+	CheckIn  time.Time `form:"check_in" binding:"required" time_format:"2006-01-02"`
 	CheckOut time.Time `form:"check_out" binding:"required,gtfield=CheckIn" time_format:"2006-01-02"`
 }
 
-func bookableDate(
-	v *validator.Validate, topStruct reflect.Value, currentStructOrField reflect.Value,
-	field reflect.Value, fieldType reflect.Type, fieldKind reflect.Kind, param string,
-) bool {
-	if date, ok := field.Interface().(time.Time); ok {
+var bookableDate validator.Func = func(fl validator.FieldLevel) bool {
+	date, ok := fl.Field().Interface().(time.Time)
+	if ok {
 		today := time.Now()
 		if today.After(date) {
 			return false
@@ -788,8 +764,8 @@ func getBookable(c *gin.Context) {
 $ curl "localhost:8085/bookable?check_in=2018-04-16&check_out=2018-04-17"
 {"message":"Booking dates are valid!"}
 
-$ curl "localhost:8085/bookable?check_in=2018-03-08&check_out=2018-03-09"
-{"error":"Key: 'Booking.CheckIn' Error:Field validation for 'CheckIn' failed on the 'bookabledate' tag"}
+$ curl "localhost:8085/bookable?check_in=2018-03-10&check_out=2018-03-09"
+{"error":"Key: 'Booking.CheckOut' Error:Field validation for 'CheckOut' failed on the 'gtfield' tag"}
 ```
 
 [Struct level validations](https://github.com/go-playground/validator/releases/tag/v8.7) can also be registered this way.
@@ -1143,7 +1119,7 @@ func main() {
 
 #### AsciiJSON
 
-Using AsciiJSON to Generates ASCII-only JSON with escaped non-ASCII chracters.
+Using AsciiJSON to Generates ASCII-only JSON with escaped non-ASCII characters.
 
 ```go
 func main() {
@@ -1204,6 +1180,24 @@ func main() {
 	// Listen and serve on 0.0.0.0:8080
 	router.Run(":8080")
 }
+```
+
+### Serving data from file
+
+```go
+func main() {
+	router := gin.Default()
+
+	router.GET("/local/file", func(c *gin.Context) {
+		c.File("local/file.go")
+	})
+
+	var fs http.FileSystem = // ...
+	router.GET("/fs/file", func(c *gin.Context) {
+		c.FileFromFS("fs/file.go", fs)
+	})
+}
+
 ```
 
 ### Serving data from reader
@@ -1672,11 +1666,19 @@ func main() {
 	}
 
 	g.Go(func() error {
-		return server01.ListenAndServe()
+		err := server01.ListenAndServe()
+		if err != nil && err != http.ErrServerClosed {
+			log.Fatal(err)
+		}
+		return err
 	})
 
 	g.Go(func() error {
-		return server02.ListenAndServe()
+		err := server02.ListenAndServe()
+		if err != nil && err != http.ErrServerClosed {
+			log.Fatal(err)
+		}
+		return err
 	})
 
 	if err := g.Wait(); err != nil {
@@ -1793,6 +1795,7 @@ func main() {
 func loadTemplate() (*template.Template, error) {
 	t := template.New("")
 	for name, file := range Assets.Files {
+		defer file.Close()
 		if file.IsDir() || !strings.HasSuffix(name, ".tmpl") {
 			continue
 		}
@@ -2052,7 +2055,7 @@ func main() {
 
         if err != nil {
             cookie = "NotSet"
-            c.SetCookie("gin_cookie", "test", 3600, "/", "localhost", false, true)
+            c.SetCookie("gin_cookie", "test", 3600, "/", "localhost", http.SameSiteLaxMode, false, true)
         }
 
         fmt.Printf("Cookie value: %s \n", cookie)
@@ -2119,3 +2122,4 @@ Awesome project lists using [Gin](https://github.com/gin-gonic/gin) web framewor
 * [krakend](https://github.com/devopsfaith/krakend): Ultra performant API Gateway with middlewares.
 * [picfit](https://github.com/thoas/picfit): An image resizing server written in Go.
 * [brigade](https://github.com/brigadecore/brigade): Event-based Scripting for Kubernetes.
+* [dkron](https://github.com/distribworks/dkron): Distributed, fault tolerant job scheduling system.

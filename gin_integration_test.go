@@ -90,7 +90,8 @@ func TestPusher(t *testing.T) {
 	go func() {
 		router.GET("/pusher", func(c *Context) {
 			if pusher := c.Writer.Pusher(); pusher != nil {
-				pusher.Push("/assets/app.js", nil)
+				err := pusher.Push("/assets/app.js", nil)
+				assert.NoError(t, err)
 			}
 			c.String(http.StatusOK, "it worked")
 		})
@@ -207,6 +208,43 @@ func TestBadFileDescriptor(t *testing.T) {
 	assert.Error(t, router.RunFd(0))
 }
 
+func TestListener(t *testing.T) {
+	router := New()
+	addr, err := net.ResolveTCPAddr("tcp", "localhost:0")
+	assert.NoError(t, err)
+	listener, err := net.ListenTCP("tcp", addr)
+	assert.NoError(t, err)
+	go func() {
+		router.GET("/example", func(c *Context) { c.String(http.StatusOK, "it worked") })
+		assert.NoError(t, router.RunListener(listener))
+	}()
+	// have to wait for the goroutine to start and run the server
+	// otherwise the main thread will complete
+	time.Sleep(5 * time.Millisecond)
+
+	c, err := net.Dial("tcp", listener.Addr().String())
+	assert.NoError(t, err)
+
+	fmt.Fprintf(c, "GET /example HTTP/1.0\r\n\r\n")
+	scanner := bufio.NewScanner(c)
+	var response string
+	for scanner.Scan() {
+		response += scanner.Text()
+	}
+	assert.Contains(t, response, "HTTP/1.0 200", "should get a 200")
+	assert.Contains(t, response, "it worked", "resp body should match")
+}
+
+func TestBadListener(t *testing.T) {
+	router := New()
+	addr, err := net.ResolveTCPAddr("tcp", "localhost:10086")
+	assert.NoError(t, err)
+	listener, err := net.ListenTCP("tcp", addr)
+	assert.NoError(t, err)
+	listener.Close()
+	assert.Error(t, router.RunListener(listener))
+}
+
 func TestWithHttptestWithAutoSelectedPort(t *testing.T) {
 	router := New()
 	router.GET("/example", func(c *Context) { c.String(http.StatusOK, "it worked") })
@@ -253,7 +291,7 @@ func TestConcurrentHandleContext(t *testing.T) {
 // }
 
 func testGetRequestHandler(t *testing.T, h http.Handler, url string) {
-	req, err := http.NewRequest("GET", url, nil)
+	req, err := http.NewRequest(http.MethodGet, url, nil)
 	assert.NoError(t, err)
 
 	w := httptest.NewRecorder()

@@ -158,7 +158,7 @@ func TestLoggerWithFormatter(t *testing.T) {
 
 	router := New()
 	router.Use(LoggerWithFormatter(func(param LogFormatterParams) string {
-		return fmt.Sprintf("[FORMATTER TEST] %v | %3d | %13v | %15s | %-7s %s\n%s",
+		return fmt.Sprintf("[FORMATTER TEST] %v | %3d | %13v | %15s | %-7s %#v\n%s",
 			param.TimeStamp.Format("2006/01/02 - 15:04:05"),
 			param.StatusCode,
 			param.Latency,
@@ -275,11 +275,11 @@ func TestDefaultLogFormatter(t *testing.T) {
 		isTerm:       false,
 	}
 
-	assert.Equal(t, "[GIN] 2018/12/07 - 09:11:42 | 200 |            5s |     20.20.20.20 | GET      /\n", defaultLogFormatter(termFalseParam))
-	assert.Equal(t, "[GIN] 2018/12/07 - 09:11:42 | 200 |    2743h29m3s |     20.20.20.20 | GET      /\n", defaultLogFormatter(termFalseLongDurationParam))
+	assert.Equal(t, "[GIN] 2018/12/07 - 09:11:42 | 200 |            5s |     20.20.20.20 | GET      \"/\"\n", defaultLogFormatter(termFalseParam))
+	assert.Equal(t, "[GIN] 2018/12/07 - 09:11:42 | 200 |    2743h29m3s |     20.20.20.20 | GET      \"/\"\n", defaultLogFormatter(termFalseLongDurationParam))
 
-	assert.Equal(t, "[GIN] 2018/12/07 - 09:11:42 |\x1b[97;42m 200 \x1b[0m|            5s |     20.20.20.20 |\x1b[97;44m GET     \x1b[0m /\n", defaultLogFormatter(termTrueParam))
-	assert.Equal(t, "[GIN] 2018/12/07 - 09:11:42 |\x1b[97;42m 200 \x1b[0m|    2743h29m3s |     20.20.20.20 |\x1b[97;44m GET     \x1b[0m /\n", defaultLogFormatter(termTrueLongDurationParam))
+	assert.Equal(t, "[GIN] 2018/12/07 - 09:11:42 |\x1b[97;42m 200 \x1b[0m|            5s |     20.20.20.20 |\x1b[97;44m GET     \x1b[0m \"/\"\n", defaultLogFormatter(termTrueParam))
+	assert.Equal(t, "[GIN] 2018/12/07 - 09:11:42 |\x1b[97;42m 200 \x1b[0m|    2743h29m3s |     20.20.20.20 |\x1b[97;44m GET     \x1b[0m \"/\"\n", defaultLogFormatter(termTrueLongDurationParam))
 
 }
 
@@ -369,15 +369,15 @@ func TestErrorLogger(t *testing.T) {
 
 	w := performRequest(router, "GET", "/error")
 	assert.Equal(t, http.StatusOK, w.Code)
-	assert.Equal(t, "{\"error\":\"this is an error\"}\n", w.Body.String())
+	assert.Equal(t, "{\"error\":\"this is an error\"}", w.Body.String())
 
 	w = performRequest(router, "GET", "/abort")
 	assert.Equal(t, http.StatusUnauthorized, w.Code)
-	assert.Equal(t, "{\"error\":\"no authorized\"}\n", w.Body.String())
+	assert.Equal(t, "{\"error\":\"no authorized\"}", w.Body.String())
 
 	w = performRequest(router, "GET", "/print")
 	assert.Equal(t, http.StatusInternalServerError, w.Code)
-	assert.Equal(t, "hola!{\"error\":\"this is an error\"}\n", w.Body.String())
+	assert.Equal(t, "hola!{\"error\":\"this is an error\"}", w.Body.String())
 }
 
 func TestLoggerWithWriterSkippingPaths(t *testing.T) {

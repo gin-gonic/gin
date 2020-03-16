@@ -602,14 +602,14 @@ func TestContextPostFormMultipart(t *testing.T) {
 
 func TestContextSetCookie(t *testing.T) {
 	c, _ := CreateTestContext(httptest.NewRecorder())
-	c.SetCookie("user", "gin", 1, "/", "localhost", true, true)
-	assert.Equal(t, "user=gin; Path=/; Domain=localhost; Max-Age=1; HttpOnly; Secure", c.Writer.Header().Get("Set-Cookie"))
+	c.SetCookie("user", "gin", 1, "/", "localhost", http.SameSiteLaxMode, true, true)
+	assert.Equal(t, "user=gin; Path=/; Domain=localhost; Max-Age=1; HttpOnly; Secure; SameSite=Lax", c.Writer.Header().Get("Set-Cookie"))
 }
 
 func TestContextSetCookiePathEmpty(t *testing.T) {
 	c, _ := CreateTestContext(httptest.NewRecorder())
-	c.SetCookie("user", "gin", 1, "", "localhost", true, true)
-	assert.Equal(t, "user=gin; Path=/; Domain=localhost; Max-Age=1; HttpOnly; Secure", c.Writer.Header().Get("Set-Cookie"))
+	c.SetCookie("user", "gin", 1, "", "localhost", http.SameSiteLaxMode, true, true)
+	assert.Equal(t, "user=gin; Path=/; Domain=localhost; Max-Age=1; HttpOnly; Secure; SameSite=Lax", c.Writer.Header().Get("Set-Cookie"))
 }
 
 func TestContextGetCookie(t *testing.T) {
@@ -662,7 +662,7 @@ func TestContextRenderJSON(t *testing.T) {
 	c.JSON(http.StatusCreated, H{"foo": "bar", "html": "<b>"})
 
 	assert.Equal(t, http.StatusCreated, w.Code)
-	assert.Equal(t, "{\"foo\":\"bar\",\"html\":\"\\u003cb\\u003e\"}\n", w.Body.String())
+	assert.Equal(t, "{\"foo\":\"bar\",\"html\":\"\\u003cb\\u003e\"}", w.Body.String())
 	assert.Equal(t, "application/json; charset=utf-8", w.Header().Get("Content-Type"))
 }
 
@@ -690,7 +690,7 @@ func TestContextRenderJSONPWithoutCallback(t *testing.T) {
 	c.JSONP(http.StatusCreated, H{"foo": "bar"})
 
 	assert.Equal(t, http.StatusCreated, w.Code)
-	assert.Equal(t, "{\"foo\":\"bar\"}\n", w.Body.String())
+	assert.Equal(t, "{\"foo\":\"bar\"}", w.Body.String())
 	assert.Equal(t, "application/json; charset=utf-8", w.Header().Get("Content-Type"))
 }
 
@@ -716,7 +716,7 @@ func TestContextRenderAPIJSON(t *testing.T) {
 	c.JSON(http.StatusCreated, H{"foo": "bar"})
 
 	assert.Equal(t, http.StatusCreated, w.Code)
-	assert.Equal(t, "{\"foo\":\"bar\"}\n", w.Body.String())
+	assert.Equal(t, "{\"foo\":\"bar\"}", w.Body.String())
 	assert.Equal(t, "application/vnd.api+json", w.Header().Get("Content-Type"))
 }
 
@@ -992,6 +992,19 @@ func TestContextRenderFile(t *testing.T) {
 	assert.Equal(t, "text/plain; charset=utf-8", w.Header().Get("Content-Type"))
 }
 
+func TestContextRenderFileFromFS(t *testing.T) {
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
+
+	c.Request, _ = http.NewRequest("GET", "/some/path", nil)
+	c.FileFromFS("./gin.go", Dir(".", false))
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Contains(t, w.Body.String(), "func New() *Engine {")
+	assert.Equal(t, "text/plain; charset=utf-8", w.Header().Get("Content-Type"))
+	assert.Equal(t, "/some/path", c.Request.URL.Path)
+}
+
 func TestContextRenderAttachment(t *testing.T) {
 	w := httptest.NewRecorder()
 	c, _ := CreateTestContext(w)
@@ -1114,12 +1127,12 @@ func TestContextNegotiationWithJSON(t *testing.T) {
 	c.Request, _ = http.NewRequest("POST", "", nil)
 
 	c.Negotiate(http.StatusOK, Negotiate{
-		Offered: []string{MIMEJSON, MIMEXML},
+		Offered: []string{MIMEJSON, MIMEXML, MIMEYAML},
 		Data:    H{"foo": "bar"},
 	})
 
 	assert.Equal(t, http.StatusOK, w.Code)
-	assert.Equal(t, "{\"foo\":\"bar\"}\n", w.Body.String())
+	assert.Equal(t, "{\"foo\":\"bar\"}", w.Body.String())
 	assert.Equal(t, "application/json; charset=utf-8", w.Header().Get("Content-Type"))
 }
 
@@ -1129,7 +1142,7 @@ func TestContextNegotiationWithXML(t *testing.T) {
 	c.Request, _ = http.NewRequest("POST", "", nil)
 
 	c.Negotiate(http.StatusOK, Negotiate{
-		Offered: []string{MIMEXML, MIMEJSON},
+		Offered: []string{MIMEXML, MIMEJSON, MIMEYAML},
 		Data:    H{"foo": "bar"},
 	})
 
@@ -1283,7 +1296,7 @@ func TestContextAbortWithStatusJSON(t *testing.T) {
 	_, err := buf.ReadFrom(w.Body)
 	assert.NoError(t, err)
 	jsonStringBody := buf.String()
-	assert.Equal(t, fmt.Sprint("{\"foo\":\"fooValue\",\"bar\":\"barValue\"}\n"), jsonStringBody)
+	assert.Equal(t, fmt.Sprint("{\"foo\":\"fooValue\",\"bar\":\"barValue\"}"), jsonStringBody)
 }
 
 func TestContextError(t *testing.T) {
@@ -1797,6 +1810,23 @@ func TestContextRenderDataFromReader(t *testing.T) {
 	assert.Equal(t, contentType, w.Header().Get("Content-Type"))
 	assert.Equal(t, fmt.Sprintf("%d", contentLength), w.Header().Get("Content-Length"))
 	assert.Equal(t, extraHeaders["Content-Disposition"], w.Header().Get("Content-Disposition"))
+}
+
+func TestContextRenderDataFromReaderNoHeaders(t *testing.T) {
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
+
+	body := "#!PNG some raw data"
+	reader := strings.NewReader(body)
+	contentLength := int64(len(body))
+	contentType := "image/png"
+
+	c.DataFromReader(http.StatusOK, contentLength, contentType, reader, nil)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Equal(t, body, w.Body.String())
+	assert.Equal(t, contentType, w.Header().Get("Content-Type"))
+	assert.Equal(t, fmt.Sprintf("%d", contentLength), w.Header().Get("Content-Length"))
 }
 
 type TestResponseRecorder struct {

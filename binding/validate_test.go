@@ -6,12 +6,11 @@ package binding
 
 import (
 	"bytes"
-	"reflect"
 	"testing"
 	"time"
 
+	"github.com/go-playground/validator/v10"
 	"github.com/stretchr/testify/assert"
-	"gopkg.in/go-playground/validator.v8"
 )
 
 type testInterface interface {
@@ -200,15 +199,8 @@ type structCustomValidation struct {
 	Integer int `binding:"notone"`
 }
 
-// notOne is a custom validator meant to be used with `validator.v8` library.
-// The method signature for `v9` is significantly different and this function
-// would need to be changed for tests to pass after upgrade.
-// See https://github.com/gin-gonic/gin/pull/1015.
-func notOne(
-	v *validator.Validate, topStruct reflect.Value, currentStructOrField reflect.Value,
-	field reflect.Value, fieldType reflect.Type, fieldKind reflect.Kind, param string,
-) bool {
-	if val, ok := field.Interface().(int); ok {
+func notOne(f1 validator.FieldLevel) bool {
+	if val, ok := f1.Field().Interface().(int); ok {
 		return val != 1
 	}
 	return false
