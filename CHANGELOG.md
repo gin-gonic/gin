@@ -1,4 +1,9 @@
-## Gin v1.6.0 (Mar 22, 2020)
+## Gin v1.6.1
+
+### BUFIXES
+  * Revert "fix accept incoming network connections" [#2294](https://github.com/gin-gonic/gin/pull/2294)
+
+## Gin v1.6.0
 
 ### BREAKING
   * chore(performance): Improve performance for adding RemoveExtraSlash flag [#2159](https://github.com/gin-gonic/gin/pull/2159)
