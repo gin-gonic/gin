@@ -58,7 +58,7 @@ type StructValidator interface {
 	ValidateStruct(interface{}) error
 
 	// Engine returns the underlying validator engine which powers the
-	// Validater implementation.
+	// 	 StructValidator implementation.
 	Engine() interface{}
 }
 
