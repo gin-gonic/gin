@@ -31,10 +31,10 @@ func (err sliceValidateError) Error() string {
 	return strings.Join(errMsgs, "\n")
 }
 
-var _ Validater = &defaultValidator{}
+var _ StructValidator = &defaultValidator{}
 
 // ValidateStruct receives any kind of type, but only performed struct or pointer to struct type.
-func (v *defaultValidator) Validate(obj interface{}) error {
+func (v *defaultValidator) ValidateStruct(obj interface{}) error {
 	if obj == nil {
 		return nil
 	}
@@ -42,7 +42,7 @@ func (v *defaultValidator) Validate(obj interface{}) error {
 	value := reflect.ValueOf(obj)
 	valueType := value.Kind()
 	if valueType == reflect.Ptr {
-		return v.Validate(value.Elem().Interface())
+		return v.ValidateStruct(value.Elem().Interface())
 	}
 
 	switch valueType {
@@ -52,7 +52,7 @@ func (v *defaultValidator) Validate(obj interface{}) error {
 		count := value.Len()
 		validateRet := make(sliceValidateError, 0)
 		for i := 0; i < count; i++ {
-			if err := v.Validate(value.Index(i).Interface()); err != nil {
+			if err := v.ValidateStruct(value.Index(i).Interface()); err != nil {
 				validateRet = append(validateRet, err)
 			}
 		}
