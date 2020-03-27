@@ -1920,3 +1920,16 @@ func TestRaceParamsContextCopy(t *testing.T) {
 	performRequest(router, "GET", "/name2/api")
 	wg.Wait()
 }
+
+func TestContextWithKeysMutex(t *testing.T) {
+	c := &Context{}
+	c.Set("foo", "bar")
+
+	value, err := c.Get("foo")
+	assert.Equal(t, "bar", value)
+	assert.True(t, err)
+
+	value, err = c.Get("foo2")
+	assert.Nil(t, value)
+	assert.False(t, err)
+}

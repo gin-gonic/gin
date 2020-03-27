@@ -228,6 +228,10 @@ func (c *Context) Error(err error) *Error {
 // Set is used to store a new key/value pair exclusively for this context.
 // It also lazy initializes  c.Keys if it was not used previously.
 func (c *Context) Set(key string, value interface{}) {
+	if c.KeysMutex == nil {
+		c.KeysMutex = &sync.RWMutex{}
+	}
+
 	c.KeysMutex.Lock()
 	if c.Keys == nil {
 		c.Keys = make(map[string]interface{})
@@ -240,6 +244,10 @@ func (c *Context) Set(key string, value interface{}) {
 // Get returns the value for the given key, ie: (value, true).
 // If the value does not exists it returns (nil, false)
 func (c *Context) Get(key string) (value interface{}, exists bool) {
+	if c.KeysMutex == nil {
+		c.KeysMutex = &sync.RWMutex{}
+	}
+
 	c.KeysMutex.RLock()
 	value, exists = c.Keys[key]
 	c.KeysMutex.RUnlock()
