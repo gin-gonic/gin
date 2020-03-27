@@ -602,13 +602,15 @@ func TestContextPostFormMultipart(t *testing.T) {
 
 func TestContextSetCookie(t *testing.T) {
 	c, _ := CreateTestContext(httptest.NewRecorder())
-	c.SetCookie("user", "gin", 1, "/", "localhost", http.SameSiteLaxMode, true, true)
+	c.SetSameSite(http.SameSiteLaxMode)
+	c.SetCookie("user", "gin", 1, "/", "localhost", true, true)
 	assert.Equal(t, "user=gin; Path=/; Domain=localhost; Max-Age=1; HttpOnly; Secure; SameSite=Lax", c.Writer.Header().Get("Set-Cookie"))
 }
 
 func TestContextSetCookiePathEmpty(t *testing.T) {
 	c, _ := CreateTestContext(httptest.NewRecorder())
-	c.SetCookie("user", "gin", 1, "", "localhost", http.SameSiteLaxMode, true, true)
+	c.SetSameSite(http.SameSiteLaxMode)
+	c.SetCookie("user", "gin", 1, "", "localhost", true, true)
 	assert.Equal(t, "user=gin; Path=/; Domain=localhost; Max-Age=1; HttpOnly; Secure; SameSite=Lax", c.Writer.Header().Get("Set-Cookie"))
 }
 
