@@ -5,6 +5,7 @@
 package binding
 
 import (
+	"encoding"
 	"errors"
 	"fmt"
 	"reflect"
@@ -14,6 +15,11 @@ import (
 
 	"github.com/gin-gonic/gin/internal/bytesconv"
 	"github.com/gin-gonic/gin/internal/json"
+)
+
+var (
+	typeTextUnmarshaler = reflect.TypeOf((*encoding.TextUnmarshaler)(nil)).Elem()
+	typeTime            = reflect.TypeOf(time.Time{})
 )
 
 var errUnknownType = errors.New("unknown type")
@@ -205,17 +211,26 @@ func setWithProperType(val string, value reflect.Value, field reflect.StructFiel
 	case reflect.String:
 		value.SetString(val)
 	case reflect.Struct:
-		switch value.Interface().(type) {
-		case time.Time:
+		tValue := value.Type()
+		switch {
+		case tValue == typeTime:
 			return setTimeField(val, field, value)
+		case reflect.PtrTo(tValue).Implements(typeTextUnmarshaler):
+			return setTextUnmarshalerField(val, field, value.Addr())
+		default:
+			return json.Unmarshal(bytesconv.StringToBytes(val), value.Addr().Interface())
 		}
-		return json.Unmarshal(bytesconv.StringToBytes(val), value.Addr().Interface())
 	case reflect.Map:
 		return json.Unmarshal(bytesconv.StringToBytes(val), value.Addr().Interface())
 	default:
 		return errUnknownType
 	}
 	return nil
+}
+
+func setTextUnmarshalerField(val string, field reflect.StructField, value reflect.Value) error {
+	u := value.Interface().(encoding.TextUnmarshaler)
+	return u.UnmarshalText(bytesconv.StringToBytes(val))
 }
 
 func setIntField(val string, bitSize int, field reflect.Value) error {

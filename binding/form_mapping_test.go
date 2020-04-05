@@ -5,6 +5,7 @@
 package binding
 
 import (
+	"github.com/gin-gonic/gin/internal/bytesconv"
 	"reflect"
 	"testing"
 	"time"
@@ -278,4 +279,44 @@ func TestMappingIgnoredCircularRef(t *testing.T) {
 
 	err := mappingByPtr(&s, formSource{}, "form")
 	assert.NoError(t, err)
+}
+
+type TestStringWrapper struct {
+	defined bool
+	val     string
+}
+
+func (t *TestStringWrapper) UnmarshalText(text []byte) error {
+	t.defined = true
+	t.val = bytesconv.BytesToString(text)
+	return nil
+}
+
+func (t *TestStringWrapper) String() string {
+	return t.val
+}
+
+func (t *TestStringWrapper) Undefined() bool {
+	return !t.defined
+}
+
+func TestMappingTextUnmarshaler(t *testing.T) {
+	type Query struct {
+		Name TestStringWrapper `json:"name" form:"name"`
+	}
+
+	q := Query{}
+	err := mappingByPtr(&q, formSource{}, "form")
+	assert.NoError(t, err)
+	assert.True(t, q.Name.Undefined())
+	assert.Empty(t, q.Name.String())
+
+	form := map[string][]string{
+		"name": {"test"},
+	}
+
+	err = mappingByPtr(&q, formSource(form), "form")
+	assert.NoError(t, err)
+	assert.False(t, q.Name.Undefined())
+	assert.Equal(t, "test", q.Name.String())
 }
