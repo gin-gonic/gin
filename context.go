@@ -1047,19 +1047,27 @@ func (c *Context) NegotiateFormat(offered ...string) string {
 		return offered[0]
 	}
 	for _, accepted := range c.Accepted {
+		// According to RFC 2616, media-range = ( "*/*" | ( type "/" "*" ) | ( type "/" subtype ) )
+		acceptedMediaRange := strings.Split(accepted, "/")
+		if len(acceptedMediaRange) != 2 || (acceptedMediaRange[0] == "*" && acceptedMediaRange[1] != "*") {
+			continue
+		}
+
 		for _, offer := range offered {
 			// According to RFC 2616 and RFC 2396, non-ASCII characters are not allowed in headers,
-			// therefore we can just iterate over the string without casting it into []rune
-			i := 0
-			for ; i < len(accepted); i++ {
-				if accepted[i] == '*' || offer[i] == '*' {
-					return offer
-				}
-				if accepted[i] != offer[i] {
-					break
-				}
+			// therefore we can handle the string without casting it into []rune
+
+			offerMediaRange := strings.Split(offer, "/")
+			if len(offerMediaRange) != 2 {
+				continue
 			}
-			if i == len(accepted) {
+
+			if acceptedMediaRange[0] == "*" || offerMediaRange[0] == "*" {
+				return offer
+			}
+
+			if acceptedMediaRange[0] == offerMediaRange[0] &&
+				(acceptedMediaRange[1] == "*" || offerMediaRange[1] == "*" || acceptedMediaRange[1] == offerMediaRange[1]) {
 				return offer
 			}
 		}

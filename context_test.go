@@ -1228,6 +1228,32 @@ func TestContextNegotiationFormatWithWildcardAccept(t *testing.T) {
 	assert.Equal(t, c.NegotiateFormat(MIMEHTML), MIMEHTML)
 }
 
+func TestContextNegotiationFormatWithInvalidAccept(t *testing.T) {
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	c.Request, _ = http.NewRequest("POST", "/", nil)
+	c.Request.Header.Add("Accept", "text*,*/html")
+
+	assert.Equal(t, c.NegotiateFormat("*/*"), "")
+	assert.Equal(t, c.NegotiateFormat("text/*"), "")
+	assert.Equal(t, c.NegotiateFormat("text/html"), "")
+	assert.Equal(t, c.NegotiateFormat(MIMEJSON), "")
+	assert.Equal(t, c.NegotiateFormat(MIMEXML), "")
+	assert.Equal(t, c.NegotiateFormat(MIMEHTML), "")
+
+	c, _ = CreateTestContext(httptest.NewRecorder())
+	c.Request, _ = http.NewRequest("POST", "/", nil)
+	c.Request.Header.Add("Accept", "text*/*,application/j*,application/jso,application/json2")
+
+	assert.Equal(t, c.NegotiateFormat("*/*"), "*/*")
+	assert.Equal(t, c.NegotiateFormat("text/*"), "")
+	assert.Equal(t, c.NegotiateFormat("text/html"), "")
+	assert.Equal(t, c.NegotiateFormat("application/*"), "application/*")
+	assert.Equal(t, c.NegotiateFormat("application/json"), "")
+	assert.Equal(t, c.NegotiateFormat(MIMEJSON), "")
+	assert.Equal(t, c.NegotiateFormat(MIMEXML), "")
+	assert.Equal(t, c.NegotiateFormat(MIMEHTML), "")
+}
+
 func TestContextNegotiationFormatCustom(t *testing.T) {
 	c, _ := CreateTestContext(httptest.NewRecorder())
 	c.Request, _ = http.NewRequest("POST", "/", nil)
