@@ -9,7 +9,7 @@ import (
 	"testing"
 )
 
-func TestSliceValidateError_Error(t *testing.T) {
+func TestSliceValidateError(t *testing.T) {
 	tests := []struct {
 		name string
 		err  sliceValidateError
@@ -26,7 +26,7 @@ func TestSliceValidateError_Error(t *testing.T) {
 	}
 }
 
-func Test_defaultValidator_Validate(t *testing.T) {
+func TestDefaultValidator(t *testing.T) {
 	type exampleStruct struct {
 		A string `binding:"max=8"`
 		B int    `binding:"gt=0"`
