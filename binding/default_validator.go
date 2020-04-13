@@ -40,12 +40,9 @@ func (v *defaultValidator) ValidateStruct(obj interface{}) error {
 	}
 
 	value := reflect.ValueOf(obj)
-	valueType := value.Kind()
-	if valueType == reflect.Ptr {
+	switch value.Kind() {
+	case reflect.Ptr:
 		return v.ValidateStruct(value.Elem().Interface())
-	}
-
-	switch valueType {
 	case reflect.Struct:
 		return v.validateStruct(obj)
 	case reflect.Slice, reflect.Array:
