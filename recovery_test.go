@@ -144,3 +144,37 @@ func TestPanicWithBrokenPipe(t *testing.T) {
 		})
 	}
 }
+
+func TestCustomRecoveryWithWriter(t *testing.T) {
+	errBuffer := new(bytes.Buffer)
+	buffer := new(bytes.Buffer)
+	router := New()
+	handleRecovery := func(c *Context, err interface{}) {
+		errBuffer.WriteString(err.(string))
+		c.AbortWithStatus(http.StatusBadRequest)
+	}
+	router.Use(CustomRecoveryWithWriter(buffer, handleRecovery))
+	router.GET("/recovery", func(_ *Context) {
+		panic("Oupps, Houston, we have a problem")
+	})
+	// RUN
+	w := performRequest(router, "GET", "/recovery")
+	// TEST
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+	assert.Contains(t, buffer.String(), "panic recovered")
+	assert.Contains(t, buffer.String(), "Oupps, Houston, we have a problem")
+	assert.Contains(t, buffer.String(), "TestCustomRecoveryWithWriter")
+	assert.NotContains(t, buffer.String(), "GET /recovery")
+
+	// Debug mode prints the request
+	SetMode(DebugMode)
+	// RUN
+	w = performRequest(router, "GET", "/recovery")
+	// TEST
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+	assert.Contains(t, buffer.String(), "GET /recovery")
+
+	assert.Equal(t, strings.Repeat("Oupps, Houston, we have a problem", 2), errBuffer.String())
+
+	SetMode(TestMode)
+}
