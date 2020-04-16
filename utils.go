@@ -11,6 +11,7 @@ import (
 	"path"
 	"reflect"
 	"runtime"
+	"strconv"
 	"strings"
 )
 
@@ -148,4 +149,11 @@ func resolveAddress(addr []string) string {
 	default:
 		panic("too many parameters")
 	}
+}
+
+// Determine whether the PORT environment variable is valid。
+// If the PORT can be parsed to int(0-65535)，return true。
+func isValidPortEnvVar(portString string) bool {
+	_, err := strconv.ParseUint(portString, 10, 16)
+	return err == nil
 }
