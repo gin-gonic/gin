@@ -137,3 +137,14 @@ func TestMarshalXMLforH(t *testing.T) {
 	e := h.MarshalXML(enc, x)
 	assert.Error(t, e)
 }
+
+func TestIsValidPortEnvVar(t *testing.T) {
+	assert.Equal(t, false, isValidPortEnvVar("abc"))
+	assert.Equal(t, false, isValidPortEnvVar("-1"))
+	assert.Equal(t, true, isValidPortEnvVar("1"))
+	assert.Equal(t, true, isValidPortEnvVar("1000"))
+	assert.Equal(t, true, isValidPortEnvVar("10000"))
+	assert.Equal(t, true, isValidPortEnvVar("65535"))
+	assert.Equal(t, false, isValidPortEnvVar("65536"))
+	assert.Equal(t, false, isValidPortEnvVar("655360"))
+}

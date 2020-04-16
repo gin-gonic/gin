@@ -11,6 +11,7 @@ import (
 	"path"
 	"reflect"
 	"runtime"
+	"strconv"
 	"strings"
 )
 
@@ -137,7 +138,7 @@ func joinPaths(absolutePath, relativePath string) string {
 func resolveAddress(addr []string) string {
 	switch len(addr) {
 	case 0:
-		if port := os.Getenv("PORT"); port != "" {
+		if port := os.Getenv("PORT"); port != "" && isValidPortEnvVar(port) {
 			debugPrint("Environment variable PORT=\"%s\"", port)
 			return ":" + port
 		}
@@ -148,4 +149,11 @@ func resolveAddress(addr []string) string {
 	default:
 		panic("too many parameters")
 	}
+}
+
+// Determine whether the PORT environment variable is valid。
+// If the PORT can be parsed to int(0-65535)，return true。
+func isValidPortEnvVar(portString string) bool {
+	_, err := strconv.ParseUint(portString, 10, 16)
+	return err == nil
 }
