@@ -1228,13 +1228,17 @@ func main() {
 
 ### HTML rendering
 
-Using LoadHTMLGlob() or LoadHTMLFiles()
+Using LoadHTMLGlob(), LoadHTMLFiles() or LoadHTMLFilesRecursively
 
 ```go
 func main() {
 	router := gin.Default()
 	router.LoadHTMLGlob("templates/*")
 	//router.LoadHTMLFiles("templates/template1.html", "templates/template2.html")
+
+	// load recursively all .html files in "public" folder
+	//router.LoadHTMLFilesRecursively("public", []string{".html"})
+	
 	router.GET("/index", func(c *gin.Context) {
 		c.HTML(http.StatusOK, "index.tmpl", gin.H{
 			"title": "Main website",
