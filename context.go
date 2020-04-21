@@ -482,14 +482,12 @@ func (c *Context) PostFormArray(key string) []string {
 
 func (c *Context) getFormCache() {
 	if c.formCache == nil {
-		c.formCache = make(url.Values)
-		req := c.Request
-		if err := req.ParseMultipartForm(c.engine.MaxMultipartMemory); err != nil {
+		if err := c.Request.ParseMultipartForm(c.engine.MaxMultipartMemory); err != nil {
 			if err != http.ErrNotMultipart {
 				debugPrint("error on parse multipart form array: %v", err)
 			}
 		}
-		c.formCache = req.PostForm
+		c.formCache = c.Request.PostForm
 	}
 }
 
