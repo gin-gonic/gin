@@ -426,7 +426,7 @@ func (c *Context) GetQueryArray(key string) ([]string, bool) {
 	if values, ok := c.queryCache[key]; ok && len(values) > 0 {
 		return values, true
 	}
-	return []string{}, false
+	return nil, false
 }
 
 // QueryMap returns a map for a given query key.
