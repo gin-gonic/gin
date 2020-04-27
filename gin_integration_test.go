@@ -144,27 +144,31 @@ func TestRunWithPort(t *testing.T) {
 }
 
 func TestUnixSocket(t *testing.T) {
-	router := New()
+        router := New()
 
-	go func() {
-		router.GET("/example", func(c *Context) { c.String(http.StatusOK, "it worked") })
-		assert.NoError(t, router.RunUnix("/tmp/unix_unit_test"))
-	}()
-	// have to wait for the goroutine to start and run the server
-	// otherwise the main thread will complete
-	time.Sleep(5 * time.Millisecond)
+        unixTestSocket := "/tmp/unix_unit_test"
 
-	c, err := net.Dial("unix", "/tmp/unix_unit_test")
-	assert.NoError(t, err)
+        defer os.Remove(unixTestSocket)
 
-	fmt.Fprint(c, "GET /example HTTP/1.0\r\n\r\n")
-	scanner := bufio.NewScanner(c)
-	var response string
-	for scanner.Scan() {
-		response += scanner.Text()
-	}
-	assert.Contains(t, response, "HTTP/1.0 200", "should get a 200")
-	assert.Contains(t, response, "it worked", "resp body should match")
+        go func() {
+                router.GET("/example", func(c *Context) { c.String(http.StatusOK, "it worked") })
+                assert.NoError(t, router.RunUnix(unixTestSocket))
+        }()
+        // have to wait for the goroutine to start and run the server
+        // otherwise the main thread will complete
+        time.Sleep(5 * time.Millisecond)
+
+        c, err := net.Dial("unix", unixTestSocket)
+        assert.NoError(t, err)
+
+        fmt.Fprint(c, "GET /example HTTP/1.0\r\n\r\n")
+        scanner := bufio.NewScanner(c)
+        var response string
+        for scanner.Scan() {
+                response += scanner.Text()
+        }
+        assert.Contains(t, response, "HTTP/1.0 200", "should get a 200")
+        assert.Contains(t, response, "it worked", "resp body should match")
 }
 
 func TestBadUnixSocket(t *testing.T) {
