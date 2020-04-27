@@ -151,8 +151,8 @@ func TestUnixSocket(t *testing.T) {
 	defer os.Remove(unixTestSocket)
 
 	go func() {
-	        router.GET("/example", func(c *Context) { c.String(http.StatusOK, "it worked") })
-	        assert.NoError(t, router.RunUnix(unixTestSocket))
+		router.GET("/example", func(c *Context) { c.String(http.StatusOK, "it worked") })
+		assert.NoError(t, router.RunUnix(unixTestSocket))
 	}()
 	// have to wait for the goroutine to start and run the server
 	// otherwise the main thread will complete
@@ -165,7 +165,7 @@ func TestUnixSocket(t *testing.T) {
 	scanner := bufio.NewScanner(c)
 	var response string
 	for scanner.Scan() {
-	        response += scanner.Text()
+		response += scanner.Text()
 	}
 	assert.Contains(t, response, "HTTP/1.0 200", "should get a 200")
 	assert.Contains(t, response, "it worked", "resp body should match")
