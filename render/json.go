@@ -21,7 +21,8 @@ type JSON struct {
 
 // IndentedJSON contains the given interface object.
 type IndentedJSON struct {
-	Data interface{}
+	IndentString string
+	Data         interface{}
 }
 
 // SecureJSON contains the given interface object and its prefix.
@@ -80,7 +81,7 @@ func WriteJSON(w http.ResponseWriter, obj interface{}) error {
 // Render (IndentedJSON) marshals the given interface object and writes it with custom ContentType.
 func (r IndentedJSON) Render(w http.ResponseWriter) error {
 	r.WriteContentType(w)
-	jsonBytes, err := json.MarshalIndent(r.Data, "", "    ")
+	jsonBytes, err := json.MarshalIndent(r.Data, "", r.IndentString)
 	if err != nil {
 		return err
 	}

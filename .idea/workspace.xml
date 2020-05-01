@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ChangeListManager">
+    <list default="true" id="ccdb3922-52d7-42cb-9023-7280d80b914d" name="Default Changelist" comment="">
+      <change beforePath="$PROJECT_DIR$/context.go" beforeDir="false" afterPath="$PROJECT_DIR$/context.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gin.go" beforeDir="false" afterPath="$PROJECT_DIR$/gin.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/render/json.go" beforeDir="false" afterPath="$PROJECT_DIR$/render/json.go" afterDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="GOROOT" path="/usr/local/Cellar/go/1.13.8/libexec" />
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="ProjectId" id="1b13IDR2kGhVue2FW5tspI0Y5Fh" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+    <option name="showMembers" value="true" />
+  </component>
+  <component name="PropertiesComponent">
+    <property name="RunOnceActivity.OpenProjectViewOnStart" value="true" />
+    <property name="RunOnceActivity.ShowReadmeOnStart" value="true" />
+    <property name="WebServerToolWindowFactoryState" value="false" />
+    <property name="go.import.settings.migrated" value="true" />
+    <property name="go.sdk.automatically.set" value="true" />
+    <property name="settings.editor.selected.configurable" value="go.vgo" />
+  </component>
+  <component name="RunManager" selected="Go Test.TestPathCleanMallocs in github.com/gin-gonic/gin">
+    <configuration name="BenchmarkPathClean in github.com/gin-gonic/gin" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
+      <module name="my_gin" />
+      <working_directory value="$PROJECT_DIR$" />
+      <framework value="gobench" />
+      <kind value="PACKAGE" />
+      <package value="github.com/gin-gonic/gin" />
+      <directory value="$PROJECT_DIR$/" />
+      <filePath value="$PROJECT_DIR$/" />
+      <pattern value="^BenchmarkPathClean$" />
+      <method v="2" />
+    </configuration>
+    <configuration name="TestPathClean in github.com/gin-gonic/gin" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
+      <module name="my_gin" />
+      <working_directory value="$PROJECT_DIR$" />
+      <framework value="gotest" />
+      <kind value="PACKAGE" />
+      <package value="github.com/gin-gonic/gin" />
+      <directory value="$PROJECT_DIR$/" />
+      <filePath value="$PROJECT_DIR$/" />
+      <pattern value="^TestPathClean$" />
+      <method v="2" />
+    </configuration>
+    <configuration name="TestPathCleanMallocs in github.com/gin-gonic/gin" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
+      <module name="my_gin" />
+      <working_directory value="$PROJECT_DIR$" />
+      <framework value="gotest" />
+      <kind value="PACKAGE" />
+      <package value="github.com/gin-gonic/gin" />
+      <directory value="$PROJECT_DIR$/" />
+      <filePath value="$PROJECT_DIR$/" />
+      <pattern value="^TestPathCleanMallocs$" />
+      <method v="2" />
+    </configuration>
+    <recent_temporary>
+      <list>
+        <item itemvalue="Go Test.TestPathCleanMallocs in github.com/gin-gonic/gin" />
+        <item itemvalue="Go Test.BenchmarkPathClean in github.com/gin-gonic/gin" />
+        <item itemvalue="Go Test.TestPathClean in github.com/gin-gonic/gin" />
+      </list>
+    </recent_temporary>
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="2" />
+  </component>
+  <component name="VgoProject">
+    <integration-enabled>true</integration-enabled>
+  </component>
+  <component name="WindowStateProjectService">
+    <state x="100" y="123" width="1240" height="621" key="DiffContextDialog" timestamp="1587793218892">
+      <screen x="0" y="23" width="1440" height="824" />
+    </state>
+    <state x="100" y="123" width="1240" height="621" key="DiffContextDialog/0.23.1440.824@0.23.1440.824" timestamp="1587793218892" />
+    <state width="1398" height="212" key="GridCell.Tab.0.bottom" timestamp="1587821851973">
+      <screen x="0" y="23" width="1440" height="824" />
+    </state>
+    <state width="1398" height="212" key="GridCell.Tab.0.bottom/0.23.1440.824@0.23.1440.824" timestamp="1587821851973" />
+    <state width="1398" height="212" key="GridCell.Tab.0.center" timestamp="1587821851972">
+      <screen x="0" y="23" width="1440" height="824" />
+    </state>
+    <state width="1398" height="212" key="GridCell.Tab.0.center/0.23.1440.824@0.23.1440.824" timestamp="1587821851972" />
+    <state width="1398" height="212" key="GridCell.Tab.0.left" timestamp="1587821851972">
+      <screen x="0" y="23" width="1440" height="824" />
+    </state>
+    <state width="1398" height="212" key="GridCell.Tab.0.left/0.23.1440.824@0.23.1440.824" timestamp="1587821851972" />
+    <state width="1398" height="212" key="GridCell.Tab.0.right" timestamp="1587821851973">
+      <screen x="0" y="23" width="1440" height="824" />
+    </state>
+    <state width="1398" height="212" key="GridCell.Tab.0.right/0.23.1440.824@0.23.1440.824" timestamp="1587821851973" />
+    <state x="221" y="72" key="SettingsEditor" timestamp="1587820614763">
+      <screen x="0" y="23" width="1440" height="824" />
+    </state>
+    <state x="221" y="72" key="SettingsEditor/0.23.1440.824@0.23.1440.824" timestamp="1587820614763" />
+    <state x="563" y="138" key="VCS.ChangeListViewerDialog" timestamp="1587786009698">
+      <screen x="0" y="23" width="1440" height="824" />
+    </state>
+    <state x="563" y="138" key="VCS.ChangeListViewerDialog/0.23.1440.824@0.23.1440.824" timestamp="1587786009698" />
+    <state x="418" y="190" width="604" height="486" key="find.popup" timestamp="1588308660233">
+      <screen x="0" y="23" width="1440" height="824" />
+    </state>
+    <state x="418" y="190" width="604" height="486" key="find.popup/0.23.1440.824@0.23.1440.824" timestamp="1588308660233" />
+  </component>
+</project>
