@@ -6,13 +6,16 @@ package gin
 
 import (
 	"crypto/tls"
+	"encoding/json"
 	"fmt"
 	"html/template"
 	"io/ioutil"
+	"math/rand"
 	"net/http"
 	"net/http/httptest"
 	"reflect"
 	"strconv"
+	"strings"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -544,3 +547,35 @@ func assertRoutePresent(t *testing.T, gotRoutes RoutesInfo, wantRoute RouteInfo)
 
 func handlerTest1(c *Context) {}
 func handlerTest2(c *Context) {}
+
+// Engine.IndentJsonIndentSpaceNum
+func TestEngine_IndentJsonIndentSpaceNum(t *testing.T) {
+
+	rand.Seed(time.Now().UnixNano())
+	spaceNum := rand.Intn(10)
+
+	router := Default()
+	defaultResponse := H{"name": "test", "age": 20}
+	router.IndentJsonIndentSpaceNum(spaceNum)
+	router.GET("/test", func(c *Context) {
+		c.IndentedJSON(200, defaultResponse)
+	})
+	s := httptest.NewServer(router)
+	defer s.Close()
+
+	req, err := http.NewRequest("GET", "/test", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	rr := httptest.NewRecorder()
+	router.ServeHTTP(rr, req)
+	if rr.Code != http.StatusOK {
+		t.Fatal("error code: ", rr.Code)
+	}
+
+	except, _ := json.MarshalIndent(defaultResponse, "", strings.Repeat(spaceString, spaceNum))
+
+	assert.Equal(t, rr.Body.Bytes(), except)
+	t.Log(rr.Body.String())
+}

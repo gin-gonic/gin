@@ -859,7 +859,7 @@ func (c *Context) HTML(code int, name string, obj interface{}) {
 // WARNING: we recommend to use this only for development purposes since printing pretty JSON is
 // more CPU and bandwidth consuming. Use Context.JSON() instead.
 func (c *Context) IndentedJSON(code int, obj interface{}) {
-	c.Render(code, render.IndentedJSON{Data: obj})
+	c.Render(code, render.IndentedJSON{IndentString: c.engine.indentJsonIndentString, Data: obj})
 }
 
 // SecureJSON serializes the given struct as Secure JSON into the response body.
