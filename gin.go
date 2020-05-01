@@ -21,7 +21,7 @@ import (
 const defaultMultipartMemory = 32 << 20 // 32 MB
 
 // A space string
-var spaceString = string(32)
+var spaceString = " "
 
 var (
 	default404Body   = []byte("404 page not found")
