@@ -55,7 +55,7 @@ func TestRenderIndentedJSON(t *testing.T) {
 		"bar": "foo",
 	}
 
-	err := (IndentedJSON{data}).Render(w)
+	err := (IndentedJSON{Data: data}).Render(w)
 
 	assert.NoError(t, err)
 	assert.Equal(t, "{\n    \"bar\": \"foo\",\n    \"foo\": \"bar\"\n}", w.Body.String())
@@ -67,7 +67,7 @@ func TestRenderIndentedJSONPanics(t *testing.T) {
 	data := make(chan int)
 
 	// json: unsupported type: chan int
-	err := (IndentedJSON{data}).Render(w)
+	err := (IndentedJSON{Data: data}).Render(w)
 	assert.Error(t, err)
 }
 
