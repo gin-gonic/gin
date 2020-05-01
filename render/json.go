@@ -22,7 +22,7 @@ type JSON struct {
 // IndentedJSON contains the given interface object.
 type IndentedJSON struct {
 	IndentString string
-	Data interface{}
+	Data         interface{}
 }
 
 // SecureJSON contains the given interface object and its prefix.
