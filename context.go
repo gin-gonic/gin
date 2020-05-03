@@ -36,7 +36,8 @@ const (
 	MIMEYAML              = binding.MIMEYAML
 )
 
-const bodyBytesKey = "_gin-gonic/gin/bodybyteskey"
+// BodyBytesKey indicates a default body bind key.
+const BodyBytesKey = "_gin-gonic/gin/bodybyteskey"
 
 const abortIndex int8 = math.MaxInt8 / 2
 
@@ -687,7 +688,7 @@ func (c *Context) ShouldBindWith(obj interface{}, b binding.Binding) error {
 // ShouldBindWith for better performance if you need to call only once.
 func (c *Context) ShouldBindBodyWith(obj interface{}, bb binding.BindingBody) (err error) {
 	var body []byte
-	if cb, ok := c.Get(bodyBytesKey); ok {
+	if cb, ok := c.Get(BodyBytesKey); ok {
 		if cbb, ok := cb.([]byte); ok {
 			body = cbb
 		}
@@ -697,7 +698,7 @@ func (c *Context) ShouldBindBodyWith(obj interface{}, bb binding.BindingBody) (e
 		if err != nil {
 			return err
 		}
-		c.Set(bodyBytesKey, body)
+		c.Set(BodyBytesKey, body)
 	}
 	return bb.BindBody(body, obj)
 }
