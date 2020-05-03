@@ -36,7 +36,7 @@ const (
 	MIMEYAML              = binding.MIMEYAML
 )
 
-// BodyBytesKey indicates a default body bind key.
+// BodyBytesKey indicates a default body bytes key.
 const BodyBytesKey = "_gin-gonic/gin/bodybyteskey"
 
 const abortIndex int8 = math.MaxInt8 / 2
