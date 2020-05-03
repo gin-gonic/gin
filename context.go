@@ -53,8 +53,13 @@ type Context struct {
 
 	engine *Engine
 
+	EnablekeysMutex bool
+
 	// This mutex protect Keys map
-	KeysMutex *sync.RWMutex
+	keysMutex *sync.RWMutex
+
+	// only initial keysMutex once
+	once sync.Once
 
 	// Keys is a key/value pair exclusively for the context of each request.
 	Keys map[string]interface{}
@@ -86,13 +91,16 @@ func (c *Context) reset() {
 	c.Params = c.Params[0:0]
 	c.handlers = nil
 	c.index = -1
-	c.KeysMutex = &sync.RWMutex{}
+
 	c.fullPath = ""
 	c.Keys = nil
 	c.Errors = c.Errors[0:0]
 	c.Accepted = nil
 	c.queryCache = nil
 	c.formCache = nil
+	if c.EnablekeysMutex {
+		c.keysMutex = &sync.RWMutex{}
+	}
 }
 
 // Copy returns a copy of the current context that can be safely used outside the request's scope.
@@ -228,29 +236,37 @@ func (c *Context) Error(err error) *Error {
 // Set is used to store a new key/value pair exclusively for this context.
 // It also lazy initializes  c.Keys if it was not used previously.
 func (c *Context) Set(key string, value interface{}) {
-	if c.KeysMutex == nil {
-		c.KeysMutex = &sync.RWMutex{}
+	if c.EnablekeysMutex {
+		if c.keysMutex == nil {
+			c.once.Do(func() {
+				c.keysMutex = &sync.RWMutex{}
+			})
+		}
+		c.keysMutex.Lock()
+		defer c.keysMutex.Unlock()
 	}
 
-	c.KeysMutex.Lock()
 	if c.Keys == nil {
 		c.Keys = make(map[string]interface{})
 	}
 
 	c.Keys[key] = value
-	c.KeysMutex.Unlock()
 }
 
 // Get returns the value for the given key, ie: (value, true).
 // If the value does not exists it returns (nil, false)
 func (c *Context) Get(key string) (value interface{}, exists bool) {
-	if c.KeysMutex == nil {
-		c.KeysMutex = &sync.RWMutex{}
+	if c.EnablekeysMutex {
+		if c.keysMutex == nil {
+			c.once.Do(func() {
+				c.keysMutex = &sync.RWMutex{}
+			})
+		}
+		c.keysMutex.RLock()
+		defer c.keysMutex.RUnlock()
 	}
 
-	c.KeysMutex.RLock()
 	value, exists = c.Keys[key]
-	c.KeysMutex.RUnlock()
 	return
 }
 
