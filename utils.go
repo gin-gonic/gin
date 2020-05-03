@@ -14,7 +14,7 @@ import (
 	"strings"
 )
 
-const bindKey = "_gin-gonic/gin/bindkey"
+const BindKey = "_gin-gonic/gin/bindkey"
 
 // Bind is a helper function for given interface object and returns a Gin middleware.
 func Bind(val interface{}) HandlerFunc {
@@ -29,7 +29,7 @@ func Bind(val interface{}) HandlerFunc {
 	return func(c *Context) {
 		obj := reflect.New(typ).Interface()
 		if c.Bind(obj) == nil {
-			c.Set(bindKey, obj)
+			c.Set(BindKey, obj)
 		}
 	}
 }
