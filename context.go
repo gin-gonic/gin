@@ -53,13 +53,10 @@ type Context struct {
 
 	engine *Engine
 
-	EnablekeysMutex bool
+	EnableMutexLock bool
 
 	// This mutex protect Keys map
-	keysMutex *sync.RWMutex
-
-	// only initial keysMutex once
-	once sync.Once
+	mu sync.RWMutex
 
 	// Keys is a key/value pair exclusively for the context of each request.
 	Keys map[string]interface{}
@@ -98,15 +95,17 @@ func (c *Context) reset() {
 	c.Accepted = nil
 	c.queryCache = nil
 	c.formCache = nil
-	if c.EnablekeysMutex {
-		c.keysMutex = &sync.RWMutex{}
-	}
 }
 
 // Copy returns a copy of the current context that can be safely used outside the request's scope.
 // This has to be used when the context has to be passed to a goroutine.
 func (c *Context) Copy() *Context {
-	var cp = *c
+	cp := Context{
+		writermem: c.writermem,
+		Request:   c.Request,
+		Params:    c.Params,
+		engine:    c.engine,
+	}
 	cp.writermem.ResponseWriter = nil
 	cp.Writer = &cp.writermem
 	cp.index = abortIndex
@@ -236,14 +235,9 @@ func (c *Context) Error(err error) *Error {
 // Set is used to store a new key/value pair exclusively for this context.
 // It also lazy initializes  c.Keys if it was not used previously.
 func (c *Context) Set(key string, value interface{}) {
-	if c.EnablekeysMutex {
-		if c.keysMutex == nil {
-			c.once.Do(func() {
-				c.keysMutex = &sync.RWMutex{}
-			})
-		}
-		c.keysMutex.Lock()
-		defer c.keysMutex.Unlock()
+	if c.EnableMutexLock {
+		c.mu.Lock()
+		defer c.mu.Unlock()
 	}
 
 	if c.Keys == nil {
@@ -256,14 +250,9 @@ func (c *Context) Set(key string, value interface{}) {
 // Get returns the value for the given key, ie: (value, true).
 // If the value does not exists it returns (nil, false)
 func (c *Context) Get(key string) (value interface{}, exists bool) {
-	if c.EnablekeysMutex {
-		if c.keysMutex == nil {
-			c.once.Do(func() {
-				c.keysMutex = &sync.RWMutex{}
-			})
-		}
-		c.keysMutex.RLock()
-		defer c.keysMutex.RUnlock()
+	if c.EnableMutexLock {
+		c.mu.RLock()
+		defer c.mu.RUnlock()
 	}
 
 	value, exists = c.Keys[key]
