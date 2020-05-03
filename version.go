@@ -5,4 +5,4 @@
 package gin
 
 // Version is the current gin framework's version.
-const Version = "v1.6.2"
+const Version = "v1.6.3"
