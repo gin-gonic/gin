@@ -1,3 +1,11 @@
+# Gin ChangeLog
+
+## Gin v1.6.3
+
+### ENHANCEMENTS
+
+  * Improve performance: Change `*sync.RWMutex` to `sync.RWMutex` in context. [#2351](https://github.com/gin-gonic/gin/pull/2351)
+
 ## Gin v1.6.2
 
 ### BUFIXES
