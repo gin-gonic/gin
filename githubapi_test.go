@@ -291,13 +291,13 @@ func TestShouldBindUri(t *testing.T) {
 
 	type Person struct {
 		Name string `uri:"name" binding:"required"`
-		Id   string `uri:"id" binding:"required"`
+		ID   string `uri:"id" binding:"required"`
 	}
 	router.Handle(http.MethodGet, "/rest/:name/:id", func(c *Context) {
 		var person Person
 		assert.NoError(t, c.ShouldBindUri(&person))
 		assert.True(t, "" != person.Name)
-		assert.True(t, "" != person.Id)
+		assert.True(t, "" != person.ID)
 		c.String(http.StatusOK, "ShouldBindUri test OK")
 	})
 
@@ -313,13 +313,13 @@ func TestBindUri(t *testing.T) {
 
 	type Person struct {
 		Name string `uri:"name" binding:"required"`
-		Id   string `uri:"id" binding:"required"`
+		ID   string `uri:"id" binding:"required"`
 	}
 	router.Handle(http.MethodGet, "/rest/:name/:id", func(c *Context) {
 		var person Person
 		assert.NoError(t, c.BindUri(&person))
 		assert.True(t, "" != person.Name)
-		assert.True(t, "" != person.Id)
+		assert.True(t, "" != person.ID)
 		c.String(http.StatusOK, "BindUri test OK")
 	})
 
