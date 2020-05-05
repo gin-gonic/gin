@@ -54,6 +54,7 @@ Gin is a web framework written in Go (Golang). It features a martini-like API wi
       - [AsciiJSON](#asciijson)
       - [PureJSON](#purejson)
     - [Serving static files](#serving-static-files)
+    - [Serving data from file](#serving-data-from-file)
     - [Serving data from reader](#serving-data-from-reader)
     - [HTML rendering](#html-rendering)
       - [Custom Template renderer](#custom-template-renderer)
@@ -68,6 +69,8 @@ Gin is a web framework written in Go (Golang). It features a martini-like API wi
     - [Support Let's Encrypt](#support-lets-encrypt)
     - [Run multiple service using Gin](#run-multiple-service-using-gin)
     - [Graceful shutdown or restart](#graceful-shutdown-or-restart)
+      - [Third-party packages](#third-party-packages)
+      - [Manually](#manually)
     - [Build a single binary with templates](#build-a-single-binary-with-templates)
     - [Bind form-data request with custom struct](#bind-form-data-request-with-custom-struct)
     - [Try to bind body into different structs](#try-to-bind-body-into-different-structs)
@@ -133,35 +136,38 @@ Gin uses a custom version of [HttpRouter](https://github.com/julienschmidt/httpr
 
 [See all benchmarks](/BENCHMARKS.md)
 
-Benchmark name                              | (1)        | (2)         | (3) 		    | (4)
---------------------------------------------|-----------:|------------:|-----------:|---------:
-**BenchmarkGin_GithubAll**                  | **30000**  |  **48375**  |     **0**  |   **0**
-BenchmarkAce_GithubAll                      |   10000    |   134059    |   13792    |   167
-BenchmarkBear_GithubAll                     |    5000    |   534445    |   86448    |   943
-BenchmarkBeego_GithubAll                    |    3000    |   592444    |   74705    |   812
-BenchmarkBone_GithubAll                     |     200    |  6957308    |  698784    |  8453
-BenchmarkDenco_GithubAll                    |   10000    |   158819    |   20224    |   167
-BenchmarkEcho_GithubAll                     |   10000    |   154700    |    6496    |   203
-BenchmarkGocraftWeb_GithubAll               |    3000    |   570806    |  131656    |  1686
-BenchmarkGoji_GithubAll                     |    2000    |   818034    |   56112    |   334
-BenchmarkGojiv2_GithubAll                   |    2000    |  1213973    |  274768    |  3712
-BenchmarkGoJsonRest_GithubAll               |    2000    |   785796    |  134371    |  2737
-BenchmarkGoRestful_GithubAll                |     300    |  5238188    |  689672    |  4519
-BenchmarkGorillaMux_GithubAll               |     100    | 10257726    |  211840    |  2272
-BenchmarkHttpRouter_GithubAll               |   20000    |   105414    |   13792    |   167
-BenchmarkHttpTreeMux_GithubAll              |   10000    |   319934    |   65856    |   671
-BenchmarkKocha_GithubAll                    |   10000    |   209442    |   23304    |   843
-BenchmarkLARS_GithubAll                     |   20000    |    62565    |       0    |     0
-BenchmarkMacaron_GithubAll                  |    2000    |  1161270    |  204194    |  2000
-BenchmarkMartini_GithubAll                  |     200    |  9991713    |  226549    |  2325
-BenchmarkPat_GithubAll                      |     200    |  5590793    | 1499568    | 27435
-BenchmarkPossum_GithubAll                   |   10000    |   319768    |   84448    |   609
-BenchmarkR2router_GithubAll                 |   10000    |   305134    |   77328    |   979
-BenchmarkRivet_GithubAll                    |   10000    |   132134    |   16272    |   167
-BenchmarkTango_GithubAll                    |    3000    |   552754    |   63826    |  1618
-BenchmarkTigerTonic_GithubAll               |    1000    |  1439483    |  239104    |  5374
-BenchmarkTraffic_GithubAll                  |     100    | 11383067    | 2659329    | 21848
-BenchmarkVulcan_GithubAll                   |    5000    |   394253    |   19894    |   609
+| Benchmark name                 |       (1) |             (2) |          (3) |             (4) |
+| ------------------------------ | ---------:| ---------------:| ------------:| ---------------:|
+| BenchmarkGin_GithubAll         | **43550** | **27364 ns/op** |   **0 B/op** | **0 allocs/op** |
+| BenchmarkAce_GithubAll         |     40543 |     29670 ns/op |       0 B/op |     0 allocs/op |
+| BenchmarkAero_GithubAll        |     57632 |     20648 ns/op |       0 B/op |     0 allocs/op |
+| BenchmarkBear_GithubAll        |      9234 |    216179 ns/op |   86448 B/op |   943 allocs/op |
+| BenchmarkBeego_GithubAll       |      7407 |    243496 ns/op |   71456 B/op |   609 allocs/op |
+| BenchmarkBone_GithubAll        |       420 |   2922835 ns/op |  720160 B/op |  8620 allocs/op |
+| BenchmarkChi_GithubAll         |      7620 |    238331 ns/op |   87696 B/op |   609 allocs/op |
+| BenchmarkDenco_GithubAll       |     18355 |     64494 ns/op |   20224 B/op |   167 allocs/op |
+| BenchmarkEcho_GithubAll        |     31251 |     38479 ns/op |       0 B/op |     0 allocs/op |
+| BenchmarkGocraftWeb_GithubAll  |      4117 |    300062 ns/op |  131656 B/op |  1686 allocs/op |
+| BenchmarkGoji_GithubAll        |      3274 |    416158 ns/op |   56112 B/op |   334 allocs/op |
+| BenchmarkGojiv2_GithubAll      |      1402 |    870518 ns/op |  352720 B/op |  4321 allocs/op |
+| BenchmarkGoJsonRest_GithubAll  |      2976 |    401507 ns/op |  134371 B/op |  2737 allocs/op |
+| BenchmarkGoRestful_GithubAll   |       410 |   2913158 ns/op |  910144 B/op |  2938 allocs/op |
+| BenchmarkGorillaMux_GithubAll  |       346 |   3384987 ns/op |  251650 B/op |  1994 allocs/op |
+| BenchmarkGowwwRouter_GithubAll |     10000 |    143025 ns/op |   72144 B/op |   501 allocs/op |
+| BenchmarkHttpRouter_GithubAll  |     55938 |     21360 ns/op |       0 B/op |     0 allocs/op |
+| BenchmarkHttpTreeMux_GithubAll |     10000 |    153944 ns/op |   65856 B/op |   671 allocs/op |
+| BenchmarkKocha_GithubAll       |     10000 |    106315 ns/op |   23304 B/op |   843 allocs/op |
+| BenchmarkLARS_GithubAll        |     47779 |     25084 ns/op |       0 B/op |     0 allocs/op |
+| BenchmarkMacaron_GithubAll     |      3266 |    371907 ns/op |  149409 B/op |  1624 allocs/op |
+| BenchmarkMartini_GithubAll     |       331 |   3444706 ns/op |  226551 B/op |  2325 allocs/op |
+| BenchmarkPat_GithubAll         |       273 |   4381818 ns/op | 1483152 B/op | 26963 allocs/op |
+| BenchmarkPossum_GithubAll      |     10000 |    164367 ns/op |   84448 B/op |   609 allocs/op |
+| BenchmarkR2router_GithubAll    |     10000 |    160220 ns/op |   77328 B/op |   979 allocs/op |
+| BenchmarkRivet_GithubAll       |     14625 |     82453 ns/op |   16272 B/op |   167 allocs/op |
+| BenchmarkTango_GithubAll       |      6255 |    279611 ns/op |   63826 B/op |  1618 allocs/op |
+| BenchmarkTigerTonic_GithubAll  |      2008 |    687874 ns/op |  193856 B/op |  4474 allocs/op |
+| BenchmarkTraffic_GithubAll     |       355 |   3478508 ns/op |  820744 B/op | 14114 allocs/op |
+| BenchmarkVulcan_GithubAll      |      6885 |    193333 ns/op |   19894 B/op |   609 allocs/op |
 
 - (1): Total Repetitions achieved in constant time, higher means more confident result
 - (2): Single Repetition Duration (ns/op), lower is better
