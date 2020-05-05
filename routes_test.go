@@ -514,7 +514,7 @@ func TestMiddlewareCalledOnceByRouterStaticFSNotFound(t *testing.T) {
 	// Middleware must be called just only once by per request.
 	middlewareCalledNum := 0
 	router.Use(func(c *Context) {
-		middlewareCalledNum += 1
+		middlewareCalledNum++
 	})
 
 	router.StaticFS("/", http.FileSystem(http.Dir("/thisreallydoesntexist/")))
