@@ -1,3 +1,18 @@
+# Gin ChangeLog
+
+## Gin v1.6.3
+
+### ENHANCEMENTS
+
+  * Improve performance: Change `*sync.RWMutex` to `sync.RWMutex` in context. [#2351](https://github.com/gin-gonic/gin/pull/2351)
+
+## Gin v1.6.2
+
+### BUFIXES
+  * fix missing initial sync.RWMutex [#2305](https://github.com/gin-gonic/gin/pull/2305)
+### ENHANCEMENTS
+  * Add set samesite in cookie. [#2306](https://github.com/gin-gonic/gin/pull/2306)
+
 ## Gin v1.6.1
 
 ### BUFIXES
