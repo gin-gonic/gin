@@ -22,6 +22,7 @@ const (
 	// TestMode indicates gin mode is test.
 	TestMode = "test"
 )
+
 const (
 	debugCode = iota
 	releaseCode

@@ -24,10 +24,11 @@ const defaultMultipartMemory = 32 << 20 // 32 MB
 var spaceString = " "
 
 var (
-	default404Body   = []byte("404 page not found")
-	default405Body   = []byte("405 method not allowed")
-	defaultAppEngine bool
+	default404Body = []byte("404 page not found")
+	default405Body = []byte("405 method not allowed")
 )
+
+var defaultAppEngine bool
 
 // HandlerFunc defines the handler used by gin middleware as return value.
 type HandlerFunc func(*Context)
@@ -106,16 +107,16 @@ type Engine struct {
 	// See the PR #1817 and issue #1644
 	RemoveExtraSlash bool
 
-	delims                 render.Delims
-	secureJsonPrefix       string
-	HTMLRender             render.HTMLRender
-	FuncMap                template.FuncMap
-	allNoRoute             HandlersChain
-	allNoMethod            HandlersChain
-	noRoute                HandlersChain
-	noMethod               HandlersChain
-	pool                   sync.Pool
-	trees                  methodTrees
+	delims           render.Delims
+	secureJSONPrefix string
+	HTMLRender       render.HTMLRender
+	FuncMap          template.FuncMap
+	allNoRoute       HandlersChain
+	allNoMethod      HandlersChain
+	noRoute          HandlersChain
+	noMethod         HandlersChain
+	pool             sync.Pool
+	trees            methodTrees
 	indentJsonIndentString string
 }
 
@@ -149,7 +150,7 @@ func New() *Engine {
 		MaxMultipartMemory:     defaultMultipartMemory,
 		trees:                  make(methodTrees, 0, 9),
 		delims:                 render.Delims{Left: "{{", Right: "}}"},
-		secureJsonPrefix:       "while(1);",
+		secureJSONPrefix:       "while(1);",
 		indentJsonIndentString: strings.Repeat(spaceString, 4),
 	}
 	engine.RouterGroup.engine = engine
@@ -168,7 +169,7 @@ func Default() *Engine {
 }
 
 func (engine *Engine) allocateContext() *Context {
-	return &Context{engine: engine, KeysMutex: &sync.RWMutex{}}
+	return &Context{engine: engine}
 }
 
 // Delims sets template left and right delims and returns a Engine instance.
@@ -177,9 +178,9 @@ func (engine *Engine) Delims(left, right string) *Engine {
 	return engine
 }
 
-// SecureJsonPrefix sets the secureJsonPrefix used in Context.SecureJSON.
+// SecureJsonPrefix sets the secureJSONPrefix used in Context.SecureJSON.
 func (engine *Engine) SecureJsonPrefix(prefix string) *Engine {
-	engine.secureJsonPrefix = prefix
+	engine.secureJSONPrefix = prefix
 	return engine
 }
 
