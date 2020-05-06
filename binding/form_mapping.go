@@ -158,15 +158,9 @@ func setByForm(value reflect.Value, field reflect.StructField, form map[string][
 		}
 		return true, setArray(vs, value, field)
 	default:
-		var val string
-		if !ok {
-			val = opt.defaultValue
-		}
-
+		val := opt.defaultValue
 		if len(vs) > 0 && vs[0] != "" {
 			val = vs[0]
-		} else {
-			val = opt.defaultValue
 		}
 		return true, setWithProperType(val, value, field)
 	}
