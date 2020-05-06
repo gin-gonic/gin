@@ -69,8 +69,8 @@ func TestMappingDefault(t *testing.T) {
 		Array  [1]int `form:",default=9"`
 	}
 	form := map[string][]string{
-		"page_no": []string{""},
-		"string":  []string{""},
+		"page_no": {""},
+		"string":  {""},
 	}
 	err := mappingByPtr(&s, formSource(form), "form")
 	assert.NoError(t, err)
