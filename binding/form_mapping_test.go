@@ -62,14 +62,22 @@ func TestMappingBaseTypes(t *testing.T) {
 
 func TestMappingDefault(t *testing.T) {
 	var s struct {
-		Int   int    `form:",default=9"`
-		Slice []int  `form:",default=9"`
-		Array [1]int `form:",default=9"`
+		Int    int    `form:",default=9"`
+		PageNo int    `form:"page_no,default=9"`
+		String string `form:"string,default=9"`
+		Slice  []int  `form:",default=9"`
+		Array  [1]int `form:",default=9"`
 	}
-	err := mappingByPtr(&s, formSource{}, "form")
+	form := map[string][]string{
+		"page_no": []string{""},
+		"string":  []string{""},
+	}
+	err := mappingByPtr(&s, formSource(form), "form")
 	assert.NoError(t, err)
 
 	assert.Equal(t, 9, s.Int)
+	assert.Equal(t, 9, s.PageNo)
+	assert.Equal(t, "9", s.String)
 	assert.Equal(t, []int{9}, s.Slice)
 	assert.Equal(t, [1]int{9}, s.Array)
 }
