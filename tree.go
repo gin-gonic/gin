@@ -434,6 +434,9 @@ walk: // Outer loop for walking the tree
 				return
 			}
 
+			// If there is no handle for this route, but this route has a
+			// wildcard child, there must be a handle for this path with an
+			// additional trailing slash
 			if path == "/" && n.wildChild && n.nType != root {
 				value.tsr = true
 				return
@@ -441,9 +444,8 @@ walk: // Outer loop for walking the tree
 
 			// No handle found. Check if a handle for this path + a
 			// trailing slash exists for trailing slash recommendation
-			indices := n.indices
-			for i, max := 0, len(indices); i < max; i++ {
-				if indices[i] == '/' {
+			for i, c := range []byte(n.indices) {
+				if c == '/' {
 					n = n.children[i]
 					value.tsr = (len(n.path) == 1 && n.handlers != nil) ||
 						(n.nType == catchAll && n.children[0].handlers != nil)
@@ -563,7 +565,7 @@ walk: // Outer loop for walking the tree
 	}
 }
 
-// findCaseInsensitivePath makes a case-insensitive lookup of the given path and tries to find a handler.
+// Makes a case-insensitive lookup of the given path and tries to find a handler.
 // It can optionally also fix trailing slashes.
 // It returns the case-corrected path and a bool indicating whether the lookup
 // was successful.
