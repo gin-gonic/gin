@@ -113,8 +113,8 @@ type Engine struct {
 	noMethod         HandlersChain
 	pool             sync.Pool
 	trees            methodTrees
-	// paramsPool       sync.Pool
-	maxParams uint16
+	paramsPool       sync.Pool
+	maxParams        uint16
 }
 
 var _ IRouter = &Engine{}
@@ -258,7 +258,7 @@ func (engine *Engine) addRoute(method, path string, handlers HandlersChain) {
 	assert1(len(handlers) > 0, "there must be at least one handler")
 
 	debugPrintRoute(method, path, handlers)
-	// varsCount := uint16(0)
+	varsCount := uint16(0)
 
 	root := engine.trees.get(method)
 	if root == nil {
@@ -269,17 +269,17 @@ func (engine *Engine) addRoute(method, path string, handlers HandlersChain) {
 	root.addRoute(path, handlers)
 
 	// Update maxParams
-	// if paramsCount := countParams(path); paramsCount+varsCount > root.maxParams {
-	// 	engine.maxParams = paramsCount + varsCount
-	// }
+	if paramsCount := countParams(path); paramsCount+varsCount > root.maxParams {
+		engine.maxParams = paramsCount + varsCount
+	}
 
 	// Lazy-init paramsPool alloc func
-	// if engine.paramsPool.New == nil && engine.maxParams > 0 {
-	// 	engine.paramsPool.New = func() interface{} {
-	// 		ps := make(Params, 0, engine.maxParams)
-	// 		return &ps
-	// 	}
-	// }
+	if engine.paramsPool.New == nil && engine.maxParams > 0 {
+		engine.paramsPool.New = func() interface{} {
+			ps := make(Params, 0, engine.maxParams)
+			return &ps
+		}
+	}
 }
 
 // Routes returns a slice of registered routes, including some useful information, such as:
@@ -398,22 +398,22 @@ func (engine *Engine) HandleContext(c *Context) {
 	c.index = oldIndexValue
 }
 
-// func (engine *Engine) getParams() *Params {
-// 	// c := engine.pool.Get().(*Context)
-// 	// c.Params = c.Params[0:0]
-// 	ps := engine.paramsPool.Get().(*Params)
-// 	*ps = (*ps)[0:0] // reset slice
-// 	return ps
-// }
+func (engine *Engine) getParams() *Params {
+	// c := engine.pool.Get().(*Context)
+	// c.Params = c.Params[0:0]
+	ps := engine.paramsPool.Get().(*Params)
+	*ps = (*ps)[0:0] // reset slice
+	return ps
+}
 
-// func (engine *Engine) putParams(ps *Params) {
-// 	// c := engine.pool.Get().(*Context)
-// 	// c.Params = *ps
-// 	// engine.pool.Put(c)
-// 	if ps != nil {
-// 		engine.paramsPool.Put(ps)
-// 	}
-// }
+func (engine *Engine) putParams(ps *Params) {
+	// c := engine.pool.Get().(*Context)
+	// c.Params = *ps
+	// engine.pool.Put(c)
+	if ps != nil {
+		engine.paramsPool.Put(ps)
+	}
+}
 
 func (engine *Engine) handleHTTPRequest(c *Context) {
 	httpMethod := c.Request.Method
@@ -436,9 +436,9 @@ func (engine *Engine) handleHTTPRequest(c *Context) {
 		}
 		root := t[i].root
 		// Find route in tree
-		value := root.getValue(rPath, &c.Params, unescape)
+		value := root.getValue(rPath, engine.getParams, unescape)
 		if value.params != nil {
-			// engine.putParams(value.params)
+			engine.putParams(value.params)
 			c.Params = *value.params
 		}
 		if value.handlers != nil {

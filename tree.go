@@ -5,6 +5,7 @@
 package gin
 
 import (
+	"log"
 	"strings"
 	"unicode"
 	"unicode/utf8"
@@ -418,7 +419,7 @@ type nodeValue struct {
 // If no handle can be found, a TSR (trailing slash redirect) recommendation is
 // made if a handle exists with an extra (without the) trailing slash for the
 // given path.
-func (n *node) getValue(path string, params *Params, unescape bool) (value nodeValue) {
+func (n *node) getValue(path string, params func() *Params, unescape bool) (value nodeValue) {
 	value = nodeValue{}
 walk: // Outer loop for walking the tree
 	for {
@@ -473,10 +474,12 @@ walk: // Outer loop for walking the tree
 				// }
 				if params != nil {
 					if value.params == nil {
-						value.params = params
+						value.params = params()
 					}
 					// Expand slice within preallocated capacity
 					i := len(*value.params)
+					log.Println(i)
+					log.Println(*value.params)
 					*value.params = (*value.params)[:i+1]
 					// val := path[:end]
 					// if unescape {
@@ -535,7 +538,7 @@ walk: // Outer loop for walking the tree
 				// Save param value
 				if params != nil {
 					if value.params == nil {
-						value.params = params
+						value.params = params()
 					}
 					// Expand slice within preallocated capacity
 					i := len(*value.params)
