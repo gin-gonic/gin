@@ -72,17 +72,15 @@ func longestCommonPrefix(a, b string) int {
 	return i
 }
 
-func countParams(path string) uint8 {
+func countParams(path string) uint16 {
 	var n uint
-	for i := 0; i < len(path); i++ {
-		if path[i] == ':' || path[i] == '*' {
+	for i := range []byte(path) {
+		switch path[i] {
+		case ':', '*':
 			n++
 		}
 	}
-	if n >= 255 {
-		return 255
-	}
-	return uint8(n)
+	return uint16(n)
 }
 
 type nodeType uint8
@@ -101,7 +99,7 @@ type node struct {
 	handlers  HandlersChain
 	priority  uint32
 	nType     nodeType
-	maxParams uint8
+	maxParams uint16
 	wildChild bool
 	// fullPath  string
 }
@@ -266,7 +264,7 @@ walk:
 }
 
 // Search for a wildcard segment and check the name for invalid characters.
-// Returns -1 as index, if no wildcard war found.
+// Returns -1 as index, if no wildcard was found.
 func findWildcard(path string) (wildcard string, i int, valid bool) {
 	// Find start
 	for start, c := range []byte(path) {
@@ -290,7 +288,7 @@ func findWildcard(path string) (wildcard string, i int, valid bool) {
 	return "", -1, false
 }
 
-func (n *node) insertChild(numParams uint8, path string, fullPath string, handlers HandlersChain) {
+func (n *node) insertChild(numParams uint16, path string, fullPath string, handlers HandlersChain) {
 	for numParams > 0 {
 		// Find prefix until first wildcard
 		wildcard, i, valid := findWildcard(path)

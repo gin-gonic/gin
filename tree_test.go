@@ -76,8 +76,8 @@ func checkPriorities(t *testing.T, n *node) uint32 {
 	return prio
 }
 
-func checkMaxParams(t *testing.T, n *node) uint8 {
-	var maxParams uint8
+func checkMaxParams(t *testing.T, n *node) uint16 {
+	var maxParams uint16
 	for i := range n.children {
 		params := checkMaxParams(t, n.children[i])
 		if params > maxParams {
