@@ -28,6 +28,11 @@ type testRequests []struct {
 	ps         Params
 }
 
+func getParams() *Params {
+	ps := make(Params, 0, 20)
+	return &ps
+}
+
 func checkRequests(t *testing.T, tree *node, requests testRequests, unescapes ...bool) {
 	unescape := false
 	if len(unescapes) >= 1 {
@@ -35,7 +40,7 @@ func checkRequests(t *testing.T, tree *node, requests testRequests, unescapes ..
 	}
 
 	for _, request := range requests {
-		value := tree.getValue(request.path, nil, unescape)
+		value := tree.getValue(request.path, getParams, unescape)
 
 		if value.handlers == nil {
 			if !request.nilHandler {
@@ -50,9 +55,12 @@ func checkRequests(t *testing.T, tree *node, requests testRequests, unescapes ..
 			}
 		}
 
-		if !reflect.DeepEqual(value.params, request.ps) {
-			t.Errorf("Params mismatch for route '%s'", request.path)
+		if value.params != nil {
+			if !reflect.DeepEqual(*value.params, request.ps) {
+				t.Errorf("Params mismatch for route '%s'", request.path)
+			}
 		}
+
 	}
 }
 
@@ -76,27 +84,27 @@ func checkPriorities(t *testing.T, n *node) uint32 {
 	return prio
 }
 
-func checkMaxParams(t *testing.T, n *node) uint16 {
-	var maxParams uint16
-	for i := range n.children {
-		params := checkMaxParams(t, n.children[i])
-		if params > maxParams {
-			maxParams = params
-		}
-	}
-	if n.nType > root && !n.wildChild {
-		maxParams++
-	}
+// func checkMaxParams(t *testing.T, n *node) uint16 {
+// 	var maxParams uint16
+// 	for i := range n.children {
+// 		params := checkMaxParams(t, n.children[i])
+// 		if params > maxParams {
+// 			maxParams = params
+// 		}
+// 	}
+// 	if n.nType > root && !n.wildChild {
+// 		maxParams++
+// 	}
 
-	if n.maxParams != maxParams {
-		t.Errorf(
-			"maxParams mismatch for node '%s': is %d, should be %d",
-			n.path, n.maxParams, maxParams,
-		)
-	}
+// 	if n.maxParams != maxParams {
+// 		t.Errorf(
+// 			"maxParams mismatch for node '%s': is %d, should be %d",
+// 			n.path, n.maxParams, maxParams,
+// 		)
+// 	}
 
-	return maxParams
-}
+// 	return maxParams
+// }
 
 func TestCountParams(t *testing.T) {
 	if countParams("/path/:param1/static/*catch-all") != uint16(2) {
@@ -142,7 +150,7 @@ func TestTreeAddAndGet(t *testing.T) {
 	})
 
 	checkPriorities(t, tree)
-	checkMaxParams(t, tree)
+	// checkMaxParams(t, tree)
 }
 
 func TestTreeWildcard(t *testing.T) {
@@ -186,7 +194,7 @@ func TestTreeWildcard(t *testing.T) {
 	})
 
 	checkPriorities(t, tree)
-	checkMaxParams(t, tree)
+	// checkMaxParams(t, tree)
 }
 
 func TestUnescapeParameters(t *testing.T) {
@@ -224,7 +232,7 @@ func TestUnescapeParameters(t *testing.T) {
 	}, unescape)
 
 	checkPriorities(t, tree)
-	checkMaxParams(t, tree)
+	// checkMaxParams(t, tree)
 }
 
 func catchPanic(testFunc func()) (recv interface{}) {
@@ -323,12 +331,14 @@ func TestTreeDupliatePath(t *testing.T) {
 		}
 	}
 
+	//printChildren(tree, "")
+
 	checkRequests(t, tree, testRequests{
 		{"/", false, "/", nil},
 		{"/doc/", false, "/doc/", nil},
-		{"/src/some/file.png", false, "/src/*filepath", Params{Param{Key: "filepath", Value: "/some/file.png"}}},
-		{"/search/someth!ng+in+ünìcodé", false, "/search/:query", Params{Param{Key: "query", Value: "someth!ng+in+ünìcodé"}}},
-		{"/user_gopher", false, "/user_:name", Params{Param{Key: "name", Value: "gopher"}}},
+		{"/src/some/file.png", false, "/src/*filepath", Params{Param{"filepath", "/some/file.png"}}},
+		{"/search/someth!ng+in+ünìcodé", false, "/search/:query", Params{Param{"query", "someth!ng+in+ünìcodé"}}},
+		{"/user_gopher", false, "/user_:name", Params{Param{"name", "gopher"}}},
 	})
 }
 
@@ -372,7 +382,7 @@ func TestTreeCatchMaxParams(t *testing.T) {
 	tree := &node{}
 	var route = "/cmd/*filepath"
 	tree.addRoute(route, fakeHandler(route))
-	checkMaxParams(t, tree)
+	// checkMaxParams(t, tree)
 }
 
 func TestTreeDoubleWildcard(t *testing.T) {

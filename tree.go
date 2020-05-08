@@ -5,6 +5,7 @@
 package gin
 
 import (
+	"net/url"
 	"strings"
 	"unicode"
 	"unicode/utf8"
@@ -478,15 +479,15 @@ walk: // Outer loop for walking the tree
 						// Expand slice within preallocated capacity
 						i := len(*value.params)
 						*value.params = (*value.params)[:i+1]
-						// val := path[:end]
-						// if unescape {
-						// 	if v, err := url.QueryUnescape(val); err == nil {
-						// 		val = v
-						// 	}
-						// }
+						val := path[:end]
+						if unescape {
+							if v, err := url.QueryUnescape(val); err == nil {
+								val = v
+							}
+						}
 						(*value.params)[i] = Param{
 							Key:   n.path[1:],
-							Value: path[:end],
+							Value: val,
 						}
 					}
 
@@ -540,14 +541,15 @@ walk: // Outer loop for walking the tree
 						// Expand slice within preallocated capacity
 						i := len(*value.params)
 						*value.params = (*value.params)[:i+1]
-						// if unescape {
-						// 	if v, err := url.QueryUnescape(path); err == nil {
-						// 		path = v
-						// 	}
-						// }
+						val := path
+						if unescape {
+							if v, err := url.QueryUnescape(path); err == nil {
+								val = v
+							}
+						}
 						(*value.params)[i] = Param{
 							Key:   n.path[2:],
-							Value: path,
+							Value: val,
 						}
 					}
 
