@@ -253,6 +253,7 @@ func (engine *Engine) rebuild405Handlers() {
 }
 
 func (engine *Engine) addRoute(method, path string, handlers HandlersChain) {
+	// log.Println(method, path)
 	assert1(path[0] == '/', "path must begin with '/'")
 	assert1(method != "", "HTTP method can not be empty")
 	assert1(len(handlers) > 0, "there must be at least one handler")
@@ -269,13 +270,15 @@ func (engine *Engine) addRoute(method, path string, handlers HandlersChain) {
 	root.addRoute(path, handlers)
 
 	// Update maxParams
-	if paramsCount := countParams(path); paramsCount+varsCount > root.maxParams {
+	// log.Println("countParams(path):", countParams(path))
+	if paramsCount := countParams(path); paramsCount+varsCount > engine.maxParams {
 		engine.maxParams = paramsCount + varsCount
 	}
 
 	// Lazy-init paramsPool alloc func
 	if engine.paramsPool.New == nil && engine.maxParams > 0 {
 		engine.paramsPool.New = func() interface{} {
+			// log.Println("engine.maxParams:", engine.maxParams)
 			ps := make(Params, 0, engine.maxParams)
 			return &ps
 		}
