@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"os"
 	"path"
+	"strings"
 	"sync"
 
 	"github.com/gin-gonic/gin/internal/bytesconv"
@@ -18,6 +19,9 @@ import (
 )
 
 const defaultMultipartMemory = 32 << 20 // 32 MB
+
+// A space string
+var spaceString = " "
 
 var (
 	default404Body = []byte("404 page not found")
@@ -103,16 +107,17 @@ type Engine struct {
 	// See the PR #1817 and issue #1644
 	RemoveExtraSlash bool
 
-	delims           render.Delims
-	secureJSONPrefix string
-	HTMLRender       render.HTMLRender
-	FuncMap          template.FuncMap
-	allNoRoute       HandlersChain
-	allNoMethod      HandlersChain
-	noRoute          HandlersChain
-	noMethod         HandlersChain
-	pool             sync.Pool
-	trees            methodTrees
+	delims                 render.Delims
+	secureJSONPrefix       string
+	HTMLRender             render.HTMLRender
+	FuncMap                template.FuncMap
+	allNoRoute             HandlersChain
+	allNoMethod            HandlersChain
+	noRoute                HandlersChain
+	noMethod               HandlersChain
+	pool                   sync.Pool
+	trees                  methodTrees
+	indentJsonIndentString string
 }
 
 var _ IRouter = &Engine{}
@@ -146,6 +151,7 @@ func New() *Engine {
 		trees:                  make(methodTrees, 0, 9),
 		delims:                 render.Delims{Left: "{{", Right: "}}"},
 		secureJSONPrefix:       "while(1);",
+		indentJsonIndentString: strings.Repeat(spaceString, 4),
 	}
 	engine.RouterGroup.engine = engine
 	engine.pool.New = func() interface{} {
@@ -175,6 +181,13 @@ func (engine *Engine) Delims(left, right string) *Engine {
 // SecureJsonPrefix sets the secureJSONPrefix used in Context.SecureJSON.
 func (engine *Engine) SecureJsonPrefix(prefix string) *Engine {
 	engine.secureJSONPrefix = prefix
+	return engine
+}
+
+// IndentJsonIndentSpaceNum sets the indentJsonIndentString used in Context.IndentedJSON.
+// When we use Context.IndentedJSON, we can use custom indentation to render the response.
+func (engine *Engine) IndentJsonIndentSpaceNum(spaceNum int) *Engine {
+	engine.indentJsonIndentString = strings.Repeat(spaceString, spaceNum)
 	return engine
 }
 
