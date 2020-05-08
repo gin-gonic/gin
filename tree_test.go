@@ -40,7 +40,7 @@ func checkRequests(t *testing.T, tree *node, requests testRequests, unescapes ..
 	}
 
 	for _, request := range requests {
-		value := tree.getValue(request.path, getParams, unescape)
+		value := tree.getValue(request.path, getParams(), unescape)
 
 		if value.handlers == nil {
 			if !request.nilHandler {

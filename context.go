@@ -54,6 +54,7 @@ type Context struct {
 	fullPath string
 
 	engine *Engine
+	params *Params
 
 	// This mutex protect Keys map
 	mu sync.RWMutex
@@ -95,6 +96,7 @@ func (c *Context) reset() {
 	c.Accepted = nil
 	c.queryCache = nil
 	c.formCache = nil
+	*c.params = (*c.params)[0:0]
 }
 
 // Copy returns a copy of the current context that can be safely used outside the request's scope.
