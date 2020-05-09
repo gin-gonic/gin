@@ -95,16 +95,15 @@ const (
 type node struct {
 	path      string
 	indices   string
+	wildChild bool
+	nType     nodeType
+	priority  uint32
 	children  []*node
 	handlers  HandlersChain
-	priority  uint32
-	nType     nodeType
-	maxParams uint16
-	wildChild bool
 	fullPath  string
 }
 
-// increments priority of the given child and reorders if necessary.
+// Increments priority of the given child and reorders if necessary
 func (n *node) incrementChildPrio(pos int) int {
 	cs := n.children
 	cs[pos].priority++
@@ -115,13 +114,14 @@ func (n *node) incrementChildPrio(pos int) int {
 	for ; newPos > 0 && cs[newPos-1].priority < prio; newPos-- {
 		// Swap node positions
 		cs[newPos-1], cs[newPos] = cs[newPos], cs[newPos-1]
+
 	}
 
-	// build new index char string
+	// Build new index char string
 	if newPos != pos {
-		n.indices = n.indices[:newPos] + // unchanged prefix, might be empty
-			n.indices[pos:pos+1] + // the index char we move
-			n.indices[newPos:pos] + n.indices[pos+1:] // rest without char at 'pos'
+		n.indices = n.indices[:newPos] + // Unchanged prefix, might be empty
+			n.indices[pos:pos+1] + // The index char we move
+			n.indices[newPos:pos] + n.indices[pos+1:] // Rest without char at 'pos'
 	}
 
 	return newPos
@@ -132,7 +132,6 @@ func (n *node) incrementChildPrio(pos int) int {
 func (n *node) addRoute(path string, handlers HandlersChain) {
 	fullPath := path
 	n.priority++
-	// numParams := countParams(path)
 
 	// Empty tree
 	if len(n.path) == 0 && len(n.children) == 0 {
@@ -145,11 +144,6 @@ func (n *node) addRoute(path string, handlers HandlersChain) {
 
 walk:
 	for {
-		// Update maxParams of the current node
-		// if numParams > n.maxParams {
-		// 	n.maxParams = numParams
-		// }
-
 		// Find the longest common prefix.
 		// This also implies that the common prefix contains no ':' or '*'
 		// since the existing key can't contain those chars.
@@ -166,13 +160,6 @@ walk:
 				priority:  n.priority - 1,
 				fullPath:  n.fullPath,
 			}
-
-			// Update maxParams (max of all children)
-			// for _, v := range child.children {
-			// 	if v.maxParams > child.maxParams {
-			// 		child.maxParams = v.maxParams
-			// 	}
-			// }
 
 			n.children = []*node{&child}
 			// []byte for proper unicode char conversion, see #65
@@ -192,18 +179,13 @@ walk:
 				n = n.children[0]
 				n.priority++
 
-				// Update maxParams of the child node
-				// if numParams > n.maxParams {
-				// 	n.maxParams = numParams
-				// }
-				// numParams--
-
 				// Check if the wildcard matches
-				if len(path) >= len(n.path) && n.path == path[:len(n.path)] {
-					// check for longer wildcard, e.g. :name and :names
-					if len(n.path) >= len(path) || path[len(n.path)] == '/' {
-						continue walk
-					}
+				if len(path) >= len(n.path) && n.path == path[:len(n.path)] &&
+					// Adding a child to a catchAll is not possible
+					n.nType != catchAll &&
+					// Check for longer wildcard, e.g. :name and :names
+					(len(n.path) >= len(path) || path[len(n.path)] == '/') {
+					continue walk
 				}
 
 				pathSeg := path
@@ -243,7 +225,6 @@ walk:
 				// []byte for proper unicode char conversion, see #65
 				n.indices += string([]byte{c})
 				child := &node{
-					// maxParams: numParams,
 					fullPath: fullPath,
 				}
 				n.children = append(n.children, child)
@@ -323,9 +304,8 @@ func (n *node) insertChild(path string, fullPath string, handlers HandlersChain)
 
 			n.wildChild = true
 			child := &node{
-				nType: param,
-				path:  wildcard,
-				// maxParams: numParams,
+				nType:    param,
+				path:     wildcard,
 				fullPath: fullPath,
 			}
 			n.children = []*node{child}
@@ -339,7 +319,6 @@ func (n *node) insertChild(path string, fullPath string, handlers HandlersChain)
 				path = path[len(wildcard):]
 
 				child := &node{
-					// maxParams: numParams,
 					priority: 1,
 					fullPath: fullPath,
 				}
@@ -374,13 +353,9 @@ func (n *node) insertChild(path string, fullPath string, handlers HandlersChain)
 		child := &node{
 			wildChild: true,
 			nType:     catchAll,
-			// maxParams: 1,
-			fullPath: fullPath,
+			fullPath:  fullPath,
 		}
-		// update maxParams of the parent node
-		// if n.maxParams < 1 {
-		// 	n.maxParams = 1
-		// }
+
 		n.children = []*node{child}
 		n.indices = string('/')
 		n = child
@@ -392,7 +367,6 @@ func (n *node) insertChild(path string, fullPath string, handlers HandlersChain)
 			nType:    catchAll,
 			handlers: handlers,
 			priority: 1,
-			// maxParams: 1,
 			fullPath: fullPath,
 		}
 		n.children = []*node{child}
@@ -414,13 +388,12 @@ type nodeValue struct {
 	fullPath string
 }
 
-// getValue returns the handle registered with the given path (key). The values of
+// Returns the handle registered with the given path (key). The values of
 // wildcards are saved to a map.
 // If no handle can be found, a TSR (trailing slash redirect) recommendation is
 // made if a handle exists with an extra (without the) trailing slash for the
 // given path.
 func (n *node) getValue(path string, params *Params, unescape bool) (value nodeValue) {
-	value = nodeValue{}
 walk: // Outer loop for walking the tree
 	for {
 		prefix := n.path
@@ -446,32 +419,17 @@ walk: // Outer loop for walking the tree
 					return
 				}
 
-				// handle wildcard child
+				// Handle wildcard child
 				n = n.children[0]
 				switch n.nType {
 				case param:
-					// find param end (either '/' or path end)
+					// Find param end (either '/' or path end)
 					end := 0
 					for end < len(path) && path[end] != '/' {
 						end++
 					}
 
-					// save param value
-					// if cap(value.params) < int(n.maxParams) {
-					// 	value.params = make(Params, 0, n.maxParams)
-					// }
-					// i := len(value.params)
-					// value.params = value.params[:i+1] // expand slice within preallocated capacity
-					// value.params[i].Key = n.path[1:]
-					// val := path[:end]
-					// if unescape {
-					// 	var err error
-					// 	if value.params[i].Value, err = url.QueryUnescape(val); err != nil {
-					// 		value.params[i].Value = val // fallback, in case of error
-					// 	}
-					// } else {
-					// 	value.params[i].Value = val
-					// }
+					// Save param value
 					if params != nil {
 						if value.params == nil {
 							value.params = params
@@ -517,22 +475,6 @@ walk: // Outer loop for walking the tree
 					return
 
 				case catchAll:
-					// // save param value
-					// if cap(value.params) < int(n.maxParams) {
-					// 	value.params = make(Params, 0, n.maxParams)
-					// }
-					// i := len(value.params)
-					// value.params = value.params[:i+1] // expand slice within preallocated capacity
-					// value.params[i].Key = n.path[2:]
-					// if unescape {
-					// 	var err error
-					// 	if value.params[i].Value, err = url.QueryUnescape(path); err != nil {
-					// 		value.params[i].Value = path // fallback, in case of error
-					// 	}
-					// } else {
-					// 	value.params[i].Value = path
-					// }
-
 					// Save param value
 					if params != nil {
 						if value.params == nil {
@@ -561,7 +503,9 @@ walk: // Outer loop for walking the tree
 					panic("invalid node type")
 				}
 			}
-		} else if path == prefix {
+		}
+
+		if path == prefix {
 			// We should have reached the node containing the handle.
 			// Check if this node has a handle registered.
 			if value.handlers = n.handlers; value.handlers != nil {
@@ -622,120 +566,6 @@ func (n *node) findCaseInsensitivePath(path string, fixTrailingSlash bool) ([]by
 	)
 
 	return ciPath, ciPath != nil
-	// ciPath = make([]byte, 0, len(path)+1) // preallocate enough memory
-
-	// // Outer loop for walking the tree
-	// for len(path) >= len(n.path) && strings.EqualFold(path[:len(n.path)], n.path) {
-	// 	path = path[len(n.path):]
-	// 	ciPath = append(ciPath, n.path...)
-
-	// 	if len(path) == 0 {
-	// 		// We should have reached the node containing the handle.
-	// 		// Check if this node has a handle registered.
-	// 		if n.handlers != nil {
-	// 			return ciPath, true
-	// 		}
-
-	// 		// No handle found.
-	// 		// Try to fix the path by adding a trailing slash
-	// 		if fixTrailingSlash {
-	// 			for i := 0; i < len(n.indices); i++ {
-	// 				if n.indices[i] == '/' {
-	// 					n = n.children[i]
-	// 					if (len(n.path) == 1 && n.handlers != nil) ||
-	// 						(n.nType == catchAll && n.children[0].handlers != nil) {
-	// 						return append(ciPath, '/'), true
-	// 					}
-	// 					return
-	// 				}
-	// 			}
-	// 		}
-	// 		return
-	// 	}
-
-	// 	// If this node does not have a wildcard (param or catchAll) child,
-	// 	// we can just look up the next child node and continue to walk down
-	// 	// the tree
-	// 	if !n.wildChild {
-	// 		r := unicode.ToLower(rune(path[0]))
-	// 		for i, index := range n.indices {
-	// 			// must use recursive approach since both index and
-	// 			// ToLower(index) could exist. We must check both.
-	// 			if r == unicode.ToLower(index) {
-	// 				out, found := n.children[i].findCaseInsensitivePath(path, fixTrailingSlash)
-	// 				if found {
-	// 					return append(ciPath, out...), true
-	// 				}
-	// 			}
-	// 		}
-
-	// 		// Nothing found. We can recommend to redirect to the same URL
-	// 		// without a trailing slash if a leaf exists for that path
-	// 		found = fixTrailingSlash && path == "/" && n.handlers != nil
-	// 		return
-	// 	}
-
-	// 	n = n.children[0]
-	// 	switch n.nType {
-	// 	case param:
-	// 		// Find param end (either '/' or path end)
-	// 		end := 0
-	// 		for end < len(path) && path[end] != '/' {
-	// 			end++
-	// 		}
-
-	// 		// add param value to case insensitive path
-	// 		ciPath = append(ciPath, path[:end]...)
-
-	// 		// we need to go deeper!
-	// 		if end < len(path) {
-	// 			if len(n.children) > 0 {
-	// 				path = path[end:]
-	// 				n = n.children[0]
-	// 				continue
-	// 			}
-
-	// 			// ... but we can't
-	// 			if fixTrailingSlash && len(path) == end+1 {
-	// 				return ciPath, true
-	// 			}
-	// 			return
-	// 		}
-
-	// 		if n.handlers != nil {
-	// 			return ciPath, true
-	// 		}
-	// 		if fixTrailingSlash && len(n.children) == 1 {
-	// 			// No handle found. Check if a handle for this path + a
-	// 			// trailing slash exists
-	// 			n = n.children[0]
-	// 			if n.path == "/" && n.handlers != nil {
-	// 				return append(ciPath, '/'), true
-	// 			}
-	// 		}
-	// 		return
-
-	// 	case catchAll:
-	// 		return append(ciPath, path...), true
-
-	// 	default:
-	// 		panic("invalid node type")
-	// 	}
-	// }
-
-	// // Nothing found.
-	// // Try to fix the path by adding / removing a trailing slash
-	// if fixTrailingSlash {
-	// 	if path == "/" {
-	// 		return ciPath, true
-	// 	}
-	// 	if len(path)+1 == len(n.path) && n.path[len(path)] == '/' &&
-	// 		strings.EqualFold(path, n.path[:len(path)]) &&
-	// 		n.handlers != nil {
-	// 		return append(ciPath, n.path...), true
-	// 	}
-	// }
-	// return
 }
 
 // Shift bytes in array by n bytes left

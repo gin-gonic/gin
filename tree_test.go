@@ -84,35 +84,13 @@ func checkPriorities(t *testing.T, n *node) uint32 {
 	return prio
 }
 
-// func checkMaxParams(t *testing.T, n *node) uint16 {
-// 	var maxParams uint16
-// 	for i := range n.children {
-// 		params := checkMaxParams(t, n.children[i])
-// 		if params > maxParams {
-// 			maxParams = params
-// 		}
-// 	}
-// 	if n.nType > root && !n.wildChild {
-// 		maxParams++
-// 	}
-
-// 	if n.maxParams != maxParams {
-// 		t.Errorf(
-// 			"maxParams mismatch for node '%s': is %d, should be %d",
-// 			n.path, n.maxParams, maxParams,
-// 		)
-// 	}
-
-// 	return maxParams
-// }
-
 func TestCountParams(t *testing.T) {
-	if countParams("/path/:param1/static/*catch-all") != uint16(2) {
+	if countParams("/path/:param1/static/*catch-all") != 2 {
 		t.Fail()
 	}
-	// if countParams(strings.Repeat("/:param", 256)) != 255 {
-	// 	t.Fail()
-	// }
+	if countParams(strings.Repeat("/:param", 256)) != 256 {
+		t.Fail()
+	}
 }
 
 func TestTreeAddAndGet(t *testing.T) {
@@ -150,7 +128,6 @@ func TestTreeAddAndGet(t *testing.T) {
 	})
 
 	checkPriorities(t, tree)
-	// checkMaxParams(t, tree)
 }
 
 func TestTreeWildcard(t *testing.T) {
@@ -194,7 +171,6 @@ func TestTreeWildcard(t *testing.T) {
 	})
 
 	checkPriorities(t, tree)
-	// checkMaxParams(t, tree)
 }
 
 func TestUnescapeParameters(t *testing.T) {
@@ -232,7 +208,6 @@ func TestUnescapeParameters(t *testing.T) {
 	}, unescape)
 
 	checkPriorities(t, tree)
-	// checkMaxParams(t, tree)
 }
 
 func catchPanic(testFunc func()) (recv interface{}) {
@@ -366,6 +341,8 @@ func TestTreeCatchAllConflict(t *testing.T) {
 		{"/src/*filepath/x", true},
 		{"/src2/", false},
 		{"/src2/*filepath/x", true},
+		{"/src3/*filepath", false},
+		{"/src3/*filepath/x", true},
 	}
 	testRoutes(t, routes)
 }
@@ -382,7 +359,6 @@ func TestTreeCatchMaxParams(t *testing.T) {
 	tree := &node{}
 	var route = "/cmd/*filepath"
 	tree.addRoute(route, fakeHandler(route))
-	// checkMaxParams(t, tree)
 }
 
 func TestTreeDoubleWildcard(t *testing.T) {
@@ -518,6 +494,9 @@ func TestTreeRootTrailingSlashRedirect(t *testing.T) {
 func TestTreeFindCaseInsensitivePath(t *testing.T) {
 	tree := &node{}
 
+	longPath := "/l" + strings.Repeat("o", 128) + "ng"
+	lOngPath := "/l" + strings.Repeat("O", 128) + "ng/"
+
 	routes := [...]string{
 		"/hi",
 		"/b/",
@@ -541,6 +520,17 @@ func TestTreeFindCaseInsensitivePath(t *testing.T) {
 		"/doc/go/away",
 		"/no/a",
 		"/no/b",
+		"/Π",
+		"/u/apfêl/",
+		"/u/äpfêl/",
+		"/u/öpfêl",
+		"/v/Äpfêl/",
+		"/v/Öpfêl",
+		"/w/♬",  // 3 byte
+		"/w/♭/", // 3 byte, last byte differs
+		"/w/𠜎",  // 4 byte
+		"/w/𠜏/", // 4 byte
+		longPath,
 	}
 
 	for _, route := range routes {
@@ -619,6 +609,21 @@ func TestTreeFindCaseInsensitivePath(t *testing.T) {
 		{"/DOC/", "/doc", true, true},
 		{"/NO", "", false, true},
 		{"/DOC/GO", "", false, true},
+		{"/π", "/Π", true, false},
+		{"/π/", "/Π", true, true},
+		{"/u/ÄPFÊL/", "/u/äpfêl/", true, false},
+		{"/u/ÄPFÊL", "/u/äpfêl/", true, true},
+		{"/u/ÖPFÊL/", "/u/öpfêl", true, true},
+		{"/u/ÖPFÊL", "/u/öpfêl", true, false},
+		{"/v/äpfêL/", "/v/Äpfêl/", true, false},
+		{"/v/äpfêL", "/v/Äpfêl/", true, true},
+		{"/v/öpfêL/", "/v/Öpfêl", true, true},
+		{"/v/öpfêL", "/v/Öpfêl", true, false},
+		{"/w/♬/", "/w/♬", true, true},
+		{"/w/♭", "/w/♭/", true, true},
+		{"/w/𠜎/", "/w/𠜎", true, true},
+		{"/w/𠜏", "/w/𠜏/", true, true},
+		{lOngPath, longPath, true, true},
 	}
 	// With fixTrailingSlash = true
 	for _, test := range tests {
@@ -706,8 +711,7 @@ func TestTreeWildcardConflictEx(t *testing.T) {
 			tree.addRoute(conflict.route, fakeHandler(conflict.route))
 		})
 
-		if !regexp.MustCompile(fmt.Sprintf("'%s' in new path .* conflicts with existing wildcard '%s' in existing prefix '%s'",
-			conflict.segPath, conflict.existSegPath, conflict.existPath)).MatchString(fmt.Sprint(recv)) {
+		if !regexp.MustCompile(fmt.Sprintf("'%s' in new path .* conflicts with existing wildcard '%s' in existing prefix '%s'", conflict.segPath, conflict.existSegPath, conflict.existPath)).MatchString(fmt.Sprint(recv)) {
 			t.Fatalf("invalid wildcard conflict error (%v)", recv)
 		}
 	}
