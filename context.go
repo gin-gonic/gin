@@ -434,9 +434,22 @@ func (c *Context) QueryMap(key string) map[string]string {
 	return dicts
 }
 
+// QueryMultiMap returns a multimap for a given query key.
+func (c *Context) QueryMultiMap(key string) map[string][]string {
+	dicts, _ := c.GetQueryMultiMap(key)
+	return dicts
+}
+
 // GetQueryMap returns a map for a given query key, plus a boolean value
 // whether at least one value exists for the given key.
 func (c *Context) GetQueryMap(key string) (map[string]string, bool) {
+	dicts, exists := c.GetQueryMultiMap(key)
+	return filterAllValuesButTheFirstOne(dicts), exists
+}
+
+// GetQueryMultiMap returns a multimap for a given query key, plus a boolean value
+// whether at least one value exists for the given key.
+func (c *Context) GetQueryMultiMap(key string) (map[string][]string, bool) {
 	c.getQueryCache()
 	return c.get(c.queryCache, key)
 }
@@ -512,22 +525,35 @@ func (c *Context) PostFormMap(key string) map[string]string {
 // whether at least one value exists for the given key.
 func (c *Context) GetPostFormMap(key string) (map[string]string, bool) {
 	c.getFormCache()
-	return c.get(c.formCache, key)
+	dicts, exists := c.get(c.formCache, key)
+	return filterAllValuesButTheFirstOne(dicts), exists
 }
 
-// get is an internal method and returns a map which satisfy conditions.
-func (c *Context) get(m map[string][]string, key string) (map[string]string, bool) {
-	dicts := make(map[string]string)
+// get is an internal method and returns a multimap which satisfy conditions.
+func (c *Context) get(m map[string][]string, key string) (map[string][]string, bool) {
+	dicts := make(map[string][]string)
 	exist := false
 	for k, v := range m {
 		if i := strings.IndexByte(k, '['); i >= 1 && k[0:i] == key {
 			if j := strings.IndexByte(k[i+1:], ']'); j >= 1 {
 				exist = true
-				dicts[k[i+1:][:j]] = v[0]
+				dicts[k[i+1:][:j]] = v
 			}
 		}
 	}
 	return dicts, exist
+}
+
+// filterAllValuesButTheFirstOne returns a map where the values correspond
+// to the first value for each key in the multimap given as input.
+func filterAllValuesButTheFirstOne(m map[string][]string) map[string]string {
+	result := map[string]string{}
+
+	for k, v := range m {
+		result[k] = v[0]
+	}
+
+	return result
 }
 
 // FormFile returns the first file for the provided form key.
