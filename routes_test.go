@@ -585,6 +585,7 @@ func TestRouteContextHoldsFullPath(t *testing.T) {
 	// Test routes
 	routes := []string{
 		"/simple",
+		"/project/:name/bui",
 		"/project/:name",
 		"/",
 		"/news/home",
@@ -592,7 +593,6 @@ func TestRouteContextHoldsFullPath(t *testing.T) {
 		"/simple-two/one",
 		"/simple-two/one-two",
 		"/project/:name/build/*params",
-		"/project/:name/bui",
 	}
 
 	for _, route := range routes {
