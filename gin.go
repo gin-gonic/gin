@@ -258,7 +258,6 @@ func (engine *Engine) addRoute(method, path string, handlers HandlersChain) {
 	assert1(len(handlers) > 0, "there must be at least one handler")
 
 	debugPrintRoute(method, path, handlers)
-	varsCount := uint16(0)
 
 	root := engine.trees.get(method)
 	if root == nil {
@@ -269,8 +268,8 @@ func (engine *Engine) addRoute(method, path string, handlers HandlersChain) {
 	root.addRoute(path, handlers)
 
 	// Update maxParams
-	if paramsCount := countParams(path); paramsCount+varsCount > engine.maxParams {
-		engine.maxParams = paramsCount + varsCount
+	if paramsCount := countParams(path); paramsCount > engine.maxParams {
+		engine.maxParams = paramsCount
 	}
 }
 
