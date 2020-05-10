@@ -710,7 +710,9 @@ walk: // Outer loop for walking the tree
 
 				if n.handlers != nil {
 					return ciPath
-				} else if fixTrailingSlash && len(n.children) == 1 {
+				}
+
+				if fixTrailingSlash && len(n.children) == 1 {
 					// No handle found. Check if a handle for this path + a
 					// trailing slash exists
 					n = n.children[0]
@@ -718,6 +720,7 @@ walk: // Outer loop for walking the tree
 						return append(ciPath, '/')
 					}
 				}
+
 				return nil
 
 			case catchAll:
