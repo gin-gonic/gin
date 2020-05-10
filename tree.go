@@ -311,7 +311,6 @@ func (n *node) insertChild(path string, fullPath string, handlers HandlersChain)
 			n.children = []*node{child}
 			n = child
 			n.priority++
-			// numParams--
 
 			// if the path doesn't end with the wildcard, then there
 			// will be another non-wildcard subpath starting with '/'
