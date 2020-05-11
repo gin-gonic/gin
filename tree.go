@@ -240,6 +240,7 @@ walk:
 			panic("handlers are already registered for path '" + fullPath + "'")
 		}
 		n.handlers = handlers
+		n.fullPath = fullPath
 		return
 	}
 }
