@@ -113,6 +113,7 @@ type Engine struct {
 	noMethod         HandlersChain
 	pool             sync.Pool
 	trees            methodTrees
+	maxParams        uint16
 }
 
 var _ IRouter = &Engine{}
@@ -163,7 +164,8 @@ func Default() *Engine {
 }
 
 func (engine *Engine) allocateContext() *Context {
-	return &Context{engine: engine}
+	v := make(Params, 0, engine.maxParams)
+	return &Context{engine: engine, params: &v}
 }
 
 // Delims sets template left and right delims and returns a Engine instance.
@@ -256,6 +258,7 @@ func (engine *Engine) addRoute(method, path string, handlers HandlersChain) {
 	assert1(len(handlers) > 0, "there must be at least one handler")
 
 	debugPrintRoute(method, path, handlers)
+
 	root := engine.trees.get(method)
 	if root == nil {
 		root = new(node)
@@ -263,6 +266,11 @@ func (engine *Engine) addRoute(method, path string, handlers HandlersChain) {
 		engine.trees = append(engine.trees, methodTree{method: method, root: root})
 	}
 	root.addRoute(path, handlers)
+
+	// Update maxParams
+	if paramsCount := countParams(path); paramsCount > engine.maxParams {
+		engine.maxParams = paramsCount
+	}
 }
 
 // Routes returns a slice of registered routes, including some useful information, such as:
@@ -402,10 +410,12 @@ func (engine *Engine) handleHTTPRequest(c *Context) {
 		}
 		root := t[i].root
 		// Find route in tree
-		value := root.getValue(rPath, c.Params, unescape)
+		value := root.getValue(rPath, c.params, unescape)
+		if value.params != nil {
+			c.Params = *value.params
+		}
 		if value.handlers != nil {
 			c.handlers = value.handlers
-			c.Params = value.params
 			c.fullPath = value.fullPath
 			c.Next()
 			c.writermem.WriteHeaderNow()
