@@ -414,7 +414,7 @@ func (c *Context) QueryArray(key string) []string {
 	return values
 }
 
-func (c *Context) getQueryCache() {
+func (c *Context) initQueryCache() {
 	if c.queryCache == nil {
 		c.queryCache = c.Request.URL.Query()
 	}
@@ -423,7 +423,7 @@ func (c *Context) getQueryCache() {
 // GetQueryArray returns a slice of strings for a given query key, plus
 // a boolean value whether at least one value exists for the given key.
 func (c *Context) GetQueryArray(key string) ([]string, bool) {
-	c.getQueryCache()
+	c.initQueryCache()
 	if values, ok := c.queryCache[key]; ok && len(values) > 0 {
 		return values, true
 	}
@@ -439,7 +439,7 @@ func (c *Context) QueryMap(key string) map[string]string {
 // GetQueryMap returns a map for a given query key, plus a boolean value
 // whether at least one value exists for the given key.
 func (c *Context) GetQueryMap(key string) (map[string]string, bool) {
-	c.getQueryCache()
+	c.initQueryCache()
 	return c.get(c.queryCache, key)
 }
 
@@ -481,7 +481,7 @@ func (c *Context) PostFormArray(key string) []string {
 	return values
 }
 
-func (c *Context) getFormCache() {
+func (c *Context) initFormCache() {
 	if c.formCache == nil {
 		c.formCache = make(url.Values)
 		req := c.Request
@@ -497,7 +497,7 @@ func (c *Context) getFormCache() {
 // GetPostFormArray returns a slice of strings for a given form key, plus
 // a boolean value whether at least one value exists for the given key.
 func (c *Context) GetPostFormArray(key string) ([]string, bool) {
-	c.getFormCache()
+	c.initFormCache()
 	if values := c.formCache[key]; len(values) > 0 {
 		return values, true
 	}
@@ -513,7 +513,7 @@ func (c *Context) PostFormMap(key string) map[string]string {
 // GetPostFormMap returns a map for a given form key, plus a boolean value
 // whether at least one value exists for the given key.
 func (c *Context) GetPostFormMap(key string) (map[string]string, bool) {
-	c.getFormCache()
+	c.initFormCache()
 	return c.get(c.formCache, key)
 }
 
