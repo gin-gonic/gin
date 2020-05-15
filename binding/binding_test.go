@@ -21,7 +21,6 @@ import (
 	"github.com/gin-gonic/gin/testdata/protoexample"
 	"github.com/golang/protobuf/proto"
 	"github.com/stretchr/testify/assert"
-	"github.com/ugorji/go/codec"
 )
 
 type appkey struct {
@@ -162,9 +161,6 @@ func TestBindingDefault(t *testing.T) {
 
 	assert.Equal(t, ProtoBuf, Default("POST", MIMEPROTOBUF))
 	assert.Equal(t, ProtoBuf, Default("PUT", MIMEPROTOBUF))
-
-	assert.Equal(t, MsgPack, Default("POST", MIMEMSGPACK))
-	assert.Equal(t, MsgPack, Default("PUT", MIMEMSGPACK2))
 
 	assert.Equal(t, YAML, Default("POST", MIMEYAML))
 	assert.Equal(t, YAML, Default("PUT", MIMEYAML))
@@ -441,7 +437,8 @@ func createFormFilesMultipartRequest(t *testing.T) *http.Request {
 	defer f.Close()
 	fw, err1 := mw.CreateFormFile("file", "form.go")
 	assert.NoError(t, err1)
-	io.Copy(fw, f)
+	_, err = io.Copy(fw, f)
+	assert.NoError(t, err)
 
 	req, err2 := http.NewRequest("POST", "/?foo=getfoo&bar=getbar", body)
 	assert.NoError(t, err2)
@@ -465,7 +462,8 @@ func createFormFilesMultipartRequestFail(t *testing.T) *http.Request {
 	defer f.Close()
 	fw, err1 := mw.CreateFormFile("file_foo", "form_foo.go")
 	assert.NoError(t, err1)
-	io.Copy(fw, f)
+	_, err = io.Copy(fw, f)
+	assert.NoError(t, err)
 
 	req, err2 := http.NewRequest("POST", "/?foo=getfoo&bar=getbar", body)
 	assert.NoError(t, err2)
@@ -554,7 +552,8 @@ func TestBindingFormPostForMapFail(t *testing.T) {
 func TestBindingFormFilesMultipart(t *testing.T) {
 	req := createFormFilesMultipartRequest(t)
 	var obj FooBarFileStruct
-	FormMultipart.Bind(req, &obj)
+	err := FormMultipart.Bind(req, &obj)
+	assert.NoError(t, err)
 
 	// file from os
 	f, _ := os.Open("form.go")
@@ -626,26 +625,6 @@ func TestBindingProtoBufFail(t *testing.T) {
 
 	testProtoBodyBindingFail(t,
 		ProtoBuf, "protobuf",
-		"/", "/",
-		string(data), string(data[1:]))
-}
-
-func TestBindingMsgPack(t *testing.T) {
-	test := FooStruct{
-		Foo: "bar",
-	}
-
-	h := new(codec.MsgpackHandle)
-	assert.NotNil(t, h)
-	buf := bytes.NewBuffer([]byte{})
-	assert.NotNil(t, buf)
-	err := codec.NewEncoder(buf, h).Encode(test)
-	assert.NoError(t, err)
-
-	data := buf.Bytes()
-
-	testMsgPackBodyBinding(t,
-		MsgPack, "msgpack",
 		"/", "/",
 		string(data), string(data[1:]))
 }
@@ -1244,23 +1223,6 @@ func testProtoBodyBindingFail(t *testing.T, b Binding, name, path, badPath, body
 	req = requestWithBody("POST", badPath, badBody)
 	req.Header.Add("Content-Type", MIMEPROTOBUF)
 	err = ProtoBuf.Bind(req, &obj)
-	assert.Error(t, err)
-}
-
-func testMsgPackBodyBinding(t *testing.T, b Binding, name, path, badPath, body, badBody string) {
-	assert.Equal(t, name, b.Name())
-
-	obj := FooStruct{}
-	req := requestWithBody("POST", path, body)
-	req.Header.Add("Content-Type", MIMEMSGPACK)
-	err := b.Bind(req, &obj)
-	assert.NoError(t, err)
-	assert.Equal(t, "bar", obj.Foo)
-
-	obj = FooStruct{}
-	req = requestWithBody("POST", badPath, badBody)
-	req.Header.Add("Content-Type", MIMEMSGPACK)
-	err = MsgPack.Bind(req, &obj)
 	assert.Error(t, err)
 }
 
