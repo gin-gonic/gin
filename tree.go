@@ -9,6 +9,7 @@ import (
 	"strings"
 	"unicode"
 	"unicode/utf8"
+	"unsafe"
 )
 
 // Param is a single URL parameter, consisting of a key and a value.
@@ -38,6 +39,16 @@ func (ps Params) Get(name string) (string, bool) {
 func (ps Params) ByName(name string) (va string) {
 	va, _ = ps.Get(name)
 	return
+}
+
+func strToBytes(s string) []byte {
+	x := (*[2]uintptr)(unsafe.Pointer(&s))
+	h := [3]uintptr{x[0], x[1], x[1]}
+	return *(*[]byte)(unsafe.Pointer(&h))
+}
+
+func bytesToStr(b []byte) string {
+	return *(*string)(unsafe.Pointer(&b))
 }
 
 type methodTree struct {
@@ -163,7 +174,7 @@ walk:
 
 			n.children = []*node{&child}
 			// []byte for proper unicode char conversion, see #65
-			n.indices = string([]byte{n.path[i]})
+			n.indices = bytesToStr([]byte{n.path[i]})
 			n.path = path[:i]
 			n.handlers = nil
 			n.wildChild = false
@@ -223,7 +234,7 @@ walk:
 			// Otherwise insert it
 			if c != ':' && c != '*' {
 				// []byte for proper unicode char conversion, see #65
-				n.indices += string([]byte{c})
+				n.indices += bytesToStr([]byte{c})
 				child := &node{
 					fullPath: fullPath,
 				}
