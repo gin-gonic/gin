@@ -5,11 +5,18 @@
 package gin
 
 import (
+	"bytes"
 	"net/url"
+	"reflect"
 	"strings"
 	"unicode"
 	"unicode/utf8"
 	"unsafe"
+)
+
+var (
+	strColon = []byte(":")
+	strStar  = []byte("*")
 )
 
 // Param is a single URL parameter, consisting of a key and a value.
@@ -39,10 +46,6 @@ func (ps Params) Get(name string) (string, bool) {
 func (ps Params) ByName(name string) (va string) {
 	va, _ = ps.Get(name)
 	return
-}
-
-func bytesToStr(b []byte) string {
-	return *(*string)(unsafe.Pointer(&b))
 }
 
 type methodTree struct {
@@ -77,14 +80,26 @@ func longestCommonPrefix(a, b string) int {
 	return i
 }
 
+func bytesToStr(b []byte) string {
+	return *(*string)(unsafe.Pointer(&b))
+}
+
+func strToBytes(s string) (b []byte) {
+	/* #nosec G103 */
+	bh := (*reflect.SliceHeader)(unsafe.Pointer(&b))
+	/* #nosec G103 */
+	sh := *(*reflect.StringHeader)(unsafe.Pointer(&s))
+	bh.Data = sh.Data
+	bh.Len = sh.Len
+	bh.Cap = sh.Len
+	return b
+}
+
 func countParams(path string) uint16 {
 	var n uint
-	for i := range []byte(path) {
-		switch path[i] {
-		case ':', '*':
-			n++
-		}
-	}
+	s := strToBytes(path)
+	n += uint(bytes.Count(s, strColon))
+	n += uint(bytes.Count(s, strStar))
 	return uint16(n)
 }
 
