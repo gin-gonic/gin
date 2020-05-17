@@ -93,20 +93,6 @@ func TestCountParams(t *testing.T) {
 	}
 }
 
-var s = strings.Repeat("/:param", 5)
-
-func BenchmarkCountParamsOld(b *testing.B) {
-	for i := 0; i < b.N; i++ {
-		countParamsOld(s)
-	}
-}
-
-func BenchmarkCountParams(b *testing.B) {
-	for i := 0; i < b.N; i++ {
-		countParamsNew(s)
-	}
-}
-
 func TestTreeAddAndGet(t *testing.T) {
 	tree := &node{}
 
