@@ -80,10 +80,19 @@ func longestCommonPrefix(a, b string) int {
 	return i
 }
 
+// bytesToStr converts byte slice to a string without memory allocation.
+// See https://groups.google.com/forum/#!msg/Golang-Nuts/ENgbUzYvCuU/90yGx7GUAgAJ .
+//
+// Note it may break if string and/or slice header will change
+// in the future go versions.
 func bytesToStr(b []byte) string {
 	return *(*string)(unsafe.Pointer(&b))
 }
 
+// strToBytes converts string to a byte slice without memory allocation.
+//
+// Note it may break if string and/or slice header will change
+// in the future go versions.
 func strToBytes(s string) (b []byte) {
 	/* #nosec G103 */
 	bh := (*reflect.SliceHeader)(unsafe.Pointer(&b))
