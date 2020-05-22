@@ -7,11 +7,11 @@ package gin
 import (
 	"bytes"
 	"net/url"
-	"reflect"
 	"strings"
 	"unicode"
 	"unicode/utf8"
-	"unsafe"
+
+	"github.com/gin-gonic/gin/internal/bytesconv"
 )
 
 var (
@@ -80,36 +80,12 @@ func longestCommonPrefix(a, b string) int {
 	return i
 }
 
-// bytesToStr converts byte slice to a string without memory allocation.
-// See https://groups.google.com/forum/#!msg/Golang-Nuts/ENgbUzYvCuU/90yGx7GUAgAJ .
-//
-// Note it may break if string and/or slice header will change
-// in the future go versions.
-func bytesToStr(b []byte) string {
-	return *(*string)(unsafe.Pointer(&b))
-}
-
-// strToBytes converts string to a byte slice without memory allocation.
-//
-// Note it may break if string and/or slice header will change
-// in the future go versions.
-func strToBytes(s string) (b []byte) {
-	/* #nosec G103 */
-	bh := (*reflect.SliceHeader)(unsafe.Pointer(&b))
-	/* #nosec G103 */
-	sh := *(*reflect.StringHeader)(unsafe.Pointer(&s))
-	bh.Data = sh.Data
-	bh.Len = sh.Len
-	bh.Cap = sh.Len
-	return b
-}
-
 func countParams(path string) uint16 {
-	var n uint
-	s := strToBytes(path)
-	n += uint(bytes.Count(s, strColon))
-	n += uint(bytes.Count(s, strStar))
-	return uint16(n)
+	var n uint16
+	s := bytesconv.StringToBytes(path)
+	n += uint16(bytes.Count(s, strColon))
+	n += uint16(bytes.Count(s, strStar))
+	return n
 }
 
 type nodeType uint8
@@ -192,7 +168,7 @@ walk:
 
 			n.children = []*node{&child}
 			// []byte for proper unicode char conversion, see #65
-			n.indices = bytesToStr([]byte{n.path[i]})
+			n.indices = bytesconv.BytesToString([]byte{n.path[i]})
 			n.path = path[:i]
 			n.handlers = nil
 			n.wildChild = false
@@ -252,7 +228,7 @@ walk:
 			// Otherwise insert it
 			if c != ':' && c != '*' {
 				// []byte for proper unicode char conversion, see #65
-				n.indices += bytesToStr([]byte{c})
+				n.indices += bytesconv.BytesToString([]byte{c})
 				child := &node{
 					fullPath: fullPath,
 				}
