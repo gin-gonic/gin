@@ -801,6 +801,7 @@ func (c *Context) GetHeader(key string) string {
 // GetRawData return stream data.
 func (c *Context) GetRawData() ([]byte, error) {
 	// return ioutil.ReadAll(c.Request.Body)
+	c.initFormCache()
 	return c.rawData, nil
 }
 
