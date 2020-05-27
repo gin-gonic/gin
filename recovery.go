@@ -33,6 +33,19 @@ func Recovery() HandlerFunc {
 
 // RecoveryWithWriter returns a middleware for a given writer that recovers from any panics and writes a 500 if there was one.
 func RecoveryWithWriter(out io.Writer) HandlerFunc {
+	return RecoveryWithWriterAndCallback(out, func(c *Context, err interface{}, brokenPipe bool) {
+		// If the connection is dead, we can't write a status to it.
+		if brokenPipe {
+			c.Error(err.(error)) // nolint: errcheck
+			c.Abort()
+		} else {
+			c.AbortWithStatus(http.StatusInternalServerError)
+		}
+	})
+}
+
+// RecoveryWithWriterAndCallback returns a middleware for a given writer that recovers from any panics and call the custom function if there was one.
+func RecoveryWithWriterAndCallback(out io.Writer, fn func(c *Context, err interface{}, brokenPipe bool)) HandlerFunc {
 	var logger *log.Logger
 	if out != nil {
 		logger = log.New(out, "\n\n\x1b[31m", log.LstdFlags)
@@ -70,14 +83,7 @@ func RecoveryWithWriter(out io.Writer) HandlerFunc {
 							timeFormat(time.Now()), err, stack, reset)
 					}
 				}
-
-				// If the connection is dead, we can't write a status to it.
-				if brokenPipe {
-					c.Error(err.(error)) // nolint: errcheck
-					c.Abort()
-				} else {
-					c.AbortWithStatus(http.StatusInternalServerError)
-				}
+				fn(c, err, brokenPipe)
 			}
 		}()
 		c.Next()
