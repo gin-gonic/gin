@@ -440,18 +440,18 @@ func (engine *Engine) handleHTTPRequest(c *Context) {
 			}
 			if value := tree.root.getValue(rPath, nil, unescape); value.handlers != nil {
 				c.handlers = engine.allNoMethod
-				serveError(c, http.StatusMethodNotAllowed, default405Body)
+				serveError(c, http.StatusMethodNotAllowed, default405Body, &httpMethod)
 				return
 			}
 		}
 	}
 	c.handlers = engine.allNoRoute
-	serveError(c, http.StatusNotFound, default404Body)
+	serveError(c, http.StatusNotFound, default404Body, nil)
 }
 
 var mimePlain = []string{MIMEPlain}
 
-func serveError(c *Context, code int, defaultMessage []byte) {
+func serveError(c *Context, code int, defaultMessage []byte, allowedMethod *string) {
 	c.writermem.status = code
 	c.Next()
 	if c.writermem.Written() {
@@ -459,6 +459,9 @@ func serveError(c *Context, code int, defaultMessage []byte) {
 	}
 	if c.writermem.Status() == code {
 		c.writermem.Header()["Content-Type"] = mimePlain
+		if allowedMethod != nil {
+			c.writermem.Header()["Allow"] = []string{*allowedMethod}
+		}
 		_, err := c.Writer.Write(defaultMessage)
 		if err != nil {
 			debugPrint("cannot write message to writer during serve error: %v", err)

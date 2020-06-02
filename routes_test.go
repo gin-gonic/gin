@@ -374,12 +374,14 @@ func TestRouteNotAllowedEnabled(t *testing.T) {
 	router.POST("/path", func(c *Context) {})
 	w := performRequest(router, http.MethodGet, "/path")
 	assert.Equal(t, http.StatusMethodNotAllowed, w.Code)
+	assert.Equal(t, "GET", w.Result().Header["Allow"][0])
 
 	router.NoMethod(func(c *Context) {
 		c.String(http.StatusTeapot, "responseText")
 	})
 	w = performRequest(router, http.MethodGet, "/path")
 	assert.Equal(t, "responseText", w.Body.String())
+	assert.NotContains(t, w.Result().Header, "Allow")
 	assert.Equal(t, http.StatusTeapot, w.Code)
 }
 
