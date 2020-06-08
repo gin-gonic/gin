@@ -55,7 +55,7 @@ func (msg *Error) SetMeta(data interface{}) *Error {
 
 // JSON creates a properly formatted JSON
 func (msg *Error) JSON() interface{} {
-	json := H{}
+	jsonData := H{}
 	if msg.Meta != nil {
 		value := reflect.ValueOf(msg.Meta)
 		switch value.Kind() {
@@ -63,16 +63,16 @@ func (msg *Error) JSON() interface{} {
 			return msg.Meta
 		case reflect.Map:
 			for _, key := range value.MapKeys() {
-				json[key.String()] = value.MapIndex(key).Interface()
+				jsonData[key.String()] = value.MapIndex(key).Interface()
 			}
 		default:
-			json["meta"] = msg.Meta
+			jsonData["meta"] = msg.Meta
 		}
 	}
-	if _, ok := json["error"]; !ok {
-		json["error"] = msg.Error()
+	if _, ok := jsonData["error"]; !ok {
+		jsonData["error"] = msg.Error()
 	}
-	return json
+	return jsonData
 }
 
 // MarshalJSON implements the json.Marshaller interface.
@@ -135,17 +135,17 @@ func (a errorMsgs) Errors() []string {
 }
 
 func (a errorMsgs) JSON() interface{} {
-	switch len(a) {
+	switch length := len(a); length {
 	case 0:
 		return nil
 	case 1:
 		return a.Last().JSON()
 	default:
-		json := make([]interface{}, len(a))
+		jsonData := make([]interface{}, length)
 		for i, err := range a {
-			json[i] = err.JSON()
+			jsonData[i] = err.JSON()
 		}
-		return json
+		return jsonData
 	}
 }
 
