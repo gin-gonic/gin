@@ -9,9 +9,11 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"runtime"
 	"time"
 
 	"github.com/mattn/go-isatty"
+	"github.com/shiena/ansicolor"
 )
 
 type consoleColorModeValue int
@@ -219,6 +221,10 @@ func LoggerWithConfig(conf LoggerConfig) HandlerFunc {
 	if w, ok := out.(*os.File); !ok || os.Getenv("TERM") == "dumb" ||
 		(!isatty.IsTerminal(w.Fd()) && !isatty.IsCygwinTerminal(w.Fd())) {
 		isTerm = false
+	}
+
+	if runtime.GOOS == "windows" {
+		out = ansicolor.NewAnsiColorWriter(out)
 	}
 
 	var skip map[string]struct{}
