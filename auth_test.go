@@ -14,25 +14,30 @@ import (
 )
 
 func TestBasicAuth(t *testing.T) {
-	pairs := processAccounts(Accounts{
+	authMap := processAccounts(Accounts{
 		"admin": "password",
 		"foo":   "bar",
 		"bar":   "foo",
 	})
 
-	assert.Len(t, pairs, 3)
-	assert.Contains(t, pairs, authPair{
-		user:  "bar",
-		value: "Basic YmFyOmZvbw==",
-	})
-	assert.Contains(t, pairs, authPair{
-		user:  "foo",
-		value: "Basic Zm9vOmJhcg==",
-	})
-	assert.Contains(t, pairs, authPair{
-		user:  "admin",
-		value: "Basic YWRtaW46cGFzc3dvcmQ=",
-	})
+
+	assert.Len(t, authMap, 3)
+	assert.Contains(t,authMap,"Basic YmFyOmZvbw==")
+	assert.Contains(t,authMap,"Basic Zm9vOmJhcg==")
+	assert.Contains(t,authMap,"Basic YWRtaW46cGFzc3dvcmQ=")
+
+	//assert.Contains(t, pairs, authPair{
+	//	user:  "bar",
+	//	value: "Basic YmFyOmZvbw==",
+	//})
+	//assert.Contains(t, pairs, authPair{
+	//	user:  "foo",
+	//	value: "Basic Zm9vOmJhcg==",
+	//})
+	//assert.Contains(t, pairs, authPair{
+	//	user:  "admin",
+	//	value: "Basic YWRtaW46cGFzc3dvcmQ=",
+	//})
 }
 
 func TestBasicAuthFails(t *testing.T) {
@@ -46,33 +51,33 @@ func TestBasicAuthFails(t *testing.T) {
 }
 
 func TestBasicAuthSearchCredential(t *testing.T) {
-	pairs := processAccounts(Accounts{
+	authMap := processAccounts(Accounts{
 		"admin": "password",
 		"foo":   "bar",
 		"bar":   "foo",
 	})
 
-	user, found := pairs.searchCredential(authorizationHeader("admin", "password"))
+	user, found := authMap.searchCredential(authorizationHeader("admin", "password"))
 	assert.Equal(t, "admin", user)
 	assert.True(t, found)
 
-	user, found = pairs.searchCredential(authorizationHeader("foo", "bar"))
+	user, found = authMap.searchCredential(authorizationHeader("foo", "bar"))
 	assert.Equal(t, "foo", user)
 	assert.True(t, found)
 
-	user, found = pairs.searchCredential(authorizationHeader("bar", "foo"))
+	user, found = authMap.searchCredential(authorizationHeader("bar", "foo"))
 	assert.Equal(t, "bar", user)
 	assert.True(t, found)
 
-	user, found = pairs.searchCredential(authorizationHeader("admins", "password"))
+	user, found = authMap.searchCredential(authorizationHeader("admins", "password"))
 	assert.Empty(t, user)
 	assert.False(t, found)
 
-	user, found = pairs.searchCredential(authorizationHeader("foo", "bar "))
+	user, found = authMap.searchCredential(authorizationHeader("foo", "bar "))
 	assert.Empty(t, user)
 	assert.False(t, found)
 
-	user, found = pairs.searchCredential("")
+	user, found = authMap.searchCredential("")
 	assert.Empty(t, user)
 	assert.False(t, found)
 }
