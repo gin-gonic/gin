@@ -18,24 +18,21 @@ const AuthUserKey = "user"
 // Accounts defines a key/value for user/pass list of authorized logins.
 type Accounts map[string]string
 
-type authPair struct {
-	value string
-	user  string
-}
+// authKVMap defines a key/value for Authorization token / user
+type authKVMap map[string]string
 
-type authPairs []authPair
 
-func (a authPairs) searchCredential(authValue string) (string, bool) {
+func (a authKVMap) searchCredential(authValue string) (string, bool) {
 	if authValue == "" {
 		return "", false
 	}
-	for _, pair := range a {
-		if pair.value == authValue {
-			return pair.user, true
-		}
+	user,ok:=a[authValue]
+	if !ok{
+		return "", false
 	}
-	return "", false
+	return user,true
 }
+
 
 // BasicAuthForRealm returns a Basic HTTP Authorization middleware. It takes as arguments a map[string]string where
 // the key is the user name and the value is the password, as well as the name of the Realm.
@@ -46,10 +43,10 @@ func BasicAuthForRealm(accounts Accounts, realm string) HandlerFunc {
 		realm = "Authorization Required"
 	}
 	realm = "Basic realm=" + strconv.Quote(realm)
-	pairs := processAccounts(accounts)
+	pairMap := processAccounts(accounts)
 	return func(c *Context) {
 		// Search user in the slice of allowed credentials
-		user, found := pairs.searchCredential(c.requestHeader("Authorization"))
+		user, found := pairMap.searchCredential(c.requestHeader("Authorization"))
 		if !found {
 			// Credentials doesn't match, we return 401 and abort handlers chain.
 			c.Header("WWW-Authenticate", realm)
@@ -69,19 +66,16 @@ func BasicAuth(accounts Accounts) HandlerFunc {
 	return BasicAuthForRealm(accounts, "")
 }
 
-func processAccounts(accounts Accounts) authPairs {
+func processAccounts(accounts Accounts) authKVMap {
 	length := len(accounts)
 	assert1(length > 0, "Empty list of authorized credentials")
-	pairs := make(authPairs, 0, length)
+	pairMap := make(authKVMap)
 	for user, password := range accounts {
 		assert1(user != "", "User can not be empty")
 		value := authorizationHeader(user, password)
-		pairs = append(pairs, authPair{
-			value: value,
-			user:  user,
-		})
+		pairMap[value]=user
 	}
-	return pairs
+	return pairMap
 }
 
 func authorizationHeader(user, password string) string {
