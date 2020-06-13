@@ -69,13 +69,13 @@ func BasicAuth(accounts Accounts) HandlerFunc {
 func processAccounts(accounts Accounts) authKVMap {
 	length := len(accounts)
 	assert1(length > 0, "Empty list of authorized credentials")
-	pairMap := make(authKVMap)
+	authMap := make(authKVMap)
 	for user, password := range accounts {
 		assert1(user != "", "User can not be empty")
 		value := authorizationHeader(user, password)
-		pairMap[value]=user
+		authMap[value]=user
 	}
-	return pairMap
+	return authMap
 }
 
 func authorizationHeader(user, password string) string {
