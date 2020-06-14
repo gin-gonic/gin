@@ -21,18 +21,16 @@ type Accounts map[string]string
 // authKVMap defines a key/value for Authorization token / user
 type authKVMap map[string]string
 
-
 func (a authKVMap) searchCredential(authValue string) (string, bool) {
 	if authValue == "" {
 		return "", false
 	}
-	user,ok:=a[authValue]
-	if !ok{
+	user, ok := a[authValue]
+	if !ok {
 		return "", false
 	}
-	return user,true
+	return user, true
 }
-
 
 // BasicAuthForRealm returns a Basic HTTP Authorization middleware. It takes as arguments a map[string]string where
 // the key is the user name and the value is the password, as well as the name of the Realm.
@@ -73,7 +71,7 @@ func processAccounts(accounts Accounts) authKVMap {
 	for user, password := range accounts {
 		assert1(user != "", "User can not be empty")
 		value := authorizationHeader(user, password)
-		authMap[value]=user
+		authMap[value] = user
 	}
 	return authMap
 }

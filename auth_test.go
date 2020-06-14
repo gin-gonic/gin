@@ -20,11 +20,10 @@ func TestBasicAuth(t *testing.T) {
 		"bar":   "foo",
 	})
 
-
 	assert.Len(t, authMap, 3)
-	assert.Contains(t,authMap,"Basic YmFyOmZvbw==")
-	assert.Contains(t,authMap,"Basic Zm9vOmJhcg==")
-	assert.Contains(t,authMap,"Basic YWRtaW46cGFzc3dvcmQ=")
+	assert.Contains(t, authMap, "Basic YmFyOmZvbw==")
+	assert.Contains(t, authMap, "Basic Zm9vOmJhcg==")
+	assert.Contains(t, authMap, "Basic YWRtaW46cGFzc3dvcmQ=")
 
 }
 
