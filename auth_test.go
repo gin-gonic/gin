@@ -26,18 +26,6 @@ func TestBasicAuth(t *testing.T) {
 	assert.Contains(t,authMap,"Basic Zm9vOmJhcg==")
 	assert.Contains(t,authMap,"Basic YWRtaW46cGFzc3dvcmQ=")
 
-	//assert.Contains(t, pairs, authPair{
-	//	user:  "bar",
-	//	value: "Basic YmFyOmZvbw==",
-	//})
-	//assert.Contains(t, pairs, authPair{
-	//	user:  "foo",
-	//	value: "Basic Zm9vOmJhcg==",
-	//})
-	//assert.Contains(t, pairs, authPair{
-	//	user:  "admin",
-	//	value: "Basic YWRtaW46cGFzc3dvcmQ=",
-	//})
 }
 
 func TestBasicAuthFails(t *testing.T) {
