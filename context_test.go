@@ -261,6 +261,18 @@ func TestContextGetInt64(t *testing.T) {
 	assert.Equal(t, int64(42424242424242), c.GetInt64("int64"))
 }
 
+func TestContextGetUint(t *testing.T) {
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	c.Set("uint", uint(1))
+	assert.Equal(t, uint(1), c.GetUint("uint"))
+}
+
+func TestContextGetUint64(t *testing.T) {
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	c.Set("uint64", uint64(18446744073709551615))
+	assert.Equal(t, uint64(18446744073709551615), c.GetUint64("uint64"))
+}
+
 func TestContextGetFloat64(t *testing.T) {
 	c, _ := CreateTestContext(httptest.NewRecorder())
 	c.Set("float64", 4.2)
