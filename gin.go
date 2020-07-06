@@ -13,16 +13,18 @@ import (
 	"path"
 	"sync"
 
+	"github.com/gin-gonic/gin/internal/bytesconv"
 	"github.com/gin-gonic/gin/render"
 )
 
 const defaultMultipartMemory = 32 << 20 // 32 MB
 
 var (
-	default404Body   = []byte("404 page not found")
-	default405Body   = []byte("405 method not allowed")
-	defaultAppEngine bool
+	default404Body = []byte("404 page not found")
+	default405Body = []byte("405 method not allowed")
 )
+
+var defaultAppEngine bool
 
 // HandlerFunc defines the handler used by gin middleware as return value.
 type HandlerFunc func(*Context)
@@ -102,7 +104,7 @@ type Engine struct {
 	RemoveExtraSlash bool
 
 	delims           render.Delims
-	secureJsonPrefix string
+	secureJSONPrefix string
 	HTMLRender       render.HTMLRender
 	FuncMap          template.FuncMap
 	allNoRoute       HandlersChain
@@ -111,6 +113,7 @@ type Engine struct {
 	noMethod         HandlersChain
 	pool             sync.Pool
 	trees            methodTrees
+	maxParams        uint16
 }
 
 var _ IRouter = &Engine{}
@@ -143,7 +146,7 @@ func New() *Engine {
 		MaxMultipartMemory:     defaultMultipartMemory,
 		trees:                  make(methodTrees, 0, 9),
 		delims:                 render.Delims{Left: "{{", Right: "}}"},
-		secureJsonPrefix:       "while(1);",
+		secureJSONPrefix:       "while(1);",
 	}
 	engine.RouterGroup.engine = engine
 	engine.pool.New = func() interface{} {
@@ -161,7 +164,8 @@ func Default() *Engine {
 }
 
 func (engine *Engine) allocateContext() *Context {
-	return &Context{engine: engine}
+	v := make(Params, 0, engine.maxParams)
+	return &Context{engine: engine, params: &v}
 }
 
 // Delims sets template left and right delims and returns a Engine instance.
@@ -170,9 +174,9 @@ func (engine *Engine) Delims(left, right string) *Engine {
 	return engine
 }
 
-// SecureJsonPrefix sets the secureJsonPrefix used in Context.SecureJSON.
+// SecureJsonPrefix sets the secureJSONPrefix used in Context.SecureJSON.
 func (engine *Engine) SecureJsonPrefix(prefix string) *Engine {
-	engine.secureJsonPrefix = prefix
+	engine.secureJSONPrefix = prefix
 	return engine
 }
 
@@ -254,6 +258,7 @@ func (engine *Engine) addRoute(method, path string, handlers HandlersChain) {
 	assert1(len(handlers) > 0, "there must be at least one handler")
 
 	debugPrintRoute(method, path, handlers)
+
 	root := engine.trees.get(method)
 	if root == nil {
 		root = new(node)
@@ -261,6 +266,11 @@ func (engine *Engine) addRoute(method, path string, handlers HandlersChain) {
 		engine.trees = append(engine.trees, methodTree{method: method, root: root})
 	}
 	root.addRoute(path, handlers)
+
+	// Update maxParams
+	if paramsCount := countParams(path); paramsCount > engine.maxParams {
+		engine.maxParams = paramsCount
+	}
 }
 
 // Routes returns a slice of registered routes, including some useful information, such as:
@@ -319,16 +329,13 @@ func (engine *Engine) RunUnix(file string) (err error) {
 	debugPrint("Listening and serving HTTP on unix:/%s", file)
 	defer func() { debugPrintError(err) }()
 
-	os.Remove(file)
 	listener, err := net.Listen("unix", file)
 	if err != nil {
 		return
 	}
 	defer listener.Close()
-	err = os.Chmod(file, 0777)
-	if err != nil {
-		return
-	}
+	defer os.Remove(file)
+
 	err = http.Serve(listener, engine)
 	return
 }
@@ -403,10 +410,12 @@ func (engine *Engine) handleHTTPRequest(c *Context) {
 		}
 		root := t[i].root
 		// Find route in tree
-		value := root.getValue(rPath, c.Params, unescape)
+		value := root.getValue(rPath, c.params, unescape)
+		if value.params != nil {
+			c.Params = *value.params
+		}
 		if value.handlers != nil {
 			c.handlers = value.handlers
-			c.Params = value.params
 			c.fullPath = value.fullPath
 			c.Next()
 			c.writermem.WriteHeaderNow()
@@ -477,7 +486,7 @@ func redirectFixedPath(c *Context, root *node, trailingSlash bool) bool {
 	rPath := req.URL.Path
 
 	if fixedPath, ok := root.findCaseInsensitivePath(cleanPath(rPath), trailingSlash); ok {
-		req.URL.Path = string(fixedPath)
+		req.URL.Path = bytesconv.BytesToString(fixedPath)
 		redirectRequest(c)
 		return true
 	}

@@ -8,6 +8,13 @@ matrix:
   - go: 1.12.x
     env: GO111MODULE=on
   - go: 1.13.x
+  - go: 1.13.x
+    env: 
+      - TESTTAGS=nomsgpack
+  - go: 1.14.x
+  - go: 1.14.x
+    env:
+      - TESTTAGS=nomsgpack
   - go: master
 
 git:

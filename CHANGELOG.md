@@ -1,4 +1,74 @@
-### Gin v1.5.0
+# Gin ChangeLog
+
+## Gin v1.6.3
+
+### ENHANCEMENTS
+
+  * Improve performance: Change `*sync.RWMutex` to `sync.RWMutex` in context. [#2351](https://github.com/gin-gonic/gin/pull/2351)
+
+## Gin v1.6.2
+
+### BUFIXES
+  * fix missing initial sync.RWMutex [#2305](https://github.com/gin-gonic/gin/pull/2305)
+### ENHANCEMENTS
+  * Add set samesite in cookie. [#2306](https://github.com/gin-gonic/gin/pull/2306)
+
+## Gin v1.6.1
+
+### BUFIXES
+  * Revert "fix accept incoming network connections" [#2294](https://github.com/gin-gonic/gin/pull/2294)
+
+## Gin v1.6.0
+
+### BREAKING
+  * chore(performance): Improve performance for adding RemoveExtraSlash flag [#2159](https://github.com/gin-gonic/gin/pull/2159)
+  * drop support govendor [#2148](https://github.com/gin-gonic/gin/pull/2148)
+  * Added support for SameSite cookie flag [#1615](https://github.com/gin-gonic/gin/pull/1615)
+### FEATURES
+  * add yaml negotitation [#2220](https://github.com/gin-gonic/gin/pull/2220)
+  * FileFromFS [#2112](https://github.com/gin-gonic/gin/pull/2112)
+### BUGFIXES
+  * Unix Socket Handling [#2280](https://github.com/gin-gonic/gin/pull/2280)
+  * Use json marshall in context json to fix breaking new line issue. Fixes #2209 [#2228](https://github.com/gin-gonic/gin/pull/2228)
+  * fix accept incoming network connections [#2216](https://github.com/gin-gonic/gin/pull/2216)
+  * Fixed a bug in the calculation of the maximum number of parameters [#2166](https://github.com/gin-gonic/gin/pull/2166)
+  * [FIX] allow empty headers on DataFromReader [#2121](https://github.com/gin-gonic/gin/pull/2121)
+  * Add mutex for protect Context.Keys map [#1391](https://github.com/gin-gonic/gin/pull/1391)
+### ENHANCEMENTS
+  * Add mitigation for log injection [#2277](https://github.com/gin-gonic/gin/pull/2277)
+  * tree: range over nodes values [#2229](https://github.com/gin-gonic/gin/pull/2229)
+  * tree: remove duplicate assignment [#2222](https://github.com/gin-gonic/gin/pull/2222)
+  * chore: upgrade go-isatty and json-iterator/go [#2215](https://github.com/gin-gonic/gin/pull/2215)
+  * path: sync code with httprouter [#2212](https://github.com/gin-gonic/gin/pull/2212)
+  * Use zero-copy approach to convert types between string and byte slice [#2206](https://github.com/gin-gonic/gin/pull/2206)
+  * Reuse bytes when cleaning the URL paths [#2179](https://github.com/gin-gonic/gin/pull/2179)
+  * tree: remove one else statement [#2177](https://github.com/gin-gonic/gin/pull/2177)
+  * tree: sync httprouter update (#2173) (#2172) [#2171](https://github.com/gin-gonic/gin/pull/2171)
+  * tree: sync part httprouter codes and reduce if/else [#2163](https://github.com/gin-gonic/gin/pull/2163)
+  * use http method constant [#2155](https://github.com/gin-gonic/gin/pull/2155)
+  * upgrade go-validator to v10 [#2149](https://github.com/gin-gonic/gin/pull/2149)
+  * Refactor redirect request in gin.go [#1970](https://github.com/gin-gonic/gin/pull/1970)
+  * Add build tag nomsgpack [#1852](https://github.com/gin-gonic/gin/pull/1852)
+### DOCS
+  * docs(path): improve comments [#2223](https://github.com/gin-gonic/gin/pull/2223)
+  * Renew README to fit the modification of SetCookie method [#2217](https://github.com/gin-gonic/gin/pull/2217)
+  * Fix spelling [#2202](https://github.com/gin-gonic/gin/pull/2202)
+  * Remove broken link from README. [#2198](https://github.com/gin-gonic/gin/pull/2198)
+  * Update docs on Context.Done(), Context.Deadline() and Context.Err() [#2196](https://github.com/gin-gonic/gin/pull/2196)
+  * Update validator to v10 [#2190](https://github.com/gin-gonic/gin/pull/2190)
+  * upgrade go-validator to v10 for README [#2189](https://github.com/gin-gonic/gin/pull/2189)
+  * Update to currently output [#2188](https://github.com/gin-gonic/gin/pull/2188)
+  * Fix "Custom Validators" example [#2186](https://github.com/gin-gonic/gin/pull/2186)
+  * Add project to README [#2165](https://github.com/gin-gonic/gin/pull/2165)
+  * docs(benchmarks): for gin v1.5 [#2153](https://github.com/gin-gonic/gin/pull/2153)
+  * Changed wording for clarity in README.md [#2122](https://github.com/gin-gonic/gin/pull/2122)
+### MISC
+  * ci support go1.14 [#2262](https://github.com/gin-gonic/gin/pull/2262)
+  * chore: upgrade depend version [#2231](https://github.com/gin-gonic/gin/pull/2231)
+  * Drop support go1.10 [#2147](https://github.com/gin-gonic/gin/pull/2147)
+  * fix comment in `mode.go` [#2129](https://github.com/gin-gonic/gin/pull/2129)
+
+## Gin v1.5.0
 
 - [FIX] Use DefaultWriter and DefaultErrorWriter for debug messages [#1891](https://github.com/gin-gonic/gin/pull/1891)
 - [NEW] Now you can parse the inline lowercase start structure [#1893](https://github.com/gin-gonic/gin/pull/1893)
@@ -90,7 +160,7 @@
 - [NEW] Upgrade dependency libraries [#1491](https://github.com/gin-gonic/gin/pull/1491)
 
 
-### Gin v1.3.0
+## Gin v1.3.0
 
 - [NEW] Add [`func (*Context) QueryMap`](https://godoc.org/github.com/gin-gonic/gin#Context.QueryMap), [`func (*Context) GetQueryMap`](https://godoc.org/github.com/gin-gonic/gin#Context.GetQueryMap), [`func (*Context) PostFormMap`](https://godoc.org/github.com/gin-gonic/gin#Context.PostFormMap) and [`func (*Context) GetPostFormMap`](https://godoc.org/github.com/gin-gonic/gin#Context.GetPostFormMap) to support `type map[string]string` as query string or form parameters, see [#1383](https://github.com/gin-gonic/gin/pull/1383)
 - [NEW] Add [`func (*Context) AsciiJSON`](https://godoc.org/github.com/gin-gonic/gin#Context.AsciiJSON), see [#1358](https://github.com/gin-gonic/gin/pull/1358)
@@ -112,7 +182,7 @@
 - [FIX] Gin Mode `""` when calling [`func Mode`](https://godoc.org/github.com/gin-gonic/gin#Mode) now returns `const DebugMode`, see [#1250](https://github.com/gin-gonic/gin/pull/1250)
 - [FIX] `Flush()` now doesn't overwrite `responseWriter` status code, see [#1460](https://github.com/gin-gonic/gin/pull/1460)
 
-### Gin 1.2.0
+## Gin 1.2.0
 
 - [NEW] Switch from godeps to govendor
 - [NEW] Add support for Let's Encrypt via gin-gonic/autotls
@@ -135,15 +205,15 @@
 - [FIX] Use X-Forwarded-For before X-Real-Ip
 - [FIX] time.Time binding (#904)
 
-### Gin 1.1.4
+## Gin 1.1.4
 
 - [NEW] Support google appengine for IsTerminal func
 
-### Gin 1.1.3
+## Gin 1.1.3
 
 - [FIX] Reverted Logger: skip ANSI color commands
 
-### Gin 1.1
+## Gin 1.1
 
 - [NEW] Implement QueryArray and PostArray methods 
 - [NEW] Refactor GetQuery and GetPostForm 
@@ -153,7 +223,7 @@
 - [FIX] Changed imports to gopkg instead of github in README (#733) 
 - [FIX] Logger: skip ANSI color commands if output is not a tty
 
-### Gin 1.0rc2 (...)
+## Gin 1.0rc2 (...)
 
 - [PERFORMANCE] Fast path for writing Content-Type.
 - [PERFORMANCE] Much faster 404 routing
@@ -188,7 +258,7 @@
 - [FIX] MIT license in every file
 
 
-### Gin 1.0rc1 (May 22, 2015)
+## Gin 1.0rc1 (May 22, 2015)
 
 - [PERFORMANCE] Zero allocation router
 - [PERFORMANCE] Faster JSON, XML and text rendering
@@ -196,7 +266,7 @@
 - [PERFORMANCE] Misc code optimizations. Inlining, tail call optimizations
 - [NEW] Built-in support for golang.org/x/net/context
 - [NEW] Any(path, handler). Create a route that matches any path
-- [NEW] Refactored rendering pipeline (faster and static typeded)
+- [NEW] Refactored rendering pipeline (faster and static typed)
 - [NEW] Refactored errors API
 - [NEW] IndentedJSON() prints pretty JSON
 - [NEW] Added gin.DefaultWriter
@@ -232,7 +302,7 @@
 - [FIX] Better support for Google App Engine (using log instead of fmt)
 
 
-### Gin 0.6 (Mar 9, 2015)
+## Gin 0.6 (Mar 9, 2015)
 
 - [NEW] Support multipart/form-data
 - [NEW] NoMethod handler
@@ -242,14 +312,14 @@
 - [FIX] Improve color logger
 
 
-### Gin 0.5 (Feb 7, 2015)
+## Gin 0.5 (Feb 7, 2015)
 
 - [NEW] Content Negotiation
 - [FIX] Solved security bug that allow a client to spoof ip
 - [FIX] Fix unexported/ignored fields in binding
 
 
-### Gin 0.4 (Aug 21, 2014)
+## Gin 0.4 (Aug 21, 2014)
 
 - [NEW] Development mode
 - [NEW] Unit tests
@@ -258,7 +328,7 @@
 - [FIX] Improved documentation for model binding
 
 
-### Gin 0.3 (Jul 18, 2014)
+## Gin 0.3 (Jul 18, 2014)
 
 - [PERFORMANCE] Normal log and error log are printed in the same call.
 - [PERFORMANCE] Improve performance of NoRouter()
@@ -276,7 +346,7 @@
 - [FIX] Check application/x-www-form-urlencoded when parsing form
 
 
-### Gin 0.2b (Jul 08, 2014)
+## Gin 0.2b (Jul 08, 2014)
 - [PERFORMANCE] Using sync.Pool to allocatio/gc overhead
 - [NEW] Travis CI integration
 - [NEW] Completely new logger
@@ -295,7 +365,7 @@
 - [FIX] Recovery() middleware only prints panics
 - [FIX] Context.Get() does not panic anymore. Use MustGet() instead.
 - [FIX] Multiple http.WriteHeader() in NotFound handlers
-- [FIX] Engine.Run() panics if http server can't be setted up
+- [FIX] Engine.Run() panics if http server can't be set up
 - [FIX] Crash when route path doesn't start with '/'
 - [FIX] Do not update header when status code is negative
 - [FIX] Setting response headers before calling WriteHeader in context.String()
