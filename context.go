@@ -34,8 +34,10 @@ const (
 	MIMEPOSTForm          = binding.MIMEPOSTForm
 	MIMEMultipartPOSTForm = binding.MIMEMultipartPOSTForm
 	MIMEYAML              = binding.MIMEYAML
-	BodyBytesKey          = "_gin-gonic/gin/bodybyteskey"
 )
+
+// BodyBytesKey indicates a default body bytes key.
+const BodyBytesKey = "_gin-gonic/gin/bodybyteskey"
 
 const abortIndex int8 = math.MaxInt8 / 2
 
@@ -52,9 +54,10 @@ type Context struct {
 	fullPath string
 
 	engine *Engine
+	params *Params
 
 	// This mutex protect Keys map
-	KeysMutex *sync.RWMutex
+	mu sync.RWMutex
 
 	// Keys is a key/value pair exclusively for the context of each request.
 	Keys map[string]interface{}
@@ -86,19 +89,25 @@ func (c *Context) reset() {
 	c.Params = c.Params[0:0]
 	c.handlers = nil
 	c.index = -1
-	c.KeysMutex = &sync.RWMutex{}
+
 	c.fullPath = ""
 	c.Keys = nil
 	c.Errors = c.Errors[0:0]
 	c.Accepted = nil
 	c.queryCache = nil
 	c.formCache = nil
+	*c.params = (*c.params)[0:0]
 }
 
 // Copy returns a copy of the current context that can be safely used outside the request's scope.
 // This has to be used when the context has to be passed to a goroutine.
 func (c *Context) Copy() *Context {
-	var cp = *c
+	cp := Context{
+		writermem: c.writermem,
+		Request:   c.Request,
+		Params:    c.Params,
+		engine:    c.engine,
+	}
 	cp.writermem.ResponseWriter = nil
 	cp.Writer = &cp.writermem
 	cp.index = abortIndex
@@ -228,29 +237,21 @@ func (c *Context) Error(err error) *Error {
 // Set is used to store a new key/value pair exclusively for this context.
 // It also lazy initializes  c.Keys if it was not used previously.
 func (c *Context) Set(key string, value interface{}) {
-	if c.KeysMutex == nil {
-		c.KeysMutex = &sync.RWMutex{}
-	}
-
-	c.KeysMutex.Lock()
+	c.mu.Lock()
 	if c.Keys == nil {
 		c.Keys = make(map[string]interface{})
 	}
 
 	c.Keys[key] = value
-	c.KeysMutex.Unlock()
+	c.mu.Unlock()
 }
 
 // Get returns the value for the given key, ie: (value, true).
 // If the value does not exists it returns (nil, false)
 func (c *Context) Get(key string) (value interface{}, exists bool) {
-	if c.KeysMutex == nil {
-		c.KeysMutex = &sync.RWMutex{}
-	}
-
-	c.KeysMutex.RLock()
+	c.mu.RLock()
 	value, exists = c.Keys[key]
-	c.KeysMutex.RUnlock()
+	c.mu.RUnlock()
 	return
 }
 
@@ -413,7 +414,7 @@ func (c *Context) QueryArray(key string) []string {
 	return values
 }
 
-func (c *Context) getQueryCache() {
+func (c *Context) initQueryCache() {
 	if c.queryCache == nil {
 		c.queryCache = c.Request.URL.Query()
 	}
@@ -422,7 +423,7 @@ func (c *Context) getQueryCache() {
 // GetQueryArray returns a slice of strings for a given query key, plus
 // a boolean value whether at least one value exists for the given key.
 func (c *Context) GetQueryArray(key string) ([]string, bool) {
-	c.getQueryCache()
+	c.initQueryCache()
 	if values, ok := c.queryCache[key]; ok && len(values) > 0 {
 		return values, true
 	}
@@ -438,7 +439,7 @@ func (c *Context) QueryMap(key string) map[string]string {
 // GetQueryMap returns a map for a given query key, plus a boolean value
 // whether at least one value exists for the given key.
 func (c *Context) GetQueryMap(key string) (map[string]string, bool) {
-	c.getQueryCache()
+	c.initQueryCache()
 	return c.get(c.queryCache, key)
 }
 
@@ -480,7 +481,7 @@ func (c *Context) PostFormArray(key string) []string {
 	return values
 }
 
-func (c *Context) getFormCache() {
+func (c *Context) initFormCache() {
 	if c.formCache == nil {
 		c.formCache = make(url.Values)
 		req := c.Request
@@ -496,7 +497,7 @@ func (c *Context) getFormCache() {
 // GetPostFormArray returns a slice of strings for a given form key, plus
 // a boolean value whether at least one value exists for the given key.
 func (c *Context) GetPostFormArray(key string) ([]string, bool) {
-	c.getFormCache()
+	c.initFormCache()
 	if values := c.formCache[key]; len(values) > 0 {
 		return values, true
 	}
@@ -512,7 +513,7 @@ func (c *Context) PostFormMap(key string) map[string]string {
 // GetPostFormMap returns a map for a given form key, plus a boolean value
 // whether at least one value exists for the given key.
 func (c *Context) GetPostFormMap(key string) (map[string]string, bool) {
-	c.getFormCache()
+	c.initFormCache()
 	return c.get(c.formCache, key)
 }
 
@@ -866,7 +867,7 @@ func (c *Context) IndentedJSON(code int, obj interface{}) {
 // Default prepends "while(1)," to response body if the given struct is array values.
 // It also sets the Content-Type as "application/json".
 func (c *Context) SecureJSON(code int, obj interface{}) {
-	c.Render(code, render.SecureJSON{Prefix: c.engine.secureJsonPrefix, Data: obj})
+	c.Render(code, render.SecureJSON{Prefix: c.engine.secureJSONPrefix, Data: obj})
 }
 
 // JSONP serializes the given struct as JSON into the response body.

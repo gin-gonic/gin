@@ -41,9 +41,6 @@ type AsciiJSON struct {
 	Data interface{}
 }
 
-// SecureJSONPrefix is a string which represents SecureJSON prefix.
-type SecureJSONPrefix string
-
 // PureJSON contains the given interface object.
 type PureJSON struct {
 	Data interface{}
