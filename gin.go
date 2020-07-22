@@ -9,6 +9,7 @@ import (
 	"html/template"
 	"net"
 	"net/http"
+	"net/http/fcgi"
 	"os"
 	"path"
 	"sync"
@@ -308,6 +309,16 @@ func (engine *Engine) Run(addr ...string) (err error) {
 	address := resolveAddress(addr)
 	debugPrint("Listening and serving HTTP on %s\n", address)
 	err = http.ListenAndServe(address, engine)
+	return
+}
+
+// RunFCGI attaches the router to a fcgi.child and starts listening to os.Stdin for requests
+// It is a shortcut for fcgi.Serve(nil, router)
+func (engine *Engine) RunFCGI() (err error) {
+	defer func() { debugPrintError(err) }()
+
+	debugPrint("Listening and serving HTTP on FCGI\n")
+	err = fcgi.Serve(nil, engine)
 	return
 }
 
