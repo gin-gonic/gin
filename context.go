@@ -156,6 +156,11 @@ func (c *Context) FullPath() string {
 /*********** FLOW CONTROL ***********/
 /************************************/
 
+// Finish will stop the current handler immediately.
+func (c *Context) Finish() {
+	c.Request.Body.Close()
+}
+
 // Next should be used only inside middleware.
 // It executes the pending handlers in the chain inside the calling handler.
 // See example in GitHub.
