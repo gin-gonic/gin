@@ -758,12 +758,12 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
-	"gopkg.in/go-playground/validator.v10"
+	"github.com/go-playground/validator/v10"
 )
 
 // Booking contains binded and validated data.
 type Booking struct {
-	CheckIn  time.Time `form:"check_in" binding:"required" time_format:"2006-01-02"`
+	CheckIn  time.Time `form:"check_in" binding:"required,bookabledate" time_format:"2006-01-02"`
 	CheckOut time.Time `form:"check_out" binding:"required,gtfield=CheckIn" time_format:"2006-01-02"`
 }
 
@@ -800,11 +800,14 @@ func getBookable(c *gin.Context) {
 ```
 
 ```console
-$ curl "localhost:8085/bookable?check_in=2018-04-16&check_out=2018-04-17"
+$ curl "localhost:8085/bookable?check_in=2030-04-16&check_out=2030-04-17"
 {"message":"Booking dates are valid!"}
 
-$ curl "localhost:8085/bookable?check_in=2018-03-10&check_out=2018-03-09"
+$ curl "localhost:8085/bookable?check_in=2030-03-10&check_out=2030-03-09"
 {"error":"Key: 'Booking.CheckOut' Error:Field validation for 'CheckOut' failed on the 'gtfield' tag"}
+
+$ curl "localhost:8085/bookable?check_in=2000-03-09&check_out=2000-03-10"
+{"error":"Key: 'Booking.CheckIn' Error:Field validation for 'CheckIn' failed on the 'bookabledate' tag"}%    
 ```
 
 [Struct level validations](https://github.com/go-playground/validator/releases/tag/v8.7) can also be registered this way.
