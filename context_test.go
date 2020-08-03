@@ -940,7 +940,7 @@ func TestContextRenderNoContentHTMLString(t *testing.T) {
 	assert.Equal(t, "text/html; charset=utf-8", w.Header().Get("Content-Type"))
 }
 
-// TestContextData tests that the response can be written from `bytesting`
+// TestContextData tests that the response can be written from `bytestring`
 // with specified MIME type
 func TestContextRenderData(t *testing.T) {
 	w := httptest.NewRecorder()
