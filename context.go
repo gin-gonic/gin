@@ -416,7 +416,11 @@ func (c *Context) QueryArray(key string) []string {
 
 func (c *Context) initQueryCache() {
 	if c.queryCache == nil {
-		c.queryCache = c.Request.URL.Query()
+		if c.Request != nil {
+			c.queryCache = c.Request.URL.Query()
+		} else {
+			c.queryCache = url.Values{}
+		}
 	}
 }
 
