@@ -26,13 +26,29 @@ var (
 	slash     = []byte("/")
 )
 
+// RecoveryFunc defines the function passable to CustomRecovery.
+type RecoveryFunc func(c *Context, err interface{})
+
 // Recovery returns a middleware that recovers from any panics and writes a 500 if there was one.
 func Recovery() HandlerFunc {
 	return RecoveryWithWriter(DefaultErrorWriter)
 }
 
+//CustomRecovery returns a middleware that recovers from any panics and calls the provided handle func to handle it.
+func CustomRecovery(handle RecoveryFunc) HandlerFunc {
+	return RecoveryWithWriter(DefaultErrorWriter, handle)
+}
+
 // RecoveryWithWriter returns a middleware for a given writer that recovers from any panics and writes a 500 if there was one.
-func RecoveryWithWriter(out io.Writer) HandlerFunc {
+func RecoveryWithWriter(out io.Writer, recovery ...RecoveryFunc) HandlerFunc {
+	if len(recovery) > 0 {
+		return CustomRecoveryWithWriter(out, recovery[0])
+	}
+	return CustomRecoveryWithWriter(out, defaultHandleRecovery)
+}
+
+// CustomRecoveryWithWriter returns a middleware for a given writer that recovers from any panics and calls the provided handle func to handle it.
+func CustomRecoveryWithWriter(out io.Writer, handle RecoveryFunc) HandlerFunc {
 	var logger *log.Logger
 	if out != nil {
 		logger = log.New(out, "\n\n\x1b[31m", log.LstdFlags)
@@ -70,18 +86,21 @@ func RecoveryWithWriter(out io.Writer) HandlerFunc {
 							timeFormat(time.Now()), err, stack, reset)
 					}
 				}
-
-				// If the connection is dead, we can't write a status to it.
 				if brokenPipe {
+					// If the connection is dead, we can't write a status to it.
 					c.Error(err.(error)) // nolint: errcheck
 					c.Abort()
 				} else {
-					c.AbortWithStatus(http.StatusInternalServerError)
+					handle(c, err)
 				}
 			}
 		}()
 		c.Next()
 	}
+}
+
+func defaultHandleRecovery(c *Context, err interface{}) {
+	c.AbortWithStatus(http.StatusInternalServerError)
 }
 
 // stack returns a nicely formatted stack frame, skipping skip frames.
