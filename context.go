@@ -303,7 +303,7 @@ func (c *Context) GetInt64(key string) (i64 int64) {
 	return
 }
 
-// GetInt64 returns the value associated with the key as an unsigned integer.
+// GetUint64 returns the value associated with the key as an unsigned integer.
 func (c *Context) GetUint64(key string) (ui64 uint64) {
 	if val, ok := c.Get(key); ok && val != nil {
 		ui64, _ = val.(uint64)
