@@ -232,6 +232,8 @@ func LoggerWithConfig(conf LoggerConfig) HandlerFunc {
 	}
 
 	return func(c *Context) {
+		c.mu.Lock()
+		defer c.mu.Unlock()
 		// Start timer
 		start := time.Now()
 		path := c.Request.URL.Path
