@@ -713,14 +713,12 @@ func (c *Context) ShouldBindBodyWith(obj interface{}, bb binding.BindingBody) (e
 // X-Real-IP and X-Forwarded-For in order to work properly with reverse-proxies such us: nginx or haproxy.
 // Use X-Forwarded-For before X-Real-Ip as nginx uses X-Real-Ip with the proxy's IP.
 func (c *Context) ClientIP() string {
-	if c.engine.ForwardedByClientIP {
-		clientIP := c.requestHeader("X-Forwarded-For")
-		clientIP = strings.TrimSpace(strings.Split(clientIP, ",")[0])
-		if clientIP == "" {
-			clientIP = strings.TrimSpace(c.requestHeader("X-Real-Ip"))
-		}
-		if clientIP != "" {
-			return clientIP
+	if c.engine.ForwardedByClientIP && c.engine.RemoteIPHeaders != nil {
+		for _, header := range c.engine.RemoteIPHeaders {
+			ipChain := filterIPsFromUntrustedProxies(c.requestHeader(header), c.Request, c.engine)
+			if len(ipChain) > 0 {
+				return ipChain[0]
+			}
 		}
 	}
 
@@ -730,11 +728,82 @@ func (c *Context) ClientIP() string {
 		}
 	}
 
-	if ip, _, err := net.SplitHostPort(strings.TrimSpace(c.Request.RemoteAddr)); err == nil {
-		return ip
+	ip, _ := getTransportPeerIPForRequest(c.Request)
+
+	return ip
+}
+
+func filterIPsFromUntrustedProxies(XForwardedForHeader string, req *http.Request, e *Engine) []string {
+	var items, out []string
+	if XForwardedForHeader != "" {
+		items = strings.Split(XForwardedForHeader, ",")
+	} else {
+		return []string{}
+	}
+	if peerIP, err := getTransportPeerIPForRequest(req); err == nil {
+		items = append(items, peerIP)
 	}
 
-	return ""
+	for i := len(items) - 1; i >= 0; i-- {
+		item := strings.TrimSpace(items[i])
+		ip := net.ParseIP(item)
+		if ip == nil {
+			return out
+		}
+
+		out = prependString(ip.String(), out)
+		if !isTrustedProxy(ip, e) {
+			return out
+		}
+		//		out = prependString(ip.String(), out)
+	}
+	return out
+}
+
+func isTrustedProxy(ip net.IP, e *Engine) bool {
+	for _, trustedProxy := range e.TrustedProxies {
+		if _, ipnet, err := net.ParseCIDR(trustedProxy); err == nil {
+			if ipnet.Contains(ip) {
+				return true
+			}
+			continue
+		}
+
+		if proxyIP := net.ParseIP(trustedProxy); proxyIP != nil {
+			if proxyIP.Equal(ip) {
+				return true
+			}
+			continue
+		}
+
+		if addrs, err := e.lookupHost(trustedProxy); err == nil {
+			for _, proxyAddr := range addrs {
+				proxyIP := net.ParseIP(proxyAddr)
+				if proxyIP == nil {
+					continue
+				}
+				if proxyIP.Equal(ip) {
+					return true
+				}
+			}
+		}
+	}
+	return false
+}
+
+func prependString(ip string, ipList []string) []string {
+	ipList = append(ipList, "")
+	copy(ipList[1:], ipList)
+	ipList[0] = string(ip)
+	return ipList
+}
+
+func getTransportPeerIPForRequest(req *http.Request) (string, error) {
+	var err error
+	if ip, _, err := net.SplitHostPort(strings.TrimSpace(req.RemoteAddr)); err == nil {
+		return ip, nil
+	}
+	return "", err
 }
 
 // ContentType returns the Content-Type header of the request.
