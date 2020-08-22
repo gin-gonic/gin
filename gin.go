@@ -634,17 +634,25 @@ func (engine *Engine) handleHTTPRequest(c *Context) {
 	}
 
 	if engine.HandleMethodNotAllowed {
+		// According to RFC 7231 section 6.5.5, MUST generate an Allow header field in response
+		// containing a list of the target resource's currently supported methods.
+		allowed := make([]string, 0, len(t)-1)
 		for _, tree := range engine.trees {
 			if tree.method == httpMethod {
 				continue
 			}
 			if value := tree.root.getValue(rPath, nil, c.skippedNodes, unescape); value.handlers != nil {
-				c.handlers = engine.allNoMethod
-				serveError(c, http.StatusMethodNotAllowed, default405Body)
-				return
+				allowed = append(allowed, tree.method)
 			}
 		}
+		if len(allowed) > 0 {
+			c.handlers = engine.allNoMethod
+			c.writermem.Header().Set("Allow", strings.Join(allowed, ", "))
+			serveError(c, http.StatusMethodNotAllowed, default405Body)
+			return
+		}
 	}
+
 	c.handlers = engine.allNoRoute
 	serveError(c, http.StatusNotFound, default404Body)
 }

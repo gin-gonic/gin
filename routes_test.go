@@ -475,6 +475,18 @@ func TestRouteNotAllowedEnabled2(t *testing.T) {
 	assert.Equal(t, http.StatusMethodNotAllowed, w.Code)
 }
 
+func TestRouteNotAllowedEnabled3(t *testing.T) {
+	router := New()
+	router.HandleMethodNotAllowed = true
+	router.GET("/path", func(c *Context) {})
+	router.POST("/path", func(c *Context) {})
+	w := PerformRequest(router, http.MethodPut, "/path")
+	assert.Equal(t, http.StatusMethodNotAllowed, w.Code)
+	allowed := w.Header().Get("Allow")
+	assert.Contains(t, allowed, "GET")
+	assert.Contains(t, allowed, "POST")
+}
+
 func TestRouteNotAllowedDisabled(t *testing.T) {
 	router := New()
 	router.HandleMethodNotAllowed = false
