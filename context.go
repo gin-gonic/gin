@@ -208,6 +208,11 @@ func (c *Context) AbortWithError(code int, err error) *Error {
 /********* ERROR MANAGEMENT *********/
 /************************************/
 
+// Avoid panic case
+var emptyError = &Error{
+	Err:  fmt.Errorf("err is nil"),
+	Type: ErrorTypePrivate,
+}
 // Error attaches an error to the current context. The error is pushed to a list of errors.
 // It's a good idea to call Error for each error that occurred during the resolution of a request.
 // A middleware can be used to collect all the errors and push them to a database together,
@@ -215,7 +220,9 @@ func (c *Context) AbortWithError(code int, err error) *Error {
 // Error will panic if err is nil.
 func (c *Context) Error(err error) *Error {
 	if err == nil {
-		panic("err is nil")
+		// Avoid panic case, and do not push it into c.Errors
+		return emptyError
+		//panic("err is nil")
 	}
 
 	parsedError, ok := err.(*Error)
