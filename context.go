@@ -295,6 +295,22 @@ func (c *Context) GetInt64(key string) (i64 int64) {
 	return
 }
 
+// GetUint returns the value associated with the key as an unsigned integer.
+func (c *Context) GetUint(key string) (ui uint) {
+	if val, ok := c.Get(key); ok && val != nil {
+		ui, _ = val.(uint)
+	}
+	return
+}
+
+// GetUint64 returns the value associated with the key as an unsigned integer.
+func (c *Context) GetUint64(key string) (ui64 uint64) {
+	if val, ok := c.Get(key); ok && val != nil {
+		ui64, _ = val.(uint64)
+	}
+	return
+}
+
 // GetFloat64 returns the value associated with the key as a float64.
 func (c *Context) GetFloat64(key string) (f64 float64) {
 	if val, ok := c.Get(key); ok && val != nil {
