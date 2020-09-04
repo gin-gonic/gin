@@ -199,9 +199,10 @@ func (c *Context) AbortWithStatusJSON(code int, jsonObj interface{}) {
 // AbortWithError calls `AbortWithStatus()` and `Error()` internally.
 // This method stops the chain, writes the status code and pushes the specified error to `c.Errors`.
 // See Context.Error() for more details.
-func (c *Context) AbortWithError(code int, err error) *Error {
+func (c *Context) AbortWithError(code int, err error) {
 	c.AbortWithStatus(code)
-	return c.Error(err)
+	c.Error(err)
+	return
 }
 
 /************************************/
@@ -212,10 +213,10 @@ func (c *Context) AbortWithError(code int, err error) *Error {
 // It's a good idea to call Error for each error that occurred during the resolution of a request.
 // A middleware can be used to collect all the errors and push them to a database together,
 // print a log, or append it in the HTTP response.
-// Error will panic if err is nil.
-func (c *Context) Error(err error) *Error {
+// Error will ignore if err is nil.
+func (c *Context) Error(err error) {
 	if err == nil {
-		panic("err is nil")
+		return
 	}
 
 	parsedError, ok := err.(*Error)
@@ -227,7 +228,30 @@ func (c *Context) Error(err error) *Error {
 	}
 
 	c.Errors = append(c.Errors, parsedError)
-	return parsedError
+	return
+}
+
+// ErrorBindType attaches an error to the current context with specific ErrorType. The error is pushed to a list of errors.
+// It's a good idea to call Error for each error that occurred during the resolution of a request.
+// A middleware can be used to collect all the errors and push them to a database together,
+// print a log, or append it in the HTTP response.
+func (c *Context) ErrorBindType(err error, typ ErrorType) {
+	if err == nil {
+		return
+	}
+
+	parsedError, ok := err.(*Error)
+	if !ok {
+		parsedError = &Error{
+			Err:  err,
+			Type: typ,
+		}
+	} else {
+		parsedError.SetType(typ)
+	}
+
+	c.Errors = append(c.Errors, parsedError)
+	return
 }
 
 /************************************/
@@ -633,7 +657,7 @@ func (c *Context) BindHeader(obj interface{}) error {
 // It will abort the request with HTTP 400 if any error occurs.
 func (c *Context) BindUri(obj interface{}) error {
 	if err := c.ShouldBindUri(obj); err != nil {
-		c.AbortWithError(http.StatusBadRequest, err).SetType(ErrorTypeBind) // nolint: errcheck
+		c.AbortWithError(http.StatusBadRequest, WrapError(err).SetType(ErrorTypeBind)) // nolint: errcheck
 		return err
 	}
 	return nil
@@ -644,7 +668,7 @@ func (c *Context) BindUri(obj interface{}) error {
 // See the binding package.
 func (c *Context) MustBindWith(obj interface{}, b binding.Binding) error {
 	if err := c.ShouldBindWith(obj, b); err != nil {
-		c.AbortWithError(http.StatusBadRequest, err).SetType(ErrorTypeBind) // nolint: errcheck
+		c.AbortWithError(http.StatusBadRequest, WrapError(err).SetType(ErrorTypeBind)) // nolint: errcheck
 		return err
 	}
 	return nil

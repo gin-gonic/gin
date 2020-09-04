@@ -41,6 +41,13 @@ type errorMsgs []*Error
 
 var _ error = &Error{}
 
+// WrapError return Error wraps original error.
+func WrapError(err error) *Error {
+	return &Error{
+		Err: err,
+	}
+}
+
 // SetType sets the error's type.
 func (msg *Error) SetType(flags ErrorType) *Error {
 	msg.Type = flags
