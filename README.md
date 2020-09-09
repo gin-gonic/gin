@@ -1255,6 +1255,7 @@ func main() {
 		}
 
 		reader := response.Body
+ 		defer reader.Close()
 		contentLength := response.ContentLength
 		contentType := response.Header.Get("Content-Type")
 
