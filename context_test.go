@@ -1282,7 +1282,7 @@ func TestContextIsAborted(t *testing.T) {
 	assert.True(t, c.IsAborted())
 }
 
-// TestContextData tests that the response can be written from `bytesting`
+// TestContextData tests that the response can be written from `bytestring`
 // with specified MIME type
 func TestContextAbortWithStatus(t *testing.T) {
 	w := httptest.NewRecorder()
