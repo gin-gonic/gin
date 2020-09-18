@@ -1761,6 +1761,21 @@ func TestContextShouldBindBodyWith(t *testing.T) {
 			assert.NoError(t, c.ShouldBindBodyWith(&objB, tt.bindingB))
 			assert.Equal(t, typeB{"BAR"}, objB)
 		}
+		// not affect the request body
+		{
+			// After it binds, other bind methods can bind without EOF error.
+			w := httptest.NewRecorder()
+			c, _ := CreateTestContext(w)
+			c.Request, _ = http.NewRequest(
+				"POST", "http://example.com", bytes.NewBufferString(tt.bodyA),
+			)
+			objA := typeA{}
+			assert.NoError(t, c.ShouldBindBodyWith(&objA, tt.bindingA))
+			assert.Equal(t, typeA{"FOO"}, objA)
+			anotherOjbA := typeA{}
+			assert.NoError(t, c.ShouldBindWith(&anotherOjbA, tt.bindingA))
+			assert.Equal(t, typeA{"FOO"}, anotherOjbA)
+		}
 	}
 }
 

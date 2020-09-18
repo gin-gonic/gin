@@ -1989,9 +1989,9 @@ func SomeHandler(c *gin.Context) {
 }
 ```
 
-* `c.ShouldBindBodyWith` stores body into the context before binding. This has
-a slight impact to performance, so you should not use this method if you are
-enough to call binding at once.
+* `c.ShouldBindBodyWith` stores body into the context before binding, and it
+does not consume the request body. This has a slight impact to performance,
+so you should not use this method if you are enough to call binding at once.
 * This feature is only needed for some formats -- `JSON`, `XML`, `MsgPack`,
 `ProtoBuf`. For other formats, `Query`, `Form`, `FormPost`, `FormMultipart`,
 can be called by `c.ShouldBind()` multiple times without any damage to
