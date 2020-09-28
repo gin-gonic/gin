@@ -987,7 +987,7 @@ func (c *Context) FileFromFS(filepath string, fs http.FileSystem) {
 // FileAttachment writes the specified file into the body stream in an efficient way
 // On the client side, the file will typically be downloaded with the given filename
 func (c *Context) FileAttachment(filepath, filename string) {
-	c.Writer.Header().Set("content-disposition", fmt.Sprintf("attachment; filename=\"%s\"", filename))
+	c.Writer.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=\"%s\"", filename))
 	http.ServeFile(c.Writer, c.Request, filepath)
 }
 
