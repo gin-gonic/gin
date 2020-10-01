@@ -326,7 +326,7 @@ func TestIsOutputColor(t *testing.T) {
 		isTerm: true,
 	}
 
-	consoleColorMode = autoColor
+	ConsoleColorMode = autoColor
 	assert.Equal(t, true, p.IsOutputColor())
 
 	ForceConsoleColor()
@@ -340,7 +340,7 @@ func TestIsOutputColor(t *testing.T) {
 		isTerm: false,
 	}
 
-	consoleColorMode = autoColor
+	ConsoleColorMode = autoColor
 	assert.Equal(t, false, p.IsOutputColor())
 
 	ForceConsoleColor()
@@ -350,7 +350,7 @@ func TestIsOutputColor(t *testing.T) {
 	assert.Equal(t, false, p.IsOutputColor())
 
 	// reset console color mode.
-	consoleColorMode = autoColor
+	ConsoleColorMode = autoColor
 }
 
 func TestErrorLogger(t *testing.T) {
@@ -415,20 +415,20 @@ func TestLoggerWithConfigSkippingPaths(t *testing.T) {
 
 func TestDisableConsoleColor(t *testing.T) {
 	New()
-	assert.Equal(t, autoColor, consoleColorMode)
+	assert.Equal(t, autoColor, ConsoleColorMode)
 	DisableConsoleColor()
-	assert.Equal(t, disableColor, consoleColorMode)
+	assert.Equal(t, disableColor, ConsoleColorMode)
 
 	// reset console color mode.
-	consoleColorMode = autoColor
+	ConsoleColorMode = autoColor
 }
 
 func TestForceConsoleColor(t *testing.T) {
 	New()
-	assert.Equal(t, autoColor, consoleColorMode)
+	assert.Equal(t, autoColor, ConsoleColorMode)
 	ForceConsoleColor()
-	assert.Equal(t, forceColor, consoleColorMode)
+	assert.Equal(t, forceColor, ConsoleColorMode)
 
 	// reset console color mode.
-	consoleColorMode = autoColor
+	ConsoleColorMode = autoColor
 }

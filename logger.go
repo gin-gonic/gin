@@ -33,7 +33,7 @@ const (
 	reset   = "\033[0m"
 )
 
-var consoleColorMode = autoColor
+var ConsoleColorMode = autoColor
 
 // LoggerConfig defines the config for Logger middleware.
 type LoggerConfig struct {
@@ -125,7 +125,7 @@ func (p *LogFormatterParams) ResetColor() string {
 
 // IsOutputColor indicates whether can colors be outputted to the log.
 func (p *LogFormatterParams) IsOutputColor() bool {
-	return consoleColorMode == forceColor || (consoleColorMode == autoColor && p.isTerm)
+	return ConsoleColorMode == forceColor || (ConsoleColorMode == autoColor && p.isTerm)
 }
 
 // defaultLogFormatter is the default log format function Logger middleware uses.
@@ -154,12 +154,12 @@ var defaultLogFormatter = func(param LogFormatterParams) string {
 
 // DisableConsoleColor disables color output in the console.
 func DisableConsoleColor() {
-	consoleColorMode = disableColor
+	ConsoleColorMode = disableColor
 }
 
 // ForceConsoleColor force color output in the console.
 func ForceConsoleColor() {
-	consoleColorMode = forceColor
+	ConsoleColorMode = forceColor
 }
 
 // ErrorLogger returns a handlerfunc for any error type.

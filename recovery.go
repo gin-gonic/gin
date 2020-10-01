@@ -50,8 +50,15 @@ func RecoveryWithWriter(out io.Writer, recovery ...RecoveryFunc) HandlerFunc {
 // CustomRecoveryWithWriter returns a middleware for a given writer that recovers from any panics and calls the provided handle func to handle it.
 func CustomRecoveryWithWriter(out io.Writer, handle RecoveryFunc) HandlerFunc {
 	var logger *log.Logger
+
+	// If gin.DisableConsoleColor() is invoked, respect it.
+	prefix := "\n\n"
+	if ConsoleColorMode != 1 {
+		prefix = "\n\n\x1b[31m"
+	}
+
 	if out != nil {
-		logger = log.New(out, "\n\n\x1b[31m", log.LstdFlags)
+		logger = log.New(out, prefix, log.LstdFlags)
 	}
 	return func(c *Context) {
 		defer func() {
