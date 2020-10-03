@@ -178,8 +178,8 @@ Gin uses a custom version of [HttpRouter](https://github.com/julienschmidt/httpr
 
 - [x] Zero allocation router.
 - [x] Still the fastest http router and framework. From routing to writing.
-- [x] Complete suite of unit tests
-- [x] Battle tested
+- [x] Complete suite of unit tests.
+- [x] Battle tested.
 - [x] API frozen, new releases will not break your code.
 
 ## Build with [jsoniter](https://github.com/json-iterator/go)
