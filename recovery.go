@@ -76,11 +76,12 @@ func CustomRecoveryWithWriter(out io.Writer, handle RecoveryFunc) HandlerFunc {
 							headers[idx] = current[0] + ": *"
 						}
 					}
+					headersToStr := strings.Join(headers, "\r\n")
 					if brokenPipe {
-						logger.Printf("%s\n%s%s", err, string(httpRequest), reset)
+						logger.Printf("%s\n%s%s", err, headersToStr, reset)
 					} else if IsDebugging() {
 						logger.Printf("[Recovery] %s panic recovered:\n%s\n%s\n%s%s",
-							timeFormat(time.Now()), strings.Join(headers, "\r\n"), err, stack, reset)
+							timeFormat(time.Now()), headersToStr, err, stack, reset)
 					} else {
 						logger.Printf("[Recovery] %s panic recovered:\n%s\n%s%s",
 							timeFormat(time.Now()), err, stack, reset)
