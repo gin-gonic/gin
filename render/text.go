@@ -7,6 +7,8 @@ package render
 import (
 	"fmt"
 	"net/http"
+
+	"github.com/gin-gonic/gin/internal/bytesconv"
 )
 
 // String contains the given interface object slice and its format.
@@ -34,6 +36,6 @@ func WriteString(w http.ResponseWriter, format string, data []interface{}) (err 
 		_, err = fmt.Fprintf(w, format, data...)
 		return
 	}
-	_, err = w.Write([]byte(format))
+	_, err = w.Write(bytesconv.StringToBytes(format))
 	return
 }
