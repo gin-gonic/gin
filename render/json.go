@@ -52,9 +52,6 @@ var jsonAsciiContentType = []string{"application/json"}
 
 // Render (JSON) writes data with custom ContentType.
 func (r JSON) Render(w http.ResponseWriter) (err error) {
-	if _, isJson := r.Data.([]byte); isJson {
-		return
-	}
 	if err = WriteJSON(w, r.Data); err != nil {
 		panic(err)
 	}
@@ -69,6 +66,10 @@ func (r JSON) WriteContentType(w http.ResponseWriter) {
 // WriteJSON marshals the given interface object and writes it with custom ContentType.
 func WriteJSON(w http.ResponseWriter, obj interface{}) error {
 	writeContentType(w, jsonContentType)
+	if _, isJson := r.Data.([]byte); isJson {
+		_, err = w.Write(jsonBytes)
+	        return err
+	}
 	jsonBytes, err := json.Marshal(obj)
 	if err != nil {
 		return err
