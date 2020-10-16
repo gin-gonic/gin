@@ -66,8 +66,8 @@ func (r JSON) WriteContentType(w http.ResponseWriter) {
 // WriteJSON marshals the given interface object and writes it with custom ContentType.
 func WriteJSON(w http.ResponseWriter, obj interface{}) error {
 	writeContentType(w, jsonContentType)
-	if _, isJson := r.Data.([]byte); isJson {
-		_, err = w.Write(jsonBytes)
+	if _, isJson := obj.([]byte); isJson {
+		_, err := w.Write(obj.([]byte))
 	        return err
 	}
 	jsonBytes, err := json.Marshal(obj)
