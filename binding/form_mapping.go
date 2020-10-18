@@ -367,6 +367,7 @@ func head(str, sep string) (head string, tail string) {
 
 func setFormMap(ptr interface{}, form map[string][]string) error {
 	el := reflect.TypeOf(ptr).Elem()
+
 	if el.Kind() == reflect.Slice {
 		ptrMap, ok := ptr.(map[string][]string)
 		if !ok {
@@ -375,14 +376,17 @@ func setFormMap(ptr interface{}, form map[string][]string) error {
 		for k, v := range form {
 			ptrMap[k] = v
 		}
-	} else {
-		ptrMap, ok := ptr.(map[string]string)
-		if !ok {
-			return errors.New("cannot convert to map of strings")
-		}
-		for k, v := range form {
-			ptrMap[k] = v[len(v)-1] // pick last
-		}
+
+		return nil
 	}
+
+	ptrMap, ok := ptr.(map[string]string)
+	if !ok {
+		return errors.New("cannot convert to map of strings")
+	}
+	for k, v := range form {
+		ptrMap[k] = v[len(v)-1] // pick last
+	}
+
 	return nil
 }
