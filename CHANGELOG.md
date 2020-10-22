@@ -8,14 +8,14 @@
 
 ## Gin v1.6.2
 
-### BUFIXES
+### BUGFIXES
   * fix missing initial sync.RWMutex [#2305](https://github.com/gin-gonic/gin/pull/2305)
 ### ENHANCEMENTS
   * Add set samesite in cookie. [#2306](https://github.com/gin-gonic/gin/pull/2306)
 
 ## Gin v1.6.1
 
-### BUFIXES
+### BUGFIXES
   * Revert "fix accept incoming network connections" [#2294](https://github.com/gin-gonic/gin/pull/2294)
 
 ## Gin v1.6.0
@@ -25,7 +25,7 @@
   * drop support govendor [#2148](https://github.com/gin-gonic/gin/pull/2148)
   * Added support for SameSite cookie flag [#1615](https://github.com/gin-gonic/gin/pull/1615)
 ### FEATURES
-  * add yaml negotitation [#2220](https://github.com/gin-gonic/gin/pull/2220)
+  * add yaml negotiation [#2220](https://github.com/gin-gonic/gin/pull/2220)
   * FileFromFS [#2112](https://github.com/gin-gonic/gin/pull/2112)
 ### BUGFIXES
   * Unix Socket Handling [#2280](https://github.com/gin-gonic/gin/pull/2280)

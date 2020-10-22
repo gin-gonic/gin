@@ -190,7 +190,7 @@ func TestMappingTime(t *testing.T) {
 	assert.Error(t, err)
 }
 
-func TestMapiingTimeDuration(t *testing.T) {
+func TestMappingTimeDuration(t *testing.T) {
 	var s struct {
 		D time.Duration
 	}

@@ -54,6 +54,7 @@ type Context struct {
 	fullPath string
 
 	engine *Engine
+	params *Params
 
 	// This mutex protect Keys map
 	mu sync.RWMutex
@@ -95,6 +96,7 @@ func (c *Context) reset() {
 	c.Accepted = nil
 	c.queryCache = nil
 	c.formCache = nil
+	*c.params = (*c.params)[0:0]
 }
 
 // Copy returns a copy of the current context that can be safely used outside the request's scope.
@@ -293,6 +295,22 @@ func (c *Context) GetInt64(key string) (i64 int64) {
 	return
 }
 
+// GetUint returns the value associated with the key as an unsigned integer.
+func (c *Context) GetUint(key string) (ui uint) {
+	if val, ok := c.Get(key); ok && val != nil {
+		ui, _ = val.(uint)
+	}
+	return
+}
+
+// GetUint64 returns the value associated with the key as an unsigned integer.
+func (c *Context) GetUint64(key string) (ui64 uint64) {
+	if val, ok := c.Get(key); ok && val != nil {
+		ui64, _ = val.(uint64)
+	}
+	return
+}
+
 // GetFloat64 returns the value associated with the key as a float64.
 func (c *Context) GetFloat64(key string) (f64 float64) {
 	if val, ok := c.Get(key); ok && val != nil {
@@ -412,16 +430,20 @@ func (c *Context) QueryArray(key string) []string {
 	return values
 }
 
-func (c *Context) getQueryCache() {
+func (c *Context) initQueryCache() {
 	if c.queryCache == nil {
-		c.queryCache = c.Request.URL.Query()
+		if c.Request != nil {
+			c.queryCache = c.Request.URL.Query()
+		} else {
+			c.queryCache = url.Values{}
+		}
 	}
 }
 
 // GetQueryArray returns a slice of strings for a given query key, plus
 // a boolean value whether at least one value exists for the given key.
 func (c *Context) GetQueryArray(key string) ([]string, bool) {
-	c.getQueryCache()
+	c.initQueryCache()
 	if values, ok := c.queryCache[key]; ok && len(values) > 0 {
 		return values, true
 	}
@@ -437,7 +459,7 @@ func (c *Context) QueryMap(key string) map[string]string {
 // GetQueryMap returns a map for a given query key, plus a boolean value
 // whether at least one value exists for the given key.
 func (c *Context) GetQueryMap(key string) (map[string]string, bool) {
-	c.getQueryCache()
+	c.initQueryCache()
 	return c.get(c.queryCache, key)
 }
 
@@ -479,7 +501,7 @@ func (c *Context) PostFormArray(key string) []string {
 	return values
 }
 
-func (c *Context) getFormCache() {
+func (c *Context) initFormCache() {
 	if c.formCache == nil {
 		c.formCache = make(url.Values)
 		req := c.Request
@@ -495,7 +517,7 @@ func (c *Context) getFormCache() {
 // GetPostFormArray returns a slice of strings for a given form key, plus
 // a boolean value whether at least one value exists for the given key.
 func (c *Context) GetPostFormArray(key string) ([]string, bool) {
-	c.getFormCache()
+	c.initFormCache()
 	if values := c.formCache[key]; len(values) > 0 {
 		return values, true
 	}
@@ -511,7 +533,7 @@ func (c *Context) PostFormMap(key string) map[string]string {
 // GetPostFormMap returns a map for a given form key, plus a boolean value
 // whether at least one value exists for the given key.
 func (c *Context) GetPostFormMap(key string) (map[string]string, bool) {
-	c.getFormCache()
+	c.initFormCache()
 	return c.get(c.formCache, key)
 }
 
@@ -951,7 +973,7 @@ func (c *Context) File(filepath string) {
 	http.ServeFile(c.Writer, c.Request, filepath)
 }
 
-// FileFromFS writes the specified file from http.FileSytem into the body stream in an efficient way.
+// FileFromFS writes the specified file from http.FileSystem into the body stream in an efficient way.
 func (c *Context) FileFromFS(filepath string, fs http.FileSystem) {
 	defer func(old string) {
 		c.Request.URL.Path = old
@@ -965,7 +987,7 @@ func (c *Context) FileFromFS(filepath string, fs http.FileSystem) {
 // FileAttachment writes the specified file into the body stream in an efficient way
 // On the client side, the file will typically be downloaded with the given filename
 func (c *Context) FileAttachment(filepath, filename string) {
-	c.Writer.Header().Set("content-disposition", fmt.Sprintf("attachment; filename=\"%s\"", filename))
+	c.Writer.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=\"%s\"", filename))
 	http.ServeFile(c.Writer, c.Request, filepath)
 }
 
