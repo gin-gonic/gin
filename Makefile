@@ -1,20 +1,16 @@
 GO ?= go
 GOFMT ?= gofmt "-s"
-PACKAGES ?= $(shell $(GO) list ./... | grep -v /vendor/)
-VETPACKAGES ?= $(shell $(GO) list ./... | grep -v /vendor/ | grep -v /examples/)
-GOFILES := $(shell find . -name "*.go" -type f -not -path "./vendor/*")
+PACKAGES ?= $(shell $(GO) list ./...)
+VETPACKAGES ?= $(shell $(GO) list ./... | grep -v /examples/)
+GOFILES := $(shell find . -name "*.go")
 TESTFOLDER := $(shell $(GO) list ./... | grep -E 'gin$$|binding$$|render$$' | grep -v examples)
-
-all: install
-
-install: deps
-	govendor sync
+TESTTAGS ?= ""
 
 .PHONY: test
 test:
 	echo "mode: count" > coverage.out
 	for d in $(TESTFOLDER); do \
-		$(GO) test -v -covermode=count -coverprofile=profile.out $$d > tmp.out; \
+		$(GO) test -tags $(TESTTAGS) -v -covermode=count -coverprofile=profile.out $$d > tmp.out; \
 		cat tmp.out; \
 		if grep -q "^--- FAIL" tmp.out; then \
 			rm tmp.out; \
@@ -47,11 +43,6 @@ fmt-check:
 
 vet:
 	$(GO) vet $(VETPACKAGES)
-
-deps:
-	@hash govendor > /dev/null 2>&1; if [ $$? -ne 0 ]; then \
-		$(GO) get -u github.com/kardianos/govendor; \
-	fi
 
 .PHONY: lint
 lint:

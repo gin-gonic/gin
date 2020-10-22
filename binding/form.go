@@ -8,7 +8,7 @@ import (
 	"net/http"
 )
 
-const defaultMemory = 32 * 1024 * 1024
+const defaultMemory = 32 << 20
 
 type formBinding struct{}
 type formPostBinding struct{}

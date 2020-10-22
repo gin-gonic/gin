@@ -90,20 +90,23 @@ func filterFlags(content string) string {
 }
 
 func chooseData(custom, wildcard interface{}) interface{} {
-	if custom == nil {
-		if wildcard == nil {
-			panic("negotiation config is invalid")
-		}
+	if custom != nil {
+		return custom
+	}
+	if wildcard != nil {
 		return wildcard
 	}
-	return custom
+	panic("negotiation config is invalid")
 }
 
 func parseAccept(acceptHeader string) []string {
 	parts := strings.Split(acceptHeader, ",")
 	out := make([]string, 0, len(parts))
 	for _, part := range parts {
-		if part = strings.TrimSpace(strings.Split(part, ";")[0]); part != "" {
+		if i := strings.IndexByte(part, ';'); i > 0 {
+			part = part[:i]
+		}
+		if part = strings.TrimSpace(part); part != "" {
 			out = append(out, part)
 		}
 	}
@@ -127,8 +130,7 @@ func joinPaths(absolutePath, relativePath string) string {
 	}
 
 	finalPath := path.Join(absolutePath, relativePath)
-	appendSlash := lastChar(relativePath) == '/' && lastChar(finalPath) != '/'
-	if appendSlash {
+	if lastChar(relativePath) == '/' && lastChar(finalPath) != '/' {
 		return finalPath + "/"
 	}
 	return finalPath
