@@ -38,7 +38,6 @@ func TestRouterGroupBasicHandle(t *testing.T) {
 	performRequestInGroup(t, http.MethodPut)
 	performRequestInGroup(t, http.MethodPatch)
 	performRequestInGroup(t, http.MethodDelete)
-	performRequestInGroup(t, http.MethodHead)
 	performRequestInGroup(t, http.MethodOptions)
 }
 
@@ -70,9 +69,6 @@ func performRequestInGroup(t *testing.T, method string) {
 	case http.MethodDelete:
 		v1.DELETE("/test", handler)
 		login.DELETE("/test", handler)
-	case http.MethodHead:
-		v1.HEAD("/test", handler)
-		login.HEAD("/test", handler)
 	case http.MethodOptions:
 		v1.OPTIONS("/test", handler)
 		login.OPTIONS("/test", handler)
@@ -87,6 +83,30 @@ func performRequestInGroup(t *testing.T, method string) {
 	w = performRequest(router, method, "/v1/test")
 	assert.Equal(t, http.StatusBadRequest, w.Code)
 	assert.Equal(t, "the method was "+method+" and index 1", w.Body.String())
+}
+
+func TestRouterGroupBasicHandleHEAD(t *testing.T) {
+	router := New()
+	v1 := router.Group("v1", func(c *Context) {})
+	assert.Equal(t, "/v1", v1.BasePath())
+
+	login := v1.Group("/login/", func(c *Context) {}, func(c *Context) {})
+	assert.Equal(t, "/v1/login/", login.BasePath())
+
+	handler := func(c *Context) {
+		c.String(http.StatusBadRequest, "the method was %s and index %d", c.Request.Method, c.index)
+	}
+
+	v1.HEAD("/test", handler)
+	login.HEAD("/test", handler)
+
+	w := performRequest(router, http.MethodHead, "/v1/login/test")
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+	assert.Equal(t, "", w.Body.String())
+
+	w = performRequest(router, http.MethodHead, "/v1/test")
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+	assert.Equal(t, "", w.Body.String())
 }
 
 func TestRouterGroupInvalidStatic(t *testing.T) {

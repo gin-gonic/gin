@@ -856,7 +856,11 @@ func (c *Context) Cookie(name string) (string, error) {
 func (c *Context) Render(code int, r render.Render) {
 	c.Status(code)
 
-	if !bodyAllowedForStatus(code) {
+	// Rendering is suppressed for 1xx, 204 and 304 and all HEAD requests
+	// This avoids wasteful response processing, even though the standard
+	// net/http response processing would discard the response entity in
+	// (some of) these cases.
+	if !bodyAllowedForStatus(code) || c.Request.Method == http.MethodHead {
 		r.WriteContentType(c.Writer)
 		c.Writer.WriteHeaderNow()
 		return
