@@ -688,7 +688,7 @@ func TestContextRenderPanicIfErr(t *testing.T) {
 func TestContextRenderJSON(t *testing.T) {
 	w := httptest.NewRecorder()
 	c, _ := CreateTestContext(w)
-	c.Request, _ = http.NewRequest("GET", "http://example.com/", nil)
+	c.Request, _ = http.NewRequest("GET", "/", nil)
 
 	c.JSON(http.StatusCreated, H{"foo": "bar", "html": "<b>"})
 
@@ -702,7 +702,7 @@ func TestContextRenderJSON(t *testing.T) {
 func TestContextRenderJSONP(t *testing.T) {
 	w := httptest.NewRecorder()
 	c, _ := CreateTestContext(w)
-	c.Request, _ = http.NewRequest("GET", "http://example.com/?callback=x", nil)
+	c.Request, _ = http.NewRequest("GET", "/?callback=x", nil)
 
 	c.JSONP(http.StatusCreated, H{"foo": "bar"})
 
@@ -716,7 +716,7 @@ func TestContextRenderJSONP(t *testing.T) {
 func TestContextRenderJSONPWithoutCallback(t *testing.T) {
 	w := httptest.NewRecorder()
 	c, _ := CreateTestContext(w)
-	c.Request, _ = http.NewRequest("GET", "http://example.com", nil)
+	c.Request, _ = http.NewRequest("GET", "/", nil)
 
 	c.JSONP(http.StatusCreated, H{"foo": "bar"})
 
@@ -742,7 +742,7 @@ func TestContextRenderNoContentJSON(t *testing.T) {
 func TestContextRenderAPIJSON(t *testing.T) {
 	w := httptest.NewRecorder()
 	c, _ := CreateTestContext(w)
-	c.Request, _ = http.NewRequest("GET", "http://example.com/", nil)
+	c.Request, _ = http.NewRequest("GET", "/", nil)
 
 	c.Header("Content-Type", "application/vnd.api+json")
 	c.JSON(http.StatusCreated, H{"foo": "bar"})
@@ -1133,7 +1133,7 @@ func TestContextRenderRedirectWithRelativePath(t *testing.T) {
 	w := httptest.NewRecorder()
 	c, _ := CreateTestContext(w)
 
-	c.Request, _ = http.NewRequest("POST", "http://example.com", nil)
+	c.Request, _ = http.NewRequest("POST", "/", nil)
 	assert.Panics(t, func() { c.Redirect(299, "/new_path") })
 	assert.Panics(t, func() { c.Redirect(309, "/new_path") })
 
@@ -1148,7 +1148,7 @@ func TestContextRenderRedirectWithAbsolutePath(t *testing.T) {
 	c, _ := CreateTestContext(w)
 	c.Request, _ = http.NewRequest("GET", "/", nil)
 
-	c.Request, _ = http.NewRequest("POST", "http://example.com", nil)
+	c.Request, _ = http.NewRequest("POST", "/", nil)
 	c.Redirect(http.StatusFound, "http://google.com")
 	c.Writer.WriteHeaderNow()
 
