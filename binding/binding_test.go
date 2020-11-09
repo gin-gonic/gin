@@ -1195,7 +1195,6 @@ func testBodyBinding(t *testing.T, b Binding, name, path, badPath, body, badBody
 	assert.Error(t, err)
 }
 
-feature/array_support_for_json_bind
 func testBodyBindingSlice(t *testing.T, b Binding, name, path, badPath, body, badBody string) {
 	assert.Equal(t, name, b.Name())
 
