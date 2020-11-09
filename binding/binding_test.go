@@ -1206,7 +1206,7 @@ func testBodyBindingSlice(t *testing.T, b Binding, name, path, badPath, body, ba
 	var obj2 []FooStruct
 	req = requestWithBody("POST", badPath, badBody)
 	err = JSON.Bind(req, &obj2)
-  assert.Error(t, err)
+	assert.Error(t, err)
 }
 
 func testBodyBindingStringMap(t *testing.T, b Binding, path, badPath, body, badBody string) {
