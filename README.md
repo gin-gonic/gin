@@ -1794,7 +1794,7 @@ func main() {
 	// it won't block the graceful shutdown handling below
 	go func() {
 		if err := srv.ListenAndServe(); err != nil && errors.Is(err, http.ErrServerClosed) {
-			log.Fatalf("listen: %s\n", err)
+			log.Printf("listen: %s\n", err)
 		}
 	}()
 
