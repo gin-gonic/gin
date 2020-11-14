@@ -371,10 +371,11 @@ func (engine *Engine) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	c := engine.pool.Get().(*Context)
 	c.writermem.reset(w)
 	c.Request = req
-	c.reset()
 
 	engine.handleHTTPRequest(c)
 
+	// Given expectations, make it clear that the context will be reset after the request ends.
+	c.reset()
 	engine.pool.Put(c)
 }
 
