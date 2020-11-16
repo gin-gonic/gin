@@ -165,7 +165,10 @@ func Default() *Engine {
 
 func (engine *Engine) allocateContext() *Context {
 	v := make(Params, 0, engine.maxParams)
-	return &Context{engine: engine, params: &v}
+	c := &Context{engine: engine, params: &v}
+	// init context struct
+	c.reset()
+	return c
 }
 
 // Delims sets template left and right delims and returns a Engine instance.
