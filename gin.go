@@ -165,7 +165,10 @@ func Default() *Engine {
 
 func (engine *Engine) allocateContext() *Context {
 	v := make(Params, 0, engine.maxParams)
-	return &Context{engine: engine, params: &v}
+	c := &Context{engine: engine, params: &v}
+	// init ctx struct
+	c.reset()
+	return c
 }
 
 // Delims sets template left and right delims and returns a Engine instance.
@@ -371,10 +374,11 @@ func (engine *Engine) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	c := engine.pool.Get().(*Context)
 	c.writermem.reset(w)
 	c.Request = req
-	c.reset()
 
 	engine.handleHTTPRequest(c)
 
+	// clear request data
+	c.reset()
 	engine.pool.Put(c)
 }
 
