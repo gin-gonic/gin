@@ -12,10 +12,11 @@ import (
 	"strings"
 	"time"
 
+	"github.com/gin-gonic/gin/internal/bytesconv"
 	"github.com/gin-gonic/gin/internal/json"
 )
 
-var errUnknownType = errors.New("Unknown type")
+var errUnknownType = errors.New("unknown type")
 
 func mapUri(ptr interface{}, m map[string][]string) error {
 	return mapFormByTag(ptr, m, "uri")
@@ -28,6 +29,21 @@ func mapForm(ptr interface{}, form map[string][]string) error {
 var emptyField = reflect.StructField{}
 
 func mapFormByTag(ptr interface{}, form map[string][]string, tag string) error {
+	// Check if ptr is a map
+	ptrVal := reflect.ValueOf(ptr)
+	var pointed interface{}
+	if ptrVal.Kind() == reflect.Ptr {
+		ptrVal = ptrVal.Elem()
+		pointed = ptrVal.Interface()
+	}
+	if ptrVal.Kind() == reflect.Map &&
+		ptrVal.Type().Key().Kind() == reflect.String {
+		if pointed != nil {
+			ptr = pointed
+		}
+		return setFormMap(ptr, form)
+	}
+
 	return mappingByPtr(ptr, formSource(form), tag)
 }
 
@@ -51,6 +67,10 @@ func mappingByPtr(ptr interface{}, setter setter, tag string) error {
 }
 
 func mapping(value reflect.Value, field reflect.StructField, setter setter, tag string) (bool, error) {
+	if field.Tag.Get(tag) == "-" { // just ignoring this field
+		return false, nil
+	}
+
 	var vKind = value.Kind()
 
 	if vKind == reflect.Ptr {
@@ -112,9 +132,6 @@ func tryToSetValue(value reflect.Value, field reflect.StructField, setter setter
 	tagValue = field.Tag.Get(tag)
 	tagValue, opts := head(tagValue, ",")
 
-	if tagValue == "-" { // just ignoring this field
-		return false, nil
-	}
 	if tagValue == "" { // default value is FieldName
 		tagValue = field.Name
 	}
@@ -207,9 +224,9 @@ func setWithProperType(val string, value reflect.Value, field reflect.StructFiel
 		case time.Time:
 			return setTimeField(val, field, value)
 		}
-		return json.Unmarshal([]byte(val), value.Addr().Interface())
+		return json.Unmarshal(bytesconv.StringToBytes(val), value.Addr().Interface())
 	case reflect.Map:
-		return json.Unmarshal([]byte(val), value.Addr().Interface())
+		return json.Unmarshal(bytesconv.StringToBytes(val), value.Addr().Interface())
 	default:
 		return errUnknownType
 	}
@@ -268,7 +285,7 @@ func setTimeField(val string, structField reflect.StructField, value reflect.Val
 
 	switch tf := strings.ToLower(timeFormat); tf {
 	case "unix", "unixnano":
-		tv, err := strconv.ParseInt(val, 10, 0)
+		tv, err := strconv.ParseInt(val, 10, 64)
 		if err != nil {
 			return err
 		}
@@ -346,4 +363,30 @@ func head(str, sep string) (head string, tail string) {
 		return str, ""
 	}
 	return str[:idx], str[idx+len(sep):]
+}
+
+func setFormMap(ptr interface{}, form map[string][]string) error {
+	el := reflect.TypeOf(ptr).Elem()
+
+	if el.Kind() == reflect.Slice {
+		ptrMap, ok := ptr.(map[string][]string)
+		if !ok {
+			return errors.New("cannot convert to map slices of strings")
+		}
+		for k, v := range form {
+			ptrMap[k] = v
+		}
+
+		return nil
+	}
+
+	ptrMap, ok := ptr.(map[string]string)
+	if !ok {
+		return errors.New("cannot convert to map of strings")
+	}
+	for k, v := range form {
+		ptrMap[k] = v[len(v)-1] // pick last
+	}
+
+	return nil
 }
