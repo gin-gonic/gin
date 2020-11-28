@@ -13,6 +13,7 @@ import (
 	"mime/multipart"
 	"net/http"
 	"os"
+	"reflect"
 	"strconv"
 	"strings"
 	"testing"
@@ -200,6 +201,12 @@ func TestBindingJSONDisallowUnknownFields(t *testing.T) {
 		`{"foo": "bar"}`, `{"foo": "bar", "what": "this"}`)
 }
 
+func TestBindingJSONStringMap(t *testing.T) {
+	testBodyBindingStringMap(t, JSON,
+		"/", "/",
+		`{"foo": "bar", "hello": "world"}`, `{"num": 2}`)
+}
+
 func TestBindingForm(t *testing.T) {
 	testFormBinding(t, "POST",
 		"/", "/",
@@ -336,6 +343,37 @@ func TestBindingFormForType(t *testing.T) {
 		"", "", "StructPointer")
 }
 
+func TestBindingFormStringMap(t *testing.T) {
+	testBodyBindingStringMap(t, Form,
+		"/", "",
+		`foo=bar&hello=world`, "")
+	// Should pick the last value
+	testBodyBindingStringMap(t, Form,
+		"/", "",
+		`foo=something&foo=bar&hello=world`, "")
+}
+
+func TestBindingFormStringSliceMap(t *testing.T) {
+	obj := make(map[string][]string)
+	req := requestWithBody("POST", "/", "foo=something&foo=bar&hello=world")
+	req.Header.Add("Content-Type", MIMEPOSTForm)
+	err := Form.Bind(req, &obj)
+	assert.NoError(t, err)
+	assert.NotNil(t, obj)
+	assert.Len(t, obj, 2)
+	target := map[string][]string{
+		"foo":   {"something", "bar"},
+		"hello": {"world"},
+	}
+	assert.True(t, reflect.DeepEqual(obj, target))
+
+	objInvalid := make(map[string][]int)
+	req = requestWithBody("POST", "/", "foo=something&foo=bar&hello=world")
+	req.Header.Add("Content-Type", MIMEPOSTForm)
+	err = Form.Bind(req, &objInvalid)
+	assert.Error(t, err)
+}
+
 func TestBindingQuery(t *testing.T) {
 	testQueryBinding(t, "POST",
 		"/?foo=bar&bar=foo", "/",
@@ -366,6 +404,28 @@ func TestBindingQueryBoolFail(t *testing.T) {
 		"bool_foo=unused", "")
 }
 
+func TestBindingQueryStringMap(t *testing.T) {
+	b := Query
+
+	obj := make(map[string]string)
+	req := requestWithBody("GET", "/?foo=bar&hello=world", "")
+	err := b.Bind(req, &obj)
+	assert.NoError(t, err)
+	assert.NotNil(t, obj)
+	assert.Len(t, obj, 2)
+	assert.Equal(t, "bar", obj["foo"])
+	assert.Equal(t, "world", obj["hello"])
+
+	obj = make(map[string]string)
+	req = requestWithBody("GET", "/?foo=bar&foo=2&hello=world", "") // should pick last
+	err = b.Bind(req, &obj)
+	assert.NoError(t, err)
+	assert.NotNil(t, obj)
+	assert.Len(t, obj, 2)
+	assert.Equal(t, "2", obj["foo"])
+	assert.Equal(t, "world", obj["hello"])
+}
+
 func TestBindingXML(t *testing.T) {
 	testBodyBinding(t,
 		XML, "xml",
@@ -385,6 +445,13 @@ func TestBindingYAML(t *testing.T) {
 		YAML, "yaml",
 		"/", "/",
 		`foo: bar`, `bar: foo`)
+}
+
+func TestBindingYAMLStringMap(t *testing.T) {
+	// YAML is a superset of JSON, so the test below is JSON (to avoid newlines)
+	testBodyBindingStringMap(t, YAML,
+		"/", "/",
+		`{"foo": "bar", "hello": "world"}`, `{"nested": {"foo": "bar"}}`)
 }
 
 func TestBindingYAMLFail(t *testing.T) {
@@ -1111,6 +1178,32 @@ func testBodyBinding(t *testing.T, b Binding, name, path, badPath, body, badBody
 	obj = FooStruct{}
 	req = requestWithBody("POST", badPath, badBody)
 	err = JSON.Bind(req, &obj)
+	assert.Error(t, err)
+}
+
+func testBodyBindingStringMap(t *testing.T, b Binding, path, badPath, body, badBody string) {
+	obj := make(map[string]string)
+	req := requestWithBody("POST", path, body)
+	if b.Name() == "form" {
+		req.Header.Add("Content-Type", MIMEPOSTForm)
+	}
+	err := b.Bind(req, &obj)
+	assert.NoError(t, err)
+	assert.NotNil(t, obj)
+	assert.Len(t, obj, 2)
+	assert.Equal(t, "bar", obj["foo"])
+	assert.Equal(t, "world", obj["hello"])
+
+	if badPath != "" && badBody != "" {
+		obj = make(map[string]string)
+		req = requestWithBody("POST", badPath, badBody)
+		err = b.Bind(req, &obj)
+		assert.Error(t, err)
+	}
+
+	objInt := make(map[string]int)
+	req = requestWithBody("POST", path, body)
+	err = b.Bind(req, &objInt)
 	assert.Error(t, err)
 }
 

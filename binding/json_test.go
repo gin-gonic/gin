@@ -19,3 +19,12 @@ func TestJSONBindingBindBody(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, "FOO", s.Foo)
 }
+
+func TestJSONBindingBindBodyMap(t *testing.T) {
+	s := make(map[string]string)
+	err := jsonBinding{}.BindBody([]byte(`{"foo": "FOO","hello":"world"}`), &s)
+	require.NoError(t, err)
+	assert.Len(t, s, 2)
+	assert.Equal(t, "FOO", s["foo"])
+	assert.Equal(t, "world", s["hello"])
+}
