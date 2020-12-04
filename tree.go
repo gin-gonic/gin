@@ -611,7 +611,7 @@ walk: // Outer loop for walking the tree
 				if rb[0] != 0 {
 					// Old rune not finished
 					idxc := rb[0]
-					for i, c := range bytesconv.StringToBytes(n.indices) {
+					for i, c := range []byte(n.indices) {
 						if c == idxc {
 							// continue with child node
 							n = n.children[i]
@@ -643,7 +643,7 @@ walk: // Outer loop for walking the tree
 					rb = shiftNRuneBytes(rb, off)
 
 					idxc := rb[0]
-					for i, c := range bytesconv.StringToBytes(n.indices) {
+					for i, c := range []byte(n.indices) {
 						// Lowercase matches
 						if c == idxc {
 							// must use a recursive approach since both the
@@ -665,7 +665,7 @@ walk: // Outer loop for walking the tree
 						rb = shiftNRuneBytes(rb, off)
 
 						idxc := rb[0]
-						for i, c := range bytesconv.StringToBytes(n.indices) {
+						for i, c := range []byte(n.indices) {
 							// Uppercase matches
 							if c == idxc {
 								// Continue with child node
