@@ -205,10 +205,8 @@ walk:
 					"'")
 			}
 
-			c := path[0]
-
 			// slash after param
-			if n.nType == param && c == '/' && len(n.children) == 1 {
+			if n.nType == param && path[0] == '/' && len(n.children) == 1 {
 				parentFullPathIndex += len(n.path)
 				n = n.children[0]
 				n.priority++
@@ -217,7 +215,7 @@ walk:
 
 			// Check if a child with the next path byte exists
 			for i, max := 0, len(n.indices); i < max; i++ {
-				if c == n.indices[i] {
+				if path[0] == n.indices[i] {
 					parentFullPathIndex += len(n.path)
 					i = n.incrementChildPrio(i)
 					n = n.children[i]
@@ -226,9 +224,9 @@ walk:
 			}
 
 			// Otherwise insert it
-			if c != ':' && c != '*' {
+			if path[0] != ':' && path[0] != '*' {
 				// []byte for proper unicode char conversion, see #65
-				n.indices += bytesconv.BytesToString([]byte{c})
+				n.indices += path[0:1]
 				child := &node{
 					fullPath: fullPath,
 				}
