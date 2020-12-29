@@ -14,6 +14,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"path/filepath"
 	"sync"
 	"testing"
 	"time"
@@ -146,7 +147,7 @@ func TestRunWithPort(t *testing.T) {
 func TestUnixSocket(t *testing.T) {
 	router := New()
 
-	unixTestSocket := "/tmp/unix_unit_test"
+	unixTestSocket := filepath.Join(os.TempDir(), "unix_unit_test")
 
 	defer os.Remove(unixTestSocket)
 
