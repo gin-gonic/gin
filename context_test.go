@@ -1960,3 +1960,22 @@ func TestContextWithKeysMutex(t *testing.T) {
 	assert.Nil(t, value)
 	assert.False(t, err)
 }
+
+func TestContextValueRequest(t *testing.T) {
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
+
+	c.Request, _ = http.NewRequest("GET", "/", nil)
+
+	// set the context value(s)
+	c1 := c.Request.Context()
+	c1 = context.WithValue(c1, interface{}("foo"), "bar")
+	c1 = context.WithValue(c1, interface{}("foo2"), "BAR2")
+
+	// set the context back to the request
+	c.Request = c.Request.WithContext(c1)
+
+	// testing
+	assert.Equal(t, "bar", c.ContextValue("foo"))
+	assert.Equal(t, "BAR2", c.ContextValue("foo2"))
+}
