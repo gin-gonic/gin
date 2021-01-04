@@ -84,7 +84,7 @@ Gin is a web framework written in Go (Golang). It features a martini-like API wi
 
 To install Gin package, you need to install Go and set your Go workspace first.
 
-1. The first need [Go](https://golang.org/) installed (**version 1.11+ is required**), then you can use the below Go command to install Gin.
+1. The first need [Go](https://golang.org/) installed (**version 1.12+ is required**), then you can use the below Go command to install Gin.
 
 ```sh
 $ go get -u github.com/gin-gonic/gin
@@ -178,8 +178,8 @@ Gin uses a custom version of [HttpRouter](https://github.com/julienschmidt/httpr
 
 - [x] Zero allocation router.
 - [x] Still the fastest http router and framework. From routing to writing.
-- [x] Complete suite of unit tests
-- [x] Battle tested
+- [x] Complete suite of unit tests.
+- [x] Battle tested.
 - [x] API frozen, new releases will not break your code.
 
 ## Build with [jsoniter](https://github.com/json-iterator/go)
@@ -340,7 +340,7 @@ func main() {
 ```
 
 ```
-ids: map[b:hello a:1234], names: map[second:tianou first:thinkerou]
+ids: map[b:hello a:1234]; names: map[second:tianou first:thinkerou]
 ```
 
 ### Upload files
@@ -1255,6 +1255,7 @@ func main() {
 		}
 
 		reader := response.Body
+ 		defer reader.Close()
 		contentLength := response.ContentLength
 		contentType := response.Header.Get("Content-Type")
 

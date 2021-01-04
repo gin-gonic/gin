@@ -295,6 +295,22 @@ func (c *Context) GetInt64(key string) (i64 int64) {
 	return
 }
 
+// GetUint returns the value associated with the key as an unsigned integer.
+func (c *Context) GetUint(key string) (ui uint) {
+	if val, ok := c.Get(key); ok && val != nil {
+		ui, _ = val.(uint)
+	}
+	return
+}
+
+// GetUint64 returns the value associated with the key as an unsigned integer.
+func (c *Context) GetUint64(key string) (ui64 uint64) {
+	if val, ok := c.Get(key); ok && val != nil {
+		ui64, _ = val.(uint64)
+	}
+	return
+}
+
 // GetFloat64 returns the value associated with the key as a float64.
 func (c *Context) GetFloat64(key string) (f64 float64) {
 	if val, ok := c.Get(key); ok && val != nil {
@@ -944,7 +960,7 @@ func (c *Context) SecureJSON(code int, obj interface{}) {
 }
 
 // JSONP serializes the given struct as JSON into the response body.
-// It add padding to response body to request data from a server residing in a different domain than the client.
+// It adds padding to response body to request data from a server residing in a different domain than the client.
 // It also sets the Content-Type as "application/javascript".
 func (c *Context) JSONP(code int, obj interface{}) {
 	callback := c.DefaultQuery("callback", "")
@@ -1021,12 +1037,12 @@ func (c *Context) DataFromReader(code int, contentLength int64, contentType stri
 	})
 }
 
-// File writes the specified file into the body stream in a efficient way.
+// File writes the specified file into the body stream in an efficient way.
 func (c *Context) File(filepath string) {
 	http.ServeFile(c.Writer, c.Request, filepath)
 }
 
-// FileFromFS writes the specified file from http.FileSytem into the body stream in an efficient way.
+// FileFromFS writes the specified file from http.FileSystem into the body stream in an efficient way.
 func (c *Context) FileFromFS(filepath string, fs http.FileSystem) {
 	defer func(old string) {
 		c.Request.URL.Path = old
@@ -1040,7 +1056,7 @@ func (c *Context) FileFromFS(filepath string, fs http.FileSystem) {
 // FileAttachment writes the specified file into the body stream in an efficient way
 // On the client side, the file will typically be downloaded with the given filename
 func (c *Context) FileAttachment(filepath, filename string) {
-	c.Writer.Header().Set("content-disposition", fmt.Sprintf("attachment; filename=\"%s\"", filename))
+	c.Writer.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=\"%s\"", filename))
 	http.ServeFile(c.Writer, c.Request, filepath)
 }
 
