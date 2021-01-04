@@ -18,6 +18,34 @@ matrix:
     env:
       - TESTTAGS=nomsgpack
   - go: master
+    # Adding ppc64le jobs
+  - go: 1.11.x
+    arch: ppc64le
+    env: GO111MODULE=on
+  - go: 1.12.x
+    arch: ppc64le
+    env: GO111MODULE=on
+  - go: 1.13.x
+    arch: ppc64le
+  - go: 1.13.x
+    arch: ppc64le
+    env:
+      - TESTTAGS=nomsgpack
+  - go: 1.14.x
+    arch: ppc64le
+  - go: 1.14.x
+    arch: ppc64le
+    env:
+      - TESTTAGS=nomsgpack
+  - go: 1.15.x
+    arch: ppc64le
+  - go: 1.15.x
+    arch: ppc64le
+    env:
+      - TESTTAGS=nomsgpack
+  - go: master
+    arch: ppc64le
+
 
 git:
   depth: 10
