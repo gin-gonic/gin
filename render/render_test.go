@@ -281,7 +281,7 @@ func TestRenderProtoBufFail(t *testing.T) {
 	w := httptest.NewRecorder()
 	data := &testdata.Test{}
 	err := (ProtoBuf{data}).Render(w)
-	assert.Error(t, err)
+	assert.NoError(t, err) // No error
 }
 
 func TestRenderXML(t *testing.T) {
