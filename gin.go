@@ -83,6 +83,9 @@ type Engine struct {
 	HandleMethodNotAllowed bool
 	ForwardedByClientIP    bool
 
+	// Custom extractor for extracting client IP from request
+	ClientIPExtractor func(*http.Request) string
+
 	// #726 #755 If enabled, it will thrust some headers starting with
 	// 'X-AppEngine...' for better integration with that PaaS.
 	AppEngine bool

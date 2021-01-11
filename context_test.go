@@ -1416,6 +1416,14 @@ func TestContextClientIP(t *testing.T) {
 	// no port
 	c.Request.RemoteAddr = "50.50.50.50"
 	assert.Empty(t, c.ClientIP())
+
+	// custome client IP extractor
+	c.engine.ClientIPExtractor = func(req *http.Request) string {
+		clientIP := c.requestHeader("My-Client-IP")
+		return clientIP
+	}
+	c.Request.Header.Set("My-Client-IP", "10.10.10.10")
+	assert.Equal(t, "10.10.10.10", c.ClientIP())
 }
 
 func TestContextContentType(t *testing.T) {
