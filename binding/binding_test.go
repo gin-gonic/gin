@@ -35,7 +35,7 @@ type QueryTest struct {
 }
 
 type FooStruct struct {
-	Foo string `msgpack:"foo" json:"foo" form:"foo" xml:"foo" binding:"required"`
+	Foo string `msgpack:"foo" json:"foo" form:"foo" xml:"foo" binding:"required,max=32"`
 }
 
 type FooBarStruct struct {
@@ -179,6 +179,20 @@ func TestBindingJSON(t *testing.T) {
 		JSON, "json",
 		"/", "/",
 		`{"foo": "bar"}`, `{"bar": "foo"}`)
+}
+
+func TestBindingJSONSlice(t *testing.T) {
+	EnableDecoderDisallowUnknownFields = true
+	defer func() {
+		EnableDecoderDisallowUnknownFields = false
+	}()
+
+	testBodyBindingSlice(t, JSON, "json", "/", "/", `[]`, ``)
+	testBodyBindingSlice(t, JSON, "json", "/", "/", `[{"foo": "123"}]`, `[{}]`)
+	testBodyBindingSlice(t, JSON, "json", "/", "/", `[{"foo": "123"}]`, `[{"foo": ""}]`)
+	testBodyBindingSlice(t, JSON, "json", "/", "/", `[{"foo": "123"}]`, `[{"foo": 123}]`)
+	testBodyBindingSlice(t, JSON, "json", "/", "/", `[{"foo": "123"}]`, `[{"bar": 123}]`)
+	testBodyBindingSlice(t, JSON, "json", "/", "/", `[{"foo": "123"}]`, `[{"foo": "123456789012345678901234567890123"}]`)
 }
 
 func TestBindingJSONUseNumber(t *testing.T) {
@@ -1178,6 +1192,20 @@ func testBodyBinding(t *testing.T, b Binding, name, path, badPath, body, badBody
 	obj = FooStruct{}
 	req = requestWithBody("POST", badPath, badBody)
 	err = JSON.Bind(req, &obj)
+	assert.Error(t, err)
+}
+
+func testBodyBindingSlice(t *testing.T, b Binding, name, path, badPath, body, badBody string) {
+	assert.Equal(t, name, b.Name())
+
+	var obj1 []FooStruct
+	req := requestWithBody("POST", path, body)
+	err := b.Bind(req, &obj1)
+	assert.NoError(t, err)
+
+	var obj2 []FooStruct
+	req = requestWithBody("POST", badPath, badBody)
+	err = JSON.Bind(req, &obj2)
 	assert.Error(t, err)
 }
 
