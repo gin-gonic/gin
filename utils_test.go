@@ -18,6 +18,12 @@ func init() {
 	SetMode(TestMode)
 }
 
+func BenchmarkParseAccept(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		parseAccept("text/html , application/xhtml+xml,application/xml;q=0.9,  */* ;q=0.8")
+	}
+}
+
 type testStruct struct {
 	T *testing.T
 }
