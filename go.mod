@@ -7,6 +7,7 @@ require (
 	github.com/go-playground/validator/v10 v10.4.1
 	github.com/golang/protobuf v1.3.3
 	github.com/json-iterator/go v1.1.9
+	github.com/kuangchanglang/graceful v1.0.2
 	github.com/mattn/go-isatty v0.0.12
 	github.com/stretchr/testify v1.4.0
 	github.com/ugorji/go/codec v1.1.7
