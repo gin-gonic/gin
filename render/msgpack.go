@@ -2,12 +2,18 @@
 // Use of this source code is governed by a MIT style
 // license that can be found in the LICENSE file.
 
+// +build !nomsgpack
+
 package render
 
 import (
 	"net/http"
 
 	"github.com/ugorji/go/codec"
+)
+
+var (
+	_ Render = MsgPack{}
 )
 
 // MsgPack contains the given interface object.

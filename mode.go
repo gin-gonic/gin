@@ -22,6 +22,7 @@ const (
 	// TestMode indicates gin mode is test.
 	TestMode = "test"
 )
+
 const (
 	debugCode = iota
 	releaseCode
@@ -50,19 +51,21 @@ func init() {
 
 // SetMode sets gin mode according to input string.
 func SetMode(value string) {
+	if value == "" {
+		value = DebugMode
+	}
+
 	switch value {
-	case DebugMode, "":
+	case DebugMode:
 		ginMode = debugCode
 	case ReleaseMode:
 		ginMode = releaseCode
 	case TestMode:
 		ginMode = testCode
 	default:
-		panic("gin mode unknown: " + value)
+		panic("gin mode unknown: " + value + " (available mode: debug release test)")
 	}
-	if value == "" {
-		value = DebugMode
-	}
+
 	modeName = value
 }
 
@@ -71,10 +74,16 @@ func DisableBindValidation() {
 	binding.Validator = nil
 }
 
-// EnableJsonDecoderUseNumber sets true for binding.EnableDecoderUseNumberto to
+// EnableJsonDecoderUseNumber sets true for binding.EnableDecoderUseNumber to
 // call the UseNumber method on the JSON Decoder instance.
 func EnableJsonDecoderUseNumber() {
 	binding.EnableDecoderUseNumber = true
+}
+
+// EnableJsonDecoderDisallowUnknownFields sets true for binding.EnableDecoderDisallowUnknownFields to
+// call the DisallowUnknownFields method on the JSON Decoder instance.
+func EnableJsonDecoderDisallowUnknownFields() {
+	binding.EnableDecoderDisallowUnknownFields = true
 }
 
 // Mode returns currently gin mode.

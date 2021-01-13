@@ -10,6 +10,7 @@ import (
 	"html/template"
 	"net/http"
 
+	"github.com/gin-gonic/gin/internal/bytesconv"
 	"github.com/gin-gonic/gin/internal/json"
 )
 
@@ -40,8 +41,10 @@ type AsciiJSON struct {
 	Data interface{}
 }
 
-// SecureJSONPrefix is a string which represents SecureJSON prefix.
-type SecureJSONPrefix string
+// PureJSON contains the given interface object.
+type PureJSON struct {
+	Data interface{}
+}
 
 var jsonContentType = []string{"application/json; charset=utf-8"}
 var jsonpContentType = []string{"application/javascript; charset=utf-8"}
@@ -95,8 +98,9 @@ func (r SecureJSON) Render(w http.ResponseWriter) error {
 		return err
 	}
 	// if the jsonBytes is array values
-	if bytes.HasPrefix(jsonBytes, []byte("[")) && bytes.HasSuffix(jsonBytes, []byte("]")) {
-		_, err = w.Write([]byte(r.Prefix))
+	if bytes.HasPrefix(jsonBytes, bytesconv.StringToBytes("[")) && bytes.HasSuffix(jsonBytes,
+		bytesconv.StringToBytes("]")) {
+		_, err = w.Write(bytesconv.StringToBytes(r.Prefix))
 		if err != nil {
 			return err
 		}
@@ -124,11 +128,11 @@ func (r JsonpJSON) Render(w http.ResponseWriter) (err error) {
 	}
 
 	callback := template.JSEscapeString(r.Callback)
-	_, err = w.Write([]byte(callback))
+	_, err = w.Write(bytesconv.StringToBytes(callback))
 	if err != nil {
 		return err
 	}
-	_, err = w.Write([]byte("("))
+	_, err = w.Write(bytesconv.StringToBytes("("))
 	if err != nil {
 		return err
 	}
@@ -136,7 +140,7 @@ func (r JsonpJSON) Render(w http.ResponseWriter) (err error) {
 	if err != nil {
 		return err
 	}
-	_, err = w.Write([]byte(")"))
+	_, err = w.Write(bytesconv.StringToBytes(");"))
 	if err != nil {
 		return err
 	}
@@ -158,7 +162,7 @@ func (r AsciiJSON) Render(w http.ResponseWriter) (err error) {
 	}
 
 	var buffer bytes.Buffer
-	for _, r := range string(ret) {
+	for _, r := range bytesconv.BytesToString(ret) {
 		cvt := string(r)
 		if r >= 128 {
 			cvt = fmt.Sprintf("\\u%04x", int64(r))
@@ -173,4 +177,17 @@ func (r AsciiJSON) Render(w http.ResponseWriter) (err error) {
 // WriteContentType (AsciiJSON) writes JSON ContentType.
 func (r AsciiJSON) WriteContentType(w http.ResponseWriter) {
 	writeContentType(w, jsonAsciiContentType)
+}
+
+// Render (PureJSON) writes custom ContentType and encodes the given interface object.
+func (r PureJSON) Render(w http.ResponseWriter) error {
+	r.WriteContentType(w)
+	encoder := json.NewEncoder(w)
+	encoder.SetEscapeHTML(false)
+	return encoder.Encode(r.Data)
+}
+
+// WriteContentType (PureJSON) writes custom ContentType.
+func (r PureJSON) WriteContentType(w http.ResponseWriter) {
+	writeContentType(w, jsonContentType)
 }

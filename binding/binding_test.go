@@ -13,6 +13,7 @@ import (
 	"mime/multipart"
 	"net/http"
 	"os"
+	"reflect"
 	"strconv"
 	"strings"
 	"testing"
@@ -21,11 +22,20 @@ import (
 	"github.com/gin-gonic/gin/testdata/protoexample"
 	"github.com/golang/protobuf/proto"
 	"github.com/stretchr/testify/assert"
-	"github.com/ugorji/go/codec"
 )
 
+type appkey struct {
+	Appkey string `json:"appkey" form:"appkey"`
+}
+
+type QueryTest struct {
+	Page int `json:"page" form:"page"`
+	Size int `json:"size" form:"size"`
+	appkey
+}
+
 type FooStruct struct {
-	Foo string `msgpack:"foo" json:"foo" form:"foo" xml:"foo" binding:"required"`
+	Foo string `msgpack:"foo" json:"foo" form:"foo" xml:"foo" binding:"required,max=32"`
 }
 
 type FooBarStruct struct {
@@ -54,9 +64,20 @@ type FooStructUseNumber struct {
 	Foo interface{} `json:"foo" binding:"required"`
 }
 
+type FooStructDisallowUnknownFields struct {
+	Foo interface{} `json:"foo" binding:"required"`
+}
+
 type FooBarStructForTimeType struct {
-	TimeFoo time.Time `form:"time_foo" time_format:"2006-01-02" time_utc:"1" time_location:"Asia/Chongqing"`
-	TimeBar time.Time `form:"time_bar" time_format:"2006-01-02" time_utc:"1"`
+	TimeFoo    time.Time `form:"time_foo" time_format:"2006-01-02" time_utc:"1" time_location:"Asia/Chongqing"`
+	TimeBar    time.Time `form:"time_bar" time_format:"2006-01-02" time_utc:"1"`
+	CreateTime time.Time `form:"createTime" time_format:"unixNano"`
+	UnixTime   time.Time `form:"unixTime" time_format:"unix"`
+}
+
+type FooStructForTimeTypeNotUnixFormat struct {
+	CreateTime time.Time `form:"createTime" time_format:"unixNano"`
+	UnixTime   time.Time `form:"unixTime" time_format:"unix"`
 }
 
 type FooStructForTimeTypeNotFormat struct {
@@ -114,71 +135,6 @@ type FooStructForBoolType struct {
 	BoolFoo bool `form:"bool_foo"`
 }
 
-type FooBarStructForIntType struct {
-	IntFoo int `form:"int_foo"`
-	IntBar int `form:"int_bar" binding:"required"`
-}
-
-type FooBarStructForInt8Type struct {
-	Int8Foo int8 `form:"int8_foo"`
-	Int8Bar int8 `form:"int8_bar" binding:"required"`
-}
-
-type FooBarStructForInt16Type struct {
-	Int16Foo int16 `form:"int16_foo"`
-	Int16Bar int16 `form:"int16_bar" binding:"required"`
-}
-
-type FooBarStructForInt32Type struct {
-	Int32Foo int32 `form:"int32_foo"`
-	Int32Bar int32 `form:"int32_bar" binding:"required"`
-}
-
-type FooBarStructForInt64Type struct {
-	Int64Foo int64 `form:"int64_foo"`
-	Int64Bar int64 `form:"int64_bar" binding:"required"`
-}
-
-type FooBarStructForUintType struct {
-	UintFoo uint `form:"uint_foo"`
-	UintBar uint `form:"uint_bar" binding:"required"`
-}
-
-type FooBarStructForUint8Type struct {
-	Uint8Foo uint8 `form:"uint8_foo"`
-	Uint8Bar uint8 `form:"uint8_bar" binding:"required"`
-}
-
-type FooBarStructForUint16Type struct {
-	Uint16Foo uint16 `form:"uint16_foo"`
-	Uint16Bar uint16 `form:"uint16_bar" binding:"required"`
-}
-
-type FooBarStructForUint32Type struct {
-	Uint32Foo uint32 `form:"uint32_foo"`
-	Uint32Bar uint32 `form:"uint32_bar" binding:"required"`
-}
-
-type FooBarStructForUint64Type struct {
-	Uint64Foo uint64 `form:"uint64_foo"`
-	Uint64Bar uint64 `form:"uint64_bar" binding:"required"`
-}
-
-type FooBarStructForBoolType struct {
-	BoolFoo bool `form:"bool_foo"`
-	BoolBar bool `form:"bool_bar" binding:"required"`
-}
-
-type FooBarStructForFloat32Type struct {
-	Float32Foo float32 `form:"float32_foo"`
-	Float32Bar float32 `form:"float32_bar" binding:"required"`
-}
-
-type FooBarStructForFloat64Type struct {
-	Float64Foo float64 `form:"float64_foo"`
-	Float64Bar float64 `form:"float64_bar" binding:"required"`
-}
-
 type FooStructForStringPtrType struct {
 	PtrFoo *string `form:"ptr_foo"`
 	PtrBar *string `form:"ptr_bar" binding:"required"`
@@ -207,9 +163,6 @@ func TestBindingDefault(t *testing.T) {
 	assert.Equal(t, ProtoBuf, Default("POST", MIMEPROTOBUF))
 	assert.Equal(t, ProtoBuf, Default("PUT", MIMEPROTOBUF))
 
-	assert.Equal(t, MsgPack, Default("POST", MIMEMSGPACK))
-	assert.Equal(t, MsgPack, Default("PUT", MIMEMSGPACK2))
-
 	assert.Equal(t, YAML, Default("POST", MIMEYAML))
 	assert.Equal(t, YAML, Default("PUT", MIMEYAML))
 }
@@ -228,6 +181,20 @@ func TestBindingJSON(t *testing.T) {
 		`{"foo": "bar"}`, `{"bar": "foo"}`)
 }
 
+func TestBindingJSONSlice(t *testing.T) {
+	EnableDecoderDisallowUnknownFields = true
+	defer func() {
+		EnableDecoderDisallowUnknownFields = false
+	}()
+
+	testBodyBindingSlice(t, JSON, "json", "/", "/", `[]`, ``)
+	testBodyBindingSlice(t, JSON, "json", "/", "/", `[{"foo": "123"}]`, `[{}]`)
+	testBodyBindingSlice(t, JSON, "json", "/", "/", `[{"foo": "123"}]`, `[{"foo": ""}]`)
+	testBodyBindingSlice(t, JSON, "json", "/", "/", `[{"foo": "123"}]`, `[{"foo": 123}]`)
+	testBodyBindingSlice(t, JSON, "json", "/", "/", `[{"foo": "123"}]`, `[{"bar": 123}]`)
+	testBodyBindingSlice(t, JSON, "json", "/", "/", `[{"foo": "123"}]`, `[{"foo": "123456789012345678901234567890123"}]`)
+}
+
 func TestBindingJSONUseNumber(t *testing.T) {
 	testBodyBindingUseNumber(t,
 		JSON, "json",
@@ -242,6 +209,18 @@ func TestBindingJSONUseNumber2(t *testing.T) {
 		`{"foo": 123}`, `{"bar": "foo"}`)
 }
 
+func TestBindingJSONDisallowUnknownFields(t *testing.T) {
+	testBodyBindingDisallowUnknownFields(t, JSON,
+		"/", "/",
+		`{"foo": "bar"}`, `{"foo": "bar", "what": "this"}`)
+}
+
+func TestBindingJSONStringMap(t *testing.T) {
+	testBodyBindingStringMap(t, JSON,
+		"/", "/",
+		`{"foo": "bar", "hello": "world"}`, `{"num": 2}`)
+}
+
 func TestBindingForm(t *testing.T) {
 	testFormBinding(t, "POST",
 		"/", "/",
@@ -251,6 +230,18 @@ func TestBindingForm(t *testing.T) {
 func TestBindingForm2(t *testing.T) {
 	testFormBinding(t, "GET",
 		"/?foo=bar&bar=foo", "/?bar2=foo",
+		"", "")
+}
+
+func TestBindingFormEmbeddedStruct(t *testing.T) {
+	testFormBindingEmbeddedStruct(t, "POST",
+		"/", "/",
+		"page=1&size=2&appkey=test-appkey", "bar2=foo")
+}
+
+func TestBindingFormEmbeddedStruct2(t *testing.T) {
+	testFormBindingEmbeddedStruct(t, "GET",
+		"/?page=1&size=2&appkey=test-appkey", "/?bar2=foo",
 		"", "")
 }
 
@@ -269,7 +260,10 @@ func TestBindingFormDefaultValue2(t *testing.T) {
 func TestBindingFormForTime(t *testing.T) {
 	testFormBindingForTime(t, "POST",
 		"/", "/",
-		"time_foo=2017-11-15&time_bar=", "bar2=foo")
+		"time_foo=2017-11-15&time_bar=&createTime=1562400033000000123&unixTime=1562400033", "bar2=foo")
+	testFormBindingForTimeNotUnixFormat(t, "POST",
+		"/", "/",
+		"time_foo=2017-11-15&createTime=bad&unixTime=bad", "bar2=foo")
 	testFormBindingForTimeNotFormat(t, "POST",
 		"/", "/",
 		"time_foo=2017-11-15", "bar2=foo")
@@ -283,8 +277,11 @@ func TestBindingFormForTime(t *testing.T) {
 
 func TestBindingFormForTime2(t *testing.T) {
 	testFormBindingForTime(t, "GET",
-		"/?time_foo=2017-11-15&time_bar=", "/?bar2=foo",
+		"/?time_foo=2017-11-15&time_bar=&createTime=1562400033000000123&unixTime=1562400033", "/?bar2=foo",
 		"", "")
+	testFormBindingForTimeNotUnixFormat(t, "POST",
+		"/", "/",
+		"time_foo=2017-11-15&createTime=bad&unixTime=bad", "bar2=foo")
 	testFormBindingForTimeNotFormat(t, "GET",
 		"/?time_foo=2017-11-15", "/?bar2=foo",
 		"", "")
@@ -337,110 +334,6 @@ func TestBindingFormForType(t *testing.T) {
 
 	testFormBindingForType(t, "POST",
 		"/", "/",
-		"int_foo=&int_bar=-12", "bar2=-123", "Int")
-
-	testFormBindingForType(t, "GET",
-		"/?int_foo=&int_bar=-12", "/?bar2=-123",
-		"", "", "Int")
-
-	testFormBindingForType(t, "POST",
-		"/", "/",
-		"int8_foo=&int8_bar=-12", "bar2=-123", "Int8")
-
-	testFormBindingForType(t, "GET",
-		"/?int8_foo=&int8_bar=-12", "/?bar2=-123",
-		"", "", "Int8")
-
-	testFormBindingForType(t, "POST",
-		"/", "/",
-		"int16_foo=&int16_bar=-12", "bar2=-123", "Int16")
-
-	testFormBindingForType(t, "GET",
-		"/?int16_foo=&int16_bar=-12", "/?bar2=-123",
-		"", "", "Int16")
-
-	testFormBindingForType(t, "POST",
-		"/", "/",
-		"int32_foo=&int32_bar=-12", "bar2=-123", "Int32")
-
-	testFormBindingForType(t, "GET",
-		"/?int32_foo=&int32_bar=-12", "/?bar2=-123",
-		"", "", "Int32")
-
-	testFormBindingForType(t, "POST",
-		"/", "/",
-		"int64_foo=&int64_bar=-12", "bar2=-123", "Int64")
-
-	testFormBindingForType(t, "GET",
-		"/?int64_foo=&int64_bar=-12", "/?bar2=-123",
-		"", "", "Int64")
-
-	testFormBindingForType(t, "POST",
-		"/", "/",
-		"uint_foo=&uint_bar=12", "bar2=123", "Uint")
-
-	testFormBindingForType(t, "GET",
-		"/?uint_foo=&uint_bar=12", "/?bar2=123",
-		"", "", "Uint")
-
-	testFormBindingForType(t, "POST",
-		"/", "/",
-		"uint8_foo=&uint8_bar=12", "bar2=123", "Uint8")
-
-	testFormBindingForType(t, "GET",
-		"/?uint8_foo=&uint8_bar=12", "/?bar2=123",
-		"", "", "Uint8")
-
-	testFormBindingForType(t, "POST",
-		"/", "/",
-		"uint16_foo=&uint16_bar=12", "bar2=123", "Uint16")
-
-	testFormBindingForType(t, "GET",
-		"/?uint16_foo=&uint16_bar=12", "/?bar2=123",
-		"", "", "Uint16")
-
-	testFormBindingForType(t, "POST",
-		"/", "/",
-		"uint32_foo=&uint32_bar=12", "bar2=123", "Uint32")
-
-	testFormBindingForType(t, "GET",
-		"/?uint32_foo=&uint32_bar=12", "/?bar2=123",
-		"", "", "Uint32")
-
-	testFormBindingForType(t, "POST",
-		"/", "/",
-		"uint64_foo=&uint64_bar=12", "bar2=123", "Uint64")
-
-	testFormBindingForType(t, "GET",
-		"/?uint64_foo=&uint64_bar=12", "/?bar2=123",
-		"", "", "Uint64")
-
-	testFormBindingForType(t, "POST",
-		"/", "/",
-		"bool_foo=&bool_bar=true", "bar2=true", "Bool")
-
-	testFormBindingForType(t, "GET",
-		"/?bool_foo=&bool_bar=true", "/?bar2=true",
-		"", "", "Bool")
-
-	testFormBindingForType(t, "POST",
-		"/", "/",
-		"float32_foo=&float32_bar=-12.34", "bar2=12.3", "Float32")
-
-	testFormBindingForType(t, "GET",
-		"/?float32_foo=&float32_bar=-12.34", "/?bar2=12.3",
-		"", "", "Float32")
-
-	testFormBindingForType(t, "POST",
-		"/", "/",
-		"float64_foo=&float64_bar=-12.34", "bar2=12.3", "Float64")
-
-	testFormBindingForType(t, "GET",
-		"/?float64_foo=&float64_bar=-12.34", "/?bar2=12.3",
-		"", "", "Float64")
-
-	testFormBindingForType(t, "POST",
-		"/", "/",
 		"ptr_bar=test", "bar2=test", "Ptr")
 
 	testFormBindingForType(t, "GET",
@@ -462,6 +355,37 @@ func TestBindingFormForType(t *testing.T) {
 	testFormBindingForType(t, "GET",
 		"/?name=thinkerou", "/?name1=ou",
 		"", "", "StructPointer")
+}
+
+func TestBindingFormStringMap(t *testing.T) {
+	testBodyBindingStringMap(t, Form,
+		"/", "",
+		`foo=bar&hello=world`, "")
+	// Should pick the last value
+	testBodyBindingStringMap(t, Form,
+		"/", "",
+		`foo=something&foo=bar&hello=world`, "")
+}
+
+func TestBindingFormStringSliceMap(t *testing.T) {
+	obj := make(map[string][]string)
+	req := requestWithBody("POST", "/", "foo=something&foo=bar&hello=world")
+	req.Header.Add("Content-Type", MIMEPOSTForm)
+	err := Form.Bind(req, &obj)
+	assert.NoError(t, err)
+	assert.NotNil(t, obj)
+	assert.Len(t, obj, 2)
+	target := map[string][]string{
+		"foo":   {"something", "bar"},
+		"hello": {"world"},
+	}
+	assert.True(t, reflect.DeepEqual(obj, target))
+
+	objInvalid := make(map[string][]int)
+	req = requestWithBody("POST", "/", "foo=something&foo=bar&hello=world")
+	req.Header.Add("Content-Type", MIMEPOSTForm)
+	err = Form.Bind(req, &objInvalid)
+	assert.Error(t, err)
 }
 
 func TestBindingQuery(t *testing.T) {
@@ -494,6 +418,28 @@ func TestBindingQueryBoolFail(t *testing.T) {
 		"bool_foo=unused", "")
 }
 
+func TestBindingQueryStringMap(t *testing.T) {
+	b := Query
+
+	obj := make(map[string]string)
+	req := requestWithBody("GET", "/?foo=bar&hello=world", "")
+	err := b.Bind(req, &obj)
+	assert.NoError(t, err)
+	assert.NotNil(t, obj)
+	assert.Len(t, obj, 2)
+	assert.Equal(t, "bar", obj["foo"])
+	assert.Equal(t, "world", obj["hello"])
+
+	obj = make(map[string]string)
+	req = requestWithBody("GET", "/?foo=bar&foo=2&hello=world", "") // should pick last
+	err = b.Bind(req, &obj)
+	assert.NoError(t, err)
+	assert.NotNil(t, obj)
+	assert.Len(t, obj, 2)
+	assert.Equal(t, "2", obj["foo"])
+	assert.Equal(t, "world", obj["hello"])
+}
+
 func TestBindingXML(t *testing.T) {
 	testBodyBinding(t,
 		XML, "xml",
@@ -513,6 +459,13 @@ func TestBindingYAML(t *testing.T) {
 		YAML, "yaml",
 		"/", "/",
 		`foo: bar`, `bar: foo`)
+}
+
+func TestBindingYAMLStringMap(t *testing.T) {
+	// YAML is a superset of JSON, so the test below is JSON (to avoid newlines)
+	testBodyBindingStringMap(t, YAML,
+		"/", "/",
+		`{"foo": "bar", "hello": "world"}`, `{"nested": {"foo": "bar"}}`)
 }
 
 func TestBindingYAMLFail(t *testing.T) {
@@ -565,7 +518,8 @@ func createFormFilesMultipartRequest(t *testing.T) *http.Request {
 	defer f.Close()
 	fw, err1 := mw.CreateFormFile("file", "form.go")
 	assert.NoError(t, err1)
-	io.Copy(fw, f)
+	_, err = io.Copy(fw, f)
+	assert.NoError(t, err)
 
 	req, err2 := http.NewRequest("POST", "/?foo=getfoo&bar=getbar", body)
 	assert.NoError(t, err2)
@@ -589,7 +543,8 @@ func createFormFilesMultipartRequestFail(t *testing.T) *http.Request {
 	defer f.Close()
 	fw, err1 := mw.CreateFormFile("file_foo", "form_foo.go")
 	assert.NoError(t, err1)
-	io.Copy(fw, f)
+	_, err = io.Copy(fw, f)
+	assert.NoError(t, err)
 
 	req, err2 := http.NewRequest("POST", "/?foo=getfoo&bar=getbar", body)
 	assert.NoError(t, err2)
@@ -678,7 +633,8 @@ func TestBindingFormPostForMapFail(t *testing.T) {
 func TestBindingFormFilesMultipart(t *testing.T) {
 	req := createFormFilesMultipartRequest(t)
 	var obj FooBarFileStruct
-	FormMultipart.Bind(req, &obj)
+	err := FormMultipart.Bind(req, &obj)
+	assert.NoError(t, err)
 
 	// file from os
 	f, _ := os.Open("form.go")
@@ -754,26 +710,6 @@ func TestBindingProtoBufFail(t *testing.T) {
 		string(data), string(data[1:]))
 }
 
-func TestBindingMsgPack(t *testing.T) {
-	test := FooStruct{
-		Foo: "bar",
-	}
-
-	h := new(codec.MsgpackHandle)
-	assert.NotNil(t, h)
-	buf := bytes.NewBuffer([]byte{})
-	assert.NotNil(t, buf)
-	err := codec.NewEncoder(buf, h).Encode(test)
-	assert.NoError(t, err)
-
-	data := buf.Bytes()
-
-	testMsgPackBodyBinding(t,
-		MsgPack, "msgpack",
-		"/", "/",
-		string(data), string(data[1:]))
-}
-
 func TestValidationFails(t *testing.T) {
 	var obj FooStruct
 	req := requestWithBody("POST", "/", `{"bar": "foo"}`)
@@ -792,9 +728,9 @@ func TestValidationDisabled(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func TestExistsSucceeds(t *testing.T) {
+func TestRequiredSucceeds(t *testing.T) {
 	type HogeStruct struct {
-		Hoge *int `json:"hoge" binding:"exists"`
+		Hoge *int `json:"hoge" binding:"required"`
 	}
 
 	var obj HogeStruct
@@ -803,14 +739,39 @@ func TestExistsSucceeds(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func TestExistsFails(t *testing.T) {
+func TestRequiredFails(t *testing.T) {
 	type HogeStruct struct {
-		Hoge *int `json:"foo" binding:"exists"`
+		Hoge *int `json:"foo" binding:"required"`
 	}
 
 	var obj HogeStruct
 	req := requestWithBody("POST", "/", `{"boen": 0}`)
 	err := JSON.Bind(req, &obj)
+	assert.Error(t, err)
+}
+
+func TestHeaderBinding(t *testing.T) {
+	h := Header
+	assert.Equal(t, "header", h.Name())
+
+	type tHeader struct {
+		Limit int `header:"limit"`
+	}
+
+	var theader tHeader
+	req := requestWithBody("GET", "/", "")
+	req.Header.Add("limit", "1000")
+	assert.NoError(t, h.Bind(req, &theader))
+	assert.Equal(t, 1000, theader.Limit)
+
+	req = requestWithBody("GET", "/", "")
+	req.Header.Add("fail", `{fail:fail}`)
+
+	type failStruct struct {
+		Fail map[string]interface{} `header:"fail"`
+	}
+
+	err := h.Bind(req, &failStruct{})
 	assert.Error(t, err)
 }
 
@@ -855,6 +816,23 @@ func TestUriInnerBinding(t *testing.T) {
 	assert.NoError(t, Uri.BindUri(m, &tag))
 	assert.Equal(t, tag.Name, expectedName)
 	assert.Equal(t, tag.S.Age, expectedAge)
+}
+
+func testFormBindingEmbeddedStruct(t *testing.T, method, path, badPath, body, badBody string) {
+	b := Form
+	assert.Equal(t, "form", b.Name())
+
+	obj := QueryTest{}
+	req := requestWithBody(method, path, body)
+	if method == "POST" {
+		req.Header.Add("Content-Type", MIMEPOSTForm)
+	}
+	err := b.Bind(req, &obj)
+	assert.NoError(t, err)
+	assert.Equal(t, 1, obj.Page)
+	assert.Equal(t, 2, obj.Size)
+	assert.Equal(t, "test-appkey", obj.Appkey)
+
 }
 
 func testFormBinding(t *testing.T, method, path, badPath, body, badBody string) {
@@ -954,8 +932,28 @@ func testFormBindingForTime(t *testing.T, method, path, badPath, body, badBody s
 	assert.Equal(t, "Asia/Chongqing", obj.TimeFoo.Location().String())
 	assert.Equal(t, int64(-62135596800), obj.TimeBar.Unix())
 	assert.Equal(t, "UTC", obj.TimeBar.Location().String())
+	assert.Equal(t, int64(1562400033000000123), obj.CreateTime.UnixNano())
+	assert.Equal(t, int64(1562400033), obj.UnixTime.Unix())
 
 	obj = FooBarStructForTimeType{}
+	req = requestWithBody(method, badPath, badBody)
+	err = JSON.Bind(req, &obj)
+	assert.Error(t, err)
+}
+
+func testFormBindingForTimeNotUnixFormat(t *testing.T, method, path, badPath, body, badBody string) {
+	b := Form
+	assert.Equal(t, "form", b.Name())
+
+	obj := FooStructForTimeTypeNotUnixFormat{}
+	req := requestWithBody(method, path, body)
+	if method == "POST" {
+		req.Header.Add("Content-Type", MIMEPOSTForm)
+	}
+	err := b.Bind(req, &obj)
+	assert.Error(t, err)
+
+	obj = FooStructForTimeTypeNotUnixFormat{}
 	req = requestWithBody(method, badPath, badBody)
 	err = JSON.Bind(req, &obj)
 	assert.Error(t, err)
@@ -1076,149 +1074,6 @@ func testFormBindingForType(t *testing.T, method, path, badPath, body, badBody s
 		req.Header.Add("Content-Type", MIMEPOSTForm)
 	}
 	switch typ {
-	case "Int":
-		obj := FooBarStructForIntType{}
-		err := b.Bind(req, &obj)
-		assert.NoError(t, err)
-		assert.Equal(t, int(0), obj.IntFoo)
-		assert.Equal(t, int(-12), obj.IntBar)
-
-		obj = FooBarStructForIntType{}
-		req = requestWithBody(method, badPath, badBody)
-		err = JSON.Bind(req, &obj)
-		assert.Error(t, err)
-	case "Int8":
-		obj := FooBarStructForInt8Type{}
-		err := b.Bind(req, &obj)
-		assert.NoError(t, err)
-		assert.Equal(t, int8(0), obj.Int8Foo)
-		assert.Equal(t, int8(-12), obj.Int8Bar)
-
-		obj = FooBarStructForInt8Type{}
-		req = requestWithBody(method, badPath, badBody)
-		err = JSON.Bind(req, &obj)
-		assert.Error(t, err)
-	case "Int16":
-		obj := FooBarStructForInt16Type{}
-		err := b.Bind(req, &obj)
-		assert.NoError(t, err)
-		assert.Equal(t, int16(0), obj.Int16Foo)
-		assert.Equal(t, int16(-12), obj.Int16Bar)
-
-		obj = FooBarStructForInt16Type{}
-		req = requestWithBody(method, badPath, badBody)
-		err = JSON.Bind(req, &obj)
-		assert.Error(t, err)
-	case "Int32":
-		obj := FooBarStructForInt32Type{}
-		err := b.Bind(req, &obj)
-		assert.NoError(t, err)
-		assert.Equal(t, int32(0), obj.Int32Foo)
-		assert.Equal(t, int32(-12), obj.Int32Bar)
-
-		obj = FooBarStructForInt32Type{}
-		req = requestWithBody(method, badPath, badBody)
-		err = JSON.Bind(req, &obj)
-		assert.Error(t, err)
-	case "Int64":
-		obj := FooBarStructForInt64Type{}
-		err := b.Bind(req, &obj)
-		assert.NoError(t, err)
-		assert.Equal(t, int64(0), obj.Int64Foo)
-		assert.Equal(t, int64(-12), obj.Int64Bar)
-
-		obj = FooBarStructForInt64Type{}
-		req = requestWithBody(method, badPath, badBody)
-		err = JSON.Bind(req, &obj)
-		assert.Error(t, err)
-	case "Uint":
-		obj := FooBarStructForUintType{}
-		err := b.Bind(req, &obj)
-		assert.NoError(t, err)
-		assert.Equal(t, uint(0x0), obj.UintFoo)
-		assert.Equal(t, uint(0xc), obj.UintBar)
-
-		obj = FooBarStructForUintType{}
-		req = requestWithBody(method, badPath, badBody)
-		err = JSON.Bind(req, &obj)
-		assert.Error(t, err)
-	case "Uint8":
-		obj := FooBarStructForUint8Type{}
-		err := b.Bind(req, &obj)
-		assert.NoError(t, err)
-		assert.Equal(t, uint8(0x0), obj.Uint8Foo)
-		assert.Equal(t, uint8(0xc), obj.Uint8Bar)
-
-		obj = FooBarStructForUint8Type{}
-		req = requestWithBody(method, badPath, badBody)
-		err = JSON.Bind(req, &obj)
-		assert.Error(t, err)
-	case "Uint16":
-		obj := FooBarStructForUint16Type{}
-		err := b.Bind(req, &obj)
-		assert.NoError(t, err)
-		assert.Equal(t, uint16(0x0), obj.Uint16Foo)
-		assert.Equal(t, uint16(0xc), obj.Uint16Bar)
-
-		obj = FooBarStructForUint16Type{}
-		req = requestWithBody(method, badPath, badBody)
-		err = JSON.Bind(req, &obj)
-		assert.Error(t, err)
-	case "Uint32":
-		obj := FooBarStructForUint32Type{}
-		err := b.Bind(req, &obj)
-		assert.NoError(t, err)
-		assert.Equal(t, uint32(0x0), obj.Uint32Foo)
-		assert.Equal(t, uint32(0xc), obj.Uint32Bar)
-
-		obj = FooBarStructForUint32Type{}
-		req = requestWithBody(method, badPath, badBody)
-		err = JSON.Bind(req, &obj)
-		assert.Error(t, err)
-	case "Uint64":
-		obj := FooBarStructForUint64Type{}
-		err := b.Bind(req, &obj)
-		assert.NoError(t, err)
-		assert.Equal(t, uint64(0x0), obj.Uint64Foo)
-		assert.Equal(t, uint64(0xc), obj.Uint64Bar)
-
-		obj = FooBarStructForUint64Type{}
-		req = requestWithBody(method, badPath, badBody)
-		err = JSON.Bind(req, &obj)
-		assert.Error(t, err)
-	case "Float32":
-		obj := FooBarStructForFloat32Type{}
-		err := b.Bind(req, &obj)
-		assert.NoError(t, err)
-		assert.Equal(t, float32(0.0), obj.Float32Foo)
-		assert.Equal(t, float32(-12.34), obj.Float32Bar)
-
-		obj = FooBarStructForFloat32Type{}
-		req = requestWithBody(method, badPath, badBody)
-		err = JSON.Bind(req, &obj)
-		assert.Error(t, err)
-	case "Float64":
-		obj := FooBarStructForFloat64Type{}
-		err := b.Bind(req, &obj)
-		assert.NoError(t, err)
-		assert.Equal(t, float64(0.0), obj.Float64Foo)
-		assert.Equal(t, float64(-12.34), obj.Float64Bar)
-
-		obj = FooBarStructForFloat64Type{}
-		req = requestWithBody(method, badPath, badBody)
-		err = JSON.Bind(req, &obj)
-		assert.Error(t, err)
-	case "Bool":
-		obj := FooBarStructForBoolType{}
-		err := b.Bind(req, &obj)
-		assert.NoError(t, err)
-		assert.False(t, obj.BoolFoo)
-		assert.True(t, obj.BoolBar)
-
-		obj = FooBarStructForBoolType{}
-		req = requestWithBody(method, badPath, badBody)
-		err = JSON.Bind(req, &obj)
-		assert.Error(t, err)
 	case "Slice":
 		obj := FooStructForSliceType{}
 		err := b.Bind(req, &obj)
@@ -1340,6 +1195,46 @@ func testBodyBinding(t *testing.T, b Binding, name, path, badPath, body, badBody
 	assert.Error(t, err)
 }
 
+func testBodyBindingSlice(t *testing.T, b Binding, name, path, badPath, body, badBody string) {
+	assert.Equal(t, name, b.Name())
+
+	var obj1 []FooStruct
+	req := requestWithBody("POST", path, body)
+	err := b.Bind(req, &obj1)
+	assert.NoError(t, err)
+
+	var obj2 []FooStruct
+	req = requestWithBody("POST", badPath, badBody)
+	err = JSON.Bind(req, &obj2)
+	assert.Error(t, err)
+}
+
+func testBodyBindingStringMap(t *testing.T, b Binding, path, badPath, body, badBody string) {
+	obj := make(map[string]string)
+	req := requestWithBody("POST", path, body)
+	if b.Name() == "form" {
+		req.Header.Add("Content-Type", MIMEPOSTForm)
+	}
+	err := b.Bind(req, &obj)
+	assert.NoError(t, err)
+	assert.NotNil(t, obj)
+	assert.Len(t, obj, 2)
+	assert.Equal(t, "bar", obj["foo"])
+	assert.Equal(t, "world", obj["hello"])
+
+	if badPath != "" && badBody != "" {
+		obj = make(map[string]string)
+		req = requestWithBody("POST", badPath, badBody)
+		err = b.Bind(req, &obj)
+		assert.Error(t, err)
+	}
+
+	objInt := make(map[string]int)
+	req = requestWithBody("POST", path, body)
+	err = b.Bind(req, &objInt)
+	assert.Error(t, err)
+}
+
 func testBodyBindingUseNumber(t *testing.T, b Binding, name, path, badPath, body, badBody string) {
 	assert.Equal(t, name, b.Name())
 
@@ -1375,6 +1270,25 @@ func testBodyBindingUseNumber2(t *testing.T, b Binding, name, path, badPath, bod
 	req = requestWithBody("POST", badPath, badBody)
 	err = JSON.Bind(req, &obj)
 	assert.Error(t, err)
+}
+
+func testBodyBindingDisallowUnknownFields(t *testing.T, b Binding, path, badPath, body, badBody string) {
+	EnableDecoderDisallowUnknownFields = true
+	defer func() {
+		EnableDecoderDisallowUnknownFields = false
+	}()
+
+	obj := FooStructDisallowUnknownFields{}
+	req := requestWithBody("POST", path, body)
+	err := b.Bind(req, &obj)
+	assert.NoError(t, err)
+	assert.Equal(t, "bar", obj.Foo)
+
+	obj = FooStructDisallowUnknownFields{}
+	req = requestWithBody("POST", badPath, badBody)
+	err = JSON.Bind(req, &obj)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "what")
 }
 
 func testBodyBindingFail(t *testing.T, b Binding, name, path, badPath, body, badBody string) {
@@ -1433,118 +1347,7 @@ func testProtoBodyBindingFail(t *testing.T, b Binding, name, path, badPath, body
 	assert.Error(t, err)
 }
 
-func testMsgPackBodyBinding(t *testing.T, b Binding, name, path, badPath, body, badBody string) {
-	assert.Equal(t, name, b.Name())
-
-	obj := FooStruct{}
-	req := requestWithBody("POST", path, body)
-	req.Header.Add("Content-Type", MIMEMSGPACK)
-	err := b.Bind(req, &obj)
-	assert.NoError(t, err)
-	assert.Equal(t, "bar", obj.Foo)
-
-	obj = FooStruct{}
-	req = requestWithBody("POST", badPath, badBody)
-	req.Header.Add("Content-Type", MIMEMSGPACK)
-	err = MsgPack.Bind(req, &obj)
-	assert.Error(t, err)
-}
-
 func requestWithBody(method, path, body string) (req *http.Request) {
 	req, _ = http.NewRequest(method, path, bytes.NewBufferString(body))
 	return
-}
-
-func TestCanSet(t *testing.T) {
-	type CanSetStruct struct {
-		lowerStart string `form:"lower"`
-	}
-
-	var c CanSetStruct
-	assert.Nil(t, mapForm(&c, nil))
-}
-
-func formPostRequest(path, body string) *http.Request {
-	req := requestWithBody("POST", path, body)
-	req.Header.Add("Content-Type", MIMEPOSTForm)
-	return req
-}
-
-func TestBindingSliceDefault(t *testing.T) {
-	var s struct {
-		Friends []string `form:"friends,default=mike"`
-	}
-	req := formPostRequest("", "")
-	err := Form.Bind(req, &s)
-	assert.NoError(t, err)
-
-	assert.Len(t, s.Friends, 1)
-	assert.Equal(t, "mike", s.Friends[0])
-}
-
-func TestBindingStructField(t *testing.T) {
-	var s struct {
-		Opts struct {
-			Port int
-		} `form:"opts"`
-	}
-	req := formPostRequest("", `opts={"Port": 8000}`)
-	err := Form.Bind(req, &s)
-	assert.NoError(t, err)
-	assert.Equal(t, 8000, s.Opts.Port)
-}
-
-func TestBindingUnknownTypeChan(t *testing.T) {
-	var s struct {
-		Stop chan bool `form:"stop"`
-	}
-	req := formPostRequest("", "stop=true")
-	err := Form.Bind(req, &s)
-	assert.Error(t, err)
-	assert.Equal(t, errUnknownType, err)
-}
-
-func TestBindingTimeDuration(t *testing.T) {
-	var s struct {
-		Timeout time.Duration `form:"timeout"`
-	}
-
-	// ok
-	req := formPostRequest("", "timeout=5s")
-	err := Form.Bind(req, &s)
-	assert.NoError(t, err)
-	assert.Equal(t, 5*time.Second, s.Timeout)
-
-	// error
-	req = formPostRequest("", "timeout=wrong")
-	err = Form.Bind(req, &s)
-	assert.Error(t, err)
-}
-
-func TestBindingArray(t *testing.T) {
-	var s struct {
-		Nums [2]int `form:"nums,default=4"`
-	}
-
-	// default
-	req := formPostRequest("", "")
-	err := Form.Bind(req, &s)
-	assert.Error(t, err)
-	assert.Equal(t, [2]int{0, 0}, s.Nums)
-
-	// ok
-	req = formPostRequest("", "nums=3&nums=8")
-	err = Form.Bind(req, &s)
-	assert.NoError(t, err)
-	assert.Equal(t, [2]int{3, 8}, s.Nums)
-
-	// not enough vals
-	req = formPostRequest("", "nums=3")
-	err = Form.Bind(req, &s)
-	assert.Error(t, err)
-
-	// error
-	req = formPostRequest("", "nums=3&nums=wrong")
-	err = Form.Bind(req, &s)
-	assert.Error(t, err)
 }
