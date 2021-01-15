@@ -63,7 +63,7 @@ func SetMode(value string) {
 	case TestMode:
 		ginMode = testCode
 	default:
-		panic("gin mode unknown: " + value)
+		panic("gin mode unknown: " + value + " (available mode: debug release test)")
 	}
 
 	modeName = value
