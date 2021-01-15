@@ -45,7 +45,7 @@ jobs:
         run: make test
 
       - name: Upload coverage to Codecov
-        run: bash <(curl -s https://codecov.io/bash)
+        uses: codecov/codecov-action@v1
   notification-gitter:
     needs: test
     runs-on: ubuntu-latest
