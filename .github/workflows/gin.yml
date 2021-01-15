@@ -45,7 +45,6 @@ jobs:
         run: make test
 
       - name: Upload coverage to Codecov
-        if: success() && matrix.go == 1.15 && matrix.os == 'ubuntu-latest' && matrix.test-tags == 'nomsgpack'
         run: bash <(curl -s https://codecov.io/bash)
   notification-gitter:
     needs: test
@@ -55,9 +54,9 @@ jobs:
         if: failure()
         run: |
           PR_OR_COMPARE="$(if [ "${{ github.event.pull_request }}" != "" ]; then echo "${{ github.event.pull_request.html_url }}"; else echo "${{ github.event.compare }}"; fi)"
-          curl -d message="GitHub Actions [$GITHUB_REPOSITORY]($PR_OR_COMPARE) ($GITHUB_REF) [normal]($GITHUB_API_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID) ($GITHUB_RUN_NUMBER)" -d level=error https://webhooks.gitter.im/e/${{ secrets.GITTER_ROOM_ID }}
+          curl -d message="GitHub Actions [$GITHUB_REPOSITORY]($PR_OR_COMPARE) ($GITHUB_REF) [normal]($GITHUB_API_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID) ($GITHUB_RUN_NUMBER)" -d level=error https://webhooks.gitter.im/e/7f95bf605c4d356372f4
       - name: Notification success message
         if: success()
         run: |
           PR_OR_COMPARE="$(if [ "${{ github.event.pull_request }}" != "" ]; then echo "${{ github.event.pull_request.html_url }}"; else echo "${{ github.event.compare }}"; fi)"
-          curl -d message="GitHub Actions [$GITHUB_REPOSITORY]($PR_OR_COMPARE) ($GITHUB_REF) [normal]($GITHUB_API_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID) ($GITHUB_RUN_NUMBER)" https://webhooks.gitter.im/e/${{ secrets.GITTER_ROOM_ID }}
+          curl -d message="GitHub Actions [$GITHUB_REPOSITORY]($PR_OR_COMPARE) ($GITHUB_REF) [normal]($GITHUB_API_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID) ($GITHUB_RUN_NUMBER)" https://webhooks.gitter.im/e/7f95bf605c4d356372f4
