@@ -448,7 +448,7 @@ func (engine *Engine) handleHTTPRequest(c *Context) {
 		}
 		if len(allowed) > 0 {
 			c.handlers = engine.allNoMethod
-			c.writermem.Header()["Allow"] = []string{strings.Join(allowed, ", ")}
+			c.writermem.Header().Set("Allow", strings.Join(allowed, ", "))
 			serveError(c, http.StatusMethodNotAllowed, default405Body)
 			return
 		}
