@@ -52,5 +52,10 @@ func decodeJSON(r io.Reader, obj interface{}) error {
 	if err := decoder.Decode(obj); err != nil {
 		return err
 	}
+
+	if decoder.More() {
+		return fmt.Errorf("invalid character after the JSON data")
+	}
+
 	return validate(obj)
 }

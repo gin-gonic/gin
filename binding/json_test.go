@@ -28,3 +28,9 @@ func TestJSONBindingBindBodyMap(t *testing.T) {
 	assert.Equal(t, "FOO", s["foo"])
 	assert.Equal(t, "world", s["hello"])
 }
+
+func TestJSONForeignSymbols(t *testing.T) {
+	s := make(map[string]string)
+	err := jsonBinding{}.BindBody([]byte(`{}text`), &s)
+	require.Error(t, err)
+}
