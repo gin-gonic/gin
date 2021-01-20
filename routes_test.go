@@ -238,7 +238,6 @@ func TestRouteParamsByName(t *testing.T) {
 
 		assert.True(t, ok)
 		assert.Equal(t, name, c.Param("name"))
-		assert.Equal(t, name, c.Param("name"))
 		assert.Equal(t, lastName, c.Param("last_name"))
 
 		assert.Empty(t, c.Param("wtf"))
@@ -271,7 +270,6 @@ func TestRouteParamsByNameWithExtraSlash(t *testing.T) {
 		wild, ok = c.Params.Get("wild")
 
 		assert.True(t, ok)
-		assert.Equal(t, name, c.Param("name"))
 		assert.Equal(t, name, c.Param("name"))
 		assert.Equal(t, lastName, c.Param("last_name"))
 
