@@ -103,6 +103,8 @@ type Engine struct {
 	// See the PR #1817 and issue #1644
 	RemoveExtraSlash bool
 
+	Server *http.Server
+
 	delims           render.Delims
 	secureJSONPrefix string
 	HTMLRender       render.HTMLRender
@@ -307,7 +309,8 @@ func (engine *Engine) Run(addr ...string) (err error) {
 
 	address := resolveAddress(addr)
 	debugPrint("Listening and serving HTTP on %s\n", address)
-	err = http.ListenAndServe(address, engine)
+	engine.Server = &http.Server{Addr: address, Handler: engine}
+	err = engine.Server.ListenAndServe()
 	return
 }
 
@@ -318,7 +321,8 @@ func (engine *Engine) RunTLS(addr, certFile, keyFile string) (err error) {
 	debugPrint("Listening and serving HTTPS on %s\n", addr)
 	defer func() { debugPrintError(err) }()
 
-	err = http.ListenAndServeTLS(addr, certFile, keyFile, engine)
+	engine.Server = &http.Server{Addr: addr, Handler: engine}
+	err = engine.Server.ListenAndServeTLS(certFile, keyFile)
 	return
 }
 
@@ -336,7 +340,8 @@ func (engine *Engine) RunUnix(file string) (err error) {
 	defer listener.Close()
 	defer os.Remove(file)
 
-	err = http.Serve(listener, engine)
+	engine.Server = &http.Server{Handler: engine}
+	err = engine.Server.Serve(listener)
 	return
 }
 
@@ -362,7 +367,8 @@ func (engine *Engine) RunFd(fd int) (err error) {
 func (engine *Engine) RunListener(listener net.Listener) (err error) {
 	debugPrint("Listening and serving HTTP on listener what's bind with address@%s", listener.Addr())
 	defer func() { debugPrintError(err) }()
-	err = http.Serve(listener, engine)
+	engine.Server = &http.Server{Handler: engine}
+	err = engine.Server.Serve(listener)
 	return
 }
 
