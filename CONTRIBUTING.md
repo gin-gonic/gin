@@ -1,4 +1,4 @@
-## Contributing 
+## Contributing
 
 - With issues:
   - Use the search tool before opening a new issue.
