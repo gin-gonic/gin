@@ -2,19 +2,20 @@
 // Use of this source code is governed by a MIT style
 // license that can be found in the LICENSE file.
 
-package render
+package render_test
 
 import (
 	"net/http/httptest"
 	"strings"
 	"testing"
 
+	"github.com/gin-gonic/gin/render"
 	"github.com/stretchr/testify/require"
 )
 
 func TestReaderRenderNoHeaders(t *testing.T) {
 	content := "test"
-	r := Reader{
+	r := render.Reader{
 		ContentLength: int64(len(content)),
 		Reader:        strings.NewReader(content),
 	}

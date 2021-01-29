@@ -4,13 +4,14 @@
 
 // +build !nomsgpack
 
-package render
+package render_test
 
 import (
 	"bytes"
 	"net/http/httptest"
 	"testing"
 
+	"github.com/gin-gonic/gin/render"
 	"github.com/stretchr/testify/assert"
 	"github.com/ugorji/go/codec"
 )
@@ -24,10 +25,10 @@ func TestRenderMsgPack(t *testing.T) {
 		"foo": "bar",
 	}
 
-	(MsgPack{data}).WriteContentType(w)
+	(render.MsgPack{data}).WriteContentType(w)
 	assert.Equal(t, "application/msgpack; charset=utf-8", w.Header().Get("Content-Type"))
 
-	err := (MsgPack{data}).Render(w)
+	err := (render.MsgPack{data}).Render(w)
 
 	assert.NoError(t, err)
 
