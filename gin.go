@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"os"
 	"path"
+	"strings"
 	"sync"
 
 	"github.com/gin-gonic/gin/internal/bytesconv"
@@ -118,6 +119,7 @@ type Engine struct {
 	pool             sync.Pool
 	trees            methodTrees
 	maxParams        uint16
+	trustedCIDRs     []*net.IPNet
 }
 
 var _ IRouter = &Engine{}
@@ -312,10 +314,33 @@ func iterate(path, method string, routes RoutesInfo, root *node) RoutesInfo {
 func (engine *Engine) Run(addr ...string) (err error) {
 	defer func() { debugPrintError(err) }()
 
+	trustedCIDRs, err := engine.prepareCIDR()
+	if err != nil {
+		return err
+	}
+	engine.trustedCIDRs = trustedCIDRs
 	address := resolveAddress(addr)
 	debugPrint("Listening and serving HTTP on %s\n", address)
 	err = http.ListenAndServe(address, engine)
 	return
+}
+
+func (engine *Engine) prepareCIDR() ([]*net.IPNet, error) {
+	if engine.TrustedProxies != nil {
+		cidr := make([]*net.IPNet, len(engine.TrustedProxies), 0)
+		for _, trustedProxy := range engine.TrustedProxies {
+			if strings.Contains(trustedProxy, "/") {
+				trustedProxy += "/32"
+			}
+			_, cidrNet, err := net.ParseCIDR(trustedProxy)
+			if err != nil {
+				return cidr, err
+			}
+			cidr = append(cidr, cidrNet)
+		}
+		return cidr, nil
+	}
+	return nil, nil
 }
 
 // RunTLS attaches the router to a http.Server and starts listening and serving HTTPS (secure) requests.
