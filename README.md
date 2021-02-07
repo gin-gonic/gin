@@ -2117,6 +2117,43 @@ func main() {
 }
 ```
 
+## Don't trust all proxies
+
+Gin lets you specify which headers to hold the real client IP (if any),
+as well as specifying which proxies (or direct clients) you trust to
+specify one of these headers.
+
+The `TrustedProxies` slice on your `gin.Engine` specifes the clients
+truest to specify unspoofed client IP headers. Proxies can be specified
+as IP's, CIDR's, or hostnames. Hostnames are resolved on each query,
+such that changes in your proxy pool take effect immediately. The
+hostname option is handy, but also costly, so only use if you have no
+other option.
+
+```go
+import (
+    "fmt"
+
+    "github.com/gin-gonic/gin"
+)
+
+func main() {
+
+	router := gin.Default()
+	router.TrustedProxies = []string{"192.168.1.2"}
+
+    router.GET("/", func(c *gin.Context) {
+
+		// If the client is 192.168.1.2, use the X-Forwarded-For
+		// header to deduce the original client IP from the trust-
+		// worthy parts of that header.
+		// Otherwise, simply return the direct client IP
+        fmt.Printf("ClientIP: %s\n", c.ClientIP())
+    })
+
+    router.Run()
+}
+```
 
 ## Testing
 

@@ -82,6 +82,8 @@ type Engine struct {
 	// handler.
 	HandleMethodNotAllowed bool
 	ForwardedByClientIP    bool
+	RemoteIPHeaders        []string
+	TrustedProxies         []string
 
 	// #726 #755 If enabled, it will thrust some headers starting with
 	// 'X-AppEngine...' for better integration with that PaaS.
@@ -102,6 +104,8 @@ type Engine struct {
 	// RemoveExtraSlash a parameter can be parsed from the URL even with extra slashes.
 	// See the PR #1817 and issue #1644
 	RemoveExtraSlash bool
+
+	lookupHost func(string) ([]string, error)
 
 	delims           render.Delims
 	secureJSONPrefix string
@@ -139,11 +143,14 @@ func New() *Engine {
 		RedirectFixedPath:      false,
 		HandleMethodNotAllowed: false,
 		ForwardedByClientIP:    true,
+		RemoteIPHeaders:        []string{"X-Forwarded-For", "X-Real-IP"},
+		TrustedProxies:         []string{"0.0.0.0/0"},
 		AppEngine:              defaultAppEngine,
 		UseRawPath:             false,
 		RemoveExtraSlash:       false,
 		UnescapePathValues:     true,
 		MaxMultipartMemory:     defaultMultipartMemory,
+		lookupHost:             net.LookupHost,
 		trees:                  make(methodTrees, 0, 9),
 		delims:                 render.Delims{Left: "{{", Right: "}}"},
 		secureJSONPrefix:       "while(1);",
