@@ -324,9 +324,9 @@ func (engine *Engine) Run(addr ...string) (err error) {
 
 func (engine *Engine) prepareCIDR() ([]*net.IPNet, error) {
 	if engine.TrustedProxies != nil {
-		cidr := make([]*net.IPNet, len(engine.TrustedProxies), 0)
+		cidr := make([]*net.IPNet, 0, len(engine.TrustedProxies))
 		for _, trustedProxy := range engine.TrustedProxies {
-			if strings.Contains(trustedProxy, "/") {
+			if !strings.Contains(trustedProxy, "/") {
 				trustedProxy += "/32"
 			}
 			_, cidrNet, err := net.ParseCIDR(trustedProxy)
