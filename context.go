@@ -777,7 +777,7 @@ func (c *Context) RemoteIP() (net.IP, bool) {
 
 func validateHeader(header string) (clientIP string, valid bool) {
 	if header == "" {
-		return
+		return "", false
 	}
 	items := strings.Split(header, ",")
 	for i, ipStr := range items {
@@ -786,6 +786,10 @@ func validateHeader(header string) (clientIP string, valid bool) {
 		if ip == nil {
 			return "", false
 		}
+
+		// We need to return the first IP in the list, but,
+		// we should not early return since we need to validate that
+		// the rest of the header is syntactically valid
 		if i == 0 {
 			clientIP = ipStr
 			valid = true
