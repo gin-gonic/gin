@@ -215,12 +215,12 @@
 
 ## Gin 1.1
 
-- [NEW] Implement QueryArray and PostArray methods 
-- [NEW] Refactor GetQuery and GetPostForm 
-- [NEW] Add contribution guide 
+- [NEW] Implement QueryArray and PostArray methods
+- [NEW] Refactor GetQuery and GetPostForm
+- [NEW] Add contribution guide
 - [FIX] Corrected typos in README
-- [FIX] Removed additional Iota  
-- [FIX] Changed imports to gopkg instead of github in README (#733) 
+- [FIX] Removed additional Iota
+- [FIX] Changed imports to gopkg instead of github in README (#733)
 - [FIX] Logger: skip ANSI color commands if output is not a tty
 
 ## Gin 1.0rc2 (...)
