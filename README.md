@@ -2132,9 +2132,9 @@ other option.
 
 ```go
 import (
-    "fmt"
+	"fmt"
 
-    "github.com/gin-gonic/gin"
+	"github.com/gin-gonic/gin"
 )
 
 func main() {
@@ -2142,14 +2142,14 @@ func main() {
 	router := gin.Default()
 	router.TrustedProxies = []string{"192.168.1.2"}
 
-    router.GET("/", func(c *gin.Context) {
+	router.GET("/", func(c *gin.Context) {
 		// If the client is 192.168.1.2, use the X-Forwarded-For
 		// header to deduce the original client IP from the trust-
 		// worthy parts of that header.
 		// Otherwise, simply return the direct client IP
-				fmt.Printf("ClientIP: %s\n", c.ClientIP())
-		})
-		router.Run()
+		fmt.Printf("ClientIP: %s\n", c.ClientIP())
+	})
+	router.Run()
 }
 ```
 
