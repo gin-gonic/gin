@@ -1392,19 +1392,6 @@ func TestContextClientIP(t *testing.T) {
 	c, _ := CreateTestContext(httptest.NewRecorder())
 	c.Request, _ = http.NewRequest("POST", "/", nil)
 
-	c.engine.lookupHost = func(host string) ([]string, error) {
-		if host == "foo" {
-			return []string{"40.40.40.40", "30.30.30.30"}, nil
-		}
-		if host == "bar" {
-			return nil, errors.New("hostname lookup failed")
-		}
-		if host == "baz" {
-			return []string{"thisshouldneverhappen"}, nil
-		}
-		return []string{}, nil
-	}
-
 	resetContextForClientIPTests(c)
 
 	// Legacy tests (validating that the defaults don't break the
