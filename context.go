@@ -725,9 +725,11 @@ func (c *Context) ShouldBindBodyWith(obj interface{}, bb binding.BindingBody) (e
 	return bb.BindBody(body, obj)
 }
 
-// ClientIP implements a best effort algorithm to return the real client IP, it parses
-// X-Real-IP and X-Forwarded-For in order to work properly with reverse-proxies such us: nginx or haproxy.
-// Use X-Forwarded-For before X-Real-Ip as nginx uses X-Real-Ip with the proxy's IP.
+// ClientIP implements a best effort algorithm to return the real client IP.
+// It called c.RemoteIP() under the hood, to check if the remote IP is a trusted proxy or not.
+// If it's it will then try to parse the headers defined in Engine.RemoteIPHeaders (defaulting to [X-Forwarded-For, X-Real-Ip]).
+// If the headers are nots syntactically valid OR the remote IP does not correspong to a trusted proxy,
+// the remote IP (coming form Request.RemoteAddr) is returned.
 func (c *Context) ClientIP() string {
 	if c.engine.AppEngine {
 		if addr := c.requestHeader("X-Appengine-Remote-Addr"); addr != "" {
@@ -739,7 +741,7 @@ func (c *Context) ClientIP() string {
 	if remoteIP == nil {
 		return ""
 	}
-	if trusted {
+	if trusted && c.engine.ForwardedByClientIP && c.engine.RemoteIPHeaders != nil {
 		for _, headerName := range c.engine.RemoteIPHeaders {
 			ip, valid := validateHeader(c.requestHeader(headerName))
 			if valid {
@@ -750,6 +752,10 @@ func (c *Context) ClientIP() string {
 	return remoteIP.String()
 }
 
+// RemoteIP parses the IP from Request.RemoteAddr, normalizes and returns the IP (without the port).
+// It also checks if the remoteIP is a trusted proxy or not.
+// In order to perform this validation, it will see if the IP is contained within at least one of the CIDR blocks
+// defined in Engine.TrustedProxies
 func (c *Context) RemoteIP() (net.IP, bool) {
 	ip, _, err := net.SplitHostPort(strings.TrimSpace(c.Request.RemoteAddr))
 	if err != nil {
@@ -759,13 +765,7 @@ func (c *Context) RemoteIP() (net.IP, bool) {
 	if remoteIP == nil {
 		return nil, false
 	}
-
-	shouldCheckTrustedIP := c.engine.ForwardedByClientIP &&
-		c.engine.RemoteIPHeaders != nil &&
-		len(c.engine.RemoteIPHeaders) > 0 &&
-		c.engine.trustedCIDRs != nil
-
-	if shouldCheckTrustedIP {
+	if c.engine.trustedCIDRs != nil {
 		for _, cidr := range c.engine.trustedCIDRs {
 			if cidr.Contains(remoteIP) {
 				return remoteIP, true
