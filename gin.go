@@ -82,11 +82,25 @@ type Engine struct {
 	// If no other Method is allowed, the request is delegated to the NotFound
 	// handler.
 	HandleMethodNotAllowed bool
-	ForwardedByClientIP    bool
-	RemoteIPHeaders        []string
-	TrustedProxies         []string
 
-	// #726 #755 If enabled, it will thrust some headers starting with
+	// If enabled, client IP will be parsed from the request's headers that
+	// match those stored at `(*gin.Engine).RemoteIPHeaders`. If no IP was
+	// fetched, it falls back to the IP obtained from
+	// `(*gin.Context).Request.RemoteAddr`.
+	ForwardedByClientIP bool
+
+	// List of headers used to obtain the client IP when
+	// `(*gin.Engine).ForwardedByClientIP` is `true` and
+	// `(*gin.Context).Request.RemoteAddr` is matched by at least one of the
+	// network origins of `(*gin.Engine).TrustedProxies`.
+	RemoteIPHeaders []string
+
+	// List of network origins (IPv4 addresses, IPv4 CIDRs or IPv6 addresses)
+	// from which to trust request's headers that contain alternative client
+	// IP when `(*gin.Engine).ForwardedByClientIP` is `true`.
+	TrustedProxies []string
+
+	// #726 #755 If enabled, it will trust some headers starting with
 	// 'X-AppEngine...' for better integration with that PaaS.
 	AppEngine bool
 
