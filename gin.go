@@ -95,9 +95,10 @@ type Engine struct {
 	// network origins of `(*gin.Engine).TrustedProxies`.
 	RemoteIPHeaders []string
 
-	// List of network origins (IPv4 addresses, IPv4 CIDRs or IPv6 addresses)
-	// from which to trust request's headers that contain alternative client
-	// IP when `(*gin.Engine).ForwardedByClientIP` is `true`.
+	// List of network origins (IPv4 addresses, IPv4 CIDRs, IPv6 addresses or
+	// IPv6 CIDRs) from which to trust request's headers that contain
+	// alternative client IP when `(*gin.Engine).ForwardedByClientIP` is
+	// `true`.
 	TrustedProxies []string
 
 	// #726 #755 If enabled, it will trust some headers starting with
@@ -325,7 +326,7 @@ func iterate(path, method string, routes RoutesInfo, root *node) RoutesInfo {
 func (engine *Engine) Run(addr ...string) (err error) {
 	defer func() { debugPrintError(err) }()
 
-	trustedCIDRs, err := engine.prepareCIDR()
+	trustedCIDRs, err := engine.prepareTrustedCIDRs()
 	if err != nil {
 		return err
 	}
@@ -336,12 +337,22 @@ func (engine *Engine) Run(addr ...string) (err error) {
 	return
 }
 
-func (engine *Engine) prepareCIDR() ([]*net.IPNet, error) {
+func (engine *Engine) prepareTrustedCIDRs() ([]*net.IPNet, error) {
 	if engine.TrustedProxies != nil {
 		cidr := make([]*net.IPNet, 0, len(engine.TrustedProxies))
 		for _, trustedProxy := range engine.TrustedProxies {
 			if !strings.Contains(trustedProxy, "/") {
-				trustedProxy += "/32"
+				ip := parseIP(trustedProxy)
+				if ip == nil {
+					return cidr, &net.ParseError{Type: "IP address", Text: trustedProxy}
+				}
+
+				switch len(ip) {
+				case net.IPv4len:
+					trustedProxy += "/32"
+				case net.IPv6len:
+					trustedProxy += "/128"
+				}
 			}
 			_, cidrNet, err := net.ParseCIDR(trustedProxy)
 			if err != nil {
@@ -352,6 +363,20 @@ func (engine *Engine) prepareCIDR() ([]*net.IPNet, error) {
 		return cidr, nil
 	}
 	return nil, nil
+}
+
+// parseIP parse a string representation of an IP and returns a net.IP with the
+// minimum byte representation or nil if input is invalid.
+func parseIP(ip string) net.IP {
+	parsedIP := net.ParseIP(ip)
+
+	if ipv4 := parsedIP.To4(); ipv4 != nil {
+		// return ip in a 4-byte representation
+		return ipv4
+	}
+
+	// return ip in a 16-byte representation or nil
+	return parsedIP
 }
 
 // RunTLS attaches the router to a http.Server and starts listening and serving HTTPS (secure) requests.

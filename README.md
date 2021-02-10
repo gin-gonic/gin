@@ -2123,9 +2123,10 @@ Gin lets you specify which headers to hold the real client IP (if any),
 as well as specifying which proxies (or direct clients) you trust to
 specify one of these headers.
 
-The `TrustedProxies` slice on your `gin.Engine` specifes the clients
-trusted to specify unspoofed client IP headers. Proxies can be specified
-as IPs or CIDRs.
+The `TrustedProxies` slice on your `gin.Engine` specifes network addresses or
+network CIDRs from where clients which their request headers related to client
+IP can be trusted. They can be IPv4 addresses, IPv4 CIDRs, IPv6 addresses or
+IPv6 CIDRs.
 
 ```go
 import (
