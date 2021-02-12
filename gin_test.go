@@ -18,6 +18,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func formatAsDate(t time.Time) string {
@@ -437,9 +438,13 @@ func compareFunc(t *testing.T, a, b interface{}) {
 }
 
 func TestListOfRoutes(t *testing.T) {
+	handlerTest1 := func(c *Context) {}
+	handlerTest2 := func(c *Context) {}
+
 	router := New()
 	router.GET("/favicon.ico", handlerTest1)
 	router.GET("/", handlerTest1)
+	router.GET("/example", handlerTest1, handlerTest2)
 	group := router.Group("/users")
 	{
 		group.GET("/", handlerTest2)
@@ -450,32 +455,67 @@ func TestListOfRoutes(t *testing.T) {
 
 	list := router.Routes()
 
-	assert.Len(t, list, 7)
-	assertRoutePresent(t, list, RouteInfo{
-		Method:  "GET",
-		Path:    "/favicon.ico",
-		Handler: "^(.*/vendor/)?github.com/gin-gonic/gin.handlerTest1$",
-	})
-	assertRoutePresent(t, list, RouteInfo{
-		Method:  "GET",
-		Path:    "/",
-		Handler: "^(.*/vendor/)?github.com/gin-gonic/gin.handlerTest1$",
-	})
-	assertRoutePresent(t, list, RouteInfo{
-		Method:  "GET",
-		Path:    "/users/",
-		Handler: "^(.*/vendor/)?github.com/gin-gonic/gin.handlerTest2$",
-	})
-	assertRoutePresent(t, list, RouteInfo{
-		Method:  "GET",
-		Path:    "/users/:id",
-		Handler: "^(.*/vendor/)?github.com/gin-gonic/gin.handlerTest1$",
-	})
-	assertRoutePresent(t, list, RouteInfo{
-		Method:  "POST",
-		Path:    "/users/:id",
-		Handler: "^(.*/vendor/)?github.com/gin-gonic/gin.handlerTest2$",
-	})
+	assert.Len(t, list, 8)
+
+	testCases := []RouteInfo{
+		{
+			Method:        "GET",
+			Path:          "/favicon.ico",
+			Handler:       "github.com/gin-gonic/gin.TestListOfRoutes.func1",
+			HandlersChain: HandlersChain{handlerTest1},
+		},
+		{
+			Method:        "GET",
+			Path:          "/",
+			Handler:       "github.com/gin-gonic/gin.TestListOfRoutes.func1",
+			HandlersChain: HandlersChain{handlerTest1},
+		},
+		{
+			Method:        "GET",
+			Path:          "/example",
+			Handler:       "github.com/gin-gonic/gin.TestListOfRoutes.func2",
+			HandlersChain: HandlersChain{handlerTest1, handlerTest2},
+		},
+		{
+			Method:        "GET",
+			Path:          "/users/",
+			Handler:       "github.com/gin-gonic/gin.TestListOfRoutes.func2",
+			HandlersChain: HandlersChain{handlerTest2},
+		},
+		{
+			Method:        "GET",
+			Path:          "/users/:id",
+			Handler:       "github.com/gin-gonic/gin.TestListOfRoutes.func1",
+			HandlersChain: HandlersChain{handlerTest1},
+		},
+		{
+			Method:        "POST",
+			Path:          "/users/:id",
+			Handler:       "github.com/gin-gonic/gin.TestListOfRoutes.func2",
+			HandlersChain: HandlersChain{handlerTest2},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.Path, func(t *testing.T) {
+			for _, gotRoute := range list {
+				if gotRoute.Path == tc.Path && gotRoute.Method == tc.Method {
+					assert.Equal(t, tc.Handler, gotRoute.Handler)
+					require.Equal(t, len(tc.HandlersChain), len(gotRoute.HandlersChain))
+					for i := range tc.HandlersChain {
+						assert.Equal(
+							t,
+							reflect.ValueOf(tc.HandlersChain[i]).Pointer(),
+							reflect.ValueOf(gotRoute.HandlersChain[i]).Pointer(),
+						)
+					}
+
+					return
+				}
+			}
+			t.Errorf("route not found: %v", tc)
+		})
+	}
 }
 
 func TestEngineHandleContext(t *testing.T) {
@@ -531,16 +571,3 @@ func TestEngineHandleContextManyReEntries(t *testing.T) {
 	assert.Equal(t, int64(expectValue), handlerCounter)
 	assert.Equal(t, int64(expectValue), middlewareCounter)
 }
-
-func assertRoutePresent(t *testing.T, gotRoutes RoutesInfo, wantRoute RouteInfo) {
-	for _, gotRoute := range gotRoutes {
-		if gotRoute.Path == wantRoute.Path && gotRoute.Method == wantRoute.Method {
-			assert.Regexp(t, wantRoute.Handler, gotRoute.Handler)
-			return
-		}
-	}
-	t.Errorf("route not found: %v", wantRoute)
-}
-
-func handlerTest1(c *Context) {}
-func handlerTest2(c *Context) {}
