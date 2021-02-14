@@ -1,0 +1,22 @@
+name: Lint
+
+on: [pull_request]
+
+jobs:
+  yamllint:
+    name: YAML
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-python@v2
+        with:
+          python-version: '3.x'  # Version range or exact version of a Python version to use, using SemVer's version range syntax
+          architecture: 'x64'  # optional x64 or x86. Defaults to x64 if not specified
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install yamllint
+      - name: YAML Lint
+        run: |
+          # return non-zero exit code on warnings
+          yamllint --strict .
