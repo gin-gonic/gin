@@ -17,6 +17,10 @@ matrix:
   - go: 1.15.x
     env:
       - TESTTAGS=nomsgpack
+  - go: 1.16.x
+  - go: 1.16.x
+    env:
+      - TESTTAGS=nomsgpack
   - go: master
 
 git:
