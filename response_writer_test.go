@@ -34,10 +34,10 @@ func TestResponseWriterReset(t *testing.T) {
 	var w ResponseWriter = writer
 
 	writer.reset(testWriter)
-	assert.Equal(t, -1, writer.size)
 	assert.Equal(t, http.StatusOK, writer.status)
-	assert.Equal(t, testWriter, writer.ResponseWriter)
 	assert.Equal(t, -1, w.Size())
+	assert.Equal(t, -1, writer.size)
+	assert.Equal(t, testWriter, writer.ResponseWriter)
 	assert.Equal(t, http.StatusOK, w.Status())
 	assert.False(t, w.Written())
 }
