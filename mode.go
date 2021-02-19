@@ -8,7 +8,7 @@ import (
 	"io"
 	"os"
 
-	"github.com/softwear/gin/binding"
+	"github.com/gin-gonic/gin/binding"
 )
 
 // EnvGinMode indicates environment name for gin mode.

@@ -6,8 +6,8 @@
 **Date:** May 04th, 2020
 **Version:** Gin v1.6.3
 **Go Version:** 1.14.2 linux/amd64
-**Source:** [Go HTTP Router Benchmark](https://github.com/softwear/go-http-routing-benchmark)
-**Result:** [See the gist](https://gist.github.com/appleboy/b5f2ecfaf50824ae9c64dcfb9165ae5e) or [Travis result](https://travis-ci.org/github/softwear/go-http-routing-benchmark/jobs/682947061)
+**Source:** [Go HTTP Router Benchmark](https://github.com/gin-gonic/go-http-routing-benchmark)
+**Result:** [See the gist](https://gist.github.com/appleboy/b5f2ecfaf50824ae9c64dcfb9165ae5e) or [Travis result](https://travis-ci.org/github/gin-gonic/go-http-routing-benchmark/jobs/682947061)
 
 ## Static Routes: 157
 

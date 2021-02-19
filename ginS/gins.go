@@ -9,7 +9,7 @@ import (
 	"net/http"
 	"sync"
 
-	"github.com/softwear/gin"
+	"github.com/gin-gonic/gin"
 )
 
 var once sync.Once

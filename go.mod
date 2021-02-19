@@ -1,4 +1,4 @@
-module github.com/softwear/gin
+module github.com/gin-gonic/gin
 
 go 1.13
 
