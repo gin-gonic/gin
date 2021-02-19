@@ -30,7 +30,7 @@ install:
   - if [[ "${GO111MODULE}" = "on" ]]; then export PATH="${GOPATH}/bin:${GOROOT}/bin:${PATH}"; fi
   - if [[ "${GO111MODULE}" = "on" ]]; then make tools; fi
 
-go_import_path: github.com/gin-gonic/gin
+go_import_path: github.com/softwear/gin
 
 script:
   - make vet
