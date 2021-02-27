@@ -9,7 +9,7 @@ import (
 )
 
 // StringToBytes converts string to byte slice without a memory allocation.
-func StringToBytes(s string) (b []byte) {
+func StringToBytes(s string) []byte {
 	return *(*[]byte)(unsafe.Pointer(
 		&struct {
 			string
