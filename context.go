@@ -19,9 +19,9 @@ import (
 	"sync"
 	"time"
 
+	"github.com/RadiumByte/gin/binding"
+	"github.com/RadiumByte/gin/render"
 	"github.com/gin-contrib/sse"
-	"github.com/gin-gonic/gin/binding"
-	"github.com/gin-gonic/gin/render"
 )
 
 // Content-Type MIME of the most common data formats.
@@ -37,7 +37,7 @@ const (
 )
 
 // BodyBytesKey indicates a default body bytes key.
-const BodyBytesKey = "_gin-gonic/gin/bodybyteskey"
+const BodyBytesKey = "_RadiumByte/gin/bodybyteskey"
 
 const abortIndex int8 = math.MaxInt8 / 2
 
