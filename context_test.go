@@ -2027,3 +2027,12 @@ func TestContextWithKeysMutex(t *testing.T) {
 	assert.Nil(t, value)
 	assert.False(t, err)
 }
+
+func TestRemoteIPFail(t *testing.T) {
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	c.Request, _ = http.NewRequest("POST", "/", nil)
+	c.Request.RemoteAddr = "[:::]:80"
+	ip, trust := c.RemoteIP()
+	assert.Nil(t, ip)
+	assert.False(t, trust)
+}
