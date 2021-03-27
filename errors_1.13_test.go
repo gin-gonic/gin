@@ -1,4 +1,5 @@
 // +build go1.13
+//go:build go1.13
 
 package gin
 
