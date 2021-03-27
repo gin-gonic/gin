@@ -338,31 +338,32 @@ func (engine *Engine) Run(addr ...string) (err error) {
 }
 
 func (engine *Engine) prepareTrustedCIDRs() ([]*net.IPNet, error) {
-	if engine.TrustedProxies != nil {
-		cidr := make([]*net.IPNet, 0, len(engine.TrustedProxies))
-		for _, trustedProxy := range engine.TrustedProxies {
-			if !strings.Contains(trustedProxy, "/") {
-				ip := parseIP(trustedProxy)
-				if ip == nil {
-					return cidr, &net.ParseError{Type: "IP address", Text: trustedProxy}
-				}
-
-				switch len(ip) {
-				case net.IPv4len:
-					trustedProxy += "/32"
-				case net.IPv6len:
-					trustedProxy += "/128"
-				}
-			}
-			_, cidrNet, err := net.ParseCIDR(trustedProxy)
-			if err != nil {
-				return cidr, err
-			}
-			cidr = append(cidr, cidrNet)
-		}
-		return cidr, nil
+	if engine.TrustedProxies == nil {
+		return nil, nil
 	}
-	return nil, nil
+
+	cidr := make([]*net.IPNet, 0, len(engine.TrustedProxies))
+	for _, trustedProxy := range engine.TrustedProxies {
+		if !strings.Contains(trustedProxy, "/") {
+			ip := parseIP(trustedProxy)
+			if ip == nil {
+				return cidr, &net.ParseError{Type: "IP address", Text: trustedProxy}
+			}
+
+			switch len(ip) {
+			case net.IPv4len:
+				trustedProxy += "/32"
+			case net.IPv6len:
+				trustedProxy += "/128"
+			}
+		}
+		_, cidrNet, err := net.ParseCIDR(trustedProxy)
+		if err != nil {
+			return cidr, err
+		}
+		cidr = append(cidr, cidrNet)
+	}
+	return cidr, nil
 }
 
 // parseIP parse a string representation of an IP and returns a net.IP with the

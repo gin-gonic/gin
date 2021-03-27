@@ -1430,7 +1430,7 @@ func TestContextClientIP(t *testing.T) {
 
 	// Only trust RemoteAddr
 	c.engine.TrustedProxies = []string{"40.40.40.40"}
-	assert.Equal(t, "30.30.30.30", c.ClientIP())
+	assert.Equal(t, "20.20.20.20", c.ClientIP())
 
 	// All steps are trusted
 	c.engine.TrustedProxies = []string{"40.40.40.40", "30.30.30.30", "20.20.20.20"}
@@ -1442,7 +1442,7 @@ func TestContextClientIP(t *testing.T) {
 
 	// Use hostname that resolves to all the proxies
 	c.engine.TrustedProxies = []string{"foo"}
-	assert.Equal(t, "20.20.20.20", c.ClientIP())
+	assert.Equal(t, "40.40.40.40", c.ClientIP())
 
 	// Use hostname that returns an error
 	c.engine.TrustedProxies = []string{"bar"}

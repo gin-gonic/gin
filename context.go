@@ -741,6 +741,7 @@ func (c *Context) ClientIP() string {
 	if remoteIP == nil {
 		return ""
 	}
+
 	if trusted && c.engine.ForwardedByClientIP && c.engine.RemoteIPHeaders != nil {
 		for _, headerName := range c.engine.RemoteIPHeaders {
 			ip, valid := validateHeader(c.requestHeader(headerName))
@@ -765,13 +766,19 @@ func (c *Context) RemoteIP() (net.IP, bool) {
 	if remoteIP == nil {
 		return nil, false
 	}
-	if c.engine.trustedCIDRs != nil {
-		for _, cidr := range c.engine.trustedCIDRs {
-			if cidr.Contains(remoteIP) {
-				return remoteIP, true
+
+	trustedCIDRs, err := c.engine.prepareTrustedCIDRs()
+	if err == nil {
+		c.engine.trustedCIDRs = trustedCIDRs
+		if c.engine.trustedCIDRs != nil {
+			for _, cidr := range c.engine.trustedCIDRs {
+				if cidr.Contains(remoteIP) {
+					return remoteIP, true
+				}
 			}
 		}
 	}
+
 	return remoteIP, false
 }
 
