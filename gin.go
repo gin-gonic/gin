@@ -15,6 +15,7 @@ import (
 
 	"github.com/gin-gonic/gin/internal/bytesconv"
 	"github.com/gin-gonic/gin/render"
+	"github.com/kuangchanglang/graceful"
 )
 
 const defaultMultipartMemory = 32 << 20 // 32 MB
@@ -114,6 +115,7 @@ type Engine struct {
 	pool             sync.Pool
 	trees            methodTrees
 	maxParams        uint16
+	server           *graceful.Server
 }
 
 var _ IRouter = &Engine{}
@@ -309,6 +311,11 @@ func (engine *Engine) Run(addr ...string) (err error) {
 	debugPrint("Listening and serving HTTP on %s\n", address)
 	err = http.ListenAndServe(address, engine)
 	return
+}
+
+// RunGracefully supports graceful shutdown using graceful 3rd party library
+func (engine *Engine) RunGracefully(addr ...string) error {
+	return engine.server.Run()
 }
 
 // RunTLS attaches the router to a http.Server and starts listening and serving HTTPS (secure) requests.
