@@ -156,7 +156,7 @@ People and companies, who have contributed, in alphabetical order.
 - Fix variadic parameter in the flexible render API
 - Fix Corrupted plain render
 - Add Pluggable View Renderer Example
- 
+
 
 **@msemenistyi (Mykyta Semenistyi)**
 - update Readme.md. Add code to String method
