@@ -1128,3 +1128,18 @@ func (c *Context) Value(key interface{}) interface{} {
 	}
 	return nil
 }
+
+// ContextValue returns the context's value associated with the http request based on key, or nil
+// if no value is associated.
+func (c *Context) ContextValue(key interface{}) interface{} {
+	if key == 0 {
+		// to make sure the api(s) are consistent in behaviour; return the Request object instead of a nil.
+		// check the [Value] method's implementation (context.go).
+		return c.Request
+	}
+	if keyAsString, ok := key.(string); ok {
+		val := c.Request.Context().Value(keyAsString)
+		return val
+	}
+	return nil
+}
