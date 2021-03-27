@@ -400,10 +400,12 @@ type nodeValue struct {
 func (n *node) getValue(path string, params *Params, unescape bool) (value nodeValue) {
 walk: // Outer loop for walking the tree
 	for {
+
 		prefix := n.path
 		if len(path) > len(prefix) {
-			if path[:len(prefix)] == prefix {
+      if strings.ToLower(path[:len(prefix)]) == strings.ToLower(prefix) {
 				path = path[len(prefix):]
+
 				// If this node does not have a wildcard (param or catchAll)
 				// child, we can just look up the next child node and continue
 				// to walk down the tree
@@ -507,9 +509,11 @@ walk: // Outer loop for walking the tree
 					panic("invalid node type")
 				}
 			}
+
 		}
 
-		if path == prefix {
+		if strings.ToLower(path) == strings.ToLower(prefix) {
+
 			// We should have reached the node containing the handle.
 			// Check if this node has a handle registered.
 			if value.handlers = n.handlers; value.handlers != nil {
