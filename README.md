@@ -66,6 +66,7 @@ Gin is a web framework written in Go (Golang). It features a martini-like API wi
     - [Using BasicAuth() middleware](#using-basicauth-middleware)
     - [Goroutines inside a middleware](#goroutines-inside-a-middleware)
     - [Custom HTTP configuration](#custom-http-configuration)
+    - [Support FCGI](#support-fcgi)
     - [Support Let's Encrypt](#support-lets-encrypt)
     - [Run multiple service using Gin](#run-multiple-service-using-gin)
     - [Graceful shutdown or restart](#graceful-shutdown-or-restart)
@@ -1589,6 +1590,81 @@ func main() {
 	s.ListenAndServe()
 }
 ```
+
+### Support FCGI
+
+Here is how to start Gin as a FCGI server that will listen to `os.Stdin`:
+
+```go
+package main
+
+import (
+	"github.com/gin-gonic/gin"
+)
+
+func main() {
+	r := gin.Default()
+
+	// Ping handler
+	r.GET("/ping", func(c *gin.Context) {
+		c.String(200, "pong")
+	})
+
+	r.RunFCGI()
+}
+```
+
+An alternative way of starting the FCGI server is:
+
+```go
+package main
+
+import (
+	"net/http/fcgi"
+
+	"github.com/gin-gonic/gin"
+)
+
+func main() {
+	r := gin.Default()
+
+	// Ping handler
+	r.GET("/ping", func(c *gin.Context) {
+		c.String(200, "pong")
+	})
+
+	fcgi.Serve(nil, r)
+}
+```
+
+Please refer to [fcgi](https://golang.org/pkg/net/http/fcgi/) to see how to use a listener other that `os.Stdin`
+
+For an Apache server, the configuration would look like this:
+
+In the file `/etc/apache2/sites-available/your-project.conf`:
+
+```
+DocumentRoot /var/www/your-project
+<Directory /var/www/your-project>
+	Options FollowSymLinks ExecCGI
+	AllowOverride All
+	Require all granted
+</Directory>
+```
+
+Then in the file `/var/www/your-project/.htaccess`:
+
+```
+# Go serves all files, static and dynamic:
+
+SetHandler fcgid-script
+
+RewriteEngine on
+
+RewriteRule ^(.*)$ your-project [QSA,L]
+```
+
+If `your-project` is the name of your binary in the directory, as created by `go build` with no other parameters.
 
 ### Support Let's Encrypt
 
