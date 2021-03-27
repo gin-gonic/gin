@@ -647,6 +647,15 @@ func TestPrepareTrustedCIRDsWith(t *testing.T) {
 		assert.Error(t, err)
 	}
 
+	// nil value
+	{
+		r.TrustedProxies = nil
+		trustedCIDRs, err := r.prepareTrustedCIDRs()
+
+		assert.Nil(t, trustedCIDRs)
+		assert.Nil(t, err)
+	}
+
 }
 
 func parseCIDR(cidr string) *net.IPNet {
