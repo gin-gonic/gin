@@ -767,14 +767,12 @@ func (c *Context) RemoteIP() (net.IP, bool) {
 		return nil, false
 	}
 
-	trustedCIDRs, err := c.engine.prepareTrustedCIDRs()
-	if err == nil {
-		c.engine.trustedCIDRs = trustedCIDRs
-		if c.engine.trustedCIDRs != nil {
-			for _, cidr := range c.engine.trustedCIDRs {
-				if cidr.Contains(remoteIP) {
-					return remoteIP, true
-				}
+	trustedCIDRs, _ := c.engine.prepareTrustedCIDRs()
+	c.engine.trustedCIDRs = trustedCIDRs
+	if c.engine.trustedCIDRs != nil {
+		for _, cidr := range c.engine.trustedCIDRs {
+			if cidr.Contains(remoteIP) {
+				return remoteIP, true
 			}
 		}
 	}
