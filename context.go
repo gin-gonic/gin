@@ -668,6 +668,11 @@ func (c *Context) ShouldBindJSON(obj interface{}) error {
 	return c.ShouldBindWith(obj, binding.JSON)
 }
 
+// ShouldBindMsgPack is a shortcut for c.ShouldBindWith(obj, binding.MsgPack).
+func (c *Context) ShouldBindMsgPack(obj interface{}) error {
+	return c.ShouldBindWith(obj, binding.MsgPack)
+}
+
 // ShouldBindXML is a shortcut for c.ShouldBindWith(obj, binding.XML).
 func (c *Context) ShouldBindXML(obj interface{}) error {
 	return c.ShouldBindWith(obj, binding.XML)
@@ -906,6 +911,12 @@ func (c *Context) JSONP(code int, obj interface{}) {
 // It also sets the Content-Type as "application/json".
 func (c *Context) JSON(code int, obj interface{}) {
 	c.Render(code, render.JSON{Data: obj})
+}
+
+// MsgPack serializes the given struct as MsgPack into the response body.
+// It also sets the Content-Type as "application/msgpack".
+func (c *Context) MsgPack(code int, obj interface{}) {
+	c.Render(code, render.MsgPack{Data: obj})
 }
 
 // AsciiJSON serializes the given struct as JSON into the response body with unicode to ASCII string.
