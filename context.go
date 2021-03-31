@@ -768,6 +768,15 @@ func (c *Context) IsWebsocket() bool {
 	return false
 }
 
+// Method returns the HTTP method of the requests.
+func (c *Context) Method() string {
+	method := c.Request.Method
+	if method == "" {
+		return http.MethodGet
+	}
+	return method
+}
+
 func (c *Context) requestHeader(key string) string {
 	return c.Request.Header.Get(key)
 }

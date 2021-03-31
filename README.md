@@ -217,6 +217,29 @@ func main() {
 }
 ```
 
+### Getting Request Method
+
+```go
+package main
+
+import (
+	"fmt"
+	"net/http"
+
+	"github.com/gin-gonic/gin"
+)
+
+func main() {
+	r := gin.Default()
+
+	r.GET("/", func(c *gin.Context) {
+		c.String(http.StatusOK, fmt.Sprintf("This is a %s request.", c.Method()))
+	})
+
+	r.Run()
+}
+```
+
 ### Parameters in path
 
 ```go
