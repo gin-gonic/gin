@@ -1764,6 +1764,38 @@ func TestContextShouldBindBodyWith(t *testing.T) {
 	}
 }
 
+func TestContextMethod(t *testing.T) {
+	c, _ := CreateTestContext(httptest.NewRecorder())
+
+	c.Request, _ = http.NewRequest("", "http://example.com", nil)
+	c.Request.Method = ""
+	assert.Equal(t, http.MethodGet, c.Method())
+
+	c.Request, _ = http.NewRequest(http.MethodPost, "http://example.com", nil)
+	assert.Equal(t, http.MethodPost, c.Method())
+
+	c.Request, _ = http.NewRequest(http.MethodPut, "http://example.com", nil)
+	assert.Equal(t, http.MethodPut, c.Method())
+
+	c.Request, _ = http.NewRequest(http.MethodPatch, "http://example.com", nil)
+	assert.Equal(t, http.MethodPatch, c.Method())
+
+	c.Request, _ = http.NewRequest(http.MethodHead, "http://example.com", nil)
+	assert.Equal(t, http.MethodHead, c.Method())
+
+	c.Request, _ = http.NewRequest(http.MethodOptions, "http://example.com", nil)
+	assert.Equal(t, http.MethodOptions, c.Method())
+
+	c.Request, _ = http.NewRequest(http.MethodDelete, "http://example.com", nil)
+	assert.Equal(t, http.MethodDelete, c.Method())
+
+	c.Request, _ = http.NewRequest(http.MethodConnect, "http://example.com", nil)
+	assert.Equal(t, http.MethodConnect, c.Method())
+
+	c.Request, _ = http.NewRequest(http.MethodTrace, "http://example.com", nil)
+	assert.Equal(t, http.MethodTrace, c.Method())
+}
+
 func TestContextGolangContext(t *testing.T) {
 	c, _ := CreateTestContext(httptest.NewRecorder())
 	c.Request, _ = http.NewRequest("POST", "/", bytes.NewBufferString("{\"foo\":\"bar\", \"bar\":\"foo\"}"))
