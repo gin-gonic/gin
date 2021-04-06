@@ -1392,11 +1392,10 @@ func TestContextClientIP(t *testing.T) {
 	c, _ := CreateTestContext(httptest.NewRecorder())
 	c.Request, _ = http.NewRequest("POST", "/", nil)
 
-	c.Request.Header.Set("X-Real-IP", " 10.10.10.10  ")
-	c.Request.Header.Set("X-Forwarded-For", "  20.20.20.20, 30.30.30.30")
-	c.Request.Header.Set("X-Appengine-Remote-Addr", "50.50.50.50")
-	c.Request.RemoteAddr = "  40.40.40.40:42123 "
+	resetContextForClientIPTests(c)
 
+	// Legacy tests (validating that the defaults don't break the
+	// (insecure!) old behaviour)
 	assert.Equal(t, "20.20.20.20", c.ClientIP())
 
 	c.Request.Header.Del("X-Forwarded-For")
@@ -1416,6 +1415,74 @@ func TestContextClientIP(t *testing.T) {
 	// no port
 	c.Request.RemoteAddr = "50.50.50.50"
 	assert.Empty(t, c.ClientIP())
+
+	// Tests exercising the TrustedProxies functionality
+	resetContextForClientIPTests(c)
+
+	// No trusted proxies
+	c.engine.TrustedProxies = []string{}
+	c.engine.RemoteIPHeaders = []string{"X-Forwarded-For"}
+	assert.Equal(t, "40.40.40.40", c.ClientIP())
+
+	// Last proxy is trusted, but the RemoteAddr is not
+	c.engine.TrustedProxies = []string{"30.30.30.30"}
+	assert.Equal(t, "40.40.40.40", c.ClientIP())
+
+	// Only trust RemoteAddr
+	c.engine.TrustedProxies = []string{"40.40.40.40"}
+	assert.Equal(t, "20.20.20.20", c.ClientIP())
+
+	// All steps are trusted
+	c.engine.TrustedProxies = []string{"40.40.40.40", "30.30.30.30", "20.20.20.20"}
+	assert.Equal(t, "20.20.20.20", c.ClientIP())
+
+	// Use CIDR
+	c.engine.TrustedProxies = []string{"40.40.25.25/16", "30.30.30.30"}
+	assert.Equal(t, "20.20.20.20", c.ClientIP())
+
+	// Use hostname that resolves to all the proxies
+	c.engine.TrustedProxies = []string{"foo"}
+	assert.Equal(t, "40.40.40.40", c.ClientIP())
+
+	// Use hostname that returns an error
+	c.engine.TrustedProxies = []string{"bar"}
+	assert.Equal(t, "40.40.40.40", c.ClientIP())
+
+	// X-Forwarded-For has a non-IP element
+	c.engine.TrustedProxies = []string{"40.40.40.40"}
+	c.Request.Header.Set("X-Forwarded-For", " blah ")
+	assert.Equal(t, "40.40.40.40", c.ClientIP())
+
+	// Result from LookupHost has non-IP element. This should never
+	// happen, but we should test it to make sure we handle it
+	// gracefully.
+	c.engine.TrustedProxies = []string{"baz"}
+	c.Request.Header.Set("X-Forwarded-For", " 30.30.30.30 ")
+	assert.Equal(t, "40.40.40.40", c.ClientIP())
+
+	c.engine.TrustedProxies = []string{"40.40.40.40"}
+	c.Request.Header.Del("X-Forwarded-For")
+	c.engine.RemoteIPHeaders = []string{"X-Forwarded-For", "X-Real-IP"}
+	assert.Equal(t, "10.10.10.10", c.ClientIP())
+
+	c.engine.RemoteIPHeaders = []string{}
+	c.engine.AppEngine = true
+	assert.Equal(t, "50.50.50.50", c.ClientIP())
+
+	c.Request.Header.Del("X-Appengine-Remote-Addr")
+	assert.Equal(t, "40.40.40.40", c.ClientIP())
+
+	// no port
+	c.Request.RemoteAddr = "50.50.50.50"
+	assert.Empty(t, c.ClientIP())
+}
+
+func resetContextForClientIPTests(c *Context) {
+	c.Request.Header.Set("X-Real-IP", " 10.10.10.10  ")
+	c.Request.Header.Set("X-Forwarded-For", "  20.20.20.20, 30.30.30.30")
+	c.Request.Header.Set("X-Appengine-Remote-Addr", "50.50.50.50")
+	c.Request.RemoteAddr = "  40.40.40.40:42123 "
+	c.engine.AppEngine = false
 }
 
 func TestContextContentType(t *testing.T) {
@@ -1959,4 +2026,13 @@ func TestContextWithKeysMutex(t *testing.T) {
 	value, err = c.Get("foo2")
 	assert.Nil(t, value)
 	assert.False(t, err)
+}
+
+func TestRemoteIPFail(t *testing.T) {
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	c.Request, _ = http.NewRequest("POST", "/", nil)
+	c.Request.RemoteAddr = "[:::]:80"
+	ip, trust := c.RemoteIP()
+	assert.Nil(t, ip)
+	assert.False(t, trust)
 }
