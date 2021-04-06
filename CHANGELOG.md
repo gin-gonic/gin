@@ -1,5 +1,11 @@
 # Gin ChangeLog
 
+## Gin v1.7.0
+
+### ENHANCEMENTS
+
+* Support params and exact routes without creating conflicts [#2663](https://github.com/gin-gonic/gin/pull/2663)
+
 ## Gin v1.6.3
 
 ### ENHANCEMENTS

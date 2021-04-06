@@ -243,6 +243,13 @@ func main() {
 		c.FullPath() == "/user/:name/*action" // true
 	})
 
+	// This handler will add a new router for /user/groups.
+	// Exact routes are resolved before param routes, regardless of the order they were defined.
+	// Routes starting with /user/groups are never interpreted as /user/:name/... routes
+	router.GET("/user/groups", func(c *gin.Context) {
+		c.String(http.StatusOK, "The available groups are [...]", name)
+	})
+
 	router.Run(":8080")
 }
 ```
