@@ -1,5 +1,11 @@
 # Gin ChangeLog
 
+## Gin v1.7.1
+
+### BUGFIXES
+
+* fix: data race with trustedCIDRs from [#2674](https://github.com/gin-gonic/gin/issues/2674)([#2675](https://github.com/gin-gonic/gin/pull/2675))
+
 ## Gin v1.7.0
 
 ### BUGFIXES
