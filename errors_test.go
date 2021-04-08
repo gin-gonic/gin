@@ -111,8 +111,7 @@ type TestErr string
 func (e TestErr) Error() string { return string(e) }
 
 // TestErrorUnwrap tests the behavior of gin.Error with "errors.Is()" and "errors.As()".
-// "errors.Is()" and "errors.As()" have been added to the standard library in go 1.13,
-// hence the "// +build go1.13" directive at the beginning of this file.
+// "errors.Is()" and "errors.As()" have been added to the standard library in go 1.13.
 func TestErrorUnwrap(t *testing.T) {
 	innerErr := TestErr("somme error")
 
