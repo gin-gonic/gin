@@ -28,6 +28,11 @@ type testRequests []struct {
 	ps         Params
 }
 
+func getParams() *Params {
+	ps := make(Params, 0, 20)
+	return &ps
+}
+
 func checkRequests(t *testing.T, tree *node, requests testRequests, unescapes ...bool) {
 	unescape := false
 	if len(unescapes) >= 1 {
@@ -35,7 +40,7 @@ func checkRequests(t *testing.T, tree *node, requests testRequests, unescapes ..
 	}
 
 	for _, request := range requests {
-		value := tree.getValue(request.path, nil, unescape)
+		value := tree.getValue(request.path, getParams(), unescape)
 
 		if value.handlers == nil {
 			if !request.nilHandler {
@@ -50,9 +55,12 @@ func checkRequests(t *testing.T, tree *node, requests testRequests, unescapes ..
 			}
 		}
 
-		if !reflect.DeepEqual(value.params, request.ps) {
-			t.Errorf("Params mismatch for route '%s'", request.path)
+		if value.params != nil {
+			if !reflect.DeepEqual(*value.params, request.ps) {
+				t.Errorf("Params mismatch for route '%s'", request.path)
+			}
 		}
+
 	}
 }
 
@@ -76,33 +84,11 @@ func checkPriorities(t *testing.T, n *node) uint32 {
 	return prio
 }
 
-func checkMaxParams(t *testing.T, n *node) uint8 {
-	var maxParams uint8
-	for i := range n.children {
-		params := checkMaxParams(t, n.children[i])
-		if params > maxParams {
-			maxParams = params
-		}
-	}
-	if n.nType > root && !n.wildChild {
-		maxParams++
-	}
-
-	if n.maxParams != maxParams {
-		t.Errorf(
-			"maxParams mismatch for node '%s': is %d, should be %d",
-			n.path, n.maxParams, maxParams,
-		)
-	}
-
-	return maxParams
-}
-
 func TestCountParams(t *testing.T) {
 	if countParams("/path/:param1/static/*catch-all") != 2 {
 		t.Fail()
 	}
-	if countParams(strings.Repeat("/:param", 256)) != 255 {
+	if countParams(strings.Repeat("/:param", 256)) != 256 {
 		t.Fail()
 	}
 }
@@ -142,7 +128,6 @@ func TestTreeAddAndGet(t *testing.T) {
 	})
 
 	checkPriorities(t, tree)
-	checkMaxParams(t, tree)
 }
 
 func TestTreeWildcard(t *testing.T) {
@@ -152,6 +137,8 @@ func TestTreeWildcard(t *testing.T) {
 		"/",
 		"/cmd/:tool/:sub",
 		"/cmd/:tool/",
+		"/cmd/whoami",
+		"/cmd/whoami/root/",
 		"/src/*filepath",
 		"/search/",
 		"/search/:query",
@@ -170,8 +157,12 @@ func TestTreeWildcard(t *testing.T) {
 
 	checkRequests(t, tree, testRequests{
 		{"/", false, "/", nil},
-		{"/cmd/test/", false, "/cmd/:tool/", Params{Param{Key: "tool", Value: "test"}}},
-		{"/cmd/test", true, "", Params{Param{Key: "tool", Value: "test"}}},
+		{"/cmd/test", true, "/cmd/:tool/", Params{Param{"tool", "test"}}},
+		{"/cmd/test/", false, "/cmd/:tool/", Params{Param{"tool", "test"}}},
+		{"/cmd/whoami", false, "/cmd/whoami", nil},
+		{"/cmd/whoami/", true, "/cmd/whoami", nil},
+		{"/cmd/whoami/root/", false, "/cmd/whoami/root/", nil},
+		{"/cmd/whoami/root", true, "/cmd/whoami/root/", nil},
 		{"/cmd/test/3", false, "/cmd/:tool/:sub", Params{Param{Key: "tool", Value: "test"}, Param{Key: "sub", Value: "3"}}},
 		{"/src/", false, "/src/*filepath", Params{Param{Key: "filepath", Value: "/"}}},
 		{"/src/some/file.png", false, "/src/*filepath", Params{Param{Key: "filepath", Value: "/some/file.png"}}},
@@ -186,7 +177,6 @@ func TestTreeWildcard(t *testing.T) {
 	})
 
 	checkPriorities(t, tree)
-	checkMaxParams(t, tree)
 }
 
 func TestUnescapeParameters(t *testing.T) {
@@ -224,7 +214,6 @@ func TestUnescapeParameters(t *testing.T) {
 	}, unescape)
 
 	checkPriorities(t, tree)
-	checkMaxParams(t, tree)
 }
 
 func catchPanic(testFunc func()) (recv interface{}) {
@@ -262,20 +251,38 @@ func testRoutes(t *testing.T, routes []testRoute) {
 func TestTreeWildcardConflict(t *testing.T) {
 	routes := []testRoute{
 		{"/cmd/:tool/:sub", false},
-		{"/cmd/vet", true},
+		{"/cmd/vet", false},
+		{"/foo/bar", false},
+		{"/foo/:name", false},
+		{"/foo/:names", true},
+		{"/cmd/*path", true},
+		{"/cmd/:badvar", true},
+		{"/cmd/:tool/names", false},
+		{"/cmd/:tool/:badsub/details", true},
 		{"/src/*filepath", false},
+		{"/src/:file", true},
+		{"/src/static.json", true},
 		{"/src/*filepathx", true},
 		{"/src/", true},
+		{"/src/foo/bar", true},
 		{"/src1/", false},
 		{"/src1/*filepath", true},
 		{"/src2*filepath", true},
+		{"/src2/*filepath", false},
 		{"/search/:query", false},
-		{"/search/invalid", true},
+		{"/search/valid", false},
 		{"/user_:name", false},
-		{"/user_x", true},
+		{"/user_x", false},
 		{"/user_:name", false},
 		{"/id:id", false},
-		{"/id/:id", true},
+		{"/id/:id", false},
+	}
+	testRoutes(t, routes)
+}
+
+func TestCatchAllAfterSlash(t *testing.T) {
+	routes := []testRoute{
+		{"/non-leading-*catchall", true},
 	}
 	testRoutes(t, routes)
 }
@@ -283,14 +290,17 @@ func TestTreeWildcardConflict(t *testing.T) {
 func TestTreeChildConflict(t *testing.T) {
 	routes := []testRoute{
 		{"/cmd/vet", false},
-		{"/cmd/:tool/:sub", true},
+		{"/cmd/:tool", false},
+		{"/cmd/:tool/:sub", false},
+		{"/cmd/:tool/misc", false},
+		{"/cmd/:tool/:othersub", true},
 		{"/src/AUTHORS", false},
 		{"/src/*filepath", true},
 		{"/user_x", false},
-		{"/user_:name", true},
+		{"/user_:name", false},
 		{"/id/:id", false},
-		{"/id:id", true},
-		{"/:id", true},
+		{"/id:id", false},
+		{"/:id", false},
 		{"/*filepath", true},
 	}
 	testRoutes(t, routes)
@@ -323,12 +333,14 @@ func TestTreeDupliatePath(t *testing.T) {
 		}
 	}
 
+	//printChildren(tree, "")
+
 	checkRequests(t, tree, testRequests{
 		{"/", false, "/", nil},
 		{"/doc/", false, "/doc/", nil},
-		{"/src/some/file.png", false, "/src/*filepath", Params{Param{Key: "filepath", Value: "/some/file.png"}}},
-		{"/search/someth!ng+in+ünìcodé", false, "/search/:query", Params{Param{Key: "query", Value: "someth!ng+in+ünìcodé"}}},
-		{"/user_gopher", false, "/user_:name", Params{Param{Key: "name", Value: "gopher"}}},
+		{"/src/some/file.png", false, "/src/*filepath", Params{Param{"filepath", "/some/file.png"}}},
+		{"/search/someth!ng+in+ünìcodé", false, "/search/:query", Params{Param{"query", "someth!ng+in+ünìcodé"}}},
+		{"/user_gopher", false, "/user_:name", Params{Param{"name", "gopher"}}},
 	})
 }
 
@@ -356,6 +368,8 @@ func TestTreeCatchAllConflict(t *testing.T) {
 		{"/src/*filepath/x", true},
 		{"/src2/", false},
 		{"/src2/*filepath/x", true},
+		{"/src3/*filepath", false},
+		{"/src3/*filepath/x", true},
 	}
 	testRoutes(t, routes)
 }
@@ -366,6 +380,12 @@ func TestTreeCatchAllConflictRoot(t *testing.T) {
 		{"/*filepath", true},
 	}
 	testRoutes(t, routes)
+}
+
+func TestTreeCatchMaxParams(t *testing.T) {
+	tree := &node{}
+	var route = "/cmd/*filepath"
+	tree.addRoute(route, fakeHandler(route))
 }
 
 func TestTreeDoubleWildcard(t *testing.T) {
@@ -501,6 +521,9 @@ func TestTreeRootTrailingSlashRedirect(t *testing.T) {
 func TestTreeFindCaseInsensitivePath(t *testing.T) {
 	tree := &node{}
 
+	longPath := "/l" + strings.Repeat("o", 128) + "ng"
+	lOngPath := "/l" + strings.Repeat("O", 128) + "ng/"
+
 	routes := [...]string{
 		"/hi",
 		"/b/",
@@ -524,6 +547,17 @@ func TestTreeFindCaseInsensitivePath(t *testing.T) {
 		"/doc/go/away",
 		"/no/a",
 		"/no/b",
+		"/Π",
+		"/u/apfêl/",
+		"/u/äpfêl/",
+		"/u/öpfêl",
+		"/v/Äpfêl/",
+		"/v/Öpfêl",
+		"/w/♬",  // 3 byte
+		"/w/♭/", // 3 byte, last byte differs
+		"/w/𠜎",  // 4 byte
+		"/w/𠜏/", // 4 byte
+		longPath,
 	}
 
 	for _, route := range routes {
@@ -602,6 +636,21 @@ func TestTreeFindCaseInsensitivePath(t *testing.T) {
 		{"/DOC/", "/doc", true, true},
 		{"/NO", "", false, true},
 		{"/DOC/GO", "", false, true},
+		{"/π", "/Π", true, false},
+		{"/π/", "/Π", true, true},
+		{"/u/ÄPFÊL/", "/u/äpfêl/", true, false},
+		{"/u/ÄPFÊL", "/u/äpfêl/", true, true},
+		{"/u/ÖPFÊL/", "/u/öpfêl", true, true},
+		{"/u/ÖPFÊL", "/u/öpfêl", true, false},
+		{"/v/äpfêL/", "/v/Äpfêl/", true, false},
+		{"/v/äpfêL", "/v/Äpfêl/", true, true},
+		{"/v/öpfêL/", "/v/Öpfêl", true, true},
+		{"/v/öpfêL", "/v/Öpfêl", true, false},
+		{"/w/♬/", "/w/♬", true, true},
+		{"/w/♭", "/w/♭/", true, true},
+		{"/w/𠜎/", "/w/𠜎", true, true},
+		{"/w/𠜏", "/w/𠜏/", true, true},
+		{lOngPath, longPath, true, true},
 	}
 	// With fixTrailingSlash = true
 	for _, test := range tests {
@@ -666,8 +715,7 @@ func TestTreeWildcardConflictEx(t *testing.T) {
 		{"/who/are/foo", "/foo", `/who/are/\*you`, `/\*you`},
 		{"/who/are/foo/", "/foo/", `/who/are/\*you`, `/\*you`},
 		{"/who/are/foo/bar", "/foo/bar", `/who/are/\*you`, `/\*you`},
-		{"/conxxx", "xxx", `/con:tact`, `:tact`},
-		{"/conooo/xxx", "ooo", `/con:tact`, `:tact`},
+		{"/con:nection", ":nection", `/con:tact`, `:tact`},
 	}
 
 	for _, conflict := range conflicts {
@@ -689,8 +737,7 @@ func TestTreeWildcardConflictEx(t *testing.T) {
 			tree.addRoute(conflict.route, fakeHandler(conflict.route))
 		})
 
-		if !regexp.MustCompile(fmt.Sprintf("'%s' in new path .* conflicts with existing wildcard '%s' in existing prefix '%s'",
-			conflict.segPath, conflict.existSegPath, conflict.existPath)).MatchString(fmt.Sprint(recv)) {
+		if !regexp.MustCompile(fmt.Sprintf("'%s' in new path .* conflicts with existing wildcard '%s' in existing prefix '%s'", conflict.segPath, conflict.existSegPath, conflict.existPath)).MatchString(fmt.Sprint(recv)) {
 			t.Fatalf("invalid wildcard conflict error (%v)", recv)
 		}
 	}

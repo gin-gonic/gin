@@ -99,19 +99,19 @@ func (p *LogFormatterParams) MethodColor() string {
 	method := p.Method
 
 	switch method {
-	case "GET":
+	case http.MethodGet:
 		return blue
-	case "POST":
+	case http.MethodPost:
 		return cyan
-	case "PUT":
+	case http.MethodPut:
 		return yellow
-	case "DELETE":
+	case http.MethodDelete:
 		return red
-	case "PATCH":
+	case http.MethodPatch:
 		return green
-	case "HEAD":
+	case http.MethodHead:
 		return magenta
-	case "OPTIONS":
+	case http.MethodOptions:
 		return white
 	default:
 		return reset
@@ -141,7 +141,7 @@ var defaultLogFormatter = func(param LogFormatterParams) string {
 		// Truncate in a golang < 1.8 safe way
 		param.Latency = param.Latency - param.Latency%time.Second
 	}
-	return fmt.Sprintf("[GIN] %v |%s %3d %s| %13v | %15s |%s %-7s %s %s\n%s",
+	return fmt.Sprintf("[GIN] %v |%s %3d %s| %13v | %15s |%s %-7s %s %#v\n%s",
 		param.TimeStamp.Format("2006/01/02 - 15:04:05"),
 		statusColor, param.StatusCode, resetColor,
 		param.Latency,

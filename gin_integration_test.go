@@ -14,6 +14,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"path/filepath"
 	"sync"
 	"testing"
 	"time"
@@ -52,6 +53,13 @@ func TestRunEmpty(t *testing.T) {
 
 	assert.Error(t, router.Run(":8080"))
 	testRequest(t, "http://localhost:8080/example")
+}
+
+func TestTrustedCIDRsForRun(t *testing.T) {
+	os.Setenv("PORT", "")
+	router := New()
+	router.TrustedProxies = []string{"hello/world"}
+	assert.Error(t, router.Run(":8080"))
 }
 
 func TestRunTLS(t *testing.T) {
@@ -146,15 +154,19 @@ func TestRunWithPort(t *testing.T) {
 func TestUnixSocket(t *testing.T) {
 	router := New()
 
+	unixTestSocket := filepath.Join(os.TempDir(), "unix_unit_test")
+
+	defer os.Remove(unixTestSocket)
+
 	go func() {
 		router.GET("/example", func(c *Context) { c.String(http.StatusOK, "it worked") })
-		assert.NoError(t, router.RunUnix("/tmp/unix_unit_test"))
+		assert.NoError(t, router.RunUnix(unixTestSocket))
 	}()
 	// have to wait for the goroutine to start and run the server
 	// otherwise the main thread will complete
 	time.Sleep(5 * time.Millisecond)
 
-	c, err := net.Dial("unix", "/tmp/unix_unit_test")
+	c, err := net.Dial("unix", unixTestSocket)
 	assert.NoError(t, err)
 
 	fmt.Fprint(c, "GET /example HTTP/1.0\r\n\r\n")
@@ -291,7 +303,7 @@ func TestConcurrentHandleContext(t *testing.T) {
 // }
 
 func testGetRequestHandler(t *testing.T, h http.Handler, url string) {
-	req, err := http.NewRequest("GET", url, nil)
+	req, err := http.NewRequest(http.MethodGet, url, nil)
 	assert.NoError(t, err)
 
 	w := httptest.NewRecorder()

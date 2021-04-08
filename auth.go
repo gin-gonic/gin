@@ -5,9 +5,12 @@
 package gin
 
 import (
+	"crypto/subtle"
 	"encoding/base64"
 	"net/http"
 	"strconv"
+
+	"github.com/gin-gonic/gin/internal/bytesconv"
 )
 
 // AuthUserKey is the cookie name for user credential in basic auth.
@@ -28,7 +31,7 @@ func (a authPairs) searchCredential(authValue string) (string, bool) {
 		return "", false
 	}
 	for _, pair := range a {
-		if pair.value == authValue {
+		if subtle.ConstantTimeCompare([]byte(pair.value), []byte(authValue)) == 1 {
 			return pair.user, true
 		}
 	}
@@ -68,8 +71,9 @@ func BasicAuth(accounts Accounts) HandlerFunc {
 }
 
 func processAccounts(accounts Accounts) authPairs {
-	assert1(len(accounts) > 0, "Empty list of authorized credentials")
-	pairs := make(authPairs, 0, len(accounts))
+	length := len(accounts)
+	assert1(length > 0, "Empty list of authorized credentials")
+	pairs := make(authPairs, 0, length)
 	for user, password := range accounts {
 		assert1(user != "", "User can not be empty")
 		value := authorizationHeader(user, password)
@@ -83,5 +87,5 @@ func processAccounts(accounts Accounts) authPairs {
 
 func authorizationHeader(user, password string) string {
 	base := user + ":" + password
-	return "Basic " + base64.StdEncoding.EncodeToString([]byte(base))
+	return "Basic " + base64.StdEncoding.EncodeToString(bytesconv.StringToBytes(base))
 }
