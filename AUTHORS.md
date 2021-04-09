@@ -190,6 +190,8 @@ People and companies, who have contributed, in alphabetical order.
 **@rogierlommers (Rogier Lommers)**
 - Add updated static serve example
 
+**@rw-access (Ross Wolf)**
+- Added support to mix exact and param routes
 
 **@se77en (Damon Zhao)**
 - Improve color logging
