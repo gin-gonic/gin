@@ -23,7 +23,7 @@ Gin is a web framework written in Go (Golang). It features a martini-like API wi
   - [Quick start](#quick-start)
   - [Benchmarks](#benchmarks)
   - [Gin v1. stable](#gin-v1-stable)
-  - [Build with jsoniter](#build-with-jsoniter)
+  - [Build with jsoniter/go-json](#build-with-json-replacement)
   - [API Examples](#api-examples)
     - [Using GET, POST, PUT, PATCH, DELETE and OPTIONS](#using-get-post-put-patch-delete-and-options)
     - [Parameters in path](#parameters-in-path)
@@ -182,12 +182,17 @@ Gin uses a custom version of [HttpRouter](https://github.com/julienschmidt/httpr
 - [x] Battle tested.
 - [x] API frozen, new releases will not break your code.
 
-## Build with [jsoniter](https://github.com/json-iterator/go)
+## Build with json replacement
 
-Gin uses `encoding/json` as default json package but you can change to [jsoniter](https://github.com/json-iterator/go) by build from other tags.
+Gin uses `encoding/json` as default json package but you can change it by build from other tags.
 
+[jsoniter](https://github.com/json-iterator/go)
 ```sh
 $ go build -tags=jsoniter .
+```
+[go-json](https://github.com/goccy/go-json)
+```sh
+$ go build -tags=go_json .
 ```
 
 ## API Examples
@@ -2215,3 +2220,4 @@ Awesome project lists using [Gin](https://github.com/gin-gonic/gin) web framewor
 * [picfit](https://github.com/thoas/picfit): An image resizing server written in Go.
 * [brigade](https://github.com/brigadecore/brigade): Event-based Scripting for Kubernetes.
 * [dkron](https://github.com/distribworks/dkron): Distributed, fault tolerant job scheduling system.
+
