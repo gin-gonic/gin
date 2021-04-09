@@ -12,7 +12,7 @@ import (
 	"strings"
 )
 
-const ginSupportMinGoVer = 12
+const ginSupportMinGoVer = 13
 
 // IsDebugging returns true if the framework is running in debug mode.
 // Use SetMode(gin.ReleaseMode) to disable debug mode.
