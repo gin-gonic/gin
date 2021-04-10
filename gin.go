@@ -472,50 +472,46 @@ func (engine *Engine) handleHTTPRequest(c *Context) {
 	}
 
 	// Find root of the tree for the given HTTP method
-	t := engine.trees
-	for i, tl := 0, len(t); i < tl; i++ {
-		if t[i].method != httpMethod {
-			continue
-		}
-		root := t[i].root
-		// Find route in tree
-		value := root.getValue(rPath, c.params, unescape)
-		if value.params != nil {
-			c.Params = *value.params
-		}
-		if value.handlers != nil {
-			c.handlers = value.handlers
-			c.fullPath = value.fullPath
-			c.Next()
-			c.writermem.WriteHeaderNow()
-			return
-		}
-		if httpMethod != "CONNECT" && rPath != "/" {
-			if value.tsr && engine.RedirectTrailingSlash {
-				redirectTrailingSlash(c)
-				return
-			}
-			if engine.RedirectFixedPath && redirectFixedPath(c, root, engine.RedirectFixedPath) {
-				return
+	root := engine.trees.get(httpMethod)
+	if root == nil {
+		if engine.HandleMethodNotAllowed {
+			for _, tree := range engine.trees {
+				if tree.method == httpMethod {
+					continue
+				}
+				if value := tree.root.getValue(rPath, nil, unescape); value.handlers != nil {
+					c.handlers = engine.allNoMethod
+					serveError(c, http.StatusMethodNotAllowed, default405Body)
+					return
+				}
 			}
 		}
-		break
+		c.handlers = engine.allNoRoute
+		serveError(c, http.StatusNotFound, default404Body)
+		return
 	}
 
-	if engine.HandleMethodNotAllowed {
-		for _, tree := range engine.trees {
-			if tree.method == httpMethod {
-				continue
-			}
-			if value := tree.root.getValue(rPath, nil, unescape); value.handlers != nil {
-				c.handlers = engine.allNoMethod
-				serveError(c, http.StatusMethodNotAllowed, default405Body)
-				return
-			}
+	// Find route in tree
+	value := root.getValue(rPath, c.params, unescape)
+	if value.params != nil {
+		c.Params = *value.params
+	}
+	if value.handlers != nil {
+		c.handlers = value.handlers
+		c.fullPath = value.fullPath
+		c.Next()
+		c.writermem.WriteHeaderNow()
+		return
+	}
+	if httpMethod != "CONNECT" && rPath != "/" {
+		if value.tsr && engine.RedirectTrailingSlash {
+			redirectTrailingSlash(c)
+			return
+		}
+		if engine.RedirectFixedPath && redirectFixedPath(c, root, engine.RedirectFixedPath) {
+			return
 		}
 	}
-	c.handlers = engine.allNoRoute
-	serveError(c, http.StatusNotFound, default404Body)
 }
 
 var mimePlain = []string{MIMEPlain}
