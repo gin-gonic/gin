@@ -326,11 +326,11 @@ func iterate(path, method string, routes RoutesInfo, root *node) RoutesInfo {
 func (engine *Engine) Run(addr ...string) (err error) {
 	defer func() { debugPrintError(err) }()
 
-	trustedCIDRs, err := engine.prepareTrustedCIDRs()
+	err = engine.parseTrustedProxies()
 	if err != nil {
 		return err
 	}
-	engine.trustedCIDRs = trustedCIDRs
+
 	address := resolveAddress(addr)
 	debugPrint("Listening and serving HTTP on %s\n", address)
 	err = http.ListenAndServe(address, engine)
@@ -364,6 +364,23 @@ func (engine *Engine) prepareTrustedCIDRs() ([]*net.IPNet, error) {
 		cidr = append(cidr, cidrNet)
 	}
 	return cidr, nil
+}
+
+// SetTrustedProxies  set Engine.TrustedProxies
+func (engine *Engine) SetTrustedProxies(trustedProxies []string) error {
+	engine.ForwardedByClientIP = true
+	engine.TrustedProxies = trustedProxies
+	return engine.parseTrustedProxies()
+}
+
+// parseTrustedProxies parse Engine.TrustedProxies to Engine.trustedCIDRs
+func (engine *Engine) parseTrustedProxies() error {
+	trustedCIDRs, err := engine.prepareTrustedCIDRs()
+	if err != nil {
+		return err
+	}
+	engine.trustedCIDRs = trustedCIDRs
+	return nil
 }
 
 // parseIP parse a string representation of an IP and returns a net.IP with the
