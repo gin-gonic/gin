@@ -84,7 +84,7 @@ Gin is a web framework written in Go (Golang). It features a martini-like API wi
 
 To install Gin package, you need to install Go and set your Go workspace first.
 
-1. The first need [Go](https://golang.org/) installed (**version 1.12+ is required**), then you can use the below Go command to install Gin.
+1. The first need [Go](https://golang.org/) installed (**version 1.13+ is required**), then you can use the below Go command to install Gin.
 
 ```sh
 $ go get -u github.com/gin-gonic/gin
@@ -241,6 +241,13 @@ func main() {
 	// For each matched request Context will hold the route definition
 	router.POST("/user/:name/*action", func(c *gin.Context) {
 		c.FullPath() == "/user/:name/*action" // true
+	})
+
+	// This handler will add a new router for /user/groups.
+	// Exact routes are resolved before param routes, regardless of the order they were defined.
+	// Routes starting with /user/groups are never interpreted as /user/:name/... routes
+	router.GET("/user/groups", func(c *gin.Context) {
+		c.String(http.StatusOK, "The available groups are [...]", name)
 	})
 
 	router.Run(":8080")
@@ -2117,6 +2124,39 @@ func main() {
 }
 ```
 
+## Don't trust all proxies
+
+Gin lets you specify which headers to hold the real client IP (if any),
+as well as specifying which proxies (or direct clients) you trust to
+specify one of these headers.
+
+The `TrustedProxies` slice on your `gin.Engine` specifes network addresses or
+network CIDRs from where clients which their request headers related to client
+IP can be trusted. They can be IPv4 addresses, IPv4 CIDRs, IPv6 addresses or
+IPv6 CIDRs.
+
+```go
+import (
+	"fmt"
+
+	"github.com/gin-gonic/gin"
+)
+
+func main() {
+
+	router := gin.Default()
+	router.TrustedProxies = []string{"192.168.1.2"}
+
+	router.GET("/", func(c *gin.Context) {
+		// If the client is 192.168.1.2, use the X-Forwarded-For
+		// header to deduce the original client IP from the trust-
+		// worthy parts of that header.
+		// Otherwise, simply return the direct client IP
+		fmt.Printf("ClientIP: %s\n", c.ClientIP())
+	})
+	router.Run()
+}
+```
 
 ## Testing
 

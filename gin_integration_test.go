@@ -55,6 +55,13 @@ func TestRunEmpty(t *testing.T) {
 	testRequest(t, "http://localhost:8080/example")
 }
 
+func TestTrustedCIDRsForRun(t *testing.T) {
+	os.Setenv("PORT", "")
+	router := New()
+	router.TrustedProxies = []string{"hello/world"}
+	assert.Error(t, router.Run(":8080"))
+}
+
 func TestRunTLS(t *testing.T) {
 	router := New()
 	go func() {
