@@ -1018,7 +1018,9 @@ func TestContextRenderFile(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, w.Code)
 	assert.Contains(t, w.Body.String(), "func New() *Engine {")
-	assert.Equal(t, "text/plain; charset=utf-8", w.Header().Get("Content-Type"))
+	// Content-Type='text/plain; charset=utf-8' when go version <= 1.16,
+	// else, Content-Type='text/x-go; charset=utf-8'
+	assert.NotEqual(t, "", w.Header().Get("Content-Type"))
 }
 
 func TestContextRenderFileFromFS(t *testing.T) {
@@ -1030,7 +1032,9 @@ func TestContextRenderFileFromFS(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, w.Code)
 	assert.Contains(t, w.Body.String(), "func New() *Engine {")
-	assert.Equal(t, "text/plain; charset=utf-8", w.Header().Get("Content-Type"))
+	// Content-Type='text/plain; charset=utf-8' when go version <= 1.16,
+	// else, Content-Type='text/x-go; charset=utf-8'
+	assert.NotEqual(t, "", w.Header().Get("Content-Type"))
 	assert.Equal(t, "/some/path", c.Request.URL.Path)
 }
 
