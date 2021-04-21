@@ -368,7 +368,7 @@ func (engine *Engine) prepareTrustedCIDRs() ([]*net.IPNet, error) {
 
 // SetTrustedProxies  set Engine.TrustedProxies
 func (engine *Engine) SetTrustedProxies(trustedProxies []string) error {
-	engine.ForwardedByClientIP = true
+	//engine.ForwardedByClientIP = true
 	engine.TrustedProxies = trustedProxies
 	return engine.parseTrustedProxies()
 }
@@ -376,11 +376,8 @@ func (engine *Engine) SetTrustedProxies(trustedProxies []string) error {
 // parseTrustedProxies parse Engine.TrustedProxies to Engine.trustedCIDRs
 func (engine *Engine) parseTrustedProxies() error {
 	trustedCIDRs, err := engine.prepareTrustedCIDRs()
-	if err != nil {
-		return err
-	}
 	engine.trustedCIDRs = trustedCIDRs
-	return nil
+	return err
 }
 
 // parseIP parse a string representation of an IP and returns a net.IP with the
