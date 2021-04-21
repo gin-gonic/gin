@@ -133,18 +133,20 @@ func (group *RouterGroup) HEAD(relativePath string, handlers ...HandlerFunc) IRo
 	return group.handle(http.MethodHead, relativePath, handlers)
 }
 
+// anyMethods for RouterGroup Any method
+var anyMethods = []string{
+	http.MethodGet, http.MethodPost, http.MethodPut, http.MethodPatch,
+	http.MethodHead, http.MethodOptions, http.MethodDelete, http.MethodConnect,
+	http.MethodTrace,
+}
+
 // Any registers a route that matches all the HTTP methods.
 // GET, POST, PUT, PATCH, HEAD, OPTIONS, DELETE, CONNECT, TRACE.
 func (group *RouterGroup) Any(relativePath string, handlers ...HandlerFunc) IRoutes {
-	group.handle(http.MethodGet, relativePath, handlers)
-	group.handle(http.MethodPost, relativePath, handlers)
-	group.handle(http.MethodPut, relativePath, handlers)
-	group.handle(http.MethodPatch, relativePath, handlers)
-	group.handle(http.MethodHead, relativePath, handlers)
-	group.handle(http.MethodOptions, relativePath, handlers)
-	group.handle(http.MethodDelete, relativePath, handlers)
-	group.handle(http.MethodConnect, relativePath, handlers)
-	group.handle(http.MethodTrace, relativePath, handlers)
+	for _, method := range anyMethods {
+		group.handle(method, relativePath, handlers)
+	}
+
 	return group.returnObj()
 }
 
