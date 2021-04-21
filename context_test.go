@@ -1048,7 +1048,7 @@ func TestContextRenderAttachment(t *testing.T) {
 
 	assert.Equal(t, 200, w.Code)
 	assert.Contains(t, w.Body.String(), "func New() *Engine {")
-	assert.Equal(t, fmt.Sprintf("attachment; filename=\"%s\"", newFilename), w.HeaderMap.Get("Content-Disposition"))
+	assert.Equal(t, fmt.Sprintf("attachment; filename=\"%s\"", newFilename), w.Header().Get("Content-Disposition"))
 }
 
 // TestContextRenderYAML tests that the response is serialized as YAML
