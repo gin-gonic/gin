@@ -11,6 +11,11 @@ import (
 	"strings"
 )
 
+var (
+	// reg match english letters for http method name
+	regEnLetter = regexp.MustCompile("^[A-Z]+$")
+)
+
 // IRouter defines all router handle interface includes single and group router.
 type IRouter interface {
 	IRoutes
@@ -87,7 +92,7 @@ func (group *RouterGroup) handle(httpMethod, relativePath string, handlers Handl
 // frequently used, non-standardized or custom methods (e.g. for internal
 // communication with a proxy).
 func (group *RouterGroup) Handle(httpMethod, relativePath string, handlers ...HandlerFunc) IRoutes {
-	if matches, err := regexp.MatchString("^[A-Z]+$", httpMethod); !matches || err != nil {
+	if matched := regEnLetter.MatchString(httpMethod); !matched {
 		panic("http method " + httpMethod + " is not valid")
 	}
 	return group.handle(httpMethod, relativePath, handlers)
