@@ -411,8 +411,14 @@ walk: // Outer loop for walking the tree
 				idxc := path[0]
 				for i, c := range []byte(n.indices) {
 					if c == idxc {
-						n = n.children[i]
-						continue walk
+						childWillWalkTo := n.children[i]
+
+						if strings.Split(childWillWalkTo.path, "/")[0] != strings.Split(path, "/")[0] && strings.HasPrefix(n.children[len(n.children)-1].path, ":") {
+							continue
+						} else {
+							n = childWillWalkTo
+							continue walk
+						}
 					}
 				}
 
