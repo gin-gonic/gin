@@ -1018,7 +1018,9 @@ func TestContextRenderFile(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, w.Code)
 	assert.Contains(t, w.Body.String(), "func New() *Engine {")
-	assert.Equal(t, "text/plain; charset=utf-8", w.Header().Get("Content-Type"))
+	// Content-Type='text/plain; charset=utf-8' when go version <= 1.16,
+	// else, Content-Type='text/x-go; charset=utf-8'
+	assert.NotEqual(t, "", w.Header().Get("Content-Type"))
 }
 
 func TestContextRenderFileFromFS(t *testing.T) {
@@ -1030,7 +1032,9 @@ func TestContextRenderFileFromFS(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, w.Code)
 	assert.Contains(t, w.Body.String(), "func New() *Engine {")
-	assert.Equal(t, "text/plain; charset=utf-8", w.Header().Get("Content-Type"))
+	// Content-Type='text/plain; charset=utf-8' when go version <= 1.16,
+	// else, Content-Type='text/x-go; charset=utf-8'
+	assert.NotEqual(t, "", w.Header().Get("Content-Type"))
 	assert.Equal(t, "/some/path", c.Request.URL.Path)
 }
 
@@ -1044,7 +1048,7 @@ func TestContextRenderAttachment(t *testing.T) {
 
 	assert.Equal(t, 200, w.Code)
 	assert.Contains(t, w.Body.String(), "func New() *Engine {")
-	assert.Equal(t, fmt.Sprintf("attachment; filename=\"%s\"", newFilename), w.HeaderMap.Get("Content-Disposition"))
+	assert.Equal(t, fmt.Sprintf("attachment; filename=\"%s\"", newFilename), w.Header().Get("Content-Disposition"))
 }
 
 // TestContextRenderYAML tests that the response is serialized as YAML
@@ -1388,15 +1392,18 @@ func TestContextAbortWithError(t *testing.T) {
 	assert.True(t, c.IsAborted())
 }
 
+func resetTrustedCIDRs(c *Context) {
+	c.engine.trustedCIDRs, _ = c.engine.prepareTrustedCIDRs()
+}
+
 func TestContextClientIP(t *testing.T) {
 	c, _ := CreateTestContext(httptest.NewRecorder())
 	c.Request, _ = http.NewRequest("POST", "/", nil)
+	resetTrustedCIDRs(c)
+	resetContextForClientIPTests(c)
 
-	c.Request.Header.Set("X-Real-IP", " 10.10.10.10  ")
-	c.Request.Header.Set("X-Forwarded-For", "  20.20.20.20, 30.30.30.30")
-	c.Request.Header.Set("X-Appengine-Remote-Addr", "50.50.50.50")
-	c.Request.RemoteAddr = "  40.40.40.40:42123 "
-
+	// Legacy tests (validating that the defaults don't break the
+	// (insecure!) old behaviour)
 	assert.Equal(t, "20.20.20.20", c.ClientIP())
 
 	c.Request.Header.Del("X-Forwarded-For")
@@ -1416,6 +1423,84 @@ func TestContextClientIP(t *testing.T) {
 	// no port
 	c.Request.RemoteAddr = "50.50.50.50"
 	assert.Empty(t, c.ClientIP())
+
+	// Tests exercising the TrustedProxies functionality
+	resetContextForClientIPTests(c)
+
+	// No trusted proxies
+	c.engine.TrustedProxies = []string{}
+	resetTrustedCIDRs(c)
+	c.engine.RemoteIPHeaders = []string{"X-Forwarded-For"}
+	assert.Equal(t, "40.40.40.40", c.ClientIP())
+
+	// Last proxy is trusted, but the RemoteAddr is not
+	c.engine.TrustedProxies = []string{"30.30.30.30"}
+	resetTrustedCIDRs(c)
+	assert.Equal(t, "40.40.40.40", c.ClientIP())
+
+	// Only trust RemoteAddr
+	c.engine.TrustedProxies = []string{"40.40.40.40"}
+	resetTrustedCIDRs(c)
+	assert.Equal(t, "20.20.20.20", c.ClientIP())
+
+	// All steps are trusted
+	c.engine.TrustedProxies = []string{"40.40.40.40", "30.30.30.30", "20.20.20.20"}
+	resetTrustedCIDRs(c)
+	assert.Equal(t, "20.20.20.20", c.ClientIP())
+
+	// Use CIDR
+	c.engine.TrustedProxies = []string{"40.40.25.25/16", "30.30.30.30"}
+	resetTrustedCIDRs(c)
+	assert.Equal(t, "20.20.20.20", c.ClientIP())
+
+	// Use hostname that resolves to all the proxies
+	c.engine.TrustedProxies = []string{"foo"}
+	resetTrustedCIDRs(c)
+	assert.Equal(t, "40.40.40.40", c.ClientIP())
+
+	// Use hostname that returns an error
+	c.engine.TrustedProxies = []string{"bar"}
+	resetTrustedCIDRs(c)
+	assert.Equal(t, "40.40.40.40", c.ClientIP())
+
+	// X-Forwarded-For has a non-IP element
+	c.engine.TrustedProxies = []string{"40.40.40.40"}
+	resetTrustedCIDRs(c)
+	c.Request.Header.Set("X-Forwarded-For", " blah ")
+	assert.Equal(t, "40.40.40.40", c.ClientIP())
+
+	// Result from LookupHost has non-IP element. This should never
+	// happen, but we should test it to make sure we handle it
+	// gracefully.
+	c.engine.TrustedProxies = []string{"baz"}
+	resetTrustedCIDRs(c)
+	c.Request.Header.Set("X-Forwarded-For", " 30.30.30.30 ")
+	assert.Equal(t, "40.40.40.40", c.ClientIP())
+
+	c.engine.TrustedProxies = []string{"40.40.40.40"}
+	resetTrustedCIDRs(c)
+	c.Request.Header.Del("X-Forwarded-For")
+	c.engine.RemoteIPHeaders = []string{"X-Forwarded-For", "X-Real-IP"}
+	assert.Equal(t, "10.10.10.10", c.ClientIP())
+
+	c.engine.RemoteIPHeaders = []string{}
+	c.engine.AppEngine = true
+	assert.Equal(t, "50.50.50.50", c.ClientIP())
+
+	c.Request.Header.Del("X-Appengine-Remote-Addr")
+	assert.Equal(t, "40.40.40.40", c.ClientIP())
+
+	// no port
+	c.Request.RemoteAddr = "50.50.50.50"
+	assert.Empty(t, c.ClientIP())
+}
+
+func resetContextForClientIPTests(c *Context) {
+	c.Request.Header.Set("X-Real-IP", " 10.10.10.10  ")
+	c.Request.Header.Set("X-Forwarded-For", "  20.20.20.20, 30.30.30.30")
+	c.Request.Header.Set("X-Appengine-Remote-Addr", "50.50.50.50")
+	c.Request.RemoteAddr = "  40.40.40.40:42123 "
+	c.engine.AppEngine = false
 }
 
 func TestContextContentType(t *testing.T) {
@@ -1959,4 +2044,13 @@ func TestContextWithKeysMutex(t *testing.T) {
 	value, err = c.Get("foo2")
 	assert.Nil(t, value)
 	assert.False(t, err)
+}
+
+func TestRemoteIPFail(t *testing.T) {
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	c.Request, _ = http.NewRequest("POST", "/", nil)
+	c.Request.RemoteAddr = "[:::]:80"
+	ip, trust := c.RemoteIP()
+	assert.Nil(t, ip)
+	assert.False(t, trust)
 }

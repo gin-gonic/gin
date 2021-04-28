@@ -23,7 +23,7 @@ Gin is a web framework written in Go (Golang). It features a martini-like API wi
   - [Quick start](#quick-start)
   - [Benchmarks](#benchmarks)
   - [Gin v1. stable](#gin-v1-stable)
-  - [Build with jsoniter](#build-with-jsoniter)
+  - [Build with jsoniter/go-json](#build-with-json-replacement)
   - [API Examples](#api-examples)
     - [Using GET, POST, PUT, PATCH, DELETE and OPTIONS](#using-get-post-put-patch-delete-and-options)
     - [Parameters in path](#parameters-in-path)
@@ -84,7 +84,7 @@ Gin is a web framework written in Go (Golang). It features a martini-like API wi
 
 To install Gin package, you need to install Go and set your Go workspace first.
 
-1. The first need [Go](https://golang.org/) installed (**version 1.11+ is required**), then you can use the below Go command to install Gin.
+1. The first need [Go](https://golang.org/) installed (**version 1.13+ is required**), then you can use the below Go command to install Gin.
 
 ```sh
 $ go get -u github.com/gin-gonic/gin
@@ -103,7 +103,7 @@ import "net/http"
 ```
 
 ## Quick start
- 
+
 ```sh
 # assume the following codes in example.go file
 $ cat example.go
@@ -182,12 +182,17 @@ Gin uses a custom version of [HttpRouter](https://github.com/julienschmidt/httpr
 - [x] Battle tested.
 - [x] API frozen, new releases will not break your code.
 
-## Build with [jsoniter](https://github.com/json-iterator/go)
+## Build with json replacement
 
-Gin uses `encoding/json` as default json package but you can change to [jsoniter](https://github.com/json-iterator/go) by build from other tags.
+Gin uses `encoding/json` as default json package but you can change it by build from other tags.
 
+[jsoniter](https://github.com/json-iterator/go)
 ```sh
 $ go build -tags=jsoniter .
+```
+[go-json](https://github.com/goccy/go-json)
+```sh
+$ go build -tags=go_json .
 ```
 
 ## API Examples
@@ -241,6 +246,13 @@ func main() {
 	// For each matched request Context will hold the route definition
 	router.POST("/user/:name/*action", func(c *gin.Context) {
 		c.FullPath() == "/user/:name/*action" // true
+	})
+
+	// This handler will add a new router for /user/groups.
+	// Exact routes are resolved before param routes, regardless of the order they were defined.
+	// Routes starting with /user/groups are never interpreted as /user/:name/... routes
+	router.GET("/user/groups", func(c *gin.Context) {
+		c.String(http.StatusOK, "The available groups are [...]", name)
 	})
 
 	router.Run(":8080")
@@ -588,44 +600,44 @@ func main() {
 ::1 - [Fri, 07 Dec 2018 17:04:38 JST] "GET /ping HTTP/1.1 200 122.767µs "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/71.0.3578.80 Safari/537.36" "
 ```
 
-### Controlling Log output coloring 
+### Controlling Log output coloring
 
 By default, logs output on console should be colorized depending on the detected TTY.
 
-Never colorize logs: 
+Never colorize logs:
 
 ```go
 func main() {
     // Disable log's color
     gin.DisableConsoleColor()
-    
+
     // Creates a gin router with default middleware:
     // logger and recovery (crash-free) middleware
     router := gin.Default()
-    
+
     router.GET("/ping", func(c *gin.Context) {
         c.String(200, "pong")
     })
-    
+
     router.Run(":8080")
 }
 ```
 
-Always colorize logs: 
+Always colorize logs:
 
 ```go
 func main() {
     // Force log's color
     gin.ForceConsoleColor()
-    
+
     // Creates a gin router with default middleware:
     // logger and recovery (crash-free) middleware
     router := gin.Default()
-    
+
     router.GET("/ping", func(c *gin.Context) {
         c.String(200, "pong")
     })
-    
+
     router.Run(":8080")
 }
 ```
@@ -667,12 +679,12 @@ func main() {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
 		}
-		
+
 		if json.User != "manu" || json.Password != "123" {
 			c.JSON(http.StatusUnauthorized, gin.H{"status": "unauthorized"})
 			return
-		} 
-		
+		}
+
 		c.JSON(http.StatusOK, gin.H{"status": "you are logged in"})
 	})
 
@@ -688,12 +700,12 @@ func main() {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
 		}
-		
+
 		if xml.User != "manu" || xml.Password != "123" {
 			c.JSON(http.StatusUnauthorized, gin.H{"status": "unauthorized"})
 			return
-		} 
-		
+		}
+
 		c.JSON(http.StatusOK, gin.H{"status": "you are logged in"})
 	})
 
@@ -705,12 +717,12 @@ func main() {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
 		}
-		
+
 		if form.User != "manu" || form.Password != "123" {
 			c.JSON(http.StatusUnauthorized, gin.H{"status": "unauthorized"})
 			return
-		} 
-		
+		}
+
 		c.JSON(http.StatusOK, gin.H{"status": "you are logged in"})
 	})
 
@@ -807,7 +819,7 @@ $ curl "localhost:8085/bookable?check_in=2030-03-10&check_out=2030-03-09"
 {"error":"Key: 'Booking.CheckOut' Error:Field validation for 'CheckOut' failed on the 'gtfield' tag"}
 
 $ curl "localhost:8085/bookable?check_in=2000-03-09&check_out=2000-03-10"
-{"error":"Key: 'Booking.CheckIn' Error:Field validation for 'CheckIn' failed on the 'bookabledate' tag"}%    
+{"error":"Key: 'Booking.CheckIn' Error:Field validation for 'CheckIn' failed on the 'bookabledate' tag"}%
 ```
 
 [Struct level validations](https://github.com/go-playground/validator/releases/tag/v8.7) can also be registered this way.
@@ -1145,7 +1157,7 @@ func main() {
 		data := gin.H{
 			"foo": "bar",
 		}
-		
+
 		//callback is x
 		// Will output  :   x({\"foo\":\"bar\"})
 		c.JSONP(http.StatusOK, data)
@@ -1190,21 +1202,21 @@ This feature is unavailable in Go 1.6 and lower.
 ```go
 func main() {
 	r := gin.Default()
-	
+
 	// Serves unicode entities
 	r.GET("/json", func(c *gin.Context) {
 		c.JSON(200, gin.H{
 			"html": "<b>Hello, world!</b>",
 		})
 	})
-	
+
 	// Serves literal characters
 	r.GET("/purejson", func(c *gin.Context) {
 		c.PureJSON(200, gin.H{
 			"html": "<b>Hello, world!</b>",
 		})
 	})
-	
+
 	// listen and serve on 0.0.0.0:8080
 	r.Run(":8080")
 }
@@ -1797,8 +1809,8 @@ func main() {
 	// Initializing the server in a goroutine so that
 	// it won't block the graceful shutdown handling below
 	go func() {
-		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			log.Fatalf("listen: %s\n", err)
+		if err := srv.ListenAndServe(); err != nil && errors.Is(err, http.ErrServerClosed) {
+			log.Printf("listen: %s\n", err)
 		}
 	}()
 
@@ -1816,10 +1828,11 @@ func main() {
 	// the request it is currently handling
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
+
 	if err := srv.Shutdown(ctx); err != nil {
 		log.Fatal("Server forced to shutdown:", err)
 	}
-	
+
 	log.Println("Server exiting")
 }
 ```
@@ -2120,6 +2133,39 @@ func main() {
 }
 ```
 
+## Don't trust all proxies
+
+Gin lets you specify which headers to hold the real client IP (if any),
+as well as specifying which proxies (or direct clients) you trust to
+specify one of these headers.
+
+The `TrustedProxies` slice on your `gin.Engine` specifes network addresses or
+network CIDRs from where clients which their request headers related to client
+IP can be trusted. They can be IPv4 addresses, IPv4 CIDRs, IPv6 addresses or
+IPv6 CIDRs.
+
+```go
+import (
+	"fmt"
+
+	"github.com/gin-gonic/gin"
+)
+
+func main() {
+
+	router := gin.Default()
+	router.TrustedProxies = []string{"192.168.1.2"}
+
+	router.GET("/", func(c *gin.Context) {
+		// If the client is 192.168.1.2, use the X-Forwarded-For
+		// header to deduce the original client IP from the trust-
+		// worthy parts of that header.
+		// Otherwise, simply return the direct client IP
+		fmt.Printf("ClientIP: %s\n", c.ClientIP())
+	})
+	router.Run()
+}
+```
 
 ## Testing
 
@@ -2178,3 +2224,4 @@ Awesome project lists using [Gin](https://github.com/gin-gonic/gin) web framewor
 * [picfit](https://github.com/thoas/picfit): An image resizing server written in Go.
 * [brigade](https://github.com/brigadecore/brigade): Event-based Scripting for Kubernetes.
 * [dkron](https://github.com/distribworks/dkron): Distributed, fault tolerant job scheduling system.
+

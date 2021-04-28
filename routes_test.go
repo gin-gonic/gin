@@ -238,7 +238,6 @@ func TestRouteParamsByName(t *testing.T) {
 
 		assert.True(t, ok)
 		assert.Equal(t, name, c.Param("name"))
-		assert.Equal(t, name, c.Param("name"))
 		assert.Equal(t, lastName, c.Param("last_name"))
 
 		assert.Empty(t, c.Param("wtf"))
@@ -271,7 +270,6 @@ func TestRouteParamsByNameWithExtraSlash(t *testing.T) {
 		wild, ok = c.Params.Get("wild")
 
 		assert.True(t, ok)
-		assert.Equal(t, name, c.Param("name"))
 		assert.Equal(t, name, c.Param("name"))
 		assert.Equal(t, lastName, c.Param("last_name"))
 
@@ -362,7 +360,9 @@ func TestRouterMiddlewareAndStatic(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, w.Code)
 	assert.Contains(t, w.Body.String(), "package gin")
-	assert.Equal(t, "text/plain; charset=utf-8", w.Header().Get("Content-Type"))
+	// Content-Type='text/plain; charset=utf-8' when go version <= 1.16,
+	// else, Content-Type='text/x-go; charset=utf-8'
+	assert.NotEqual(t, "", w.Header().Get("Content-Type"))
 	assert.NotEqual(t, w.Header().Get("Last-Modified"), "Mon, 02 Jan 2006 15:04:05 MST")
 	assert.Equal(t, "Mon, 02 Jan 2006 15:04:05 MST", w.Header().Get("Expires"))
 	assert.Equal(t, "Gin Framework", w.Header().Get("x-GIN"))

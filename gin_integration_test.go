@@ -14,6 +14,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"path/filepath"
 	"sync"
 	"testing"
 	"time"
@@ -52,6 +53,13 @@ func TestRunEmpty(t *testing.T) {
 
 	assert.Error(t, router.Run(":8080"))
 	testRequest(t, "http://localhost:8080/example")
+}
+
+func TestTrustedCIDRsForRun(t *testing.T) {
+	os.Setenv("PORT", "")
+	router := New()
+	router.TrustedProxies = []string{"hello/world"}
+	assert.Error(t, router.Run(":8080"))
 }
 
 func TestRunTLS(t *testing.T) {
@@ -146,7 +154,7 @@ func TestRunWithPort(t *testing.T) {
 func TestUnixSocket(t *testing.T) {
 	router := New()
 
-	unixTestSocket := "/tmp/unix_unit_test"
+	unixTestSocket := filepath.Join(os.TempDir(), "unix_unit_test")
 
 	defer os.Remove(unixTestSocket)
 
