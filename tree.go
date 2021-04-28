@@ -414,11 +414,21 @@ walk: // Outer loop for walking the tree
 						childWillWalkTo := n.children[i]
 
 						if strings.Split(childWillWalkTo.path, "/")[0] != strings.Split(path, "/")[0] && strings.HasPrefix(n.children[len(n.children)-1].path, ":") {
+							for _, child := range childWillWalkTo.children {
+								cPath := string(c) + child.path
+
+								if cPath == path {
+									child.path = cPath
+									n = child
+									continue walk
+								}
+							}
+
 							continue
-						} else {
-							n = childWillWalkTo
-							continue walk
 						}
+
+						n = childWillWalkTo
+						continue walk
 					}
 				}
 
