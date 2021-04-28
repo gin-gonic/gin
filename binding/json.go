@@ -6,7 +6,7 @@ package binding
 
 import (
 	"bytes"
-	"fmt"
+	"errors"
 	"io"
 	"net/http"
 
@@ -32,7 +32,7 @@ func (jsonBinding) Name() string {
 
 func (jsonBinding) Bind(req *http.Request, obj interface{}) error {
 	if req == nil || req.Body == nil {
-		return fmt.Errorf("invalid request")
+		return errors.New("invalid request")
 	}
 	return decodeJSON(req.Body, obj)
 }
