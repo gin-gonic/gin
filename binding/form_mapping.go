@@ -109,7 +109,7 @@ func mapping(value reflect.Value, field reflect.StructField, setter setter, tag 
 			if sf.PkgPath != "" && !sf.Anonymous { // unexported
 				continue
 			}
-			ok, err := mapping(value.Field(i), tValue.Field(i), setter, tag)
+			ok, err := mapping(value.Field(i), sf, setter, tag)
 			if err != nil {
 				return false, err
 			}
