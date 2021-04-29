@@ -564,7 +564,7 @@ walk: // Outer loop for walking the tree
 			return
 		}
 
-		if path != "/" && strings.HasSuffix(skipped.path, path) {
+		if path != "/" && skipped != nil && strings.HasSuffix(skipped.path, path) {
 			path = skipped.path
 			n = skipped.paramNode
 			skipped = nil
