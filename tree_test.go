@@ -135,9 +135,10 @@ func TestTreeWildcard(t *testing.T) {
 
 	routes := [...]string{
 		"/",
-		"/cmd/:tool/:sub",
 		"/cmd/:tool/",
+		"/cmd/:tool/:sub",
 		"/cmd/whoami",
+		"/cmd/whoami/root",
 		"/cmd/whoami/root/",
 		"/src/*filepath",
 		"/search/",
@@ -152,6 +153,7 @@ func TestTreeWildcard(t *testing.T) {
 		"/doc/go1.html",
 		"/info/:user/public",
 		"/info/:user/project/:project",
+		"/info/:user/project/golang",
 	}
 	for _, route := range routes {
 		tree.addRoute(route, fakeHandler(route))
@@ -161,11 +163,15 @@ func TestTreeWildcard(t *testing.T) {
 		{"/", false, "/", nil},
 		{"/cmd/test", true, "/cmd/:tool/", Params{Param{"tool", "test"}}},
 		{"/cmd/test/", false, "/cmd/:tool/", Params{Param{"tool", "test"}}},
+		{"/cmd/test/3", false, "/cmd/:tool/:sub", Params{Param{Key: "tool", Value: "test"}, Param{Key: "sub", Value: "3"}}},
+		{"/cmd/who", true, "/cmd/:tool/", Params{Param{"tool", "who"}}},
+		{"/cmd/who/", false, "/cmd/:tool/", Params{Param{"tool", "who"}}},
 		{"/cmd/whoami", false, "/cmd/whoami", nil},
 		{"/cmd/whoami/", true, "/cmd/whoami", nil},
+		{"/cmd/whoami/r", false, "/cmd/:tool/:sub", Params{Param{Key: "tool", Value: "whoami"}, Param{Key: "sub", Value: "r"}}},
+		{"/cmd/whoami/r/", true, "/cmd/:tool/:sub", Params{Param{Key: "tool", Value: "whoami"}, Param{Key: "sub", Value: "r"}}},
+		{"/cmd/whoami/root", false, "/cmd/whoami/root", nil},
 		{"/cmd/whoami/root/", false, "/cmd/whoami/root/", nil},
-		{"/cmd/whoami/root", true, "/cmd/whoami/root/", nil},
-		{"/cmd/test/3", false, "/cmd/:tool/:sub", Params{Param{Key: "tool", Value: "test"}, Param{Key: "sub", Value: "3"}}},
 		{"/src/", false, "/src/*filepath", Params{Param{Key: "filepath", Value: "/"}}},
 		{"/src/some/file.png", false, "/src/*filepath", Params{Param{Key: "filepath", Value: "/some/file.png"}}},
 		{"/search/", false, "/search/", nil},
@@ -179,6 +185,7 @@ func TestTreeWildcard(t *testing.T) {
 		{"/files/js/inc/framework.js", false, "/files/:dir/*filepath", Params{Param{Key: "dir", Value: "js"}, Param{Key: "filepath", Value: "/inc/framework.js"}}},
 		{"/info/gordon/public", false, "/info/:user/public", Params{Param{Key: "user", Value: "gordon"}}},
 		{"/info/gordon/project/go", false, "/info/:user/project/:project", Params{Param{Key: "user", Value: "gordon"}, Param{Key: "project", Value: "go"}}},
+		{"/info/gordon/project/golang", false, "/info/:user/project/golang", Params{Param{Key: "user", Value: "gordon"}}},
 	})
 
 	checkPriorities(t, tree)
