@@ -23,7 +23,8 @@ Gin is a web framework written in Go (Golang). It features a martini-like API wi
   - [Quick start](#quick-start)
   - [Benchmarks](#benchmarks)
   - [Gin v1. stable](#gin-v1-stable)
-  - [Build with jsoniter](#build-with-jsoniter)
+  - [Build with jsoniter/go-json](#build-with-json-replacement)
+  - [Build without `MsgPack` rendering feature](#build-without-msgpack-rendering-feature)
   - [API Examples](#api-examples)
     - [Using GET, POST, PUT, PATCH, DELETE and OPTIONS](#using-get-post-put-patch-delete-and-options)
     - [Parameters in path](#parameters-in-path)
@@ -84,7 +85,7 @@ Gin is a web framework written in Go (Golang). It features a martini-like API wi
 
 To install Gin package, you need to install Go and set your Go workspace first.
 
-1. The first need [Go](https://golang.org/) installed (**version 1.12+ is required**), then you can use the below Go command to install Gin.
+1. The first need [Go](https://golang.org/) installed (**version 1.13+ is required**), then you can use the below Go command to install Gin.
 
 ```sh
 $ go get -u github.com/gin-gonic/gin
@@ -182,13 +183,28 @@ Gin uses a custom version of [HttpRouter](https://github.com/julienschmidt/httpr
 - [x] Battle tested.
 - [x] API frozen, new releases will not break your code.
 
-## Build with [jsoniter](https://github.com/json-iterator/go)
+## Build with json replacement
 
-Gin uses `encoding/json` as default json package but you can change to [jsoniter](https://github.com/json-iterator/go) by build from other tags.
+Gin uses `encoding/json` as default json package but you can change it by build from other tags.
 
+[jsoniter](https://github.com/json-iterator/go)
 ```sh
 $ go build -tags=jsoniter .
 ```
+[go-json](https://github.com/goccy/go-json)
+```sh
+$ go build -tags=go_json .
+```
+
+## Build without `MsgPack` rendering feature
+
+Gin enables `MsgPack` rendering feature by default. But you can disable this feature by specifying `nomsgpack` build tag.
+
+```sh
+$ go build -tags=nomsgpack .
+```
+
+This is useful to reduce the binary size of executable files. See the [detail information](https://github.com/gin-gonic/gin/pull/1852).
 
 ## API Examples
 
@@ -925,7 +941,7 @@ func main() {
 	route.GET("/:name/:id", func(c *gin.Context) {
 		var person Person
 		if err := c.ShouldBindUri(&person); err != nil {
-			c.JSON(400, gin.H{"msg": err})
+			c.JSON(400, gin.H{"msg": err.Error()})
 			return
 		}
 		c.JSON(200, gin.H{"name": person.Name, "uuid": person.ID})
@@ -2215,3 +2231,4 @@ Awesome project lists using [Gin](https://github.com/gin-gonic/gin) web framewor
 * [picfit](https://github.com/thoas/picfit): An image resizing server written in Go.
 * [brigade](https://github.com/brigadecore/brigade): Event-based Scripting for Kubernetes.
 * [dkron](https://github.com/distribworks/dkron): Distributed, fault tolerant job scheduling system.
+
