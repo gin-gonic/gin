@@ -368,7 +368,6 @@ func (engine *Engine) prepareTrustedCIDRs() ([]*net.IPNet, error) {
 
 // SetTrustedProxies  set Engine.TrustedProxies
 func (engine *Engine) SetTrustedProxies(trustedProxies []string) error {
-	//engine.ForwardedByClientIP = true
 	engine.TrustedProxies = trustedProxies
 	return engine.parseTrustedProxies()
 }
@@ -401,6 +400,11 @@ func (engine *Engine) RunTLS(addr, certFile, keyFile string) (err error) {
 	debugPrint("Listening and serving HTTPS on %s\n", addr)
 	defer func() { debugPrintError(err) }()
 
+	err = engine.parseTrustedProxies()
+	if err != nil {
+		return err
+	}
+
 	err = http.ListenAndServeTLS(addr, certFile, keyFile, engine)
 	return
 }
@@ -411,6 +415,11 @@ func (engine *Engine) RunTLS(addr, certFile, keyFile string) (err error) {
 func (engine *Engine) RunUnix(file string) (err error) {
 	debugPrint("Listening and serving HTTP on unix:/%s", file)
 	defer func() { debugPrintError(err) }()
+
+	err = engine.parseTrustedProxies()
+	if err != nil {
+		return err
+	}
 
 	listener, err := net.Listen("unix", file)
 	if err != nil {
@@ -430,6 +439,11 @@ func (engine *Engine) RunFd(fd int) (err error) {
 	debugPrint("Listening and serving HTTP on fd@%d", fd)
 	defer func() { debugPrintError(err) }()
 
+	err = engine.parseTrustedProxies()
+	if err != nil {
+		return err
+	}
+
 	f := os.NewFile(uintptr(fd), fmt.Sprintf("fd@%d", fd))
 	listener, err := net.FileListener(f)
 	if err != nil {
@@ -445,6 +459,12 @@ func (engine *Engine) RunFd(fd int) (err error) {
 func (engine *Engine) RunListener(listener net.Listener) (err error) {
 	debugPrint("Listening and serving HTTP on listener what's bind with address@%s", listener.Addr())
 	defer func() { debugPrintError(err) }()
+
+	err = engine.parseTrustedProxies()
+	if err != nil {
+		return err
+	}
+
 	err = http.Serve(listener, engine)
 	return
 }
