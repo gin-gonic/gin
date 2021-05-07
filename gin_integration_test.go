@@ -62,7 +62,7 @@ func TestBadTrustedCIDRsForRun(t *testing.T) {
 	assert.Error(t, router.Run(":8080"))
 }
 
-func TestBadTrustedCIDRsForRunUnix(t *testing.T){
+func TestBadTrustedCIDRsForRunUnix(t *testing.T) {
 	router := New()
 	router.TrustedProxies = []string{"hello/world"}
 
@@ -79,7 +79,7 @@ func TestBadTrustedCIDRsForRunUnix(t *testing.T){
 	time.Sleep(5 * time.Millisecond)
 }
 
-func TestBadTrustedCIDRsForRunFd(t *testing.T){
+func TestBadTrustedCIDRsForRunFd(t *testing.T) {
 	router := New()
 	router.TrustedProxies = []string{"hello/world"}
 
@@ -99,7 +99,7 @@ func TestBadTrustedCIDRsForRunFd(t *testing.T){
 	time.Sleep(5 * time.Millisecond)
 }
 
-func TestBadTrustedCIDRsForRunListener(t *testing.T){
+func TestBadTrustedCIDRsForRunListener(t *testing.T) {
 	router := New()
 	router.TrustedProxies = []string{"hello/world"}
 
