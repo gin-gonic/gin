@@ -105,6 +105,10 @@ type Engine struct {
 	// 'X-AppEngine...' for better integration with that PaaS.
 	AppEngine bool
 
+	// If enabled, it will trust the CF-Connecting-IP header to determine the
+	// IP of the client.
+	CloudflareProxy bool
+
 	// If enabled, the url.RawPath will be used to find parameters.
 	UseRawPath bool
 
