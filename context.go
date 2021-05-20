@@ -78,6 +78,9 @@ type Context struct {
 	// SameSite allows a server to define a cookie attribute making it impossible for
 	// the browser to send this cookie along with cross-site requests.
 	sameSite http.SameSite
+
+	// Method initQueryCache is only called once
+	initQueryCacheOnce sync.Once
 }
 
 /************************************/
@@ -96,6 +99,7 @@ func (c *Context) reset() {
 	c.Accepted = nil
 	c.queryCache = nil
 	c.formCache = nil
+	c.initQueryCacheOnce = sync.Once{}
 	*c.params = (*c.params)[0:0]
 }
 
@@ -113,6 +117,7 @@ func (c *Context) Copy() *Context {
 	cp.index = abortIndex
 	cp.handlers = nil
 	cp.Keys = map[string]interface{}{}
+	cp.initQueryCacheOnce = sync.Once{}
 	for k, v := range c.Keys {
 		cp.Keys[k] = v
 	}
@@ -431,13 +436,15 @@ func (c *Context) QueryArray(key string) []string {
 }
 
 func (c *Context) initQueryCache() {
-	if c.queryCache == nil {
-		if c.Request != nil {
-			c.queryCache = c.Request.URL.Query()
-		} else {
-			c.queryCache = url.Values{}
+	c.initQueryCacheOnce.Do(func() {
+		if c.queryCache == nil {
+			if c.Request != nil {
+				c.queryCache = c.Request.URL.Query()
+			} else {
+				c.queryCache = url.Values{}
+			}
 		}
-	}
+	})
 }
 
 // GetQueryArray returns a slice of strings for a given query key, plus
