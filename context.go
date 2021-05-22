@@ -86,17 +86,17 @@ type Context struct {
 
 func (c *Context) reset() {
 	c.Writer = &c.writermem
-	c.Params = c.Params[0:0]
+	c.Params = c.Params[:0]
 	c.handlers = nil
 	c.index = -1
 
 	c.fullPath = ""
 	c.Keys = nil
-	c.Errors = c.Errors[0:0]
+	c.Errors = c.Errors[:0]
 	c.Accepted = nil
 	c.queryCache = nil
 	c.formCache = nil
-	*c.params = (*c.params)[0:0]
+	*c.params = (*c.params)[:0]
 }
 
 // Copy returns a copy of the current context that can be safely used outside the request's scope.
