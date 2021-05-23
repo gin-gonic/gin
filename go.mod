@@ -11,5 +11,6 @@ require (
 	github.com/mattn/go-isatty v0.0.12
 	github.com/stretchr/testify v1.4.0
 	github.com/ugorji/go/codec v1.1.7
+	golang.org/x/net v0.0.0-20210315170653-34ac3e1c2000
 	gopkg.in/yaml.v2 v2.2.8
 )
