@@ -24,6 +24,7 @@ Gin is a web framework written in Go (Golang). It features a martini-like API wi
   - [Benchmarks](#benchmarks)
   - [Gin v1. stable](#gin-v1-stable)
   - [Build with jsoniter/go-json](#build-with-json-replacement)
+  - [Build without `MsgPack` rendering feature](#build-without-msgpack-rendering-feature)
   - [API Examples](#api-examples)
     - [Using GET, POST, PUT, PATCH, DELETE and OPTIONS](#using-get-post-put-patch-delete-and-options)
     - [Parameters in path](#parameters-in-path)
@@ -194,6 +195,16 @@ $ go build -tags=jsoniter .
 ```sh
 $ go build -tags=go_json .
 ```
+
+## Build without `MsgPack` rendering feature
+
+Gin enables `MsgPack` rendering feature by default. But you can disable this feature by specifying `nomsgpack` build tag.
+
+```sh
+$ go build -tags=nomsgpack .
+```
+
+This is useful to reduce the binary size of executable files. See the [detail information](https://github.com/gin-gonic/gin/pull/1852).
 
 ## API Examples
 
@@ -691,7 +702,7 @@ func main() {
 	// Example for binding XML (
 	//	<?xml version="1.0" encoding="UTF-8"?>
 	//	<root>
-	//		<user>user</user>
+	//		<user>manu</user>
 	//		<password>123</password>
 	//	</root>)
 	router.POST("/loginXML", func(c *gin.Context) {
@@ -930,7 +941,7 @@ func main() {
 	route.GET("/:name/:id", func(c *gin.Context) {
 		var person Person
 		if err := c.ShouldBindUri(&person); err != nil {
-			c.JSON(400, gin.H{"msg": err})
+			c.JSON(400, gin.H{"msg": err.Error()})
 			return
 		}
 		c.JSON(200, gin.H{"name": person.Name, "uuid": person.ID})
