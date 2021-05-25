@@ -24,36 +24,38 @@ func IsDebugging() bool {
 var DebugPrintRouteFunc func(httpMethod, absolutePath, handlerName string, nuHandlers int)
 
 func debugPrintRoute(httpMethod, absolutePath string, handlers HandlersChain) {
-	if IsDebugging() {
-		nuHandlers := len(handlers)
-		handlerName := nameOfFunction(handlers.Last())
-		if DebugPrintRouteFunc == nil {
-			debugPrint("%-6s %-25s --> %s (%d handlers)\n", httpMethod, absolutePath, handlerName, nuHandlers)
-		} else {
-			DebugPrintRouteFunc(httpMethod, absolutePath, handlerName, nuHandlers)
-		}
+	if !IsDebugging() {
+		return
+	}
+	nuHandlers := len(handlers)
+	handlerName := nameOfFunction(handlers.Last())
+	if DebugPrintRouteFunc == nil {
+		debugPrint("%-6s %-25s --> %s (%d handlers)\n", httpMethod, absolutePath, handlerName, nuHandlers)
+	} else {
+		DebugPrintRouteFunc(httpMethod, absolutePath, handlerName, nuHandlers)
 	}
 }
-
 func debugPrintLoadTemplate(tmpl *template.Template) {
-	if IsDebugging() {
-		var buf strings.Builder
-		for _, tmpl := range tmpl.Templates() {
-			buf.WriteString("\t- ")
-			buf.WriteString(tmpl.Name())
-			buf.WriteString("\n")
-		}
-		debugPrint("Loaded HTML Templates (%d): \n%s\n", len(tmpl.Templates()), buf.String())
+	if !IsDebugging() {
+		return
 	}
+	var buf strings.Builder
+	for _, tmpl := range tmpl.Templates() {
+		buf.WriteString("\t- ")
+		buf.WriteString(tmpl.Name())
+		buf.WriteString("\n")
+	}
+	debugPrint("Loaded HTML Templates (%d): \n%s\n", len(tmpl.Templates()), buf.String())
 }
 
 func debugPrint(format string, values ...interface{}) {
-	if IsDebugging() {
-		if !strings.HasSuffix(format, "\n") {
-			format += "\n"
-		}
-		fmt.Fprintf(DefaultWriter, "[GIN-debug] "+format, values...)
+	if !IsDebugging() {
+		return
 	}
+	if !strings.HasSuffix(format, "\n") {
+		format += "\n"
+	}
+	fmt.Fprintf(DefaultWriter, "[GIN-debug] "+format, values...)
 }
 
 func getMinVer(v string) (uint64, error) {
@@ -95,9 +97,7 @@ at initialization. ie. before any route is registered or the router is listening
 }
 
 func debugPrintError(err error) {
-	if err != nil {
-		if IsDebugging() {
-			fmt.Fprintf(DefaultErrorWriter, "[GIN-debug] [ERROR] %v\n", err)
-		}
+	if err != nil && IsDebugging() {
+		fmt.Fprintf(DefaultErrorWriter, "[GIN-debug] [ERROR] %v\n", err)
 	}
 }
