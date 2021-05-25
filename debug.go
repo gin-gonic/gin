@@ -31,9 +31,9 @@ func debugPrintRoute(httpMethod, absolutePath string, handlers HandlersChain) {
 	handlerName := nameOfFunction(handlers.Last())
 	if DebugPrintRouteFunc == nil {
 		debugPrint("%-6s %-25s --> %s (%d handlers)\n", httpMethod, absolutePath, handlerName, nuHandlers)
-	} else {
-		DebugPrintRouteFunc(httpMethod, absolutePath, handlerName, nuHandlers)
+		return
 	}
+	DebugPrintRouteFunc(httpMethod, absolutePath, handlerName, nuHandlers)
 }
 func debugPrintLoadTemplate(tmpl *template.Template) {
 	if !IsDebugging() {
