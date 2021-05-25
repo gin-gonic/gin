@@ -55,11 +55,72 @@ func TestRunEmpty(t *testing.T) {
 	testRequest(t, "http://localhost:8080/example")
 }
 
-func TestTrustedCIDRsForRun(t *testing.T) {
+func TestBadTrustedCIDRsForRun(t *testing.T) {
 	os.Setenv("PORT", "")
 	router := New()
 	router.TrustedProxies = []string{"hello/world"}
 	assert.Error(t, router.Run(":8080"))
+}
+
+func TestBadTrustedCIDRsForRunUnix(t *testing.T) {
+	router := New()
+	router.TrustedProxies = []string{"hello/world"}
+
+	unixTestSocket := filepath.Join(os.TempDir(), "unix_unit_test")
+
+	defer os.Remove(unixTestSocket)
+
+	go func() {
+		router.GET("/example", func(c *Context) { c.String(http.StatusOK, "it worked") })
+		assert.Error(t, router.RunUnix(unixTestSocket))
+	}()
+	// have to wait for the goroutine to start and run the server
+	// otherwise the main thread will complete
+	time.Sleep(5 * time.Millisecond)
+}
+
+func TestBadTrustedCIDRsForRunFd(t *testing.T) {
+	router := New()
+	router.TrustedProxies = []string{"hello/world"}
+
+	addr, err := net.ResolveTCPAddr("tcp", "localhost:0")
+	assert.NoError(t, err)
+	listener, err := net.ListenTCP("tcp", addr)
+	assert.NoError(t, err)
+	socketFile, err := listener.File()
+	assert.NoError(t, err)
+
+	go func() {
+		router.GET("/example", func(c *Context) { c.String(http.StatusOK, "it worked") })
+		assert.Error(t, router.RunFd(int(socketFile.Fd())))
+	}()
+	// have to wait for the goroutine to start and run the server
+	// otherwise the main thread will complete
+	time.Sleep(5 * time.Millisecond)
+}
+
+func TestBadTrustedCIDRsForRunListener(t *testing.T) {
+	router := New()
+	router.TrustedProxies = []string{"hello/world"}
+
+	addr, err := net.ResolveTCPAddr("tcp", "localhost:0")
+	assert.NoError(t, err)
+	listener, err := net.ListenTCP("tcp", addr)
+	assert.NoError(t, err)
+	go func() {
+		router.GET("/example", func(c *Context) { c.String(http.StatusOK, "it worked") })
+		assert.Error(t, router.RunListener(listener))
+	}()
+	// have to wait for the goroutine to start and run the server
+	// otherwise the main thread will complete
+	time.Sleep(5 * time.Millisecond)
+}
+
+func TestBadTrustedCIDRsForRunTLS(t *testing.T) {
+	os.Setenv("PORT", "")
+	router := New()
+	router.TrustedProxies = []string{"hello/world"}
+	assert.Error(t, router.RunTLS(":8080", "./testdata/certificate/cert.pem", "./testdata/certificate/key.pem"))
 }
 
 func TestRunTLS(t *testing.T) {
