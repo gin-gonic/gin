@@ -1410,7 +1410,7 @@ func TestContextClientIP(t *testing.T) {
 
 	c.Request.Header.Del("X-Forwarded-For")
 	c.Request.Header.Del("X-Real-IP")
-	c.engine.AppEngine = true
+	c.engine.TrustedPlatform = PlatformGoogleAppEngine
 	assert.Equal(t, "50.50.50.50", c.ClientIP())
 
 	c.Request.Header.Del("X-Appengine-Remote-Addr")
@@ -1470,18 +1470,26 @@ func TestContextClientIP(t *testing.T) {
 	assert.Equal(t, "10.10.10.10", c.ClientIP())
 
 	c.engine.RemoteIPHeaders = []string{}
+	c.engine.TrustedPlatform = PlatformGoogleAppEngine
+	assert.Equal(t, "50.50.50.50", c.ClientIP())
+
+	// Test the legacy flag
+	c.engine.TrustedPlatform = ""
 	c.engine.AppEngine = true
 	assert.Equal(t, "50.50.50.50", c.ClientIP())
+	c.engine.AppEngine = false
+	c.engine.TrustedPlatform = PlatformGoogleAppEngine
 
 	c.Request.Header.Del("X-Appengine-Remote-Addr")
 	assert.Equal(t, "40.40.40.40", c.ClientIP())
 
-	c.engine.AppEngine = false
-	c.engine.CloudflareProxy = true
+	c.engine.TrustedPlatform = PlatformCloudflare
 	assert.Equal(t, "60.60.60.60", c.ClientIP())
 
 	c.Request.Header.Del("CF-Connecting-IP")
 	assert.Equal(t, "40.40.40.40", c.ClientIP())
+
+	c.engine.TrustedPlatform = ""
 
 	// no port
 	c.Request.RemoteAddr = "50.50.50.50"
@@ -1494,6 +1502,7 @@ func resetContextForClientIPTests(c *Context) {
 	c.Request.Header.Set("X-Appengine-Remote-Addr", "50.50.50.50")
 	c.Request.Header.Set("CF-Connecting-IP", "60.60.60.60")
 	c.Request.RemoteAddr = "  40.40.40.40:42123 "
+	c.engine.TrustedPlatform = ""
 	c.engine.AppEngine = false
 }
 
