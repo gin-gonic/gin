@@ -731,8 +731,13 @@ func (c *Context) ShouldBindBodyWith(obj interface{}, bb binding.BindingBody) (e
 // If the headers are nots syntactically valid OR the remote IP does not correspong to a trusted proxy,
 // the remote IP (coming form Request.RemoteAddr) is returned.
 func (c *Context) ClientIP() string {
-	if c.engine.AppEngine {
+	switch {
+	case c.engine.AppEngine:
 		if addr := c.requestHeader("X-Appengine-Remote-Addr"); addr != "" {
+			return addr
+		}
+	case c.engine.CloudflareProxy:
+		if addr := c.requestHeader("CF-Connecting-IP"); addr != "" {
 			return addr
 		}
 	}
