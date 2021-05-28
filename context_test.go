@@ -1476,6 +1476,13 @@ func TestContextClientIP(t *testing.T) {
 	c.Request.Header.Del("X-Appengine-Remote-Addr")
 	assert.Equal(t, "40.40.40.40", c.ClientIP())
 
+	c.engine.AppEngine = false
+	c.engine.CloudflareProxy = true
+	assert.Equal(t, "60.60.60.60", c.ClientIP())
+
+	c.Request.Header.Del("CF-Connecting-IP")
+	assert.Equal(t, "40.40.40.40", c.ClientIP())
+
 	// no port
 	c.Request.RemoteAddr = "50.50.50.50"
 	assert.Empty(t, c.ClientIP())
@@ -1485,6 +1492,7 @@ func resetContextForClientIPTests(c *Context) {
 	c.Request.Header.Set("X-Real-IP", " 10.10.10.10  ")
 	c.Request.Header.Set("X-Forwarded-For", "  20.20.20.20, 30.30.30.30")
 	c.Request.Header.Set("X-Appengine-Remote-Addr", "50.50.50.50")
+	c.Request.Header.Set("CF-Connecting-IP", "60.60.60.60")
 	c.Request.RemoteAddr = "  40.40.40.40:42123 "
 	c.engine.AppEngine = false
 }
