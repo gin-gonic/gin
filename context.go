@@ -86,17 +86,17 @@ type Context struct {
 
 func (c *Context) reset() {
 	c.Writer = &c.writermem
-	c.Params = c.Params[0:0]
+	c.Params = c.Params[:0]
 	c.handlers = nil
 	c.index = -1
 
 	c.fullPath = ""
 	c.Keys = nil
-	c.Errors = c.Errors[0:0]
+	c.Errors = c.Errors[:0]
 	c.Accepted = nil
 	c.queryCache = nil
 	c.formCache = nil
-	*c.params = (*c.params)[0:0]
+	*c.params = (*c.params)[:0]
 }
 
 // Copy returns a copy of the current context that can be safely used outside the request's scope.
@@ -731,8 +731,13 @@ func (c *Context) ShouldBindBodyWith(obj interface{}, bb binding.BindingBody) (e
 // If the headers are nots syntactically valid OR the remote IP does not correspong to a trusted proxy,
 // the remote IP (coming form Request.RemoteAddr) is returned.
 func (c *Context) ClientIP() string {
-	if c.engine.AppEngine {
+	switch {
+	case c.engine.AppEngine:
 		if addr := c.requestHeader("X-Appengine-Remote-Addr"); addr != "" {
+			return addr
+		}
+	case c.engine.CloudflareProxy:
+		if addr := c.requestHeader("CF-Connecting-IP"); addr != "" {
 			return addr
 		}
 	}
