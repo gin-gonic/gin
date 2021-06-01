@@ -937,7 +937,7 @@ import (
 type Workplace struct {
         Employee     string    `form:"employee"`
         Location     string    `form:"address,default=headquarter"`
-		Peripherals  []string  `form:"peripherals,mutliple_default,default=monitor,mouse,keyboard`
+		Peripherals  []string  `form:"peripherals,multiple_default,default=monitor,mouse,keyboard`
 
 }
 
@@ -953,7 +953,7 @@ func startPage(c *gin.Context) {
 	// If `POST`, first checks the `content-type` for `JSON` or `XML`, then uses `Form` (`form-data`).
 	// See more at https://github.com/gin-gonic/gin/blob/master/binding/binding.go#L48
 	// If default value defined, and the Request does not contain the key, the default value will be used. Empty value from request overrides that behaviour
-	// If mutliple_default is in front of default, the 'default' value is returned as a slice, the position of mutliple_default is important
+	// If multiple_default is in front of default, the 'default' value is returned as a slice, the position of multiple_default is important
         if c.ShouldBind(&workplace) == nil {
                 log.Println(workplace.Employee)
                 log.Println(workplace.Location)

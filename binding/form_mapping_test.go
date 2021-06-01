@@ -76,9 +76,9 @@ func TestMappingDefault(t *testing.T) {
 
 func TestMappingMultipleDefault(t *testing.T) {
 	var s struct {
-		Int   int    `form:",mutliple_default,default=9"`
-		Slice []int  `form:",mutliple_default,default=9"`
-		Array [1]int `form:",mutliple_default,default=9"`
+		Int   int    `form:",multiple_default,default=9"`
+		Slice []int  `form:",multiple_default,default=9"`
+		Array [1]int `form:",multiple_default,default=9"`
 	}
 	err := mappingByPtr(&s, formSource{}, "form")
 	assert.NoError(t, err)

@@ -142,7 +142,7 @@ func tryToSetValue(value reflect.Value, field reflect.StructField, setter setter
 	var opt string
 	for len(opts) > 0 {
 		opt, opts = head(opts, ",")
-		if k, _ := head(opt, "="); k == "mutliple_default" {
+		if k, _ := head(opt, "="); k == "multiple_default" {
 			_, values := head(opts, "=")
 			setOpt.isDefaultExists = true
 			setOpt.defaultValue = values
