@@ -922,6 +922,53 @@ Test it with:
 $ curl -X GET "localhost:8085/testing?name=appleboy&address=xyz&birthday=1992-03-15&createTime=1562400033000000123&unixTime=1562400033"
 ```
 
+### Bind Query String or Post Data and assign default value(s)
+
+```go
+package main
+
+import (
+	"log"
+	"time"
+
+	"github.com/gin-gonic/gin"
+)
+
+type Workplace struct {
+        Employee     string    `form:"employee"`
+        Location     string    `form:"address,default=headquarter"`
+		Peripherals  []string  `form:"peripherals,mutliple_default,default=monitor,mouse,keyboard`
+
+}
+
+func main() {
+	route := gin.Default()
+	route.GET("/testing", startPage)
+	route.Run(":8085")
+}
+
+func startPage(c *gin.Context) {
+	var workplace Workplace
+	// If `GET`, only `Form` binding engine (`query`) used.
+	// If `POST`, first checks the `content-type` for `JSON` or `XML`, then uses `Form` (`form-data`).
+	// See more at https://github.com/gin-gonic/gin/blob/master/binding/binding.go#L48
+	// If default value defined, and the Request does not contain the key, the default value will be used. Empty value from request overrides that behaviour
+	// If mutliple_default is in front of default, the 'default' value is returned as a slice, the position of mutliple_default is important
+        if c.ShouldBind(&workplace) == nil {
+                log.Println(workplace.Employee)
+                log.Println(workplace.Location)
+                log.Println(workplace.Peripherals)
+        }
+
+	c.String(200, "Success")
+}
+```
+
+Test it with:
+```sh
+$ curl -X GET "localhost:8085/testing?employee=andre"
+```
+
 ### Bind Uri
 
 See the [detail information](https://github.com/gin-gonic/gin/issues/846).

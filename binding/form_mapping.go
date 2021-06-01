@@ -142,6 +142,12 @@ func tryToSetValue(value reflect.Value, field reflect.StructField, setter setter
 	var opt string
 	for len(opts) > 0 {
 		opt, opts = head(opts, ",")
+		if k, _ := head(opt, "="); k == "mutliple_default" {
+			_, values := head(opts, "=")
+			setOpt.isDefaultExists = true
+			setOpt.defaultValue = values
+			break
+		}
 
 		if k, v := head(opt, "="); k == "default" {
 			setOpt.isDefaultExists = true
@@ -161,12 +167,12 @@ func setByForm(value reflect.Value, field reflect.StructField, form map[string][
 	switch value.Kind() {
 	case reflect.Slice:
 		if !ok {
-			vs = []string{opt.defaultValue}
+			vs = strings.Split(opt.defaultValue, ",")
 		}
 		return true, setSlice(vs, value, field)
 	case reflect.Array:
 		if !ok {
-			vs = []string{opt.defaultValue}
+			vs = strings.Split(opt.defaultValue, ",")
 		}
 		if len(vs) != value.Len() {
 			return false, fmt.Errorf("%q is not valid value for %s", vs, value.Type().String())
