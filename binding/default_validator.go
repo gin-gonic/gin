@@ -64,7 +64,7 @@ func (v *defaultValidator) ValidateStruct(obj interface{}) error {
 
 // validateStruct receives struct type
 func (v *defaultValidator) validateStruct(obj interface{}) error {
-	v.lazyinit()
+	v.lazyInit()
 	return v.validate.Struct(obj)
 }
 
@@ -73,11 +73,11 @@ func (v *defaultValidator) validateStruct(obj interface{}) error {
 // or struct level validations. See validator GoDoc for more info -
 // https://pkg.go.dev/github.com/go-playground/validator/v10
 func (v *defaultValidator) Engine() interface{} {
-	v.lazyinit()
+	v.lazyInit()
 	return v.validate
 }
 
-func (v *defaultValidator) lazyinit() {
+func (v *defaultValidator) lazyInit() {
 	v.once.Do(func() {
 		v.validate = validator.New()
 		v.validate.SetTagName("binding")
