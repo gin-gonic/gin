@@ -24,6 +24,7 @@ var (
 	centerDot = []byte("·")
 	dot       = []byte(".")
 	slash     = []byte("/")
+	newline   = []byte{'\n'}
 )
 
 // RecoveryFunc defines the function passable to CustomRecovery.
@@ -47,6 +48,20 @@ func RecoveryWithWriter(out io.Writer, recovery ...RecoveryFunc) HandlerFunc {
 	return CustomRecoveryWithWriter(out, defaultHandleRecovery)
 }
 
+// isBrokenPipe check for a broken connection
+func isBrokenPipe(err interface{}) bool {
+	if ne, ok := err.(*net.OpError); ok {
+		if se, ok := ne.Err.(*os.SyscallError); ok {
+			errMsg := strings.ToLower(se.Error())
+			if strings.Contains(errMsg, "broken pipe") || strings.Contains(errMsg, "connection reset by peer") {
+				return true
+			}
+		}
+	}
+
+	return false
+}
+
 // CustomRecoveryWithWriter returns a middleware for a given writer that recovers from any panics and calls the provided handle func to handle it.
 func CustomRecoveryWithWriter(out io.Writer, handle RecoveryFunc) HandlerFunc {
 	var logger *log.Logger
@@ -58,16 +73,9 @@ func CustomRecoveryWithWriter(out io.Writer, handle RecoveryFunc) HandlerFunc {
 			if err := recover(); err != nil {
 				// Check for a broken connection, as it is not really a
 				// condition that warrants a panic stack trace.
-				var brokenPipe bool
-				if ne, ok := err.(*net.OpError); ok {
-					if se, ok := ne.Err.(*os.SyscallError); ok {
-						if strings.Contains(strings.ToLower(se.Error()), "broken pipe") || strings.Contains(strings.ToLower(se.Error()), "connection reset by peer") {
-							brokenPipe = true
-						}
-					}
-				}
+				brokenPipe := isBrokenPipe(err)
 				if logger != nil {
-					stack := stack(3)
+					stackBytes := stack(3)
 					httpRequest, _ := httputil.DumpRequest(c.Request, false)
 					headers := strings.Split(string(httpRequest), "\r\n")
 					for idx, header := range headers {
@@ -81,12 +89,13 @@ func CustomRecoveryWithWriter(out io.Writer, handle RecoveryFunc) HandlerFunc {
 						logger.Printf("%s\n%s%s", err, headersToStr, reset)
 					} else if IsDebugging() {
 						logger.Printf("[Recovery] %s panic recovered:\n%s\n%s\n%s%s",
-							timeFormat(time.Now()), headersToStr, err, stack, reset)
+							timeFormat(time.Now()), headersToStr, err, stackBytes, reset)
 					} else {
 						logger.Printf("[Recovery] %s panic recovered:\n%s\n%s%s",
-							timeFormat(time.Now()), err, stack, reset)
+							timeFormat(time.Now()), err, stackBytes, reset)
 					}
 				}
+
 				if brokenPipe {
 					// If the connection is dead, we can't write a status to it.
 					c.Error(err.(error)) // nolint: errcheck
@@ -100,7 +109,7 @@ func CustomRecoveryWithWriter(out io.Writer, handle RecoveryFunc) HandlerFunc {
 	}
 }
 
-func defaultHandleRecovery(c *Context, err interface{}) {
+func defaultHandleRecovery(c *Context, _ interface{}) {
 	c.AbortWithStatus(http.StatusInternalServerError)
 }
 
@@ -123,7 +132,7 @@ func stack(skip int) []byte {
 			if err != nil {
 				continue
 			}
-			lines = bytes.Split(data, []byte{'\n'})
+			lines = bytes.Split(data, newline)
 			lastFile = file
 		}
 		fmt.Fprintf(buf, "\t%s: %s\n", function(pc), source(lines, line))
