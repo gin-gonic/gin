@@ -328,20 +328,20 @@ func TestTreeDupliatePath(t *testing.T) {
 		"/search/:query",
 		"/user_:name",
 	}
-	for _, route := range routes {
+	for k := range routes {
 		recv := catchPanic(func() {
-			tree.addRoute(route, fakeHandler(route))
+			tree.addRoute(routes[k], fakeHandler(routes[k]))
 		})
 		if recv != nil {
-			t.Fatalf("panic inserting route '%s': %v", route, recv)
+			t.Fatalf("panic inserting route '%s': %v", routes[k], recv)
 		}
 
 		// Add again
 		recv = catchPanic(func() {
-			tree.addRoute(route, nil)
+			tree.addRoute(routes[k], nil)
 		})
 		if recv == nil {
-			t.Fatalf("no panic while inserting duplicate route '%s", route)
+			t.Fatalf("no panic while inserting duplicate route '%s", routes[k])
 		}
 	}
 
@@ -730,7 +730,7 @@ func TestTreeWildcardConflictEx(t *testing.T) {
 		{"/con:nection", ":nection", `/con:tact`, `:tact`},
 	}
 
-	for _, conflict := range conflicts {
+	for k := range conflicts {
 		// I have to re-create a 'tree', because the 'tree' will be
 		// in an inconsistent state when the loop recovers from the
 		// panic which threw by 'addRoute' function.
@@ -746,10 +746,13 @@ func TestTreeWildcardConflictEx(t *testing.T) {
 		}
 
 		recv := catchPanic(func() {
-			tree.addRoute(conflict.route, fakeHandler(conflict.route))
+			tree.addRoute(conflicts[k].route, fakeHandler(conflicts[k].route))
 		})
 
-		if !regexp.MustCompile(fmt.Sprintf("'%s' in new path .* conflicts with existing wildcard '%s' in existing prefix '%s'", conflict.segPath, conflict.existSegPath, conflict.existPath)).MatchString(fmt.Sprint(recv)) {
+		if !regexp.MustCompile(
+			fmt.Sprintf("'%s' in new path .* conflicts with existing wildcard '%s' in existing prefix '%s'",
+				conflicts[k].segPath, conflicts[k].existSegPath, conflicts[k].existPath)).
+			MatchString(fmt.Sprint(recv)) {
 			t.Fatalf("invalid wildcard conflict error (%v)", recv)
 		}
 	}
