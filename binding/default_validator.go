@@ -8,13 +8,11 @@ import (
 	"fmt"
 	"reflect"
 	"strings"
-	"sync"
 
 	"github.com/go-playground/validator/v10"
 )
 
 type defaultValidator struct {
-	once     sync.Once
 	validate *validator.Validate
 }
 
@@ -77,9 +75,10 @@ func (v *defaultValidator) Engine() interface{} {
 	return v.validate
 }
 
+// lazyInit initialize the validate Settings, no need to use sync.once
 func (v *defaultValidator) lazyInit() {
-	v.once.Do(func() {
+	if v.validate == nil {
 		v.validate = validator.New()
 		v.validate.SetTagName("binding")
-	})
+	}
 }
