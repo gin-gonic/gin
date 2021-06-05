@@ -80,8 +80,8 @@ func TestPathCleanMallocs(t *testing.T) {
 		t.Skip("skipping malloc count in short mode")
 	}
 
-	for k := range cleanTests {
-		assert.EqualValues(t, testing.AllocsPerRun(100, func() { cleanPath(cleanTests[k].result) }), 0)
+	for key := range cleanTests {
+		assert.EqualValues(t, testing.AllocsPerRun(100, func() { cleanPath(cleanTests[key].result) }), 0)
 	}
 }
 
@@ -89,8 +89,8 @@ func BenchmarkPathClean(b *testing.B) {
 	b.ReportAllocs()
 
 	for i := 0; i < b.N; i++ {
-		for _, test := range cleanTests {
-			cleanPath(test.path)
+		for key := range cleanTests {
+			cleanPath(cleanTests[key].path)
 		}
 	}
 }

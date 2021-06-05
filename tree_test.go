@@ -245,17 +245,17 @@ type testRoute struct {
 func testRoutes(t *testing.T, routes []testRoute) {
 	tree := &node{}
 
-	for _, route := range routes {
+	for k := range routes {
 		recv := catchPanic(func() {
-			tree.addRoute(route.path, nil)
+			tree.addRoute(routes[k].path, nil)
 		})
 
-		if route.conflict {
+		if routes[k].conflict {
 			if recv == nil {
-				t.Errorf("no panic for conflicting route '%s'", route.path)
+				t.Errorf("no panic for conflicting route '%s'", routes[k].path)
 			}
 		} else if recv != nil {
-			t.Errorf("unexpected panic for route '%s': %v", route.path, recv)
+			t.Errorf("unexpected panic for route '%s': %v", routes[k].path, recv)
 		}
 	}
 }
@@ -365,12 +365,9 @@ func TestEmptyWildcardName(t *testing.T) {
 		"/cmd/:/",
 		"/src/*",
 	}
-	for _, route := range routes {
-		recv := catchPanic(func() {
-			tree.addRoute(route, nil)
-		})
-		if recv == nil {
-			t.Fatalf("no panic while inserting route with empty wildcard name '%s", route)
+	for k := range routes {
+		if catchPanic(func() { tree.addRoute(routes[k], nil) }) == nil {
+			t.Fatalf("no panic while inserting route with empty wildcard name '%s", routes[k])
 		}
 	}
 }
@@ -403,20 +400,20 @@ func TestTreeCatchMaxParams(t *testing.T) {
 func TestTreeDoubleWildcard(t *testing.T) {
 	const panicMsg = "only one wildcard per path segment is allowed"
 
-	routes := [...]string{
+	routes := []string{
 		"/:foo:bar",
 		"/:foo:bar/",
 		"/:foo*bar",
 	}
 
-	for _, route := range routes {
+	for key := range routes {
 		tree := &node{}
 		recv := catchPanic(func() {
-			tree.addRoute(route, nil)
+			tree.addRoute(routes[key], nil)
 		})
 
 		if rs, ok := recv.(string); !ok || !strings.HasPrefix(rs, panicMsg) {
-			t.Fatalf(`"Expected panic "%s" for route '%s', got "%v"`, panicMsg, route, recv)
+			t.Fatalf(`"Expected panic "%s" for route '%s', got "%v"`, panicMsg, routes[key], recv)
 		}
 	}
 }
@@ -426,7 +423,7 @@ func TestTreeDoubleWildcard(t *testing.T) {
 	routes := [...]string{
 		"/:id/:name/:id",
 	}
-	for _, route := range routes {
+	for k := range routes {
 		...
 	}
 }*/
@@ -460,12 +457,12 @@ func TestTreeTrailingSlashRedirect(t *testing.T) {
 		"/no/b",
 		"/api/hello/:name",
 	}
-	for _, route := range routes {
+	for key := range routes {
 		recv := catchPanic(func() {
-			tree.addRoute(route, fakeHandler(route))
+			tree.addRoute(routes[key], fakeHandler(routes[key]))
 		})
 		if recv != nil {
-			t.Fatalf("panic inserting route '%s': %v", route, recv)
+			t.Fatalf("panic inserting route '%s': %v", routes[key], recv)
 		}
 	}
 
@@ -572,32 +569,32 @@ func TestTreeFindCaseInsensitivePath(t *testing.T) {
 		longPath,
 	}
 
-	for _, route := range routes {
+	for key := range routes {
 		recv := catchPanic(func() {
-			tree.addRoute(route, fakeHandler(route))
+			tree.addRoute(routes[key], fakeHandler(routes[key]))
 		})
 		if recv != nil {
-			t.Fatalf("panic inserting route '%s': %v", route, recv)
+			t.Fatalf("panic inserting route '%s': %v", routes[key], recv)
 		}
 	}
 
 	// Check out == in for all registered routes
 	// With fixTrailingSlash = true
-	for _, route := range routes {
-		out, found := tree.findCaseInsensitivePath(route, true)
+	for key := range routes {
+		out, found := tree.findCaseInsensitivePath(routes[key], true)
 		if !found {
-			t.Errorf("Route '%s' not found!", route)
-		} else if string(out) != route {
-			t.Errorf("Wrong result for route '%s': %s", route, string(out))
+			t.Errorf("Route '%s' not found!", routes[key])
+		} else if string(out) != routes[key] {
+			t.Errorf("Wrong result for route '%s': %s", routes[key], string(out))
 		}
 	}
 	// With fixTrailingSlash = false
-	for _, route := range routes {
-		out, found := tree.findCaseInsensitivePath(route, false)
+	for key := range routes {
+		out, found := tree.findCaseInsensitivePath(routes[key], false)
 		if !found {
-			t.Errorf("Route '%s' not found!", route)
-		} else if string(out) != route {
-			t.Errorf("Wrong result for route '%s': %s", route, string(out))
+			t.Errorf("Route '%s' not found!", routes[key])
+		} else if string(out) != routes[key] {
+			t.Errorf("Wrong result for route '%s': %s", routes[key], string(out))
 		}
 	}
 
@@ -730,7 +727,7 @@ func TestTreeWildcardConflictEx(t *testing.T) {
 		{"/con:nection", ":nection", `/con:tact`, `:tact`},
 	}
 
-	for k := range conflicts {
+	for outKey := range conflicts {
 		// I have to re-create a 'tree', because the 'tree' will be
 		// in an inconsistent state when the loop recovers from the
 		// panic which threw by 'addRoute' function.
@@ -741,17 +738,17 @@ func TestTreeWildcardConflictEx(t *testing.T) {
 			"/who/foo/hello",
 		}
 
-		for _, route := range routes {
-			tree.addRoute(route, fakeHandler(route))
+		for k := range routes {
+			tree.addRoute(routes[k], fakeHandler(routes[k]))
 		}
 
 		recv := catchPanic(func() {
-			tree.addRoute(conflicts[k].route, fakeHandler(conflicts[k].route))
+			tree.addRoute(conflicts[outKey].route, fakeHandler(conflicts[outKey].route))
 		})
 
 		if !regexp.MustCompile(
 			fmt.Sprintf("'%s' in new path .* conflicts with existing wildcard '%s' in existing prefix '%s'",
-				conflicts[k].segPath, conflicts[k].existSegPath, conflicts[k].existPath)).
+				conflicts[outKey].segPath, conflicts[outKey].existSegPath, conflicts[outKey].existPath)).
 			MatchString(fmt.Sprint(recv)) {
 			t.Fatalf("invalid wildcard conflict error (%v)", recv)
 		}
