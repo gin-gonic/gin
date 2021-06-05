@@ -17,10 +17,10 @@ func TestSliceValidateError(t *testing.T) {
 	}{
 		{"has nil elements", sliceValidateError{errors.New("test error"), nil}, "[0]: test error"},
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := tt.err.Error(); got != tt.want {
-				t.Errorf("sliceValidateError.Error() = %v, want %v", got, tt.want)
+	for k := range tests {
+		t.Run(tests[k].name, func(t *testing.T) {
+			if got := tests[k].err.Error(); got != tests[k].want {
+				t.Errorf("sliceValidateError.Error() = %v, want %v", got, tests[k].want)
 			}
 		})
 	}
@@ -58,10 +58,10 @@ func TestDefaultValidator(t *testing.T) {
 		{"validate *[]*struct failed-2", &defaultValidator{}, &[]*exampleStruct{{A: "12345678", B: 0}}, true},
 		{"validate *[]*struct passed", &defaultValidator{}, &[]*exampleStruct{{A: "12345678", B: 1}}, false},
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if err := tt.v.ValidateStruct(tt.obj); (err != nil) != tt.wantErr {
-				t.Errorf("defaultValidator.Validate() error = %v, wantErr %v", err, tt.wantErr)
+	for k := range tests {
+		t.Run(tests[k].name, func(t *testing.T) {
+			if err := tests[k].v.ValidateStruct(tests[k].obj); (err != nil) != tests[k].wantErr {
+				t.Errorf("defaultValidator.Validate() error = %v, wantErr %v", err, tests[k].wantErr)
 			}
 		})
 	}
