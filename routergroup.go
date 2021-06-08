@@ -183,7 +183,7 @@ func (group *RouterGroup) StaticFileFS(relativePath, filepath string, fs http.Fi
 // of the Router's NotFound handler.
 // To use the operating system's file system implementation,
 // use :
-//     router.Static("/static", "/var/www", http)
+//     router.Static("/static", "/var/www")
 func (group *RouterGroup) Static(relativePath, root string) IRoutes {
 	return group.StaticFS(relativePath, Dir(root, false))
 }
