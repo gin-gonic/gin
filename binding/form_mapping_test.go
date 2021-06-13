@@ -74,6 +74,39 @@ func TestMappingDefault(t *testing.T) {
 	assert.Equal(t, [1]int{9}, s.Array)
 }
 
+func TestMappingCollectionFormat(t *testing.T) {
+	var s struct {
+		SliceMulti []int  `form:"slice_multi" collection_format:"multi"`
+		SliceCsv   []int  `form:"slice_csv" collection_format:"csv"`
+		SliceSsv   []int  `form:"slice_ssv" collection_format:"ssv"`
+		SlicePipes []int  `form:"slice_pipes" collection_format:"pipes"`
+		ArrayMulti [2]int `form:"array_multi" collection_format:"multi"`
+		ArrayCsv   [2]int `form:"array_csv" collection_format:"csv"`
+		ArraySsv   [2]int `form:"array_ssv" collection_format:"ssv"`
+		ArrayPipes [2]int `form:"array_pipes" collection_format:"pipes"`
+	}
+	err := mappingByPtr(&s, formSource{
+		"slice_multi": {"1", "2"},
+		"slice_csv":   {"1,2"},
+		"slice_ssv":   {"1 2"},
+		"slice_pipes": {"1|2"},
+		"array_multi": {"1", "2"},
+		"array_csv":   {"1,2"},
+		"array_ssv":   {"1 2"},
+		"array_pipes": {"1|2"},
+	}, "form")
+	assert.NoError(t, err)
+
+	assert.Equal(t, []int{1, 2}, s.SliceMulti)
+	assert.Equal(t, []int{1, 2}, s.SliceCsv)
+	assert.Equal(t, []int{1, 2}, s.SliceSsv)
+	assert.Equal(t, []int{1, 2}, s.SlicePipes)
+	assert.Equal(t, [2]int{1, 2}, s.ArrayMulti)
+	assert.Equal(t, [2]int{1, 2}, s.ArrayCsv)
+	assert.Equal(t, [2]int{1, 2}, s.ArraySsv)
+	assert.Equal(t, [2]int{1, 2}, s.ArrayPipes)
+}
+
 func TestMappingSkipField(t *testing.T) {
 	var s struct {
 		A int

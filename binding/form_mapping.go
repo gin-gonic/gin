@@ -170,11 +170,15 @@ func setByForm(value reflect.Value, field reflect.StructField, form map[string][
 	case reflect.Slice:
 		if !ok {
 			vs = []string{opt.defaultValue}
+		} else {
+			vs = split(vs, field)
 		}
 		return true, setSlice(vs, value, field)
 	case reflect.Array:
 		if !ok {
 			vs = []string{opt.defaultValue}
+		} else {
+			vs = split(vs, field)
 		}
 		if len(vs) != value.Len() {
 			return false, fmt.Errorf("%q is not valid value for %s", vs, value.Type().String())
@@ -371,6 +375,25 @@ func head(str, sep string) (head string, tail string) {
 		return str, ""
 	}
 	return str[:idx], str[idx+len(sep):]
+}
+
+func split(vals []string, field reflect.StructField) []string {
+	if cfTag := field.Tag.Get("collection_format"); cfTag != "" {
+		sep := "multi"
+		switch cfTag {
+		case "csv":
+			sep = ","
+		case "ssv":
+			sep = " "
+		case "pipes":
+			sep = "|"
+		}
+
+		if sep != "multi" && len(vals) == 1 {
+			return strings.Split(vals[0], sep)
+		}
+	}
+	return vals
 }
 
 func setFormMap(ptr interface{}, form map[string][]string) error {

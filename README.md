@@ -876,6 +876,15 @@ func startPage(c *gin.Context) {
 
 See the [detail information](https://github.com/gin-gonic/gin/issues/742#issuecomment-264681292).
 
+#### Collection format for arrays
+
+| Format          | Description                                               | Example                 |
+| --------------- | --------------------------------------------------------- | ----------------------- |
+| multi (default) | Multiple parameter instances rather than multiple values. | key=foo&key=bar&key=baz |
+| csv             | Comma-separated values.                                   | foo,bar,baz             |
+| ssv             | Space-separated values.                                   | foo bar baz             |
+| pipes           | Pipe-separated values.                                    | foo\|bar\|baz           |
+
 ```go
 package main
 
@@ -887,11 +896,11 @@ import (
 )
 
 type Person struct {
-        Name       string    `form:"name"`
-        Address    string    `form:"address"`
-        Birthday   time.Time `form:"birthday" time_format:"2006-01-02" time_utc:"1"`
-        CreateTime time.Time `form:"createTime" time_format:"unixNano"`
-        UnixTime   time.Time `form:"unixTime" time_format:"unix"`
+	Name       string    `form:"name"`
+	Addresses  []string  `form:"addresses" collection_format:"csv"`
+	Birthday   time.Time `form:"birthday" time_format:"2006-01-02" time_utc:"1"`
+	CreateTime time.Time `form:"createTime" time_format:"unixNano"`
+	UnixTime   time.Time `form:"unixTime" time_format:"unix"`
 }
 
 func main() {
@@ -907,7 +916,7 @@ func startPage(c *gin.Context) {
 	// See more at https://github.com/gin-gonic/gin/blob/master/binding/binding.go#L48
         if c.ShouldBind(&person) == nil {
                 log.Println(person.Name)
-                log.Println(person.Address)
+                log.Println(person.Addresses)
                 log.Println(person.Birthday)
                 log.Println(person.CreateTime)
                 log.Println(person.UnixTime)
@@ -919,7 +928,7 @@ func startPage(c *gin.Context) {
 
 Test it with:
 ```sh
-$ curl -X GET "localhost:8085/testing?name=appleboy&address=xyz&birthday=1992-03-15&createTime=1562400033000000123&unixTime=1562400033"
+$ curl -X GET "localhost:8085/testing?name=appleboy&addresses=foo,bar&birthday=1992-03-15&createTime=1562400033000000123&unixTime=1562400033"
 ```
 
 ### Bind Uri
