@@ -2057,3 +2057,17 @@ func TestRemoteIPFail(t *testing.T) {
 	assert.Nil(t, ip)
 	assert.False(t, trust)
 }
+
+func TestContextWithFallbackValueFromRequestContext(t *testing.T) {
+	var key struct{}
+	c := &Context{}
+	c.Request, _ = http.NewRequest("POST", "/", nil)
+	c.Request = c.Request.WithContext(context.WithValue(context.TODO(), key, "value"))
+
+	assert.Equal(t, "value", c.Value(key))
+
+	c2 := &Context{}
+	c2.Request, _ = http.NewRequest("POST", "/", nil)
+	c2.Request = c2.Request.WithContext(context.WithValue(context.TODO(), "key", "value2"))
+	assert.Equal(t, "value2", c2.Value("key"))
+}
