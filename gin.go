@@ -328,16 +328,16 @@ func iterate(path, method string, routes RoutesInfo, root *node) RoutesInfo {
 // It is a shortcut for http.ListenAndServe(addr, router)
 // Note: this method will block the calling goroutine indefinitely unless an error happens.
 func (engine *Engine) Run(addr ...string) (err error) {
-	defer func() { debugPrintError(err) }()
+	address := resolveAddress(addr)
 
-	err = engine.parseTrustedProxies()
+	// support random port display
+	ln, err := net.Listen("tcp", address)
 	if err != nil {
-		return err
+		debugPrintError(err)
+		return
 	}
 
-	address := resolveAddress(addr)
-	debugPrint("Listening and serving HTTP on %s\n", address)
-	err = http.ListenAndServe(address, engine)
+	err = engine.RunListener(ln)
 	return
 }
 
@@ -401,7 +401,6 @@ func parseIP(ip string) net.IP {
 // It is a shortcut for http.ListenAndServeTLS(addr, certFile, keyFile, router)
 // Note: this method will block the calling goroutine indefinitely unless an error happens.
 func (engine *Engine) RunTLS(addr, certFile, keyFile string) (err error) {
-	debugPrint("Listening and serving HTTPS on %s\n", addr)
 	defer func() { debugPrintError(err) }()
 
 	err = engine.parseTrustedProxies()
@@ -409,7 +408,15 @@ func (engine *Engine) RunTLS(addr, certFile, keyFile string) (err error) {
 		return err
 	}
 
-	err = http.ListenAndServeTLS(addr, certFile, keyFile, engine)
+	// support random port display
+	address := resolveAddress(strings.Fields(addr))
+	ln, err := net.Listen("tcp", address)
+	if err != nil {
+		return err
+	}
+	debugPrint("Listening and serving HTTPS on %s\n", ln.Addr())
+
+	err = http.ServeTLS(ln, engine, certFile, keyFile)
 	return
 }
 
@@ -461,7 +468,7 @@ func (engine *Engine) RunFd(fd int) (err error) {
 // RunListener attaches the router to a http.Server and starts listening and serving HTTP requests
 // through the specified net.Listener
 func (engine *Engine) RunListener(listener net.Listener) (err error) {
-	debugPrint("Listening and serving HTTP on listener what's bind with address@%s", listener.Addr())
+	debugPrint("Listening and serving HTTP on %s\n", listener.Addr())
 	defer func() { debugPrintError(err) }()
 
 	err = engine.parseTrustedProxies()
