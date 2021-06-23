@@ -15,8 +15,16 @@ type multipartRequest http.Request
 
 var _ setter = (*multipartRequest)(nil)
 
+var (
+	// ErrMultiFileHeader multipart.FileHeader invalid
+	ErrMultiFileHeader = errors.New("unsupported field type for multipart.FileHeader")
+
+	// ErrMultiFileHeaderLenInvalid array for []*multipart.FileHeader len invalid
+	ErrMultiFileHeaderLenInvalid = errors.New("unsupported len of array for []*multipart.FileHeader")
+)
+
 // TrySet tries to set a value by the multipart request with the binding a form file
-func (r *multipartRequest) TrySet(value reflect.Value, field reflect.StructField, key string, opt setOptions) (isSetted bool, err error) {
+func (r *multipartRequest) TrySet(value reflect.Value, field reflect.StructField, key string, opt setOptions) (bool, error) {
 	if files := r.MultipartForm.File[key]; len(files) != 0 {
 		return setByMultipartFormFile(value, field, files)
 	}
@@ -49,12 +57,12 @@ func setByMultipartFormFile(value reflect.Value, field reflect.StructField, file
 	case reflect.Array:
 		return setArrayOfMultipartFormFiles(value, field, files)
 	}
-	return false, errors.New("unsupported field type for multipart.FileHeader")
+	return false, ErrMultiFileHeader
 }
 
 func setArrayOfMultipartFormFiles(value reflect.Value, field reflect.StructField, files []*multipart.FileHeader) (isSetted bool, err error) {
 	if value.Len() != len(files) {
-		return false, errors.New("unsupported len of array for []*multipart.FileHeader")
+		return false, ErrMultiFileHeaderLenInvalid
 	}
 	for i := range files {
 		setted, err := setByMultipartFormFile(value.Index(i), field, files[i:i+1])

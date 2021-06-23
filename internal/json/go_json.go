@@ -2,12 +2,12 @@
 // Use of this source code is governed by a MIT style
 // license that can be found in the LICENSE file.
 
-//go:build !jsoniter && !go_json
-// +build !jsoniter,!go_json
+//go:build go_json
+// +build go_json
 
 package json
 
-import "encoding/json"
+import json "github.com/goccy/go-json"
 
 var (
 	// Marshal is exported by gin/json package.
