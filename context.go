@@ -1153,19 +1153,19 @@ func (c *Context) SetAccepted(formats ...string) {
 // Deadline always returns that there is no deadline (ok==false),
 // maybe you want to use Request.Context().Deadline() instead.
 func (c *Context) Deadline() (deadline time.Time, ok bool) {
-	return
+	return c.Request.Context().Deadline()
 }
 
 // Done always returns nil (chan which will wait forever),
 // if you want to abort your work when the connection was closed
 // you should use Request.Context().Done() instead.
 func (c *Context) Done() <-chan struct{} {
-	return nil
+	return c.Request.Context().Done()
 }
 
 // Err always returns nil, maybe you want to use Request.Context().Err() instead.
 func (c *Context) Err() error {
-	return nil
+	return c.Request.Context().Err()
 }
 
 // Value returns the value associated with this context for key, or nil
@@ -1176,8 +1176,9 @@ func (c *Context) Value(key interface{}) interface{} {
 		return c.Request
 	}
 	if keyAsString, ok := key.(string); ok {
-		val, _ := c.Get(keyAsString)
-		return val
+		if val, ok := c.Get(keyAsString); ok {
+			return val
+		}
 	}
-	return nil
+	return c.Request.Context().Value(key)
 }
