@@ -1,0 +1,62 @@
+name: Run Tests
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  test:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        go: [1.13, 1.14, 1.15, 1.16]
+        test-tags: ['', nomsgpack]
+    name: ${{ matrix.os }} @ Go ${{ matrix.go }} ${{ matrix.test-tags }}
+    runs-on: ${{ matrix.os }}
+    env:
+      GO111MODULE: on
+      TESTTAGS: ${{ matrix.test-tags }}
+      GOPROXY: https://proxy.golang.org
+    steps:
+      - name: Set up Go ${{ matrix.go }}
+        uses: actions/setup-go@v2
+        with:
+          go-version: ${{ matrix.go }}
+
+      - name: Checkout Code
+        uses: actions/checkout@v2
+        with:
+          ref: ${{ github.ref }}
+
+      - name: Install Dependencies
+        run: make tools
+
+      - name: Run Check
+        run: |
+          make vet
+          make fmt-check
+          make misspell-check
+
+      - name: Run Tests
+        run: make test
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v1
+  notification-gitter:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Notification failure message
+        if: failure()
+        run: |
+          PR_OR_COMPARE="$(if [ "${{ github.event.pull_request }}" != "" ]; then echo "${{ github.event.pull_request.html_url }}"; else echo "${{ github.event.compare }}"; fi)"
+          curl -d message="GitHub Actions [$GITHUB_REPOSITORY]($PR_OR_COMPARE) ($GITHUB_REF) [normal]($GITHUB_API_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID) ($GITHUB_RUN_NUMBER)" -d level=error https://webhooks.gitter.im/e/7f95bf605c4d356372f4
+      - name: Notification success message
+        if: success()
+        run: |
+          PR_OR_COMPARE="$(if [ "${{ github.event.pull_request }}" != "" ]; then echo "${{ github.event.pull_request.html_url }}"; else echo "${{ github.event.compare }}"; fi)"
+          curl -d message="GitHub Actions [$GITHUB_REPOSITORY]($PR_OR_COMPARE) ($GITHUB_REF) [normal]($GITHUB_API_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID) ($GITHUB_RUN_NUMBER)" https://webhooks.gitter.im/e/7f95bf605c4d356372f4
