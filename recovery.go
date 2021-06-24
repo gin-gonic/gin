@@ -34,7 +34,7 @@ func Recovery() HandlerFunc {
 	return RecoveryWithWriter(DefaultErrorWriter)
 }
 
-//CustomRecovery returns a middleware that recovers from any panics and calls the provided handle func to handle it.
+// CustomRecovery returns a middleware that recovers from any panics and calls the provided handle func to handle it.
 func CustomRecovery(handle RecoveryFunc) HandlerFunc {
 	return RecoveryWithWriter(DefaultErrorWriter, handle)
 }
@@ -165,6 +165,7 @@ func function(pc uintptr) []byte {
 	return name
 }
 
+// timeFormat returns a customized time string for logger.
 func timeFormat(t time.Time) string {
 	timeString := t.Format("2006/01/02 - 15:04:05")
 	return timeString
