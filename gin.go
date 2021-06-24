@@ -25,7 +25,7 @@ var (
 	default405Body = []byte("405 method not allowed")
 )
 
-var defaultAppEngine bool
+var defaultPlatform string
 
 // HandlerFunc defines the handler used by gin middleware as return value.
 type HandlerFunc func(*Context)
@@ -51,6 +51,16 @@ type RouteInfo struct {
 
 // RoutesInfo defines a RouteInfo array.
 type RoutesInfo []RouteInfo
+
+// Trusted platforms
+const (
+	// When running on Google App Engine. Trust X-Appengine-Remote-Addr
+	// for determining the client's IP
+	PlatformGoogleAppEngine = "google-app-engine"
+	// When using Cloudflare's CDN. Trust CF-Connecting-IP for determining
+	// the client's IP
+	PlatformCloudflare = "cloudflare"
+)
 
 // Engine is the framework's instance, it contains the muxer, middleware and configuration settings.
 // Create an instance of Engine, by using New() or Default()
@@ -101,13 +111,14 @@ type Engine struct {
 	// `true`.
 	TrustedProxies []string
 
+	// If set to a constant of value gin.Platform*, trusts the headers set by
+	// that platform, for example to determine the client IP
+	TrustedPlatform string
+
+	// DEPRECATED: USE `TrustedPlatform` WITH VALUE `gin.GoogleAppEngine` INSTEAD
 	// #726 #755 If enabled, it will trust some headers starting with
 	// 'X-AppEngine...' for better integration with that PaaS.
 	AppEngine bool
-
-	// If enabled, it will trust the CF-Connecting-IP header to determine the
-	// IP of the client.
-	CloudflareProxy bool
 
 	// If enabled, the url.RawPath will be used to find parameters.
 	UseRawPath bool
@@ -164,7 +175,7 @@ func New() *Engine {
 		ForwardedByClientIP:    true,
 		RemoteIPHeaders:        []string{"X-Forwarded-For", "X-Real-IP"},
 		TrustedProxies:         []string{"0.0.0.0/0"},
-		AppEngine:              defaultAppEngine,
+		TrustedPlatform:        defaultPlatform,
 		UseRawPath:             false,
 		RemoveExtraSlash:       false,
 		UnescapePathValues:     true,
