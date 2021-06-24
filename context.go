@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"log"
 	"math"
 	"mime/multipart"
 	"net"
@@ -731,13 +732,22 @@ func (c *Context) ShouldBindBodyWith(obj interface{}, bb binding.BindingBody) (e
 // If the headers are nots syntactically valid OR the remote IP does not correspong to a trusted proxy,
 // the remote IP (coming form Request.RemoteAddr) is returned.
 func (c *Context) ClientIP() string {
-	switch {
-	case c.engine.AppEngine:
+	// Check if we're running on a tursted platform
+	switch c.engine.TrustedPlatform {
+	case PlatformGoogleAppEngine:
 		if addr := c.requestHeader("X-Appengine-Remote-Addr"); addr != "" {
 			return addr
 		}
-	case c.engine.CloudflareProxy:
+	case PlatformCloudflare:
 		if addr := c.requestHeader("CF-Connecting-IP"); addr != "" {
+			return addr
+		}
+	}
+
+	// Legacy "AppEngine" flag
+	if c.engine.AppEngine {
+		log.Println(`The AppEngine flag is going to be deprecated. Please check issues #2723 and #2739 and use 'TrustedPlatform: gin.PlatformGoogleAppEngine' instead.`)
+		if addr := c.requestHeader("X-Appengine-Remote-Addr"); addr != "" {
 			return addr
 		}
 	}
