@@ -1410,7 +1410,7 @@ func TestContextClientIP(t *testing.T) {
 
 	c.Request.Header.Del("X-Forwarded-For")
 	c.Request.Header.Del("X-Real-IP")
-	c.engine.AppEngine = true
+	c.engine.TrustedPlatform = PlatformGoogleAppEngine
 	assert.Equal(t, "50.50.50.50", c.ClientIP())
 
 	c.Request.Header.Del("X-Appengine-Remote-Addr")
@@ -1470,18 +1470,26 @@ func TestContextClientIP(t *testing.T) {
 	assert.Equal(t, "10.10.10.10", c.ClientIP())
 
 	c.engine.RemoteIPHeaders = []string{}
+	c.engine.TrustedPlatform = PlatformGoogleAppEngine
+	assert.Equal(t, "50.50.50.50", c.ClientIP())
+
+	// Test the legacy flag
+	c.engine.TrustedPlatform = ""
 	c.engine.AppEngine = true
 	assert.Equal(t, "50.50.50.50", c.ClientIP())
+	c.engine.AppEngine = false
+	c.engine.TrustedPlatform = PlatformGoogleAppEngine
 
 	c.Request.Header.Del("X-Appengine-Remote-Addr")
 	assert.Equal(t, "40.40.40.40", c.ClientIP())
 
-	c.engine.AppEngine = false
-	c.engine.CloudflareProxy = true
+	c.engine.TrustedPlatform = PlatformCloudflare
 	assert.Equal(t, "60.60.60.60", c.ClientIP())
 
 	c.Request.Header.Del("CF-Connecting-IP")
 	assert.Equal(t, "40.40.40.40", c.ClientIP())
+
+	c.engine.TrustedPlatform = ""
 
 	// no port
 	c.Request.RemoteAddr = "50.50.50.50"
@@ -1494,6 +1502,7 @@ func resetContextForClientIPTests(c *Context) {
 	c.Request.Header.Set("X-Appengine-Remote-Addr", "50.50.50.50")
 	c.Request.Header.Set("CF-Connecting-IP", "60.60.60.60")
 	c.Request.RemoteAddr = "  40.40.40.40:42123 "
+	c.engine.TrustedPlatform = ""
 	c.engine.AppEngine = false
 }
 
@@ -2047,4 +2056,57 @@ func TestRemoteIPFail(t *testing.T) {
 	ip, trust := c.RemoteIP()
 	assert.Nil(t, ip)
 	assert.False(t, trust)
+}
+
+func TestContextWithFallbackValueFromRequestContext(t *testing.T) {
+	tests := []struct {
+		name             string
+		getContextAndKey func() (*Context, interface{})
+		value            interface{}
+	}{
+		{
+			name: "c with struct context key",
+			getContextAndKey: func() (*Context, interface{}) {
+				var key struct{}
+				c := &Context{}
+				c.Request, _ = http.NewRequest("POST", "/", nil)
+				c.Request = c.Request.WithContext(context.WithValue(context.TODO(), key, "value"))
+				return c, key
+			},
+			value: "value",
+		},
+		{
+			name: "c with string context key",
+			getContextAndKey: func() (*Context, interface{}) {
+				c := &Context{}
+				c.Request, _ = http.NewRequest("POST", "/", nil)
+				c.Request = c.Request.WithContext(context.WithValue(context.TODO(), "key", "value"))
+				return c, "key"
+			},
+			value: "value",
+		},
+		{
+			name: "c with nil http.Request",
+			getContextAndKey: func() (*Context, interface{}) {
+				c := &Context{}
+				return c, "key"
+			},
+			value: nil,
+		},
+		{
+			name: "c with nil http.Request.Context()",
+			getContextAndKey: func() (*Context, interface{}) {
+				c := &Context{}
+				c.Request, _ = http.NewRequest("POST", "/", nil)
+				return c, "key"
+			},
+			value: nil,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			c, key := tt.getContextAndKey()
+			assert.Equal(t, tt.value, c.Value(key))
+		})
+	}
 }
