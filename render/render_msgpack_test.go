@@ -39,6 +39,6 @@ func TestRenderMsgPack(t *testing.T) {
 	err = codec.NewEncoder(buf, h).Encode(data)
 
 	assert.NoError(t, err)
-	assert.Equal(t, w.Body.String(), string(buf.Bytes()))
+	assert.Equal(t, w.Body.String(), buf.String())
 	assert.Equal(t, "application/msgpack; charset=utf-8", w.Header().Get("Content-Type"))
 }
