@@ -459,7 +459,7 @@ walk: // Outer loop for walking the tree
 					}
 
 					// Save param value
-					if params != nil {
+					if params != nil && cap(*params) > 0 {
 						if value.params == nil {
 							value.params = params
 						}
