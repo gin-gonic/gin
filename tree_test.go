@@ -154,6 +154,12 @@ func TestTreeWildcard(t *testing.T) {
 		"/info/:user/public",
 		"/info/:user/project/:project",
 		"/info/:user/project/golang",
+		"/aa/*xx",
+		"/ab/*xx",
+		"/:cc",
+		"/:cc/cc",
+		"/get/test/abc/",
+		"/get/:param/abc/",
 	}
 	for _, route := range routes {
 		tree.addRoute(route, fakeHandler(route))
@@ -186,6 +192,22 @@ func TestTreeWildcard(t *testing.T) {
 		{"/info/gordon/public", false, "/info/:user/public", Params{Param{Key: "user", Value: "gordon"}}},
 		{"/info/gordon/project/go", false, "/info/:user/project/:project", Params{Param{Key: "user", Value: "gordon"}, Param{Key: "project", Value: "go"}}},
 		{"/info/gordon/project/golang", false, "/info/:user/project/golang", Params{Param{Key: "user", Value: "gordon"}}},
+		{"/aa/aa", false, "/aa/*xx", Params{Param{Key: "xx", Value: "/aa"}}},
+		{"/ab/ab", false, "/ab/*xx", Params{Param{Key: "xx", Value: "/ab"}}},
+		{"/a", false, "/:cc", Params{Param{Key: "cc", Value: "a"}}},
+		// * level 1 router match param will be Intercept first
+		// new PR handle (/all /all/cc /a/cc)
+		{"/all", false, "/:cc", Params{Param{Key: "cc", Value: "ll"}}},
+		{"/all/cc", false, "/:cc/cc", Params{Param{Key: "cc", Value: "ll"}}},
+		{"/a/cc", false, "/:cc/cc", Params{Param{Key: "cc", Value: ""}}},
+		{"/get/test/abc/", false, "/get/test/abc/", nil},
+		{"/get/te/abc/", false, "/get/:param/abc/", Params{Param{Key: "param", Value: "te"}}},
+		{"/get/xx/abc/", false, "/get/:param/abc/", Params{Param{Key: "param", Value: "xx"}}},
+		{"/get/tt/abc/", false, "/get/:param/abc/", Params{Param{Key: "param", Value: "tt"}}},
+		{"/get/a/abc/", false, "/get/:param/abc/", Params{Param{Key: "param", Value: "a"}}},
+		{"/get/t/abc/", false, "/get/:param/abc/", Params{Param{Key: "param", Value: "t"}}},
+		{"/get/aa/abc/", false, "/get/:param/abc/", Params{Param{Key: "param", Value: "aa"}}},
+		{"/get/abas/abc/", false, "/get/:param/abc/", Params{Param{Key: "param", Value: "abas"}}},
 	})
 
 	checkPriorities(t, tree)
@@ -565,8 +587,8 @@ func TestTreeFindCaseInsensitivePath(t *testing.T) {
 		"/u/öpfêl",
 		"/v/Äpfêl/",
 		"/v/Öpfêl",
-		"/w/♬",  // 3 byte
-		"/w/♭/", // 3 byte, last byte differs
+		"/w/♬",   // 3 byte
+		"/w/♭/",  // 3 byte, last byte differs
 		"/w/𠜎",  // 4 byte
 		"/w/𠜏/", // 4 byte
 		longPath,
