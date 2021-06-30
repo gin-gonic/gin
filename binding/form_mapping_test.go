@@ -145,6 +145,15 @@ func TestMappingForm(t *testing.T) {
 	assert.Equal(t, int(6), s.F)
 }
 
+func TestMapFormWithTag(t *testing.T) {
+	var s struct {
+		F int `externalTag:"field"`
+	}
+	err := MapFormWithTag(&s, map[string][]string{"field": {"6"}}, "externalTag")
+	assert.NoError(t, err)
+	assert.Equal(t, int(6), s.F)
+}
+
 func TestMappingTime(t *testing.T) {
 	var s struct {
 		Time      time.Time
