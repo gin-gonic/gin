@@ -732,7 +732,7 @@ func (c *Context) ShouldBindBodyWith(obj interface{}, bb binding.BindingBody) (e
 // If the headers are nots syntactically valid OR the remote IP does not correspong to a trusted proxy,
 // the remote IP (coming form Request.RemoteAddr) is returned.
 func (c *Context) ClientIP() string {
-	// Check if we're running on a tursted platform
+	// Check if we're running on a trusted platform
 	switch c.engine.TrustedPlatform {
 	case PlatformGoogleAppEngine:
 		if addr := c.requestHeader("X-Appengine-Remote-Addr"); addr != "" {
