@@ -2021,6 +2021,61 @@ enough to call binding at once.
 can be called by `c.ShouldBind()` multiple times without any damage to
 performance (See [#1341](https://github.com/gin-gonic/gin/pull/1341)).
 
+### Bind form-data request with custom struct and custom tag
+
+```go
+const (
+	customerTag = "url"
+	defaultMemory = 32 << 20
+)
+
+type customerBinding struct {}
+
+func (customerBinding) Name() string {
+	return "form"
+}
+
+func (customerBinding) Bind(req *http.Request, obj interface{}) error {
+	if err := req.ParseForm(); err != nil {
+		return err
+	}
+	if err := req.ParseMultipartForm(defaultMemory); err != nil {
+		if err != http.ErrNotMultipart {
+			return err
+		}
+	}
+	if err := binding.MapFormWithTag(obj, req.Form, customerTag); err != nil {
+		return err
+	}
+	return validate(obj)
+}
+
+func validate(obj interface{}) error {
+	if binding.Validator == nil {
+		return nil
+	}
+	return binding.Validator.ValidateStruct(obj)
+}
+
+// Now we can do this!!!
+// FormA is a external type that we can't modify it's tag
+type FormA struct {
+	FieldA string `url:"field_a"`
+}
+
+func ListHandler(s *Service) func(ctx *gin.Context) {
+	return func(ctx *gin.Context) {
+		var urlBinding = customerBinding{}
+		var opt FormA
+		err := ctx.MustBindWith(&opt, urlBinding)
+		if err != nil {
+			...
+		}
+		...
+	}
+}
+```
+
 ### http2 server push
 
 http.Pusher is supported only **go1.8+**. See the [golang blog](https://blog.golang.org/h2push) for detail information.
