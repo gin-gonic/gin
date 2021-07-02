@@ -405,18 +405,14 @@ func (n *node) getValue(path string, params *Params, unescape bool) (value nodeV
 	// level 2 router:123
 	// level 3 router:def
 	var (
-		skippedPath string
+		skippedPath = path
 		latestNode  = n // not found `level 2 router` use latestNode
 
 		// match '/' count
-		// matchNum <  1: `level 2 router` not found,the current node needs to be equal to latestNode
+		// matchNum <  1 && skippedPath != '/': `level 2 router` not found,the current node needs to be equal to latestNode
 		// matchNum >= 1: `level (2 or 3 or 4 or ...) router`: Normal handling
 		matchNum int // each match will accumulate
 	)
-	// if path = '/', no need to look for router
-	if len(path) == 1 {
-		matchNum = 1
-	}
 
 walk: // Outer loop for walking the tree
 	for {
@@ -563,10 +559,10 @@ walk: // Outer loop for walking the tree
 				}
 			}
 		}
-		// path = n.path
+
 		if path == prefix {
 			// level 2 router not found and latestNode.wildChild is ture
-			if matchNum < 1 && latestNode.wildChild {
+			if skippedPath != "/" && matchNum < 1 && latestNode.wildChild {
 				n = latestNode.children[len(latestNode.children)-1]
 			}
 			// We should have reached the node containing the handle.
