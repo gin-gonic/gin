@@ -158,8 +158,14 @@ func TestTreeWildcard(t *testing.T) {
 		"/ab/*xx",
 		"/:cc",
 		"/:cc/cc",
+		"/:cc/:dd/ee",
+		"/:cc/:dd/:ee/ff",
+		"/:cc/:dd/:ee/:ff/gg",
+		"/:cc/:dd/:ee/:ff/:gg/hh",
 		"/get/test/abc/",
 		"/get/:param/abc/",
+		"/something/:paramname/thirdthing",
+		"/something/secondthing/test",
 	}
 	for _, route := range routes {
 		tree.addRoute(route, fakeHandler(route))
@@ -208,6 +214,14 @@ func TestTreeWildcard(t *testing.T) {
 		{"/get/t/abc/", false, "/get/:param/abc/", Params{Param{Key: "param", Value: "t"}}},
 		{"/get/aa/abc/", false, "/get/:param/abc/", Params{Param{Key: "param", Value: "aa"}}},
 		{"/get/abas/abc/", false, "/get/:param/abc/", Params{Param{Key: "param", Value: "abas"}}},
+		{"/something/secondthing/test", false, "/something/secondthing/test", nil},
+		{"/something/abcdad/thirdthing", false, "/something/:paramname/thirdthing", Params{Param{Key: "paramname", Value: "abcdad"}}},
+		{"/something/se/thirdthing", false, "/something/:paramname/thirdthing", Params{Param{Key: "paramname", Value: "se"}}},
+		{"/something/s/thirdthing", false, "/something/:paramname/thirdthing", Params{Param{Key: "paramname", Value: "s"}}},
+		{"/c/d/ee", false, "/:cc/:dd/ee", Params{Param{Key: "cc", Value: "c"}, Param{Key: "dd", Value: "d"}}},
+		{"/c/d/e/ff", false, "/:cc/:dd/:ee/ff", Params{Param{Key: "cc", Value: "c"}, Param{Key: "dd", Value: "d"}, Param{Key: "ee", Value: "e"}}},
+		{"/c/d/e/f/gg", false, "/:cc/:dd/:ee/:ff/gg", Params{Param{Key: "cc", Value: "c"}, Param{Key: "dd", Value: "d"}, Param{Key: "ee", Value: "e"}, Param{Key: "ff", Value: "f"}}},
+		{"/c/d/e/f/g/hh", false, "/:cc/:dd/:ee/:ff/:gg/hh", Params{Param{Key: "cc", Value: "c"}, Param{Key: "dd", Value: "d"}, Param{Key: "ee", Value: "e"}, Param{Key: "ff", Value: "f"}, Param{Key: "gg", Value: "g"}}},
 	})
 
 	checkPriorities(t, tree)
@@ -587,8 +601,8 @@ func TestTreeFindCaseInsensitivePath(t *testing.T) {
 		"/u/öpfêl",
 		"/v/Äpfêl/",
 		"/v/Öpfêl",
-		"/w/♬",   // 3 byte
-		"/w/♭/",  // 3 byte, last byte differs
+		"/w/♬",  // 3 byte
+		"/w/♭/", // 3 byte, last byte differs
 		"/w/𠜎",  // 4 byte
 		"/w/𠜏/", // 4 byte
 		longPath,

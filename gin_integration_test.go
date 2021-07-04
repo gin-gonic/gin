@@ -23,7 +23,8 @@ import (
 )
 
 // params[0]=url example:http://127.0.0.1:8080/index (cannot be empty)
-// params[1]=response body (custom compare content)
+// params[1]=response status (custom compare status) default:"200 OK"
+// params[2]=response body (custom compare content)  default:"it worked"
 func testRequest(t *testing.T, params ...string) {
 
 	if len(params) == 0 {
@@ -44,12 +45,20 @@ func testRequest(t *testing.T, params ...string) {
 	body, ioerr := ioutil.ReadAll(resp.Body)
 	assert.NoError(t, ioerr)
 
-	var expected = "it worked"
-	if len(params) > 1 {
-		expected = params[1]
+	var responseStatus = "200 OK"
+	if len(params) > 1 && params[1] != "" {
+		responseStatus = params[1]
 	}
-	assert.Equal(t, expected, string(body), "resp body should match")
-	assert.Equal(t, "200 OK", resp.Status, "should get a 200")
+
+	var responseBody = "it worked"
+	if len(params) > 2 && params[2] != "" {
+		responseBody = params[2]
+	}
+
+	assert.Equal(t, responseStatus, resp.Status, "should get a "+responseStatus)
+	if responseStatus == "200 OK" {
+		assert.Equal(t, responseBody, string(body), "resp body should match")
+	}
 }
 
 func TestRunEmpty(t *testing.T) {
@@ -393,25 +402,46 @@ func TestRunDynamicRouting(t *testing.T) {
 	router.GET("/", func(c *Context) { c.String(http.StatusOK, "home") })
 	router.GET("/:cc", func(c *Context) { c.String(http.StatusOK, "/:cc") })
 	router.GET("/:cc/cc", func(c *Context) { c.String(http.StatusOK, "/:cc/cc") })
+
+	router.GET("/:cc/:dd/ee", func(c *Context) { c.String(http.StatusOK, "/:cc/:dd/ee") })
+	router.GET("/:cc/:dd/:ee/ff", func(c *Context) { c.String(http.StatusOK, "/:cc/:dd/:ee/ff") })
+	router.GET("/:cc/:dd/:ee/:ff/gg", func(c *Context) { c.String(http.StatusOK, "/:cc/:dd/:ee/:ff/gg") })
+	router.GET("/:cc/:dd/:ee/:ff/:gg/hh", func(c *Context) { c.String(http.StatusOK, "/:cc/:dd/:ee/:ff/:gg/hh") })
+
 	router.GET("/get/test/abc/", func(c *Context) { c.String(http.StatusOK, "/get/test/abc/") })
 	router.GET("/get/:param/abc/", func(c *Context) { c.String(http.StatusOK, "/get/:param/abc/") })
+	router.GET("/something/:paramname/thirdthing", func(c *Context) { c.String(http.StatusOK, "/something/:paramname/thirdthing") })
+	router.GET("/something/secondthing/test", func(c *Context) { c.String(http.StatusOK, "/something/secondthing/test") })
 
 	ts := httptest.NewServer(router)
 	defer ts.Close()
 
-	testRequest(t, ts.URL+"/", "home")
-	testRequest(t, ts.URL+"/aa/aa", "/aa/*xx")
-	testRequest(t, ts.URL+"/ab/ab", "/ab/*xx")
-	testRequest(t, ts.URL+"/all", "/:cc")
-	testRequest(t, ts.URL+"/all/cc", "/:cc/cc")
-	testRequest(t, ts.URL+"/a/cc", "/:cc/cc")
-	testRequest(t, ts.URL+"/a", "/:cc")
-	testRequest(t, ts.URL+"/get/test/abc/", "/get/test/abc/")
-	testRequest(t, ts.URL+"/get/te/abc/", "/get/:param/abc/")
-	testRequest(t, ts.URL+"/get/xx/abc/", "/get/:param/abc/")
-	testRequest(t, ts.URL+"/get/tt/abc/", "/get/:param/abc/")
-	testRequest(t, ts.URL+"/get/a/abc/", "/get/:param/abc/")
-	testRequest(t, ts.URL+"/get/t/abc/", "/get/:param/abc/")
-	testRequest(t, ts.URL+"/get/aa/abc/", "/get/:param/abc/")
-	testRequest(t, ts.URL+"/get/abas/abc/", "/get/:param/abc/")
+	testRequest(t, ts.URL+"/", "", "home")
+	testRequest(t, ts.URL+"/aa/aa", "", "/aa/*xx")
+	testRequest(t, ts.URL+"/ab/ab", "", "/ab/*xx")
+	testRequest(t, ts.URL+"/all", "", "/:cc")
+	testRequest(t, ts.URL+"/all/cc", "", "/:cc/cc")
+	testRequest(t, ts.URL+"/a/cc", "", "/:cc/cc")
+	testRequest(t, ts.URL+"/c/d/ee", "", "/:cc/:dd/ee")
+	testRequest(t, ts.URL+"/c/d/e/ff", "", "/:cc/:dd/:ee/ff")
+	testRequest(t, ts.URL+"/c/d/e/f/gg", "", "/:cc/:dd/:ee/:ff/gg")
+	testRequest(t, ts.URL+"/c/d/e/f/g/hh", "", "/:cc/:dd/:ee/:ff/:gg/hh")
+	testRequest(t, ts.URL+"/a", "", "/:cc")
+	testRequest(t, ts.URL+"/get/test/abc/", "", "/get/test/abc/")
+	testRequest(t, ts.URL+"/get/te/abc/", "", "/get/:param/abc/")
+	testRequest(t, ts.URL+"/get/xx/abc/", "", "/get/:param/abc/")
+	testRequest(t, ts.URL+"/get/tt/abc/", "", "/get/:param/abc/")
+	testRequest(t, ts.URL+"/get/a/abc/", "", "/get/:param/abc/")
+	testRequest(t, ts.URL+"/get/t/abc/", "", "/get/:param/abc/")
+	testRequest(t, ts.URL+"/get/aa/abc/", "", "/get/:param/abc/")
+	testRequest(t, ts.URL+"/get/abas/abc/", "", "/get/:param/abc/")
+	testRequest(t, ts.URL+"/something/secondthing/test", "", "/something/secondthing/test")
+	testRequest(t, ts.URL+"/something/abcdad/thirdthing", "", "/something/:paramname/thirdthing")
+	testRequest(t, ts.URL+"/something/se/thirdthing", "", "/something/:paramname/thirdthing")
+	testRequest(t, ts.URL+"/something/s/thirdthing", "", "/something/:paramname/thirdthing")
+	testRequest(t, ts.URL+"/something/secondthing/thirdthing", "", "/something/:paramname/thirdthing")
+	// 404 not found
+	testRequest(t, ts.URL+"/a/dd", "404 Not Found")
+	testRequest(t, ts.URL+"/addr/dd/aa", "404 Not Found")
+	testRequest(t, ts.URL+"/something/secondthing/121", "404 Not Found")
 }

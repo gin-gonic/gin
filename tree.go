@@ -512,7 +512,9 @@ walk: // Outer loop for walking the tree
 							// call /a/dd 	     expectations:unmatch/404    Actual: panic
 							// call /addr/dd/aa  expectations:unmatch/404    Actual: panic
 							// skippedPath: It can only be executed if the secondary route is not found
+							// matchNum: not match,need add matchNum
 							skippedPath = ""
+							matchNum++
 							continue walk
 						}
 
@@ -598,7 +600,7 @@ walk: // Outer loop for walking the tree
 			return
 		}
 
-		if path != "/" {
+		if path != "/" && skippedPath != "" {
 			path = skippedPath
 			n = latestNode
 			skippedPath = ""
@@ -607,7 +609,7 @@ walk: // Outer loop for walking the tree
 
 		// Nothing found. We can recommend to redirect to the same URL with an
 		// extra trailing slash if a leaf exists for that path
-		value.tsr = true
+		// tree.go line:569 handle leaf nodes
 		return
 	}
 }
