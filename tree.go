@@ -446,7 +446,7 @@ walk: // Outer loop for walking the tree
 						n = n.children[i]
 
 						// match '/', If this condition is matched, the next route is found
-						if len(n.fullPath) != 0 && n.wildChild {
+						if (len(n.fullPath) != 0 && n.wildChild) || strings.HasSuffix(path, "/") {
 							matchNum++
 						}
 						continue walk
@@ -609,7 +609,9 @@ walk: // Outer loop for walking the tree
 
 		// Nothing found. We can recommend to redirect to the same URL with an
 		// extra trailing slash if a leaf exists for that path
-		// tree.go line:569 handle leaf nodes
+		value.tsr = (path == "/") ||
+			(len(prefix) == len(path)+1 && prefix[len(path)] == '/' &&
+				path == prefix[:len(prefix)-1] && n.handlers != nil)
 		return
 	}
 }
