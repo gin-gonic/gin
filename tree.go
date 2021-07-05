@@ -409,11 +409,11 @@ func (n *node) getValue(path string, params *Params, unescape bool) (value nodeV
 		latestNode  = n // not found `level 2 router` use latestNode
 
 		// match '/' count
-		// matchNum <  1 && skippedPath != '/': `level 2 router` not found,the current node needs to be equal to latestNode
+		// matchNum < 1: `level 2 router` not found,the current node needs to be equal to latestNode
 		// matchNum >= 1: `level (2 or 3 or 4 or ...) router`: Normal handling
 		matchNum int // each match will accumulate
 	)
-	//if path == "/", no need to look for router
+	//if path == "/", no need to look for tree node
 	if len(path) == 1 {
 		matchNum = 1
 	}
@@ -512,7 +512,7 @@ walk: // Outer loop for walking the tree
 							// call /a/dd 	     expectations:unmatch/404    Actual: panic
 							// call /addr/dd/aa  expectations:unmatch/404    Actual: panic
 							// skippedPath: It can only be executed if the secondary route is not found
-							// matchNum: not match,need add matchNum
+							// matchNum: Go to the next level of routing tree node search,need add matchNum
 							skippedPath = ""
 							matchNum++
 							continue walk
