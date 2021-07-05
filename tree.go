@@ -446,7 +446,7 @@ walk: // Outer loop for walking the tree
 						n = n.children[i]
 
 						// match '/', If this condition is matched, the next route is found
-						if (len(n.fullPath) != 0 && n.wildChild) || strings.HasSuffix(path, "/") {
+						if (len(n.fullPath) != 0 && n.wildChild) || path[len(path)-1] == '/' {
 							matchNum++
 						}
 						continue walk
