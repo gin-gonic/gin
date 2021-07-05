@@ -18,10 +18,10 @@ type defaultValidator struct {
 	validate *validator.Validate
 }
 
-type sliceValidateError []error
+type SliceValidateError []error
 
-// Error concatenates all error elements in sliceValidateError into a single string separated by \n.
-func (err sliceValidateError) Error() string {
+// Error concatenates all error elements in SliceValidateError into a single string separated by \n.
+func (err SliceValidateError) Error() string {
 	n := len(err)
 	switch n {
 	case 0:
@@ -59,7 +59,7 @@ func (v *defaultValidator) ValidateStruct(obj interface{}) error {
 		return v.validateStruct(obj)
 	case reflect.Slice, reflect.Array:
 		count := value.Len()
-		validateRet := make(sliceValidateError, 0)
+		validateRet := make(SliceValidateError, 0)
 		for i := 0; i < count; i++ {
 			if err := v.ValidateStruct(value.Index(i).Interface()); err != nil {
 				validateRet = append(validateRet, err)
