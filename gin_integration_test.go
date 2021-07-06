@@ -395,7 +395,7 @@ func testGetRequestHandler(t *testing.T, h http.Handler, url string) {
 	assert.Equal(t, 200, w.Code, "should get a 200")
 }
 
-func TestRunDynamicRouting(t *testing.T) {
+func TestTreeRunDynamicRouting(t *testing.T) {
 	router := New()
 	router.GET("/aa/*xx", func(c *Context) { c.String(http.StatusOK, "/aa/*xx") })
 	router.GET("/ab/*xx", func(c *Context) { c.String(http.StatusOK, "/ab/*xx") })
