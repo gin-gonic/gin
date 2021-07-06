@@ -505,7 +505,7 @@ walk: // Outer loop for walking the tree
 							n = n.children[0]
 							// next node,the latestNode needs to be equal to currentNode and handle next router
 							latestNode = n
-							// not found router in (level 1 router and handle next node),skipped cannot execute
+							// not found router in (level 1 router and handle next node),skippedPath cannot execute
 							// example:
 							// * /:cc/cc
 							// call /a/cc 	     expectations:match/200      Actual:match/200
@@ -567,7 +567,7 @@ walk: // Outer loop for walking the tree
 		}
 
 		if path == prefix {
-			// level 2 router not found and latestNode.wildChild is ture
+			// level 2 router not found and latestNode.wildChild is true
 			if matchNum < 1 && latestNode.wildChild {
 				n = latestNode.children[len(latestNode.children)-1]
 			}
