@@ -49,7 +49,7 @@ type BindingUri interface {
 // StructValidator is the minimal interface which needs to be implemented in
 // order for it to be used as the validator engine for ensuring the correctness
 // of the request. Gin provides a default implementation for this using
-// https://github.com/go-playground/validator/tree/v8.18.2.
+// https://github.com/go-playground/validator/tree/v10.6.1.
 type StructValidator interface {
 	// ValidateStruct can receive any kind of type and it should never panic, even if the configuration is not right.
 	// If the received type is a slice|array, the validation should be performed travel on every element.
@@ -65,7 +65,7 @@ type StructValidator interface {
 }
 
 // Validator is the default validator which implements the StructValidator
-// interface. It uses https://github.com/go-playground/validator/tree/v8.18.2
+// interface. It uses https://github.com/go-playground/validator/tree/v10.6.1
 // under the hood.
 var Validator StructValidator = &defaultValidator{}
 
