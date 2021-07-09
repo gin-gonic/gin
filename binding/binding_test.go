@@ -114,6 +114,13 @@ type FooStructForSliceType struct {
 	SliceFoo []int `form:"slice_foo"`
 }
 
+type FooStructForCollectionFormatTag struct {
+	SliceMulti []int `form:"slice_multi" collection_format:"multi"`
+	SliceCsv   []int `form:"slice_csv" collection_format:"csv"`
+	SliceSsv   []int `form:"slice_ssv" collection_format:"ssv"`
+	SlicePipes []int `form:"slice_pipes" collection_format:"pipes"`
+}
+
 type FooStructForStructType struct {
 	StructFoo struct {
 		Idx int `form:"idx"`
@@ -309,6 +316,15 @@ func TestBindingFormInvalidName2(t *testing.T) {
 	testFormBindingInvalidName2(t, "POST",
 		"/", "/",
 		"map_foo=bar", "bar2=foo")
+}
+
+func TestBindingFormCollectionFormat(t *testing.T) {
+	testFormBindingForCollectionFormat(t, "POST",
+		"/?slice_multi=1&slice_multi=2&slice_csv=1,2&slice_ssv=1 2&slice_pipes=1|2", "/",
+		"", "")
+	testFormBindingForCollectionFormat(t, "POST",
+		"/", "/",
+		"slice_multi=1&slice_multi=2&slice_csv=1,2&slice_ssv=1 2&slice_pipes=1|2", "")
 }
 
 func TestBindingFormForType(t *testing.T) {
@@ -1063,6 +1079,24 @@ func testFormBindingInvalidName2(t *testing.T, method, path, badPath, body, badB
 	req = requestWithBody(method, badPath, badBody)
 	err = JSON.Bind(req, &obj)
 	assert.Error(t, err)
+}
+
+func testFormBindingForCollectionFormat(t *testing.T, method, path, badPath, body, badBody string) {
+	b := Form
+	assert.Equal(t, "form", b.Name())
+
+	obj := FooStructForCollectionFormatTag{}
+	req := requestWithBody(method, path, body)
+	if method == "POST" {
+		req.Header.Add("Content-Type", MIMEPOSTForm)
+	}
+	err := b.Bind(req, &obj)
+	assert.NoError(t, err)
+
+	assert.Equal(t, []int{1, 2}, obj.SliceMulti)
+	assert.Equal(t, []int{1, 2}, obj.SliceCsv)
+	assert.Equal(t, []int{1, 2}, obj.SliceCsv)
+	assert.Equal(t, []int{1, 2}, obj.SlicePipes)
 }
 
 func testFormBindingForType(t *testing.T, method, path, badPath, body, badBody string, typ string) {
