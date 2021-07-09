@@ -5,6 +5,7 @@
 package gin
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"io"
@@ -80,6 +81,9 @@ type Context struct {
 	// SameSite allows a server to define a cookie attribute making it impossible for
 	// the browser to send this cookie along with cross-site requests.
 	sameSite http.SameSite
+
+	// rawData cache and reuse http.request.Body
+	rawData []byte
 }
 
 /************************************/
@@ -507,6 +511,10 @@ func (c *Context) initFormCache() {
 	if c.formCache == nil {
 		c.formCache = make(url.Values)
 		req := c.Request
+		if req.Body != nil {
+			c.rawData, _ = ioutil.ReadAll(req.Body)
+			req.Body = ioutil.NopCloser(bytes.NewReader(c.rawData))
+		}
 		if err := req.ParseMultipartForm(c.engine.MaxMultipartMemory); err != nil {
 			if err != http.ErrNotMultipart {
 				debugPrint("error on parse multipart form array: %v", err)
@@ -876,7 +884,9 @@ func (c *Context) GetHeader(key string) string {
 
 // GetRawData return stream data.
 func (c *Context) GetRawData() ([]byte, error) {
-	return ioutil.ReadAll(c.Request.Body)
+	// return ioutil.ReadAll(c.Request.Body)
+	c.initFormCache()
+	return c.rawData, nil
 }
 
 // SetSameSite with cookie
