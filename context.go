@@ -5,6 +5,7 @@
 package gin
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"io"
@@ -708,7 +709,7 @@ func (c *Context) ShouldBindWith(obj interface{}, b binding.Binding) error {
 // ShouldBindBodyWith is similar with ShouldBindWith, but it stores the request
 // body into the context, and reuse when it is called again.
 //
-// NOTE: This method reads the body before binding. So you should use
+// NOTE: This method copies the body before binding. So you should use
 // ShouldBindWith for better performance if you need to call only once.
 func (c *Context) ShouldBindBodyWith(obj interface{}, bb binding.BindingBody) (err error) {
 	var body []byte
@@ -722,6 +723,8 @@ func (c *Context) ShouldBindBodyWith(obj interface{}, bb binding.BindingBody) (e
 		if err != nil {
 			return err
 		}
+		c.Request.Body.Close()
+		c.Request.Body = ioutil.NopCloser(bytes.NewBuffer(body))
 		c.Set(BodyBytesKey, body)
 	}
 	return bb.BindBody(body, obj)
