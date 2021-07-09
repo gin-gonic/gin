@@ -175,6 +175,15 @@ func setByForm(value reflect.Value, field reflect.StructField, form map[string][
 		if !ok {
 			vs = []string{opt.defaultValue}
 		}
+
+		switch value.Interface().(type) {
+		case []byte:
+			if len(vs) > 0 {
+				value.Set(reflect.ValueOf([]byte(vs[0])))
+				return true, nil
+			}
+		}
+
 		return true, setSlice(vs, value, field)
 	case reflect.Array:
 		if !ok {
