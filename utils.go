@@ -11,6 +11,7 @@ import (
 	"path"
 	"reflect"
 	"runtime"
+	"strconv"
 	"strings"
 )
 
@@ -140,14 +141,23 @@ func resolveAddress(addr []string) string {
 	switch len(addr) {
 	case 0:
 		if port := os.Getenv("PORT"); port != "" {
-			debugPrint("Environment variable PORT=\"%s\"", port)
-			return ":" + port
+			if isValidPORTEnvVar(port) {
+				debugPrint("Environment variable PORT=\"%s\"", port)
+				return ":" + port
+			}
 		}
-		debugPrint("Environment variable PORT is undefined. Using port :8080 by default")
+		debugPrint("Environment variable PORT is undefined or invalid. Using port :8080 by default")
 		return ":8080"
 	case 1:
 		return addr[0]
 	default:
 		panic("too many parameters")
 	}
+}
+
+// Determine the PORT environment variable whether is valid。
+// If the PORT can be parsed to uint(0-65535)，return true。
+func isValidPORTEnvVar(portString string) bool {
+	_, err := strconv.ParseUint(portString, 10, 16)
+	return err == nil
 }
