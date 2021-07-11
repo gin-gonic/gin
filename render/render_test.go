@@ -40,12 +40,12 @@ func TestRenderJSON(t *testing.T) {
 	assert.Equal(t, "application/json; charset=utf-8", w.Header().Get("Content-Type"))
 }
 
-func TestRenderJSONPanics(t *testing.T) {
+func TestRenderJSONError(t *testing.T) {
 	w := httptest.NewRecorder()
 	data := make(chan int)
 
 	// json: unsupported type: chan int
-	assert.Panics(t, func() { assert.NoError(t, (JSON{data}).Render(w)) })
+	assert.Error(t, (JSON{data}).Render(w))
 }
 
 func TestRenderIndentedJSON(t *testing.T) {
