@@ -17,6 +17,9 @@ import (
 // BindKey indicates a default bind key.
 const BindKey = "_gin-gonic/gin/bindkey"
 
+// DefaultRunAddress default gin run address.
+var DefaultRunAddress = ":8080"
+
 // Bind is a helper function for given interface object and returns a Gin middleware.
 func Bind(val interface{}) HandlerFunc {
 	value := reflect.ValueOf(val)
@@ -143,8 +146,8 @@ func resolveAddress(addr []string) string {
 			debugPrint("Environment variable PORT=\"%s\"", port)
 			return ":" + port
 		}
-		debugPrint("Environment variable PORT is undefined. Using port :8080 by default")
-		return ":8080"
+		debugPrint("Environment variable PORT is undefined. Using address:%s by default", DefaultRunAddress)
+		return DefaultRunAddress
 	case 1:
 		return addr[0]
 	default:

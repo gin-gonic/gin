@@ -120,8 +120,8 @@ func TestPanicWithBrokenPipe(t *testing.T) {
 		syscall.ECONNRESET: "connection reset by peer",
 	}
 
-	for errno, expectMsg := range expectMsgs {
-		t.Run(expectMsg, func(t *testing.T) {
+	for k := range expectMsgs {
+		t.Run(expectMsgs[k], func(t *testing.T) {
 
 			var buf bytes.Buffer
 
@@ -133,14 +133,14 @@ func TestPanicWithBrokenPipe(t *testing.T) {
 				c.Status(expectCode)
 
 				// Oops. Client connection closed
-				e := &net.OpError{Err: &os.SyscallError{Err: errno}}
+				e := &net.OpError{Err: &os.SyscallError{Err: k}}
 				panic(e)
 			})
 			// RUN
 			w := performRequest(router, "GET", "/recovery")
 			// TEST
 			assert.Equal(t, expectCode, w.Code)
-			assert.Contains(t, strings.ToLower(buf.String()), expectMsg)
+			assert.Contains(t, strings.ToLower(buf.String()), expectMsgs[k])
 		})
 	}
 }
