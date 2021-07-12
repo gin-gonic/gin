@@ -12,21 +12,21 @@ import (
 func TestSliceValidateError(t *testing.T) {
 	tests := []struct {
 		name string
-		err  sliceValidateError
+		err  SliceValidateError
 		want string
 	}{
-		{"has nil elements", sliceValidateError{errors.New("test error"), nil}, "[0]: test error"},
-		{"has zero elements", sliceValidateError{}, ""},
-		{"has one element", sliceValidateError{errors.New("test one error")}, "[0]: test one error"},
+		{"has nil elements", SliceValidateError{errors.New("test error"), nil}, "[0]: test error"},
+		{"has zero elements", SliceValidateError{}, ""},
+		{"has one element", SliceValidateError{errors.New("test one error")}, "[0]: test one error"},
 		{"has two elements",
-			sliceValidateError{
+			SliceValidateError{
 				errors.New("first error"),
 				errors.New("second error"),
 			},
 			"[0]: first error\n[1]: second error",
 		},
 		{"has many elements",
-			sliceValidateError{
+			SliceValidateError{
 				errors.New("first error"),
 				errors.New("second error"),
 				nil,
@@ -40,7 +40,7 @@ func TestSliceValidateError(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := tt.err.Error(); got != tt.want {
-				t.Errorf("sliceValidateError.Error() = %v, want %v", got, tt.want)
+				t.Errorf("SliceValidateError.Error() = %v, want %v", got, tt.want)
 			}
 		})
 	}
