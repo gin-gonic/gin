@@ -111,6 +111,17 @@ func TestRouterGroupInvalidStaticFile(t *testing.T) {
 	})
 }
 
+func TestRouterGroupInvalidStaticFileFS(t *testing.T) {
+	router := New()
+	assert.Panics(t, func() {
+		router.StaticFileFS("/path/:param", "favicon.ico", Dir(".", false))
+	})
+
+	assert.Panics(t, func() {
+		router.StaticFileFS("/path/*param", "favicon.ico", Dir(".", false))
+	})
+}
+
 func TestRouterGroupTooManyHandlers(t *testing.T) {
 	const (
 		panicValue = "too many handlers"
@@ -177,6 +188,7 @@ func testRoutesInterface(t *testing.T, r IRoutes) {
 	assert.Equal(t, r, r.HEAD("/", handler))
 
 	assert.Equal(t, r, r.StaticFile("/file", "."))
+	assert.Equal(t, r, r.StaticFileFS("/static2", ".", Dir(".", false)))
 	assert.Equal(t, r, r.Static("/static", "."))
 	assert.Equal(t, r, r.StaticFS("/static2", Dir(".", false)))
 }
