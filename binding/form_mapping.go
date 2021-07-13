@@ -17,7 +17,8 @@ import (
 )
 
 var (
-	errUnknownType = errors.New("unknown type")
+	// ErrUnknownType unknown request type
+	ErrUnknownType = errors.New("unknown type")
 
 	// ErrConvertMapStringSlice can not covert to map[string][]string
 	ErrConvertMapStringSlice = errors.New("can not convert to map slices of strings")
@@ -240,7 +241,7 @@ func setWithProperType(val string, value reflect.Value, field reflect.StructFiel
 	case reflect.Map:
 		return json.Unmarshal(bytesconv.StringToBytes(val), value.Addr().Interface())
 	default:
-		return errUnknownType
+		return ErrUnknownType
 	}
 	return nil
 }
