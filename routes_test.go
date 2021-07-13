@@ -368,6 +368,18 @@ func TestRouterMiddlewareAndStatic(t *testing.T) {
 	assert.Equal(t, "Gin Framework", w.Header().Get("x-GIN"))
 }
 
+func TestRouteHeadUsesGetHandlerByDefault(t *testing.T) {
+	router := New()
+	router.GET("/path", func(c *Context) {
+		c.String(http.StatusOK, "responseText")
+	})
+	w := performRequest(router, http.MethodHead, "/path")
+	assert.Equal(t, http.StatusOK, w.Code)
+	// The response entity is blank because response rendering is suppressed for HEAD requests.
+	// Note that the Go net/http handlers would discard the entity for HEAD requests anyway.
+	assert.Equal(t, "", w.Body.String())
+}
+
 func TestRouteNotAllowedEnabled(t *testing.T) {
 	router := New()
 	router.HandleMethodNotAllowed = true
@@ -494,7 +506,7 @@ func TestRouterStaticFSNotFound(t *testing.T) {
 	assert.Equal(t, "non existent", w.Body.String())
 
 	w = performRequest(router, http.MethodHead, "/nonexistent")
-	assert.Equal(t, "non existent", w.Body.String())
+	assert.Equal(t, "", w.Body.String())
 }
 
 func TestRouterStaticFSFileNotFound(t *testing.T) {

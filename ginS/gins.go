@@ -58,14 +58,21 @@ func Handle(httpMethod, relativePath string, handlers ...gin.HandlerFunc) gin.IR
 	return engine().Handle(httpMethod, relativePath, handlers...)
 }
 
+// GET is a shortcut for router.Handle("GET", path, handle)
+// HEAD requests will also be handled automatically by this handler.
+func GET(relativePath string, handlers ...gin.HandlerFunc) gin.IRoutes {
+	return engine().GET(relativePath, handlers...)
+}
+
+// HEAD is a shortcut for router.Handle("HEAD", path, handle)
+// This is rarely needed because every GET handler will also handle HEAD requests.
+func HEAD(relativePath string, handlers ...gin.HandlerFunc) gin.IRoutes {
+	return engine().HEAD(relativePath, handlers...)
+}
+
 // POST is a shortcut for router.Handle("POST", path, handle)
 func POST(relativePath string, handlers ...gin.HandlerFunc) gin.IRoutes {
 	return engine().POST(relativePath, handlers...)
-}
-
-// GET is a shortcut for router.Handle("GET", path, handle)
-func GET(relativePath string, handlers ...gin.HandlerFunc) gin.IRoutes {
-	return engine().GET(relativePath, handlers...)
 }
 
 // DELETE is a shortcut for router.Handle("DELETE", path, handle)
@@ -86,11 +93,6 @@ func PUT(relativePath string, handlers ...gin.HandlerFunc) gin.IRoutes {
 // OPTIONS is a shortcut for router.Handle("OPTIONS", path, handle)
 func OPTIONS(relativePath string, handlers ...gin.HandlerFunc) gin.IRoutes {
 	return engine().OPTIONS(relativePath, handlers...)
-}
-
-// HEAD is a shortcut for router.Handle("HEAD", path, handle)
-func HEAD(relativePath string, handlers ...gin.HandlerFunc) gin.IRoutes {
-	return engine().HEAD(relativePath, handlers...)
 }
 
 // Any is a wrapper for Engine.Any.
