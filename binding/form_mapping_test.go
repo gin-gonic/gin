@@ -74,6 +74,20 @@ func TestMappingDefault(t *testing.T) {
 	assert.Equal(t, [1]int{9}, s.Array)
 }
 
+func TestMappingMultipleDefault(t *testing.T) {
+	var s struct {
+		Int   int    `form:",multiple_default,default=9"`
+		Slice []int  `form:",multiple_default,default=9"`
+		Array [1]int `form:",multiple_default,default=9"`
+	}
+	err := mappingByPtr(&s, formSource{}, "form")
+	assert.NoError(t, err)
+
+	assert.Equal(t, 9, s.Int)
+	assert.Equal(t, []int{9}, s.Slice)
+	assert.Equal(t, [1]int{9}, s.Array)
+}
+
 func TestMappingSkipField(t *testing.T) {
 	var s struct {
 		A int
