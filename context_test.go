@@ -2058,6 +2058,48 @@ func TestRemoteIPFail(t *testing.T) {
 	assert.False(t, trust)
 }
 
+func TestContextWithFallbackDeadlineFromRequestContext(t *testing.T) {
+	c := &Context{}
+	deadline, ok := c.Deadline()
+	assert.Zero(t, deadline)
+	assert.False(t, ok)
+
+	c2 := &Context{}
+	c2.Request, _ = http.NewRequest(http.MethodGet, "/", nil)
+	d := time.Now().Add(time.Second)
+	ctx, cancel := context.WithDeadline(context.Background(), d)
+	defer cancel()
+	c2.Request = c2.Request.WithContext(ctx)
+	deadline, ok = c2.Deadline()
+	assert.Equal(t, d, deadline)
+	assert.True(t, ok)
+}
+
+func TestContextWithFallbackDoneFromRequestContext(t *testing.T) {
+	c := &Context{}
+	assert.Nil(t, c.Done())
+
+	c2 := &Context{}
+	c2.Request, _ = http.NewRequest(http.MethodGet, "/", nil)
+	ctx, cancel := context.WithCancel(context.Background())
+	c2.Request = c2.Request.WithContext(ctx)
+	cancel()
+	assert.NotNil(t, <-c2.Done())
+}
+
+func TestContextWithFallbackErrFromRequestContext(t *testing.T) {
+	c := &Context{}
+	assert.Nil(t, c.Err())
+
+	c2 := &Context{}
+	c2.Request, _ = http.NewRequest(http.MethodGet, "/", nil)
+	ctx, cancel := context.WithCancel(context.Background())
+	c2.Request = c2.Request.WithContext(ctx)
+	cancel()
+
+	assert.EqualError(t, c2.Err(), context.Canceled.Error())
+}
+
 func TestContextWithFallbackValueFromRequestContext(t *testing.T) {
 	tests := []struct {
 		name             string
