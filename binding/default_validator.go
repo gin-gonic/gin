@@ -8,13 +8,11 @@ import (
 	"fmt"
 	"reflect"
 	"strings"
-	"sync"
 
 	"github.com/go-playground/validator/v10"
 )
 
 type defaultValidator struct {
-	once     sync.Once
 	validate *validator.Validate
 }
 
@@ -76,7 +74,7 @@ func (v *defaultValidator) ValidateStruct(obj interface{}) error {
 
 // validateStruct receives struct type
 func (v *defaultValidator) validateStruct(obj interface{}) error {
-	v.lazyinit()
+	v.lazyInit()
 	return v.validate.Struct(obj)
 }
 
@@ -85,13 +83,14 @@ func (v *defaultValidator) validateStruct(obj interface{}) error {
 // or struct level validations. See validator GoDoc for more info -
 // https://pkg.go.dev/github.com/go-playground/validator/v10
 func (v *defaultValidator) Engine() interface{} {
-	v.lazyinit()
+	v.lazyInit()
 	return v.validate
 }
 
-func (v *defaultValidator) lazyinit() {
-	v.once.Do(func() {
+// lazyInit initialize the validate Settings, no need to use sync.once
+func (v *defaultValidator) lazyInit() {
+	if v.validate == nil {
 		v.validate = validator.New()
 		v.validate.SetTagName("binding")
-	})
+	}
 }
