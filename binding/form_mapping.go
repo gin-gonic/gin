@@ -17,7 +17,8 @@ import (
 )
 
 var (
-	errUnknownType = errors.New("unknown type")
+	// ErrUnknownType unknown type
+	ErrUnknownType = errors.New("unknown type")
 
 	// ErrConvertMapStringSlice can not covert to map[string][]string
 	ErrConvertMapStringSlice = errors.New("can not convert to map slices of strings")
@@ -164,7 +165,7 @@ func tryToSetValue(value reflect.Value, field reflect.StructField, setter setter
 	return setter.TrySet(value, field, tagValue, setOpt)
 }
 
-func setByForm(value reflect.Value, field reflect.StructField, form map[string][]string, tagValue string, opt setOptions) (isSetted bool, err error) {
+func setByForm(value reflect.Value, field reflect.StructField, form map[string][]string, tagValue string, opt setOptions) (bool, error) {
 	vs, ok := form[tagValue]
 	if !ok && !opt.isDefaultExists {
 		return false, nil
@@ -240,7 +241,7 @@ func setWithProperType(val string, value reflect.Value, field reflect.StructFiel
 	case reflect.Map:
 		return json.Unmarshal(bytesconv.StringToBytes(val), value.Addr().Interface())
 	default:
-		return errUnknownType
+		return ErrUnknownType
 	}
 	return nil
 }
