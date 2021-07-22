@@ -154,6 +154,18 @@ func TestTreeWildcard(t *testing.T) {
 		"/info/:user/public",
 		"/info/:user/project/:project",
 		"/info/:user/project/golang",
+		"/aa/*xx",
+		"/ab/*xx",
+		"/:cc",
+		"/:cc/cc",
+		"/:cc/:dd/ee",
+		"/:cc/:dd/:ee/ff",
+		"/:cc/:dd/:ee/:ff/gg",
+		"/:cc/:dd/:ee/:ff/:gg/hh",
+		"/get/test/abc/",
+		"/get/:param/abc/",
+		"/something/:paramname/thirdthing",
+		"/something/secondthing/test",
 	}
 	for _, route := range routes {
 		tree.addRoute(route, fakeHandler(route))
@@ -186,6 +198,30 @@ func TestTreeWildcard(t *testing.T) {
 		{"/info/gordon/public", false, "/info/:user/public", Params{Param{Key: "user", Value: "gordon"}}},
 		{"/info/gordon/project/go", false, "/info/:user/project/:project", Params{Param{Key: "user", Value: "gordon"}, Param{Key: "project", Value: "go"}}},
 		{"/info/gordon/project/golang", false, "/info/:user/project/golang", Params{Param{Key: "user", Value: "gordon"}}},
+		{"/aa/aa", false, "/aa/*xx", Params{Param{Key: "xx", Value: "/aa"}}},
+		{"/ab/ab", false, "/ab/*xx", Params{Param{Key: "xx", Value: "/ab"}}},
+		{"/a", false, "/:cc", Params{Param{Key: "cc", Value: "a"}}},
+		// * level 1 router match param will be Intercept first
+		// new PR handle (/all /all/cc /a/cc)
+		{"/all", false, "/:cc", Params{Param{Key: "cc", Value: "ll"}}},
+		{"/all/cc", false, "/:cc/cc", Params{Param{Key: "cc", Value: "ll"}}},
+		{"/a/cc", false, "/:cc/cc", Params{Param{Key: "cc", Value: ""}}},
+		{"/get/test/abc/", false, "/get/test/abc/", nil},
+		{"/get/te/abc/", false, "/get/:param/abc/", Params{Param{Key: "param", Value: "te"}}},
+		{"/get/xx/abc/", false, "/get/:param/abc/", Params{Param{Key: "param", Value: "xx"}}},
+		{"/get/tt/abc/", false, "/get/:param/abc/", Params{Param{Key: "param", Value: "tt"}}},
+		{"/get/a/abc/", false, "/get/:param/abc/", Params{Param{Key: "param", Value: "a"}}},
+		{"/get/t/abc/", false, "/get/:param/abc/", Params{Param{Key: "param", Value: "t"}}},
+		{"/get/aa/abc/", false, "/get/:param/abc/", Params{Param{Key: "param", Value: "aa"}}},
+		{"/get/abas/abc/", false, "/get/:param/abc/", Params{Param{Key: "param", Value: "abas"}}},
+		{"/something/secondthing/test", false, "/something/secondthing/test", nil},
+		{"/something/abcdad/thirdthing", false, "/something/:paramname/thirdthing", Params{Param{Key: "paramname", Value: "abcdad"}}},
+		{"/something/se/thirdthing", false, "/something/:paramname/thirdthing", Params{Param{Key: "paramname", Value: "se"}}},
+		{"/something/s/thirdthing", false, "/something/:paramname/thirdthing", Params{Param{Key: "paramname", Value: "s"}}},
+		{"/c/d/ee", false, "/:cc/:dd/ee", Params{Param{Key: "cc", Value: "c"}, Param{Key: "dd", Value: "d"}}},
+		{"/c/d/e/ff", false, "/:cc/:dd/:ee/ff", Params{Param{Key: "cc", Value: "c"}, Param{Key: "dd", Value: "d"}, Param{Key: "ee", Value: "e"}}},
+		{"/c/d/e/f/gg", false, "/:cc/:dd/:ee/:ff/gg", Params{Param{Key: "cc", Value: "c"}, Param{Key: "dd", Value: "d"}, Param{Key: "ee", Value: "e"}, Param{Key: "ff", Value: "f"}}},
+		{"/c/d/e/f/g/hh", false, "/:cc/:dd/:ee/:ff/:gg/hh", Params{Param{Key: "cc", Value: "c"}, Param{Key: "dd", Value: "d"}, Param{Key: "ee", Value: "e"}, Param{Key: "ff", Value: "f"}, Param{Key: "gg", Value: "g"}}},
 	})
 
 	checkPriorities(t, tree)
