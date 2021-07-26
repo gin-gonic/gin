@@ -400,23 +400,10 @@ type nodeValue struct {
 // made if a handle exists with an extra (without the) trailing slash for the
 // given path.
 func (n *node) getValue(path string, params *Params, unescape bool) (value nodeValue) {
-	// path: /abc/123/def
-	// level 1 router:abc
-	// level 2 router:123
-	// level 3 router:def
 	var (
 		skippedPath string
-		latestNode  = n // not found `level 2 router` use latestNode
-
-		// match '/' count
-		// matchNum < 1: `level 2 router` not found,the current node needs to be equal to latestNode
-		// matchNum >= 1: `level (2 or 3 or 4 or ...) router`: Normal handling
-		matchNum int // each match will accumulate
+		latestNode  = n // Caching the latest node
 	)
-	//if path == "/", no need to look for tree node
-	if len(path) == 1 {
-		matchNum = 1
-	}
 
 walk: // Outer loop for walking the tree
 	for {
@@ -444,17 +431,13 @@ walk: // Outer loop for walking the tree
 						}
 
 						n = n.children[i]
-
-						// match '/', If this condition is matched, the next route is found
-						if (len(n.fullPath) != 0 && n.wildChild) || path[len(path)-1] == '/' {
-							matchNum++
-						}
 						continue walk
 					}
 				}
-
-				// level 2 router not found,the current node needs to be equal to latestNode
-				if matchNum < 1 {
+				// If the path at the end of the loop is not equal to '/' and the current node has no child nodes
+				// the current node needs to be equal to the latest matching node
+				matched := path != "/" && !n.wildChild
+				if matched {
 					n = latestNode
 				}
 
@@ -472,6 +455,16 @@ walk: // Outer loop for walking the tree
 
 				switch n.nType {
 				case param:
+					// fix truncate the parameter
+					// tree_test.go  line: 204
+					if matched {
+						path = prefix + path
+						// The saved path is used after the prefix route is intercepted by matching
+						if n.indices == "/" {
+							path = skippedPath[1:]
+						}
+					}
+
 					// Find param end (either '/' or path end)
 					end := 0
 					for end < len(path) && path[end] != '/' {
@@ -503,18 +496,6 @@ walk: // Outer loop for walking the tree
 						if len(n.children) > 0 {
 							path = path[end:]
 							n = n.children[0]
-							// next node,the latestNode needs to be equal to currentNode and handle next router
-							latestNode = n
-							// not found router in (level 1 router and handle next node),skippedPath cannot execute
-							// example:
-							// * /:cc/cc
-							// call /a/cc 	     expectations:match/200      Actual:match/200
-							// call /a/dd 	     expectations:unmatch/404    Actual: panic
-							// call /addr/dd/aa  expectations:unmatch/404    Actual: panic
-							// skippedPath: It can only be executed if the secondary route is not found
-							// matchNum: Go to the next level of routing tree node search,need add matchNum
-							skippedPath = ""
-							matchNum++
 							continue walk
 						}
 
@@ -567,8 +548,9 @@ walk: // Outer loop for walking the tree
 		}
 
 		if path == prefix {
-			// level 2 router not found and latestNode.wildChild is true
-			if matchNum < 1 && latestNode.wildChild {
+			// If the current path does not equal '/' and the node does not have a registered handle and the most recently matched node has a child node
+			// the current node needs to be equal to the latest matching node
+			if latestNode.wildChild && n.handlers == nil && path != "/" {
 				n = latestNode.children[len(latestNode.children)-1]
 			}
 			// We should have reached the node containing the handle.
@@ -600,10 +582,17 @@ walk: // Outer loop for walking the tree
 			return
 		}
 
-		// path != "/" && skippedPath != ""
-		if len(path) != 1 && len(skippedPath) > 0 && strings.HasSuffix(skippedPath, path) {
+		if path != "/" && len(skippedPath) > 0 && strings.HasSuffix(skippedPath, path) {
 			path = skippedPath
-			n = latestNode
+			// Reduce the number of cycles
+			n, latestNode = latestNode, n
+			// skippedPath cannot execute
+			// example:
+			// * /:cc/cc
+			// call /a/cc 	     expectations:match/200      Actual:match/200
+			// call /a/dd 	     expectations:unmatch/404    Actual: panic
+			// call /addr/dd/aa  expectations:unmatch/404    Actual: panic
+			// skippedPath: It can only be executed if the secondary route is not found
 			skippedPath = ""
 			continue walk
 		}
