@@ -1160,7 +1160,7 @@ func (c *Context) SetAccepted(formats ...string) {
 /***** GOLANG.ORG/X/NET/CONTEXT *****/
 /************************************/
 
-// Deadline returns that there is no deadline (ok==false) when c.Request with no Context.
+// Deadline returns that there is no deadline (ok==false) when c.Request has no Context.
 func (c *Context) Deadline() (deadline time.Time, ok bool) {
 	if c.Request == nil || c.Request.Context() == nil {
 		return
@@ -1168,7 +1168,7 @@ func (c *Context) Deadline() (deadline time.Time, ok bool) {
 	return c.Request.Context().Deadline()
 }
 
-// Done returns nil (chan which will wait forever) when c.Request with no Context.
+// Done returns nil (chan which will wait forever) when c.Request has no Context.
 func (c *Context) Done() <-chan struct{} {
 	if c.Request == nil || c.Request.Context() == nil {
 		return nil
@@ -1176,7 +1176,7 @@ func (c *Context) Done() <-chan struct{} {
 	return c.Request.Context().Done()
 }
 
-// Err returns nil when c.Request with no Context.
+// Err returns nil when c.Request has no Context.
 func (c *Context) Err() error {
 	if c.Request == nil || c.Request.Context() == nil {
 		return nil
