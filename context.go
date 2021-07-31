@@ -1161,22 +1161,28 @@ func (c *Context) SetAccepted(formats ...string) {
 /***** GOLANG.ORG/X/NET/CONTEXT *****/
 /************************************/
 
-// Deadline always returns that there is no deadline (ok==false),
-// maybe you want to use Request.Context().Deadline() instead.
+// Deadline returns that there is no deadline (ok==false) when c.Request has no Context.
 func (c *Context) Deadline() (deadline time.Time, ok bool) {
-	return
+	if c.Request == nil || c.Request.Context() == nil {
+		return
+	}
+	return c.Request.Context().Deadline()
 }
 
-// Done always returns nil (chan which will wait forever),
-// if you want to abort your work when the connection was closed
-// you should use Request.Context().Done() instead.
+// Done returns nil (chan which will wait forever) when c.Request has no Context.
 func (c *Context) Done() <-chan struct{} {
-	return nil
+	if c.Request == nil || c.Request.Context() == nil {
+		return nil
+	}
+	return c.Request.Context().Done()
 }
 
-// Err always returns nil, maybe you want to use Request.Context().Err() instead.
+// Err returns nil when c.Request has no Context.
 func (c *Context) Err() error {
-	return nil
+	if c.Request == nil || c.Request.Context() == nil {
+		return nil
+	}
+	return c.Request.Context().Err()
 }
 
 // Value returns the value associated with this context for key, or nil
