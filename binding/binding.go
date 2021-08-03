@@ -30,6 +30,7 @@ const (
 type Binding interface {
 	Name() string
 	Bind(*http.Request, interface{}) error
+	BindOnly(*http.Request, interface{}) error
 }
 
 // BindingBody adds BindBody method to Binding. BindBody is similar with Bind,
@@ -37,6 +38,7 @@ type Binding interface {
 type BindingBody interface {
 	Binding
 	BindBody([]byte, interface{}) error
+	BindBodyOnly([]byte, interface{}) error
 }
 
 // BindingUri adds BindUri method to Binding. BindUri is similar with Bind,
@@ -83,6 +85,8 @@ var (
 	YAML          = yamlBinding{}
 	Uri           = uriBinding{}
 	Header        = headerBinding{}
+	Request       = requestBinding{}
+	Cookie        = cookieBinding{}
 )
 
 // Default returns the appropriate Binding instance based on the HTTP method

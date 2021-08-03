@@ -18,14 +18,22 @@ func (protobufBinding) Name() string {
 }
 
 func (b protobufBinding) Bind(req *http.Request, obj interface{}) error {
+	return b.BindOnly(req, obj)
+}
+
+func (b protobufBinding) BindOnly(req *http.Request, obj interface{}) error {
 	buf, err := ioutil.ReadAll(req.Body)
 	if err != nil {
 		return err
 	}
-	return b.BindBody(buf, obj)
+	return b.BindBodyOnly(buf, obj)
 }
 
-func (protobufBinding) BindBody(body []byte, obj interface{}) error {
+func (b protobufBinding) BindBody(body []byte, obj interface{}) error {
+	return b.BindBodyOnly(body, obj)
+}
+
+func (protobufBinding) BindBodyOnly(body []byte, obj interface{}) error {
 	if err := proto.Unmarshal(body, obj.(proto.Message)); err != nil {
 		return err
 	}
