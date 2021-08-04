@@ -47,6 +47,8 @@ Gin is a web framework written in Go (Golang). It features a martini-like API wi
     - [Bind Query String or Post Data](#bind-query-string-or-post-data)
     - [Bind Uri](#bind-uri)
     - [Bind Header](#bind-header)
+    - [Bind Cookie](#bind-cookie)
+	- [Bind Request](#bind-request)
     - [Bind HTML checkboxes](#bind-html-checkboxes)
     - [Multipart/Urlencoded binding](#multiparturlencoded-binding)
     - [XML, JSON, YAML and ProtoBuf rendering](#xml-json-yaml-and-protobuf-rendering)
@@ -663,10 +665,10 @@ Note that you need to set the corresponding binding tag on all fields you want t
 
 Also, Gin provides two sets of methods for binding:
 - **Type** - Must bind
-  - **Methods** - `Bind`, `BindJSON`, `BindXML`, `BindQuery`, `BindYAML`, `BindHeader`
+  - **Methods** - `Bind`, `BindJSON`, `BindXML`, `BindQuery`, `BindYAML`, `BindHeader`, `BindCookie`, `BindRequest`
   - **Behavior** - These methods use `MustBindWith` under the hood. If there is a binding error, the request is aborted with `c.AbortWithError(400, err).SetType(ErrorTypeBind)`. This sets the response status code to 400 and the `Content-Type` header is set to `text/plain; charset=utf-8`. Note that if you try to set the response code after this, it will result in a warning `[GIN-debug] [WARNING] Headers were already written. Wanted to override status code 400 with 422`. If you wish to have greater control over the behavior, consider using the `ShouldBind` equivalent method.
 - **Type** - Should bind
-  - **Methods** - `ShouldBind`, `ShouldBindJSON`, `ShouldBindXML`, `ShouldBindQuery`, `ShouldBindYAML`, `ShouldBindHeader`
+  - **Methods** - `ShouldBind`, `ShouldBindJSON`, `ShouldBindXML`, `ShouldBindQuery`, `ShouldBindYAML`, `ShouldBindHeader`, `ShouldBindCookie`, `ShouldBindReqeust`
   - **Behavior** - These methods use `ShouldBindWith` under the hood. If there is a binding error, the error is returned and it is the developer's responsibility to handle the request and error appropriately.
 
 When using the Bind-method, Gin tries to infer the binder depending on the Content-Type header. If you are sure what you are binding, you can use `MustBindWith` or `ShouldBindWith`.
@@ -991,6 +993,72 @@ func main() {
 // output
 // {"Domain":"music","Rate":300}
 }
+```
+### Bind Cookie
+
+see `Authorization` in `Params` of [Bind Request](#bind-request)
+
+
+### Bind Request
+
+`c.BindRequest` and `c.ShouldBindRquest` can bind all wanted values into struct instance at once.
+Now, 
++ supports values from `form`, `uri`, `header`, `cookie` 
+and request `req.Body`.
++ `req.Body` decocder is decided by header `Content-Type` value, see more [request_test.go](./binding/binding_request_test.go#L40)
+
+**example**
+
+```go
+package main
+
+import (
+	"net/http"
+	"github.com/gin-gonic/gin"
+)
+
+type Params struct {
+	Name          string `uri:"name"`
+	Age           int    `form:"age,default=18"`
+	Money         int32  `form:"money" binding:"required"`
+	Authorization string `cookie:"Authorization"`
+	UserAgent     string `header:"User-Agent"`
+	Data          struct {
+		Replicas *int32 `json:"replicas" yaml:"replicas" xml:"replicas" form:"replicas"`
+	} `body:"body"`
+}
+
+func main() {
+	r := gin.Default()
+
+	r.POST("/hello/:name", handler)
+	_ = r.Run(":9881")
+
+}
+
+func handler(c *gin.Context) {
+	var err error
+	params := &Params{}
+
+	err = c.ShouldBindRequest(params)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, err)
+		return
+	}
+
+	c.JSON(200, params)
+}
+
+// ### POST test by RestClient of vscode extenstion
+// POST http://127.0.0.1:9881/hello/zhangsan?money=1000
+// Content-Type: application/json
+// Accept-Language: en-GB,en-US;q=0.8,en;q=0.6,zh-CN;q=0.4
+// Cookie: Authorization=auth123123;
+//
+// {
+//     "replicas":5
+// }
+
 ```
 
 ### Bind HTML checkboxes

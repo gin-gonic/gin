@@ -30,14 +30,33 @@ func (jsonBinding) Name() string {
 	return "json"
 }
 
-func (jsonBinding) Bind(req *http.Request, obj interface{}) error {
+func (b jsonBinding) Bind(req *http.Request, obj interface{}) error {
+	if err := b.BindOnly(req, obj); err != nil {
+		return err
+	}
+
+	return validate(obj)
+
+}
+
+func (b jsonBinding) BindOnly(req *http.Request, obj interface{}) error {
 	if req == nil || req.Body == nil {
 		return errors.New("invalid request")
 	}
+
+	// data, _ := ioutil.ReadAll(req.Body)
+	// fmt.Printf("%s", data)
+
 	return decodeJSON(req.Body, obj)
 }
 
-func (jsonBinding) BindBody(body []byte, obj interface{}) error {
+func (b jsonBinding) BindBody(body []byte, obj interface{}) error {
+	if err := b.BindBodyOnly(body, obj); err != nil {
+		return err
+	}
+	return validate(obj)
+}
+func (b jsonBinding) BindBodyOnly(body []byte, obj interface{}) error {
 	return decodeJSON(bytes.NewReader(body), obj)
 }
 
@@ -52,5 +71,5 @@ func decodeJSON(r io.Reader, obj interface{}) error {
 	if err := decoder.Decode(obj); err != nil {
 		return err
 	}
-	return validate(obj)
+	return nil
 }

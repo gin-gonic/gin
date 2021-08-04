@@ -21,18 +21,31 @@ func (msgpackBinding) Name() string {
 	return "msgpack"
 }
 
-func (msgpackBinding) Bind(req *http.Request, obj interface{}) error {
+func (b msgpackBinding) Bind(req *http.Request, obj interface{}) error {
+	if err := b.BindOnly(req, obj); err != nil {
+		return err
+	}
+
+	return validate(obj)
+}
+
+func (b msgpackBinding) BindOnly(req *http.Request, obj interface{}) error {
 	return decodeMsgPack(req.Body, obj)
 }
 
-func (msgpackBinding) BindBody(body []byte, obj interface{}) error {
+func (b msgpackBinding) BindBody(body []byte, obj interface{}) error {
+	if err := b.BindBodyOnly(body, obj); err != nil {
+		return err
+	}
+
+	return validate(obj)
+}
+
+func (b msgpackBinding) BindBodyOnly(body []byte, obj interface{}) error {
 	return decodeMsgPack(bytes.NewReader(body), obj)
 }
 
 func decodeMsgPack(r io.Reader, obj interface{}) error {
 	cdc := new(codec.MsgpackHandle)
-	if err := codec.NewDecoder(r, cdc).Decode(&obj); err != nil {
-		return err
-	}
-	return validate(obj)
+	return codec.NewDecoder(r, cdc).Decode(&obj)
 }

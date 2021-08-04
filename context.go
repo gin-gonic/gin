@@ -631,11 +631,26 @@ func (c *Context) BindHeader(obj interface{}) error {
 	return c.MustBindWith(obj, binding.Header)
 }
 
+// BindCookie is a shortcut for c.MustBindWith(obj, binding.Cookie).
+func (c *Context) BindCookie(obj interface{}) error {
+	return c.MustBindWith(obj, binding.Cookie)
+}
+
 // BindUri binds the passed struct pointer using binding.Uri.
 // It will abort the request with HTTP 400 if any error occurs.
 func (c *Context) BindUri(obj interface{}) error {
 	if err := c.ShouldBindUri(obj); err != nil {
 		c.AbortWithError(http.StatusBadRequest, err).SetType(ErrorTypeBind) // nolint: errcheck
+		return err
+	}
+	return nil
+}
+
+// BindRequest binds the passed struct pointer using binding.Request.
+// It will abort the request with HTTP 400 if any error occurs.
+func (c *Context) BindRequest(obj interface{}) error {
+	if err := c.ShouldBindRequest(obj); err != nil {
+		c.AbortWithError(http.StatusBadRequest, err).SetType(ErrorTypeBind)
 		return err
 	}
 	return nil
@@ -690,13 +705,45 @@ func (c *Context) ShouldBindHeader(obj interface{}) error {
 	return c.ShouldBindWith(obj, binding.Header)
 }
 
+// ShouldBindCookie is a shortcut for c.ShouldBindWith(obj, binding.Cookie).
+func (c *Context) ShouldBindCookie(obj interface{}) error {
+	return c.ShouldBindWith(obj, binding.Cookie)
+}
+
 // ShouldBindUri binds the passed struct pointer using the specified binding engine.
 func (c *Context) ShouldBindUri(obj interface{}) error {
 	m := make(map[string][]string)
 	for _, v := range c.Params {
 		m[v.Key] = []string{v.Value}
 	}
-	return binding.Uri.BindUri(m, obj)
+	return binding.Uri.Bind(m, obj)
+}
+
+// ShouldBindRequest binds the passed struct pointer using the specified binding engine.
+//   including
+//     `uri`,
+//     `query`
+//     `header` and
+//     `body data` with tag `body:"body"`
+//   and it's decoder is decided by header `Content-Type` value
+//
+// type Params struct {
+// 	Name          string `uri:"name"`
+// 	Age           int    `form:"age,default=18"`
+// 	Money         int32  `form:"money" binding:"required"`
+// 	Authorization string `cookie:"Authorization"`
+// 	UserAgent     string `header:"User-Agent"`
+// 	Data          struct {
+// 		Replicas *int32 `json:"replicas" yaml:"replicas" xml:"replicas" form:"replicas"`
+// 	} `body:"body"`
+// }
+func (c *Context) ShouldBindRequest(obj interface{}) error {
+	params := make(map[string][]string)
+	for _, v := range c.Params {
+		params[v.Key] = []string{v.Value}
+	}
+
+	return binding.Request.Bind(obj, c.Request, params)
 }
 
 // ShouldBindWith binds the passed struct pointer using the specified binding engine.

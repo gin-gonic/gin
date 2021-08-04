@@ -12,10 +12,18 @@ func (queryBinding) Name() string {
 	return "query"
 }
 
-func (queryBinding) Bind(req *http.Request, obj interface{}) error {
+func (b queryBinding) Bind(req *http.Request, obj interface{}) error {
+	if err := b.BindOnly(req, obj); err != nil {
+		return err
+	}
+
+	return validate(obj)
+}
+
+func (queryBinding) BindOnly(req *http.Request, obj interface{}) error {
 	values := req.URL.Query()
 	if err := mapForm(obj, values); err != nil {
 		return err
 	}
-	return validate(obj)
+	return nil
 }
