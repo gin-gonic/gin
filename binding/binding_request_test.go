@@ -10,8 +10,8 @@ import (
 
 type Params struct {
 	Name          string `uri:"name"`
-	Age           int    `form:"age,default=18"`
-	Money         int32  `form:"money" binding:"required"`
+	Age           int    `query:"age,default=18"`
+	Money         int32  `query:"money" binding:"required"`
 	Authorization string `cookie:"Authorization"`
 	UserAgent     string `header:"User-Agent"`
 	Data          struct {

@@ -48,7 +48,7 @@ Gin is a web framework written in Go (Golang). It features a martini-like API wi
     - [Bind Uri](#bind-uri)
     - [Bind Header](#bind-header)
     - [Bind Cookie](#bind-cookie)
-	- [Bind Request](#bind-request)
+    - [Bind Request](#bind-request)
     - [Bind HTML checkboxes](#bind-html-checkboxes)
     - [Multipart/Urlencoded binding](#multiparturlencoded-binding)
     - [XML, JSON, YAML and ProtoBuf rendering](#xml-json-yaml-and-protobuf-rendering)
@@ -1003,9 +1003,13 @@ see `Authorization` in `Params` of [Bind Request](#bind-request)
 
 `c.BindRequest` and `c.ShouldBindRquest` can bind all wanted values into struct instance at once.
 Now, 
-+ supports values from `form`, `uri`, `header`, `cookie` 
-and request `req.Body`.
++ supports values from `query`, `uri`, `header`, `cookie`, `form` 
+and `body` for request `req.Body`.
 + `req.Body` decocder is decided by header `Content-Type` value, see more [request_test.go](./binding/binding_request_test.go#L40)
+
+> ❗️ Attention: 
+>> 1. tag `query`, `uri`, `header`, `cookie` must never be used in body struct, or it will be panic.
+>> 2. tag `query` only work for `c.BindRequest` and `c.ShouldBindRequest` api.
 
 **example**
 
@@ -1019,8 +1023,8 @@ import (
 
 type Params struct {
 	Name          string `uri:"name"`
-	Age           int    `form:"age,default=18"`
-	Money         int32  `form:"money" binding:"required"`
+	Age           int    `query:"age,default=18"`
+	Money         int32  `query:"money" binding:"required"`
 	Authorization string `cookie:"Authorization"`
 	UserAgent     string `header:"User-Agent"`
 	Data          struct {

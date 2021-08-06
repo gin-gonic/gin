@@ -724,13 +724,18 @@ func (c *Context) ShouldBindUri(obj interface{}) error {
 //     `uri`,
 //     `query`
 //     `header` and
-//     `body data` with tag `body:"body"`
+//     `body data` with tag `body:""`
 //   and it's decoder is decided by header `Content-Type` value
+//   following tags must not be used in body struct, or it will be panic,
+//     uri
+//     query
+//     header
+//     cookie
 //
 // type Params struct {
 // 	Name          string `uri:"name"`
-// 	Age           int    `form:"age,default=18"`
-// 	Money         int32  `form:"money" binding:"required"`
+// 	Age           int    `query:"age,default=18"`
+// 	Money         int32  `query:"money" binding:"required"`
 // 	Authorization string `cookie:"Authorization"`
 // 	UserAgent     string `header:"User-Agent"`
 // 	Data          struct {
