@@ -256,14 +256,15 @@ func main() {
 
 	// For each matched request Context will hold the route definition
 	router.POST("/user/:name/*action", func(c *gin.Context) {
-		c.FullPath() == "/user/:name/*action" // true
+		b := c.FullPath() == "/user/:name/*action" // true
+		c.String(http.StatusOK, "%t", b)
 	})
 
 	// This handler will add a new router for /user/groups.
 	// Exact routes are resolved before param routes, regardless of the order they were defined.
 	// Routes starting with /user/groups are never interpreted as /user/:name/... routes
 	router.GET("/user/groups", func(c *gin.Context) {
-		c.String(http.StatusOK, "The available groups are [...]", name)
+		c.String(http.StatusOK, "The available groups are [...]")
 	})
 
 	router.Run(":8080")
