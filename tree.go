@@ -496,6 +496,7 @@ walk: // Outer loop for walking the tree
 						if len(n.children) > 0 {
 							path = path[end:]
 							n = n.children[0]
+							latestNode = n
 							continue walk
 						}
 

@@ -28,8 +28,12 @@ type testRequests []struct {
 	ps         Params
 }
 
-func getParams() *Params {
-	ps := make(Params, 0, 20)
+func getParams(path string) *Params {
+	paramCnt := countParams(path)
+	if paramCnt == 0 {
+		paramCnt = 20
+	}
+	ps := make(Params, 0, paramCnt)
 	return &ps
 }
 
@@ -40,7 +44,7 @@ func checkRequests(t *testing.T, tree *node, requests testRequests, unescapes ..
 	}
 
 	for _, request := range requests {
-		value := tree.getValue(request.path, getParams(), unescape)
+		value := tree.getValue(request.path, getParams(request.path), unescape)
 
 		if value.handlers == nil {
 			if !request.nilHandler {
@@ -261,6 +265,7 @@ func TestTreeWildcard(t *testing.T) {
 		{"/c/d/e/f/gg", false, "/:cc/:dd/:ee/:ff/gg", Params{Param{Key: "cc", Value: "c"}, Param{Key: "dd", Value: "d"}, Param{Key: "ee", Value: "e"}, Param{Key: "ff", Value: "f"}}},
 		{"/c/d/e/f/g/hh", false, "/:cc/:dd/:ee/:ff/:gg/hh", Params{Param{Key: "cc", Value: "c"}, Param{Key: "dd", Value: "d"}, Param{Key: "ee", Value: "e"}, Param{Key: "ff", Value: "f"}, Param{Key: "gg", Value: "g"}}},
 		{"/cc/dd/ee/ff/gg/hh", false, "/:cc/:dd/:ee/:ff/:gg/hh", Params{Param{Key: "cc", Value: "cc"}, Param{Key: "dd", Value: "dd"}, Param{Key: "ee", Value: "ee"}, Param{Key: "ff", Value: "ff"}, Param{Key: "gg", Value: "gg"}}},
+		{"/cc/dd/ee/ff/gg/hh1", true, "/:cc/:dd/:ee/:ff/:gg/hh", Params{Param{Key: "cc", Value: "cc"}, Param{Key: "dd", Value: "dd"}, Param{Key: "ee", Value: "ee"}, Param{Key: "ff", Value: "ff"}, Param{Key: "gg", Value: "gg"}}},
 		{"/get/abc", false, "/get/abc", nil},
 		{"/get/a", false, "/get/:param", Params{Param{Key: "param", Value: "a"}}},
 		{"/get/abz", false, "/get/:param", Params{Param{Key: "param", Value: "abz"}}},
