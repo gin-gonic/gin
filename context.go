@@ -40,6 +40,9 @@ const (
 // BodyBytesKey indicates a default body bytes key.
 const BodyBytesKey = "_gin-gonic/gin/bodybyteskey"
 
+// ContextKey is the key that a Context returns itself for.
+const ContextKey = "_gin-gonic/gin/contextkey"
+
 // abortIndex represents a typical value used in abort functions.
 const abortIndex int8 = math.MaxInt8 >> 1
 
@@ -1191,6 +1194,9 @@ func (c *Context) Err() error {
 func (c *Context) Value(key interface{}) interface{} {
 	if key == 0 {
 		return c.Request
+	}
+	if key == ContextKey {
+		return c
 	}
 	if keyAsString, ok := key.(string); ok {
 		if val, exists := c.Get(keyAsString); exists {
