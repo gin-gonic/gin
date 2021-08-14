@@ -318,6 +318,14 @@ func (engine *Engine) Routes() (routes RoutesInfo) {
 	return routes
 }
 
+// SetBasePath To modify basePath
+func (engine *Engine) SetBasePath(basePath string) {
+	if len(basePath) < 1 {
+		return
+	}
+	engine.basePath = basePath
+}
+
 func iterate(path, method string, routes RoutesInfo, root *node) RoutesInfo {
 	path += root.path
 	if len(root.handlers) > 0 {
