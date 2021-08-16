@@ -9,12 +9,31 @@ on:
       - master
 
 jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup go
+        uses: actions/setup-go@v2
+        with:
+          go-version: '^1.16'
+      - name: Checkout repository
+        uses: actions/checkout@v2
+      - name: Setup golangci-lint
+        uses: golangci/golangci-lint-action@v2
+        with:
+          version: v1.41.1
+          args: --verbose
   test:
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest]
         go: [1.13, 1.14, 1.15, 1.16]
         test-tags: ['', nomsgpack]
+        include:
+          - os: ubuntu-latest
+            go-build: ~/.cache/go-build
+          - os: macos-latest
+            go-build: ~/Library/Caches/go-build
     name: ${{ matrix.os }} @ Go ${{ matrix.go }} ${{ matrix.test-tags }}
     runs-on: ${{ matrix.os }}
     env:
@@ -31,21 +50,23 @@ jobs:
         uses: actions/checkout@v2
         with:
           ref: ${{ github.ref }}
-
-      - name: Install Dependencies
-        run: make tools
-
-      - name: Run Check
-        run: |
-          make vet
-          make fmt-check
-          make misspell-check
+          
+      - uses: actions/cache@v2
+        with:
+          path: |
+            ${{ matrix.go-build }}
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
 
       - name: Run Tests
         run: make test
 
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v1
+        uses: codecov/codecov-action@v2
+        with:
+          flags: ${{ matrix.os }},go-${{ matrix.go }},${{ matrix.test-tags }}
   notification-gitter:
     needs: test
     runs-on: ubuntu-latest

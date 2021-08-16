@@ -843,7 +843,7 @@ func TestTreeInvalidParamsType(t *testing.T) {
 	tree.children[0].nType = 2
 
 	// set invalid Params type
-	params := make(Params, 0, 0)
+	params := make(Params, 0)
 
 	// try to trigger slice bounds out of range with capacity 0
 	tree.getValue("/test", &params, false)
