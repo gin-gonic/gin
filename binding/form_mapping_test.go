@@ -145,6 +145,15 @@ func TestMappingForm(t *testing.T) {
 	assert.Equal(t, int(6), s.F)
 }
 
+func TestMapFormWithTag(t *testing.T) {
+	var s struct {
+		F int `externalTag:"field"`
+	}
+	err := MapFormWithTag(&s, map[string][]string{"field": {"6"}}, "externalTag")
+	assert.NoError(t, err)
+	assert.Equal(t, int(6), s.F)
+}
+
 func TestMappingTime(t *testing.T) {
 	var s struct {
 		Time      time.Time
@@ -190,7 +199,7 @@ func TestMappingTime(t *testing.T) {
 	assert.Error(t, err)
 }
 
-func TestMapiingTimeDuration(t *testing.T) {
+func TestMappingTimeDuration(t *testing.T) {
 	var s struct {
 		D time.Duration
 	}
@@ -268,4 +277,14 @@ func TestMappingMapField(t *testing.T) {
 	err := mappingByPtr(&s, formSource{"M": {`{"one": 1}`}}, "form")
 	assert.NoError(t, err)
 	assert.Equal(t, map[string]int{"one": 1}, s.M)
+}
+
+func TestMappingIgnoredCircularRef(t *testing.T) {
+	type S struct {
+		S *S `form:"-"`
+	}
+	var s S
+
+	err := mappingByPtr(&s, formSource{}, "form")
+	assert.NoError(t, err)
 }
