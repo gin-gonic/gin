@@ -188,6 +188,7 @@ func New() *Engine {
 	engine.pool.New = func() interface{} {
 		return engine.allocateContext()
 	}
+	engine.trustedCIDRs, _ = engine.prepareTrustedCIDRs()
 	return engine
 }
 
