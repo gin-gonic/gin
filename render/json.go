@@ -49,7 +49,7 @@ type PureJSON struct {
 var (
 	jsonContentType      = []string{"application/json; charset=utf-8"}
 	jsonpContentType     = []string{"application/javascript; charset=utf-8"}
-	jsonAsciiContentType = []string{"application/json"}
+	jsonASCIIContentType = []string{"application/json"}
 )
 
 // Render (JSON) writes data with custom ContentType.
@@ -178,7 +178,7 @@ func (r AsciiJSON) Render(w http.ResponseWriter) (err error) {
 
 // WriteContentType (AsciiJSON) writes JSON ContentType.
 func (r AsciiJSON) WriteContentType(w http.ResponseWriter) {
-	writeContentType(w, jsonAsciiContentType)
+	writeContentType(w, jsonASCIIContentType)
 }
 
 // Render (PureJSON) writes custom ContentType and encodes the given interface object.

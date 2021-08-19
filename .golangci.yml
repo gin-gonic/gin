@@ -1,0 +1,23 @@
+linters:
+  enable:
+  - gofmt
+  - misspell
+  - revive
+issues:
+  exclude-rules:
+  - linters:
+    - deadcode
+    text: "`static` is unused"
+  - linters:
+    - structcheck
+    - unused
+    text: "`data` is unused"
+  - linters:
+    - staticcheck
+    text: "SA1019:"
+  - linters:
+    - revive
+    text: "var-naming:"
+  - linters:
+    - revive
+    text: "exported:"

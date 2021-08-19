@@ -131,7 +131,7 @@ func TestMappingURI(t *testing.T) {
 	var s struct {
 		F int `uri:"field"`
 	}
-	err := mapUri(&s, map[string][]string{"field": {"6"}})
+	err := mapURI(&s, map[string][]string{"field": {"6"}})
 	assert.NoError(t, err)
 	assert.Equal(t, int(6), s.F)
 }
