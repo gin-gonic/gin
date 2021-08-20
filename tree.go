@@ -101,8 +101,7 @@ func countParams(path string) uint16 {
 type nodeType uint8
 
 const (
-	static nodeType = iota // default
-	root
+	root nodeType = iota + 1
 	param
 	catchAll
 )
