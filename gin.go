@@ -5,31 +5,35 @@
 package gin
 
 import (
+	"fmt"
 	"html/template"
 	"net"
 	"net/http"
 	"os"
+	"path"
+	"strings"
 	"sync"
 
+	"github.com/gin-gonic/gin/internal/bytesconv"
 	"github.com/gin-gonic/gin/render"
 )
 
-const (
-	// Version is Framework's version.
-	Version                = "v1.3.0"
-	defaultMultipartMemory = 32 << 20 // 32 MB
-)
+const defaultMultipartMemory = 32 << 20 // 32 MB
 
 var (
-	default404Body   = []byte("404 page not found")
-	default405Body   = []byte("405 method not allowed")
-	defaultAppEngine bool
+	default404Body = []byte("404 page not found")
+	default405Body = []byte("405 method not allowed")
 )
 
+var defaultPlatform string
+
+// HandlerFunc defines the handler used by gin middleware as return value.
 type HandlerFunc func(*Context)
+
+// HandlersChain defines a HandlerFunc array.
 type HandlersChain []HandlerFunc
 
-// Last returns the last handler in the chain. ie. the last handler is the main own.
+// Last returns the last handler in the chain. ie. the last handler is the main one.
 func (c HandlersChain) Last() HandlerFunc {
 	if length := len(c); length > 0 {
 		return c[length-1]
@@ -37,13 +41,26 @@ func (c HandlersChain) Last() HandlerFunc {
 	return nil
 }
 
+// RouteInfo represents a request route's specification which contains method and path and its handler.
 type RouteInfo struct {
-	Method  string
-	Path    string
-	Handler string
+	Method      string
+	Path        string
+	Handler     string
+	HandlerFunc HandlerFunc
 }
 
+// RoutesInfo defines a RouteInfo array.
 type RoutesInfo []RouteInfo
+
+// Trusted platforms
+const (
+	// When running on Google App Engine. Trust X-Appengine-Remote-Addr
+	// for determining the client's IP
+	PlatformGoogleAppEngine = "google-app-engine"
+	// When using Cloudflare's CDN. Trust CF-Connecting-IP for determining
+	// the client's IP
+	PlatformCloudflare = "cloudflare"
+)
 
 // Engine is the framework's instance, it contains the muxer, middleware and configuration settings.
 // Create an instance of Engine, by using New() or Default()
@@ -75,9 +92,15 @@ type Engine struct {
 	// If no other Method is allowed, the request is delegated to the NotFound
 	// handler.
 	HandleMethodNotAllowed bool
-	ForwardedByClientIP    bool
 
-	// #726 #755 If enabled, it will thrust some headers starting with
+	// If enabled, client IP will be parsed from the request's headers that
+	// match those stored at `(*gin.Engine).RemoteIPHeaders`. If no IP was
+	// fetched, it falls back to the IP obtained from
+	// `(*gin.Context).Request.RemoteAddr`.
+	ForwardedByClientIP bool
+
+	// DEPRECATED: USE `TrustedPlatform` WITH VALUE `gin.GoogleAppEngine` INSTEAD
+	// #726 #755 If enabled, it will trust some headers starting with
 	// 'X-AppEngine...' for better integration with that PaaS.
 	AppEngine bool
 
@@ -89,12 +112,32 @@ type Engine struct {
 	// as url.Path gonna be used, which is already unescaped.
 	UnescapePathValues bool
 
+	// RemoveExtraSlash a parameter can be parsed from the URL even with extra slashes.
+	// See the PR #1817 and issue #1644
+	RemoveExtraSlash bool
+
+	// List of headers used to obtain the client IP when
+	// `(*gin.Engine).ForwardedByClientIP` is `true` and
+	// `(*gin.Context).Request.RemoteAddr` is matched by at least one of the
+	// network origins of `(*gin.Engine).TrustedProxies`.
+	RemoteIPHeaders []string
+
+	// List of network origins (IPv4 addresses, IPv4 CIDRs, IPv6 addresses or
+	// IPv6 CIDRs) from which to trust request's headers that contain
+	// alternative client IP when `(*gin.Engine).ForwardedByClientIP` is
+	// `true`.
+	TrustedProxies []string
+
+	// If set to a constant of value gin.Platform*, trusts the headers set by
+	// that platform, for example to determine the client IP
+	TrustedPlatform string
+
 	// Value of 'maxMemory' param that is given to http.Request's ParseMultipartForm
 	// method call.
 	MaxMultipartMemory int64
 
 	delims           render.Delims
-	secureJsonPrefix string
+	secureJSONPrefix string
 	HTMLRender       render.HTMLRender
 	FuncMap          template.FuncMap
 	allNoRoute       HandlersChain
@@ -103,6 +146,8 @@ type Engine struct {
 	noMethod         HandlersChain
 	pool             sync.Pool
 	trees            methodTrees
+	maxParams        uint16
+	trustedCIDRs     []*net.IPNet
 }
 
 var _ IRouter = &Engine{}
@@ -128,13 +173,16 @@ func New() *Engine {
 		RedirectFixedPath:      false,
 		HandleMethodNotAllowed: false,
 		ForwardedByClientIP:    true,
-		AppEngine:              defaultAppEngine,
+		RemoteIPHeaders:        []string{"X-Forwarded-For", "X-Real-IP"},
+		TrustedProxies:         []string{"0.0.0.0/0"},
+		TrustedPlatform:        defaultPlatform,
 		UseRawPath:             false,
+		RemoveExtraSlash:       false,
 		UnescapePathValues:     true,
 		MaxMultipartMemory:     defaultMultipartMemory,
 		trees:                  make(methodTrees, 0, 9),
 		delims:                 render.Delims{Left: "{{", Right: "}}"},
-		secureJsonPrefix:       "while(1);",
+		secureJSONPrefix:       "while(1);",
 	}
 	engine.RouterGroup.engine = engine
 	engine.pool.New = func() interface{} {
@@ -152,17 +200,19 @@ func Default() *Engine {
 }
 
 func (engine *Engine) allocateContext() *Context {
-	return &Context{engine: engine}
+	v := make(Params, 0, engine.maxParams)
+	return &Context{engine: engine, params: &v}
 }
 
+// Delims sets template left and right delims and returns a Engine instance.
 func (engine *Engine) Delims(left, right string) *Engine {
 	engine.delims = render.Delims{Left: left, Right: right}
 	return engine
 }
 
-// SecureJsonPrefix sets the secureJsonPrefix used in Context.SecureJSON.
+// SecureJsonPrefix sets the secureJSONPrefix used in Context.SecureJSON.
 func (engine *Engine) SecureJsonPrefix(prefix string) *Engine {
-	engine.secureJsonPrefix = prefix
+	engine.secureJSONPrefix = prefix
 	return engine
 }
 
@@ -220,7 +270,7 @@ func (engine *Engine) NoMethod(handlers ...HandlerFunc) {
 	engine.rebuild405Handlers()
 }
 
-// Use attachs a global middleware to the router. ie. the middleware attached though Use() will be
+// Use attaches a global middleware to the router. ie. the middleware attached though Use() will be
 // included in the handlers chain for every single request. Even 404, 405, static files...
 // For example, this is the right place for a logger or error management middleware.
 func (engine *Engine) Use(middleware ...HandlerFunc) IRoutes {
@@ -244,12 +294,19 @@ func (engine *Engine) addRoute(method, path string, handlers HandlersChain) {
 	assert1(len(handlers) > 0, "there must be at least one handler")
 
 	debugPrintRoute(method, path, handlers)
+
 	root := engine.trees.get(method)
 	if root == nil {
 		root = new(node)
+		root.fullPath = "/"
 		engine.trees = append(engine.trees, methodTree{method: method, root: root})
 	}
 	root.addRoute(path, handlers)
+
+	// Update maxParams
+	if paramsCount := countParams(path); paramsCount > engine.maxParams {
+		engine.maxParams = paramsCount
+	}
 }
 
 // Routes returns a slice of registered routes, including some useful information, such as:
@@ -264,10 +321,12 @@ func (engine *Engine) Routes() (routes RoutesInfo) {
 func iterate(path, method string, routes RoutesInfo, root *node) RoutesInfo {
 	path += root.path
 	if len(root.handlers) > 0 {
+		handlerFunc := root.handlers.Last()
 		routes = append(routes, RouteInfo{
-			Method:  method,
-			Path:    path,
-			Handler: nameOfFunction(root.handlers.Last()),
+			Method:      method,
+			Path:        path,
+			Handler:     nameOfFunction(handlerFunc),
+			HandlerFunc: handlerFunc,
 		})
 	}
 	for _, child := range root.children {
@@ -282,10 +341,71 @@ func iterate(path, method string, routes RoutesInfo, root *node) RoutesInfo {
 func (engine *Engine) Run(addr ...string) (err error) {
 	defer func() { debugPrintError(err) }()
 
+	err = engine.parseTrustedProxies()
+	if err != nil {
+		return err
+	}
+
 	address := resolveAddress(addr)
 	debugPrint("Listening and serving HTTP on %s\n", address)
 	err = http.ListenAndServe(address, engine)
 	return
+}
+
+func (engine *Engine) prepareTrustedCIDRs() ([]*net.IPNet, error) {
+	if engine.TrustedProxies == nil {
+		return nil, nil
+	}
+
+	cidr := make([]*net.IPNet, 0, len(engine.TrustedProxies))
+	for _, trustedProxy := range engine.TrustedProxies {
+		if !strings.Contains(trustedProxy, "/") {
+			ip := parseIP(trustedProxy)
+			if ip == nil {
+				return cidr, &net.ParseError{Type: "IP address", Text: trustedProxy}
+			}
+
+			switch len(ip) {
+			case net.IPv4len:
+				trustedProxy += "/32"
+			case net.IPv6len:
+				trustedProxy += "/128"
+			}
+		}
+		_, cidrNet, err := net.ParseCIDR(trustedProxy)
+		if err != nil {
+			return cidr, err
+		}
+		cidr = append(cidr, cidrNet)
+	}
+	return cidr, nil
+}
+
+// SetTrustedProxies  set Engine.TrustedProxies
+func (engine *Engine) SetTrustedProxies(trustedProxies []string) error {
+	engine.TrustedProxies = trustedProxies
+	return engine.parseTrustedProxies()
+}
+
+// parseTrustedProxies parse Engine.TrustedProxies to Engine.trustedCIDRs
+func (engine *Engine) parseTrustedProxies() error {
+	trustedCIDRs, err := engine.prepareTrustedCIDRs()
+	engine.trustedCIDRs = trustedCIDRs
+	return err
+}
+
+// parseIP parse a string representation of an IP and returns a net.IP with the
+// minimum byte representation or nil if input is invalid.
+func parseIP(ip string) net.IP {
+	parsedIP := net.ParseIP(ip)
+
+	if ipv4 := parsedIP.To4(); ipv4 != nil {
+		// return ip in a 4-byte representation
+		return ipv4
+	}
+
+	// return ip in a 16-byte representation or nil
+	return parsedIP
 }
 
 // RunTLS attaches the router to a http.Server and starts listening and serving HTTPS (secure) requests.
@@ -294,6 +414,11 @@ func (engine *Engine) Run(addr ...string) (err error) {
 func (engine *Engine) RunTLS(addr, certFile, keyFile string) (err error) {
 	debugPrint("Listening and serving HTTPS on %s\n", addr)
 	defer func() { debugPrintError(err) }()
+
+	err = engine.parseTrustedProxies()
+	if err != nil {
+		return err
+	}
 
 	err = http.ListenAndServeTLS(addr, certFile, keyFile, engine)
 	return
@@ -306,12 +431,55 @@ func (engine *Engine) RunUnix(file string) (err error) {
 	debugPrint("Listening and serving HTTP on unix:/%s", file)
 	defer func() { debugPrintError(err) }()
 
-	os.Remove(file)
+	err = engine.parseTrustedProxies()
+	if err != nil {
+		return err
+	}
+
 	listener, err := net.Listen("unix", file)
 	if err != nil {
 		return
 	}
 	defer listener.Close()
+	defer os.Remove(file)
+
+	err = http.Serve(listener, engine)
+	return
+}
+
+// RunFd attaches the router to a http.Server and starts listening and serving HTTP requests
+// through the specified file descriptor.
+// Note: this method will block the calling goroutine indefinitely unless an error happens.
+func (engine *Engine) RunFd(fd int) (err error) {
+	debugPrint("Listening and serving HTTP on fd@%d", fd)
+	defer func() { debugPrintError(err) }()
+
+	err = engine.parseTrustedProxies()
+	if err != nil {
+		return err
+	}
+
+	f := os.NewFile(uintptr(fd), fmt.Sprintf("fd@%d", fd))
+	listener, err := net.FileListener(f)
+	if err != nil {
+		return
+	}
+	defer listener.Close()
+	err = engine.RunListener(listener)
+	return
+}
+
+// RunListener attaches the router to a http.Server and starts listening and serving HTTP requests
+// through the specified net.Listener
+func (engine *Engine) RunListener(listener net.Listener) (err error) {
+	debugPrint("Listening and serving HTTP on listener what's bind with address@%s", listener.Addr())
+	defer func() { debugPrintError(err) }()
+
+	err = engine.parseTrustedProxies()
+	if err != nil {
+		return err
+	}
+
 	err = http.Serve(listener, engine)
 	return
 }
@@ -332,18 +500,24 @@ func (engine *Engine) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 // This can be done by setting c.Request.URL.Path to your new target.
 // Disclaimer: You can loop yourself to death with this, use wisely.
 func (engine *Engine) HandleContext(c *Context) {
+	oldIndexValue := c.index
 	c.reset()
 	engine.handleHTTPRequest(c)
-	engine.pool.Put(c)
+
+	c.index = oldIndexValue
 }
 
 func (engine *Engine) handleHTTPRequest(c *Context) {
 	httpMethod := c.Request.Method
-	path := c.Request.URL.Path
+	rPath := c.Request.URL.Path
 	unescape := false
 	if engine.UseRawPath && len(c.Request.URL.RawPath) > 0 {
-		path = c.Request.URL.RawPath
+		rPath = c.Request.URL.RawPath
 		unescape = engine.UnescapePathValues
+	}
+
+	if engine.RemoveExtraSlash {
+		rPath = cleanPath(rPath)
 	}
 
 	// Find root of the tree for the given HTTP method
@@ -354,16 +528,19 @@ func (engine *Engine) handleHTTPRequest(c *Context) {
 		}
 		root := t[i].root
 		// Find route in tree
-		handlers, params, tsr := root.getValue(path, c.Params, unescape)
-		if handlers != nil {
-			c.handlers = handlers
-			c.Params = params
+		value := root.getValue(rPath, c.params, unescape)
+		if value.params != nil {
+			c.Params = *value.params
+		}
+		if value.handlers != nil {
+			c.handlers = value.handlers
+			c.fullPath = value.fullPath
 			c.Next()
 			c.writermem.WriteHeaderNow()
 			return
 		}
-		if httpMethod != "CONNECT" && path != "/" {
-			if tsr && engine.RedirectTrailingSlash {
+		if httpMethod != http.MethodConnect && rPath != "/" {
+			if value.tsr && engine.RedirectTrailingSlash {
 				redirectTrailingSlash(c)
 				return
 			}
@@ -379,7 +556,7 @@ func (engine *Engine) handleHTTPRequest(c *Context) {
 			if tree.method == httpMethod {
 				continue
 			}
-			if handlers, _, _ := tree.root.getValue(path, nil, unescape); handlers != nil {
+			if value := tree.root.getValue(rPath, nil, unescape); value.handlers != nil {
 				c.handlers = engine.allNoMethod
 				serveError(c, http.StatusMethodNotAllowed, default405Body)
 				return
@@ -400,44 +577,50 @@ func serveError(c *Context, code int, defaultMessage []byte) {
 	}
 	if c.writermem.Status() == code {
 		c.writermem.Header()["Content-Type"] = mimePlain
-		c.Writer.Write(defaultMessage)
+		_, err := c.Writer.Write(defaultMessage)
+		if err != nil {
+			debugPrint("cannot write message to writer during serve error: %v", err)
+		}
 		return
 	}
 	c.writermem.WriteHeaderNow()
-	return
 }
 
 func redirectTrailingSlash(c *Context) {
 	req := c.Request
-	path := req.URL.Path
-	code := http.StatusMovedPermanently // Permanent redirect, request with GET method
-	if req.Method != "GET" {
-		code = http.StatusTemporaryRedirect
+	p := req.URL.Path
+	if prefix := path.Clean(c.Request.Header.Get("X-Forwarded-Prefix")); prefix != "." {
+		p = prefix + "/" + req.URL.Path
 	}
-
-	req.URL.Path = path + "/"
-	if length := len(path); length > 1 && path[length-1] == '/' {
-		req.URL.Path = path[:length-1]
+	req.URL.Path = p + "/"
+	if length := len(p); length > 1 && p[length-1] == '/' {
+		req.URL.Path = p[:length-1]
 	}
-	debugPrint("redirecting request %d: %s --> %s", code, path, req.URL.String())
-	http.Redirect(c.Writer, req, req.URL.String(), code)
-	c.writermem.WriteHeaderNow()
+	redirectRequest(c)
 }
 
 func redirectFixedPath(c *Context, root *node, trailingSlash bool) bool {
 	req := c.Request
-	path := req.URL.Path
+	rPath := req.URL.Path
 
-	if fixedPath, ok := root.findCaseInsensitivePath(cleanPath(path), trailingSlash); ok {
-		code := http.StatusMovedPermanently // Permanent redirect, request with GET method
-		if req.Method != "GET" {
-			code = http.StatusTemporaryRedirect
-		}
-		req.URL.Path = string(fixedPath)
-		debugPrint("redirecting request %d: %s --> %s", code, path, req.URL.String())
-		http.Redirect(c.Writer, req, req.URL.String(), code)
-		c.writermem.WriteHeaderNow()
+	if fixedPath, ok := root.findCaseInsensitivePath(cleanPath(rPath), trailingSlash); ok {
+		req.URL.Path = bytesconv.BytesToString(fixedPath)
+		redirectRequest(c)
 		return true
 	}
 	return false
+}
+
+func redirectRequest(c *Context) {
+	req := c.Request
+	rPath := req.URL.Path
+	rURL := req.URL.String()
+
+	code := http.StatusMovedPermanently // Permanent redirect, request with GET method
+	if req.Method != http.MethodGet {
+		code = http.StatusTemporaryRedirect
+	}
+	debugPrint("redirecting request %d: %s --> %s", code, rPath, rURL)
+	http.Redirect(c.Writer, req, rURL, code)
+	c.writermem.WriteHeaderNow()
 }

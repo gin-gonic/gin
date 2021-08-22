@@ -14,8 +14,10 @@ import (
 	"strings"
 )
 
+// BindKey indicates a default bind key.
 const BindKey = "_gin-gonic/gin/bindkey"
 
+// Bind is a helper function for given interface object and returns a Gin middleware.
 func Bind(val interface{}) HandlerFunc {
 	value := reflect.ValueOf(val)
 	if value.Kind() == reflect.Ptr {
@@ -33,16 +35,14 @@ func Bind(val interface{}) HandlerFunc {
 	}
 }
 
-// WrapF is a helper function for wrapping http.HandlerFunc
-// Returns a Gin middleware
+// WrapF is a helper function for wrapping http.HandlerFunc and returns a Gin middleware.
 func WrapF(f http.HandlerFunc) HandlerFunc {
 	return func(c *Context) {
 		f(c.Writer, c.Request)
 	}
 }
 
-// WrapH is a helper function for wrapping http.Handler
-// Returns a Gin middleware
+// WrapH is a helper function for wrapping http.Handler and returns a Gin middleware.
 func WrapH(h http.Handler) HandlerFunc {
 	return func(c *Context) {
 		h.ServeHTTP(c.Writer, c.Request)
@@ -90,20 +90,23 @@ func filterFlags(content string) string {
 }
 
 func chooseData(custom, wildcard interface{}) interface{} {
-	if custom == nil {
-		if wildcard == nil {
-			panic("negotiation config is invalid")
-		}
+	if custom != nil {
+		return custom
+	}
+	if wildcard != nil {
 		return wildcard
 	}
-	return custom
+	panic("negotiation config is invalid")
 }
 
 func parseAccept(acceptHeader string) []string {
 	parts := strings.Split(acceptHeader, ",")
 	out := make([]string, 0, len(parts))
 	for _, part := range parts {
-		if part = strings.TrimSpace(strings.Split(part, ";")[0]); part != "" {
+		if i := strings.IndexByte(part, ';'); i > 0 {
+			part = part[:i]
+		}
+		if part = strings.TrimSpace(part); part != "" {
 			out = append(out, part)
 		}
 	}
@@ -127,8 +130,7 @@ func joinPaths(absolutePath, relativePath string) string {
 	}
 
 	finalPath := path.Join(absolutePath, relativePath)
-	appendSlash := lastChar(relativePath) == '/' && lastChar(finalPath) != '/'
-	if appendSlash {
+	if lastChar(relativePath) == '/' && lastChar(finalPath) != '/' {
 		return finalPath + "/"
 	}
 	return finalPath
@@ -146,6 +148,6 @@ func resolveAddress(addr []string) string {
 	case 1:
 		return addr[0]
 	default:
-		panic("too much parameters")
+		panic("too many parameters")
 	}
 }

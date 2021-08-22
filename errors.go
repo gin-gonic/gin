@@ -5,25 +5,32 @@
 package gin
 
 import (
-	"bytes"
 	"fmt"
 	"reflect"
+	"strings"
 
-	"github.com/gin-gonic/gin/json"
+	"github.com/gin-gonic/gin/internal/json"
 )
 
+// ErrorType is an unsigned 64-bit error code as defined in the gin spec.
 type ErrorType uint64
 
 const (
-	ErrorTypeBind    ErrorType = 1 << 63 // used when c.Bind() fails
-	ErrorTypeRender  ErrorType = 1 << 62 // used when c.Render() fails
+	// ErrorTypeBind is used when Context.Bind() fails.
+	ErrorTypeBind ErrorType = 1 << 63
+	// ErrorTypeRender is used when Context.Render() fails.
+	ErrorTypeRender ErrorType = 1 << 62
+	// ErrorTypePrivate indicates a private error.
 	ErrorTypePrivate ErrorType = 1 << 0
-	ErrorTypePublic  ErrorType = 1 << 1
-
+	// ErrorTypePublic indicates a public error.
+	ErrorTypePublic ErrorType = 1 << 1
+	// ErrorTypeAny indicates any other error.
 	ErrorTypeAny ErrorType = 1<<64 - 1
-	ErrorTypeNu            = 2
+	// ErrorTypeNu indicates any other error.
+	ErrorTypeNu = 2
 )
 
+// Error represents a error's specification.
 type Error struct {
 	Err  error
 	Type ErrorType
@@ -34,18 +41,21 @@ type errorMsgs []*Error
 
 var _ error = &Error{}
 
+// SetType sets the error's type.
 func (msg *Error) SetType(flags ErrorType) *Error {
 	msg.Type = flags
 	return msg
 }
 
+// SetMeta sets the error's meta data.
 func (msg *Error) SetMeta(data interface{}) *Error {
 	msg.Meta = data
 	return msg
 }
 
+// JSON creates a properly formatted JSON
 func (msg *Error) JSON() interface{} {
-	json := H{}
+	jsonData := H{}
 	if msg.Meta != nil {
 		value := reflect.ValueOf(msg.Meta)
 		switch value.Kind() {
@@ -53,16 +63,16 @@ func (msg *Error) JSON() interface{} {
 			return msg.Meta
 		case reflect.Map:
 			for _, key := range value.MapKeys() {
-				json[key.String()] = value.MapIndex(key).Interface()
+				jsonData[key.String()] = value.MapIndex(key).Interface()
 			}
 		default:
-			json["meta"] = msg.Meta
+			jsonData["meta"] = msg.Meta
 		}
 	}
-	if _, ok := json["error"]; !ok {
-		json["error"] = msg.Error()
+	if _, ok := jsonData["error"]; !ok {
+		jsonData["error"] = msg.Error()
 	}
-	return json
+	return jsonData
 }
 
 // MarshalJSON implements the json.Marshaller interface.
@@ -70,13 +80,19 @@ func (msg *Error) MarshalJSON() ([]byte, error) {
 	return json.Marshal(msg.JSON())
 }
 
-// Error implements the error interface
+// Error implements the error interface.
 func (msg Error) Error() string {
 	return msg.Err.Error()
 }
 
+// IsType judges one error.
 func (msg *Error) IsType(flags ErrorType) bool {
 	return (msg.Type & flags) > 0
+}
+
+// Unwrap returns the wrapped error, to allow interoperability with errors.Is(), errors.As() and errors.Unwrap()
+func (msg *Error) Unwrap() error {
+	return msg.Err
 }
 
 // ByType returns a readonly copy filtered the byte.
@@ -124,20 +140,21 @@ func (a errorMsgs) Errors() []string {
 }
 
 func (a errorMsgs) JSON() interface{} {
-	switch len(a) {
+	switch length := len(a); length {
 	case 0:
 		return nil
 	case 1:
 		return a.Last().JSON()
 	default:
-		json := make([]interface{}, len(a))
+		jsonData := make([]interface{}, length)
 		for i, err := range a {
-			json[i] = err.JSON()
+			jsonData[i] = err.JSON()
 		}
-		return json
+		return jsonData
 	}
 }
 
+// MarshalJSON implements the json.Marshaller interface.
 func (a errorMsgs) MarshalJSON() ([]byte, error) {
 	return json.Marshal(a.JSON())
 }
@@ -146,7 +163,7 @@ func (a errorMsgs) String() string {
 	if len(a) == 0 {
 		return ""
 	}
-	var buffer bytes.Buffer
+	var buffer strings.Builder
 	for i, msg := range a {
 		fmt.Fprintf(&buffer, "Error #%02d: %s\n", i+1, msg.Err)
 		if msg.Meta != nil {

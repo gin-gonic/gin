@@ -81,13 +81,6 @@ func TestBasicAuthAuthorizationHeader(t *testing.T) {
 	assert.Equal(t, "Basic YWRtaW46cGFzc3dvcmQ=", authorizationHeader("admin", "password"))
 }
 
-func TestBasicAuthSecureCompare(t *testing.T) {
-	assert.True(t, secureCompare("1234567890", "1234567890"))
-	assert.False(t, secureCompare("123456789", "1234567890"))
-	assert.False(t, secureCompare("12345678900", "1234567890"))
-	assert.False(t, secureCompare("1234567891", "1234567890"))
-}
-
 func TestBasicAuthSucceed(t *testing.T) {
 	accounts := Accounts{"admin": "password"}
 	router := New()
@@ -122,7 +115,7 @@ func TestBasicAuth401(t *testing.T) {
 
 	assert.False(t, called)
 	assert.Equal(t, http.StatusUnauthorized, w.Code)
-	assert.Equal(t, "Basic realm=\"Authorization Required\"", w.HeaderMap.Get("WWW-Authenticate"))
+	assert.Equal(t, "Basic realm=\"Authorization Required\"", w.Header().Get("WWW-Authenticate"))
 }
 
 func TestBasicAuth401WithCustomRealm(t *testing.T) {
@@ -142,5 +135,5 @@ func TestBasicAuth401WithCustomRealm(t *testing.T) {
 
 	assert.False(t, called)
 	assert.Equal(t, http.StatusUnauthorized, w.Code)
-	assert.Equal(t, "Basic realm=\"My Custom \\\"Realm\\\"\"", w.HeaderMap.Get("WWW-Authenticate"))
+	assert.Equal(t, "Basic realm=\"My Custom \\\"Realm\\\"\"", w.Header().Get("WWW-Authenticate"))
 }

@@ -11,20 +11,25 @@ import (
 	"github.com/gin-gonic/gin/binding"
 )
 
-const ENV_GIN_MODE = "GIN_MODE"
+// EnvGinMode indicates environment name for gin mode.
+const EnvGinMode = "GIN_MODE"
 
 const (
-	DebugMode   = "debug"
+	// DebugMode indicates gin mode is debug.
+	DebugMode = "debug"
+	// ReleaseMode indicates gin mode is release.
 	ReleaseMode = "release"
-	TestMode    = "test"
+	// TestMode indicates gin mode is test.
+	TestMode = "test"
 )
+
 const (
 	debugCode = iota
 	releaseCode
 	testCode
 )
 
-// DefaultWriter is the default io.Writer used the Gin for debug output and
+// DefaultWriter is the default io.Writer used by Gin for debug output and
 // middleware output like Logger() or Recovery().
 // Note that both Logger and Recovery provides custom ways to configure their
 // output io.Writer.
@@ -32,41 +37,58 @@ const (
 // 		import "github.com/mattn/go-colorable"
 // 		gin.DefaultWriter = colorable.NewColorableStdout()
 var DefaultWriter io.Writer = os.Stdout
+
+// DefaultErrorWriter is the default io.Writer used by Gin to debug errors
 var DefaultErrorWriter io.Writer = os.Stderr
 
-var ginMode = debugCode
-var modeName = DebugMode
+var (
+	ginMode  = debugCode
+	modeName = DebugMode
+)
 
 func init() {
-	mode := os.Getenv(ENV_GIN_MODE)
+	mode := os.Getenv(EnvGinMode)
 	SetMode(mode)
 }
 
+// SetMode sets gin mode according to input string.
 func SetMode(value string) {
+	if value == "" {
+		value = DebugMode
+	}
+
 	switch value {
-	case DebugMode, "":
+	case DebugMode:
 		ginMode = debugCode
 	case ReleaseMode:
 		ginMode = releaseCode
 	case TestMode:
 		ginMode = testCode
 	default:
-		panic("gin mode unknown: " + value)
+		panic("gin mode unknown: " + value + " (available mode: debug release test)")
 	}
-	if value == "" {
-		value = DebugMode
-	}
+
 	modeName = value
 }
 
+// DisableBindValidation closes the default validator.
 func DisableBindValidation() {
 	binding.Validator = nil
 }
 
+// EnableJsonDecoderUseNumber sets true for binding.EnableDecoderUseNumber to
+// call the UseNumber method on the JSON Decoder instance.
 func EnableJsonDecoderUseNumber() {
 	binding.EnableDecoderUseNumber = true
 }
 
+// EnableJsonDecoderDisallowUnknownFields sets true for binding.EnableDecoderDisallowUnknownFields to
+// call the DisallowUnknownFields method on the JSON Decoder instance.
+func EnableJsonDecoderDisallowUnknownFields() {
+	binding.EnableDecoderDisallowUnknownFields = true
+}
+
+// Mode returns currently gin mode.
 func Mode() string {
 	return modeName
 }
