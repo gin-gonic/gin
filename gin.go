@@ -27,11 +27,13 @@ var (
 
 var defaultPlatform string
 
-// HandlerFunc defines the handler used by gin middleware as return value.
-type HandlerFunc func(*Context)
+type (
+	// HandlerFunc defines the handler used by gin middleware as return value.
+	HandlerFunc func(*Context)
 
-// HandlersChain defines a HandlerFunc array.
-type HandlersChain []HandlerFunc
+	// HandlersChain defines a HandlerFunc array.
+	HandlersChain []HandlerFunc
+)
 
 // Last returns the last handler in the chain. ie. the last handler is the main one.
 func (c HandlersChain) Last() HandlerFunc {
@@ -41,16 +43,18 @@ func (c HandlersChain) Last() HandlerFunc {
 	return nil
 }
 
-// RouteInfo represents a request route's specification which contains method and path and its handler.
-type RouteInfo struct {
-	Method      string
-	Path        string
-	Handler     string
-	HandlerFunc HandlerFunc
-}
+type (
+	// RouteInfo represents a request route's specification which contains method and path and its handler.
+	RouteInfo struct {
+		Method      string
+		Path        string
+		Handler     string
+		HandlerFunc HandlerFunc
+	}
 
-// RoutesInfo defines a RouteInfo array.
-type RoutesInfo []RouteInfo
+	// RoutesInfo defines a RouteInfo array.
+	RoutesInfo []RouteInfo
+)
 
 // Trusted platforms
 const (

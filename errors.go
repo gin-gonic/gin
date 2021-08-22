@@ -30,14 +30,16 @@ const (
 	ErrorTypeNu = 2
 )
 
-// Error represents a error's specification.
-type Error struct {
-	Err  error
-	Type ErrorType
-	Meta interface{}
-}
+type (
+	// Error represents a error's specification.
+	Error struct {
+		Err  error
+		Type ErrorType
+		Meta interface{}
+	}
 
-type errorMsgs []*Error
+	errorMsgs []*Error
+)
 
 var _ error = &Error{}
 

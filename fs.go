@@ -9,13 +9,15 @@ import (
 	"os"
 )
 
-type onlyFilesFS struct {
-	fs http.FileSystem
-}
+type (
+	onlyFilesFS struct {
+		fs http.FileSystem
+	}
 
-type neuteredReaddirFile struct {
-	http.File
-}
+	neuteredReaddirFile struct {
+		http.File
+	}
+)
 
 // Dir returns a http.FileSystem that can be used by http.FileServer(). It is used internally
 // in router.Static().
