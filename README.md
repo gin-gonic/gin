@@ -1241,7 +1241,7 @@ func main() {
 	router.Static("/assets", "./assets")
 	router.StaticFS("/more_static", http.Dir("my_file_system"))
 	router.StaticFile("/favicon.ico", "./resources/favicon.ico")
-    router.StaticFileFS("/more_favicon.ico", "more_favicon.ico", http.Dir("my_file_system"))
+	router.StaticFileFS("/more_favicon.ico", "more_favicon.ico", http.Dir("my_file_system"))
 	
 	// Listen and serve on 0.0.0.0:8080
 	router.Run(":8080")

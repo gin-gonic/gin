@@ -152,26 +152,23 @@ func (group *RouterGroup) Any(relativePath string, handlers ...HandlerFunc) IRou
 // StaticFile registers a single route in order to serve a single file of the local filesystem.
 // router.StaticFile("favicon.ico", "./resources/favicon.ico")
 func (group *RouterGroup) StaticFile(relativePath, filepath string) IRoutes {
-	if strings.Contains(relativePath, ":") || strings.Contains(relativePath, "*") {
-		panic("URL parameters can not be used when serving a static file")
-	}
-	handler := func(c *Context) {
+	return group.staticFileHandler(relativePath, func(c *Context) {
 		c.File(filepath)
-	}
-	group.GET(relativePath, handler)
-	group.HEAD(relativePath, handler)
-	return group.returnObj()
+	})
 }
 
 // StaticFileFS works just like `StaticFile` but a custom `http.FileSystem` can be used instead..
 // router.StaticFileFS("favicon.ico", "./resources/favicon.ico", Dir{".", false})
 // Gin by default user: gin.Dir()
 func (group *RouterGroup) StaticFileFS(relativePath, filepath string, fs http.FileSystem) IRoutes {
+	return group.staticFileHandler(relativePath, func(c *Context) {
+		c.FileFromFS(filepath, fs)
+	})
+}
+
+func (group *RouterGroup) staticFileHandler(relativePath string, handler HandlerFunc) IRoutes {
 	if strings.Contains(relativePath, ":") || strings.Contains(relativePath, "*") {
 		panic("URL parameters can not be used when serving a static file")
-	}
-	handler := func(c *Context) {
-		c.FileFromFS(filepath, fs)
 	}
 	group.GET(relativePath, handler)
 	group.HEAD(relativePath, handler)
