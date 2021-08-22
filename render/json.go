@@ -120,29 +120,29 @@ func (r JsonpJSON) Render(w http.ResponseWriter) (err error) {
 	r.WriteContentType(w)
 	ret, err := json.Marshal(r.Data)
 	if err != nil {
-		return err
+		return
 	}
 
 	if r.Callback == "" {
 		_, err = w.Write(ret)
-		return err
+		return
 	}
 
 	callback := template.JSEscapeString(r.Callback)
 	if _, err = w.Write(bytesconv.StringToBytes(callback)); err != nil {
-		return err
+		return
 	}
 
 	if _, err = w.Write(bytesconv.StringToBytes("(")); err != nil {
-		return err
+		return
 	}
 
 	if _, err = w.Write(ret); err != nil {
-		return err
+		return
 	}
 
 	if _, err = w.Write(bytesconv.StringToBytes(");")); err != nil {
-		return err
+		return
 	}
 
 	return nil
@@ -158,7 +158,7 @@ func (r AsciiJSON) Render(w http.ResponseWriter) (err error) {
 	r.WriteContentType(w)
 	ret, err := json.Marshal(r.Data)
 	if err != nil {
-		return err
+		return
 	}
 
 	var buffer bytes.Buffer
@@ -171,7 +171,7 @@ func (r AsciiJSON) Render(w http.ResponseWriter) (err error) {
 	}
 
 	_, err = w.Write(buffer.Bytes())
-	return err
+	return
 }
 
 // WriteContentType (AsciiJSON) writes JSON ContentType.

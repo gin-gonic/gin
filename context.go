@@ -716,7 +716,7 @@ func (c *Context) ShouldBindBodyWith(obj interface{}, bb binding.BindingBody) (e
 	if body == nil {
 		body, err = ioutil.ReadAll(c.Request.Body)
 		if err != nil {
-			return err
+			return
 		}
 		c.Set(BodyBytesKey, body)
 	}

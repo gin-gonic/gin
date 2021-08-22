@@ -343,7 +343,7 @@ func (engine *Engine) Run(addr ...string) (err error) {
 
 	err = engine.parseTrustedProxies()
 	if err != nil {
-		return err
+		return
 	}
 
 	address := resolveAddress(addr)
@@ -417,7 +417,7 @@ func (engine *Engine) RunTLS(addr, certFile, keyFile string) (err error) {
 
 	err = engine.parseTrustedProxies()
 	if err != nil {
-		return err
+		return
 	}
 
 	err = http.ListenAndServeTLS(addr, certFile, keyFile, engine)
@@ -433,7 +433,7 @@ func (engine *Engine) RunUnix(file string) (err error) {
 
 	err = engine.parseTrustedProxies()
 	if err != nil {
-		return err
+		return
 	}
 
 	listener, err := net.Listen("unix", file)
@@ -456,7 +456,7 @@ func (engine *Engine) RunFd(fd int) (err error) {
 
 	err = engine.parseTrustedProxies()
 	if err != nil {
-		return err
+		return
 	}
 
 	f := os.NewFile(uintptr(fd), fmt.Sprintf("fd@%d", fd))
@@ -477,7 +477,7 @@ func (engine *Engine) RunListener(listener net.Listener) (err error) {
 
 	err = engine.parseTrustedProxies()
 	if err != nil {
-		return err
+		return
 	}
 
 	err = http.Serve(listener, engine)
