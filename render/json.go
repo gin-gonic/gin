@@ -102,7 +102,7 @@ func (r SecureJSON) Render(w http.ResponseWriter) error {
 	// if the jsonBytes is array values
 	if bytes.HasPrefix(jsonBytes, bytesconv.StringToBytes("[")) && bytes.HasSuffix(jsonBytes,
 		bytesconv.StringToBytes("]")) {
-		if _, err = w.Write(bytesconv.StringToBytes(r.Prefix)); err != nil {
+		if _, err := w.Write(bytesconv.StringToBytes(r.Prefix)); err != nil {
 			return err
 		}
 	}
@@ -124,24 +124,24 @@ func (r JsonpJSON) Render(w http.ResponseWriter) (err error) {
 	}
 
 	if r.Callback == "" {
-		_, err = w.Write(ret)
+		_, err := w.Write(ret)
 		return err
 	}
 
 	callback := template.JSEscapeString(r.Callback)
-	if _, err = w.Write(bytesconv.StringToBytes(callback)); err != nil {
+	if _, err := w.Write(bytesconv.StringToBytes(callback)); err != nil {
 		return err
 	}
 
-	if _, err = w.Write(bytesconv.StringToBytes("(")); err != nil {
+	if _, err := w.Write(bytesconv.StringToBytes("(")); err != nil {
 		return err
 	}
 
-	if _, err = w.Write(ret); err != nil {
+	if _, err := w.Write(ret); err != nil {
 		return err
 	}
 
-	if _, err = w.Write(bytesconv.StringToBytes(");")); err != nil {
+	if _, err := w.Write(bytesconv.StringToBytes(");")); err != nil {
 		return err
 	}
 
