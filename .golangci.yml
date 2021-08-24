@@ -8,9 +8,6 @@ linters:
 issues:
   exclude-rules:
   - linters:
-    - deadcode
-    text: "`static` is unused"
-  - linters:
     - structcheck
     - unused
     text: "`data` is unused"
