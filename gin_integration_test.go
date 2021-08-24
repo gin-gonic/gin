@@ -524,4 +524,5 @@ func TestTreeRunDynamicRouting(t *testing.T) {
 	testRequest(t, ts.URL+"/a/dd", "404 Not Found")
 	testRequest(t, ts.URL+"/addr/dd/aa", "404 Not Found")
 	testRequest(t, ts.URL+"/something/secondthing/121", "404 Not Found")
+	testRequest(t, ts.URL+"/cc/dd/ee/ff/gg/hh1", "404 Not Found")
 }
