@@ -621,3 +621,24 @@ func TestRouteContextHoldsFullPath(t *testing.T) {
 	w := performRequest(router, http.MethodGet, "/not-found")
 	assert.Equal(t, http.StatusNotFound, w.Code)
 }
+
+// Reproduction test for the bug of issue #2843
+func TestRouteTrailingSlashRoute(t *testing.T) {
+	router := New()
+
+	router.NoRoute(func(c *Context) {
+		if c.Request.RequestURI == "/login" {
+			c.String(200, "login")
+		}
+	})
+
+	router.GET("/logout", func(c *Context) {
+		c.String(200, "logout")
+	})
+
+	w := performRequest(router, http.MethodGet, "/login")
+	assert.Equal(t, "login", w.Body.String())
+
+	w = performRequest(router, http.MethodGet, "/logout")
+	assert.Equal(t, "logout", w.Body.String())
+}
