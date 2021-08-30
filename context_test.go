@@ -2150,3 +2150,14 @@ func TestContextWithFallbackValueFromRequestContext(t *testing.T) {
 		})
 	}
 }
+
+func TestContextSetParam(t *testing.T) {
+	c := &Context{}
+	id := "id"
+	value := "1"
+	c.SetParam(id, value)
+
+	v, ok := c.Params.Get(id)
+	assert.Equal(t, ok, true)
+	assert.Equal(t, value, v)
+}
