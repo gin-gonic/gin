@@ -600,7 +600,7 @@ walk: // Outer loop for walking the tree
 		// extra trailing slash if a leaf exists for that path
 		value.tsr = path == "/" ||
 			(len(prefix) == len(path)+1 && prefix[len(path)] == '/' &&
-				path == prefix[:len(prefix) - 1] && n.handlers != nil)
+				path == prefix[:len(prefix)-1] && n.handlers != nil)
 		return
 	}
 }
