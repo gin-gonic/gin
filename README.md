@@ -2287,4 +2287,5 @@ Awesome project lists using [Gin](https://github.com/gin-gonic/gin) web framewor
 * [picfit](https://github.com/thoas/picfit): An image resizing server written in Go.
 * [brigade](https://github.com/brigadecore/brigade): Event-based Scripting for Kubernetes.
 * [dkron](https://github.com/distribworks/dkron): Distributed, fault tolerant job scheduling system.
+* [go-clean-template](https://github.com/evrone/go-clean-template): Clean Architecture template for Golang services.
 
