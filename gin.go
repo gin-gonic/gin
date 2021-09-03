@@ -16,6 +16,8 @@ import (
 
 	"github.com/gin-gonic/gin/internal/bytesconv"
 	"github.com/gin-gonic/gin/render"
+	"golang.org/x/net/http2"
+	"golang.org/x/net/http2/h2c"
 )
 
 const defaultMultipartMemory = 32 << 20 // 32 MB
@@ -136,6 +138,9 @@ type Engine struct {
 	// method call.
 	MaxMultipartMemory int64
 
+	// Enable h2c support.
+	UseH2C bool
+
 	delims           render.Delims
 	secureJSONPrefix string
 	HTMLRender       render.HTMLRender
@@ -197,6 +202,15 @@ func Default() *Engine {
 	engine := New()
 	engine.Use(Logger(), Recovery())
 	return engine
+}
+
+func (engine *Engine) Handler() http.Handler {
+	if !engine.UseH2C {
+		return engine
+	}
+
+	h2s := &http2.Server{}
+	return h2c.NewHandler(engine, h2s)
 }
 
 func (engine *Engine) allocateContext() *Context {
@@ -348,7 +362,7 @@ func (engine *Engine) Run(addr ...string) (err error) {
 
 	address := resolveAddress(addr)
 	debugPrint("Listening and serving HTTP on %s\n", address)
-	err = http.ListenAndServe(address, engine)
+	err = http.ListenAndServe(address, engine.Handler())
 	return
 }
 
@@ -420,7 +434,7 @@ func (engine *Engine) RunTLS(addr, certFile, keyFile string) (err error) {
 		return err
 	}
 
-	err = http.ListenAndServeTLS(addr, certFile, keyFile, engine)
+	err = http.ListenAndServeTLS(addr, certFile, keyFile, engine.Handler())
 	return
 }
 
@@ -443,7 +457,7 @@ func (engine *Engine) RunUnix(file string) (err error) {
 	defer listener.Close()
 	defer os.Remove(file)
 
-	err = http.Serve(listener, engine)
+	err = http.Serve(listener, engine.Handler())
 	return
 }
 
@@ -480,7 +494,7 @@ func (engine *Engine) RunListener(listener net.Listener) (err error) {
 		return err
 	}
 
-	err = http.Serve(listener, engine)
+	err = http.Serve(listener, engine.Handler())
 	return
 }
 
