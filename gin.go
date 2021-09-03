@@ -24,6 +24,9 @@ import (
 )
 
 const defaultMultipartMemory = 32 << 20 // 32 MB
+const escapedColon = "\\:"
+const colon = ":"
+const backslash = "\\"
 
 var (
 	default404Body = []byte("404 page not found")
@@ -474,6 +477,26 @@ func (engine *Engine) validateHeader(header string) (clientIP string, valid bool
 	return "", false
 }
 
+// updateRouteTree do update to the route tree recursively
+func updateRouteTree(n *node) {
+	n.path = strings.ReplaceAll(n.path, escapedColon, colon)
+	n.fullPath = strings.ReplaceAll(n.fullPath, escapedColon, colon)
+	n.indices = strings.ReplaceAll(n.indices, backslash, colon)
+	if n.children == nil {
+		return
+	}
+	for _, child := range n.children {
+		updateRouteTree(child)
+	}
+}
+
+// updateRouteTrees do update to the route trees
+func (engine *Engine) updateRouteTrees() {
+	for _, tree := range engine.trees {
+		updateRouteTree(tree.root)
+	}
+}
+
 // parseIP parse a string representation of an IP and returns a net.IP with the
 // minimum byte representation or nil if input is invalid.
 func parseIP(ip string) net.IP {
@@ -498,7 +521,7 @@ func (engine *Engine) Run(addr ...string) (err error) {
 		debugPrint("[WARNING] You trusted all proxies, this is NOT safe. We recommend you to set a value.\n" +
 			"Please check https://github.com/gin-gonic/gin/blob/master/docs/doc.md#dont-trust-all-proxies for details.")
 	}
-
+	engine.updateRouteTrees()
 	address := resolveAddress(addr)
 	debugPrint("Listening and serving HTTP on %s\n", address)
 	err = http.ListenAndServe(address, engine.Handler())
