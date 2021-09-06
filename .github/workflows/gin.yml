@@ -1,0 +1,83 @@
+name: Run Tests
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup go
+        uses: actions/setup-go@v2
+        with:
+          go-version: '^1.16'
+      - name: Checkout repository
+        uses: actions/checkout@v2
+      - name: Setup golangci-lint
+        uses: golangci/golangci-lint-action@v2
+        with:
+          version: v1.42.0
+          args: --verbose
+  test:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        go: [1.13, 1.14, 1.15, 1.16, 1.17]
+        test-tags: ['', nomsgpack]
+        include:
+          - os: ubuntu-latest
+            go-build: ~/.cache/go-build
+          - os: macos-latest
+            go-build: ~/Library/Caches/go-build
+    name: ${{ matrix.os }} @ Go ${{ matrix.go }} ${{ matrix.test-tags }}
+    runs-on: ${{ matrix.os }}
+    env:
+      GO111MODULE: on
+      TESTTAGS: ${{ matrix.test-tags }}
+      GOPROXY: https://proxy.golang.org
+    steps:
+      - name: Set up Go ${{ matrix.go }}
+        uses: actions/setup-go@v2
+        with:
+          go-version: ${{ matrix.go }}
+
+      - name: Checkout Code
+        uses: actions/checkout@v2
+        with:
+          ref: ${{ github.ref }}
+          
+      - uses: actions/cache@v2
+        with:
+          path: |
+            ${{ matrix.go-build }}
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+
+      - name: Run Tests
+        run: make test
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v2
+        with:
+          flags: ${{ matrix.os }},go-${{ matrix.go }},${{ matrix.test-tags }}
+  notification-gitter:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Notification failure message
+        if: failure()
+        run: |
+          PR_OR_COMPARE="$(if [ "${{ github.event.pull_request }}" != "" ]; then echo "${{ github.event.pull_request.html_url }}"; else echo "${{ github.event.compare }}"; fi)"
+          curl -d message="GitHub Actions [$GITHUB_REPOSITORY]($PR_OR_COMPARE) ($GITHUB_REF) [normal]($GITHUB_API_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID) ($GITHUB_RUN_NUMBER)" -d level=error https://webhooks.gitter.im/e/7f95bf605c4d356372f4
+      - name: Notification success message
+        if: success()
+        run: |
+          PR_OR_COMPARE="$(if [ "${{ github.event.pull_request }}" != "" ]; then echo "${{ github.event.pull_request.html_url }}"; else echo "${{ github.event.compare }}"; fi)"
+          curl -d message="GitHub Actions [$GITHUB_REPOSITORY]($PR_OR_COMPARE) ($GITHUB_REF) [normal]($GITHUB_API_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID) ($GITHUB_RUN_NUMBER)" https://webhooks.gitter.im/e/7f95bf605c4d356372f4
