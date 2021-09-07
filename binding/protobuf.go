@@ -5,6 +5,7 @@
 package binding
 
 import (
+	"errors"
 	"io/ioutil"
 	"net/http"
 
@@ -26,7 +27,11 @@ func (b protobufBinding) Bind(req *http.Request, obj interface{}) error {
 }
 
 func (protobufBinding) BindBody(body []byte, obj interface{}) error {
-	if err := proto.Unmarshal(body, obj.(proto.Message)); err != nil {
+	msg, ok := obj.(proto.Message)
+	if !ok {
+		return errors.New("obj is not ProtoMessage")
+	}
+	if err := proto.Unmarshal(body, msg); err != nil {
 		return err
 	}
 	// Here it's same to return validate(obj), but util now we can't add
