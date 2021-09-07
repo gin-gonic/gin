@@ -1339,6 +1339,13 @@ func testProtoBodyBindingFail(t *testing.T, b Binding, name, path, badPath, body
 	err := b.Bind(req, &obj)
 	assert.Error(t, err)
 
+	invalid_obj := FooStruct{}
+	req.Body = ioutil.NopCloser(strings.NewReader(`{"msg":"hello"}`))
+	req.Header.Add("Content-Type", MIMEPROTOBUF)
+	err = b.Bind(req, &invalid_obj)
+	assert.Error(t, err)
+	assert.Equal(t, err.Error(), "obj is not ProtoMessage")
+
 	obj = protoexample.Test{}
 	req = requestWithBody("POST", badPath, badBody)
 	req.Header.Add("Content-Type", MIMEPROTOBUF)
