@@ -437,7 +437,7 @@ func TestTreeChildConflict(t *testing.T) {
 	testRoutes(t, routes)
 }
 
-func TestTreeDupliatePath(t *testing.T) {
+func TestTreeDuplicatePath(t *testing.T) {
 	tree := &node{}
 
 	routes := [...]string{
