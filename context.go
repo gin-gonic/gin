@@ -383,6 +383,15 @@ func (c *Context) Param(key string) string {
 	return c.Params.ByName(key)
 }
 
+// AddParam adds param to context and
+// replaces path param key with given value for e2e testing purposes
+// Example Route: "/user/:id"
+// AddParam("id", 1)
+// Result: "/user/1"
+func (c *Context) AddParam(key, value string) {
+	c.Params = append(c.Params, Param{Key: key, Value: value})
+}
+
 // Query returns the keyed url query value if it exists,
 // otherwise it returns an empty string `("")`.
 // It is shortcut for `c.Request.URL.Query().Get(key)`
