@@ -2,9 +2,22 @@ run:
   timeout: 5m
 linters:
   enable:
+  - asciicheck
+  - depguard
+  - dogsled
+  - durationcheck
+  - errcheck
+  - errorlint
+  - exportloopref
+  - gci 
   - gofmt
+  - goimports
   - misspell
+  - nakedret
+  - nilerr
+  - nolintlint
   - revive
+  - wastedassign
 issues:
   exclude-rules:
   - linters:

@@ -24,6 +24,7 @@ jobs:
           version: v1.42.1
           args: --verbose
   test:
+    needs: lint
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest]
