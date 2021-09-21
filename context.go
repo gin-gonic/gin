@@ -220,7 +220,8 @@ func (c *Context) Error(err error) *Error {
 		panic("err is nil")
 	}
 
-	parsedError, ok := err.(*Error)
+	var parsedError *Error
+	ok := errors.As(err, &parsedError)
 	if !ok {
 		parsedError = &Error{
 			Err:  err,
@@ -515,7 +516,7 @@ func (c *Context) initFormCache() {
 		c.formCache = make(url.Values)
 		req := c.Request
 		if err := req.ParseMultipartForm(c.engine.MaxMultipartMemory); err != nil {
-			if err != http.ErrNotMultipart {
+			if !errors.Is(err, http.ErrNotMultipart) {
 				debugPrint("error on parse multipart form array: %v", err)
 			}
 		}

@@ -23,10 +23,9 @@ import (
 
 	"github.com/gin-contrib/sse"
 	"github.com/gin-gonic/gin/binding"
+	testdata "github.com/gin-gonic/gin/testdata/protoexample"
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/protobuf/proto"
-
-	testdata "github.com/gin-gonic/gin/testdata/protoexample"
 )
 
 var _ context.Context = &Context{}
