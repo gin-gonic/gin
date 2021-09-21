@@ -7,7 +7,6 @@ package binding
 import (
 	"fmt"
 	"reflect"
-	"strings"
 	"sync"
 
 	"github.com/go-playground/validator/v10"
@@ -18,34 +17,33 @@ type defaultValidator struct {
 	validate *validator.Validate
 }
 
-type sliceValidateError []error
+// SliceFieldError is returned for invalid slice or array elements.
+// It extends validator.FieldError with the index of the failing element.
+type SliceFieldError interface {
+	validator.FieldError
+	Index() int
+}
 
-// Error concatenates all error elements in sliceValidateError into a single string separated by \n.
-func (err sliceValidateError) Error() string {
-	n := len(err)
-	switch n {
-	case 0:
-		return ""
-	default:
-		var b strings.Builder
-		if err[0] != nil {
-			fmt.Fprintf(&b, "[%d]: %s", 0, err[0].Error())
-		}
-		if n > 1 {
-			for i := 1; i < n; i++ {
-				if err[i] != nil {
-					b.WriteString("\n")
-					fmt.Fprintf(&b, "[%d]: %s", i, err[i].Error())
-				}
-			}
-		}
-		return b.String()
-	}
+type sliceFieldError struct {
+	validator.FieldError
+	index int
+}
+
+func (fe sliceFieldError) Index() int {
+	return fe.index
+}
+
+func (fe sliceFieldError) Error() string {
+	return fmt.Sprintf("[%d]: %s", fe.index, fe.FieldError.Error())
+}
+
+func (fe sliceFieldError) Unwrap() error {
+	return fe.FieldError
 }
 
 var _ StructValidator = &defaultValidator{}
 
-// ValidateStruct receives any kind of type, but only performed struct or pointer to struct type.
+// ValidateStruct receives any kind of type, but validates only structs, pointers, slices, and arrays.
 func (v *defaultValidator) ValidateStruct(obj interface{}) error {
 	if obj == nil {
 		return nil
@@ -59,16 +57,18 @@ func (v *defaultValidator) ValidateStruct(obj interface{}) error {
 		return v.validateStruct(obj)
 	case reflect.Slice, reflect.Array:
 		count := value.Len()
-		validateRet := make(sliceValidateError, 0)
+		var errs validator.ValidationErrors
 		for i := 0; i < count; i++ {
 			if err := v.ValidateStruct(value.Index(i).Interface()); err != nil {
-				validateRet = append(validateRet, err)
+				for _, fieldError := range err.(validator.ValidationErrors) { // nolint: errorlint
+					errs = append(errs, sliceFieldError{fieldError, i})
+				}
 			}
 		}
-		if len(validateRet) == 0 {
-			return nil
+		if len(errs) > 0 {
+			return errs
 		}
-		return validateRet
+		return nil
 	default:
 		return nil
 	}
