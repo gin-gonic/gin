@@ -189,10 +189,6 @@ func New() *Engine {
 	engine.pool.New = func() interface{} {
 		return engine.allocateContext()
 	}
-<<<<<<< Updated upstream
-	_ = engine.parseTrustedProxies()
-=======
->>>>>>> Stashed changes
 	return engine
 }
 
