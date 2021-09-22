@@ -183,12 +183,16 @@ func New() *Engine {
 		trees:                  make(methodTrees, 0, 9),
 		delims:                 render.Delims{Left: "{{", Right: "}}"},
 		secureJSONPrefix:       "while(1);",
+		trustedCIDRs:           []*net.IPNet{{IP: net.IP{0x0, 0x0, 0x0, 0x0}, Mask: net.IPMask{0x0, 0x0, 0x0, 0x0}}},
 	}
 	engine.RouterGroup.engine = engine
 	engine.pool.New = func() interface{} {
 		return engine.allocateContext()
 	}
+<<<<<<< Updated upstream
 	_ = engine.parseTrustedProxies()
+=======
+>>>>>>> Stashed changes
 	return engine
 }
 
