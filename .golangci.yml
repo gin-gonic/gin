@@ -34,6 +34,6 @@ issues:
     - linters:
         - revive
       text: "exported:"
-    - path: (_test\.go)
+    - path: _test\.go
       linters:
         - gosec # security is not make sense in tests
