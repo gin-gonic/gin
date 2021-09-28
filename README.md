@@ -1248,6 +1248,32 @@ func main() {
 }
 ```
 
+### Serving static files from embed
+
+```go
+// static
+// ├── css
+// │   └── chunk.css
+// ├── favicon.ico
+// ├── index.html
+// 
+//go:embed static
+var static embed.FS
+
+func main() {
+	router := gin.Default()
+	// /public/css/chunk.css
+	// /public/favicon.ico
+	// /public/index.html
+	router.StaticFSFromEmbed("/public/", "static/", static)
+	// /asset/chunk.css
+	router.StaticFSFromEmbed("/asset/", "static/css/", static)
+	// Listen and serve on 0.0.0.0:8080
+	router.Run(":8080")
+}
+
+```
+
 ### Serving data from file
 
 ```go

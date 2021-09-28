@@ -5,6 +5,7 @@
 package gin
 
 import (
+	"embed"
 	"net/http"
 	"testing"
 
@@ -162,6 +163,9 @@ func TestRouterGroupPipeline(t *testing.T) {
 	testRoutesInterface(t, v1)
 }
 
+//go:embed testdata
+var embed_static embed.FS
+
 func testRoutesInterface(t *testing.T, r IRoutes) {
 	handler := func(c *Context) {}
 	assert.Equal(t, r, r.Use(handler))
@@ -179,4 +183,5 @@ func testRoutesInterface(t *testing.T, r IRoutes) {
 	assert.Equal(t, r, r.StaticFile("/file", "."))
 	assert.Equal(t, r, r.Static("/static", "."))
 	assert.Equal(t, r, r.StaticFS("/static2", Dir(".", false)))
+	assert.Equal(t, r, r.StaticFSFromEmbed("/static3", "testdata", embed_static))
 }

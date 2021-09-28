@@ -38,6 +38,7 @@ type IRoutes interface {
 	OPTIONS(string, ...HandlerFunc) IRoutes
 	HEAD(string, ...HandlerFunc) IRoutes
 
+	StaticFSFromEmbed(relativePath, root string, assets embed.FS) IRoutes
 	StaticFile(string, string) IRoutes
 	Static(string, string) IRoutes
 	StaticFS(string, http.FileSystem) IRoutes
