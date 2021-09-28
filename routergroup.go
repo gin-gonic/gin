@@ -5,6 +5,8 @@
 package gin
 
 import (
+	"embed"
+	"io/fs"
 	"net/http"
 	"path"
 	"regexp"
@@ -170,6 +172,33 @@ func (group *RouterGroup) StaticFile(relativePath, filepath string) IRoutes {
 //     router.Static("/static", "/var/www")
 func (group *RouterGroup) Static(relativePath, root string) IRoutes {
 	return group.StaticFS(relativePath, Dir(root, false))
+}
+
+// Define redirectable embed fs interface
+type fsFunc func(name string) (fs.File, error)
+
+func (f fsFunc) Open(name string) (fs.File, error) {
+	return f(name)
+}
+
+// Redirectable embed files
+// use :
+//      //go:embed static
+//      var static embed.FS
+//      ......
+//      router.StaticFSFromEmbed("/", "static/", static)
+func (group *RouterGroup) StaticFSFromEmbed(relativePath, root string, assets embed.FS) IRoutes {
+	fs := http.FS(fsFunc(func(name string) (fs.File, error) {
+		assetPath := path.Join(root, name)
+		// If we can't find the asset, fs can handle the error
+		file, err := assets.Open(assetPath)
+		if err != nil {
+			return nil, err
+		}
+		// Otherwise assume this is a legitimate request routed correctly
+		return file, err
+	}))
+	return group.StaticFS(relativePath, fs)
 }
 
 // StaticFS works just like `Static()` but a custom `http.FileSystem` can be used instead.
