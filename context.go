@@ -728,8 +728,8 @@ func (c *Context) ShouldBindBodyWith(obj interface{}, bb binding.BindingBody) (e
 
 // ClientIP implements a best effort algorithm to return the real client IP.
 // It called c.RemoteIP() under the hood, to check if the remote IP is a trusted proxy or not.
-// If it's it will then try to parse the headers defined in Engine.RemoteIPHeaders (defaulting to [X-Forwarded-For, X-Real-Ip]).
-// If the headers are nots syntactically valid OR the remote IP does not correspong to a trusted proxy,
+// If it is it will then try to parse the headers defined in Engine.RemoteIPHeaders (defaulting to [X-Forwarded-For, X-Real-Ip]).
+// If the headers are not syntactically valid OR the remote IP does not correspond to a trusted proxy,
 // the remote IP (coming form Request.RemoteAddr) is returned.
 func (c *Context) ClientIP() string {
 	// Check if we're running on a trusted platform
