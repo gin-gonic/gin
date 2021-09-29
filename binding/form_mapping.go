@@ -210,7 +210,7 @@ func setWithProperType(val string, value reflect.Value, field reflect.StructFiel
 	case reflect.Int64:
 		switch value.Interface().(type) {
 		case time.Duration:
-			return setTimeDuration(val, value, field)
+			return setTimeDuration(val, value)
 		}
 		return setIntField(val, 64, value)
 	case reflect.Uint:
@@ -359,7 +359,7 @@ func setSlice(vals []string, value reflect.Value, field reflect.StructField) err
 	return nil
 }
 
-func setTimeDuration(val string, value reflect.Value, field reflect.StructField) error {
+func setTimeDuration(val string, value reflect.Value) error {
 	d, err := time.ParseDuration(val)
 	if err != nil {
 		return err

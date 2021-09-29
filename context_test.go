@@ -23,10 +23,9 @@ import (
 
 	"github.com/gin-contrib/sse"
 	"github.com/gin-gonic/gin/binding"
+	testdata "github.com/gin-gonic/gin/testdata/protoexample"
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/protobuf/proto"
-
-	testdata "github.com/gin-gonic/gin/testdata/protoexample"
 )
 
 var _ context.Context = &Context{}
@@ -85,19 +84,6 @@ func TestContextFormFile(t *testing.T) {
 	}
 
 	assert.NoError(t, c.SaveUploadedFile(f, "test"))
-}
-
-func TestContextFormFileFailed(t *testing.T) {
-	buf := new(bytes.Buffer)
-	mw := multipart.NewWriter(buf)
-	mw.Close()
-	c, _ := CreateTestContext(httptest.NewRecorder())
-	c.Request, _ = http.NewRequest("POST", "/", nil)
-	c.Request.Header.Set("Content-Type", mw.FormDataContentType())
-	c.engine.MaxMultipartMemory = 8 << 20
-	f, err := c.FormFile("file")
-	assert.Error(t, err)
-	assert.Nil(t, f)
 }
 
 func TestContextMultipartForm(t *testing.T) {
@@ -2149,4 +2135,15 @@ func TestContextWithFallbackValueFromRequestContext(t *testing.T) {
 			assert.Equal(t, tt.value, c.Value(key))
 		})
 	}
+}
+
+func TestContextAddParam(t *testing.T) {
+	c := &Context{}
+	id := "id"
+	value := "1"
+	c.AddParam(id, value)
+
+	v, ok := c.Params.Get(id)
+	assert.Equal(t, ok, true)
+	assert.Equal(t, value, v)
 }
