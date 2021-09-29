@@ -183,6 +183,7 @@ func New() *Engine {
 		trees:                  make(methodTrees, 0, 9),
 		delims:                 render.Delims{Left: "{{", Right: "}}"},
 		secureJSONPrefix:       "while(1);",
+		trustedCIDRs:           []*net.IPNet{{IP: net.IP{0x0, 0x0, 0x0, 0x0}, Mask: net.IPMask{0x0, 0x0, 0x0, 0x0}}},
 	}
 	engine.RouterGroup.engine = engine
 	engine.pool.New = func() interface{} {
@@ -264,9 +265,8 @@ func (engine *Engine) NoRoute(handlers ...HandlerFunc) {
 	engine.rebuild404Handlers()
 }
 
-// NoMethod sets the handlers called when NoMethod.
+// NoMethod sets the handlers called when Engine.HandleMethodNotAllowed = true.
 func (engine *Engine) NoMethod(handlers ...HandlerFunc) {
-	engine.HandleMethodNotAllowed = true
 	engine.noMethod = handlers
 	engine.rebuild405Handlers()
 }
