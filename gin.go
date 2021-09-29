@@ -265,9 +265,8 @@ func (engine *Engine) NoRoute(handlers ...HandlerFunc) {
 	engine.rebuild404Handlers()
 }
 
-// NoMethod sets the handlers called when NoMethod.
+// NoMethod sets the handlers called when Engine.HandleMethodNotAllowed = true.
 func (engine *Engine) NoMethod(handlers ...HandlerFunc) {
-	engine.HandleMethodNotAllowed = true
 	engine.noMethod = handlers
 	engine.rebuild405Handlers()
 }
