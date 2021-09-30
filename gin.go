@@ -122,7 +122,7 @@ type Engine struct {
 	// List of headers used to obtain the client IP when
 	// `(*gin.Engine).ForwardedByClientIP` is `true` and
 	// `(*gin.Context).Request.RemoteAddr` is matched by at least one of the
-	// network origins of list set by `(*gin.Engine).SetTrustedProxies()`.
+	// network origins of list defined by `(*gin.Engine).SetTrustedProxies()`.
 	RemoteIPHeaders []string
 
 	// If set to a constant of value gin.Platform*, trusts the headers set by
@@ -393,7 +393,7 @@ func (engine *Engine) SetTrustedProxies(trustedProxies []string) error {
 	return engine.parseTrustedProxies()
 }
 
-// isUnsafeTrustedProxies equals Engine.trustedCIDRs and defaultTrustedCIDRs, it's not safe if true
+// isUnsafeTrustedProxies compares Engine.trustedCIDRs and defaultTrustedCIDRs, it's not safe if equal (returns true)
 func (engine *Engine) isUnsafeTrustedProxies() bool {
 	return reflect.DeepEqual(engine.trustedCIDRs, defaultTrustedCIDRs)
 }

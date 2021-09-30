@@ -2208,8 +2208,8 @@ IP can be trusted. They can be IPv4 addresses, IPv4 CIDRs, IPv6 addresses or
 IPv6 CIDRs.
 
 **Attention:** Gin trust all proxies by default if you don't specify a trusted 
-proxy using this function, **this is not safe**. At the same time, if you don't use
-any proxy, you can disable this feature by use `Engine.SetTrustedProxies(nil)`,
+proxy using the function above, **this is NOT safe**. At the same time, if you don't
+use any proxy, you can disable this feature by using `Engine.SetTrustedProxies(nil)`,
 then `Context.ClientIP()` will return the remote address directly to avoid some
 unnecessary computation.
 
