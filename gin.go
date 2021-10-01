@@ -341,7 +341,7 @@ func (engine *Engine) Run(addr ...string) (err error) {
 	defer func() { debugPrintError(err) }()
 
 	if engine.isUnsafeTrustedProxies() {
-		debugPrint("[WARNING] You trusted all proxies, this is not safe. We recommend you to set a value.\n" +
+		debugPrint("[WARNING] You trusted all proxies, this is NOT safe. We recommend you to set a value.\n" +
 			"Please check https://pkg.go.dev/github.com/gin-gonic/gin#readme-don-t-trust-all-proxies for details.")
 	}
 
@@ -427,7 +427,7 @@ func (engine *Engine) RunTLS(addr, certFile, keyFile string) (err error) {
 	defer func() { debugPrintError(err) }()
 
 	if engine.isUnsafeTrustedProxies() {
-		debugPrint("[WARNING] You trusted all proxies, this is not safe. We recommend you to set a value.\n" +
+		debugPrint("[WARNING] You trusted all proxies, this is NOT safe. We recommend you to set a value.\n" +
 			"Please check https://pkg.go.dev/github.com/gin-gonic/gin#readme-don-t-trust-all-proxies for details.")
 	}
 
@@ -443,7 +443,7 @@ func (engine *Engine) RunUnix(file string) (err error) {
 	defer func() { debugPrintError(err) }()
 
 	if engine.isUnsafeTrustedProxies() {
-		debugPrint("[WARNING] You trusted all proxies, this is not safe. We recommend you to set a value.\n" +
+		debugPrint("[WARNING] You trusted all proxies, this is NOT safe. We recommend you to set a value.\n" +
 			"Please check https://pkg.go.dev/github.com/gin-gonic/gin#readme-don-t-trust-all-proxies for details.")
 	}
 
@@ -466,7 +466,7 @@ func (engine *Engine) RunFd(fd int) (err error) {
 	defer func() { debugPrintError(err) }()
 
 	if engine.isUnsafeTrustedProxies() {
-		debugPrint("[WARNING] You trusted all proxies, this is not safe. We recommend you to set a value.\n" +
+		debugPrint("[WARNING] You trusted all proxies, this is NOT safe. We recommend you to set a value.\n" +
 			"Please check https://pkg.go.dev/github.com/gin-gonic/gin#readme-don-t-trust-all-proxies for details.")
 	}
 
@@ -487,7 +487,7 @@ func (engine *Engine) RunListener(listener net.Listener) (err error) {
 	defer func() { debugPrintError(err) }()
 
 	if engine.isUnsafeTrustedProxies() {
-		debugPrint("[WARNING] You trusted all proxies, this is not safe. We recommend you to set a value.\n" +
+		debugPrint("[WARNING] You trusted all proxies, this is NOT safe. We recommend you to set a value.\n" +
 			"Please check https://pkg.go.dev/github.com/gin-gonic/gin#readme-don-t-trust-all-proxies for details.")
 	}
 
