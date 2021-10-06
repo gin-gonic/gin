@@ -76,6 +76,12 @@ func TestRunEmpty(t *testing.T) {
 	testRequest(t, "http://localhost:8080/example")
 }
 
+func TestBadTrustedCIDRs(t *testing.T) {
+	router := New()
+	assert.Error(t, router.SetTrustedProxies([]string{"hello/world"}))
+}
+
+/* legacy tests
 func TestBadTrustedCIDRsForRun(t *testing.T) {
 	os.Setenv("PORT", "")
 	router := New()
@@ -143,6 +149,7 @@ func TestBadTrustedCIDRsForRunTLS(t *testing.T) {
 	router.TrustedProxies = []string{"hello/world"}
 	assert.Error(t, router.RunTLS(":8080", "./testdata/certificate/cert.pem", "./testdata/certificate/key.pem"))
 }
+*/
 
 func TestRunTLS(t *testing.T) {
 	router := New()
