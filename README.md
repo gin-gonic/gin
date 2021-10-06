@@ -2130,10 +2130,16 @@ Gin lets you specify which headers to hold the real client IP (if any),
 as well as specifying which proxies (or direct clients) you trust to
 specify one of these headers.
 
-The `TrustedProxies` slice on your `gin.Engine` specifes network addresses or
-network CIDRs from where clients which their request headers related to client
+Use function `SetTrustedProxies()` on your `gin.Engine` to specify network addresses
+or network CIDRs from where clients which their request headers related to client
 IP can be trusted. They can be IPv4 addresses, IPv4 CIDRs, IPv6 addresses or
 IPv6 CIDRs.
+
+**Attention:** Gin trust all proxies by default if you don't specify a trusted 
+proxy using the function above, **this is NOT safe**. At the same time, if you don't
+use any proxy, you can disable this feature by using `Engine.SetTrustedProxies(nil)`,
+then `Context.ClientIP()` will return the remote address directly to avoid some
+unnecessary computation.
 
 ```go
 import (
@@ -2145,7 +2151,7 @@ import (
 func main() {
 
 	router := gin.Default()
-	router.TrustedProxies = []string{"192.168.1.2"}
+	router.SetTrustedProxies([]string{"192.168.1.2"})
 
 	router.GET("/", func(c *gin.Context) {
 		// If the client is 192.168.1.2, use the X-Forwarded-For
