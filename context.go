@@ -220,7 +220,8 @@ func (c *Context) Error(err error) *Error {
 		panic("err is nil")
 	}
 
-	parsedError, ok := err.(*Error)
+	var parsedError *Error
+	ok := errors.As(err, &parsedError)
 	if !ok {
 		parsedError = &Error{
 			Err:  err,
@@ -515,7 +516,7 @@ func (c *Context) initFormCache() {
 		c.formCache = make(url.Values)
 		req := c.Request
 		if err := req.ParseMultipartForm(c.engine.MaxMultipartMemory); err != nil {
-			if err != http.ErrNotMultipart {
+			if !errors.Is(err, http.ErrNotMultipart) {
 				debugPrint("error on parse multipart form array: %v", err)
 			}
 		}
@@ -734,8 +735,8 @@ func (c *Context) ShouldBindBodyWith(obj interface{}, bb binding.BindingBody) (e
 
 // ClientIP implements a best effort algorithm to return the real client IP.
 // It called c.RemoteIP() under the hood, to check if the remote IP is a trusted proxy or not.
-// If it's it will then try to parse the headers defined in Engine.RemoteIPHeaders (defaulting to [X-Forwarded-For, X-Real-Ip]).
-// If the headers are nots syntactically valid OR the remote IP does not correspong to a trusted proxy,
+// If it is it will then try to parse the headers defined in Engine.RemoteIPHeaders (defaulting to [X-Forwarded-For, X-Real-Ip]).
+// If the headers are not syntactically valid OR the remote IP does not correspond to a trusted proxy,
 // the remote IP (coming form Request.RemoteAddr) is returned.
 func (c *Context) ClientIP() string {
 	// Check if we're running on a trusted platform
@@ -777,7 +778,7 @@ func (c *Context) ClientIP() string {
 // RemoteIP parses the IP from Request.RemoteAddr, normalizes and returns the IP (without the port).
 // It also checks if the remoteIP is a trusted proxy or not.
 // In order to perform this validation, it will see if the IP is contained within at least one of the CIDR blocks
-// defined in Engine.TrustedProxies
+// defined by Engine.SetTrustedProxies()
 func (c *Context) RemoteIP() (net.IP, bool) {
 	ip, _, err := net.SplitHostPort(strings.TrimSpace(c.Request.RemoteAddr))
 	if err != nil {
