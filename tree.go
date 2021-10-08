@@ -412,7 +412,7 @@ type skippedNode struct {
 // given path.
 func (n *node) getValue(path string, params *Params, unescape bool) (value nodeValue) {
 	skippedNodes := make([]skippedNode, 0, countSections(path)) // Caching the latest nodes
-	var globalParamsCount int16 = 0
+	var globalParamsCount int16
 
 walk: // Outer loop for walking the tree
 	for {
@@ -491,7 +491,7 @@ walk: // Outer loop for walking the tree
 
 				// Handle wildcard child, which is always at the end of the array
 				n = n.children[len(n.children)-1]
-				globalParamsCount += 1
+				globalParamsCount++
 
 				switch n.nType {
 				case param:
