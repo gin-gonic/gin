@@ -1409,13 +1409,17 @@ func TestContextClientIP(t *testing.T) {
 	c.engine.RemoteIPHeaders = []string{"X-Forwarded-For"}
 	assert.Equal(t, "40.40.40.40", c.ClientIP())
 
+	// Disabled TrustedProxies feature
+	_ = c.engine.SetTrustedProxies(nil)
+	assert.Equal(t, "40.40.40.40", c.ClientIP())
+
 	// Last proxy is trusted, but the RemoteAddr is not
 	_ = c.engine.SetTrustedProxies([]string{"30.30.30.30"})
 	assert.Equal(t, "40.40.40.40", c.ClientIP())
 
 	// Only trust RemoteAddr
 	_ = c.engine.SetTrustedProxies([]string{"40.40.40.40"})
-	assert.Equal(t, "20.20.20.20", c.ClientIP())
+	assert.Equal(t, "30.30.30.30", c.ClientIP())
 
 	// All steps are trusted
 	_ = c.engine.SetTrustedProxies([]string{"40.40.40.40", "30.30.30.30", "20.20.20.20"})
