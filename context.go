@@ -759,13 +759,24 @@ func (c *Context) ClientIP() string {
 
 	if trusted && c.engine.ForwardedByClientIP && c.engine.RemoteIPHeaders != nil {
 		for _, headerName := range c.engine.RemoteIPHeaders {
-			ip, valid := validateHeader(c.requestHeader(headerName))
+			ip, valid := c.engine.validateHeader(c.requestHeader(headerName))
 			if valid {
 				return ip
 			}
 		}
 	}
 	return remoteIP.String()
+}
+
+func (e *Engine) isTrustedProxy(ip net.IP) bool {
+	if e.trustedCIDRs != nil {
+		for _, cidr := range e.trustedCIDRs {
+			if cidr.Contains(ip) {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 // RemoteIP parses the IP from Request.RemoteAddr, normalizes and returns the IP (without the port).
@@ -782,35 +793,25 @@ func (c *Context) RemoteIP() (net.IP, bool) {
 		return nil, false
 	}
 
-	if c.engine.trustedCIDRs != nil {
-		for _, cidr := range c.engine.trustedCIDRs {
-			if cidr.Contains(remoteIP) {
-				return remoteIP, true
-			}
-		}
-	}
-
-	return remoteIP, false
+	return remoteIP, c.engine.isTrustedProxy(remoteIP)
 }
 
-func validateHeader(header string) (clientIP string, valid bool) {
+func (e *Engine) validateHeader(header string) (clientIP string, valid bool) {
 	if header == "" {
 		return "", false
 	}
 	items := strings.Split(header, ",")
-	for i, ipStr := range items {
-		ipStr = strings.TrimSpace(ipStr)
+	for i := len(items) - 1; i >= 0; i-- {
+		ipStr := strings.TrimSpace(items[i])
 		ip := net.ParseIP(ipStr)
 		if ip == nil {
 			return "", false
 		}
 
-		// We need to return the first IP in the list, but,
-		// we should not early return since we need to validate that
-		// the rest of the header is syntactically valid
-		if i == 0 {
-			clientIP = ipStr
-			valid = true
+		// X-Forwarded-For is appended by proxy
+		// Check IPs in reverse order and stop when find untrusted proxy
+		if (i == 0) || (!e.isTrustedProxy(ip)) {
+			return ipStr, true
 		}
 	}
 	return
