@@ -33,6 +33,11 @@ func getParams() *Params {
 	return &ps
 }
 
+func getSkippedNodes() *[]skippedNode {
+	ps := make([]skippedNode, 0, 20)
+	return &ps
+}
+
 func checkRequests(t *testing.T, tree *node, requests testRequests, unescapes ...bool) {
 	unescape := false
 	if len(unescapes) >= 1 {
@@ -40,7 +45,7 @@ func checkRequests(t *testing.T, tree *node, requests testRequests, unescapes ..
 	}
 
 	for _, request := range requests {
-		value := tree.getValue(request.path, getParams(), unescape)
+		value := tree.getValue(request.path, getParams(), getSkippedNodes(), unescape)
 
 		if value.handlers == nil {
 			if !request.nilHandler {
@@ -605,7 +610,7 @@ func TestTreeTrailingSlashRedirect(t *testing.T) {
 		"/doc/",
 	}
 	for _, route := range tsrRoutes {
-		value := tree.getValue(route, nil, false)
+		value := tree.getValue(route, nil, getSkippedNodes(), false)
 		if value.handlers != nil {
 			t.Fatalf("non-nil handler for TSR route '%s", route)
 		} else if !value.tsr {
@@ -622,7 +627,7 @@ func TestTreeTrailingSlashRedirect(t *testing.T) {
 		"/api/world/abc",
 	}
 	for _, route := range noTsrRoutes {
-		value := tree.getValue(route, nil, false)
+		value := tree.getValue(route, nil, getSkippedNodes(), false)
 		if value.handlers != nil {
 			t.Fatalf("non-nil handler for No-TSR route '%s", route)
 		} else if value.tsr {
@@ -641,7 +646,7 @@ func TestTreeRootTrailingSlashRedirect(t *testing.T) {
 		t.Fatalf("panic inserting test route: %v", recv)
 	}
 
-	value := tree.getValue("/", nil, false)
+	value := tree.getValue("/", nil, getSkippedNodes(), false)
 	if value.handlers != nil {
 		t.Fatalf("non-nil handler")
 	} else if value.tsr {
@@ -821,7 +826,7 @@ func TestTreeInvalidNodeType(t *testing.T) {
 
 	// normal lookup
 	recv := catchPanic(func() {
-		tree.getValue("/test", nil, false)
+		tree.getValue("/test", nil, getSkippedNodes(), false)
 	})
 	if rs, ok := recv.(string); !ok || rs != panicMsg {
 		t.Fatalf("Expected panic '"+panicMsg+"', got '%v'", recv)
@@ -846,7 +851,7 @@ func TestTreeInvalidParamsType(t *testing.T) {
 	params := make(Params, 0)
 
 	// try to trigger slice bounds out of range with capacity 0
-	tree.getValue("/test", &params, false)
+	tree.getValue("/test", &params, getSkippedNodes(), false)
 }
 
 func TestTreeWildcardConflictEx(t *testing.T) {

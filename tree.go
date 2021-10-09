@@ -410,8 +410,8 @@ type skippedNode struct {
 // If no handle can be found, a TSR (trailing slash redirect) recommendation is
 // made if a handle exists with an extra (without the) trailing slash for the
 // given path.
-func (n *node) getValue(path string, params *Params, unescape bool) (value nodeValue) {
-	skippedNodes := make([]skippedNode, 0, countSections(path)) // Caching the latest nodes
+func (n *node) getValue(path string, params *Params, skippedNodes *[]skippedNode, unescape bool) (value nodeValue) {
+	//skippedNodes := make([]skippedNode, 0, countSections(path)) // Caching the latest nodes
 	var globalParamsCount int16
 
 walk: // Outer loop for walking the tree
@@ -427,9 +427,9 @@ walk: // Outer loop for walking the tree
 					if c == idxc {
 						//  strings.HasPrefix(n.children[len(n.children)-1].path, ":") == n.wildChild
 						if n.wildChild {
-							index := len(skippedNodes)
-							skippedNodes = skippedNodes[:index+1]
-							skippedNodes[index] = skippedNode{
+							index := len(*skippedNodes)
+							*skippedNodes = (*skippedNodes)[:index+1]
+							(*skippedNodes)[index] = skippedNode{
 								path: prefix + path,
 								node: &node{
 									path:      n.path,
@@ -464,10 +464,9 @@ walk: // Outer loop for walking the tree
 				*/
 
 				if path != "/" && !n.wildChild {
-					for len(skippedNodes) > 0 {
-						l := len(skippedNodes)
-						skippedNode := skippedNodes[l-1]
-						skippedNodes = skippedNodes[:l-1]
+					for l := len(*skippedNodes); l > 0; {
+						skippedNode := (*skippedNodes)[l-1]
+						*skippedNodes = (*skippedNodes)[:l-1]
 						if strings.HasSuffix(skippedNode.path, path) {
 							path = skippedNode.path
 							n = skippedNode.node
@@ -593,10 +592,9 @@ walk: // Outer loop for walking the tree
 			// If the current path does not equal '/' and the node does not have a registered handle and the most recently matched node has a child node
 			// the current node needs to be equal to the latest matching node
 			if n.handlers == nil && path != "/" {
-				for len(skippedNodes) > 0 {
-					l := len(skippedNodes)
-					skippedNode := skippedNodes[l-1]
-					skippedNodes = skippedNodes[:l-1]
+				for l := len(*skippedNodes); l > 0; {
+					skippedNode := (*skippedNodes)[l-1]
+					*skippedNodes = (*skippedNodes)[:l-1]
 					if strings.HasSuffix(skippedNode.path, path) {
 						path = skippedNode.path
 						n = skippedNode.node
@@ -639,10 +637,9 @@ walk: // Outer loop for walking the tree
 		}
 
 		if path != "/" {
-			for len(skippedNodes) > 0 {
-				l := len(skippedNodes)
-				skippedNode := skippedNodes[l-1]
-				skippedNodes = skippedNodes[:l-1]
+			for l := len(*skippedNodes); l > 0; {
+				skippedNode := (*skippedNodes)[l-1]
+				*skippedNodes = (*skippedNodes)[:l-1]
 				if strings.HasSuffix(skippedNode.path, path) {
 					path = skippedNode.path
 					n = skippedNode.node

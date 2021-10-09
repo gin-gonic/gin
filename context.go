@@ -55,8 +55,9 @@ type Context struct {
 	index    int8
 	fullPath string
 
-	engine *Engine
-	params *Params
+	engine       *Engine
+	params       *Params
+	skippedNodes *[]skippedNode
 
 	// This mutex protect Keys map
 	mu sync.RWMutex
@@ -99,6 +100,7 @@ func (c *Context) reset() {
 	c.queryCache = nil
 	c.formCache = nil
 	*c.params = (*c.params)[:0]
+	*c.skippedNodes = (*c.skippedNodes)[:0]
 }
 
 // Copy returns a copy of the current context that can be safely used outside the request's scope.
