@@ -411,7 +411,6 @@ type skippedNode struct {
 // made if a handle exists with an extra (without the) trailing slash for the
 // given path.
 func (n *node) getValue(path string, params *Params, skippedNodes *[]skippedNode, unescape bool) (value nodeValue) {
-	//skippedNodes := make([]skippedNode, 0, countSections(path)) // Caching the latest nodes
 	var globalParamsCount int16
 
 walk: // Outer loop for walking the tree
@@ -449,19 +448,7 @@ walk: // Outer loop for walking the tree
 					}
 				}
 				// If the path at the end of the loop is not equal to '/' and the current node has no child nodes
-				// the current node needs to be equal to the latest matching node
-				/*
-					matched := path != "/" && !n.wildChild
-					if matched {
-						if len(skippedNodes) > 0 {
-							l := len(skippedNodes)
-							n = skippedNodes[l-1].node
-							path = skippedNodes[l-1].path
-							skippedNodes = skippedNodes[:l-1]
-						}
-						//n = latestNode
-					}
-				*/
+				// the current node needs to roll back to last vaild skippedNode
 
 				if path != "/" && !n.wildChild {
 					for l := len(*skippedNodes); l > 0; {
@@ -496,15 +483,6 @@ walk: // Outer loop for walking the tree
 				case param:
 					// fix truncate the parameter
 					// tree_test.go  line: 204
-					/*
-						if matched {
-							path = prefix + path
-							// The saved path is used after the prefix route is intercepted by matching
-							if n.indices == "/" {
-								path = skippedPath[1:]
-							}
-						}
-					*/
 
 					// Find param end (either '/' or path end)
 					end := 0
@@ -590,7 +568,7 @@ walk: // Outer loop for walking the tree
 
 		if path == prefix {
 			// If the current path does not equal '/' and the node does not have a registered handle and the most recently matched node has a child node
-			// the current node needs to be equal to the latest matching node
+			// the current node needs to roll back to last vaild skippedNode
 			if n.handlers == nil && path != "/" {
 				for l := len(*skippedNodes); l > 0; {
 					skippedNode := (*skippedNodes)[l-1]
@@ -636,6 +614,7 @@ walk: // Outer loop for walking the tree
 			return
 		}
 
+		// roll back to last vaild skippedNode
 		if path != "/" {
 			for l := len(*skippedNodes); l > 0; {
 				skippedNode := (*skippedNodes)[l-1]
@@ -651,22 +630,6 @@ walk: // Outer loop for walking the tree
 				}
 			}
 		}
-		/*
-			len(skippedNodes) > 0 && strings.HasSuffix(skippedPath, path) {
-				path = skippedPath
-				// Reduce the number of cycles
-				n, latestNode = latestNode, n
-				// skippedPath cannot execute
-				// example:
-				// * /:cc/cc
-				// call /a/cc 	     expectations:match/200      Actual:match/200
-				// call /a/dd 	     expectations:unmatch/404    Actual: panic
-				// call /addr/dd/aa  expectations:unmatch/404    Actual: panic
-				// skippedPath: It can only be executed if the secondary route is not found
-				skippedPath = ""
-				continue walk
-			}
-		*/
 
 		// Nothing found. We can recommend to redirect to the same URL with an
 		// extra trailing slash if a leaf exists for that path
