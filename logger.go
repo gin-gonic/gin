@@ -274,7 +274,7 @@ func LoggerWithConfig(conf LoggerConfig) HandlerFunc {
 	}
 }
 
-// willSkipLog if skip path is "attachments/", url like "attachments/producthunt/*" will be skipped
+// willSkipLog if skip path is "/attachments/", url like "/attachments/producthunt/*" will be skipped
 func willSkipLog(path string, skip map[string]struct{}) bool {
 	for p := range skip {
 		if strings.HasPrefix(path, p[:len(p)-1]) {
