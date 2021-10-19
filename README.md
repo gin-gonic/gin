@@ -212,6 +212,8 @@ You can find a number of ready-to-run examples at [Gin examples repository](http
 
 ### Using GET, POST, PUT, PATCH, DELETE and OPTIONS
 
+For each HTTP method, there is a router method to set up handlers on specific paths.
+  
 ```go
 func main() {
 	// Creates a gin router with default middleware:
@@ -233,7 +235,12 @@ func main() {
 }
 ```
 
+Note that every GET handler will also receive its equivalent HEAD requests automatically, so
+although you can define HEAD handlers explicitly, you don't really need to.
+
 ### Parameters in path
+
+Path parameters take the form `:param` and accept any string separated the adjacent slash(es).
 
 ```go
 func main() {
@@ -271,7 +278,10 @@ func main() {
 }
 ```
 
-### Querystring parameters
+### Query string parameters
+
+The query string follows the `?` in the URL. The parameters are accessed using Gin `Context` methods
+`Query` and `DefaultQuery`.
 
 ```go
 func main() {
@@ -339,7 +349,7 @@ func main() {
 id: 1234; page: 1; name: manu; message: this_is_great
 ```
 
-### Map as querystring or postform parameters
+### Map as query string or post form parameters
 
 ```
 POST /post?ids[a]=1234&ids[b]=hello HTTP/1.1
@@ -571,7 +581,7 @@ func main() {
         c.String(200, "pong")
     })
 
-    router.Run(":8080")
+    router.Run(":8080")
 }
 ```
 

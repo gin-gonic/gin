@@ -85,7 +85,7 @@ func (group *RouterGroup) handle(httpMethod, relativePath string, handlers Handl
 // The last handler should be the real handler, the other ones should be middleware that can and should be shared among different routes.
 // See the example code in GitHub.
 //
-// For GET, POST, PUT, PATCH and DELETE requests the respective shortcut
+// For GET, HEAD, POST, PUT, PATCH, DELETE and OPTIONS requests the respective shortcut
 // functions can be used.
 //
 // This function is intended for bulk loading and to allow the usage of less
@@ -103,9 +103,16 @@ func (group *RouterGroup) POST(relativePath string, handlers ...HandlerFunc) IRo
 	return group.handle(http.MethodPost, relativePath, handlers)
 }
 
-// GET is a shortcut for router.Handle("GET", path, handle).
+// GET is a shortcut for router.Handle("GET", path, handle). The equivalent
+// HEAD requests will also be handled automatically by this handler.
 func (group *RouterGroup) GET(relativePath string, handlers ...HandlerFunc) IRoutes {
 	return group.handle(http.MethodGet, relativePath, handlers)
+}
+
+// HEAD is a shortcut for router.Handle("HEAD", path, handle). This is rarely needed
+// because every GET handler will also handle HEAD requests.
+func (group *RouterGroup) HEAD(relativePath string, handlers ...HandlerFunc) IRoutes {
+	return group.handle(http.MethodHead, relativePath, handlers)
 }
 
 // DELETE is a shortcut for router.Handle("DELETE", path, handle).
@@ -126,11 +133,6 @@ func (group *RouterGroup) PUT(relativePath string, handlers ...HandlerFunc) IRou
 // OPTIONS is a shortcut for router.Handle("OPTIONS", path, handle).
 func (group *RouterGroup) OPTIONS(relativePath string, handlers ...HandlerFunc) IRoutes {
 	return group.handle(http.MethodOptions, relativePath, handlers)
-}
-
-// HEAD is a shortcut for router.Handle("HEAD", path, handle).
-func (group *RouterGroup) HEAD(relativePath string, handlers ...HandlerFunc) IRoutes {
-	return group.handle(http.MethodHead, relativePath, handlers)
 }
 
 // Any registers a route that matches all the HTTP methods.
@@ -157,8 +159,9 @@ func (group *RouterGroup) StaticFile(relativePath, filepath string) IRoutes {
 	handler := func(c *Context) {
 		c.File(filepath)
 	}
+
+	// Register GET (and HEAD) handler
 	group.GET(relativePath, handler)
-	group.HEAD(relativePath, handler)
 	return group.returnObj()
 }
 
@@ -181,9 +184,8 @@ func (group *RouterGroup) StaticFS(relativePath string, fs http.FileSystem) IRou
 	handler := group.createStaticHandler(relativePath, fs)
 	urlPattern := path.Join(relativePath, "/*filepath")
 
-	// Register GET and HEAD handlers
+	// Register GET (and HEAD) handler
 	group.GET(urlPattern, handler)
-	group.HEAD(urlPattern, handler)
 	return group.returnObj()
 }
 

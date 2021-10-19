@@ -451,7 +451,7 @@ func TestListOfRoutes(t *testing.T) {
 
 	list := router.Routes()
 
-	assert.Len(t, list, 7)
+	assert.Len(t, list, 6)
 	assertRoutePresent(t, list, RouteInfo{
 		Method:  "GET",
 		Path:    "/favicon.ico",

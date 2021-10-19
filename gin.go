@@ -519,7 +519,6 @@ func (engine *Engine) HandleContext(c *Context) {
 }
 
 func (engine *Engine) handleHTTPRequest(c *Context) {
-	httpMethod := c.Request.Method
 	rPath := c.Request.URL.Path
 	unescape := false
 	if engine.UseRawPath && len(c.Request.URL.RawPath) > 0 {
@@ -531,40 +530,20 @@ func (engine *Engine) handleHTTPRequest(c *Context) {
 		rPath = cleanPath(rPath)
 	}
 
-	// Find root of the tree for the given HTTP method
-	t := engine.trees
-	for i, tl := 0, len(t); i < tl; i++ {
-		if t[i].method != httpMethod {
-			continue
-		}
-		root := t[i].root
-		// Find route in tree
-		value := root.getValue(rPath, c.params, unescape)
-		if value.params != nil {
-			c.Params = *value.params
-		}
-		if value.handlers != nil {
-			c.handlers = value.handlers
-			c.fullPath = value.fullPath
-			c.Next()
-			c.writermem.WriteHeaderNow()
-			return
-		}
-		if httpMethod != http.MethodConnect && rPath != "/" {
-			if value.tsr && engine.RedirectTrailingSlash {
-				redirectTrailingSlash(c)
-				return
-			}
-			if engine.RedirectFixedPath && redirectFixedPath(c, root, engine.RedirectFixedPath) {
-				return
-			}
-		}
-		break
+	if engine.handleHTTPRequestForMethod(c, c.Request.Method, rPath, unescape) {
+		return
+	}
+
+	// For HEAD requests, reaching here means no HEAD handler had been set up, so we retry the
+	// equivalent GET handler as if this had been a GET request. As expected for HEAD requests,
+	// the response content will of course be empty (see net/http for implementation details).
+	if c.Request.Method == http.MethodHead && engine.handleHTTPRequestForMethod(c, http.MethodGet, rPath, unescape) {
+		return
 	}
 
 	if engine.HandleMethodNotAllowed {
 		for _, tree := range engine.trees {
-			if tree.method == httpMethod {
+			if tree.method == c.Request.Method {
 				continue
 			}
 			if value := tree.root.getValue(rPath, nil, unescape); value.handlers != nil {
@@ -576,6 +555,40 @@ func (engine *Engine) handleHTTPRequest(c *Context) {
 	}
 	c.handlers = engine.allNoRoute
 	serveError(c, http.StatusNotFound, default404Body)
+}
+
+func (engine *Engine) handleHTTPRequestForMethod(c *Context, httpMethod, rPath string, unescape bool) bool {
+	// Find root of the tree for the given HTTP method
+	for _, t := range engine.trees {
+		if t.method != httpMethod {
+			continue
+		}
+		root := t.root
+		// Find route in tree
+		value := root.getValue(rPath, c.params, unescape)
+		if value.params != nil {
+			c.Params = *value.params
+		}
+		if value.handlers != nil {
+			c.handlers = value.handlers
+			c.fullPath = value.fullPath
+			c.Next()
+			c.writermem.WriteHeaderNow()
+			return true
+		}
+		if httpMethod != http.MethodConnect && rPath != "/" {
+			if value.tsr && engine.RedirectTrailingSlash {
+				redirectTrailingSlash(c)
+				return true
+			}
+			if engine.RedirectFixedPath && redirectFixedPath(c, root, engine.RedirectFixedPath) {
+				return true
+			}
+		}
+		break
+	}
+
+	return false // probably 404 or 406
 }
 
 var mimePlain = []string{MIMEPlain}
