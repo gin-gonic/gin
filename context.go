@@ -740,10 +740,7 @@ func (c *Context) ShouldBindBodyWith(obj interface{}, bb binding.BindingBody) (e
 // the remote IP (coming form Request.RemoteAddr) is returned.
 func (c *Context) ClientIP() string {
 	// Check if we're running on a trusted platform, continue running backwards if error
-	switch c.engine.TrustedPlatform {
-	case "":
-		// TrustedPlatform is empty, do nothing
-	default:
+	if c.engine.TrustedPlatform != "" {
 		// Developers can define their own header of Trusted Platform or use predefined constants
 		if addr := c.requestHeader(c.engine.TrustedPlatform); addr != "" {
 			return addr
