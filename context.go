@@ -743,16 +743,8 @@ func (c *Context) ClientIP() string {
 	switch c.engine.TrustedPlatform {
 	case "":
 		// TrustedPlatform is empty, do nothing
-	case PlatformGoogleAppEngine:
-		if addr := c.requestHeader("X-Appengine-Remote-Addr"); addr != "" {
-			return addr
-		}
-	case PlatformCloudflare:
-		if addr := c.requestHeader("CF-Connecting-IP"); addr != "" {
-			return addr
-		}
 	default:
-		// Developers can define their own header of Trusted Platform
+		// Developers can define their own header of Trusted Platform or use predefined constants
 		if addr := c.requestHeader(c.engine.TrustedPlatform); addr != "" {
 			return addr
 		}
