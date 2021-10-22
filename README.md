@@ -2000,7 +2000,7 @@ func SomeHandler(c *gin.Context) {
   objA := formA{}
   objB := formB{}
   // This reads c.Request.Body and stores the result into the context.
-  if errA := c.ShouldBindBodyWith(&objA, binding.JSON); errA == nil {
+  if errA := c.ShouldBindBodyWith(&objA, binding.Form); errA == nil {
     c.String(http.StatusOK, `the body should be formA`)
   // At this time, it reuses body stored in the context.
   } else if errB := c.ShouldBindBodyWith(&objB, binding.JSON); errB == nil {
