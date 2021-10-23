@@ -144,6 +144,7 @@ type Engine struct {
 	pool             sync.Pool
 	trees            methodTrees
 	maxParams        uint16
+	maxSections      uint16
 	trustedProxies   []string
 	trustedCIDRs     []*net.IPNet
 }
@@ -200,7 +201,8 @@ func Default() *Engine {
 
 func (engine *Engine) allocateContext() *Context {
 	v := make(Params, 0, engine.maxParams)
-	return &Context{engine: engine, params: &v}
+	skippedNodes := make([]skippedNode, 0, engine.maxSections)
+	return &Context{engine: engine, params: &v, skippedNodes: &skippedNodes}
 }
 
 // Delims sets template left and right delims and returns a Engine instance.
@@ -305,6 +307,10 @@ func (engine *Engine) addRoute(method, path string, handlers HandlersChain) {
 	// Update maxParams
 	if paramsCount := countParams(path); paramsCount > engine.maxParams {
 		engine.maxParams = paramsCount
+	}
+
+	if sectionsCount := countSections(path); sectionsCount > engine.maxSections {
+		engine.maxSections = sectionsCount
 	}
 }
 
@@ -539,7 +545,7 @@ func (engine *Engine) handleHTTPRequest(c *Context) {
 		}
 		root := t[i].root
 		// Find route in tree
-		value := root.getValue(rPath, c.params, unescape)
+		value := root.getValue(rPath, c.params, c.skippedNodes, unescape)
 		if value.params != nil {
 			c.Params = *value.params
 		}
@@ -567,7 +573,7 @@ func (engine *Engine) handleHTTPRequest(c *Context) {
 			if tree.method == httpMethod {
 				continue
 			}
-			if value := tree.root.getValue(rPath, nil, unescape); value.handlers != nil {
+			if value := tree.root.getValue(rPath, nil, c.skippedNodes, unescape); value.handlers != nil {
 				c.handlers = engine.allNoMethod
 				serveError(c, http.StatusMethodNotAllowed, default405Body)
 				return
