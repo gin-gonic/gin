@@ -59,10 +59,10 @@ type RoutesInfo []RouteInfo
 const (
 	// When running on Google App Engine. Trust X-Appengine-Remote-Addr
 	// for determining the client's IP
-	PlatformGoogleAppEngine = "google-app-engine"
+	PlatformGoogleAppEngine = "X-Appengine-Remote-Addr"
 	// When using Cloudflare's CDN. Trust CF-Connecting-IP for determining
 	// the client's IP
-	PlatformCloudflare = "cloudflare"
+	PlatformCloudflare = "CF-Connecting-IP"
 )
 
 // Engine is the framework's instance, it contains the muxer, middleware and configuration settings.
