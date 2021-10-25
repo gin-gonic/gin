@@ -757,10 +757,15 @@ func (c *Context) ClientIP() string {
 		}
 	}
 
-	remoteIP, trusted := c.RemoteIP()
+	remoteIP := net.ParseIP(c.RemoteIP())
 	if remoteIP == nil {
 		return ""
 	}
+
+	// It also checks if the remoteIP is a trusted proxy or not.
+	// In order to perform this validation, it will see if the IP is contained within at least one of the CIDR blocks
+	// defined by Engine.SetTrustedProxies()
+	trusted := c.engine.isTrustedProxy(remoteIP)
 
 	if trusted && c.engine.ForwardedByClientIP && c.engine.RemoteIPHeaders != nil {
 		for _, headerName := range c.engine.RemoteIPHeaders {
@@ -773,53 +778,15 @@ func (c *Context) ClientIP() string {
 	return remoteIP.String()
 }
 
-func (e *Engine) isTrustedProxy(ip net.IP) bool {
-	if e.trustedCIDRs != nil {
-		for _, cidr := range e.trustedCIDRs {
-			if cidr.Contains(ip) {
-				return true
-			}
-		}
-	}
-	return false
-}
-
 // RemoteIP parses the IP from Request.RemoteAddr, normalizes and returns the IP (without the port).
-// It also checks if the remoteIP is a trusted proxy or not.
-// In order to perform this validation, it will see if the IP is contained within at least one of the CIDR blocks
-// defined by Engine.SetTrustedProxies()
-func (c *Context) RemoteIP() (net.IP, bool) {
+// And it will return empty string if error.
+func (c *Context) RemoteIP() string {
 	ip, _, err := net.SplitHostPort(strings.TrimSpace(c.Request.RemoteAddr))
 	if err != nil {
-		return nil, false
-	}
-	remoteIP := net.ParseIP(ip)
-	if remoteIP == nil {
-		return nil, false
+		return ""
 	}
 
-	return remoteIP, c.engine.isTrustedProxy(remoteIP)
-}
-
-func (e *Engine) validateHeader(header string) (clientIP string, valid bool) {
-	if header == "" {
-		return "", false
-	}
-	items := strings.Split(header, ",")
-	for i := len(items) - 1; i >= 0; i-- {
-		ipStr := strings.TrimSpace(items[i])
-		ip := net.ParseIP(ipStr)
-		if ip == nil {
-			return "", false
-		}
-
-		// X-Forwarded-For is appended by proxy
-		// Check IPs in reverse order and stop when find untrusted proxy
-		if (i == 0) || (!e.isTrustedProxy(ip)) {
-			return ipStr, true
-		}
-	}
-	return
+	return ip
 }
 
 // ContentType returns the Content-Type header of the request.

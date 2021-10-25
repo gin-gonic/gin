@@ -404,6 +404,38 @@ func (engine *Engine) isUnsafeTrustedProxies() bool {
 	return reflect.DeepEqual(engine.trustedCIDRs, defaultTrustedCIDRs)
 }
 
+func (engine *Engine) isTrustedProxy(ip net.IP) bool {
+	if engine.trustedCIDRs != nil {
+		for _, cidr := range engine.trustedCIDRs {
+			if cidr.Contains(ip) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func (engine *Engine) validateHeader(header string) (clientIP string, valid bool) {
+	if header == "" {
+		return "", false
+	}
+	items := strings.Split(header, ",")
+	for i := len(items) - 1; i >= 0; i-- {
+		ipStr := strings.TrimSpace(items[i])
+		ip := net.ParseIP(ipStr)
+		if ip == nil {
+			return "", false
+		}
+
+		// X-Forwarded-For is appended by proxy
+		// Check IPs in reverse order and stop when find untrusted proxy
+		if (i == 0) || (!engine.isTrustedProxy(ip)) {
+			return ipStr, true
+		}
+	}
+	return
+}
+
 // parseTrustedProxies parse Engine.trustedProxies to Engine.trustedCIDRs
 func (engine *Engine) parseTrustedProxies() error {
 	trustedCIDRs, err := engine.prepareTrustedCIDRs()
