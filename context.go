@@ -55,8 +55,9 @@ type Context struct {
 	index    int8
 	fullPath string
 
-	engine *Engine
-	params *Params
+	engine       *Engine
+	params       *Params
+	skippedNodes *[]skippedNode
 
 	// This mutex protect Keys map
 	mu sync.RWMutex
@@ -99,6 +100,7 @@ func (c *Context) reset() {
 	c.queryCache = nil
 	c.formCache = nil
 	*c.params = (*c.params)[:0]
+	*c.skippedNodes = (*c.skippedNodes)[:0]
 }
 
 // Copy returns a copy of the current context that can be safely used outside the request's scope.
@@ -733,20 +735,16 @@ func (c *Context) ShouldBindBodyWith(obj interface{}, bb binding.BindingBody) (e
 	return bb.BindBody(body, obj)
 }
 
-// ClientIP implements a best effort algorithm to return the real client IP.
+// ClientIP implements one best effort algorithm to return the real client IP.
 // It called c.RemoteIP() under the hood, to check if the remote IP is a trusted proxy or not.
 // If it is it will then try to parse the headers defined in Engine.RemoteIPHeaders (defaulting to [X-Forwarded-For, X-Real-Ip]).
 // If the headers are not syntactically valid OR the remote IP does not correspond to a trusted proxy,
 // the remote IP (coming form Request.RemoteAddr) is returned.
 func (c *Context) ClientIP() string {
-	// Check if we're running on a trusted platform
-	switch c.engine.TrustedPlatform {
-	case PlatformGoogleAppEngine:
-		if addr := c.requestHeader("X-Appengine-Remote-Addr"); addr != "" {
-			return addr
-		}
-	case PlatformCloudflare:
-		if addr := c.requestHeader("CF-Connecting-IP"); addr != "" {
+	// Check if we're running on a trusted platform, continue running backwards if error
+	if c.engine.TrustedPlatform != "" {
+		// Developers can define their own header of Trusted Platform or use predefined constants
+		if addr := c.requestHeader(c.engine.TrustedPlatform); addr != "" {
 			return addr
 		}
 	}
