@@ -657,5 +657,34 @@ func assertRoutePresent(t *testing.T, gotRoutes RoutesInfo, wantRoute RouteInfo)
 	t.Errorf("route not found: %v", wantRoute)
 }
 
+func TestEngineValidateHeader(t *testing.T) {
+	_, e := CreateTestContext(httptest.NewRecorder())
+	_ = e.SetTrustedProxies([]string{"30.30.30.30", "40.40.40.40"})
+
+	{
+		// normal legal header
+		header := "123.123.123.123, 30.30.30.30, 40.40.40.40"
+		ip, ok := e.validateHeader(header)
+		assert.Equal(t, true, ok)
+		assert.Equal(t, "123.123.123.123", ip)
+	}
+
+	{
+		// partial legal header
+		header := "50.50.50.50, 123.123.123.123, 30.30.30.30"
+		ip, ok := e.validateHeader(header)
+		assert.Equal(t, true, ok)
+		assert.Equal(t, "123.123.123.123", ip)
+	}
+
+	{
+		// illegal header
+		header := "123.123.123.123, 30.30.30.30, 256.255.255.255"
+		ip, ok := e.validateHeader(header)
+		assert.Equal(t, false, ok)
+		assert.Empty(t, ip)
+	}
+}
+
 func handlerTest1(c *Context) {}
 func handlerTest2(c *Context) {}
