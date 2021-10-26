@@ -665,7 +665,7 @@ func TestEngineValidateHeader(t *testing.T) {
 		// normal legal header
 		header := "123.123.123.123, 30.30.30.30, 40.40.40.40"
 		ip, ok := e.validateHeader(header)
-		assert.Equal(t, true, ok)
+		assert.True(t, ok)
 		assert.Equal(t, "123.123.123.123", ip)
 	}
 
@@ -673,7 +673,7 @@ func TestEngineValidateHeader(t *testing.T) {
 		// partial legal header
 		header := "50.50.50.50, 123.123.123.123, 30.30.30.30"
 		ip, ok := e.validateHeader(header)
-		assert.Equal(t, true, ok)
+		assert.True(t, ok)
 		assert.Equal(t, "123.123.123.123", ip)
 	}
 
@@ -681,7 +681,15 @@ func TestEngineValidateHeader(t *testing.T) {
 		// illegal header
 		header := "123.123.123.123, 30.30.30.30, 256.255.255.255"
 		ip, ok := e.validateHeader(header)
-		assert.Equal(t, false, ok)
+		assert.False(t, ok)
+		assert.Empty(t, ip)
+	}
+
+	{
+		// empty header
+		header := ""
+		ip, ok := e.validateHeader(header)
+		assert.False(t, ok)
 		assert.Empty(t, ip)
 	}
 }
