@@ -481,6 +481,21 @@ func TestRouterNotFound(t *testing.T) {
 	router.GET("/a", func(c *Context) {})
 	w = performRequest(router, http.MethodGet, "/")
 	assert.Equal(t, http.StatusNotFound, w.Code)
+
+	// Reproduction test for the bug of issue #2843
+	router = New()
+	router.NoRoute(func(c *Context) {
+		if c.Request.RequestURI == "/login" {
+			c.String(200, "login")
+		}
+	})
+	router.GET("/logout", func(c *Context) {
+		c.String(200, "logout")
+	})
+	w = performRequest(router, http.MethodGet, "/login")
+	assert.Equal(t, "login", w.Body.String())
+	w = performRequest(router, http.MethodGet, "/logout")
+	assert.Equal(t, "logout", w.Body.String())
 }
 
 func TestRouterStaticFSNotFound(t *testing.T) {
