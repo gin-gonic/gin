@@ -678,16 +678,8 @@ func TestEngineValidateHeader(t *testing.T) {
 	}
 
 	{
-		// normal header with illegal element
-		header := "123.123.123.123, 30.30.30.30, 256.255.255.255"
-		ip, ok := e.validateHeader(header)
-		assert.False(t, ok)
-		assert.Empty(t, ip)
-	}
-
-	{
 		// illegal header
-		header := "foo/bar"
+		header := "123.123.123.123, 30.30.30.30, 256.255.255.255"
 		ip, ok := e.validateHeader(header)
 		assert.False(t, ok)
 		assert.Empty(t, ip)
