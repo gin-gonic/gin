@@ -416,23 +416,24 @@ func (engine *Engine) isTrustedProxy(ip net.IP) bool {
 }
 
 func (engine *Engine) validateHeader(header string) (clientIP string, valid bool) {
-	if header != "" {
-		items := strings.Split(header, ",")
-		for i := len(items) - 1; i >= 0; i-- {
-			ipStr := strings.TrimSpace(items[i])
-			ip := net.ParseIP(ipStr)
-			if ip == nil {
-				return "", false
-			}
+	if header == "" {
+		return "", false
+	}
+	items := strings.Split(header, ",")
+	for i := len(items) - 1; i >= 0; i-- {
+		ipStr := strings.TrimSpace(items[i])
+		ip := net.ParseIP(ipStr)
+		if ip == nil {
+			return "", false
+		}
 
-			// X-Forwarded-For is appended by proxy
-			// Check IPs in reverse order and stop when find untrusted proxy
-			if (i == 0) || (!engine.isTrustedProxy(ip)) {
-				return ipStr, true
-			}
+		// X-Forwarded-For is appended by proxy
+		// Check IPs in reverse order and stop when find untrusted proxy
+		if (i == 0) || (!engine.isTrustedProxy(ip)) {
+			return ipStr, true
 		}
 	}
-	return "", false
+	return
 }
 
 // parseTrustedProxies parse Engine.trustedProxies to Engine.trustedCIDRs
