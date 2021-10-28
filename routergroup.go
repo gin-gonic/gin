@@ -14,6 +14,13 @@ import (
 var (
 	// reg match english letters for http method name
 	regEnLetter = regexp.MustCompile("^[A-Z]+$")
+
+	// anyMethods for RouterGroup Any method
+	anyMethods = []string{
+		http.MethodGet, http.MethodPost, http.MethodPut, http.MethodPatch,
+		http.MethodHead, http.MethodOptions, http.MethodDelete, http.MethodConnect,
+		http.MethodTrace,
+	}
 )
 
 // IRouter defines all router handle interface includes single and group router.
@@ -136,15 +143,10 @@ func (group *RouterGroup) HEAD(relativePath string, handlers ...HandlerFunc) IRo
 // Any registers a route that matches all the HTTP methods.
 // GET, POST, PUT, PATCH, HEAD, OPTIONS, DELETE, CONNECT, TRACE.
 func (group *RouterGroup) Any(relativePath string, handlers ...HandlerFunc) IRoutes {
-	group.handle(http.MethodGet, relativePath, handlers)
-	group.handle(http.MethodPost, relativePath, handlers)
-	group.handle(http.MethodPut, relativePath, handlers)
-	group.handle(http.MethodPatch, relativePath, handlers)
-	group.handle(http.MethodHead, relativePath, handlers)
-	group.handle(http.MethodOptions, relativePath, handlers)
-	group.handle(http.MethodDelete, relativePath, handlers)
-	group.handle(http.MethodConnect, relativePath, handlers)
-	group.handle(http.MethodTrace, relativePath, handlers)
+	for _, method := range anyMethods {
+		group.handle(method, relativePath, handlers)
+	}
+
 	return group.returnObj()
 }
 
@@ -214,9 +216,7 @@ func (group *RouterGroup) createStaticHandler(relativePath string, fs http.FileS
 
 func (group *RouterGroup) combineHandlers(handlers HandlersChain) HandlersChain {
 	finalSize := len(group.Handlers) + len(handlers)
-	if finalSize >= int(abortIndex) {
-		panic("too many handlers")
-	}
+	assert1(finalSize < int(abortIndex), "too many handlers")
 	mergedHandlers := make(HandlersChain, finalSize)
 	copy(mergedHandlers, group.Handlers)
 	copy(mergedHandlers[len(group.Handlers):], handlers)

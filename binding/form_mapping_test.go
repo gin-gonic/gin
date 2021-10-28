@@ -164,7 +164,7 @@ func TestMappingURI(t *testing.T) {
 	var s struct {
 		F int `uri:"field"`
 	}
-	err := mapUri(&s, map[string][]string{"field": {"6"}})
+	err := mapURI(&s, map[string][]string{"field": {"6"}})
 	assert.NoError(t, err)
 	assert.Equal(t, int(6), s.F)
 }
@@ -174,6 +174,15 @@ func TestMappingForm(t *testing.T) {
 		F int `form:"field"`
 	}
 	err := mapForm(&s, map[string][]string{"field": {"6"}})
+	assert.NoError(t, err)
+	assert.Equal(t, int(6), s.F)
+}
+
+func TestMapFormWithTag(t *testing.T) {
+	var s struct {
+		F int `externalTag:"field"`
+	}
+	err := MapFormWithTag(&s, map[string][]string{"field": {"6"}}, "externalTag")
 	assert.NoError(t, err)
 	assert.Equal(t, int(6), s.F)
 }

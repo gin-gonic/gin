@@ -5,10 +5,11 @@
 package binding
 
 import (
+	"errors"
 	"io/ioutil"
 	"net/http"
 
-	"github.com/golang/protobuf/proto"
+	"google.golang.org/protobuf/proto"
 )
 
 type protobufBinding struct{}
@@ -26,7 +27,11 @@ func (b protobufBinding) Bind(req *http.Request, obj interface{}) error {
 }
 
 func (protobufBinding) BindBody(body []byte, obj interface{}) error {
-	if err := proto.Unmarshal(body, obj.(proto.Message)); err != nil {
+	msg, ok := obj.(proto.Message)
+	if !ok {
+		return errors.New("obj is not ProtoMessage")
+	}
+	if err := proto.Unmarshal(body, msg); err != nil {
 		return err
 	}
 	// Here it's same to return validate(obj), but util now we can't add

@@ -113,7 +113,7 @@ func (e TestErr) Error() string { return string(e) }
 // TestErrorUnwrap tests the behavior of gin.Error with "errors.Is()" and "errors.As()".
 // "errors.Is()" and "errors.As()" have been added to the standard library in go 1.13.
 func TestErrorUnwrap(t *testing.T) {
-	innerErr := TestErr("somme error")
+	innerErr := TestErr("some error")
 
 	// 2 layers of wrapping : use 'fmt.Errorf("%w")' to wrap a gin.Error{}, which itself wraps innerErr
 	err := fmt.Errorf("wrapped: %w", &Error{

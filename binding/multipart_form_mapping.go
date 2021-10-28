@@ -32,7 +32,7 @@ func (r *multipartRequest) TrySet(value reflect.Value, field reflect.StructField
 	return setByForm(value, field, r.MultipartForm.Value, key, opt)
 }
 
-func setByMultipartFormFile(value reflect.Value, field reflect.StructField, files []*multipart.FileHeader) (isSetted bool, err error) {
+func setByMultipartFormFile(value reflect.Value, field reflect.StructField, files []*multipart.FileHeader) (isSet bool, err error) {
 	switch value.Kind() {
 	case reflect.Ptr:
 		switch value.Interface().(type) {
@@ -48,9 +48,9 @@ func setByMultipartFormFile(value reflect.Value, field reflect.StructField, file
 		}
 	case reflect.Slice:
 		slice := reflect.MakeSlice(value.Type(), len(files), len(files))
-		isSetted, err = setArrayOfMultipartFormFiles(slice, field, files)
-		if err != nil || !isSetted {
-			return isSetted, err
+		isSet, err = setArrayOfMultipartFormFiles(slice, field, files)
+		if err != nil || !isSet {
+			return isSet, err
 		}
 		value.Set(slice)
 		return true, nil
@@ -60,14 +60,14 @@ func setByMultipartFormFile(value reflect.Value, field reflect.StructField, file
 	return false, ErrMultiFileHeader
 }
 
-func setArrayOfMultipartFormFiles(value reflect.Value, field reflect.StructField, files []*multipart.FileHeader) (isSetted bool, err error) {
+func setArrayOfMultipartFormFiles(value reflect.Value, field reflect.StructField, files []*multipart.FileHeader) (isSet bool, err error) {
 	if value.Len() != len(files) {
 		return false, ErrMultiFileHeaderLenInvalid
 	}
 	for i := range files {
-		setted, err := setByMultipartFormFile(value.Index(i), field, files[i:i+1])
-		if err != nil || !setted {
-			return setted, err
+		set, err := setByMultipartFormFile(value.Index(i), field, files[i:i+1])
+		if err != nil || !set {
+			return set, err
 		}
 	}
 	return true, nil

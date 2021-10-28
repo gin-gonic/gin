@@ -1,5 +1,11 @@
 # Gin ChangeLog
 
+## Gin v1.7.3
+
+### BUGFIXES
+
+* fix level 1 router match [#2767](https://github.com/gin-gonic/gin/issues/2767), [#2796](https://github.com/gin-gonic/gin/issues/2796)
+
 ## Gin v1.7.2
 
 ### BUGFIXES

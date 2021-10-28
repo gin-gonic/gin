@@ -20,8 +20,8 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin/testdata/protoexample"
-	"github.com/golang/protobuf/proto"
 	"github.com/stretchr/testify/assert"
+	"google.golang.org/protobuf/proto"
 )
 
 type appkey struct {
@@ -848,7 +848,6 @@ func testFormBindingEmbeddedStruct(t *testing.T, method, path, badPath, body, ba
 	assert.Equal(t, 1, obj.Page)
 	assert.Equal(t, 2, obj.Size)
 	assert.Equal(t, "test-appkey", obj.Appkey)
-
 }
 
 func testFormBinding(t *testing.T, method, path, badPath, body, badBody string) {
@@ -1373,6 +1372,13 @@ func testProtoBodyBindingFail(t *testing.T, b Binding, name, path, badPath, body
 	req.Header.Add("Content-Type", MIMEPROTOBUF)
 	err := b.Bind(req, &obj)
 	assert.Error(t, err)
+
+	invalid_obj := FooStruct{}
+	req.Body = ioutil.NopCloser(strings.NewReader(`{"msg":"hello"}`))
+	req.Header.Add("Content-Type", MIMEPROTOBUF)
+	err = b.Bind(req, &invalid_obj)
+	assert.Error(t, err)
+	assert.Equal(t, err.Error(), "obj is not ProtoMessage")
 
 	obj = protoexample.Test{}
 	req = requestWithBody("POST", badPath, badBody)

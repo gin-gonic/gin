@@ -8,5 +8,5 @@
 package gin
 
 func init() {
-	defaultAppEngine = true
+	defaultPlatform = PlatformGoogleAppEngine
 }
