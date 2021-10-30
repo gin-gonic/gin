@@ -122,7 +122,7 @@ func (a errorMsgs) Last() *Error {
 	return nil
 }
 
-// Errors returns an array will all the error messages.
+// Errors returns an array with all the error messages.
 // Example:
 // 		c.Error(errors.New("first"))
 // 		c.Error(errors.New("second"))
