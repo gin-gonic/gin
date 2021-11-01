@@ -448,27 +448,26 @@ walk: // Outer loop for walking the tree
 						continue walk
 					}
 				}
-				// If the path at the end of the loop is not equal to '/' and the current node has no child nodes
-				// the current node needs to roll back to last vaild skippedNode
 
-				if path != "/" && !n.wildChild {
-					for l := len(*skippedNodes); l > 0; {
-						skippedNode := (*skippedNodes)[l-1]
-						*skippedNodes = (*skippedNodes)[:l-1]
-						if strings.HasSuffix(skippedNode.path, path) {
-							path = skippedNode.path
-							n = skippedNode.node
-							if value.params != nil {
-								*value.params = (*value.params)[:skippedNode.paramsCount]
+				if !n.wildChild {
+					// If the path at the end of the loop is not equal to '/' and the current node has no child nodes
+					// the current node needs to roll back to last vaild skippedNode
+					if path != "/" {
+						for l := len(*skippedNodes); l > 0; {
+							skippedNode := (*skippedNodes)[l-1]
+							*skippedNodes = (*skippedNodes)[:l-1]
+							if strings.HasSuffix(skippedNode.path, path) {
+								path = skippedNode.path
+								n = skippedNode.node
+								if value.params != nil {
+									*value.params = (*value.params)[:skippedNode.paramsCount]
+								}
+								globalParamsCount = skippedNode.paramsCount
+								continue walk
 							}
-							globalParamsCount = skippedNode.paramsCount
-							continue walk
 						}
 					}
-				}
 
-				// If there is no wildcard pattern, recommend a redirection
-				if !n.wildChild {
 					// Nothing found.
 					// We can recommend to redirect to the same URL without a
 					// trailing slash if a leaf exists for that path.
@@ -615,8 +614,14 @@ walk: // Outer loop for walking the tree
 			return
 		}
 
-		// roll back to last vaild skippedNode
-		if path != "/" {
+		// Nothing found. We can recommend to redirect to the same URL with an
+		// extra trailing slash if a leaf exists for that path
+		value.tsr = path == "/" ||
+			(len(prefix) == len(path)+1 && prefix[len(path)] == '/' &&
+				path == prefix[:len(prefix)-1] && n.handlers != nil)
+
+		// roll back to last valid skippedNode
+		if !value.tsr && path != "/" {
 			for l := len(*skippedNodes); l > 0; {
 				skippedNode := (*skippedNodes)[l-1]
 				*skippedNodes = (*skippedNodes)[:l-1]
@@ -632,11 +637,6 @@ walk: // Outer loop for walking the tree
 			}
 		}
 
-		// Nothing found. We can recommend to redirect to the same URL with an
-		// extra trailing slash if a leaf exists for that path
-		value.tsr = path == "/" ||
-			(len(prefix) == len(path)+1 && prefix[len(path)] == '/' &&
-				path == prefix[:len(prefix)-1] && n.handlers != nil)
 		return
 	}
 }
