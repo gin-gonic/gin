@@ -41,8 +41,10 @@ var DefaultWriter io.Writer = os.Stdout
 // DefaultErrorWriter is the default io.Writer used by Gin to debug errors
 var DefaultErrorWriter io.Writer = os.Stderr
 
-var ginMode = debugCode
-var modeName = DebugMode
+var (
+	ginMode  = debugCode
+	modeName = DebugMode
+)
 
 func init() {
 	mode := os.Getenv(EnvGinMode)
@@ -63,7 +65,7 @@ func SetMode(value string) {
 	case TestMode:
 		ginMode = testCode
 	default:
-		panic("gin mode unknown: " + value)
+		panic("gin mode unknown: " + value + " (available mode: debug release test)")
 	}
 
 	modeName = value

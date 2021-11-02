@@ -156,7 +156,7 @@ People and companies, who have contributed, in alphabetical order.
 - Fix variadic parameter in the flexible render API
 - Fix Corrupted plain render
 - Add Pluggable View Renderer Example
- 
+
 
 **@msemenistyi (Mykyta Semenistyi)**
 - update Readme.md. Add code to String method
@@ -190,6 +190,8 @@ People and companies, who have contributed, in alphabetical order.
 **@rogierlommers (Rogier Lommers)**
 - Add updated static serve example
 
+**@rw-access (Ross Wolf)**
+- Added support to mix exact and param routes
 
 **@se77en (Damon Zhao)**
 - Improve color logging

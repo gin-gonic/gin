@@ -5,6 +5,7 @@
 package binding
 
 import (
+	"errors"
 	"net/http"
 )
 
@@ -22,10 +23,8 @@ func (formBinding) Bind(req *http.Request, obj interface{}) error {
 	if err := req.ParseForm(); err != nil {
 		return err
 	}
-	if err := req.ParseMultipartForm(defaultMemory); err != nil {
-		if err != http.ErrNotMultipart {
-			return err
-		}
+	if err := req.ParseMultipartForm(defaultMemory); err != nil && !errors.Is(err, http.ErrNotMultipart) {
+		return err
 	}
 	if err := mapForm(obj, req.Form); err != nil {
 		return err

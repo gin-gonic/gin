@@ -2,7 +2,7 @@
 
 <img align="right" width="159px" src="https://raw.githubusercontent.com/gin-gonic/logo/master/color.png">
 
-[![Build Status](https://travis-ci.org/gin-gonic/gin.svg)](https://travis-ci.org/gin-gonic/gin)
+[![Build Status](https://github.com/gin-gonic/gin/workflows/Run%20Tests/badge.svg?branch=master)](https://github.com/gin-gonic/gin/actions?query=branch%3Amaster)
 [![codecov](https://codecov.io/gh/gin-gonic/gin/branch/master/graph/badge.svg)](https://codecov.io/gh/gin-gonic/gin)
 [![Go Report Card](https://goreportcard.com/badge/github.com/gin-gonic/gin)](https://goreportcard.com/report/github.com/gin-gonic/gin)
 [![GoDoc](https://pkg.go.dev/badge/github.com/gin-gonic/gin?status.svg)](https://pkg.go.dev/github.com/gin-gonic/gin?tab=doc)
@@ -23,7 +23,8 @@ Gin is a web framework written in Go (Golang). It features a martini-like API wi
   - [Quick start](#quick-start)
   - [Benchmarks](#benchmarks)
   - [Gin v1. stable](#gin-v1-stable)
-  - [Build with jsoniter](#build-with-jsoniter)
+  - [Build with jsoniter/go-json](#build-with-json-replacement)
+  - [Build without `MsgPack` rendering feature](#build-without-msgpack-rendering-feature)
   - [API Examples](#api-examples)
     - [Using GET, POST, PUT, PATCH, DELETE and OPTIONS](#using-get-post-put-patch-delete-and-options)
     - [Parameters in path](#parameters-in-path)
@@ -77,6 +78,7 @@ Gin is a web framework written in Go (Golang). It features a martini-like API wi
     - [http2 server push](#http2-server-push)
     - [Define format for the log of routes](#define-format-for-the-log-of-routes)
     - [Set and get a cookie](#set-and-get-a-cookie)
+  - [Don't trust all proxies](#don't-trust-all-proxies)
   - [Testing](#testing)
   - [Users](#users)
 
@@ -84,7 +86,7 @@ Gin is a web framework written in Go (Golang). It features a martini-like API wi
 
 To install Gin package, you need to install Go and set your Go workspace first.
 
-1. The first need [Go](https://golang.org/) installed (**version 1.11+ is required**), then you can use the below Go command to install Gin.
+1. The first need [Go](https://golang.org/) installed (**version 1.13+ is required**), then you can use the below Go command to install Gin.
 
 ```sh
 $ go get -u github.com/gin-gonic/gin
@@ -103,7 +105,7 @@ import "net/http"
 ```
 
 ## Quick start
- 
+
 ```sh
 # assume the following codes in example.go file
 $ cat example.go
@@ -178,17 +180,32 @@ Gin uses a custom version of [HttpRouter](https://github.com/julienschmidt/httpr
 
 - [x] Zero allocation router.
 - [x] Still the fastest http router and framework. From routing to writing.
-- [x] Complete suite of unit tests
-- [x] Battle tested
+- [x] Complete suite of unit tests.
+- [x] Battle tested.
 - [x] API frozen, new releases will not break your code.
 
-## Build with [jsoniter](https://github.com/json-iterator/go)
+## Build with json replacement
 
-Gin uses `encoding/json` as default json package but you can change to [jsoniter](https://github.com/json-iterator/go) by build from other tags.
+Gin uses `encoding/json` as default json package but you can change it by build from other tags.
 
+[jsoniter](https://github.com/json-iterator/go)
 ```sh
 $ go build -tags=jsoniter .
 ```
+[go-json](https://github.com/goccy/go-json)
+```sh
+$ go build -tags=go_json .
+```
+
+## Build without `MsgPack` rendering feature
+
+Gin enables `MsgPack` rendering feature by default. But you can disable this feature by specifying `nomsgpack` build tag.
+
+```sh
+$ go build -tags=nomsgpack .
+```
+
+This is useful to reduce the binary size of executable files. See the [detail information](https://github.com/gin-gonic/gin/pull/1852).
 
 ## API Examples
 
@@ -240,7 +257,15 @@ func main() {
 
 	// For each matched request Context will hold the route definition
 	router.POST("/user/:name/*action", func(c *gin.Context) {
-		c.FullPath() == "/user/:name/*action" // true
+		b := c.FullPath() == "/user/:name/*action" // true
+		c.String(http.StatusOK, "%t", b)
+	})
+
+	// This handler will add a new router for /user/groups.
+	// Exact routes are resolved before param routes, regardless of the order they were defined.
+	// Routes starting with /user/groups are never interpreted as /user/:name/... routes
+	router.GET("/user/groups", func(c *gin.Context) {
+		c.String(http.StatusOK, "The available groups are [...]")
 	})
 
 	router.Run(":8080")
@@ -340,7 +365,7 @@ func main() {
 ```
 
 ```
-ids: map[b:hello a:1234], names: map[second:tianou first:thinkerou]
+ids: map[b:hello a:1234]; names: map[second:tianou first:thinkerou]
 ```
 
 ### Upload files
@@ -588,44 +613,44 @@ func main() {
 ::1 - [Fri, 07 Dec 2018 17:04:38 JST] "GET /ping HTTP/1.1 200 122.767µs "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/71.0.3578.80 Safari/537.36" "
 ```
 
-### Controlling Log output coloring 
+### Controlling Log output coloring
 
 By default, logs output on console should be colorized depending on the detected TTY.
 
-Never colorize logs: 
+Never colorize logs:
 
 ```go
 func main() {
     // Disable log's color
     gin.DisableConsoleColor()
-    
+
     // Creates a gin router with default middleware:
     // logger and recovery (crash-free) middleware
     router := gin.Default()
-    
+
     router.GET("/ping", func(c *gin.Context) {
         c.String(200, "pong")
     })
-    
+
     router.Run(":8080")
 }
 ```
 
-Always colorize logs: 
+Always colorize logs:
 
 ```go
 func main() {
     // Force log's color
     gin.ForceConsoleColor()
-    
+
     // Creates a gin router with default middleware:
     // logger and recovery (crash-free) middleware
     router := gin.Default()
-    
+
     router.GET("/ping", func(c *gin.Context) {
         c.String(200, "pong")
     })
-    
+
     router.Run(":8080")
 }
 ```
@@ -667,19 +692,19 @@ func main() {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
 		}
-		
+
 		if json.User != "manu" || json.Password != "123" {
 			c.JSON(http.StatusUnauthorized, gin.H{"status": "unauthorized"})
 			return
-		} 
-		
+		}
+
 		c.JSON(http.StatusOK, gin.H{"status": "you are logged in"})
 	})
 
 	// Example for binding XML (
 	//	<?xml version="1.0" encoding="UTF-8"?>
 	//	<root>
-	//		<user>user</user>
+	//		<user>manu</user>
 	//		<password>123</password>
 	//	</root>)
 	router.POST("/loginXML", func(c *gin.Context) {
@@ -688,12 +713,12 @@ func main() {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
 		}
-		
+
 		if xml.User != "manu" || xml.Password != "123" {
 			c.JSON(http.StatusUnauthorized, gin.H{"status": "unauthorized"})
 			return
-		} 
-		
+		}
+
 		c.JSON(http.StatusOK, gin.H{"status": "you are logged in"})
 	})
 
@@ -705,12 +730,12 @@ func main() {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
 		}
-		
+
 		if form.User != "manu" || form.Password != "123" {
 			c.JSON(http.StatusUnauthorized, gin.H{"status": "unauthorized"})
 			return
-		} 
-		
+		}
+
 		c.JSON(http.StatusOK, gin.H{"status": "you are logged in"})
 	})
 
@@ -807,7 +832,7 @@ $ curl "localhost:8085/bookable?check_in=2030-03-10&check_out=2030-03-09"
 {"error":"Key: 'Booking.CheckOut' Error:Field validation for 'CheckOut' failed on the 'gtfield' tag"}
 
 $ curl "localhost:8085/bookable?check_in=2000-03-09&check_out=2000-03-10"
-{"error":"Key: 'Booking.CheckIn' Error:Field validation for 'CheckIn' failed on the 'bookabledate' tag"}%    
+{"error":"Key: 'Booking.CheckIn' Error:Field validation for 'CheckIn' failed on the 'bookabledate' tag"}%
 ```
 
 [Struct level validations](https://github.com/go-playground/validator/releases/tag/v8.7) can also be registered this way.
@@ -918,7 +943,7 @@ func main() {
 	route.GET("/:name/:id", func(c *gin.Context) {
 		var person Person
 		if err := c.ShouldBindUri(&person); err != nil {
-			c.JSON(400, gin.H{"msg": err})
+			c.JSON(400, gin.H{"msg": err.Error()})
 			return
 		}
 		c.JSON(200, gin.H{"name": person.Name, "uuid": person.ID})
@@ -1145,7 +1170,7 @@ func main() {
 		data := gin.H{
 			"foo": "bar",
 		}
-		
+
 		//callback is x
 		// Will output  :   x({\"foo\":\"bar\"})
 		c.JSONP(http.StatusOK, data)
@@ -1190,21 +1215,21 @@ This feature is unavailable in Go 1.6 and lower.
 ```go
 func main() {
 	r := gin.Default()
-	
+
 	// Serves unicode entities
 	r.GET("/json", func(c *gin.Context) {
 		c.JSON(200, gin.H{
 			"html": "<b>Hello, world!</b>",
 		})
 	})
-	
+
 	// Serves literal characters
 	r.GET("/purejson", func(c *gin.Context) {
 		c.PureJSON(200, gin.H{
 			"html": "<b>Hello, world!</b>",
 		})
 	})
-	
+
 	// listen and serve on 0.0.0.0:8080
 	r.Run(":8080")
 }
@@ -1255,6 +1280,7 @@ func main() {
 		}
 
 		reader := response.Body
+ 		defer reader.Close()
 		contentLength := response.ContentLength
 		contentType := response.Header.Get("Content-Type")
 
@@ -1792,8 +1818,8 @@ func main() {
 	// Initializing the server in a goroutine so that
 	// it won't block the graceful shutdown handling below
 	go func() {
-		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			log.Fatalf("listen: %s\n", err)
+		if err := srv.ListenAndServe(); err != nil && errors.Is(err, http.ErrServerClosed) {
+			log.Printf("listen: %s\n", err)
 		}
 	}()
 
@@ -1802,7 +1828,7 @@ func main() {
 	quit := make(chan os.Signal)
 	// kill (no param) default send syscall.SIGTERM
 	// kill -2 is syscall.SIGINT
-	// kill -9 is syscall.SIGKILL but can't be catch, so don't need add it
+	// kill -9 is syscall.SIGKILL but can't be caught, so don't need to add it
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
 	log.Println("Shutting down server...")
@@ -1811,10 +1837,11 @@ func main() {
 	// the request it is currently handling
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
+
 	if err := srv.Shutdown(ctx); err != nil {
 		log.Fatal("Server forced to shutdown:", err)
 	}
-	
+
 	log.Println("Server exiting")
 }
 ```
@@ -1974,7 +2001,7 @@ func SomeHandler(c *gin.Context) {
   objA := formA{}
   objB := formB{}
   // This reads c.Request.Body and stores the result into the context.
-  if errA := c.ShouldBindBodyWith(&objA, binding.JSON); errA == nil {
+  if errA := c.ShouldBindBodyWith(&objA, binding.Form); errA == nil {
     c.String(http.StatusOK, `the body should be formA`)
   // At this time, it reuses body stored in the context.
   } else if errB := c.ShouldBindBodyWith(&objB, binding.JSON); errB == nil {
@@ -1995,6 +2022,61 @@ enough to call binding at once.
 `ProtoBuf`. For other formats, `Query`, `Form`, `FormPost`, `FormMultipart`,
 can be called by `c.ShouldBind()` multiple times without any damage to
 performance (See [#1341](https://github.com/gin-gonic/gin/pull/1341)).
+
+### Bind form-data request with custom struct and custom tag
+
+```go
+const (
+	customerTag = "url"
+	defaultMemory = 32 << 20
+)
+
+type customerBinding struct {}
+
+func (customerBinding) Name() string {
+	return "form"
+}
+
+func (customerBinding) Bind(req *http.Request, obj interface{}) error {
+	if err := req.ParseForm(); err != nil {
+		return err
+	}
+	if err := req.ParseMultipartForm(defaultMemory); err != nil {
+		if err != http.ErrNotMultipart {
+			return err
+		}
+	}
+	if err := binding.MapFormWithTag(obj, req.Form, customerTag); err != nil {
+		return err
+	}
+	return validate(obj)
+}
+
+func validate(obj interface{}) error {
+	if binding.Validator == nil {
+		return nil
+	}
+	return binding.Validator.ValidateStruct(obj)
+}
+
+// Now we can do this!!!
+// FormA is a external type that we can't modify it's tag
+type FormA struct {
+	FieldA string `url:"field_a"`
+}
+
+func ListHandler(s *Service) func(ctx *gin.Context) {
+	return func(ctx *gin.Context) {
+		var urlBinding = customerBinding{}
+		var opt FormA
+		err := ctx.MustBindWith(&opt, urlBinding)
+		if err != nil {
+			...
+		}
+		...
+	}
+}
+```
 
 ### http2 server push
 
@@ -2115,6 +2197,73 @@ func main() {
 }
 ```
 
+## Don't trust all proxies
+
+Gin lets you specify which headers to hold the real client IP (if any),
+as well as specifying which proxies (or direct clients) you trust to
+specify one of these headers.
+
+Use function `SetTrustedProxies()` on your `gin.Engine` to specify network addresses
+or network CIDRs from where clients which their request headers related to client
+IP can be trusted. They can be IPv4 addresses, IPv4 CIDRs, IPv6 addresses or
+IPv6 CIDRs.
+
+**Attention:** Gin trust all proxies by default if you don't specify a trusted 
+proxy using the function above, **this is NOT safe**. At the same time, if you don't
+use any proxy, you can disable this feature by using `Engine.SetTrustedProxies(nil)`,
+then `Context.ClientIP()` will return the remote address directly to avoid some
+unnecessary computation.
+
+```go
+import (
+	"fmt"
+
+	"github.com/gin-gonic/gin"
+)
+
+func main() {
+
+	router := gin.Default()
+	router.SetTrustedProxies([]string{"192.168.1.2"})
+
+	router.GET("/", func(c *gin.Context) {
+		// If the client is 192.168.1.2, use the X-Forwarded-For
+		// header to deduce the original client IP from the trust-
+		// worthy parts of that header.
+		// Otherwise, simply return the direct client IP
+		fmt.Printf("ClientIP: %s\n", c.ClientIP())
+	})
+	router.Run()
+}
+```
+
+**Notice:** If you are using a CDN service, you can set the `Engine.TrustedPlatform`
+to skip TrustedProxies check, it has a higher priority than TrustedProxies. 
+Look at the example below:
+```go
+import (
+	"fmt"
+
+	"github.com/gin-gonic/gin"
+)
+
+func main() {
+
+	router := gin.Default()
+	// Use predefined header gin.PlatformXXX
+	router.TrustedPlatform = gin.PlatformGoogleAppEngine
+	// Or set your own trusted request header for another trusted proxy service
+	// Don't set it to any suspect request header, it's unsafe
+	router.TrustedPlatform = "X-CDN-IP"
+
+	router.GET("/", func(c *gin.Context) {
+		// If you set TrustedPlatform, ClientIP() will resolve the
+		// corresponding header and return IP directly
+		fmt.Printf("ClientIP: %s\n", c.ClientIP())
+	})
+	router.Run()
+}
+```
 
 ## Testing
 
@@ -2173,3 +2322,4 @@ Awesome project lists using [Gin](https://github.com/gin-gonic/gin) web framewor
 * [picfit](https://github.com/thoas/picfit): An image resizing server written in Go.
 * [brigade](https://github.com/brigadecore/brigade): Event-based Scripting for Kubernetes.
 * [dkron](https://github.com/distribworks/dkron): Distributed, fault tolerant job scheduling system.
+

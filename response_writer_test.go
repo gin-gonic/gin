@@ -17,12 +17,14 @@ import (
 // func (w *responseWriter) CloseNotify() <-chan bool {
 // func (w *responseWriter) Flush() {
 
-var _ ResponseWriter = &responseWriter{}
-var _ http.ResponseWriter = &responseWriter{}
-var _ http.ResponseWriter = ResponseWriter(&responseWriter{})
-var _ http.Hijacker = ResponseWriter(&responseWriter{})
-var _ http.Flusher = ResponseWriter(&responseWriter{})
-var _ http.CloseNotifier = ResponseWriter(&responseWriter{})
+var (
+	_ ResponseWriter      = &responseWriter{}
+	_ http.ResponseWriter = &responseWriter{}
+	_ http.ResponseWriter = ResponseWriter(&responseWriter{})
+	_ http.Hijacker       = ResponseWriter(&responseWriter{})
+	_ http.Flusher        = ResponseWriter(&responseWriter{})
+	_ http.CloseNotifier  = ResponseWriter(&responseWriter{})
+)
 
 func init() {
 	SetMode(TestMode)

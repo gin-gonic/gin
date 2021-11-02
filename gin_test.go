@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"html/template"
 	"io/ioutil"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"reflect"
@@ -583,6 +584,120 @@ func TestEngineHandleContextManyReEntries(t *testing.T) {
 
 	assert.Equal(t, int64(expectValue), handlerCounter)
 	assert.Equal(t, int64(expectValue), middlewareCounter)
+}
+
+func TestPrepareTrustedCIRDsWith(t *testing.T) {
+	r := New()
+
+	// valid ipv4 cidr
+	{
+		expectedTrustedCIDRs := []*net.IPNet{parseCIDR("0.0.0.0/0")}
+		err := r.SetTrustedProxies([]string{"0.0.0.0/0"})
+
+		assert.NoError(t, err)
+		assert.Equal(t, expectedTrustedCIDRs, r.trustedCIDRs)
+	}
+
+	// invalid ipv4 cidr
+	{
+		err := r.SetTrustedProxies([]string{"192.168.1.33/33"})
+
+		assert.Error(t, err)
+	}
+
+	// valid ipv4 address
+	{
+		expectedTrustedCIDRs := []*net.IPNet{parseCIDR("192.168.1.33/32")}
+
+		err := r.SetTrustedProxies([]string{"192.168.1.33"})
+
+		assert.NoError(t, err)
+		assert.Equal(t, expectedTrustedCIDRs, r.trustedCIDRs)
+	}
+
+	// invalid ipv4 address
+	{
+		err := r.SetTrustedProxies([]string{"192.168.1.256"})
+
+		assert.Error(t, err)
+	}
+
+	// valid ipv6 address
+	{
+		expectedTrustedCIDRs := []*net.IPNet{parseCIDR("2002:0000:0000:1234:abcd:ffff:c0a8:0101/128")}
+		err := r.SetTrustedProxies([]string{"2002:0000:0000:1234:abcd:ffff:c0a8:0101"})
+
+		assert.NoError(t, err)
+		assert.Equal(t, expectedTrustedCIDRs, r.trustedCIDRs)
+	}
+
+	// invalid ipv6 address
+	{
+		err := r.SetTrustedProxies([]string{"gggg:0000:0000:1234:abcd:ffff:c0a8:0101"})
+
+		assert.Error(t, err)
+	}
+
+	// valid ipv6 cidr
+	{
+		expectedTrustedCIDRs := []*net.IPNet{parseCIDR("::/0")}
+		err := r.SetTrustedProxies([]string{"::/0"})
+
+		assert.NoError(t, err)
+		assert.Equal(t, expectedTrustedCIDRs, r.trustedCIDRs)
+	}
+
+	// invalid ipv6 cidr
+	{
+		err := r.SetTrustedProxies([]string{"gggg:0000:0000:1234:abcd:ffff:c0a8:0101/129"})
+
+		assert.Error(t, err)
+	}
+
+	// valid combination
+	{
+		expectedTrustedCIDRs := []*net.IPNet{
+			parseCIDR("::/0"),
+			parseCIDR("192.168.0.0/16"),
+			parseCIDR("172.16.0.1/32"),
+		}
+		err := r.SetTrustedProxies([]string{
+			"::/0",
+			"192.168.0.0/16",
+			"172.16.0.1",
+		})
+
+		assert.NoError(t, err)
+		assert.Equal(t, expectedTrustedCIDRs, r.trustedCIDRs)
+	}
+
+	// invalid combination
+	{
+		err := r.SetTrustedProxies([]string{
+			"::/0",
+			"192.168.0.0/16",
+			"172.16.0.256",
+		})
+
+		assert.Error(t, err)
+	}
+
+	// nil value
+	{
+		err := r.SetTrustedProxies(nil)
+
+		assert.Nil(t, r.trustedCIDRs)
+		assert.Nil(t, err)
+	}
+
+}
+
+func parseCIDR(cidr string) *net.IPNet {
+	_, parsedCIDR, err := net.ParseCIDR(cidr)
+	if err != nil {
+		fmt.Println(err)
+	}
+	return parsedCIDR
 }
 
 func assertRoutePresent(t *testing.T, gotRoutes RoutesInfo, wantRoute RouteInfo) {

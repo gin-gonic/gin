@@ -124,7 +124,7 @@ func createRequestMultipartFiles(t *testing.T, files ...testFile) *http.Request 
 
 func assertMultipartFileHeader(t *testing.T, fh *multipart.FileHeader, file testFile) {
 	assert.Equal(t, file.Filename, fh.Filename)
-	// assert.Equal(t, int64(len(file.Content)), fh.Size) // fh.Size does not exist on go1.8
+	assert.Equal(t, int64(len(file.Content)), fh.Size)
 
 	fl, err := fh.Open()
 	assert.NoError(t, err)

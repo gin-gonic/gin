@@ -2,15 +2,14 @@
 // Use of this source code is governed by a MIT style
 // license that can be found in the LICENSE file.
 
-//go:build jsoniter
-// +build jsoniter
+//go:build go_json
+// +build go_json
 
 package json
 
-import jsoniter "github.com/json-iterator/go"
+import json "github.com/goccy/go-json"
 
 var (
-	json = jsoniter.ConfigCompatibleWithStandardLibrary
 	// Marshal is exported by gin/json package.
 	Marshal = json.Marshal
 	// Unmarshal is exported by gin/json package.
