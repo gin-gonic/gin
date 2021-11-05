@@ -12,6 +12,33 @@ import (
 	"github.com/go-playground/validator/v10"
 )
 
+var validatorTags = make(map[reflect.Type]string)
+
+// RegisterValidatorTag registers a validator tag against a number of types.
+// This allows defining validation for custom slice, array, and map types. For example:
+//     type CustomMap map[int]string
+//     ...
+//     binding.RegisterValidatorTag("gt=0", CustomMap{})
+//
+// Do not use the "dive" tag (unless in conjunction with "keys"/"endkeys").
+// Slice/array/map elements are validated independently.
+//
+// This function will not have any effect is binding.Validator has been replaced.
+//
+// NOTE: This function is not thread-safe. It is intended that these all be registered prior to any validation.
+func RegisterValidatorTag(tag string, types ...interface{}) {
+	for _, typ := range types {
+		t := reflect.TypeOf(typ)
+		if t.Kind() == reflect.Ptr {
+			t = t.Elem()
+		}
+		if t.Kind() != reflect.Slice && t.Kind() != reflect.Array && t.Kind() != reflect.Map {
+			panic("validator tags can be registered only for slices, arrays, and maps")
+		}
+		validatorTags[t] = tag
+	}
+}
+
 type defaultValidator struct {
 	once     sync.Once
 	validate *validator.Validate
@@ -81,6 +108,13 @@ func (v *defaultValidator) ValidateStruct(obj interface{}) error {
 		return v.validateStruct(obj)
 	case reflect.Slice, reflect.Array:
 		var errs validator.ValidationErrors
+
+		if tag, ok := validatorTags[value.Type()]; ok {
+			if err := v.validateVar(obj, tag); err != nil {
+				errs = append(errs, err.(validator.ValidationErrors)...) // nolint: errorlint
+			}
+		}
+
 		count := value.Len()
 		for i := 0; i < count; i++ {
 			if err := v.ValidateStruct(value.Index(i).Interface()); err != nil {
@@ -89,12 +123,20 @@ func (v *defaultValidator) ValidateStruct(obj interface{}) error {
 				}
 			}
 		}
+
 		if len(errs) > 0 {
 			return errs
 		}
 		return nil
 	case reflect.Map:
 		var errs validator.ValidationErrors
+
+		if tag, ok := validatorTags[value.Type()]; ok {
+			if err := v.validateVar(obj, tag); err != nil {
+				errs = append(errs, err.(validator.ValidationErrors)...) // nolint: errorlint
+			}
+		}
+
 		for _, key := range value.MapKeys() {
 			if err := v.ValidateStruct(value.MapIndex(key).Interface()); err != nil {
 				for _, fieldError := range err.(validator.ValidationErrors) { // nolint: errorlint
@@ -115,6 +157,12 @@ func (v *defaultValidator) ValidateStruct(obj interface{}) error {
 func (v *defaultValidator) validateStruct(obj interface{}) error {
 	v.lazyinit()
 	return v.validate.Struct(obj)
+}
+
+// validateStruct receives slice, array, and map types
+func (v *defaultValidator) validateVar(obj interface{}, tag string) error {
+	v.lazyinit()
+	return v.validate.Var(obj, tag)
 }
 
 // Engine returns the underlying validator engine which powers the default
