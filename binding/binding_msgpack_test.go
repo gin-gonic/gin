@@ -9,6 +9,7 @@ package binding
 
 import (
 	"bytes"
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -35,7 +36,7 @@ func TestBindingMsgPack(t *testing.T) {
 		string(data), string(data[1:]))
 }
 
-func testMsgPackBodyBinding(t *testing.T, b Binding, name, path, badPath, body, badBody string) {
+func testMsgPackBodyBinding(t *testing.T, b ContextBinding, name, path, badPath, body, badBody string) {
 	assert.Equal(t, name, b.Name())
 
 	obj := FooStruct{}
@@ -48,7 +49,17 @@ func testMsgPackBodyBinding(t *testing.T, b Binding, name, path, badPath, body, 
 	obj = FooStruct{}
 	req = requestWithBody("POST", badPath, badBody)
 	req.Header.Add("Content-Type", MIMEMSGPACK)
-	err = MsgPack.Bind(req, &obj)
+	err = b.Bind(req, &obj)
+	assert.Error(t, err)
+
+	obj2 := ConditionalFooStruct{}
+	req = requestWithBody("POST", path, body)
+	req.Header.Add("Content-Type", MIMEMSGPACK)
+	err = b.BindContext(context.Background(), req, &obj2)
+	assert.NoError(t, err)
+	assert.Equal(t, "bar", obj2.Foo)
+
+	err = b.BindContext(context.WithValue(context.Background(), "condition", true), req, &obj2) // nolint
 	assert.Error(t, err)
 }
 

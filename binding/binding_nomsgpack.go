@@ -7,7 +7,10 @@
 
 package binding
 
-import "net/http"
+import (
+	"context"
+	"net/http"
+)
 
 // Content-Type MIME of the most common data formats.
 const (
@@ -30,18 +33,39 @@ type Binding interface {
 	Bind(*http.Request, interface{}) error
 }
 
-// BindingBody adds BindBody method to Binding. BindBody is similar with Bind,
+// ContextBinding enables contextual validation by adding BindContext to Binding.
+// Custom validators can take advantage of the information in the context.
+type ContextBinding interface {
+	Binding
+	BindContext(context.Context, *http.Request, interface{}) error
+}
+
+// BindingBody adds BindBody method to Binding. BindBody is similar to Bind,
 // but it reads the body from supplied bytes instead of req.Body.
 type BindingBody interface {
 	Binding
 	BindBody([]byte, interface{}) error
 }
 
-// BindingUri adds BindUri method to Binding. BindUri is similar with Bind,
-// but it read the Params.
+// ContextBindingBody enables contextual validation by adding BindBodyContext to BindingBody.
+// Custom validators can take advantage of the information in the context.
+type ContextBindingBody interface {
+	BindingBody
+	BindContext(context.Context, *http.Request, interface{}) error
+	BindBodyContext(context.Context, []byte, interface{}) error
+}
+
+// BindingUri is similar to Bind, but it read the Params.
 type BindingUri interface {
 	Name() string
 	BindUri(map[string][]string, interface{}) error
+}
+
+// ContextBindingUri enables contextual validation by adding BindUriContext to BindingUri.
+// Custom validators can take advantage of the information in the context.
+type ContextBindingUri interface {
+	BindingUri
+	BindUriContext(context.Context, map[string][]string, interface{}) error
 }
 
 // StructValidator is the minimal interface which needs to be implemented in
@@ -60,6 +84,14 @@ type StructValidator interface {
 	// Engine returns the underlying validator engine which powers the
 	// StructValidator implementation.
 	Engine() interface{}
+}
+
+// ContextStructValidator is an extension of StructValidator that requires implementing
+// context-aware validation.
+// Custom validators can take advantage of the information in the context.
+type ContextStructValidator interface {
+	StructValidator
+	ValidateStructContext(context.Context, interface{}) error
 }
 
 // Validator is the default validator which implements the StructValidator
@@ -85,7 +117,7 @@ var (
 // Default returns the appropriate Binding instance based on the HTTP method
 // and the content type.
 func Default(method, contentType string) Binding {
-	if method == "GET" {
+	if method == http.MethodGet {
 		return Form
 	}
 
@@ -105,9 +137,12 @@ func Default(method, contentType string) Binding {
 	}
 }
 
-func validate(obj interface{}) error {
+func validateContext(ctx context.Context, obj interface{}) error {
 	if Validator == nil {
 		return nil
+	}
+	if v, ok := Validator.(ContextStructValidator); ok {
+		return v.ValidateStructContext(ctx, obj)
 	}
 	return Validator.ValidateStruct(obj)
 }

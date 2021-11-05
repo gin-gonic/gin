@@ -6,6 +6,7 @@ package binding
 
 import (
 	"bytes"
+	"context"
 	"encoding/xml"
 	"io"
 	"net/http"
@@ -17,17 +18,26 @@ func (xmlBinding) Name() string {
 	return "xml"
 }
 
-func (xmlBinding) Bind(req *http.Request, obj interface{}) error {
-	return decodeXML(req.Body, obj)
+func (b xmlBinding) Bind(req *http.Request, obj interface{}) error {
+	return b.BindContext(context.Background(), req, obj)
 }
 
-func (xmlBinding) BindBody(body []byte, obj interface{}) error {
-	return decodeXML(bytes.NewReader(body), obj)
+func (xmlBinding) BindContext(ctx context.Context, req *http.Request, obj interface{}) error {
+	return decodeXML(ctx, req.Body, obj)
 }
-func decodeXML(r io.Reader, obj interface{}) error {
+
+func (b xmlBinding) BindBody(body []byte, obj interface{}) error {
+	return b.BindBodyContext(context.Background(), body, obj)
+}
+
+func (xmlBinding) BindBodyContext(ctx context.Context, body []byte, obj interface{}) error {
+	return decodeXML(ctx, bytes.NewReader(body), obj)
+}
+
+func decodeXML(ctx context.Context, r io.Reader, obj interface{}) error {
 	decoder := xml.NewDecoder(r)
 	if err := decoder.Decode(obj); err != nil {
 		return err
 	}
-	return validate(obj)
+	return validateContext(ctx, obj)
 }

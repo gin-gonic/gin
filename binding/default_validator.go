@@ -5,6 +5,7 @@
 package binding
 
 import (
+	"context"
 	"fmt"
 	"reflect"
 	"sync"
@@ -92,10 +93,14 @@ func (fe mapFieldError) Unwrap() error {
 	return fe.FieldError
 }
 
-var _ StructValidator = &defaultValidator{}
+var _ ContextStructValidator = &defaultValidator{}
 
 // ValidateStruct receives any kind of type, but validates only structs, pointers, slices, arrays, and maps.
 func (v *defaultValidator) ValidateStruct(obj interface{}) error {
+	return v.ValidateStructContext(context.Background(), obj)
+}
+
+func (v *defaultValidator) ValidateStructContext(ctx context.Context, obj interface{}) error {
 	if obj == nil {
 		return nil
 	}
@@ -103,21 +108,21 @@ func (v *defaultValidator) ValidateStruct(obj interface{}) error {
 	value := reflect.ValueOf(obj)
 	switch value.Kind() {
 	case reflect.Ptr:
-		return v.ValidateStruct(value.Elem().Interface())
+		return v.ValidateStructContext(ctx, value.Elem().Interface())
 	case reflect.Struct:
-		return v.validateStruct(obj)
+		return v.validateStruct(ctx, obj)
 	case reflect.Slice, reflect.Array:
 		var errs validator.ValidationErrors
 
 		if tag, ok := validatorTags[value.Type()]; ok {
-			if err := v.validateVar(obj, tag); err != nil {
+			if err := v.validateVar(ctx, obj, tag); err != nil {
 				errs = append(errs, err.(validator.ValidationErrors)...) // nolint: errorlint
 			}
 		}
 
 		count := value.Len()
 		for i := 0; i < count; i++ {
-			if err := v.ValidateStruct(value.Index(i).Interface()); err != nil {
+			if err := v.ValidateStructContext(ctx, value.Index(i).Interface()); err != nil {
 				for _, fieldError := range err.(validator.ValidationErrors) { // nolint: errorlint
 					errs = append(errs, sliceFieldError{fieldError, i})
 				}
@@ -132,13 +137,13 @@ func (v *defaultValidator) ValidateStruct(obj interface{}) error {
 		var errs validator.ValidationErrors
 
 		if tag, ok := validatorTags[value.Type()]; ok {
-			if err := v.validateVar(obj, tag); err != nil {
+			if err := v.validateVar(ctx, obj, tag); err != nil {
 				errs = append(errs, err.(validator.ValidationErrors)...) // nolint: errorlint
 			}
 		}
 
 		for _, key := range value.MapKeys() {
-			if err := v.ValidateStruct(value.MapIndex(key).Interface()); err != nil {
+			if err := v.ValidateStructContext(ctx, value.MapIndex(key).Interface()); err != nil {
 				for _, fieldError := range err.(validator.ValidationErrors) { // nolint: errorlint
 					errs = append(errs, mapFieldError{fieldError, key.Interface()})
 				}
@@ -154,15 +159,15 @@ func (v *defaultValidator) ValidateStruct(obj interface{}) error {
 }
 
 // validateStruct receives struct type
-func (v *defaultValidator) validateStruct(obj interface{}) error {
+func (v *defaultValidator) validateStruct(ctx context.Context, obj interface{}) error {
 	v.lazyinit()
-	return v.validate.Struct(obj)
+	return v.validate.StructCtx(ctx, obj)
 }
 
 // validateStruct receives slice, array, and map types
-func (v *defaultValidator) validateVar(obj interface{}, tag string) error {
+func (v *defaultValidator) validateVar(ctx context.Context, obj interface{}, tag string) error {
 	v.lazyinit()
-	return v.validate.Var(obj, tag)
+	return v.validate.VarCtx(ctx, obj, tag)
 }
 
 // Engine returns the underlying validator engine which powers the default

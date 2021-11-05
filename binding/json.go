@@ -6,6 +6,7 @@ package binding
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"io"
 	"net/http"
@@ -30,18 +31,26 @@ func (jsonBinding) Name() string {
 	return "json"
 }
 
-func (jsonBinding) Bind(req *http.Request, obj interface{}) error {
+func (b jsonBinding) Bind(req *http.Request, obj interface{}) error {
+	return b.BindContext(context.Background(), req, obj)
+}
+
+func (jsonBinding) BindContext(ctx context.Context, req *http.Request, obj interface{}) error {
 	if req == nil || req.Body == nil {
 		return errors.New("invalid request")
 	}
-	return decodeJSON(req.Body, obj)
+	return decodeJSON(ctx, req.Body, obj)
 }
 
-func (jsonBinding) BindBody(body []byte, obj interface{}) error {
-	return decodeJSON(bytes.NewReader(body), obj)
+func (b jsonBinding) BindBody(body []byte, obj interface{}) error {
+	return b.BindBodyContext(context.Background(), body, obj)
 }
 
-func decodeJSON(r io.Reader, obj interface{}) error {
+func (jsonBinding) BindBodyContext(ctx context.Context, body []byte, obj interface{}) error {
+	return decodeJSON(ctx, bytes.NewReader(body), obj)
+}
+
+func decodeJSON(ctx context.Context, r io.Reader, obj interface{}) error {
 	decoder := json.NewDecoder(r)
 	if EnableDecoderUseNumber {
 		decoder.UseNumber()
@@ -52,5 +61,5 @@ func decodeJSON(r io.Reader, obj interface{}) error {
 	if err := decoder.Decode(obj); err != nil {
 		return err
 	}
-	return validate(obj)
+	return validateContext(ctx, obj)
 }
