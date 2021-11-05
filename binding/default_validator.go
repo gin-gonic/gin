@@ -41,9 +41,33 @@ func (fe sliceFieldError) Unwrap() error {
 	return fe.FieldError
 }
 
+// MapFieldError is returned for invalid map values.
+// It extends validator.FieldError with the key of the failing value.
+type MapFieldError interface {
+	validator.FieldError
+	Key() interface{}
+}
+
+type mapFieldError struct {
+	validator.FieldError
+	key interface{}
+}
+
+func (fe mapFieldError) Key() interface{} {
+	return fe.key
+}
+
+func (fe mapFieldError) Error() string {
+	return fmt.Sprintf("[%v]: %s", fe.key, fe.FieldError.Error())
+}
+
+func (fe mapFieldError) Unwrap() error {
+	return fe.FieldError
+}
+
 var _ StructValidator = &defaultValidator{}
 
-// ValidateStruct receives any kind of type, but validates only structs, pointers, slices, and arrays.
+// ValidateStruct receives any kind of type, but validates only structs, pointers, slices, arrays, and maps.
 func (v *defaultValidator) ValidateStruct(obj interface{}) error {
 	if obj == nil {
 		return nil
@@ -56,12 +80,25 @@ func (v *defaultValidator) ValidateStruct(obj interface{}) error {
 	case reflect.Struct:
 		return v.validateStruct(obj)
 	case reflect.Slice, reflect.Array:
-		count := value.Len()
 		var errs validator.ValidationErrors
+		count := value.Len()
 		for i := 0; i < count; i++ {
 			if err := v.ValidateStruct(value.Index(i).Interface()); err != nil {
 				for _, fieldError := range err.(validator.ValidationErrors) { // nolint: errorlint
 					errs = append(errs, sliceFieldError{fieldError, i})
+				}
+			}
+		}
+		if len(errs) > 0 {
+			return errs
+		}
+		return nil
+	case reflect.Map:
+		var errs validator.ValidationErrors
+		for _, key := range value.MapKeys() {
+			if err := v.ValidateStruct(value.MapIndex(key).Interface()); err != nil {
+				for _, fieldError := range err.(validator.ValidationErrors) { // nolint: errorlint
+					errs = append(errs, mapFieldError{fieldError, key.Interface()})
 				}
 			}
 		}

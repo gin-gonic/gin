@@ -21,6 +21,20 @@ func TestSliceFieldError(t *testing.T) {
 	assert.Equal(t, fe, errors.Unwrap(err))
 }
 
+func TestMapFieldError(t *testing.T) {
+	var fe validator.FieldError = dummyFieldError{msg: "test error"}
+
+	var err MapFieldError = mapFieldError{fe, "test key"}
+	assert.Equal(t, "test key", err.Key())
+	assert.Equal(t, "[test key]: test error", err.Error())
+	assert.Equal(t, fe, errors.Unwrap(err))
+
+	err = mapFieldError{fe, 123}
+	assert.Equal(t, 123, err.Key())
+	assert.Equal(t, "[123]: test error", err.Error())
+	assert.Equal(t, fe, errors.Unwrap(err))
+}
+
 type dummyFieldError struct {
 	validator.FieldError
 	msg string
@@ -61,6 +75,18 @@ func TestDefaultValidator(t *testing.T) {
 		{"validate *[]*struct failed-1", &defaultValidator{}, &[]*exampleStruct{{A: "123456789", B: 1}}, true},
 		{"validate *[]*struct failed-2", &defaultValidator{}, &[]*exampleStruct{{A: "12345678", B: 0}}, true},
 		{"validate *[]*struct passed", &defaultValidator{}, &[]*exampleStruct{{A: "12345678", B: 1}}, false},
+		{"validate map[string]struct failed-1", &defaultValidator{}, map[string]exampleStruct{"x": {A: "123456789", B: 1}}, true},
+		{"validate map[string]struct failed-2", &defaultValidator{}, map[string]exampleStruct{"x": {A: "12345678", B: 0}}, true},
+		{"validate map[string]struct passed", &defaultValidator{}, map[string]exampleStruct{"x": {A: "12345678", B: 1}}, false},
+		{"validate map[string]*struct failed-1", &defaultValidator{}, map[string]*exampleStruct{"x": {A: "123456789", B: 1}}, true},
+		{"validate map[string]*struct failed-2", &defaultValidator{}, map[string]*exampleStruct{"x": {A: "12345678", B: 0}}, true},
+		{"validate map[string]*struct passed", &defaultValidator{}, map[string]*exampleStruct{"x": {A: "12345678", B: 1}}, false},
+		{"validate *map[string]struct failed-1", &defaultValidator{}, &map[string]exampleStruct{"x": {A: "123456789", B: 1}}, true},
+		{"validate *map[string]struct failed-2", &defaultValidator{}, &map[string]exampleStruct{"x": {A: "12345678", B: 0}}, true},
+		{"validate *map[string]struct passed", &defaultValidator{}, &map[string]exampleStruct{"x": {A: "12345678", B: 1}}, false},
+		{"validate *map[string]*struct failed-1", &defaultValidator{}, &map[string]*exampleStruct{"x": {A: "123456789", B: 1}}, true},
+		{"validate *map[string]*struct failed-2", &defaultValidator{}, &map[string]*exampleStruct{"x": {A: "12345678", B: 0}}, true},
+		{"validate *map[string]*struct passed", &defaultValidator{}, &map[string]*exampleStruct{"x": {A: "12345678", B: 1}}, false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

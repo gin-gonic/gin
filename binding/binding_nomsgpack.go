@@ -50,8 +50,9 @@ type BindingUri interface {
 // https://github.com/go-playground/validator/tree/v10.6.1.
 type StructValidator interface {
 	// ValidateStruct can receive any kind of type and it should never panic, even if the configuration is not right.
-	// If the received type is not a struct, any validation should be skipped and nil must be returned.
-	// If the received type is a struct or pointer to a struct, the validation should be performed.
+	// If the received type is a slice/array/map, the validation should be performed on every element.
+	// If the received type is not a struct or slice/array/map, any validation should be skipped and nil must be returned.
+	// If the received type is a pointer to a struct/slice/array/map, the validation should be performed.
 	// If the struct is not valid or the validation itself fails, a descriptive error should be returned.
 	// Otherwise nil must be returned.
 	ValidateStruct(interface{}) error
