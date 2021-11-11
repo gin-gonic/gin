@@ -4,15 +4,21 @@
 
 package binding
 
+import "context"
+
 type uriBinding struct{}
 
 func (uriBinding) Name() string {
 	return "uri"
 }
 
-func (uriBinding) BindUri(m map[string][]string, obj interface{}) error {
+func (b uriBinding) BindUri(m map[string][]string, obj interface{}) error {
+	return b.BindUriContext(context.Background(), m, obj)
+}
+
+func (uriBinding) BindUriContext(ctx context.Context, m map[string][]string, obj interface{}) error {
 	if err := mapURI(obj, m); err != nil {
 		return err
 	}
-	return validate(obj)
+	return validateContext(ctx, obj)
 }

@@ -6,6 +6,7 @@ package binding
 
 import (
 	"bytes"
+	"context"
 	"io"
 	"net/http"
 
@@ -18,18 +19,26 @@ func (yamlBinding) Name() string {
 	return "yaml"
 }
 
-func (yamlBinding) Bind(req *http.Request, obj interface{}) error {
-	return decodeYAML(req.Body, obj)
+func (b yamlBinding) Bind(req *http.Request, obj interface{}) error {
+	return b.BindContext(context.Background(), req, obj)
 }
 
-func (yamlBinding) BindBody(body []byte, obj interface{}) error {
-	return decodeYAML(bytes.NewReader(body), obj)
+func (yamlBinding) BindContext(ctx context.Context, req *http.Request, obj interface{}) error {
+	return decodeYAML(ctx, req.Body, obj)
 }
 
-func decodeYAML(r io.Reader, obj interface{}) error {
+func (b yamlBinding) BindBody(body []byte, obj interface{}) error {
+	return b.BindBodyContext(context.Background(), body, obj)
+}
+
+func (yamlBinding) BindBodyContext(ctx context.Context, body []byte, obj interface{}) error {
+	return decodeYAML(ctx, bytes.NewReader(body), obj)
+}
+
+func decodeYAML(ctx context.Context, r io.Reader, obj interface{}) error {
 	decoder := yaml.NewDecoder(r)
 	if err := decoder.Decode(obj); err != nil {
 		return err
 	}
-	return validate(obj)
+	return validateContext(ctx, obj)
 }

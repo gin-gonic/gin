@@ -43,6 +43,7 @@ Gin is a web framework written in Go (Golang). It features a martini-like API wi
     - [Controlling Log output coloring](#controlling-log-output-coloring)
     - [Model binding and validation](#model-binding-and-validation)
     - [Custom Validators](#custom-validators)
+    - [Custom Map and Slice Validator Tags](#custom-map-and-slice-validator-tags)
     - [Only Bind Query String](#only-bind-query-string)
     - [Bind Query String or Post Data](#bind-query-string-or-post-data)
     - [Bind Uri](#bind-uri)
@@ -837,6 +838,46 @@ $ curl "localhost:8085/bookable?check_in=2000-03-09&check_out=2000-03-10"
 
 [Struct level validations](https://github.com/go-playground/validator/releases/tag/v8.7) can also be registered this way.
 See the [struct-lvl-validation example](https://github.com/gin-gonic/examples/tree/master/struct-lvl-validations) to learn more.
+
+### Custom Map and Slice Validator Tags
+
+It is possible to register validator tags for custom map and slice types.
+
+```go
+package main
+
+import (
+	"net/http"
+
+	"github.com/gin-gonic/gin"
+	"github.com/gin-gonic/gin/binding"
+)
+
+type Person struct {
+	FirstName string `json:"firstName" binding:"required,lte=64"`
+	LastName string `json:"lastName" binding:"required,lte=64"`
+}
+
+type Managers map[string]Person
+
+func main() {
+	route := gin.Default()
+
+	binding.RegisterValidatorTag("dive,keys,oneof=accounting finance operations,endkeys", Managers{})
+
+	route.POST("/managers", configureManagers)
+	route.Run(":8085")
+}
+
+func configureManagers(c *gin.Context) {
+	var m Managers
+	if err := c.ShouldBindJSON(&m); err == nil {
+		c.JSON(http.StatusOK, gin.H{"message": "Manager configuration is valid!"})
+	} else {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	}
+}
+```
 
 ### Only Bind Query String
 

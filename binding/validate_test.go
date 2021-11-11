@@ -6,6 +6,7 @@ package binding
 
 import (
 	"bytes"
+	"context"
 	"testing"
 	"time"
 
@@ -225,4 +226,8 @@ func TestValidatorEngine(t *testing.T) {
 	assert.NotNil(t, errs)
 	// Check that the error matches expectation
 	assert.Error(t, errs, "", "", "notone")
+}
+
+func validate(obj interface{}) error {
+	return validateContext(context.Background(), obj)
 }

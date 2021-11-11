@@ -6,6 +6,7 @@ package binding
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"io"
@@ -20,6 +21,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin/testdata/protoexample"
+	"github.com/go-playground/validator/v10"
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/protobuf/proto"
 )
@@ -36,6 +38,10 @@ type QueryTest struct {
 
 type FooStruct struct {
 	Foo string `msgpack:"foo" json:"foo" form:"foo" xml:"foo" binding:"required,max=32"`
+}
+
+type ConditionalFooStruct struct {
+	Foo string `msgpack:"foo" json:"foo" form:"foo" xml:"foo" binding:"required_if_condition,max=32"`
 }
 
 type FooBarStruct struct {
@@ -142,6 +148,16 @@ type FooStructForStringPtrType struct {
 
 type FooStructForMapPtrType struct {
 	PtrBar *map[string]interface{} `form:"ptr_bar"`
+}
+
+func init() {
+	_ = Validator.Engine().(*validator.Validate).RegisterValidationCtx(
+		"required_if_condition", func(ctx context.Context, fl validator.FieldLevel) bool {
+			if ctx.Value("condition") == true {
+				return !fl.Field().IsZero()
+			}
+			return true
+		})
 }
 
 func TestBindingDefault(t *testing.T) {
@@ -796,6 +812,38 @@ func TestUriBinding(t *testing.T) {
 	assert.Equal(t, map[string]interface{}(nil), not.Name)
 }
 
+func TestUriBindingWithContext(t *testing.T) {
+	b := Uri
+
+	type Tag struct {
+		Name string `uri:"name" binding:"required_if_condition"`
+	}
+
+	empty := make(map[string][]string)
+	assert.NoError(t, b.BindUriContext(context.Background(), empty, new(Tag)))
+	assert.Error(t, b.BindUriContext(context.WithValue(context.Background(), "condition", true), empty, new(Tag))) // nolint
+}
+
+func TestUriBindingWithNotContextValidator(t *testing.T) {
+	prev := Validator
+	defer func() {
+		Validator = prev
+	}()
+	Validator = &notContextValidator{}
+
+	TestUriBinding(t)
+}
+
+type notContextValidator defaultValidator
+
+func (v *notContextValidator) ValidateStruct(obj interface{}) error {
+	return (*defaultValidator)(v).ValidateStruct(obj)
+}
+
+func (v *notContextValidator) Engine() interface{} {
+	return (*defaultValidator)(v).Engine()
+}
+
 func TestUriInnerBinding(t *testing.T) {
 	type Tag struct {
 		Name string `uri:"name"`
@@ -1179,7 +1227,7 @@ func testQueryBindingBoolFail(t *testing.T, method, path, badPath, body, badBody
 	assert.Error(t, err)
 }
 
-func testBodyBinding(t *testing.T, b Binding, name, path, badPath, body, badBody string) {
+func testBodyBinding(t *testing.T, b ContextBinding, name, path, badPath, body, badBody string) {
 	assert.Equal(t, name, b.Name())
 
 	obj := FooStruct{}
@@ -1190,7 +1238,16 @@ func testBodyBinding(t *testing.T, b Binding, name, path, badPath, body, badBody
 
 	obj = FooStruct{}
 	req = requestWithBody("POST", badPath, badBody)
-	err = JSON.Bind(req, &obj)
+	err = b.Bind(req, &obj)
+	assert.Error(t, err)
+
+	obj2 := ConditionalFooStruct{}
+	req = requestWithBody("POST", path, body)
+	err = b.BindContext(context.Background(), req, &obj2)
+	assert.NoError(t, err)
+	assert.Equal(t, "bar", obj2.Foo)
+
+	err = b.BindContext(context.WithValue(context.Background(), "condition", true), req, &obj2) // nolint
 	assert.Error(t, err)
 }
 
@@ -1204,7 +1261,7 @@ func testBodyBindingSlice(t *testing.T, b Binding, name, path, badPath, body, ba
 
 	var obj2 []FooStruct
 	req = requestWithBody("POST", badPath, badBody)
-	err = JSON.Bind(req, &obj2)
+	err = b.Bind(req, &obj2)
 	assert.Error(t, err)
 }
 
@@ -1249,7 +1306,7 @@ func testBodyBindingUseNumber(t *testing.T, b Binding, name, path, badPath, body
 
 	obj = FooStructUseNumber{}
 	req = requestWithBody("POST", badPath, badBody)
-	err = JSON.Bind(req, &obj)
+	err = b.Bind(req, &obj)
 	assert.Error(t, err)
 }
 
@@ -1267,7 +1324,7 @@ func testBodyBindingUseNumber2(t *testing.T, b Binding, name, path, badPath, bod
 
 	obj = FooStructUseNumber{}
 	req = requestWithBody("POST", badPath, badBody)
-	err = JSON.Bind(req, &obj)
+	err = b.Bind(req, &obj)
 	assert.Error(t, err)
 }
 
@@ -1285,7 +1342,7 @@ func testBodyBindingDisallowUnknownFields(t *testing.T, b Binding, path, badPath
 
 	obj = FooStructDisallowUnknownFields{}
 	req = requestWithBody("POST", badPath, badBody)
-	err = JSON.Bind(req, &obj)
+	err = b.Bind(req, &obj)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "what")
 }
@@ -1301,7 +1358,7 @@ func testBodyBindingFail(t *testing.T, b Binding, name, path, badPath, body, bad
 
 	obj = FooStruct{}
 	req = requestWithBody("POST", badPath, badBody)
-	err = JSON.Bind(req, &obj)
+	err = b.Bind(req, &obj)
 	assert.Error(t, err)
 }
 
@@ -1318,7 +1375,7 @@ func testProtoBodyBinding(t *testing.T, b Binding, name, path, badPath, body, ba
 	obj = protoexample.Test{}
 	req = requestWithBody("POST", badPath, badBody)
 	req.Header.Add("Content-Type", MIMEPROTOBUF)
-	err = ProtoBuf.Bind(req, &obj)
+	err = b.Bind(req, &obj)
 	assert.Error(t, err)
 }
 
@@ -1349,7 +1406,7 @@ func testProtoBodyBindingFail(t *testing.T, b Binding, name, path, badPath, body
 	obj = protoexample.Test{}
 	req = requestWithBody("POST", badPath, badBody)
 	req.Header.Add("Content-Type", MIMEPROTOBUF)
-	err = ProtoBuf.Bind(req, &obj)
+	err = b.Bind(req, &obj)
 	assert.Error(t, err)
 }
 

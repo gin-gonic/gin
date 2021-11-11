@@ -704,12 +704,15 @@ func (c *Context) ShouldBindUri(obj interface{}) error {
 	for _, v := range c.Params {
 		m[v.Key] = []string{v.Value}
 	}
-	return binding.Uri.BindUri(m, obj)
+	return binding.Uri.BindUriContext(c, m, obj)
 }
 
 // ShouldBindWith binds the passed struct pointer using the specified binding engine.
 // See the binding package.
 func (c *Context) ShouldBindWith(obj interface{}, b binding.Binding) error {
+	if b, ok := b.(binding.ContextBinding); ok {
+		return b.BindContext(c, c.Request, obj)
+	}
 	return b.Bind(c.Request, obj)
 }
 
@@ -731,6 +734,9 @@ func (c *Context) ShouldBindBodyWith(obj interface{}, bb binding.BindingBody) (e
 			return err
 		}
 		c.Set(BodyBytesKey, body)
+	}
+	if bb, ok := bb.(binding.ContextBindingBody); ok {
+		return bb.BindBodyContext(c, body, obj)
 	}
 	return bb.BindBody(body, obj)
 }

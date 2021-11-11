@@ -24,6 +24,7 @@ import (
 	"github.com/gin-contrib/sse"
 	"github.com/gin-gonic/gin/binding"
 	testdata "github.com/gin-gonic/gin/testdata/protoexample"
+	"github.com/go-playground/validator/v10"
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/protobuf/proto"
 )
@@ -35,6 +36,16 @@ var _ context.Context = &Context{}
 // func (c *Context) Negotiate(code int, config Negotiate) {
 // BAD case: func (c *Context) Render(code int, render render.Render, obj ...interface{}) {
 // test that information is not leaked when reusing Contexts (using the Pool)
+
+func init() {
+	_ = binding.Validator.Engine().(*validator.Validate).RegisterValidationCtx(
+		"required_if_condition", func(ctx context.Context, fl validator.FieldLevel) bool {
+			if ctx.Value("condition") == true {
+				return !fl.Field().IsZero()
+			}
+			return true
+		})
+}
 
 func createMultipartRequest() *http.Request {
 	boundary := "--testboundary"
@@ -1543,6 +1554,27 @@ func TestContextBindWithJSON(t *testing.T) {
 	assert.Equal(t, 0, w.Body.Len())
 }
 
+func TestContextBindWithJSONContextual(t *testing.T) {
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
+
+	c.Request, _ = http.NewRequest("POST", "/", bytes.NewBufferString("{\"bar\":\"foo\"}"))
+	c.Request.Header.Add("Content-Type", MIMEXML) // set fake content-type
+
+	var obj struct {
+		Foo string `json:"foo" binding:"required_if_condition"`
+		Bar string `json:"bar"`
+	}
+	c.Set("condition", true)
+	assert.Error(t, c.BindJSON(&obj))
+
+	c.Request, _ = http.NewRequest("POST", "/", bytes.NewBufferString("{\"foo\":\"bar\", \"bar\":\"foo\"}"))
+	assert.NoError(t, c.BindJSON(&obj))
+	assert.Equal(t, "foo", obj.Bar)
+	assert.Equal(t, "bar", obj.Foo)
+	assert.Equal(t, 0, w.Body.Len())
+}
+
 func TestContextBindWithXML(t *testing.T) {
 	w := httptest.NewRecorder()
 	c, _ := CreateTestContext(w)
@@ -1670,6 +1702,92 @@ func TestContextShouldBindWithJSON(t *testing.T) {
 	assert.Equal(t, "foo", obj.Bar)
 	assert.Equal(t, "bar", obj.Foo)
 	assert.Equal(t, 0, w.Body.Len())
+}
+
+func TestContextShouldBindWithJSONContextual(t *testing.T) {
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
+
+	c.Request, _ = http.NewRequest("POST", "/", bytes.NewBufferString("{\"bar\":\"foo\"}"))
+	c.Request.Header.Add("Content-Type", MIMEXML) // set fake content-type
+
+	var obj struct {
+		Foo string `json:"foo" binding:"required_if_condition"`
+		Bar string `json:"bar"`
+	}
+	c.Set("condition", true)
+	assert.Error(t, c.ShouldBindJSON(&obj))
+
+	c.Request, _ = http.NewRequest("POST", "/", bytes.NewBufferString("{\"foo\":\"bar\", \"bar\":\"foo\"}"))
+	assert.NoError(t, c.ShouldBindJSON(&obj))
+	assert.Equal(t, "foo", obj.Bar)
+	assert.Equal(t, "bar", obj.Foo)
+	assert.Equal(t, 0, w.Body.Len())
+}
+
+func TestContextShouldBindBodyWithJSONContextual(t *testing.T) {
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
+
+	var obj struct {
+		Foo string `json:"foo" binding:"required_if_condition"`
+		Bar string `json:"bar"`
+	}
+	c.Set("condition", true)
+	c.Set(BodyBytesKey, []byte("{\"bar\":\"foo\"}"))
+	assert.Error(t, c.ShouldBindBodyWith(&obj, binding.JSON))
+
+	c.Set(BodyBytesKey, []byte("{\"foo\":\"bar\", \"bar\":\"foo\"}"))
+	assert.NoError(t, c.ShouldBindBodyWith(&obj, binding.JSON))
+	assert.Equal(t, "foo", obj.Bar)
+	assert.Equal(t, "bar", obj.Foo)
+	assert.Equal(t, 0, w.Body.Len())
+}
+
+func TestContextShouldBindWithNotContextBinding(t *testing.T) {
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
+
+	c.Request, _ = http.NewRequest("POST", "/", bytes.NewBufferString("{\"foo\":\"bar\", \"bar\":\"foo\"}"))
+	c.Request.Header.Add("Content-Type", MIMEXML) // set fake content-type
+
+	var obj struct {
+		Foo string `json:"foo" binding:"required_if_condition"`
+		Bar string `json:"bar"`
+	}
+	assert.NoError(t, c.ShouldBindWith(&obj, notContextBinding{}))
+	assert.Equal(t, "foo", obj.Bar)
+	assert.Equal(t, "bar", obj.Foo)
+	assert.Equal(t, 0, w.Body.Len())
+}
+
+func TestContextShouldBindBodyWithNotContextBinding(t *testing.T) {
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
+
+	var obj struct {
+		Foo string `json:"foo"`
+		Bar string `json:"bar"`
+	}
+	c.Set(BodyBytesKey, []byte("{\"foo\":\"bar\", \"bar\":\"foo\"}"))
+	assert.NoError(t, c.ShouldBindBodyWith(&obj, notContextBinding{}))
+	assert.Equal(t, "foo", obj.Bar)
+	assert.Equal(t, "bar", obj.Foo)
+	assert.Equal(t, 0, w.Body.Len())
+}
+
+type notContextBinding struct{}
+
+func (notContextBinding) Name() string {
+	return binding.JSON.Name()
+}
+
+func (b notContextBinding) Bind(req *http.Request, obj interface{}) error {
+	return binding.JSON.Bind(req, obj)
+}
+
+func (b notContextBinding) BindBody(body []byte, obj interface{}) error {
+	return binding.JSON.BindBody(body, obj)
 }
 
 func TestContextShouldBindWithXML(t *testing.T) {
