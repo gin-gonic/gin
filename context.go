@@ -260,6 +260,16 @@ func (c *Context) Get(key string) (value interface{}, exists bool) {
 	return
 }
 
+// Do iterates the key/value pairs stored in c.Keys and executes the callback.
+// It does nothing if c.Keys is nil or empty.
+func (c *Context) Do(fn func(key string, value interface{})) {
+	c.mu.RLock()
+	for k, v := range c.Keys {
+		fn(k,v)
+	} 
+	c.mu.RUnlock()
+}
+
 // MustGet returns the value for the given key if it exists, otherwise it panics.
 func (c *Context) MustGet(key string) interface{} {
 	if value, exists := c.Get(key); exists {
