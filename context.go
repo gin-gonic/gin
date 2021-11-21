@@ -252,7 +252,7 @@ func (c *Context) Set(key string, value interface{}) {
 }
 
 // Get returns the value for the given key, ie: (value, true).
-// If the value does not exists it returns (nil, false)
+// If the value does not exist it returns (nil, false)
 func (c *Context) Get(key string) (value interface{}, exists bool) {
 	c.mu.RLock()
 	value, exists = c.Keys[key]
@@ -602,7 +602,7 @@ func (c *Context) SaveUploadedFile(file *multipart.FileHeader, dst string) error
 }
 
 // Bind checks the Content-Type to select a binding engine automatically,
-// Depending the "Content-Type" header different bindings are used:
+// Depending on the "Content-Type" header different bindings are used:
 //     "application/json" --> JSON binding
 //     "application/xml"  --> XML binding
 // otherwise --> returns an error.
@@ -661,7 +661,7 @@ func (c *Context) MustBindWith(obj interface{}, b binding.Binding) error {
 }
 
 // ShouldBind checks the Content-Type to select a binding engine automatically,
-// Depending the "Content-Type" header different bindings are used:
+// Depending on the "Content-Type" header different bindings are used:
 //     "application/json" --> JSON binding
 //     "application/xml"  --> XML binding
 // otherwise --> returns an error
@@ -863,7 +863,7 @@ func (c *Context) Status(code int) {
 	c.Writer.WriteHeader(code)
 }
 
-// Header is a intelligent shortcut for c.Writer.Header().Set(key, value).
+// Header is an intelligent shortcut for c.Writer.Header().Set(key, value).
 // It writes a header in the response.
 // If value == "", this method removes the header `c.Writer.Header().Del(key)`
 func (c *Context) Header(key, value string) {
@@ -946,7 +946,7 @@ func (c *Context) HTML(code int, name string, obj interface{}) {
 
 // IndentedJSON serializes the given struct as pretty JSON (indented + endlines) into the response body.
 // It also sets the Content-Type as "application/json".
-// WARNING: we recommend to use this only for development purposes since printing pretty JSON is
+// WARNING: we recommend using this only for development purposes since printing pretty JSON is
 // more CPU and bandwidth consuming. Use Context.JSON() instead.
 func (c *Context) IndentedJSON(code int, obj interface{}) {
 	c.Render(code, render.IndentedJSON{Data: obj})
@@ -1010,7 +1010,7 @@ func (c *Context) String(code int, format string, values ...interface{}) {
 	c.Render(code, render.String{Format: format, Data: values})
 }
 
-// Redirect returns a HTTP redirect to the specific location.
+// Redirect returns an HTTP redirect to the specific location.
 func (c *Context) Redirect(code int, location string) {
 	c.Render(-1, render.Redirect{
 		Code:     code,
