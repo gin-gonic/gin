@@ -2,6 +2,8 @@
 
 ## Gin v1.7.6
 
+### BUGFIXES
+
 * bump new release to fix v1.7.5 installation error and retract v1.7.5.
 
 ## Gin v1.7.5
