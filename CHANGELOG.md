@@ -1,12 +1,6 @@
 # Gin ChangeLog
 
-## Gin v1.7.6
-
-### BUGFIXES
-
-* bump new release to fix v1.7.5 installation error and retract v1.7.5.
-
-## Gin v1.7.5
+## Gin v1.7.7
 
 ### BUGFIXES
 
@@ -23,6 +17,12 @@
 ### DOCS
 
 * NoMethod: added usage annotation ([#2832](https://github.com/gin-gonic/gin/pull/2832#issuecomment-929954463)).
+
+## Gin v1.7.6
+
+### BUGFIXES
+
+* bump new release to fix v1.7.5 release error by using v1.7.4 codes.
 
 ## Gin v1.7.4
 
