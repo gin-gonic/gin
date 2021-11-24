@@ -192,6 +192,7 @@ func TestTreeWildcard(t *testing.T) {
 		"/get/abc/123abg/:param",
 		"/get/abc/123abf/:param",
 		"/get/abc/123abfff/:param",
+		"/get/address/:address",
 	}
 	for _, route := range routes {
 		tree.addRoute(route, fakeHandler(route))
@@ -315,6 +316,7 @@ func TestTreeWildcard(t *testing.T) {
 		{"/get/abc/123abg/test", false, "/get/abc/123abg/:param", Params{Param{Key: "param", Value: "test"}}},
 		{"/get/abc/123abf/testss", false, "/get/abc/123abf/:param", Params{Param{Key: "param", Value: "testss"}}},
 		{"/get/abc/123abfff/te", false, "/get/abc/123abfff/:param", Params{Param{Key: "param", Value: "te"}}},
+		{"/get/address/B", false, "/get/address/:address", Params{{Key: "address", Value: "B"}}},
 	})
 
 	checkPriorities(t, tree)
