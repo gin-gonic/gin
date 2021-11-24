@@ -12,3 +12,5 @@ require (
 	github.com/ugorji/go/codec v1.1.7
 	gopkg.in/yaml.v2 v2.2.8
 )
+
+retract v1.7.5
