@@ -317,6 +317,8 @@ func TestTreeWildcard(t *testing.T) {
 		{"/get/abc/123abf/testss", false, "/get/abc/123abf/:param", Params{Param{Key: "param", Value: "testss"}}},
 		{"/get/abc/123abfff/te", false, "/get/abc/123abfff/:param", Params{Param{Key: "param", Value: "te"}}},
 		{"/get/address/B", false, "/get/address/:address", Params{{Key: "address", Value: "B"}}},
+		{"/get/address/https://nono.de", false, "/get/address/:address", Params{{Key: "address", Value: "https://nono.de"}}},
+		{"/get/address/https%3A%2F%2Fnono.de", false, "/get/address/:address", Params{{Key: "address", Value: "https://nono.de"}}},
 	})
 
 	checkPriorities(t, tree)
