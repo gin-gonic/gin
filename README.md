@@ -78,7 +78,7 @@ Gin is a web framework written in Go (Golang). It features a martini-like API wi
     - [http2 server push](#http2-server-push)
     - [Define format for the log of routes](#define-format-for-the-log-of-routes)
     - [Set and get a cookie](#set-and-get-a-cookie)
-  - [Don't trust all proxies](#don't-trust-all-proxies)
+  - [Don't trust all proxies](#dont-trust-all-proxies)
   - [Testing](#testing)
   - [Users](#users)
 
