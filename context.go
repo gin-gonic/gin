@@ -785,10 +785,14 @@ func (e *Engine) isTrustedProxy(ip net.IP) bool {
 }
 
 // RemoteIP parses the IP from Request.RemoteAddr, normalizes and returns the IP (without the port).
+// If Request.RemoteAddr is @ which may be proxy pass by a unix listener, treat it as 127.0.0.1.
 // It also checks if the remoteIP is a trusted proxy or not.
 // In order to perform this validation, it will see if the IP is contained within at least one of the CIDR blocks
 // defined by Engine.SetTrustedProxies()
 func (c *Context) RemoteIP() (net.IP, bool) {
+	if c.Request.RemoteAddr == "@" {
+		c.Request.RemoteAddr = "127.0.0.1:"
+	}
 	ip, _, err := net.SplitHostPort(strings.TrimSpace(c.Request.RemoteAddr))
 	if err != nil {
 		return nil, false

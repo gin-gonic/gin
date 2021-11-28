@@ -1401,6 +1401,12 @@ func TestContextClientIP(t *testing.T) {
 	c.Request.RemoteAddr = "50.50.50.50"
 	assert.Empty(t, c.ClientIP())
 
+	// @
+	c.Request.RemoteAddr = "@"
+	assert.Equal(t, "127.0.0.1", c.ClientIP())
+	c.Request.Header.Set("X-Forwarded-For", "30.30.30.30  ")
+	assert.Equal(t, "30.30.30.30", c.ClientIP())
+
 	// Tests exercising the TrustedProxies functionality
 	resetContextForClientIPTests(c)
 
