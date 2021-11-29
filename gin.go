@@ -11,7 +11,6 @@ import (
 	"net/http"
 	"os"
 	"path"
-	"reflect"
 	"strings"
 	"sync"
 
@@ -408,9 +407,9 @@ func (engine *Engine) SetTrustedProxies(trustedProxies []string) error {
 	return engine.parseTrustedProxies()
 }
 
-// isUnsafeTrustedProxies compares Engine.trustedCIDRs and defaultTrustedCIDRs, it's not safe if equal (returns true)
+// isUnsafeTrustedProxies checks if Engine.trustedCIDRs contains all IPs, it's not safe if it has (returns true)
 func (engine *Engine) isUnsafeTrustedProxies() bool {
-	return reflect.DeepEqual(engine.trustedCIDRs, defaultTrustedCIDRs)
+	return engine.isTrustedProxy(net.ParseIP("0.0.0.0")) || engine.isTrustedProxy(net.ParseIP("::"))
 }
 
 // parseTrustedProxies parse Engine.trustedProxies to Engine.trustedCIDRs
