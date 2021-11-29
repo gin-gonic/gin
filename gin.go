@@ -28,7 +28,13 @@ var (
 
 var defaultPlatform string
 
-var defaultTrustedCIDRs = []*net.IPNet{{IP: net.IP{0x0, 0x0, 0x0, 0x0}, Mask: net.IPMask{0x0, 0x0, 0x0, 0x0}}} // 0.0.0.0/0
+var defaultTrustedCIDRs = []*net.IPNet{
+	{IP: net.IP{0x0, 0x0, 0x0, 0x0}, Mask: net.IPMask{0x0, 0x0, 0x0, 0x0}}, // 0.0.0.0/0
+	{ // ::/0
+		IP:   net.IP{0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0},
+		Mask: net.IPMask{0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0},
+	},
+}
 
 // HandlerFunc defines the handler used by gin middleware as return value.
 type HandlerFunc func(*Context)
@@ -409,6 +415,39 @@ func (engine *Engine) parseTrustedProxies() error {
 	trustedCIDRs, err := engine.prepareTrustedCIDRs()
 	engine.trustedCIDRs = trustedCIDRs
 	return err
+}
+
+// isTrustedProxy will check whether the IP address is included in the trusted list according to Engine.trustedCIDRs
+func (engine *Engine) isTrustedProxy(ip net.IP) bool {
+	if engine.trustedCIDRs != nil {
+		for _, cidr := range engine.trustedCIDRs {
+			if cidr.Contains(ip) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// validateHeader will parse X-Forwarded-For header and return the trusted client IP address
+func (engine *Engine) validateHeader(header string) (clientIP string, valid bool) {
+	if header != "" {
+		items := strings.Split(header, ",")
+		for i := len(items) - 1; i >= 0; i-- {
+			ipStr := strings.TrimSpace(items[i])
+			ip := net.ParseIP(ipStr)
+			if ip == nil {
+				break
+			}
+
+			// X-Forwarded-For is appended by proxy
+			// Check IPs in reverse order and stop when find untrusted proxy
+			if (i == 0) || (!engine.isTrustedProxy(ip)) {
+				return ipStr, true
+			}
+		}
+	}
+	return "", false
 }
 
 // parseIP parse a string representation of an IP and returns a net.IP with the
