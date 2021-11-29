@@ -422,11 +422,12 @@ func (engine *Engine) parseTrustedProxies() error {
 
 // isTrustedProxy will check whether the IP address is included in the trusted list according to Engine.trustedCIDRs
 func (engine *Engine) isTrustedProxy(ip net.IP) bool {
-	if engine.trustedCIDRs != nil {
-		for _, cidr := range engine.trustedCIDRs {
-			if cidr.Contains(ip) {
-				return true
-			}
+	if engine.trustedCIDRs == nil {
+		return false
+	}
+	for _, cidr := range engine.trustedCIDRs {
+		if cidr.Contains(ip) {
+			return true
 		}
 	}
 	return false
@@ -434,20 +435,21 @@ func (engine *Engine) isTrustedProxy(ip net.IP) bool {
 
 // validateHeader will parse X-Forwarded-For header and return the trusted client IP address
 func (engine *Engine) validateHeader(header string) (clientIP string, valid bool) {
-	if header != "" {
-		items := strings.Split(header, ",")
-		for i := len(items) - 1; i >= 0; i-- {
-			ipStr := strings.TrimSpace(items[i])
-			ip := net.ParseIP(ipStr)
-			if ip == nil {
-				break
-			}
+	if header == "" {
+		return "", false
+	}
+	items := strings.Split(header, ",")
+	for i := len(items) - 1; i >= 0; i-- {
+		ipStr := strings.TrimSpace(items[i])
+		ip := net.ParseIP(ipStr)
+		if ip == nil {
+			break
+		}
 
-			// X-Forwarded-For is appended by proxy
-			// Check IPs in reverse order and stop when find untrusted proxy
-			if (i == 0) || (!engine.isTrustedProxy(ip)) {
-				return ipStr, true
-			}
+		// X-Forwarded-For is appended by proxy
+		// Check IPs in reverse order and stop when find untrusted proxy
+		if (i == 0) || (!engine.isTrustedProxy(ip)) {
+			return ipStr, true
 		}
 	}
 	return "", false
