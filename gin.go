@@ -102,7 +102,7 @@ type Engine struct {
 	// `(*gin.Context).Request.RemoteAddr`.
 	ForwardedByClientIP bool
 
-	// DEPRECATED: USE `TrustedPlatform` WITH VALUE `gin.GoogleAppEngine` INSTEAD
+	// DEPRECATED: USE `TrustedPlatform` WITH VALUE `gin.PlatformGoogleAppEngine` INSTEAD
 	// #726 #755 If enabled, it will trust some headers starting with
 	// 'X-AppEngine...' for better integration with that PaaS.
 	AppEngine bool
