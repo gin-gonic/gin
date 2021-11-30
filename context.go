@@ -415,7 +415,7 @@ func (c *Context) Query(key string) (value string) {
 //     c.DefaultQuery("name", "unknown") == "Manu"
 //     c.DefaultQuery("id", "none") == "none"
 //     c.DefaultQuery("lastname", "none") == ""
-func (c *Context) DefaultQuery(key, defaultValue string) string {
+func (c *Context) DefaultQuery(key, defaultValue interface{}) interface{} {
 	if value, ok := c.GetQuery(key); ok {
 		return value
 	}
