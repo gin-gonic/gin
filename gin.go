@@ -152,7 +152,7 @@ type Engine struct {
 var _ IRouter = &Engine{}
 
 // New returns a new blank Engine instance without any middleware attached.
-// By default the configuration is:
+// By default, the configuration is:
 // - RedirectTrailingSlash:  true
 // - RedirectFixedPath:      false
 // - HandleMethodNotAllowed: false
