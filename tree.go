@@ -48,6 +48,16 @@ func (ps Params) ByName(name string) (va string) {
 	return
 }
 
+//IsEmpty check the value of the param 
+func (ps Params) IsEmpty() bool {
+	for _, entry := range ps {
+		if len(entry.Value) < 1 {
+			return false
+		}
+	}
+	return true
+}
+
 type methodTree struct {
 	method string
 	root   *node
