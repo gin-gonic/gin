@@ -12,6 +12,7 @@ import (
 	"html/template"
 	"io"
 	"mime/multipart"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -1404,6 +1405,11 @@ func TestContextClientIP(t *testing.T) {
 	// Tests exercising the TrustedProxies functionality
 	resetContextForClientIPTests(c)
 
+	// IPv6 support
+	c.Request.RemoteAddr = "[::1]:12345"
+	assert.Equal(t, "20.20.20.20", c.ClientIP())
+
+	resetContextForClientIPTests(c)
 	// No trusted proxies
 	_ = c.engine.SetTrustedProxies([]string{})
 	c.engine.RemoteIPHeaders = []string{"X-Forwarded-For"}
@@ -1500,6 +1506,7 @@ func resetContextForClientIPTests(c *Context) {
 	c.Request.Header.Set("CF-Connecting-IP", "60.60.60.60")
 	c.Request.RemoteAddr = "  40.40.40.40:42123 "
 	c.engine.TrustedPlatform = ""
+	c.engine.trustedCIDRs = defaultTrustedCIDRs
 	c.engine.AppEngine = false
 }
 
@@ -2051,7 +2058,8 @@ func TestRemoteIPFail(t *testing.T) {
 	c, _ := CreateTestContext(httptest.NewRecorder())
 	c.Request, _ = http.NewRequest("POST", "/", nil)
 	c.Request.RemoteAddr = "[:::]:80"
-	ip, trust := c.RemoteIP()
+	ip := net.ParseIP(c.RemoteIP())
+	trust := c.engine.isTrustedProxy(ip)
 	assert.Nil(t, ip)
 	assert.False(t, trust)
 }
