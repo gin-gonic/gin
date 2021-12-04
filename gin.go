@@ -529,6 +529,14 @@ func (engine *Engine) handleHTTPRequest(c *Context) {
 		root := t[i].root
 		// Find route in tree
 		value := root.getValue(rPath, c.params, unescape)
+		
+		for _, param := range *value.params {
+			if len(param.Value) < 1 {
+				serveError(c, http.StatusNotFound, default404Body)
+				return
+			}
+		}
+		
 		if value.params != nil {
 			c.Params = *value.params
 		}
