@@ -44,7 +44,7 @@ type HandlerFunc func(*Context)
 // HandlersChain defines a HandlerFunc array.
 type HandlersChain []HandlerFunc
 
-// Last returns the last handler in the chain. ie. the last handler is the main one.
+// Last returns the last handler in the chain. i.e. the last handler is the main one.
 func (c HandlersChain) Last() HandlerFunc {
 	if length := len(c); length > 0 {
 		return c[length-1]
@@ -60,7 +60,7 @@ type RouteInfo struct {
 	HandlerFunc HandlerFunc
 }
 
-// RoutesInfo defines a RouteInfo array.
+// RoutesInfo defines a RouteInfo slice.
 type RoutesInfo []RouteInfo
 
 // Trusted platforms
@@ -556,9 +556,9 @@ func (engine *Engine) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	engine.pool.Put(c)
 }
 
-// HandleContext re-enter a context that has been rewritten.
+// HandleContext re-enters a context that has been rewritten.
 // This can be done by setting c.Request.URL.Path to your new target.
-// Disclaimer: You can loop yourself to death with this, use wisely.
+// Disclaimer: You can loop yourself to deal with this, use wisely.
 func (engine *Engine) HandleContext(c *Context) {
 	oldIndexValue := c.index
 	c.reset()
