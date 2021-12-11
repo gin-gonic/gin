@@ -385,7 +385,7 @@ func main() {
 	router.MaxMultipartMemory = 8 << 20  // 8 MiB
 	router.POST("/upload", func(c *gin.Context) {
 		// single file
-		file, _ := c.FormFile("file")
+		file, _ := c.FormFile("Filename")
 		log.Println(file.Filename)
 
 		// Upload the file to specific dst.
