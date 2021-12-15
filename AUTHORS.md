@@ -109,6 +109,11 @@ People and companies, who have contributed, in alphabetical order.
 - Fix typo in comment
 
 
+**@jincheng9 (Jincheng Zhang)**
+- ★ support TSR when wildcard follows named param
+- Fix errors and typos in comments
+
+
 **@joiggama (Ignacio Galindo)**
 - Add utf-8 charset header on renders
 
