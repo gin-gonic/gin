@@ -547,6 +547,13 @@ func (c *Context) GetPostFormMap(key string) (map[string]string, bool) {
 	return c.get(c.formCache, key)
 }
 
+// GetPostFormData returns c.formCache, which cached PostForm contains the parsed form data from POST, PATCH,
+// or PUT body parameters.
+func (c *Context) GetPostFormData() url.Values {
+	c.initFormCache()
+	return c.formCache
+}
+
 // get is an internal method and returns a map which satisfy conditions.
 func (c *Context) get(m map[string][]string, key string) (map[string]string, bool) {
 	dicts := make(map[string]string)
