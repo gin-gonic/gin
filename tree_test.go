@@ -595,6 +595,7 @@ func TestTreeTrailingSlashRedirect(t *testing.T) {
 		"/blog/:p",
 		"/posts/:b/:c",
 		"/posts/b/:c/d/",
+		"/vendor/:x/*y",
 	}
 	for _, route := range routes {
 		recv := catchPanic(func() {
@@ -631,6 +632,7 @@ func TestTreeTrailingSlashRedirect(t *testing.T) {
 		"/api/world/abc/",
 		"/blog/pp/",
 		"/posts/b/c/d",
+		"/vendor/x",
 	}
 
 	for _, route := range tsrRoutes {
