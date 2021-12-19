@@ -149,7 +149,7 @@ func TestCustomRecoveryWithWriter(t *testing.T) {
 	errBuffer := new(bytes.Buffer)
 	buffer := new(bytes.Buffer)
 	router := New()
-	handleRecovery := func(c *Context, err interface{}) {
+	handleRecovery := func(c *Context, err any) {
 		errBuffer.WriteString(err.(string))
 		c.AbortWithStatus(http.StatusBadRequest)
 	}
@@ -184,7 +184,7 @@ func TestCustomRecovery(t *testing.T) {
 	buffer := new(bytes.Buffer)
 	router := New()
 	DefaultErrorWriter = buffer
-	handleRecovery := func(c *Context, err interface{}) {
+	handleRecovery := func(c *Context, err any) {
 		errBuffer.WriteString(err.(string))
 		c.AbortWithStatus(http.StatusBadRequest)
 	}
@@ -219,7 +219,7 @@ func TestRecoveryWithWriterWithCustomRecovery(t *testing.T) {
 	buffer := new(bytes.Buffer)
 	router := New()
 	DefaultErrorWriter = buffer
-	handleRecovery := func(c *Context, err interface{}) {
+	handleRecovery := func(c *Context, err any) {
 		errBuffer.WriteString(err.(string))
 		c.AbortWithStatus(http.StatusBadRequest)
 	}

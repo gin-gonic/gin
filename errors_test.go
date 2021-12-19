@@ -86,7 +86,7 @@ Error #02: second
 Error #03: third
      Meta: map[status:400]
 `, errs.String())
-	assert.Equal(t, []interface{}{
+	assert.Equal(t, []any{
 		H{"error": "first"},
 		H{"error": "second", "meta": "some data"},
 		H{"error": "third", "status": "400"},

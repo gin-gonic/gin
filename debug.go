@@ -47,7 +47,7 @@ func debugPrintLoadTemplate(tmpl *template.Template) {
 	}
 }
 
-func debugPrint(format string, values ...interface{}) {
+func debugPrint(format string, values ...any) {
 	if IsDebugging() {
 		if !strings.HasSuffix(format, "\n") {
 			format += "\n"

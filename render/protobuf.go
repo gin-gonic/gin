@@ -12,7 +12,7 @@ import (
 
 // ProtoBuf contains the given interface object.
 type ProtoBuf struct {
-	Data interface{}
+	Data any
 }
 
 var protobufContentType = []string{"application/x-protobuf"}

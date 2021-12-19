@@ -18,7 +18,7 @@ import (
 const BindKey = "_gin-gonic/gin/bindkey"
 
 // Bind is a helper function for given interface object and returns a Gin middleware.
-func Bind(val interface{}) HandlerFunc {
+func Bind(val any) HandlerFunc {
 	value := reflect.ValueOf(val)
 	if value.Kind() == reflect.Ptr {
 		panic(`Bind struct can not be a pointer. Example:
@@ -50,7 +50,7 @@ func WrapH(h http.Handler) HandlerFunc {
 }
 
 // H is a shortcut for map[string]interface{}
-type H map[string]interface{}
+type H map[string]any
 
 // MarshalXML allows type H to be used with xml.Marshal.
 func (h H) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
@@ -89,7 +89,7 @@ func filterFlags(content string) string {
 	return content
 }
 
-func chooseData(custom, wildcard interface{}) interface{} {
+func chooseData(custom, wildcard any) any {
 	if custom != nil {
 		return custom
 	}
@@ -120,7 +120,7 @@ func lastChar(str string) uint8 {
 	return str[len(str)-1]
 }
 
-func nameOfFunction(f interface{}) string {
+func nameOfFunction(f any) string {
 	return runtime.FuncForPC(reflect.ValueOf(f).Pointer()).Name()
 }
 
