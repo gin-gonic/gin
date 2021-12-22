@@ -384,7 +384,7 @@ func main() {
 	// Set a lower memory limit for multipart forms (default is 32 MiB)
 	router.MaxMultipartMemory = 8 << 20  // 8 MiB
 	router.POST("/upload", func(c *gin.Context) {
-		// single file
+		// Single file
 		file, _ := c.FormFile("Filename")
 		log.Println(file.Filename)
 
@@ -417,7 +417,7 @@ func main() {
 	router.POST("/upload", func(c *gin.Context) {
 		// Multipart form
 		form, _ := c.MultipartForm()
-		files := form.File["upload[]"]
+		files := form.File["Filename[]"]
 
 		for _, file := range files {
 			log.Println(file.Filename)
