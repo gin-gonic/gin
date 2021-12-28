@@ -59,7 +59,7 @@ type Context struct {
 	params       *Params
 	skippedNodes *[]skippedNode
 
-	// This mutex protect Keys map
+	// This mutex protects Keys map.
 	mu sync.RWMutex
 
 	// Keys is a key/value pair exclusively for the context of each request.
@@ -71,10 +71,10 @@ type Context struct {
 	// Accepted defines a list of manually accepted formats for content negotiation.
 	Accepted []string
 
-	// queryCache use url.ParseQuery cached the param query result from c.Request.URL.Query()
+	// queryCache caches the query result from c.Request.URL.Query().
 	queryCache url.Values
 
-	// formCache use url.ParseQuery cached PostForm contains the parsed form data from POST, PATCH,
+	// formCache caches c.Request.PostForm, which contains the parsed form data from POST, PATCH,
 	// or PUT body parameters.
 	formCache url.Values
 
@@ -252,7 +252,7 @@ func (c *Context) Set(key string, value interface{}) {
 }
 
 // Get returns the value for the given key, ie: (value, true).
-// If the value does not exists it returns (nil, false)
+// If the value does not exist it returns (nil, false)
 func (c *Context) Get(key string) (value interface{}, exists bool) {
 	c.mu.RLock()
 	value, exists = c.Keys[key]
@@ -602,7 +602,7 @@ func (c *Context) SaveUploadedFile(file *multipart.FileHeader, dst string) error
 }
 
 // Bind checks the Content-Type to select a binding engine automatically,
-// Depending the "Content-Type" header different bindings are used:
+// Depending on the "Content-Type" header different bindings are used:
 //     "application/json" --> JSON binding
 //     "application/xml"  --> XML binding
 // otherwise --> returns an error.
@@ -661,7 +661,7 @@ func (c *Context) MustBindWith(obj interface{}, b binding.Binding) error {
 }
 
 // ShouldBind checks the Content-Type to select a binding engine automatically,
-// Depending the "Content-Type" header different bindings are used:
+// Depending on the "Content-Type" header different bindings are used:
 //     "application/json" --> JSON binding
 //     "application/xml"  --> XML binding
 // otherwise --> returns an error
@@ -739,7 +739,7 @@ func (c *Context) ShouldBindBodyWith(obj interface{}, bb binding.BindingBody) (e
 // It called c.RemoteIP() under the hood, to check if the remote IP is a trusted proxy or not.
 // If it is it will then try to parse the headers defined in Engine.RemoteIPHeaders (defaulting to [X-Forwarded-For, X-Real-Ip]).
 // If the headers are not syntactically valid OR the remote IP does not correspond to a trusted proxy,
-// the remote IP (coming form Request.RemoteAddr) is returned.
+// the remote IP (coming from Request.RemoteAddr) is returned.
 func (c *Context) ClientIP() string {
 	// Check if we're running on a trusted platform, continue running backwards if error
 	if c.engine.TrustedPlatform != "" {
@@ -757,10 +757,14 @@ func (c *Context) ClientIP() string {
 		}
 	}
 
-	remoteIP, trusted := c.RemoteIP()
+	// It also checks if the remoteIP is a trusted proxy or not.
+	// In order to perform this validation, it will see if the IP is contained within at least one of the CIDR blocks
+	// defined by Engine.SetTrustedProxies()
+	remoteIP := net.ParseIP(c.RemoteIP())
 	if remoteIP == nil {
 		return ""
 	}
+	trusted := c.engine.isTrustedProxy(remoteIP)
 
 	if trusted && c.engine.ForwardedByClientIP && c.engine.RemoteIPHeaders != nil {
 		for _, headerName := range c.engine.RemoteIPHeaders {
@@ -773,53 +777,13 @@ func (c *Context) ClientIP() string {
 	return remoteIP.String()
 }
 
-func (e *Engine) isTrustedProxy(ip net.IP) bool {
-	if e.trustedCIDRs != nil {
-		for _, cidr := range e.trustedCIDRs {
-			if cidr.Contains(ip) {
-				return true
-			}
-		}
-	}
-	return false
-}
-
 // RemoteIP parses the IP from Request.RemoteAddr, normalizes and returns the IP (without the port).
-// It also checks if the remoteIP is a trusted proxy or not.
-// In order to perform this validation, it will see if the IP is contained within at least one of the CIDR blocks
-// defined by Engine.SetTrustedProxies()
-func (c *Context) RemoteIP() (net.IP, bool) {
+func (c *Context) RemoteIP() string {
 	ip, _, err := net.SplitHostPort(strings.TrimSpace(c.Request.RemoteAddr))
 	if err != nil {
-		return nil, false
+		return ""
 	}
-	remoteIP := net.ParseIP(ip)
-	if remoteIP == nil {
-		return nil, false
-	}
-
-	return remoteIP, c.engine.isTrustedProxy(remoteIP)
-}
-
-func (e *Engine) validateHeader(header string) (clientIP string, valid bool) {
-	if header == "" {
-		return "", false
-	}
-	items := strings.Split(header, ",")
-	for i := len(items) - 1; i >= 0; i-- {
-		ipStr := strings.TrimSpace(items[i])
-		ip := net.ParseIP(ipStr)
-		if ip == nil {
-			return "", false
-		}
-
-		// X-Forwarded-For is appended by proxy
-		// Check IPs in reverse order and stop when find untrusted proxy
-		if (i == 0) || (!e.isTrustedProxy(ip)) {
-			return ipStr, true
-		}
-	}
-	return
+	return ip
 }
 
 // ContentType returns the Content-Type header of the request.
@@ -863,7 +827,7 @@ func (c *Context) Status(code int) {
 	c.Writer.WriteHeader(code)
 }
 
-// Header is a intelligent shortcut for c.Writer.Header().Set(key, value).
+// Header is an intelligent shortcut for c.Writer.Header().Set(key, value).
 // It writes a header in the response.
 // If value == "", this method removes the header `c.Writer.Header().Del(key)`
 func (c *Context) Header(key, value string) {
@@ -946,7 +910,7 @@ func (c *Context) HTML(code int, name string, obj interface{}) {
 
 // IndentedJSON serializes the given struct as pretty JSON (indented + endlines) into the response body.
 // It also sets the Content-Type as "application/json".
-// WARNING: we recommend to use this only for development purposes since printing pretty JSON is
+// WARNING: we recommend using this only for development purposes since printing pretty JSON is
 // more CPU and bandwidth consuming. Use Context.JSON() instead.
 func (c *Context) IndentedJSON(code int, obj interface{}) {
 	c.Render(code, render.IndentedJSON{Data: obj})
@@ -1010,7 +974,7 @@ func (c *Context) String(code int, format string, values ...interface{}) {
 	c.Render(code, render.String{Format: format, Data: values})
 }
 
-// Redirect returns a HTTP redirect to the specific location.
+// Redirect returns an HTTP redirect to the specific location.
 func (c *Context) Redirect(code int, location string) {
 	c.Render(-1, render.Redirect{
 		Code:     code,
@@ -1102,7 +1066,7 @@ type Negotiate struct {
 	Data     interface{}
 }
 
-// Negotiate calls different Render according acceptable Accept format.
+// Negotiate calls different Render according to acceptable Accept format.
 func (c *Context) Negotiate(code int, config Negotiate) {
 	switch c.NegotiateFormat(config.Offered...) {
 	case binding.MIMEJSON:
