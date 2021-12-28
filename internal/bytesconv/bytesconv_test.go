@@ -12,8 +12,10 @@ import (
 	"time"
 )
 
-var testString = "Albert Einstein: Logic will get you from A to B. Imagination will take you everywhere."
-var testBytes = []byte(testString)
+var (
+	testString = "Albert Einstein: Logic will get you from A to B. Imagination will take you everywhere."
+	testBytes  = []byte(testString)
+)
 
 func rawBytesToStr(b []byte) string {
 	return string(b)

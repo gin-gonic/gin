@@ -11,6 +11,7 @@ linters:
     - exportloopref
     - gci
     - gofmt
+    - gofumpt
     - goimports
     - gosec
     - misspell

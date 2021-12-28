@@ -32,7 +32,6 @@ type IRouter interface {
 // IRoutes defines all router handle interface.
 type IRoutes interface {
 	Use(...HandlerFunc) IRoutes
-
 	Handle(string, string, ...HandlerFunc) IRoutes
 	Any(string, ...HandlerFunc) IRoutes
 	GET(string, ...HandlerFunc) IRoutes
@@ -42,7 +41,6 @@ type IRoutes interface {
 	PUT(string, ...HandlerFunc) IRoutes
 	OPTIONS(string, ...HandlerFunc) IRoutes
 	HEAD(string, ...HandlerFunc) IRoutes
-
 	StaticFile(string, string) IRoutes
 	Static(string, string) IRoutes
 	StaticFS(string, http.FileSystem) IRoutes

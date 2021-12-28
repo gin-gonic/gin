@@ -26,7 +26,6 @@ import (
 // params[1]=response status (custom compare status) default:"200 OK"
 // params[2]=response body (custom compare content)  default:"it worked"
 func testRequest(t *testing.T, params ...string) {
-
 	if len(params) == 0 {
 		t.Fatal("url cannot be empty")
 	}
@@ -45,12 +44,12 @@ func testRequest(t *testing.T, params ...string) {
 	body, ioerr := ioutil.ReadAll(resp.Body)
 	assert.NoError(t, ioerr)
 
-	var responseStatus = "200 OK"
+	responseStatus := "200 OK"
 	if len(params) > 1 && params[1] != "" {
 		responseStatus = params[1]
 	}
 
-	var responseBody = "it worked"
+	responseBody := "it worked"
 	if len(params) > 2 && params[2] != "" {
 		responseBody = params[2]
 	}
@@ -168,7 +167,7 @@ func TestRunTLS(t *testing.T) {
 }
 
 func TestPusher(t *testing.T) {
-	var html = template.Must(template.New("https").Parse(`
+	html := template.Must(template.New("https").Parse(`
 <html>
 <head>
   <title>Https Test</title>

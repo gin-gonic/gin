@@ -122,7 +122,6 @@ func TestPanicWithBrokenPipe(t *testing.T) {
 
 	for errno, expectMsg := range expectMsgs {
 		t.Run(expectMsg, func(t *testing.T) {
-
 			var buf bytes.Buffer
 
 			router := New()

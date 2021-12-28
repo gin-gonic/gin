@@ -190,7 +190,6 @@ func TestMiddlewareAbortHandlersChainAndNext(t *testing.T) {
 		c.Next()
 		c.AbortWithStatus(http.StatusGone)
 		signature += "B"
-
 	})
 	router.GET("/", func(c *Context) {
 		signature += "C"

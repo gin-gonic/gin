@@ -12,8 +12,10 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-var once sync.Once
-var internalEngine *gin.Engine
+var (
+	once           sync.Once
+	internalEngine *gin.Engine
+)
 
 func engine() *gin.Engine {
 	once.Do(func() {

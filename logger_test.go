@@ -228,7 +228,6 @@ func TestLoggerWithConfigFormatting(t *testing.T) {
 	assert.Equal(t, "/example?a=100", gotParam.Path)
 	assert.Empty(t, gotParam.ErrorMessage)
 	assert.Equal(t, gotKeys, gotParam.Keys)
-
 }
 
 func TestDefaultLogFormatter(t *testing.T) {
@@ -282,7 +281,6 @@ func TestDefaultLogFormatter(t *testing.T) {
 
 	assert.Equal(t, "[GIN] 2018/12/07 - 09:11:42 |\x1b[97;42m 200 \x1b[0m|            5s |     20.20.20.20 |\x1b[97;44m GET     \x1b[0m \"/\"\n", defaultLogFormatter(termTrueParam))
 	assert.Equal(t, "[GIN] 2018/12/07 - 09:11:42 |\x1b[97;42m 200 \x1b[0m|    2743h29m3s |     20.20.20.20 |\x1b[97;44m GET     \x1b[0m \"/\"\n", defaultLogFormatter(termTrueLongDurationParam))
-
 }
 
 func TestColorForMethod(t *testing.T) {

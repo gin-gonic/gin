@@ -43,7 +43,7 @@ func setupHTMLFiles(t *testing.T, mode string, tls bool, loadMethod func(*Engine
 		})
 		router.GET("/raw", func(c *Context) {
 			c.HTML(http.StatusOK, "raw.tmpl", map[string]interface{}{
-				"now": time.Date(2017, 07, 01, 0, 0, 0, 0, time.UTC),
+				"now": time.Date(2017, 0o7, 0o1, 0, 0, 0, 0, time.UTC),
 			})
 		})
 	})
@@ -395,7 +395,6 @@ func TestNoMethodWithoutGlobalHandlers(t *testing.T) {
 }
 
 func TestRebuild404Handlers(t *testing.T) {
-
 }
 
 func TestNoMethodWithGlobalHandlers(t *testing.T) {
@@ -636,7 +635,6 @@ func TestPrepareTrustedCIRDsWith(t *testing.T) {
 		assert.Nil(t, r.trustedCIDRs)
 		assert.Nil(t, err)
 	}
-
 }
 
 func parseCIDR(cidr string) *net.IPNet {

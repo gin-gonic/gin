@@ -157,16 +157,16 @@ type structNoValidationPointer struct {
 }
 
 func TestValidateNoValidationPointers(t *testing.T) {
-	//origin := createNoValidation_values()
-	//test := createNoValidation_values()
+	// origin := createNoValidation_values()
+	// test := createNoValidation_values()
 	empty := structNoValidationPointer{}
 
-	//assert.Nil(t, validate(test))
-	//assert.Nil(t, validate(&test))
+	// assert.Nil(t, validate(test))
+	// assert.Nil(t, validate(&test))
 	assert.Nil(t, validate(empty))
 	assert.Nil(t, validate(&empty))
 
-	//assert.Equal(t, origin, test)
+	// assert.Equal(t, origin, test)
 }
 
 type Object map[string]interface{}
