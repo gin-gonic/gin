@@ -18,6 +18,7 @@ linters:
     - nakedret
     - nilerr
     - nolintlint
+    - predeclared
     - revive
     - wastedassign
 issues:
