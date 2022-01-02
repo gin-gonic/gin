@@ -395,7 +395,6 @@ func TestNoMethodWithoutGlobalHandlers(t *testing.T) {
 }
 
 func TestRebuild404Handlers(t *testing.T) {
-
 }
 
 func TestNoMethodWithGlobalHandlers(t *testing.T) {
@@ -491,7 +490,7 @@ func TestEngineHandleContext(t *testing.T) {
 	}
 
 	assert.NotPanics(t, func() {
-		w := performRequest(r, "GET", "/")
+		w := PerformRequest(r, "GET", "/")
 		assert.Equal(t, 301, w.Code)
 	})
 }
@@ -524,7 +523,7 @@ func TestEngineHandleContextManyReEntries(t *testing.T) {
 	})
 
 	assert.NotPanics(t, func() {
-		w := performRequest(r, "GET", "/"+strconv.Itoa(expectValue-1)) // include 0 value
+		w := PerformRequest(r, "GET", "/"+strconv.Itoa(expectValue-1)) // include 0 value
 		assert.Equal(t, 200, w.Code)
 		assert.Equal(t, expectValue, w.Body.Len())
 	})
@@ -636,7 +635,6 @@ func TestPrepareTrustedCIRDsWith(t *testing.T) {
 		assert.Nil(t, r.trustedCIDRs)
 		assert.Nil(t, err)
 	}
-
 }
 
 func parseCIDR(cidr string) *net.IPNet {

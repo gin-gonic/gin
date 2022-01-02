@@ -302,7 +302,7 @@ func TestShouldBindUri(t *testing.T) {
 	})
 
 	path, _ := exampleFromPath("/rest/:name/:id")
-	w := performRequest(router, http.MethodGet, path)
+	w := PerformRequest(router, http.MethodGet, path)
 	assert.Equal(t, "ShouldBindUri test OK", w.Body.String())
 	assert.Equal(t, http.StatusOK, w.Code)
 }
@@ -324,7 +324,7 @@ func TestBindUri(t *testing.T) {
 	})
 
 	path, _ := exampleFromPath("/rest/:name/:id")
-	w := performRequest(router, http.MethodGet, path)
+	w := PerformRequest(router, http.MethodGet, path)
 	assert.Equal(t, "BindUri test OK", w.Body.String())
 	assert.Equal(t, http.StatusOK, w.Code)
 }
@@ -342,7 +342,7 @@ func TestBindUriError(t *testing.T) {
 	})
 
 	path1, _ := exampleFromPath("/new/rest/:num")
-	w1 := performRequest(router, http.MethodGet, path1)
+	w1 := PerformRequest(router, http.MethodGet, path1)
 	assert.Equal(t, http.StatusBadRequest, w1.Code)
 }
 
@@ -358,7 +358,7 @@ func TestRaceContextCopy(t *testing.T) {
 		go readWriteKeys(c.Copy())
 		c.String(http.StatusOK, "run OK, no panics")
 	})
-	w := performRequest(router, http.MethodGet, "/test/copy/race")
+	w := PerformRequest(router, http.MethodGet, "/test/copy/race")
 	assert.Equal(t, "run OK, no panics", w.Body.String())
 }
 
@@ -389,7 +389,7 @@ func TestGithubAPI(t *testing.T) {
 
 	for _, route := range githubAPI {
 		path, values := exampleFromPath(route.path)
-		w := performRequest(router, route.method, path)
+		w := PerformRequest(router, route.method, path)
 
 		// TEST
 		assert.Contains(t, w.Body.String(), "\"status\":\"good\"")
