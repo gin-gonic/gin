@@ -2036,8 +2036,8 @@ func TestRaceParamsContextCopy(t *testing.T) {
 			}(c.Copy(), c.Param("name"))
 		})
 	}
-	performRequest(router, "GET", "/name1/api")
-	performRequest(router, "GET", "/name2/api")
+	PerformRequest(router, "GET", "/name1/api")
+	PerformRequest(router, "GET", "/name2/api")
 	wg.Wait()
 }
 
