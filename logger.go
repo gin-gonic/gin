@@ -6,6 +6,7 @@ package gin
 
 import (
 	"fmt"
+	"github.com/gin-gonic/gin/internal/bytesconv"
 	"io"
 	"net/http"
 	"os"
@@ -264,7 +265,7 @@ func LoggerWithConfig(conf LoggerConfig) HandlerFunc {
 
 			param.Path = path
 
-			fmt.Fprint(out, formatter(param))
+			out.Write(bytesconv.StringToBytes(formatter(param)))
 		}
 	}
 }
