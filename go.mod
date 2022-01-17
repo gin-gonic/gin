@@ -5,7 +5,7 @@ go 1.13
 require (
 	github.com/gin-contrib/sse v0.1.0
 	github.com/go-playground/validator/v10 v10.10.0
-	github.com/goccy/go-json v0.9.0
+	github.com/goccy/go-json v0.9.3
 	github.com/json-iterator/go v1.1.12
 	github.com/mattn/go-isatty v0.0.14
 	github.com/stretchr/testify v1.7.0
