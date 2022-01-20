@@ -5,6 +5,7 @@
 package binding
 
 import (
+	"encoding"
 	"errors"
 	"fmt"
 	"reflect"
@@ -175,10 +176,16 @@ func setByForm(value reflect.Value, field reflect.StructField, form map[string][
 		if !ok {
 			vs = []string{opt.defaultValue}
 		}
+		if ok, err := trySetCustom(vs[0], value); ok || err != nil {
+			return ok, err
+		}
 		return true, setSlice(vs, value, field)
 	case reflect.Array:
 		if !ok {
 			vs = []string{opt.defaultValue}
+		}
+		if ok, err := trySetCustom(vs[0], value); ok || err != nil {
+			return ok, err
 		}
 		if len(vs) != value.Len() {
 			return false, fmt.Errorf("%q is not valid value for %s", vs, value.Type().String())
@@ -193,8 +200,24 @@ func setByForm(value reflect.Value, field reflect.StructField, form map[string][
 		if len(vs) > 0 {
 			val = vs[0]
 		}
+		if ok, err := trySetCustom(val, value); ok || err != nil {
+			return ok, err
+		}
 		return true, setWithProperType(val, value, field)
 	}
+}
+
+func trySetCustom(val string, value reflect.Value) (isSet bool, err error) {
+	switch v := value.Addr().Interface().(type) {
+	case encoding.TextUnmarshaler:
+		if value.Kind() != reflect.Struct {
+			return true, v.UnmarshalText([]byte(val))
+		}
+	case BindUnmarshaler:
+		return true, v.UnmarshalParam(val)
+	}
+
+	return false, nil
 }
 
 func setWithProperType(val string, value reflect.Value, field reflect.StructField) error {

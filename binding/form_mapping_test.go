@@ -5,7 +5,10 @@
 package binding
 
 import (
+	"fmt"
 	"reflect"
+	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -287,4 +290,111 @@ func TestMappingIgnoredCircularRef(t *testing.T) {
 
 	err := mappingByPtr(&s, formSource{}, "form")
 	assert.NoError(t, err)
+}
+
+type foohex int
+
+func (f *foohex) UnmarshalText(text []byte) error {
+	v, err := strconv.ParseInt(string(text), 16, 64)
+	if err != nil {
+		return err
+	}
+	*f = foohex(v)
+	return nil
+}
+
+func TestMappingCustomFieldType(t *testing.T) {
+	var s struct {
+		Foo foohex `form:"foo"`
+	}
+	err := mappingByPtr(&s, formSource{"foo": {`f5`}}, "form")
+	assert.NoError(t, err)
+
+	assert.EqualValues(t, 245, s.Foo)
+}
+
+func TestMappingCustomFieldTypeWithURI(t *testing.T) {
+	var s struct {
+		Foo foohex `uri:"foo"`
+	}
+	err := mappingByPtr(&s, formSource{"foo": {`f5`}}, "uri")
+	assert.NoError(t, err)
+
+	assert.EqualValues(t, 245, s.Foo)
+}
+
+type customType struct {
+	Protocol string
+	Path     string
+	Name     string
+}
+
+func (f *customType) UnmarshalParam(param string) error {
+	parts := strings.Split(param, ":")
+	if len(parts) != 3 {
+		return fmt.Errorf("invalid format")
+	}
+	f.Protocol = parts[0]
+	f.Path = parts[1]
+	f.Name = parts[2]
+	return nil
+}
+
+func TestMappingCustomStructType(t *testing.T) {
+	var s struct {
+		FileData customType `form:"data"`
+	}
+	err := mappingByPtr(&s, formSource{"data": {`file:/foo:happiness`}}, "form")
+	assert.NoError(t, err)
+
+	assert.EqualValues(t, "file", s.FileData.Protocol)
+	assert.EqualValues(t, "/foo", s.FileData.Path)
+	assert.EqualValues(t, "happiness", s.FileData.Name)
+}
+
+func TestMappingCustomPointerStructType(t *testing.T) {
+	var s struct {
+		FileData *customType `form:"data"`
+	}
+	err := mappingByPtr(&s, formSource{"data": {`file:/foo:happiness`}}, "form")
+	assert.NoError(t, err)
+
+	assert.EqualValues(t, "file", s.FileData.Protocol)
+	assert.EqualValues(t, "/foo", s.FileData.Path)
+	assert.EqualValues(t, "happiness", s.FileData.Name)
+}
+
+type MySlice []string
+
+func (s *MySlice) UnmarshalParam(param string) error {
+	*s = MySlice(strings.Split(param, ","))
+	return nil
+}
+
+func TestMappingCustomSliceType(t *testing.T) {
+	var s struct {
+		Permissions MySlice `form:"permissions"`
+	}
+	err := mappingByPtr(&s, formSource{"permissions": {"read,write,delete"}}, "form")
+	assert.NoError(t, err)
+
+	assert.EqualValues(t, []string{"read", "write", "delete"}, s.Permissions)
+}
+
+type MyArray [3]string
+
+func (s *MyArray) UnmarshalParam(param string) error {
+	parts := strings.Split(param, ",")
+	*s = MyArray([3]string{parts[0], parts[1], parts[2]})
+	return nil
+}
+
+func TestMappingCustomArrayType(t *testing.T) {
+	var s struct {
+		Permissions MyArray `form:"permissions"`
+	}
+	err := mappingByPtr(&s, formSource{"permissions": {"read,write,delete"}}, "form")
+	assert.NoError(t, err)
+
+	assert.EqualValues(t, [3]string{"read", "write", "delete"}, s.Permissions)
 }
