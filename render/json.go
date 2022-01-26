@@ -54,10 +54,7 @@ var (
 
 // Render (JSON) writes data with custom ContentType.
 func (r JSON) Render(w http.ResponseWriter) (err error) {
-	if err = WriteJSON(w, r.Data); err != nil {
-		panic(err)
-	}
-	return
+	return WriteJSON(w, r.Data)
 }
 
 // WriteContentType (JSON) writes JSON ContentType.

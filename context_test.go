@@ -642,25 +642,18 @@ func TestContextBodyAllowedForStatus(t *testing.T) {
 	assert.True(t, true, bodyAllowedForStatus(http.StatusInternalServerError))
 }
 
-type TestPanicRender struct{}
+type TestErrorRender struct{}
 
-func (*TestPanicRender) Render(http.ResponseWriter) error {
-	return errors.New("TestPanicRender")
+func (*TestErrorRender) Render(http.ResponseWriter) error {
+	return errors.New("TestErrorRender")
 }
 
-func (*TestPanicRender) WriteContentType(http.ResponseWriter) {}
+func (*TestErrorRender) WriteContentType(http.ResponseWriter) {}
 
 func TestContextRenderPanicIfErr(t *testing.T) {
-	defer func() {
-		r := recover()
-		assert.Equal(t, "TestPanicRender", fmt.Sprint(r))
-	}()
 	w := httptest.NewRecorder()
 	c, _ := CreateTestContext(w)
-
-	c.Render(http.StatusOK, &TestPanicRender{})
-
-	assert.Fail(t, "Panic not detected")
+	assert.Error(t, c.Render(http.StatusOK, &TestErrorRender{}))
 }
 
 // Tests that the response is serialized as JSON
@@ -670,7 +663,7 @@ func TestContextRenderJSON(t *testing.T) {
 	w := httptest.NewRecorder()
 	c, _ := CreateTestContext(w)
 
-	c.JSON(http.StatusCreated, H{"foo": "bar", "html": "<b>"})
+	assert.NoError(t, c.JSON(http.StatusCreated, H{"foo": "bar", "html": "<b>"}))
 
 	assert.Equal(t, http.StatusCreated, w.Code)
 	assert.Equal(t, "{\"foo\":\"bar\",\"html\":\"\\u003cb\\u003e\"}", w.Body.String())
@@ -684,7 +677,7 @@ func TestContextRenderJSONP(t *testing.T) {
 	c, _ := CreateTestContext(w)
 	c.Request, _ = http.NewRequest("GET", "http://example.com/?callback=x", nil)
 
-	c.JSONP(http.StatusCreated, H{"foo": "bar"})
+	assert.NoError(t, c.JSONP(http.StatusCreated, H{"foo": "bar"}))
 
 	assert.Equal(t, http.StatusCreated, w.Code)
 	assert.Equal(t, "x({\"foo\":\"bar\"});", w.Body.String())
@@ -698,7 +691,7 @@ func TestContextRenderJSONPWithoutCallback(t *testing.T) {
 	c, _ := CreateTestContext(w)
 	c.Request, _ = http.NewRequest("GET", "http://example.com", nil)
 
-	c.JSONP(http.StatusCreated, H{"foo": "bar"})
+	assert.NoError(t, c.JSONP(http.StatusCreated, H{"foo": "bar"}))
 
 	assert.Equal(t, http.StatusCreated, w.Code)
 	assert.Equal(t, "{\"foo\":\"bar\"}", w.Body.String())
@@ -750,8 +743,7 @@ func TestContextRenderIndentedJSON(t *testing.T) {
 	w := httptest.NewRecorder()
 	c, _ := CreateTestContext(w)
 
-	c.IndentedJSON(http.StatusCreated, H{"foo": "bar", "bar": "foo", "nested": H{"foo": "bar"}})
-
+	assert.NoError(t, c.IndentedJSON(http.StatusCreated, H{"foo": "bar", "bar": "foo", "nested": H{"foo": "bar"}}))
 	assert.Equal(t, http.StatusCreated, w.Code)
 	assert.Equal(t, "{\n    \"bar\": \"foo\",\n    \"foo\": \"bar\",\n    \"nested\": {\n        \"foo\": \"bar\"\n    }\n}", w.Body.String())
 	assert.Equal(t, "application/json; charset=utf-8", w.Header().Get("Content-Type"))
@@ -762,7 +754,7 @@ func TestContextRenderNoContentIndentedJSON(t *testing.T) {
 	w := httptest.NewRecorder()
 	c, _ := CreateTestContext(w)
 
-	c.IndentedJSON(http.StatusNoContent, H{"foo": "bar", "bar": "foo", "nested": H{"foo": "bar"}})
+	assert.NoError(t, c.IndentedJSON(http.StatusNoContent, H{"foo": "bar", "bar": "foo", "nested": H{"foo": "bar"}}))
 
 	assert.Equal(t, http.StatusNoContent, w.Code)
 	assert.Empty(t, w.Body.String())
@@ -776,7 +768,7 @@ func TestContextRenderSecureJSON(t *testing.T) {
 	c, router := CreateTestContext(w)
 
 	router.SecureJsonPrefix("&&&START&&&")
-	c.SecureJSON(http.StatusCreated, []string{"foo", "bar"})
+	assert.NoError(t, c.SecureJSON(http.StatusCreated, []string{"foo", "bar"}))
 
 	assert.Equal(t, http.StatusCreated, w.Code)
 	assert.Equal(t, "&&&START&&&[\"foo\",\"bar\"]", w.Body.String())
@@ -788,7 +780,7 @@ func TestContextRenderNoContentSecureJSON(t *testing.T) {
 	w := httptest.NewRecorder()
 	c, _ := CreateTestContext(w)
 
-	c.SecureJSON(http.StatusNoContent, []string{"foo", "bar"})
+	assert.NoError(t, c.SecureJSON(http.StatusNoContent, []string{"foo", "bar"}))
 
 	assert.Equal(t, http.StatusNoContent, w.Code)
 	assert.Empty(t, w.Body.String())
@@ -799,7 +791,7 @@ func TestContextRenderNoContentAsciiJSON(t *testing.T) {
 	w := httptest.NewRecorder()
 	c, _ := CreateTestContext(w)
 
-	c.AsciiJSON(http.StatusNoContent, []string{"lang", "Go语言"})
+	assert.NoError(t, c.AsciiJSON(http.StatusNoContent, []string{"lang", "Go语言"}))
 
 	assert.Equal(t, http.StatusNoContent, w.Code)
 	assert.Empty(t, w.Body.String())
@@ -812,7 +804,7 @@ func TestContextRenderNoContentAsciiJSON(t *testing.T) {
 func TestContextRenderPureJSON(t *testing.T) {
 	w := httptest.NewRecorder()
 	c, _ := CreateTestContext(w)
-	c.PureJSON(http.StatusCreated, H{"foo": "bar", "html": "<b>"})
+	assert.NoError(t, c.PureJSON(http.StatusCreated, H{"foo": "bar", "html": "<b>"}))
 	assert.Equal(t, http.StatusCreated, w.Code)
 	assert.Equal(t, "{\"foo\":\"bar\",\"html\":\"<b>\"}\n", w.Body.String())
 	assert.Equal(t, "application/json; charset=utf-8", w.Header().Get("Content-Type"))
@@ -827,7 +819,7 @@ func TestContextRenderHTML(t *testing.T) {
 	templ := template.Must(template.New("t").Parse(`Hello {{.name}}`))
 	router.SetHTMLTemplate(templ)
 
-	c.HTML(http.StatusCreated, "t", H{"name": "alexandernyquist"})
+	assert.NoError(t, c.HTML(http.StatusCreated, "t", H{"name": "alexandernyquist"}))
 
 	assert.Equal(t, http.StatusCreated, w.Code)
 	assert.Equal(t, "Hello alexandernyquist", w.Body.String())
@@ -851,7 +843,7 @@ func TestContextRenderHTML2(t *testing.T) {
 
 	assert.Equal(t, "[GIN-debug] [WARNING] Since SetHTMLTemplate() is NOT thread-safe. It should only be called\nat initialization. ie. before any route is registered or the router is listening in a socket:\n\n\trouter := gin.Default()\n\trouter.SetHTMLTemplate(template) // << good place\n\n", re)
 
-	c.HTML(http.StatusCreated, "t", H{"name": "alexandernyquist"})
+	assert.NoError(t, c.HTML(http.StatusCreated, "t", H{"name": "alexandernyquist"}))
 
 	assert.Equal(t, http.StatusCreated, w.Code)
 	assert.Equal(t, "Hello alexandernyquist", w.Body.String())
@@ -865,7 +857,7 @@ func TestContextRenderNoContentHTML(t *testing.T) {
 	templ := template.Must(template.New("t").Parse(`Hello {{.name}}`))
 	router.SetHTMLTemplate(templ)
 
-	c.HTML(http.StatusNoContent, "t", H{"name": "alexandernyquist"})
+	assert.NoError(t, c.HTML(http.StatusNoContent, "t", H{"name": "alexandernyquist"}))
 
 	assert.Equal(t, http.StatusNoContent, w.Code)
 	assert.Empty(t, w.Body.String())
@@ -878,7 +870,7 @@ func TestContextRenderXML(t *testing.T) {
 	w := httptest.NewRecorder()
 	c, _ := CreateTestContext(w)
 
-	c.XML(http.StatusCreated, H{"foo": "bar"})
+	assert.NoError(t, c.XML(http.StatusCreated, H{"foo": "bar"}))
 
 	assert.Equal(t, http.StatusCreated, w.Code)
 	assert.Equal(t, "<map><foo>bar</foo></map>", w.Body.String())
@@ -890,7 +882,7 @@ func TestContextRenderNoContentXML(t *testing.T) {
 	w := httptest.NewRecorder()
 	c, _ := CreateTestContext(w)
 
-	c.XML(http.StatusNoContent, H{"foo": "bar"})
+	assert.NoError(t, c.XML(http.StatusNoContent, H{"foo": "bar"}))
 
 	assert.Equal(t, http.StatusNoContent, w.Code)
 	assert.Empty(t, w.Body.String())
@@ -903,7 +895,7 @@ func TestContextRenderString(t *testing.T) {
 	w := httptest.NewRecorder()
 	c, _ := CreateTestContext(w)
 
-	c.String(http.StatusCreated, "test %s %d", "string", 2)
+	assert.NoError(t, c.String(http.StatusCreated, "test %s %d", "string", 2))
 
 	assert.Equal(t, http.StatusCreated, w.Code)
 	assert.Equal(t, "test string 2", w.Body.String())
@@ -915,7 +907,7 @@ func TestContextRenderNoContentString(t *testing.T) {
 	w := httptest.NewRecorder()
 	c, _ := CreateTestContext(w)
 
-	c.String(http.StatusNoContent, "test %s %d", "string", 2)
+	assert.NoError(t, c.String(http.StatusNoContent, "test %s %d", "string", 2))
 
 	assert.Equal(t, http.StatusNoContent, w.Code)
 	assert.Empty(t, w.Body.String())
@@ -929,7 +921,7 @@ func TestContextRenderHTMLString(t *testing.T) {
 	c, _ := CreateTestContext(w)
 
 	c.Header("Content-Type", "text/html; charset=utf-8")
-	c.String(http.StatusCreated, "<html>%s %d</html>", "string", 3)
+	assert.NoError(t, c.String(http.StatusCreated, "<html>%s %d</html>", "string", 3))
 
 	assert.Equal(t, http.StatusCreated, w.Code)
 	assert.Equal(t, "<html>string 3</html>", w.Body.String())
@@ -942,7 +934,7 @@ func TestContextRenderNoContentHTMLString(t *testing.T) {
 	c, _ := CreateTestContext(w)
 
 	c.Header("Content-Type", "text/html; charset=utf-8")
-	c.String(http.StatusNoContent, "<html>%s %d</html>", "string", 3)
+	assert.NoError(t, c.String(http.StatusNoContent, "<html>%s %d</html>", "string", 3))
 
 	assert.Equal(t, http.StatusNoContent, w.Code)
 	assert.Empty(t, w.Body.String())
@@ -955,7 +947,7 @@ func TestContextRenderData(t *testing.T) {
 	w := httptest.NewRecorder()
 	c, _ := CreateTestContext(w)
 
-	c.Data(http.StatusCreated, "text/csv", []byte(`foo,bar`))
+	assert.NoError(t, c.Data(http.StatusCreated, "text/csv", []byte(`foo,bar`)))
 
 	assert.Equal(t, http.StatusCreated, w.Code)
 	assert.Equal(t, "foo,bar", w.Body.String())
@@ -967,7 +959,7 @@ func TestContextRenderNoContentData(t *testing.T) {
 	w := httptest.NewRecorder()
 	c, _ := CreateTestContext(w)
 
-	c.Data(http.StatusNoContent, "text/csv", []byte(`foo,bar`))
+	assert.NoError(t, c.Data(http.StatusNoContent, "text/csv", []byte(`foo,bar`)))
 
 	assert.Equal(t, http.StatusNoContent, w.Code)
 	assert.Empty(t, w.Body.String())
@@ -978,15 +970,15 @@ func TestContextRenderSSE(t *testing.T) {
 	w := httptest.NewRecorder()
 	c, _ := CreateTestContext(w)
 
-	c.SSEvent("float", 1.5)
-	c.Render(-1, sse.Event{
+	assert.NoError(t, c.SSEvent("float", 1.5))
+	assert.NoError(t, c.Render(-1, sse.Event{
 		Id:   "123",
 		Data: "text",
-	})
-	c.SSEvent("chat", H{
+	}))
+	assert.NoError(t, c.SSEvent("chat", H{
 		"foo": "bar",
 		"bar": "foo",
-	})
+	}))
 
 	assert.Equal(t, strings.Replace(w.Body.String(), " ", "", -1), strings.Replace("event:float\ndata:1.5\n\nid:123\ndata:text\n\nevent:chat\ndata:{\"bar\":\"foo\",\"foo\":\"bar\"}\n\n", " ", "", -1))
 }
@@ -1039,7 +1031,7 @@ func TestContextRenderYAML(t *testing.T) {
 	w := httptest.NewRecorder()
 	c, _ := CreateTestContext(w)
 
-	c.YAML(http.StatusCreated, H{"foo": "bar"})
+	assert.NoError(t, c.YAML(http.StatusCreated, H{"foo": "bar"}))
 
 	assert.Equal(t, http.StatusCreated, w.Code)
 	assert.Equal(t, "foo: bar\n", w.Body.String())
@@ -1060,7 +1052,7 @@ func TestContextRenderProtoBuf(t *testing.T) {
 		Reps:  reps,
 	}
 
-	c.ProtoBuf(http.StatusCreated, data)
+	assert.NoError(t, c.ProtoBuf(http.StatusCreated, data))
 
 	protoData, err := proto.Marshal(data)
 	assert.NoError(t, err)
@@ -1092,10 +1084,10 @@ func TestContextRenderRedirectWithRelativePath(t *testing.T) {
 	c, _ := CreateTestContext(w)
 
 	c.Request, _ = http.NewRequest("POST", "http://example.com", nil)
-	assert.Panics(t, func() { c.Redirect(299, "/new_path") })
-	assert.Panics(t, func() { c.Redirect(309, "/new_path") })
+	assert.Error(t, c.Redirect(299, "/new_path"))
+	assert.Error(t, c.Redirect(309, "/new_path"))
 
-	c.Redirect(http.StatusMovedPermanently, "/path")
+	assert.NoError(t, c.Redirect(http.StatusMovedPermanently, "/path"))
 	c.Writer.WriteHeaderNow()
 	assert.Equal(t, http.StatusMovedPermanently, w.Code)
 	assert.Equal(t, "/path", w.Header().Get("Location"))
@@ -1106,7 +1098,7 @@ func TestContextRenderRedirectWithAbsolutePath(t *testing.T) {
 	c, _ := CreateTestContext(w)
 
 	c.Request, _ = http.NewRequest("POST", "http://example.com", nil)
-	c.Redirect(http.StatusFound, "http://google.com")
+	assert.NoError(t, c.Redirect(http.StatusFound, "http://google.com"))
 	c.Writer.WriteHeaderNow()
 
 	assert.Equal(t, http.StatusFound, w.Code)
@@ -1118,7 +1110,7 @@ func TestContextRenderRedirectWith201(t *testing.T) {
 	c, _ := CreateTestContext(w)
 
 	c.Request, _ = http.NewRequest("POST", "http://example.com", nil)
-	c.Redirect(http.StatusCreated, "/resource")
+	assert.NoError(t, c.Redirect(http.StatusCreated, "/resource"))
 	c.Writer.WriteHeaderNow()
 
 	assert.Equal(t, http.StatusCreated, w.Code)
@@ -1128,12 +1120,12 @@ func TestContextRenderRedirectWith201(t *testing.T) {
 func TestContextRenderRedirectAll(t *testing.T) {
 	c, _ := CreateTestContext(httptest.NewRecorder())
 	c.Request, _ = http.NewRequest("POST", "http://example.com", nil)
-	assert.Panics(t, func() { c.Redirect(http.StatusOK, "/resource") })
-	assert.Panics(t, func() { c.Redirect(http.StatusAccepted, "/resource") })
-	assert.Panics(t, func() { c.Redirect(299, "/resource") })
-	assert.Panics(t, func() { c.Redirect(309, "/resource") })
-	assert.NotPanics(t, func() { c.Redirect(http.StatusMultipleChoices, "/resource") })
-	assert.NotPanics(t, func() { c.Redirect(http.StatusPermanentRedirect, "/resource") })
+	assert.Error(t, c.Redirect(http.StatusOK, "/resource"))
+	assert.Error(t, c.Redirect(http.StatusAccepted, "/resource"))
+	assert.Error(t, c.Redirect(299, "/resource"))
+	assert.Error(t, c.Redirect(309, "/resource"))
+	assert.NoError(t, c.Redirect(http.StatusMultipleChoices, "/resource"))
+	assert.NoError(t, c.Redirect(http.StatusPermanentRedirect, "/resource"))
 }
 
 func TestContextNegotiationWithJSON(t *testing.T) {
@@ -1141,10 +1133,10 @@ func TestContextNegotiationWithJSON(t *testing.T) {
 	c, _ := CreateTestContext(w)
 	c.Request, _ = http.NewRequest("POST", "", nil)
 
-	c.Negotiate(http.StatusOK, Negotiate{
+	assert.NoError(t, c.Negotiate(http.StatusOK, Negotiate{
 		Offered: []string{MIMEJSON, MIMEXML, MIMEYAML},
 		Data:    H{"foo": "bar"},
-	})
+	}))
 
 	assert.Equal(t, http.StatusOK, w.Code)
 	assert.Equal(t, "{\"foo\":\"bar\"}", w.Body.String())
@@ -1156,10 +1148,10 @@ func TestContextNegotiationWithXML(t *testing.T) {
 	c, _ := CreateTestContext(w)
 	c.Request, _ = http.NewRequest("POST", "", nil)
 
-	c.Negotiate(http.StatusOK, Negotiate{
+	assert.NoError(t, c.Negotiate(http.StatusOK, Negotiate{
 		Offered: []string{MIMEXML, MIMEJSON, MIMEYAML},
 		Data:    H{"foo": "bar"},
-	})
+	}))
 
 	assert.Equal(t, http.StatusOK, w.Code)
 	assert.Equal(t, "<map><foo>bar</foo></map>", w.Body.String())
@@ -1173,11 +1165,11 @@ func TestContextNegotiationWithHTML(t *testing.T) {
 	templ := template.Must(template.New("t").Parse(`Hello {{.name}}`))
 	router.SetHTMLTemplate(templ)
 
-	c.Negotiate(http.StatusOK, Negotiate{
+	assert.NoError(t, c.Negotiate(http.StatusOK, Negotiate{
 		Offered:  []string{MIMEHTML},
 		Data:     H{"name": "gin"},
 		HTMLName: "t",
-	})
+	}))
 
 	assert.Equal(t, http.StatusOK, w.Code)
 	assert.Equal(t, "Hello gin", w.Body.String())
@@ -1189,9 +1181,9 @@ func TestContextNegotiationNotSupport(t *testing.T) {
 	c, _ := CreateTestContext(w)
 	c.Request, _ = http.NewRequest("POST", "", nil)
 
-	c.Negotiate(http.StatusOK, Negotiate{
+	assert.NoError(t, c.Negotiate(http.StatusOK, Negotiate{
 		Offered: []string{MIMEPOSTForm},
-	})
+	}))
 
 	assert.Equal(t, http.StatusNotAcceptable, w.Code)
 	assert.Equal(t, c.index, abortIndex)
@@ -1297,7 +1289,7 @@ func TestContextAbortWithStatusJSON(t *testing.T) {
 	in.Bar = "barValue"
 	in.Foo = "fooValue"
 
-	c.AbortWithStatusJSON(http.StatusUnsupportedMediaType, in)
+	assert.NoError(t, c.AbortWithStatusJSON(http.StatusUnsupportedMediaType, in))
 
 	assert.Equal(t, abortIndex, c.index)
 	assert.Equal(t, http.StatusUnsupportedMediaType, c.Writer.Status())
@@ -1925,7 +1917,7 @@ func TestContextRenderDataFromReader(t *testing.T) {
 	contentType := "image/png"
 	extraHeaders := map[string]string{"Content-Disposition": `attachment; filename="gopher.png"`}
 
-	c.DataFromReader(http.StatusOK, contentLength, contentType, reader, extraHeaders)
+	assert.NoError(t, c.DataFromReader(http.StatusOK, contentLength, contentType, reader, extraHeaders))
 
 	assert.Equal(t, http.StatusOK, w.Code)
 	assert.Equal(t, body, w.Body.String())
@@ -1943,7 +1935,7 @@ func TestContextRenderDataFromReaderNoHeaders(t *testing.T) {
 	contentLength := int64(len(body))
 	contentType := "image/png"
 
-	c.DataFromReader(http.StatusOK, contentLength, contentType, reader, nil)
+	assert.NoError(t, c.DataFromReader(http.StatusOK, contentLength, contentType, reader, nil))
 
 	assert.Equal(t, http.StatusOK, w.Code)
 	assert.Equal(t, body, w.Body.String())

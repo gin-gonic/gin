@@ -195,9 +195,9 @@ func (c *Context) AbortWithStatus(code int) {
 // AbortWithStatusJSON calls `Abort()` and then `JSON` internally.
 // This method stops the chain, writes the status code and return a JSON body.
 // It also sets the Content-Type as "application/json".
-func (c *Context) AbortWithStatusJSON(code int, jsonObj interface{}) {
+func (c *Context) AbortWithStatusJSON(code int, jsonObj interface{}) error {
 	c.Abort()
-	c.JSON(code, jsonObj)
+	return c.JSON(code, jsonObj)
 }
 
 // AbortWithError calls `AbortWithStatus()` and `Error()` internally.
@@ -884,97 +884,94 @@ func (c *Context) Cookie(name string) (string, error) {
 }
 
 // Render writes the response headers and calls render.Render to render data.
-func (c *Context) Render(code int, r render.Render) {
+func (c *Context) Render(code int, r render.Render) error {
 	c.Status(code)
 
 	if !bodyAllowedForStatus(code) {
 		r.WriteContentType(c.Writer)
 		c.Writer.WriteHeaderNow()
-		return
+		return nil
 	}
 
-	if err := r.Render(c.Writer); err != nil {
-		panic(err)
-	}
+	return r.Render(c.Writer)
 }
 
 // HTML renders the HTTP template specified by its file name.
 // It also updates the HTTP code and sets the Content-Type as "text/html".
 // See http://golang.org/doc/articles/wiki/
-func (c *Context) HTML(code int, name string, obj interface{}) {
+func (c *Context) HTML(code int, name string, obj interface{}) error {
 	instance := c.engine.HTMLRender.Instance(name, obj)
-	c.Render(code, instance)
+	return c.Render(code, instance)
 }
 
 // IndentedJSON serializes the given struct as pretty JSON (indented + endlines) into the response body.
 // It also sets the Content-Type as "application/json".
 // WARNING: we recommend using this only for development purposes since printing pretty JSON is
 // more CPU and bandwidth consuming. Use Context.JSON() instead.
-func (c *Context) IndentedJSON(code int, obj interface{}) {
-	c.Render(code, render.IndentedJSON{Data: obj})
+func (c *Context) IndentedJSON(code int, obj interface{}) error {
+	return c.Render(code, render.IndentedJSON{Data: obj})
 }
 
 // SecureJSON serializes the given struct as Secure JSON into the response body.
 // Default prepends "while(1)," to response body if the given struct is array values.
 // It also sets the Content-Type as "application/json".
-func (c *Context) SecureJSON(code int, obj interface{}) {
-	c.Render(code, render.SecureJSON{Prefix: c.engine.secureJSONPrefix, Data: obj})
+func (c *Context) SecureJSON(code int, obj interface{}) error {
+	return c.Render(code, render.SecureJSON{Prefix: c.engine.secureJSONPrefix, Data: obj})
 }
 
 // JSONP serializes the given struct as JSON into the response body.
 // It adds padding to response body to request data from a server residing in a different domain than the client.
 // It also sets the Content-Type as "application/javascript".
-func (c *Context) JSONP(code int, obj interface{}) {
+func (c *Context) JSONP(code int, obj interface{}) error {
 	callback := c.DefaultQuery("callback", "")
 	if callback == "" {
-		c.Render(code, render.JSON{Data: obj})
-		return
+		return c.Render(code, render.JSON{Data: obj})
 	}
-	c.Render(code, render.JsonpJSON{Callback: callback, Data: obj})
+	return c.Render(code, render.JsonpJSON{Callback: callback, Data: obj})
 }
 
 // JSON serializes the given struct as JSON into the response body.
 // It also sets the Content-Type as "application/json".
-func (c *Context) JSON(code int, obj interface{}) {
-	c.Render(code, render.JSON{Data: obj})
+func (c *Context) JSON(code int, obj interface{}) error {
+	return c.Render(code, render.JSON{Data: obj})
 }
 
 // AsciiJSON serializes the given struct as JSON into the response body with unicode to ASCII string.
 // It also sets the Content-Type as "application/json".
-func (c *Context) AsciiJSON(code int, obj interface{}) {
-	c.Render(code, render.AsciiJSON{Data: obj})
+func (c *Context) AsciiJSON(code int, obj interface{}) error {
+	return c.Render(code, render.AsciiJSON{Data: obj})
 }
 
 // PureJSON serializes the given struct as JSON into the response body.
 // PureJSON, unlike JSON, does not replace special html characters with their unicode entities.
-func (c *Context) PureJSON(code int, obj interface{}) {
-	c.Render(code, render.PureJSON{Data: obj})
+func (c *Context) PureJSON(code int, obj interface{}) error {
+	return c.Render(code, render.PureJSON{Data: obj})
 }
 
 // XML serializes the given struct as XML into the response body.
 // It also sets the Content-Type as "application/xml".
-func (c *Context) XML(code int, obj interface{}) {
-	c.Render(code, render.XML{Data: obj})
+func (c *Context) XML(code int, obj interface{}) error {
+	return c.Render(code, render.XML{Data: obj})
 }
 
 // YAML serializes the given struct as YAML into the response body.
-func (c *Context) YAML(code int, obj interface{}) {
-	c.Render(code, render.YAML{Data: obj})
+func (c *Context) YAML(code int, obj interface{}) error {
+	return c.Render(code, render.YAML{Data: obj})
 }
 
 // ProtoBuf serializes the given struct as ProtoBuf into the response body.
-func (c *Context) ProtoBuf(code int, obj interface{}) {
-	c.Render(code, render.ProtoBuf{Data: obj})
+func (c *Context) ProtoBuf(code int, obj interface{}) error {
+	return c.Render(code, render.ProtoBuf{Data: obj})
 }
 
 // String writes the given string into the response body.
-func (c *Context) String(code int, format string, values ...interface{}) {
-	c.Render(code, render.String{Format: format, Data: values})
+func (c *Context) String(code int, format string, values ...interface{}) error {
+	return c.Render(code, render.String{Format: format, Data: values})
 }
 
 // Redirect returns an HTTP redirect to the specific location.
-func (c *Context) Redirect(code int, location string) {
-	c.Render(-1, render.Redirect{
+func (c *Context) Redirect(code int, location string) error {
+	return c.Render(-1, render.Redirect{
 		Code:     code,
 		Location: location,
 		Request:  c.Request,
@@ -982,16 +979,16 @@ func (c *Context) Redirect(code int, location string) {
 }
 
 // Data writes some data into the body stream and updates the HTTP code.
-func (c *Context) Data(code int, contentType string, data []byte) {
-	c.Render(code, render.Data{
+func (c *Context) Data(code int, contentType string, data []byte) error {
+	return c.Render(code, render.Data{
 		ContentType: contentType,
 		Data:        data,
 	})
 }
 
 // DataFromReader writes the specified reader into the body stream and updates the HTTP code.
-func (c *Context) DataFromReader(code int, contentLength int64, contentType string, reader io.Reader, extraHeaders map[string]string) {
-	c.Render(code, render.Reader{
+func (c *Context) DataFromReader(code int, contentLength int64, contentType string, reader io.Reader, extraHeaders map[string]string) error {
+	return c.Render(code, render.Reader{
 		Headers:       extraHeaders,
 		ContentType:   contentType,
 		ContentLength: contentLength,
@@ -1023,8 +1020,8 @@ func (c *Context) FileAttachment(filepath, filename string) {
 }
 
 // SSEvent writes a Server-Sent Event into the body stream.
-func (c *Context) SSEvent(name string, message interface{}) {
-	c.Render(-1, sse.Event{
+func (c *Context) SSEvent(name string, message interface{}) error {
+	return c.Render(-1, sse.Event{
 		Event: name,
 		Data:  message,
 	})
@@ -1065,26 +1062,27 @@ type Negotiate struct {
 }
 
 // Negotiate calls different Render according to acceptable Accept format.
-func (c *Context) Negotiate(code int, config Negotiate) {
+func (c *Context) Negotiate(code int, config Negotiate) error {
 	switch c.NegotiateFormat(config.Offered...) {
 	case binding.MIMEJSON:
 		data := chooseData(config.JSONData, config.Data)
-		c.JSON(code, data)
+		return c.JSON(code, data)
 
 	case binding.MIMEHTML:
 		data := chooseData(config.HTMLData, config.Data)
-		c.HTML(code, config.HTMLName, data)
+		return c.HTML(code, config.HTMLName, data)
 
 	case binding.MIMEXML:
 		data := chooseData(config.XMLData, config.Data)
-		c.XML(code, data)
+		return c.XML(code, data)
 
 	case binding.MIMEYAML:
 		data := chooseData(config.YAMLData, config.Data)
-		c.YAML(code, data)
+		return c.YAML(code, data)
 
 	default:
 		c.AbortWithError(http.StatusNotAcceptable, errors.New("the accepted formats are not offered by the server")) // nolint: errcheck
+		return nil
 	}
 }
 
