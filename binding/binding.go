@@ -22,6 +22,7 @@ const (
 	MIMEMSGPACK           = "application/x-msgpack"
 	MIMEMSGPACK2          = "application/msgpack"
 	MIMEYAML              = "application/x-yaml"
+	MIMEOctetStream       = "application/octet-stream"
 )
 
 // Binding describes the interface which needs to be implemented for binding the

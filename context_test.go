@@ -143,6 +143,38 @@ func TestSaveUploadedCreateFailed(t *testing.T) {
 	assert.Error(t, c.SaveUploadedFile(f, "/"))
 }
 
+func TestSaveOctetStreamFile(t *testing.T) {
+	buf := new(bytes.Buffer)
+	_, err := buf.WriteString("large file binary content")
+	assert.NoError(t, err, "write string error for buffer")
+
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	c.Request, _ = http.NewRequest("POST", "/", buf)
+	c.Request.Header.Set("Content-Type", binding.MIMEOctetStream)
+
+	assert.NoError(t, c.SaveOctetStreamFile("test", os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0644))
+}
+
+func TestSaveOctetStreamFileFailed(t *testing.T) {
+	buf := new(bytes.Buffer)
+	_, err := buf.WriteString("large file binary content")
+	assert.NoError(t, err, "write string error for buffer")
+
+	c, _ := CreateTestContext(httptest.NewRecorder())
+
+	c.Request, _ = http.NewRequest("GET", "/", buf)
+	c.Request.Header.Set("Content-Type", binding.MIMEOctetStream)
+	err = c.SaveOctetStreamFile("test", os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0644)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "support POST/PATCH/PUT")
+
+	c.Request, _ = http.NewRequest("PATCH", "/", buf)
+	c.Request.Header.Set("Content-Type", binding.MIMEJSON)
+	err = c.SaveOctetStreamFile("test", os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0644)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), binding.MIMEOctetStream)
+}
+
 func TestContextReset(t *testing.T) {
 	router := New()
 	c := router.allocateContext()

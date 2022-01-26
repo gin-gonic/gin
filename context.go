@@ -601,6 +601,27 @@ func (c *Context) SaveUploadedFile(file *multipart.FileHeader, dst string) error
 	return err
 }
 
+// SaveOctetStreamFile is useful for uploading large file since containing request data, it will operate underlying data stream to dst.
+func (c *Context) SaveOctetStreamFile(dst string, flag int, perm os.FileMode) error {
+	if c.GetHeader("Content-Type") != binding.MIMEOctetStream {
+		return fmt.Errorf("octet stream required %s data format", binding.MIMEOctetStream)
+	}
+	method := c.Request.Method
+	// In particular, only support POST/PATCH/PUT for taking payload according to https://www.rfc-editor.org/rfc/rfc2616#section-9
+	if method != http.MethodPost && method != http.MethodPatch && method != http.MethodPut {
+		return fmt.Errorf("invalid http request method, only support POST/PATCH/PUT")
+	}
+
+	out, err := os.OpenFile(dst, flag, perm)
+	if err != nil {
+		return err
+	}
+	defer out.Close()
+
+	_, err = io.Copy(out, c.Request.Body)
+	return err
+}
+
 // Bind checks the Method and Content-Type to select a binding engine automatically,
 // Depending on the "Content-Type" header different bindings are used, for example:
 //     "application/json" --> JSON binding
