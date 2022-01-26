@@ -642,25 +642,21 @@ func TestContextBodyAllowedForStatus(t *testing.T) {
 	assert.True(t, true, bodyAllowedForStatus(http.StatusInternalServerError))
 }
 
-type TestPanicRender struct{}
+type TestErrorRender struct{}
 
-func (*TestPanicRender) Render(http.ResponseWriter) error {
-	return errors.New("TestPanicRender")
+var errTestPanicRender = errors.New("TestPanicRender")
+
+func (*TestErrorRender) Render(http.ResponseWriter) error {
+	return errTestPanicRender
 }
 
-func (*TestPanicRender) WriteContentType(http.ResponseWriter) {}
+func (*TestErrorRender) WriteContentType(http.ResponseWriter) {}
 
 func TestContextRenderPanicIfErr(t *testing.T) {
-	defer func() {
-		r := recover()
-		assert.Equal(t, "TestPanicRender", fmt.Sprint(r))
-	}()
 	w := httptest.NewRecorder()
 	c, _ := CreateTestContext(w)
-
-	c.Render(http.StatusOK, &TestPanicRender{})
-
-	assert.Fail(t, "Panic not detected")
+	c.Render(http.StatusOK, &TestErrorRender{})
+	assert.Equal(t, errorMsgs{&Error{Err: errTestPanicRender, Type: 1}}, c.Errors)
 }
 
 // Tests that the response is serialized as JSON
