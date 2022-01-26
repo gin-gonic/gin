@@ -894,7 +894,7 @@ func (c *Context) Render(code int, r render.Render) {
 	}
 
 	if err := r.Render(c.Writer); err != nil {
-		c.Error(err)
+		c.Error(err) // nolint: errcheck
 		c.Abort()
 	}
 }
