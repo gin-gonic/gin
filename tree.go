@@ -296,7 +296,7 @@ func (n *node) insertChild(path string, fullPath string, handlers HandlersChain)
 			break
 		}
 
-		// The wildcard name must only contain one ':' or '*' charactor
+		// The wildcard name must only contain one ':' or '*' character
 		if !valid {
 			panic("only one wildcard per path segment is allowed, has: '" +
 				wildcard + "' in path '" + fullPath + "'")
