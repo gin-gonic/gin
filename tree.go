@@ -81,7 +81,7 @@ func longestCommonPrefix(a, b string) int {
 	return i
 }
 
-// addChild will add a child node, keeping wildcards at the end
+// addChild will add a child node, keeping wildcardChild at the end
 func (n *node) addChild(child *node) {
 	if n.wildChild && len(n.children) > 0 {
 		wildcardChild := n.children[len(n.children)-1]
@@ -296,7 +296,7 @@ func (n *node) insertChild(path string, fullPath string, handlers HandlersChain)
 			break
 		}
 
-		// The wildcard name must not contain ':' and '*'
+		// The wildcard name must only contain one ':' or '*' character
 		if !valid {
 			panic("only one wildcard per path segment is allowed, has: '" +
 				wildcard + "' in path '" + fullPath + "'")

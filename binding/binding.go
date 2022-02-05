@@ -40,7 +40,7 @@ type BindingBody interface {
 }
 
 // BindingUri adds BindUri method to Binding. BindUri is similar with Bind,
-// but it read the Params.
+// but it reads the Params.
 type BindingUri interface {
 	Name() string
 	BindUri(map[string][]string, interface{}) error
