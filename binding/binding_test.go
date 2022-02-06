@@ -165,6 +165,11 @@ func TestBindingDefault(t *testing.T) {
 
 	assert.Equal(t, YAML, Default("POST", MIMEYAML))
 	assert.Equal(t, YAML, Default("PUT", MIMEYAML))
+
+	assert.Equal(t, MsgPack, Default("POST", MIMEMSGPACK))
+	assert.Equal(t, MsgPack, Default("PUT", MIMEMSGPACK2))
+
+	assert.Equal(t, Form, Default("POST", MIMEHTML))
 }
 
 func TestBindingJSONNilBody(t *testing.T) {
