@@ -90,7 +90,12 @@ func TestH2c(t *testing.T) {
 	r.GET("/", func(c *Context) {
 		c.String(200, "<h1>Hello world</h1>")
 	})
-	go http.Serve(ln, r.Handler())
+	go func() {
+		err := http.Serve(ln, r.Handler())
+		if err != nil {
+			fmt.Println(err)
+		}
+	}()
 	defer ln.Close()
 
 	url := "http://" + ln.Addr().String() + "/"
