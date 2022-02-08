@@ -85,6 +85,7 @@ func TestContextFormFile(t *testing.T) {
 	}
 
 	assert.NoError(t, c.SaveUploadedFile(f, "test"))
+	os.Remove("test")
 }
 
 func TestContextMultipartForm(t *testing.T) {
@@ -106,6 +107,7 @@ func TestContextMultipartForm(t *testing.T) {
 	}
 
 	assert.NoError(t, c.SaveUploadedFile(f.File["file"][0], "test"))
+	os.Remove("test")
 }
 
 func TestSaveUploadedOpenFailed(t *testing.T) {
