@@ -78,9 +78,21 @@ func mappingByPtr(ptr interface{}, setter setter, tag string) error {
 	return err
 }
 
-func mapping(value reflect.Value, field reflect.StructField, setter setter, tag string) (bool, error) {
+type structInfo struct {
+	value reflect.Value
+	field reflect.StructField
+}
+
+func mapping(value reflect.Value, field reflect.StructField, setter setter, tag string, maped ...map[string]struct{}) (bool, error) {
 	if field.Tag.Get(tag) == "-" { // just ignoring this field
 		return false, nil
+	}
+
+	var _maped map[string]struct{}
+	if len(maped) > 0 {
+		_maped = maped[0]
+	} else {
+		_maped = make(map[string]struct{})
 	}
 
 	vKind := value.Kind()
@@ -92,7 +104,7 @@ func mapping(value reflect.Value, field reflect.StructField, setter setter, tag 
 			isNew = true
 			vPtr = reflect.New(value.Type().Elem())
 		}
-		isSet, err := mapping(vPtr.Elem(), field, setter, tag)
+		isSet, err := mapping(vPtr.Elem(), field, setter, tag, _maped)
 		if err != nil {
 			return false, err
 		}
@@ -116,20 +128,57 @@ func mapping(value reflect.Value, field reflect.StructField, setter setter, tag 
 		tValue := value.Type()
 
 		var isSet bool
+		structs := make([]structInfo, 0)
 		for i := 0; i < value.NumField(); i++ {
 			sf := tValue.Field(i)
 			if sf.PkgPath != "" && !sf.Anonymous { // unexported
 				continue
 			}
-			ok, err := mapping(value.Field(i), sf, setter, tag)
+			tagValue := sf.Tag.Get(tag)
+			if _, ok := _maped[tagValue]; ok {
+				continue
+			}
+
+			if isStruct(value.Field(i)) {
+				structs = append(structs, structInfo{
+					value: value.Field(i),
+					field: sf,
+				})
+				continue
+			}
+			ok, err := mapping(value.Field(i), sf, setter, tag, _maped)
 			if err != nil {
 				return false, err
 			}
 			isSet = isSet || ok
+
+			if isSet && tagValue != "" {
+				_maped[tagValue] = struct{}{}
+			}
+		}
+		for _, st := range structs {
+			ok, err := mapping(st.value, st.field, setter, tag, _maped)
+			if err != nil {
+				return false, err
+			}
+			isSet = isSet || ok
+			tagValue := st.field.Tag.Get(tag)
+			if isSet && tagValue != "" {
+				_maped[tagValue] = struct{}{}
+			}
 		}
 		return isSet, nil
 	}
 	return false, nil
+}
+
+func isStruct(_field reflect.Value) bool {
+	if _field.Kind() == reflect.Ptr {
+		vPtr := reflect.New(_field.Type().Elem())
+		return vPtr.Elem().Kind() == reflect.Struct
+	} else {
+		return _field.Kind() == reflect.Struct
+	}
 }
 
 type setOptions struct {

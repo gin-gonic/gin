@@ -288,3 +288,56 @@ func TestMappingIgnoredCircularRef(t *testing.T) {
 	err := mappingByPtr(&s, formSource{}, "form")
 	assert.NoError(t, err)
 }
+
+func TestMappingNestedStructure(t *testing.T) {
+	formData := formSource{"name": {"hello"}, "id": {"1"}, "age": {"18"}}
+	type Other struct {
+		Name string `form:"name"`
+	}
+	type City struct {
+		Id        int    `form:"id"`
+		Name      string `form:"name"`
+		OtherInfo *Other
+	}
+	type User struct {
+		Id       int    `form:"id"`
+		Name     string `form:"name"`
+		Age      int    `form:"age"`
+		CityInfo *City
+	}
+	var u User
+	err := mappingByPtr(&u, formData, "form")
+	assert.NoError(t, err)
+	assert.Equal(t, u.Id, 1)
+	assert.Equal(t, u.Name, "hello")
+	assert.Nil(t, u.CityInfo)
+
+	type User1 struct {
+		CityInfo *City
+		Id       int    `form:"id"`
+		Name     string `form:"name"`
+		Age      int    `form:"age"`
+	}
+	var u1 User1
+
+	err = mappingByPtr(&u1, formData, "form")
+	assert.NoError(t, err)
+	assert.Equal(t, u1.Id, 1)
+	assert.Equal(t, u1.Name, "hello")
+	assert.Nil(t, u1.CityInfo)
+
+	type User2 struct {
+		CityInfo City
+		Id       int    `form:"id"`
+		Name     string `form:"name"`
+		Age      int    `form:"age"`
+	}
+	var u2 User2
+
+	err = mappingByPtr(&u2, formData, "form")
+	assert.NoError(t, err)
+	assert.Equal(t, u2.Id, 1)
+	assert.Equal(t, u2.Name, "hello")
+	assert.Equal(t, u2.CityInfo.Id, 0)
+	assert.Equal(t, u2.CityInfo.Name, "")
+}
