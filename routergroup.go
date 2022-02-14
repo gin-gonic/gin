@@ -12,7 +12,7 @@ import (
 )
 
 var (
-	// reg match english letters for http method name
+	// regEnLetter matches english letters for http method name
 	regEnLetter = regexp.MustCompile("^[A-Z]+$")
 
 	// anyMethods for RouterGroup Any method
