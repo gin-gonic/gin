@@ -15,7 +15,9 @@ import (
 	"testing"
 
 	testdata "github.com/gin-gonic/gin/testdata/protoexample"
+
 	"github.com/stretchr/testify/assert"
+	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -509,4 +511,47 @@ func TestRenderReaderNoContentLength(t *testing.T) {
 	assert.NotContains(t, "Content-Length", w.Header())
 	assert.Equal(t, headers["Content-Disposition"], w.Header().Get("Content-Disposition"))
 	assert.Equal(t, headers["x-request-id"], w.Header().Get("x-request-id"))
+}
+
+func TestRenderJsonPb(t *testing.T) {
+	w := httptest.NewRecorder()
+	reps := []int64{int64(1), int64(2)}
+	typ := int32(11)
+	label := "test"
+	data := &testdata.Test{
+		Label:         &label,
+		Type:          &typ,
+		Reps:          reps,
+		Optionalgroup: &testdata.Test_OptionalGroup{RequiredField: &label},
+	}
+
+	r := (JSONPB{
+		Data:   data,
+		datapb: []byte{},
+		Option: protojson.MarshalOptions{
+			EmitUnpopulated: true,
+		},
+	})
+	r.WriteContentType(w)
+	result, err := protojson.MarshalOptions{EmitUnpopulated: true}.Marshal(data)
+	assert.NoError(t, err)
+	err = r.Render(w)
+	assert.NoError(t, err)
+	assert.Equal(t, string(result), w.Body.String())
+	assert.Equal(t, "application/json; charset=utf-8", w.Header().Get("Content-Type"))
+
+	w1 := httptest.NewRecorder()
+	r1 := (JSONPB{
+		Data:   nil,
+		datapb: []byte{},
+		Option: protojson.MarshalOptions{
+			EmitUnpopulated: true,
+		},
+	})
+	r1.WriteContentType(w)
+	result2 := "{}"
+	err1 := r1.Render(w1)
+	assert.NoError(t, err1)
+	assert.Equal(t, result2, w1.Body.String())
+	assert.Equal(t, "application/json; charset=utf-8", w1.Header().Get("Content-Type"))
 }

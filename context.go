@@ -23,6 +23,8 @@ import (
 	"github.com/gin-contrib/sse"
 	"github.com/gin-gonic/gin/binding"
 	"github.com/gin-gonic/gin/render"
+	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/proto"
 )
 
 // Content-Type MIME of the most common data formats.
@@ -937,6 +939,12 @@ func (c *Context) JSONP(code int, obj interface{}) {
 // It also sets the Content-Type as "application/json".
 func (c *Context) JSON(code int, obj interface{}) {
 	c.Render(code, render.JSON{Data: obj})
+}
+
+// JSONPB serializes the given proto Message as JSON into the response body.
+// It also sets the Content-Type as "application/json".
+func (c *Context) JSONPB(code int, obj proto.Message) {
+	c.Render(code, render.JSONPB{Data: obj, Option: protojson.MarshalOptions{EmitUnpopulated: true}})
 }
 
 // AsciiJSON serializes the given struct as JSON into the response body with unicode to ASCII string.
