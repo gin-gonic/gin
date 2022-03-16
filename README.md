@@ -513,6 +513,7 @@ func main() {
 
 		// nested group
 		testing := authorized.Group("testing")
+		// visited 0.0.0.0:8080/testing/analytics
 		testing.GET("/analytics", analyticsEndpoint)
 	}
 
