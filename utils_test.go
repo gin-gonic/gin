@@ -143,3 +143,8 @@ func TestMarshalXMLforH(t *testing.T) {
 	e := h.MarshalXML(enc, x)
 	assert.Error(t, e)
 }
+
+func TestIsASCII(t *testing.T) {
+	assert.Equal(t, isASCII("test"), true)
+	assert.Equal(t, isASCII("🧡💛💚💙💜"), false)
+}

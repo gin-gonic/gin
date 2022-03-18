@@ -385,7 +385,7 @@ func main() {
 	router.MaxMultipartMemory = 8 << 20  // 8 MiB
 	router.POST("/upload", func(c *gin.Context) {
 		// Single file
-		file, _ := c.FormFile("Filename")
+		file, _ := c.FormFile("file")
 		log.Println(file.Filename)
 
 		// Upload the file to specific dst.
@@ -417,7 +417,7 @@ func main() {
 	router.POST("/upload", func(c *gin.Context) {
 		// Multipart form
 		form, _ := c.MultipartForm()
-		files := form.File["Filename[]"]
+		files := form.File["upload[]"]
 
 		for _, file := range files {
 			log.Println(file.Filename)
@@ -513,6 +513,7 @@ func main() {
 
 		// nested group
 		testing := authorized.Group("testing")
+		// visit 0.0.0.0:8080/testing/analytics
 		testing.GET("/analytics", analyticsEndpoint)
 	}
 
@@ -1243,7 +1244,8 @@ func main() {
 	router.Static("/assets", "./assets")
 	router.StaticFS("/more_static", http.Dir("my_file_system"))
 	router.StaticFile("/favicon.ico", "./resources/favicon.ico")
-
+	router.StaticFileFS("/more_favicon.ico", "more_favicon.ico", http.Dir("my_file_system"))
+	
 	// Listen and serve on 0.0.0.0:8080
 	router.Run(":8080")
 }
