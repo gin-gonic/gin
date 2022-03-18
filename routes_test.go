@@ -344,16 +344,16 @@ func TestRouteStaticFileFS(t *testing.T) {
 	router.Static("/using_static", dir)
 	router.StaticFileFS("/result_fs", filename, Dir(dir, false))
 
-	w := performRequest(router, http.MethodGet, "/using_static/"+filename)
-	w2 := performRequest(router, http.MethodGet, "/result_fs")
+	w := PerformRequest(router, http.MethodGet, "/using_static/"+filename)
+	w2 := PerformRequest(router, http.MethodGet, "/result_fs")
 
 	assert.Equal(t, w, w2)
 	assert.Equal(t, http.StatusOK, w.Code)
 	assert.Equal(t, "Gin Web Framework", w.Body.String())
 	assert.Equal(t, "text/plain; charset=utf-8", w.Header().Get("Content-Type"))
 
-	w3 := performRequest(router, http.MethodHead, "/using_static/"+filename)
-	w4 := performRequest(router, http.MethodHead, "/result_fs")
+	w3 := PerformRequest(router, http.MethodHead, "/using_static/"+filename)
+	w4 := PerformRequest(router, http.MethodHead, "/result_fs")
 
 	assert.Equal(t, w3, w4)
 	assert.Equal(t, http.StatusOK, w3.Code)
