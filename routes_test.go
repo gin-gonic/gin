@@ -325,6 +325,40 @@ func TestRouteStaticFile(t *testing.T) {
 	assert.Equal(t, http.StatusOK, w3.Code)
 }
 
+// TestHandleStaticFile - ensure the static file handles properly
+func TestRouteStaticFileFS(t *testing.T) {
+	// SETUP file
+	testRoot, _ := os.Getwd()
+	f, err := ioutil.TempFile(testRoot, "")
+	if err != nil {
+		t.Error(err)
+	}
+	defer os.Remove(f.Name())
+	_, err = f.WriteString("Gin Web Framework")
+	assert.NoError(t, err)
+	f.Close()
+
+	dir, filename := filepath.Split(f.Name())
+	// SETUP gin
+	router := New()
+	router.Static("/using_static", dir)
+	router.StaticFileFS("/result_fs", filename, Dir(dir, false))
+
+	w := performRequest(router, http.MethodGet, "/using_static/"+filename)
+	w2 := performRequest(router, http.MethodGet, "/result_fs")
+
+	assert.Equal(t, w, w2)
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Equal(t, "Gin Web Framework", w.Body.String())
+	assert.Equal(t, "text/plain; charset=utf-8", w.Header().Get("Content-Type"))
+
+	w3 := performRequest(router, http.MethodHead, "/using_static/"+filename)
+	w4 := performRequest(router, http.MethodHead, "/result_fs")
+
+	assert.Equal(t, w3, w4)
+	assert.Equal(t, http.StatusOK, w3.Code)
+}
+
 // TestHandleStaticDir - ensure the root/sub dir handles properly
 func TestRouteStaticListingDir(t *testing.T) {
 	router := New()
