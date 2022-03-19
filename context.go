@@ -49,7 +49,8 @@ type Context struct {
 	Request   *http.Request
 	Writer    ResponseWriter
 
-	Params   Params
+	Params Params
+	// when the operation is not initialized, the default is nil slice
 	handlers HandlersChain
 	index    int8
 	fullPath string
@@ -110,12 +111,13 @@ func (c *Context) Copy() *Context {
 		Request:   c.Request,
 		Params:    c.Params,
 		engine:    c.engine,
+		Keys:      make(map[string]interface{}, len(c.Keys)),
+		index:     abortIndex,
+		handlers:  nil,
 	}
+
 	cp.writermem.ResponseWriter = nil
 	cp.Writer = &cp.writermem
-	cp.index = abortIndex
-	cp.handlers = nil
-	cp.Keys = map[string]interface{}{}
 	for k, v := range c.Keys {
 		cp.Keys[k] = v
 	}
