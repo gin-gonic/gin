@@ -15,6 +15,7 @@ import (
 	"net"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"os"
 	"reflect"
 	"strings"
@@ -1033,6 +1034,19 @@ func TestContextRenderAttachment(t *testing.T) {
 	assert.Equal(t, fmt.Sprintf("attachment; filename=\"%s\"", newFilename), w.Header().Get("Content-Disposition"))
 }
 
+func TestContextRenderUTF8Attachment(t *testing.T) {
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
+	newFilename := "new🧡_filename.go"
+
+	c.Request, _ = http.NewRequest("GET", "/", nil)
+	c.FileAttachment("./gin.go", newFilename)
+
+	assert.Equal(t, 200, w.Code)
+	assert.Contains(t, w.Body.String(), "func New() *Engine {")
+	assert.Equal(t, `attachment; filename*=UTF-8''`+url.QueryEscape(newFilename), w.Header().Get("Content-Disposition"))
+}
+
 // TestContextRenderYAML tests that the response is serialized as YAML
 // and Content-Type is set to application/x-yaml
 func TestContextRenderYAML(t *testing.T) {
@@ -2036,8 +2050,8 @@ func TestRaceParamsContextCopy(t *testing.T) {
 			}(c.Copy(), c.Param("name"))
 		})
 	}
-	performRequest(router, "GET", "/name1/api")
-	performRequest(router, "GET", "/name2/api")
+	PerformRequest(router, "GET", "/name1/api")
+	PerformRequest(router, "GET", "/name2/api")
 	wg.Wait()
 }
 

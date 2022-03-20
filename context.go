@@ -6,7 +6,6 @@ package gin
 
 import (
 	"errors"
-	"fmt"
 	"io"
 	"io/ioutil"
 	"log"
@@ -59,7 +58,7 @@ type Context struct {
 	params       *Params
 	skippedNodes *[]skippedNode
 
-	// This mutex protect Keys map
+	// This mutex protects Keys map.
 	mu sync.RWMutex
 
 	// Keys is a key/value pair exclusively for the context of each request.
@@ -71,10 +70,10 @@ type Context struct {
 	// Accepted defines a list of manually accepted formats for content negotiation.
 	Accepted []string
 
-	// queryCache use url.ParseQuery cached the param query result from c.Request.URL.Query()
+	// queryCache caches the query result from c.Request.URL.Query().
 	queryCache url.Values
 
-	// formCache use url.ParseQuery cached PostForm contains the parsed form data from POST, PATCH,
+	// formCache caches c.Request.PostForm, which contains the parsed form data from POST, PATCH,
 	// or PUT body parameters.
 	formCache url.Values
 
@@ -601,11 +600,10 @@ func (c *Context) SaveUploadedFile(file *multipart.FileHeader, dst string) error
 	return err
 }
 
-// Bind checks the Content-Type to select a binding engine automatically,
-// Depending on the "Content-Type" header different bindings are used:
+// Bind checks the Method and Content-Type to select a binding engine automatically,
+// Depending on the "Content-Type" header different bindings are used, for example:
 //     "application/json" --> JSON binding
 //     "application/xml"  --> XML binding
-// otherwise --> returns an error.
 // It parses the request's body as JSON if Content-Type == "application/json" using JSON or XML as a JSON input.
 // It decodes the json payload into the struct specified as a pointer.
 // It writes a 400 error and sets Content-Type header "text/plain" in the response if input is not valid.
@@ -660,14 +658,13 @@ func (c *Context) MustBindWith(obj any, b binding.Binding) error {
 	return nil
 }
 
-// ShouldBind checks the Content-Type to select a binding engine automatically,
-// Depending on the "Content-Type" header different bindings are used:
+// ShouldBind checks the Method and Content-Type to select a binding engine automatically,
+// Depending on the "Content-Type" header different bindings are used, for example:
 //     "application/json" --> JSON binding
 //     "application/xml"  --> XML binding
-// otherwise --> returns an error
 // It parses the request's body as JSON if Content-Type == "application/json" using JSON or XML as a JSON input.
 // It decodes the json payload into the struct specified as a pointer.
-// Like c.Bind() but this method does not set the response status code to 400 and abort if the json is not valid.
+// Like c.Bind() but this method does not set the response status code to 400 or abort if input is not valid.
 func (c *Context) ShouldBind(obj any) error {
 	b := binding.Default(c.Request.Method, c.ContentType())
 	return c.ShouldBindWith(obj, b)
@@ -843,7 +840,7 @@ func (c *Context) GetHeader(key string) string {
 	return c.requestHeader(key)
 }
 
-// GetRawData return stream data.
+// GetRawData returns stream data.
 func (c *Context) GetRawData() ([]byte, error) {
 	return ioutil.ReadAll(c.Request.Body)
 }
@@ -1020,7 +1017,11 @@ func (c *Context) FileFromFS(filepath string, fs http.FileSystem) {
 // FileAttachment writes the specified file into the body stream in an efficient way
 // On the client side, the file will typically be downloaded with the given filename
 func (c *Context) FileAttachment(filepath, filename string) {
-	c.Writer.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=\"%s\"", filename))
+	if isASCII(filename) {
+		c.Writer.Header().Set("Content-Disposition", `attachment; filename="`+filename+`"`)
+	} else {
+		c.Writer.Header().Set("Content-Disposition", `attachment; filename*=UTF-8''`+url.QueryEscape(filename))
+	}
 	http.ServeFile(c.Writer, c.Request, filepath)
 }
 

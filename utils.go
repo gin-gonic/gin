@@ -12,6 +12,7 @@ import (
 	"reflect"
 	"runtime"
 	"strings"
+	"unicode"
 )
 
 // BindKey indicates a default bind key.
@@ -150,4 +151,14 @@ func resolveAddress(addr []string) string {
 	default:
 		panic("too many parameters")
 	}
+}
+
+// https://stackoverflow.com/questions/53069040/checking-a-string-contains-only-ascii-characters
+func isASCII(s string) bool {
+	for i := 0; i < len(s); i++ {
+		if s[i] > unicode.MaxASCII {
+			return false
+		}
+	}
+	return true
 }

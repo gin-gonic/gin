@@ -17,11 +17,11 @@ jobs:
         with:
           go-version: '^1.16'
       - name: Checkout repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: Setup golangci-lint
-        uses: golangci/golangci-lint-action@v2
+        uses: golangci/golangci-lint-action@v3.1.0
         with:
-          version: v1.43.0
+          version: v1.44.0
           args: --verbose
   test:
     needs: lint
@@ -48,7 +48,7 @@ jobs:
           go-version: ${{ matrix.go }}
 
       - name: Checkout Code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           ref: ${{ github.ref }}
           

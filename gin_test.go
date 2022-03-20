@@ -19,6 +19,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"golang.org/x/net/http2"
 )
 
 func formatAsDate(t time.Time) string {
@@ -71,6 +72,44 @@ func TestLoadHTMLGlobDebugMode(t *testing.T) {
 	defer ts.Close()
 
 	res, err := http.Get(fmt.Sprintf("%s/test", ts.URL))
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	resp, _ := ioutil.ReadAll(res.Body)
+	assert.Equal(t, "<h1>Hello world</h1>", string(resp))
+}
+
+func TestH2c(t *testing.T) {
+	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		fmt.Println(err)
+	}
+	r := Default()
+	r.UseH2C = true
+	r.GET("/", func(c *Context) {
+		c.String(200, "<h1>Hello world</h1>")
+	})
+	go func() {
+		err := http.Serve(ln, r.Handler())
+		if err != nil {
+			fmt.Println(err)
+		}
+	}()
+	defer ln.Close()
+
+	url := "http://" + ln.Addr().String() + "/"
+
+	http := http.Client{
+		Transport: &http2.Transport{
+			AllowHTTP: true,
+			DialTLS: func(netw, addr string, cfg *tls.Config) (net.Conn, error) {
+				return net.Dial(netw, addr)
+			},
+		},
+	}
+
+	res, err := http.Get(url)
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -395,7 +434,6 @@ func TestNoMethodWithoutGlobalHandlers(t *testing.T) {
 }
 
 func TestRebuild404Handlers(t *testing.T) {
-
 }
 
 func TestNoMethodWithGlobalHandlers(t *testing.T) {
@@ -491,7 +529,7 @@ func TestEngineHandleContext(t *testing.T) {
 	}
 
 	assert.NotPanics(t, func() {
-		w := performRequest(r, "GET", "/")
+		w := PerformRequest(r, "GET", "/")
 		assert.Equal(t, 301, w.Code)
 	})
 }
@@ -524,7 +562,7 @@ func TestEngineHandleContextManyReEntries(t *testing.T) {
 	})
 
 	assert.NotPanics(t, func() {
-		w := performRequest(r, "GET", "/"+strconv.Itoa(expectValue-1)) // include 0 value
+		w := PerformRequest(r, "GET", "/"+strconv.Itoa(expectValue-1)) // include 0 value
 		assert.Equal(t, 200, w.Code)
 		assert.Equal(t, expectValue, w.Body.Len())
 	})
@@ -636,7 +674,6 @@ func TestPrepareTrustedCIRDsWith(t *testing.T) {
 		assert.Nil(t, r.trustedCIDRs)
 		assert.Nil(t, err)
 	}
-
 }
 
 func parseCIDR(cidr string) *net.IPNet {

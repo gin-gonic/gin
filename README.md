@@ -384,8 +384,8 @@ func main() {
 	// Set a lower memory limit for multipart forms (default is 32 MiB)
 	router.MaxMultipartMemory = 8 << 20  // 8 MiB
 	router.POST("/upload", func(c *gin.Context) {
-		// single file
-		file, _ := c.FormFile("Filename")
+		// Single file
+		file, _ := c.FormFile("file")
 		log.Println(file.Filename)
 
 		// Upload the file to specific dst.
@@ -513,6 +513,7 @@ func main() {
 
 		// nested group
 		testing := authorized.Group("testing")
+		// visit 0.0.0.0:8080/testing/analytics
 		testing.GET("/analytics", analyticsEndpoint)
 	}
 
@@ -906,7 +907,7 @@ func startPage(c *gin.Context) {
 	var person Person
 	// If `GET`, only `Form` binding engine (`query`) used.
 	// If `POST`, first checks the `content-type` for `JSON` or `XML`, then uses `Form` (`form-data`).
-	// See more at https://github.com/gin-gonic/gin/blob/master/binding/binding.go#L48
+	// See more at https://github.com/gin-gonic/gin/blob/master/binding/binding.go#L88
         if c.ShouldBind(&person) == nil {
                 log.Println(person.Name)
                 log.Println(person.Address)
@@ -1243,7 +1244,8 @@ func main() {
 	router.Static("/assets", "./assets")
 	router.StaticFS("/more_static", http.Dir("my_file_system"))
 	router.StaticFile("/favicon.ico", "./resources/favicon.ico")
-
+	router.StaticFileFS("/more_favicon.ico", "more_favicon.ico", http.Dir("my_file_system"))
+	
 	// Listen and serve on 0.0.0.0:8080
 	router.Run(":8080")
 }
@@ -1409,7 +1411,7 @@ import (
 
 func formatAsDate(t time.Time) string {
     year, month, day := t.Date()
-    return fmt.Sprintf("%d%02d/%02d", year, month, day)
+    return fmt.Sprintf("%d/%02d/%02d", year, month, day)
 }
 
 func main() {
