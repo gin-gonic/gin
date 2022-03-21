@@ -198,7 +198,7 @@ func New() *Engine {
 		trustedCIDRs:           defaultTrustedCIDRs,
 	}
 	engine.RouterGroup.engine = engine
-	engine.pool.New = func() interface{} {
+	engine.pool.New = func() any {
 		return engine.allocateContext()
 	}
 	return engine

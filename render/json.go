@@ -16,34 +16,34 @@ import (
 
 // JSON contains the given interface object.
 type JSON struct {
-	Data interface{}
+	Data any
 }
 
 // IndentedJSON contains the given interface object.
 type IndentedJSON struct {
-	Data interface{}
+	Data any
 }
 
 // SecureJSON contains the given interface object and its prefix.
 type SecureJSON struct {
 	Prefix string
-	Data   interface{}
+	Data   any
 }
 
 // JsonpJSON contains the given interface object its callback.
 type JsonpJSON struct {
 	Callback string
-	Data     interface{}
+	Data     any
 }
 
 // AsciiJSON contains the given interface object.
 type AsciiJSON struct {
-	Data interface{}
+	Data any
 }
 
 // PureJSON contains the given interface object.
 type PureJSON struct {
-	Data interface{}
+	Data any
 }
 
 var (
@@ -66,7 +66,7 @@ func (r JSON) WriteContentType(w http.ResponseWriter) {
 }
 
 // WriteJSON marshals the given interface object and writes it with custom ContentType.
-func WriteJSON(w http.ResponseWriter, obj interface{}) error {
+func WriteJSON(w http.ResponseWriter, obj any) error {
 	writeContentType(w, jsonContentType)
 	jsonBytes, err := json.Marshal(obj)
 	if err != nil {
