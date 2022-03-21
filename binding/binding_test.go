@@ -61,11 +61,11 @@ type FooDefaultBarStruct struct {
 }
 
 type FooStructUseNumber struct {
-	Foo interface{} `json:"foo" binding:"required"`
+	Foo any `json:"foo" binding:"required"`
 }
 
 type FooStructDisallowUnknownFields struct {
-	Foo interface{} `json:"foo" binding:"required"`
+	Foo any `json:"foo" binding:"required"`
 }
 
 type FooBarStructForTimeType struct {
@@ -93,7 +93,7 @@ type FooStructForTimeTypeFailLocation struct {
 }
 
 type FooStructForMapType struct {
-	MapFoo map[string]interface{} `form:"map_foo"`
+	MapFoo map[string]any `form:"map_foo"`
 }
 
 type FooStructForIgnoreFormTag struct {
@@ -106,7 +106,7 @@ type InvalidNameType struct {
 
 type InvalidNameMapType struct {
 	TestName struct {
-		MapFoo map[string]interface{} `form:"map_foo"`
+		MapFoo map[string]any `form:"map_foo"`
 	}
 }
 
@@ -128,7 +128,7 @@ type FooStructForStructPointerType struct {
 
 type FooStructForSliceMapType struct {
 	// Unknown type: not support map
-	SliceMapFoo []map[string]interface{} `form:"slice_map_foo"`
+	SliceMapFoo []map[string]any `form:"slice_map_foo"`
 }
 
 type FooStructForBoolType struct {
@@ -141,7 +141,7 @@ type FooStructForStringPtrType struct {
 }
 
 type FooStructForMapPtrType struct {
-	PtrBar *map[string]interface{} `form:"ptr_bar"`
+	PtrBar *map[string]any `form:"ptr_bar"`
 }
 
 func TestBindingDefault(t *testing.T) {
@@ -768,7 +768,7 @@ func TestHeaderBinding(t *testing.T) {
 	req.Header.Add("fail", `{fail:fail}`)
 
 	type failStruct struct {
-		Fail map[string]interface{} `header:"fail"`
+		Fail map[string]any `header:"fail"`
 	}
 
 	err := h.Bind(req, &failStruct{})
@@ -789,11 +789,11 @@ func TestUriBinding(t *testing.T) {
 	assert.Equal(t, "thinkerou", tag.Name)
 
 	type NotSupportStruct struct {
-		Name map[string]interface{} `uri:"name"`
+		Name map[string]any `uri:"name"`
 	}
 	var not NotSupportStruct
 	assert.Error(t, b.BindUri(m, &not))
-	assert.Equal(t, map[string]interface{}(nil), not.Name)
+	assert.Equal(t, map[string]any(nil), not.Name)
 }
 
 func TestUriInnerBinding(t *testing.T) {

@@ -212,7 +212,7 @@ func TestContextSetGetValues(t *testing.T) {
 	c.Set("uint64", uint64(42))
 	c.Set("float32", float32(4.2))
 	c.Set("float64", 4.2)
-	var a interface{} = 1
+	var a any = 1
 	c.Set("intInterface", a)
 
 	assert.Exactly(t, c.MustGet("string").(string), "this is a string")
@@ -287,7 +287,7 @@ func TestContextGetStringSlice(t *testing.T) {
 
 func TestContextGetStringMap(t *testing.T) {
 	c, _ := CreateTestContext(httptest.NewRecorder())
-	m := make(map[string]interface{})
+	m := make(map[string]any)
 	m["foo"] = 1
 	c.Set("map", m)
 
@@ -2125,12 +2125,12 @@ type contextKey string
 func TestContextWithFallbackValueFromRequestContext(t *testing.T) {
 	tests := []struct {
 		name             string
-		getContextAndKey func() (*Context, interface{})
-		value            interface{}
+		getContextAndKey func() (*Context, any)
+		value            any
 	}{
 		{
 			name: "c with struct context key",
-			getContextAndKey: func() (*Context, interface{}) {
+			getContextAndKey: func() (*Context, any) {
 				var key struct{}
 				c := &Context{}
 				c.Request, _ = http.NewRequest("POST", "/", nil)
@@ -2141,7 +2141,7 @@ func TestContextWithFallbackValueFromRequestContext(t *testing.T) {
 		},
 		{
 			name: "c with string context key",
-			getContextAndKey: func() (*Context, interface{}) {
+			getContextAndKey: func() (*Context, any) {
 				c := &Context{}
 				c.Request, _ = http.NewRequest("POST", "/", nil)
 				c.Request = c.Request.WithContext(context.WithValue(context.TODO(), contextKey("key"), "value"))
@@ -2151,7 +2151,7 @@ func TestContextWithFallbackValueFromRequestContext(t *testing.T) {
 		},
 		{
 			name: "c with nil http.Request",
-			getContextAndKey: func() (*Context, interface{}) {
+			getContextAndKey: func() (*Context, any) {
 				c := &Context{}
 				return c, "key"
 			},
@@ -2159,7 +2159,7 @@ func TestContextWithFallbackValueFromRequestContext(t *testing.T) {
 		},
 		{
 			name: "c with nil http.Request.Context()",
-			getContextAndKey: func() (*Context, interface{}) {
+			getContextAndKey: func() (*Context, any) {
 				c := &Context{}
 				c.Request, _ = http.NewRequest("POST", "/", nil)
 				return c, "key"

@@ -34,7 +34,7 @@ const (
 type Error struct {
 	Err  error
 	Type ErrorType
-	Meta interface{}
+	Meta any
 }
 
 type errorMsgs []*Error
@@ -48,13 +48,13 @@ func (msg *Error) SetType(flags ErrorType) *Error {
 }
 
 // SetMeta sets the error's meta data.
-func (msg *Error) SetMeta(data interface{}) *Error {
+func (msg *Error) SetMeta(data any) *Error {
 	msg.Meta = data
 	return msg
 }
 
 // JSON creates a properly formatted JSON
-func (msg *Error) JSON() interface{} {
+func (msg *Error) JSON() any {
 	jsonData := H{}
 	if msg.Meta != nil {
 		value := reflect.ValueOf(msg.Meta)
@@ -139,14 +139,14 @@ func (a errorMsgs) Errors() []string {
 	return errorStrings
 }
 
-func (a errorMsgs) JSON() interface{} {
+func (a errorMsgs) JSON() any {
 	switch length := len(a); length {
 	case 0:
 		return nil
 	case 1:
 		return a.Last().JSON()
 	default:
-		jsonData := make([]interface{}, length)
+		jsonData := make([]any, length)
 		for i, err := range a {
 			jsonData[i] = err.JSON()
 		}

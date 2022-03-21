@@ -181,7 +181,7 @@ func TestLoggerWithFormatter(t *testing.T) {
 
 func TestLoggerWithConfigFormatting(t *testing.T) {
 	var gotParam LogFormatterParams
-	var gotKeys map[string]interface{}
+	var gotKeys map[string]any
 	buffer := new(bytes.Buffer)
 
 	router := New()

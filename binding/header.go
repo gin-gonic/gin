@@ -12,7 +12,7 @@ func (headerBinding) Name() string {
 	return "header"
 }
 
-func (headerBinding) Bind(req *http.Request, obj interface{}) error {
+func (headerBinding) Bind(req *http.Request, obj any) error {
 
 	if err := mapHeader(obj, req.Header); err != nil {
 		return err
@@ -21,7 +21,7 @@ func (headerBinding) Bind(req *http.Request, obj interface{}) error {
 	return validate(obj)
 }
 
-func mapHeader(ptr interface{}, h map[string][]string) error {
+func mapHeader(ptr any, h map[string][]string) error {
 	return mappingByPtr(ptr, headerSource(h), "header")
 }
 

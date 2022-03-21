@@ -43,7 +43,7 @@ func setupHTMLFiles(t *testing.T, mode string, tls bool, loadMethod func(*Engine
 			c.HTML(http.StatusOK, "hello.tmpl", map[string]string{"name": "world"})
 		})
 		router.GET("/raw", func(c *Context) {
-			c.HTML(http.StatusOK, "raw.tmpl", map[string]interface{}{
+			c.HTML(http.StatusOK, "raw.tmpl", map[string]any{
 				"now": time.Date(2017, 07, 01, 0, 0, 0, 0, time.UTC),
 			})
 		})
@@ -467,7 +467,7 @@ func TestNoMethodWithGlobalHandlers(t *testing.T) {
 	compareFunc(t, router.allNoMethod[2], middleware0)
 }
 
-func compareFunc(t *testing.T, a, b interface{}) {
+func compareFunc(t *testing.T, a, b any) {
 	sf1 := reflect.ValueOf(a)
 	sf2 := reflect.ValueOf(b)
 	if sf1.Pointer() != sf2.Pointer() {

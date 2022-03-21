@@ -21,7 +21,7 @@ import (
 
 func TestRenderMsgPack(t *testing.T) {
 	w := httptest.NewRecorder()
-	data := map[string]interface{}{
+	data := map[string]any{
 		"foo": "bar",
 	}
 

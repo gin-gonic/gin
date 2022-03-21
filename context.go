@@ -62,7 +62,7 @@ type Context struct {
 	mu sync.RWMutex
 
 	// Keys is a key/value pair exclusively for the context of each request.
-	Keys map[string]interface{}
+	Keys map[string]any
 
 	// Errors is a list of errors attached to all the handlers/middlewares who used this context.
 	Errors errorMsgs
@@ -115,7 +115,7 @@ func (c *Context) Copy() *Context {
 	cp.Writer = &cp.writermem
 	cp.index = abortIndex
 	cp.handlers = nil
-	cp.Keys = map[string]interface{}{}
+	cp.Keys = map[string]any{}
 	for k, v := range c.Keys {
 		cp.Keys[k] = v
 	}
@@ -194,7 +194,7 @@ func (c *Context) AbortWithStatus(code int) {
 // AbortWithStatusJSON calls `Abort()` and then `JSON` internally.
 // This method stops the chain, writes the status code and return a JSON body.
 // It also sets the Content-Type as "application/json".
-func (c *Context) AbortWithStatusJSON(code int, jsonObj interface{}) {
+func (c *Context) AbortWithStatusJSON(code int, jsonObj any) {
 	c.Abort()
 	c.JSON(code, jsonObj)
 }
@@ -240,10 +240,10 @@ func (c *Context) Error(err error) *Error {
 
 // Set is used to store a new key/value pair exclusively for this context.
 // It also lazy initializes  c.Keys if it was not used previously.
-func (c *Context) Set(key string, value interface{}) {
+func (c *Context) Set(key string, value any) {
 	c.mu.Lock()
 	if c.Keys == nil {
-		c.Keys = make(map[string]interface{})
+		c.Keys = make(map[string]any)
 	}
 
 	c.Keys[key] = value
@@ -252,7 +252,7 @@ func (c *Context) Set(key string, value interface{}) {
 
 // Get returns the value for the given key, ie: (value, true).
 // If the value does not exist it returns (nil, false)
-func (c *Context) Get(key string) (value interface{}, exists bool) {
+func (c *Context) Get(key string) (value any, exists bool) {
 	c.mu.RLock()
 	value, exists = c.Keys[key]
 	c.mu.RUnlock()
@@ -260,7 +260,7 @@ func (c *Context) Get(key string) (value interface{}, exists bool) {
 }
 
 // MustGet returns the value for the given key if it exists, otherwise it panics.
-func (c *Context) MustGet(key string) interface{} {
+func (c *Context) MustGet(key string) any {
 	if value, exists := c.Get(key); exists {
 		return value
 	}
@@ -348,9 +348,9 @@ func (c *Context) GetStringSlice(key string) (ss []string) {
 }
 
 // GetStringMap returns the value associated with the key as a map of interfaces.
-func (c *Context) GetStringMap(key string) (sm map[string]interface{}) {
+func (c *Context) GetStringMap(key string) (sm map[string]any) {
 	if val, ok := c.Get(key); ok && val != nil {
-		sm, _ = val.(map[string]interface{})
+		sm, _ = val.(map[string]any)
 	}
 	return
 }
@@ -607,39 +607,39 @@ func (c *Context) SaveUploadedFile(file *multipart.FileHeader, dst string) error
 // It parses the request's body as JSON if Content-Type == "application/json" using JSON or XML as a JSON input.
 // It decodes the json payload into the struct specified as a pointer.
 // It writes a 400 error and sets Content-Type header "text/plain" in the response if input is not valid.
-func (c *Context) Bind(obj interface{}) error {
+func (c *Context) Bind(obj any) error {
 	b := binding.Default(c.Request.Method, c.ContentType())
 	return c.MustBindWith(obj, b)
 }
 
 // BindJSON is a shortcut for c.MustBindWith(obj, binding.JSON).
-func (c *Context) BindJSON(obj interface{}) error {
+func (c *Context) BindJSON(obj any) error {
 	return c.MustBindWith(obj, binding.JSON)
 }
 
 // BindXML is a shortcut for c.MustBindWith(obj, binding.BindXML).
-func (c *Context) BindXML(obj interface{}) error {
+func (c *Context) BindXML(obj any) error {
 	return c.MustBindWith(obj, binding.XML)
 }
 
 // BindQuery is a shortcut for c.MustBindWith(obj, binding.Query).
-func (c *Context) BindQuery(obj interface{}) error {
+func (c *Context) BindQuery(obj any) error {
 	return c.MustBindWith(obj, binding.Query)
 }
 
 // BindYAML is a shortcut for c.MustBindWith(obj, binding.YAML).
-func (c *Context) BindYAML(obj interface{}) error {
+func (c *Context) BindYAML(obj any) error {
 	return c.MustBindWith(obj, binding.YAML)
 }
 
 // BindHeader is a shortcut for c.MustBindWith(obj, binding.Header).
-func (c *Context) BindHeader(obj interface{}) error {
+func (c *Context) BindHeader(obj any) error {
 	return c.MustBindWith(obj, binding.Header)
 }
 
 // BindUri binds the passed struct pointer using binding.Uri.
 // It will abort the request with HTTP 400 if any error occurs.
-func (c *Context) BindUri(obj interface{}) error {
+func (c *Context) BindUri(obj any) error {
 	if err := c.ShouldBindUri(obj); err != nil {
 		c.AbortWithError(http.StatusBadRequest, err).SetType(ErrorTypeBind) // nolint: errcheck
 		return err
@@ -650,7 +650,7 @@ func (c *Context) BindUri(obj interface{}) error {
 // MustBindWith binds the passed struct pointer using the specified binding engine.
 // It will abort the request with HTTP 400 if any error occurs.
 // See the binding package.
-func (c *Context) MustBindWith(obj interface{}, b binding.Binding) error {
+func (c *Context) MustBindWith(obj any, b binding.Binding) error {
 	if err := c.ShouldBindWith(obj, b); err != nil {
 		c.AbortWithError(http.StatusBadRequest, err).SetType(ErrorTypeBind) // nolint: errcheck
 		return err
@@ -665,38 +665,38 @@ func (c *Context) MustBindWith(obj interface{}, b binding.Binding) error {
 // It parses the request's body as JSON if Content-Type == "application/json" using JSON or XML as a JSON input.
 // It decodes the json payload into the struct specified as a pointer.
 // Like c.Bind() but this method does not set the response status code to 400 or abort if input is not valid.
-func (c *Context) ShouldBind(obj interface{}) error {
+func (c *Context) ShouldBind(obj any) error {
 	b := binding.Default(c.Request.Method, c.ContentType())
 	return c.ShouldBindWith(obj, b)
 }
 
 // ShouldBindJSON is a shortcut for c.ShouldBindWith(obj, binding.JSON).
-func (c *Context) ShouldBindJSON(obj interface{}) error {
+func (c *Context) ShouldBindJSON(obj any) error {
 	return c.ShouldBindWith(obj, binding.JSON)
 }
 
 // ShouldBindXML is a shortcut for c.ShouldBindWith(obj, binding.XML).
-func (c *Context) ShouldBindXML(obj interface{}) error {
+func (c *Context) ShouldBindXML(obj any) error {
 	return c.ShouldBindWith(obj, binding.XML)
 }
 
 // ShouldBindQuery is a shortcut for c.ShouldBindWith(obj, binding.Query).
-func (c *Context) ShouldBindQuery(obj interface{}) error {
+func (c *Context) ShouldBindQuery(obj any) error {
 	return c.ShouldBindWith(obj, binding.Query)
 }
 
 // ShouldBindYAML is a shortcut for c.ShouldBindWith(obj, binding.YAML).
-func (c *Context) ShouldBindYAML(obj interface{}) error {
+func (c *Context) ShouldBindYAML(obj any) error {
 	return c.ShouldBindWith(obj, binding.YAML)
 }
 
 // ShouldBindHeader is a shortcut for c.ShouldBindWith(obj, binding.Header).
-func (c *Context) ShouldBindHeader(obj interface{}) error {
+func (c *Context) ShouldBindHeader(obj any) error {
 	return c.ShouldBindWith(obj, binding.Header)
 }
 
 // ShouldBindUri binds the passed struct pointer using the specified binding engine.
-func (c *Context) ShouldBindUri(obj interface{}) error {
+func (c *Context) ShouldBindUri(obj any) error {
 	m := make(map[string][]string)
 	for _, v := range c.Params {
 		m[v.Key] = []string{v.Value}
@@ -706,7 +706,7 @@ func (c *Context) ShouldBindUri(obj interface{}) error {
 
 // ShouldBindWith binds the passed struct pointer using the specified binding engine.
 // See the binding package.
-func (c *Context) ShouldBindWith(obj interface{}, b binding.Binding) error {
+func (c *Context) ShouldBindWith(obj any, b binding.Binding) error {
 	return b.Bind(c.Request, obj)
 }
 
@@ -715,7 +715,7 @@ func (c *Context) ShouldBindWith(obj interface{}, b binding.Binding) error {
 //
 // NOTE: This method reads the body before binding. So you should use
 // ShouldBindWith for better performance if you need to call only once.
-func (c *Context) ShouldBindBodyWith(obj interface{}, bb binding.BindingBody) (err error) {
+func (c *Context) ShouldBindBodyWith(obj any, bb binding.BindingBody) (err error) {
 	var body []byte
 	if cb, ok := c.Get(BodyBytesKey); ok {
 		if cbb, ok := cb.([]byte); ok {
@@ -900,7 +900,7 @@ func (c *Context) Render(code int, r render.Render) {
 // HTML renders the HTTP template specified by its file name.
 // It also updates the HTTP code and sets the Content-Type as "text/html".
 // See http://golang.org/doc/articles/wiki/
-func (c *Context) HTML(code int, name string, obj interface{}) {
+func (c *Context) HTML(code int, name string, obj any) {
 	instance := c.engine.HTMLRender.Instance(name, obj)
 	c.Render(code, instance)
 }
@@ -909,21 +909,21 @@ func (c *Context) HTML(code int, name string, obj interface{}) {
 // It also sets the Content-Type as "application/json".
 // WARNING: we recommend using this only for development purposes since printing pretty JSON is
 // more CPU and bandwidth consuming. Use Context.JSON() instead.
-func (c *Context) IndentedJSON(code int, obj interface{}) {
+func (c *Context) IndentedJSON(code int, obj any) {
 	c.Render(code, render.IndentedJSON{Data: obj})
 }
 
 // SecureJSON serializes the given struct as Secure JSON into the response body.
 // Default prepends "while(1)," to response body if the given struct is array values.
 // It also sets the Content-Type as "application/json".
-func (c *Context) SecureJSON(code int, obj interface{}) {
+func (c *Context) SecureJSON(code int, obj any) {
 	c.Render(code, render.SecureJSON{Prefix: c.engine.secureJSONPrefix, Data: obj})
 }
 
 // JSONP serializes the given struct as JSON into the response body.
 // It adds padding to response body to request data from a server residing in a different domain than the client.
 // It also sets the Content-Type as "application/javascript".
-func (c *Context) JSONP(code int, obj interface{}) {
+func (c *Context) JSONP(code int, obj any) {
 	callback := c.DefaultQuery("callback", "")
 	if callback == "" {
 		c.Render(code, render.JSON{Data: obj})
@@ -934,40 +934,40 @@ func (c *Context) JSONP(code int, obj interface{}) {
 
 // JSON serializes the given struct as JSON into the response body.
 // It also sets the Content-Type as "application/json".
-func (c *Context) JSON(code int, obj interface{}) {
+func (c *Context) JSON(code int, obj any) {
 	c.Render(code, render.JSON{Data: obj})
 }
 
 // AsciiJSON serializes the given struct as JSON into the response body with unicode to ASCII string.
 // It also sets the Content-Type as "application/json".
-func (c *Context) AsciiJSON(code int, obj interface{}) {
+func (c *Context) AsciiJSON(code int, obj any) {
 	c.Render(code, render.AsciiJSON{Data: obj})
 }
 
 // PureJSON serializes the given struct as JSON into the response body.
 // PureJSON, unlike JSON, does not replace special html characters with their unicode entities.
-func (c *Context) PureJSON(code int, obj interface{}) {
+func (c *Context) PureJSON(code int, obj any) {
 	c.Render(code, render.PureJSON{Data: obj})
 }
 
 // XML serializes the given struct as XML into the response body.
 // It also sets the Content-Type as "application/xml".
-func (c *Context) XML(code int, obj interface{}) {
+func (c *Context) XML(code int, obj any) {
 	c.Render(code, render.XML{Data: obj})
 }
 
 // YAML serializes the given struct as YAML into the response body.
-func (c *Context) YAML(code int, obj interface{}) {
+func (c *Context) YAML(code int, obj any) {
 	c.Render(code, render.YAML{Data: obj})
 }
 
 // ProtoBuf serializes the given struct as ProtoBuf into the response body.
-func (c *Context) ProtoBuf(code int, obj interface{}) {
+func (c *Context) ProtoBuf(code int, obj any) {
 	c.Render(code, render.ProtoBuf{Data: obj})
 }
 
 // String writes the given string into the response body.
-func (c *Context) String(code int, format string, values ...interface{}) {
+func (c *Context) String(code int, format string, values ...any) {
 	c.Render(code, render.String{Format: format, Data: values})
 }
 
@@ -1026,7 +1026,7 @@ func (c *Context) FileAttachment(filepath, filename string) {
 }
 
 // SSEvent writes a Server-Sent Event into the body stream.
-func (c *Context) SSEvent(name string, message interface{}) {
+func (c *Context) SSEvent(name string, message any) {
 	c.Render(-1, sse.Event{
 		Event: name,
 		Data:  message,
@@ -1060,11 +1060,11 @@ func (c *Context) Stream(step func(w io.Writer) bool) bool {
 type Negotiate struct {
 	Offered  []string
 	HTMLName string
-	HTMLData interface{}
-	JSONData interface{}
-	XMLData  interface{}
-	YAMLData interface{}
-	Data     interface{}
+	HTMLData any
+	JSONData any
+	XMLData  any
+	YAMLData any
+	Data     any
 }
 
 // Negotiate calls different Render according to acceptable Accept format.
@@ -1158,7 +1158,7 @@ func (c *Context) Err() error {
 // Value returns the value associated with this context for key, or nil
 // if no value is associated with key. Successive calls to Value with
 // the same key returns the same result.
-func (c *Context) Value(key interface{}) interface{} {
+func (c *Context) Value(key any) any {
 	if key == 0 {
 		return c.Request
 	}
