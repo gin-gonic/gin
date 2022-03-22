@@ -285,7 +285,7 @@ var githubAPI = []route{
 	{http.MethodDelete, "/user/keys/:id"},
 }
 
-func TestShouldBindUri(t *testing.T) {
+func TestShouldBindUrl(t *testing.T) {
 	DefaultWriter = os.Stdout
 	router := New()
 
@@ -294,20 +294,27 @@ func TestShouldBindUri(t *testing.T) {
 		ID   string `uri:"id" binding:"required"`
 	}
 	router.Handle(http.MethodGet, "/rest/:name/:id", func(c *Context) {
-		var person Person
-		assert.NoError(t, c.ShouldBindUri(&person))
+		var person struct {
+			Person
+			Foo string `form:"foo"`
+			Bar string `form:"bar"`
+		}
+		assert.NoError(t, c.ShouldBindUrl(&person))
 		assert.True(t, "" != person.Name)
 		assert.True(t, "" != person.ID)
-		c.String(http.StatusOK, "ShouldBindUri test OK")
+		assert.Equal(t, "foo", person.Bar)
+		assert.Equal(t, "bar", person.Foo)
+		c.String(http.StatusOK, "ShouldBindUrl test OK")
 	})
 
 	path, _ := exampleFromPath("/rest/:name/:id")
+	path += "?foo=bar&bar=foo"
 	w := PerformRequest(router, http.MethodGet, path)
-	assert.Equal(t, "ShouldBindUri test OK", w.Body.String())
+	assert.Equal(t, "ShouldBindUrl test OK", w.Body.String())
 	assert.Equal(t, http.StatusOK, w.Code)
 }
 
-func TestBindUri(t *testing.T) {
+func TestBindUrl(t *testing.T) {
 	DefaultWriter = os.Stdout
 	router := New()
 
@@ -316,20 +323,27 @@ func TestBindUri(t *testing.T) {
 		ID   string `uri:"id" binding:"required"`
 	}
 	router.Handle(http.MethodGet, "/rest/:name/:id", func(c *Context) {
-		var person Person
-		assert.NoError(t, c.BindUri(&person))
+		var person struct {
+			Person
+			Foo string `form:"foo"`
+			Bar string `form:"bar"`
+		}
+		assert.NoError(t, c.BindUrl(&person))
 		assert.True(t, "" != person.Name)
 		assert.True(t, "" != person.ID)
-		c.String(http.StatusOK, "BindUri test OK")
+		assert.Equal(t, "foo", person.Bar)
+		assert.Equal(t, "bar", person.Foo)
+		c.String(http.StatusOK, "BindUrl test OK")
 	})
 
 	path, _ := exampleFromPath("/rest/:name/:id")
+	path += "?foo=bar&bar=foo"
 	w := PerformRequest(router, http.MethodGet, path)
-	assert.Equal(t, "BindUri test OK", w.Body.String())
+	assert.Equal(t, "BindUrl test OK", w.Body.String())
 	assert.Equal(t, http.StatusOK, w.Code)
 }
 
-func TestBindUriError(t *testing.T) {
+func TestBindUrlError(t *testing.T) {
 	DefaultWriter = os.Stdout
 	router := New()
 
@@ -337,11 +351,16 @@ func TestBindUriError(t *testing.T) {
 		Number string `uri:"num" binding:"required,uuid"`
 	}
 	router.Handle(http.MethodGet, "/new/rest/:num", func(c *Context) {
-		var m Member
-		assert.Error(t, c.BindUri(&m))
+		var m struct {
+			Member
+			Foo string `form:"foo"`
+		}
+		assert.Error(t, c.BindUrl(&m))
+		assert.True(t, "" == m.Foo)
 	})
 
 	path1, _ := exampleFromPath("/new/rest/:num")
+	path1 += "?foo=bar"
 	w1 := PerformRequest(router, http.MethodGet, path1)
 	assert.Equal(t, http.StatusBadRequest, w1.Code)
 }

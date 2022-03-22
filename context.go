@@ -647,6 +647,14 @@ func (c *Context) BindUri(obj any) error {
 	return nil
 }
 
+// BindUrl combines c.BindUri() and c.BindQuery(), abort with HTTP 400 likewise
+func (c *Context) BindUrl(obj any) error {
+	if err := c.BindUri(obj); err != nil {
+		return err
+	}
+	return c.BindQuery(obj)
+}
+
 // MustBindWith binds the passed struct pointer using the specified binding engine.
 // It will abort the request with HTTP 400 if any error occurs.
 // See the binding package.
@@ -702,6 +710,16 @@ func (c *Context) ShouldBindUri(obj any) error {
 		m[v.Key] = []string{v.Value}
 	}
 	return binding.Uri.BindUri(m, obj)
+}
+
+// ShouldBindUrl combines c.ShouldBindQuery() and c.ShouldBindUri().
+// It will bind uri parameters and query part at the same time.
+func (c *Context) ShouldBindUrl(obj any) error {
+	err := c.ShouldBindUri(obj)
+	if err != nil {
+		return err
+	}
+	return c.ShouldBindQuery(obj)
 }
 
 // ShouldBindWith binds the passed struct pointer using the specified binding engine.
