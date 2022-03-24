@@ -202,7 +202,7 @@ func TestLoadHTMLGlobFromFuncMap(t *testing.T) {
 	}
 
 	resp, _ := ioutil.ReadAll(res.Body)
-	assert.Equal(t, "Date: 2017/07/01\n", string(resp))
+	assert.Equal(t, "Date: 2017/07/01", string(resp))
 }
 
 func init() {
@@ -320,7 +320,7 @@ func TestLoadHTMLFilesFuncMap(t *testing.T) {
 	}
 
 	resp, _ := ioutil.ReadAll(res.Body)
-	assert.Equal(t, "Date: 2017/07/01\n", string(resp))
+	assert.Equal(t, "Date: 2017/07/01", string(resp))
 }
 
 func TestAddRoute(t *testing.T) {
