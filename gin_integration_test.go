@@ -15,6 +15,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"runtime"
 	"sync"
 	"testing"
 	"time"
@@ -281,7 +282,16 @@ func TestFileDescriptor(t *testing.T) {
 	listener, err := net.ListenTCP("tcp", addr)
 	assert.NoError(t, err)
 	socketFile, err := listener.File()
-	assert.NoError(t, err)
+	if isWindows() {
+		// not supported by windows, it is unimplemented now
+		assert.Error(t, err)
+	} else {
+		assert.NoError(t, err)
+	}
+
+	if socketFile == nil {
+		return
+	}
 
 	go func() {
 		router.GET("/example", func(c *Context) { c.String(http.StatusOK, "it worked") })
@@ -546,4 +556,8 @@ func TestTreeRunDynamicRouting(t *testing.T) {
 	testRequest(t, ts.URL+"/a/dd", "404 Not Found")
 	testRequest(t, ts.URL+"/addr/dd/aa", "404 Not Found")
 	testRequest(t, ts.URL+"/something/secondthing/121", "404 Not Found")
+}
+
+func isWindows() bool {
+	return runtime.GOOS == "windows"
 }
