@@ -129,9 +129,7 @@ func (r JsonpJSON) Render(w http.ResponseWriter) (err error) {
 		_, err = w.Write(ret)
 		return err
 	}
-
-	jsonpData := fmt.Sprintf("%s(%s);", template.JSEscapeString(r.Callback), bytesconv.BytesToString(ret))
-	_, err = w.Write(bytesconv.StringToBytes(jsonpData))
+	_, err = w.Write(bytesconv.StringToBytes(template.JSEscapeString(r.Callback) + "(" + bytesconv.BytesToString(ret) + ");"))
 	return err
 }
 
