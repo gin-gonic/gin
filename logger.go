@@ -6,12 +6,12 @@ package gin
 
 import (
 	"fmt"
-	"github.com/gin-gonic/gin/internal/bytesconv"
 	"io"
 	"net/http"
 	"os"
 	"time"
 
+	"github.com/gin-gonic/gin/internal/bytesconv"
 	"github.com/mattn/go-isatty"
 )
 
@@ -265,7 +265,9 @@ func LoggerWithConfig(conf LoggerConfig) HandlerFunc {
 
 			param.Path = path
 
-			out.Write(bytesconv.StringToBytes(formatter(param)))
+			if _, err := out.Write(bytesconv.StringToBytes(formatter(param))); err != nil {
+				fmt.Println(err)
+			}
 		}
 	}
 }
