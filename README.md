@@ -86,7 +86,7 @@ Gin is a web framework written in Go (Golang). It features a martini-like API wi
 
 To install Gin package, you need to install Go and set your Go workspace first.
 
-1. The first need [Go](https://golang.org/) installed (**version 1.13+ is required**), then you can use the below Go command to install Gin.
+1. The first need [Go](https://golang.org/) installed (**version 1.14+ is required**), then you can use the below Go command to install Gin.
 
 ```sh
 $ go get -u github.com/gin-gonic/gin
@@ -385,7 +385,7 @@ func main() {
 	router.MaxMultipartMemory = 8 << 20  // 8 MiB
 	router.POST("/upload", func(c *gin.Context) {
 		// Single file
-		file, _ := c.FormFile("Filename")
+		file, _ := c.FormFile("file")
 		log.Println(file.Filename)
 
 		// Upload the file to specific dst.
@@ -417,7 +417,7 @@ func main() {
 	router.POST("/upload", func(c *gin.Context) {
 		// Multipart form
 		form, _ := c.MultipartForm()
-		files := form.File["Filename[]"]
+		files := form.File["upload[]"]
 
 		for _, file := range files {
 			log.Println(file.Filename)
@@ -513,6 +513,7 @@ func main() {
 
 		// nested group
 		testing := authorized.Group("testing")
+		// visit 0.0.0.0:8080/testing/analytics
 		testing.GET("/analytics", analyticsEndpoint)
 	}
 
@@ -1243,7 +1244,8 @@ func main() {
 	router.Static("/assets", "./assets")
 	router.StaticFS("/more_static", http.Dir("my_file_system"))
 	router.StaticFile("/favicon.ico", "./resources/favicon.ico")
-
+	router.StaticFileFS("/more_favicon.ico", "more_favicon.ico", http.Dir("my_file_system"))
+	
 	// Listen and serve on 0.0.0.0:8080
 	router.Run(":8080")
 }
@@ -1409,7 +1411,7 @@ import (
 
 func formatAsDate(t time.Time) string {
     year, month, day := t.Date()
-    return fmt.Sprintf("%d%02d/%02d", year, month, day)
+    return fmt.Sprintf("%d/%02d/%02d", year, month, day)
 }
 
 func main() {

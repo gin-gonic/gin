@@ -12,7 +12,7 @@ import (
 
 // YAML contains the given interface object.
 type YAML struct {
-	Data interface{}
+	Data any
 }
 
 var yamlContentType = []string{"application/x-yaml; charset=utf-8"}
