@@ -38,7 +38,7 @@ var consoleColorMode = autoColor
 
 // LoggerConfig defines the config for Logger middleware.
 type LoggerConfig struct {
-	// Optional. Default value is gin.defaultLogFormatter
+	// Formatter is optional, the default value is gin.defaultLogFormatter
 	Formatter LogFormatter
 
 	// Output is a writer where logs are written.
@@ -265,9 +265,7 @@ func LoggerWithConfig(conf LoggerConfig) HandlerFunc {
 
 			param.Path = path
 
-			if _, err := out.Write(bytesconv.StringToBytes(formatter(param))); err != nil {
-				fmt.Println(err)
-			}
+			out.Write(bytesconv.StringToBytes(formatter(param)))
 		}
 	}
 }
