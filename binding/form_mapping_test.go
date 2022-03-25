@@ -18,9 +18,9 @@ func TestMappingBaseTypes(t *testing.T) {
 	}
 	for _, tt := range []struct {
 		name   string
-		value  interface{}
+		value  any
 		form   string
-		expect interface{}
+		expect any
 	}{
 		{"base type", struct{ F int }{}, "9", int(9)},
 		{"base type", struct{ F int8 }{}, "9", int8(9)},

@@ -46,7 +46,7 @@ func (err SliceValidationError) Error() string {
 var _ StructValidator = &defaultValidator{}
 
 // ValidateStruct receives any kind of type, but only performed struct or pointer to struct type.
-func (v *defaultValidator) ValidateStruct(obj interface{}) error {
+func (v *defaultValidator) ValidateStruct(obj any) error {
 	if obj == nil {
 		return nil
 	}
@@ -75,7 +75,7 @@ func (v *defaultValidator) ValidateStruct(obj interface{}) error {
 }
 
 // validateStruct receives struct type
-func (v *defaultValidator) validateStruct(obj interface{}) error {
+func (v *defaultValidator) validateStruct(obj any) error {
 	v.lazyinit()
 	return v.validate.Struct(obj)
 }
@@ -84,7 +84,7 @@ func (v *defaultValidator) validateStruct(obj interface{}) error {
 // Validator instance. This is useful if you want to register custom validations
 // or struct level validations. See validator GoDoc for more info -
 // https://pkg.go.dev/github.com/go-playground/validator/v10
-func (v *defaultValidator) Engine() interface{} {
+func (v *defaultValidator) Engine() any {
 	v.lazyinit()
 	return v.validate
 }
