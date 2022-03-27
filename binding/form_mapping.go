@@ -243,13 +243,13 @@ func setWithProperType(val string, value reflect.Value, field reflect.StructFiel
 			return err
 		}
 
-		ms, err := json.Marshal(val)
+		mv, err := json.Marshal(val)
 
 		if err != nil {
 			return err
 		}
 
-		return json.Unmarshal(ms, value.Addr().Interface())
+		return json.Unmarshal(mv, value.Addr().Interface())
 	case reflect.Map:
 		return json.Unmarshal(bytesconv.StringToBytes(val), value.Addr().Interface())
 	default:
