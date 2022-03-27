@@ -236,7 +236,20 @@ func setWithProperType(val string, value reflect.Value, field reflect.StructFiel
 		case time.Time:
 			return setTimeField(val, field, value)
 		}
-		return json.Unmarshal(bytesconv.StringToBytes(val), value.Addr().Interface())
+
+		err := json.Unmarshal(bytesconv.StringToBytes(val), value.Addr().Interface())
+
+		if err == nil {
+			return err
+		}
+
+		ms, err := json.Marshal(val)
+
+		if err != nil {
+			return err
+		}
+
+		return json.Unmarshal(ms, value.Addr().Interface())
 	case reflect.Map:
 		return json.Unmarshal(bytesconv.StringToBytes(val), value.Addr().Interface())
 	default:
