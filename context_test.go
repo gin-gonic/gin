@@ -1773,6 +1773,22 @@ func TestContextShouldBindWithYAML(t *testing.T) {
 	assert.Equal(t, 0, w.Body.Len())
 }
 
+func TestContextShouldBindWithAVRO(t *testing.T) {
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	c.Request, _ = http.NewRequest("POST", "/", bytes.NewBufferString("{\"foo\":\"bar\", \"bar\":\"foo\"}"))
+	c.Request.Header.Add("Content-Type", MIMEJSON)
+
+	var obj struct {
+		Foo string `avro:"foo"`
+		Bar string `avro:"bar"`
+	}
+	assert.NoError(t, c.ShouldBind(&obj))
+	assert.Equal(t, "foo", obj.Bar)
+	assert.Equal(t, "bar", obj.Foo)
+	assert.Empty(t, c.Errors)
+}
+
+
 func TestContextBadAutoShouldBind(t *testing.T) {
 	w := httptest.NewRecorder()
 	c, _ := CreateTestContext(w)

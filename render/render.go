@@ -6,7 +6,7 @@ package render
 
 import "net/http"
 
-// Render interface is to be implemented by JSON, XML, HTML, YAML and so on.
+// Render interface is to be implemented by JSON, XML, HTML, YAML, AVRO and so on.
 type Render interface {
 	// Render writes data with custom ContentType.
 	Render(http.ResponseWriter) error
@@ -30,6 +30,7 @@ var (
 	_ Render     = Reader{}
 	_ Render     = AsciiJSON{}
 	_ Render     = ProtoBuf{}
+	_ Render     = AVRO{}
 )
 
 func writeContentType(w http.ResponseWriter, value []string) {
