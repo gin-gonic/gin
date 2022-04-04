@@ -1773,6 +1773,23 @@ func TestContextShouldBindWithYAML(t *testing.T) {
 	assert.Equal(t, 0, w.Body.Len())
 }
 
+func TestContextShouldBindWithTOML(t *testing.T) {
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
+
+	c.Request, _ = http.NewRequest("POST", "/", bytes.NewBufferString("foo='bar'\nbar= 'foo'"))
+	c.Request.Header.Add("Content-Type", MIMETOML) // set fake content-type
+
+	var obj struct {
+		Foo string `toml:"foo"`
+		Bar string `toml:"bar"`
+	}
+	assert.NoError(t, c.ShouldBindTOML(&obj))
+	assert.Equal(t, "foo", obj.Bar)
+	assert.Equal(t, "bar", obj.Foo)
+	assert.Equal(t, 0, w.Body.Len())
+}
+
 func TestContextBadAutoShouldBind(t *testing.T) {
 	w := httptest.NewRecorder()
 	c, _ := CreateTestContext(w)
