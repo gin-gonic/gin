@@ -973,7 +973,7 @@ func (c *Context) String(code int, format string, values ...any) {
 
 // Redirect returns an HTTP redirect to the specific location.
 func (c *Context) Redirect(code int, location string) {
-	c.Render(-1, render.Redirect{
+	c.Render(code, render.Redirect{
 		Code:     code,
 		Location: location,
 		Request:  c.Request,
