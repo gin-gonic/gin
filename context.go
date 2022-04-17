@@ -98,6 +98,7 @@ func (c *Context) reset() {
 	c.Accepted = nil
 	c.queryCache = nil
 	c.formCache = nil
+	c.sameSite = 0
 	*c.params = (*c.params)[:0]
 	*c.skippedNodes = (*c.skippedNodes)[:0]
 }
