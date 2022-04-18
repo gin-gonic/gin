@@ -124,7 +124,7 @@ func TestMappingUnknownFieldType(t *testing.T) {
 
 	err := mappingByPtr(&s, formSource{"U": {"unknown"}}, "form")
 	assert.Error(t, err)
-	assert.Equal(t, errUnknownType, err)
+	assert.Equal(t, ErrUnknownType, err)
 }
 
 func TestMappingURI(t *testing.T) {
