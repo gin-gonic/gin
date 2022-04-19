@@ -507,12 +507,11 @@ walk: // Outer loop for walking the tree
 							v := val
 							for {
 								beforeDecoding := v
-								if decoded, err := url.QueryUnescape(v); err == nil {
+								decoded, err := url.QueryUnescape(v)
+								if err == nil {
 									v = decoded
-								} else {
-									break
 								}
-								if beforeDecoding == v {
+								if beforeDecoding == v || err != nil {
 									val = v
 									break
 								}
