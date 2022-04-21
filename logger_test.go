@@ -208,6 +208,7 @@ func TestLoggerWithConfigFormatting(t *testing.T) {
 		// set dummy ClientIP
 		c.Request.Header.Set("X-Forwarded-For", "20.20.20.20")
 		gotKeys = c.Keys
+		time.Sleep(time.Millisecond)
 	})
 	PerformRequest(router, "GET", "/example?a=100")
 
