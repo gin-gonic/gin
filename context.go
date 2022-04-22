@@ -716,7 +716,7 @@ func (c *Context) ShouldBindWith(obj any, b binding.Binding) error {
 //
 // NOTE: This method reads the body before binding. So you should use
 // ShouldBindWith for better performance if you need to call only once.
-func (c *Context) ShouldBindBodyWith(obj any, bb binding.BindingBody) (err error) {
+func (c *Context) ShouldBindBodyWith(obj any, bb binding.Body) (err error) {
 	var body []byte
 	if cb, ok := c.Get(BodyBytesKey); ok {
 		if cbb, ok := cb.([]byte); ok {
