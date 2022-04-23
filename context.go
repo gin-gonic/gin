@@ -694,6 +694,11 @@ func (c *Context) ShouldBindYAML(obj any) error {
 	return c.ShouldBindWith(obj, binding.YAML)
 }
 
+// ShouldBindAVRO is a shortcut for c.ShouldBindWith(obj, binding.AVRO).
+func (c *Context) ShouldBindAVRO(obj any) error {
+	return c.ShouldBindWith(obj, binding.AVRO)
+}
+
 // ShouldBindHeader is a shortcut for c.ShouldBindWith(obj, binding.Header).
 func (c *Context) ShouldBindHeader(obj any) error {
 	return c.ShouldBindWith(obj, binding.Header)

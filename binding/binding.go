@@ -22,6 +22,7 @@ const (
 	MIMEMSGPACK           = "application/x-msgpack"
 	MIMEMSGPACK2          = "application/msgpack"
 	MIMEYAML              = "application/x-yaml"
+	MIMEAVRO              = "application/x-avro"
 )
 
 // Binding describes the interface which needs to be implemented for binding the
@@ -83,6 +84,7 @@ var (
 	YAML          = yamlBinding{}
 	Uri           = uriBinding{}
 	Header        = headerBinding{}
+	AVRO          = avroBinding{}
 )
 
 // Default returns the appropriate Binding instance based on the HTTP method
@@ -105,6 +107,8 @@ func Default(method, contentType string) Binding {
 		return YAML
 	case MIMEMultipartPOSTForm:
 		return FormMultipart
+	case MIMEAVRO:
+		return AVRO
 	default: // case MIMEPOSTForm:
 		return Form
 	}

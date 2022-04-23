@@ -35,7 +35,7 @@ type QueryTest struct {
 }
 
 type FooStruct struct {
-	Foo string `msgpack:"foo" json:"foo" form:"foo" xml:"foo" binding:"required,max=32"`
+	Foo string `msgpack:"foo" json:"foo" form:"foo" avro:"foo" xml:"foo" binding:"required,max=32"`
 }
 
 type FooBarStruct struct {
@@ -144,6 +144,11 @@ type FooStructForMapPtrType struct {
 	PtrBar *map[string]any `form:"ptr_bar"`
 }
 
+type FooStructForAvro struct {
+	A int64  `avro:"a"`
+	B string `avro:"b"`
+}
+
 func TestBindingDefault(t *testing.T) {
 	assert.Equal(t, Form, Default("GET", ""))
 	assert.Equal(t, Form, Default("GET", MIMEJSON))
@@ -165,6 +170,9 @@ func TestBindingDefault(t *testing.T) {
 
 	assert.Equal(t, YAML, Default("POST", MIMEYAML))
 	assert.Equal(t, YAML, Default("PUT", MIMEYAML))
+
+	assert.Equal(t, AVRO, Default("POST", MIMEAVRO))
+	assert.Equal(t, AVRO, Default("PUT", MIMEAVRO))
 }
 
 func TestBindingJSONNilBody(t *testing.T) {
@@ -459,6 +467,14 @@ func TestBindingYAML(t *testing.T) {
 		YAML, "yaml",
 		"/", "/",
 		`foo: bar`, `bar: foo`)
+}
+
+func TestBindingAVRO(t *testing.T) {
+	s := `{"type": "record","name": "test","fields" : [{"name": "a", "type": "long"},{"name": "b", "type": "string"}]}`
+	testBodyBindingAvro(t,
+		AVRO, "avro", s,
+		"/", "/",
+		`{"a": 27, "b": "foo"}`, `{foo:bar}`)
 }
 
 func TestBindingYAMLStringMap(t *testing.T) {
@@ -1319,6 +1335,20 @@ func testProtoBodyBinding(t *testing.T, b Binding, name, path, badPath, body, ba
 	req = requestWithBody("POST", badPath, badBody)
 	req.Header.Add("Content-Type", MIMEPROTOBUF)
 	err = ProtoBuf.Bind(req, &obj)
+	assert.Error(t, err)
+}
+func testBodyBindingAvro(t *testing.T, b Binding, name, schema, path, badPath, body, badBody string) {
+	assert.Equal(t, name, b.Name())
+
+	req := requestWithBody("POST", path, body)
+	obj := FooStructForAvro{}
+	err := avroBinding{s: schema}.Bind(req, &obj)
+	assert.NoError(t, err)
+	assert.Equal(t, "foo", obj.B)
+
+	obj = FooStructForAvro{}
+	req = requestWithBody("POST", badPath, badBody)
+	err = avroBinding{s: schema}.Bind(req, &obj)
 	assert.Error(t, err)
 }
 
