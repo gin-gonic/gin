@@ -1880,6 +1880,7 @@ func TestContextGolangContext(t *testing.T) {
 	assert.Equal(t, ti, time.Time{})
 	assert.False(t, ok)
 	assert.Equal(t, c.Value(0), c.Request)
+	assert.Equal(t, c.Value(ContextKey), c)
 	assert.Nil(t, c.Value("foo"))
 
 	c.Set("foo", "bar")
