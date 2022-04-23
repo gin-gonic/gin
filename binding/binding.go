@@ -32,9 +32,9 @@ type Binding interface {
 	Bind(*http.Request, any) error
 }
 
-// Body adds BindBody method to Binding. BindBody is similar with Bind,
+// BindingBody adds BindBody method to Binding. BindBody is similar with Bind,
 // but it reads the body from supplied bytes instead of req.Body.
-type Body interface {
+type BindingBody interface {
 	Binding
 	BindBody([]byte, any) error
 }

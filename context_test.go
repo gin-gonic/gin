@@ -1801,7 +1801,7 @@ func TestContextShouldBindBodyWith(t *testing.T) {
 	}
 	for _, tt := range []struct {
 		name               string
-		bindingA, bindingB binding.Body
+		bindingA, bindingB binding.BindingBody
 		bodyA, bodyB       string
 	}{
 		{
