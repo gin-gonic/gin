@@ -5,6 +5,7 @@
 package gin
 
 import (
+	"flag"
 	"io"
 	"os"
 
@@ -54,7 +55,11 @@ func init() {
 // SetMode sets gin mode according to input string.
 func SetMode(value string) {
 	if value == "" {
-		value = DebugMode
+		if flag.Lookup("test.v") != nil {
+			value = TestMode
+		} else {
+			value = DebugMode
+		}
 	}
 
 	switch value {
