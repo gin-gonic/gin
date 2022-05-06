@@ -384,16 +384,26 @@ func TestErrorLogger(t *testing.T) {
 func TestLoggerWithWriterSkippingPaths(t *testing.T) {
 	buffer := new(bytes.Buffer)
 	router := New()
-	router.Use(LoggerWithWriter(buffer, "/skipped"))
+	router.Use(LoggerWithWriter(buffer, "/skipped", "/skippedUsers/:id"))
 	router.GET("/logged", func(c *Context) {})
+	router.GET("/loggedUsers/:id", func(c *Context) {})
 	router.GET("/skipped", func(c *Context) {})
+	router.GET("/skippedUsers/:id", func(c *Context) {})
 
 	PerformRequest(router, "GET", "/logged")
 	assert.Contains(t, buffer.String(), "200")
 
 	buffer.Reset()
+	PerformRequest(router, "GET", "/loggedUsers/2")
+	assert.Contains(t, buffer.String(), "200")
+
+	buffer.Reset()
 	PerformRequest(router, "GET", "/skipped")
-	assert.Contains(t, buffer.String(), "")
+	assert.Equal(t, "", buffer.String())
+
+	buffer.Reset()
+	PerformRequest(router, "GET", "/skippedUsers/3")
+	assert.Equal(t, "", buffer.String())
 }
 
 func TestLoggerWithConfigSkippingPaths(t *testing.T) {
@@ -401,17 +411,27 @@ func TestLoggerWithConfigSkippingPaths(t *testing.T) {
 	router := New()
 	router.Use(LoggerWithConfig(LoggerConfig{
 		Output:    buffer,
-		SkipPaths: []string{"/skipped"},
+		SkipPaths: []string{"/skipped", "/skippedUsers/:id"},
 	}))
 	router.GET("/logged", func(c *Context) {})
+	router.GET("/loggedUsers/:id", func(c *Context) {})
 	router.GET("/skipped", func(c *Context) {})
+	router.GET("/skippedUsers/:id", func(c *Context) {})
 
 	PerformRequest(router, "GET", "/logged")
 	assert.Contains(t, buffer.String(), "200")
 
 	buffer.Reset()
+	PerformRequest(router, "GET", "/loggedUsers/2")
+	assert.Contains(t, buffer.String(), "200")
+
+	buffer.Reset()
 	PerformRequest(router, "GET", "/skipped")
-	assert.Contains(t, buffer.String(), "")
+	assert.Equal(t, "", buffer.String())
+
+	buffer.Reset()
+	PerformRequest(router, "GET", "/skippedUsers/3")
+	assert.Equal(t, "", buffer.String())
 }
 
 func TestDisableConsoleColor(t *testing.T) {
