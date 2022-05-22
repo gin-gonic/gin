@@ -823,6 +823,22 @@ func bodyAllowedForStatus(status int) bool {
 	return true
 }
 
+func appendKeysData(data map[string]any, obj any) any {
+	copyObj, ok := obj.(map[string]any)
+	if !ok {
+		return obj
+	}
+
+	for key, value := range data {
+		_, exist := copyObj[key]
+		if !exist {
+			copyObj[key] = value
+		}
+	}
+
+	return copyObj
+}
+
 // Status sets the HTTP response code.
 func (c *Context) Status(code int) {
 	c.Writer.WriteHeader(code)
@@ -905,6 +921,11 @@ func (c *Context) Render(code int, r render.Render) {
 // It also updates the HTTP code and sets the Content-Type as "text/html".
 // See http://golang.org/doc/articles/wiki/
 func (c *Context) HTML(code int, name string, obj any) {
+	// Append c.Set() data into object if object is map[string]any
+	if c.engine.AppendKeys {
+		obj = appendKeysData(c.Keys, obj)
+	}
+
 	instance := c.engine.HTMLRender.Instance(name, obj)
 	c.Render(code, instance)
 }

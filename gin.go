@@ -147,6 +147,9 @@ type Engine struct {
 	// UseH2C enable h2c support.
 	UseH2C bool
 
+	// AppendKeys if true, Gin will merge c.Set() data with user obj data
+	AppendKeys bool
+
 	delims           render.Delims
 	secureJSONPrefix string
 	HTMLRender       render.HTMLRender
