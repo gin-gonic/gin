@@ -34,10 +34,14 @@ const (
 	MIMEPOSTForm          = binding.MIMEPOSTForm
 	MIMEMultipartPOSTForm = binding.MIMEMultipartPOSTForm
 	MIMEYAML              = binding.MIMEYAML
+	MIMETOML              = binding.MIMETOML
 )
 
 // BodyBytesKey indicates a default body bytes key.
 const BodyBytesKey = "_gin-gonic/gin/bodybyteskey"
+
+// ContextKey is the key that a Context returns itself for.
+const ContextKey = "_gin-gonic/gin/contextkey"
 
 // abortIndex represents a typical value used in abort functions.
 const abortIndex int8 = math.MaxInt8 >> 1
@@ -98,6 +102,7 @@ func (c *Context) reset() {
 	c.Accepted = nil
 	c.queryCache = nil
 	c.formCache = nil
+	c.sameSite = 0
 	*c.params = (*c.params)[:0]
 	*c.skippedNodes = (*c.skippedNodes)[:0]
 }
@@ -632,6 +637,11 @@ func (c *Context) BindYAML(obj any) error {
 	return c.MustBindWith(obj, binding.YAML)
 }
 
+// BindTOML is a shortcut for c.MustBindWith(obj, binding.TOML).
+func (c *Context) BindTOML(obj interface{}) error {
+	return c.MustBindWith(obj, binding.TOML)
+}
+
 // BindHeader is a shortcut for c.MustBindWith(obj, binding.Header).
 func (c *Context) BindHeader(obj any) error {
 	return c.MustBindWith(obj, binding.Header)
@@ -688,6 +698,11 @@ func (c *Context) ShouldBindQuery(obj any) error {
 // ShouldBindYAML is a shortcut for c.ShouldBindWith(obj, binding.YAML).
 func (c *Context) ShouldBindYAML(obj any) error {
 	return c.ShouldBindWith(obj, binding.YAML)
+}
+
+// ShouldBindTOML is a shortcut for c.ShouldBindWith(obj, binding.TOML).
+func (c *Context) ShouldBindTOML(obj interface{}) error {
+	return c.ShouldBindWith(obj, binding.TOML)
 }
 
 // ShouldBindHeader is a shortcut for c.ShouldBindWith(obj, binding.Header).
@@ -961,6 +976,11 @@ func (c *Context) YAML(code int, obj any) {
 	c.Render(code, render.YAML{Data: obj})
 }
 
+// TOML serializes the given struct as TOML into the response body.
+func (c *Context) TOML(code int, obj interface{}) {
+	c.Render(code, render.TOML{Data: obj})
+}
+
 // ProtoBuf serializes the given struct as ProtoBuf into the response body.
 func (c *Context) ProtoBuf(code int, obj any) {
 	c.Render(code, render.ProtoBuf{Data: obj})
@@ -1065,6 +1085,7 @@ type Negotiate struct {
 	XMLData  any
 	YAMLData any
 	Data     any
+	TOMLData any
 }
 
 // Negotiate calls different Render according to acceptable Accept format.
@@ -1085,6 +1106,10 @@ func (c *Context) Negotiate(code int, config Negotiate) {
 	case binding.MIMEYAML:
 		data := chooseData(config.YAMLData, config.Data)
 		c.YAML(code, data)
+
+	case binding.MIMETOML:
+		data := chooseData(config.TOMLData, config.Data)
+		c.TOML(code, data)
 
 	default:
 		c.AbortWithError(http.StatusNotAcceptable, errors.New("the accepted formats are not offered by the server")) // nolint: errcheck
@@ -1161,6 +1186,9 @@ func (c *Context) Err() error {
 func (c *Context) Value(key any) any {
 	if key == 0 {
 		return c.Request
+	}
+	if key == ContextKey {
+		return c
 	}
 	if keyAsString, ok := key.(string); ok {
 		if val, exists := c.Get(keyAsString); exists {

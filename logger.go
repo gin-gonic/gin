@@ -44,7 +44,7 @@ type LoggerConfig struct {
 	// Optional. Default value is gin.DefaultWriter.
 	Output io.Writer
 
-	// SkipPaths is a url path array which logs are not written.
+	// SkipPaths is an url path array which logs are not written.
 	// Optional.
 	SkipPaths []string
 }
@@ -161,12 +161,12 @@ func ForceConsoleColor() {
 	consoleColorMode = forceColor
 }
 
-// ErrorLogger returns a handlerfunc for any error type.
+// ErrorLogger returns a HandlerFunc for any error type.
 func ErrorLogger() HandlerFunc {
 	return ErrorLoggerT(ErrorTypeAny)
 }
 
-// ErrorLoggerT returns a handlerfunc for a given error type.
+// ErrorLoggerT returns a HandlerFunc for a given error type.
 func ErrorLoggerT(typ ErrorType) HandlerFunc {
 	return func(c *Context) {
 		c.Next()
