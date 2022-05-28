@@ -195,7 +195,7 @@ func New() *Engine {
 		trees:                  make(methodTrees, 0, 9),
 		delims:                 render.Delims{Left: "{{", Right: "}}"},
 		secureJSONPrefix:       "while(1);",
-		trustedProxies:         []string{"0.0.0.0/0"},
+		trustedProxies:         []string{"0.0.0.0/0", "::/0"},
 		trustedCIDRs:           defaultTrustedCIDRs,
 	}
 	engine.RouterGroup.engine = engine
