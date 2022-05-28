@@ -165,6 +165,9 @@ func TestBindingDefault(t *testing.T) {
 
 	assert.Equal(t, YAML, Default("POST", MIMEYAML))
 	assert.Equal(t, YAML, Default("PUT", MIMEYAML))
+
+	assert.Equal(t, TOML, Default("POST", MIMETOML))
+	assert.Equal(t, TOML, Default("PUT", MIMETOML))
 }
 
 func TestBindingJSONNilBody(t *testing.T) {
@@ -452,6 +455,20 @@ func TestBindingXMLFail(t *testing.T) {
 		XML, "xml",
 		"/", "/",
 		"<map><foo>bar<foo></map>", "<map><bar>foo</bar></map>")
+}
+
+func TestBindingTOML(t *testing.T) {
+	testBodyBinding(t,
+		TOML, "toml",
+		"/", "/",
+		`foo="bar"`, `bar="foo"`)
+}
+
+func TestBindingTOMLFail(t *testing.T) {
+	testBodyBindingFail(t,
+		TOML, "toml",
+		"/", "/",
+		`foo=\n"bar"`, `bar="foo"`)
 }
 
 func TestBindingYAML(t *testing.T) {
