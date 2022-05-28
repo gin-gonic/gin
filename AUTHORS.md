@@ -399,7 +399,6 @@ People and companies, who have contributed, in alphabetical order.
 - 森 優太 <59682979+uta-mori@users.noreply.github.com>
 - 杰哥 <858806258@qq.com>
 - 涛叔 <hi@taoshu.in>
-- 田欧 <thinkerou@gmail.com>
 - 市民233 <mengrenxiong@gmail.com>
 - 尹宝强 <wmdandme@gmail.com>
 - 梦溪笔谈 <loongmxbt@gmail.com>
