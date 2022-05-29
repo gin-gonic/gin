@@ -2,7 +2,7 @@ List of all the awesome people working to make Gin the best Web Framework in Go.
 
 ## gin 1.x series authors
 
-**Gin Core Team:** Bo-Yi Wu (@appleboy), 田欧 (@thinkerou), Javier Provecho (@javierprovecho)
+**Gin Core Team:** Bo-Yi Wu (@appleboy), thinkerou (@thinkerou), Javier Provecho (@javierprovecho)
 
 ## gin 0.x series authors
 
