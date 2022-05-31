@@ -11,7 +11,7 @@ require (
 	github.com/pelletier/go-toml/v2 v2.0.1
 	github.com/stretchr/testify v1.7.1
 	github.com/ugorji/go/codec v1.2.7
-	golang.org/x/net v0.0.0-20220526153639-5463443f8c37
+	golang.org/x/net v0.0.0-20211112202133-69e39bad7dc2
 	google.golang.org/protobuf v1.28.0
 	gopkg.in/yaml.v2 v2.4.0
 )
