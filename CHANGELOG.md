@@ -5,6 +5,7 @@
 ## Break Changes
 
 * TrustedProxies: Add default IPv6 support and refactor [#2967](https://github.com/gin-gonic/gin/pull/2967). Please replace `RemoteIP() (net.IP, bool)` with `RemoteIP() net.IP`
+* gin.Context with fallback value from gin.Context.Request.Context() [#2751](https://github.com/gin-gonic/gin/pull/2751)
 
 ### BUGFIXES
 
@@ -22,7 +23,6 @@
 * Get client IP when using Cloudflare [#2723](https://github.com/gin-gonic/gin/pull/2723)
 * Optimize code adjust [#2700](https://github.com/gin-gonic/gin/pull/2700/files)
 * Optimize code and reduce code cyclomatic complexity [#2737](https://github.com/gin-gonic/gin/pull/2737)
-* gin.Context with fallback value from gin.Context.Request.Context() [#2751](https://github.com/gin-gonic/gin/pull/2751)
 * Improve sliceValidateError.Error performance [#2765](https://github.com/gin-gonic/gin/pull/2765)
 * Support custom struct tag [#2720](https://github.com/gin-gonic/gin/pull/2720)
 * Improve router group tests [#2787](https://github.com/gin-gonic/gin/pull/2787)
