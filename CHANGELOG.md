@@ -2,6 +2,10 @@
 
 ## Gin v1.8.0
 
+## Break Changes
+
+* TrustedProxies: Add default IPv6 support and refactor [#2967](https://github.com/gin-gonic/gin/pull/2967). Please replace `RemoteIP() (net.IP, bool)` with `RemoteIP() net.IP`
+
 ### BUGFIXES
 
 * Fixed SetOutput() panics on go 1.17 [#2861](https://github.com/gin-gonic/gin/pull/2861)
