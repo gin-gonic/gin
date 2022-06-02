@@ -114,12 +114,16 @@ $ cat example.go
 ```go
 package main
 
-import "github.com/gin-gonic/gin"
+import (
+	"net/http"
+
+	"github.com/gin-gonic/gin"
+)
 
 func main() {
 	r := gin.Default()
 	r.GET("/ping", func(c *gin.Context) {
-		c.JSON(200, gin.H{
+		c.JSON(http.StatusOK, gin.H{
 			"message": "pong",
 		})
 	})
@@ -300,7 +304,7 @@ func main() {
 		message := c.PostForm("message")
 		nick := c.DefaultPostForm("nick", "anonymous")
 
-		c.JSON(200, gin.H{
+		c.JSON(http.StatusOK, gin.H{
 			"status":  "posted",
 			"message": message,
 			"nick":    nick,
@@ -570,7 +574,7 @@ func main() {
 
     router := gin.Default()
     router.GET("/ping", func(c *gin.Context) {
-        c.String(200, "pong")
+        c.String(http.StatusOK, "pong")
     })
 
     router.Run(":8080")
@@ -602,7 +606,7 @@ func main() {
 	router.Use(gin.Recovery())
 
 	router.GET("/ping", func(c *gin.Context) {
-		c.String(200, "pong")
+		c.String(http.StatusOK, "pong")
 	})
 
 	router.Run(":8080")
@@ -630,7 +634,7 @@ func main() {
     router := gin.Default()
 
     router.GET("/ping", func(c *gin.Context) {
-        c.String(200, "pong")
+        c.String(http.StatusOK, "pong")
     })
 
     router.Run(":8080")
@@ -649,7 +653,7 @@ func main() {
     router := gin.Default()
 
     router.GET("/ping", func(c *gin.Context) {
-        c.String(200, "pong")
+        c.String(http.StatusOK, "pong")
     })
 
     router.Run(":8080")
@@ -848,6 +852,7 @@ package main
 
 import (
 	"log"
+	"net/http"
 
 	"github.com/gin-gonic/gin"
 )
@@ -870,7 +875,7 @@ func startPage(c *gin.Context) {
 		log.Println(person.Name)
 		log.Println(person.Address)
 	}
-	c.String(200, "Success")
+	c.String(http.StatusOK, "Success")
 }
 
 ```
@@ -884,6 +889,7 @@ package main
 
 import (
 	"log"
+	"net/http"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -916,7 +922,7 @@ func startPage(c *gin.Context) {
                 log.Println(person.UnixTime)
         }
 
-	c.String(200, "Success")
+	c.String(http.StatusOK, "Success")
 }
 ```
 
@@ -932,7 +938,11 @@ See the [detail information](https://github.com/gin-gonic/gin/issues/846).
 ```go
 package main
 
-import "github.com/gin-gonic/gin"
+import (
+	"net/http"
+
+	"github.com/gin-gonic/gin"
+)
 
 type Person struct {
 	ID string `uri:"id" binding:"required,uuid"`
@@ -944,10 +954,10 @@ func main() {
 	route.GET("/:name/:id", func(c *gin.Context) {
 		var person Person
 		if err := c.ShouldBindUri(&person); err != nil {
-			c.JSON(400, gin.H{"msg": err.Error()})
+			c.JSON(http.StatusBadRequest, gin.H{"msg": err.Error()})
 			return
 		}
-		c.JSON(200, gin.H{"name": person.Name, "uuid": person.ID})
+		c.JSON(http.StatusOK, gin.H{"name": person.Name, "uuid": person.ID})
 	})
 	route.Run(":8088")
 }
@@ -966,6 +976,8 @@ package main
 
 import (
 	"fmt"
+	"net/http"
+
 	"github.com/gin-gonic/gin"
 )
 
@@ -980,11 +992,11 @@ func main() {
 		h := testHeader{}
 
 		if err := c.ShouldBindHeader(&h); err != nil {
-			c.JSON(200, err)
+			c.JSON(http.StatusOK, err)
 		}
 
 		fmt.Printf("%#v\n", h)
-		c.JSON(200, gin.H{"Rate": h.Rate, "Domain": h.Domain})
+		c.JSON(http.StatusOK, gin.H{"Rate": h.Rate, "Domain": h.Domain})
 	})
 
 	r.Run()
@@ -1014,7 +1026,7 @@ type myForm struct {
 func formHandler(c *gin.Context) {
     var fakeForm myForm
     c.ShouldBind(&fakeForm)
-    c.JSON(200, gin.H{"color": fakeForm.Colors})
+    c.JSON(http.StatusOK, gin.H{"color": fakeForm.Colors})
 }
 
 ...
@@ -1219,14 +1231,14 @@ func main() {
 
 	// Serves unicode entities
 	r.GET("/json", func(c *gin.Context) {
-		c.JSON(200, gin.H{
+		c.JSON(http.StatusOK, gin.H{
 			"html": "<b>Hello, world!</b>",
 		})
 	})
 
 	// Serves literal characters
 	r.GET("/purejson", func(c *gin.Context) {
-		c.PureJSON(200, gin.H{
+		c.PureJSON(http.StatusOK, gin.H{
 			"html": "<b>Hello, world!</b>",
 		})
 	})
@@ -1473,7 +1485,7 @@ r.GET("/test", func(c *gin.Context) {
     r.HandleContext(c)
 })
 r.GET("/test2", func(c *gin.Context) {
-    c.JSON(200, gin.H{"hello": "world"})
+    c.JSON(http.StatusOK, gin.H{"hello": "world"})
 })
 ```
 
@@ -1626,6 +1638,7 @@ package main
 
 import (
 	"log"
+	"net/http"
 
 	"github.com/gin-gonic/autotls"
 	"github.com/gin-gonic/gin"
@@ -1636,7 +1649,7 @@ func main() {
 
 	// Ping handler
 	r.GET("/ping", func(c *gin.Context) {
-		c.String(200, "pong")
+		c.String(http.StatusOK, "pong")
 	})
 
 	log.Fatal(autotls.Run(r, "example1.com", "example2.com"))
@@ -1650,6 +1663,7 @@ package main
 
 import (
 	"log"
+	"net/http"
 
 	"github.com/gin-gonic/autotls"
 	"github.com/gin-gonic/gin"
@@ -1661,7 +1675,7 @@ func main() {
 
 	// Ping handler
 	r.GET("/ping", func(c *gin.Context) {
-		c.String(200, "pong")
+		c.String(http.StatusOK, "pong")
 	})
 
 	m := autocert.Manager{
@@ -1922,7 +1936,7 @@ type StructD struct {
 func GetDataB(c *gin.Context) {
     var b StructB
     c.Bind(&b)
-    c.JSON(200, gin.H{
+    c.JSON(http.StatusOK, gin.H{
         "a": b.NestedStruct,
         "b": b.FieldB,
     })
@@ -1931,7 +1945,7 @@ func GetDataB(c *gin.Context) {
 func GetDataC(c *gin.Context) {
     var b StructC
     c.Bind(&b)
-    c.JSON(200, gin.H{
+    c.JSON(http.StatusOK, gin.H{
         "a": b.NestedStructPointer,
         "c": b.FieldC,
     })
@@ -1940,7 +1954,7 @@ func GetDataC(c *gin.Context) {
 func GetDataD(c *gin.Context) {
     var b StructD
     c.Bind(&b)
-    c.JSON(200, gin.H{
+    c.JSON(http.StatusOK, gin.H{
         "x": b.NestedAnonyStruct,
         "d": b.FieldD,
     })
@@ -2090,6 +2104,7 @@ package main
 import (
 	"html/template"
 	"log"
+	"net/http"
 
 	"github.com/gin-gonic/gin"
 )
@@ -2118,7 +2133,7 @@ func main() {
 				log.Printf("Failed to push: %v", err)
 			}
 		}
-		c.HTML(200, "https", gin.H{
+		c.HTML(http.StatusOK, "https", gin.H{
 			"status": "success",
 		})
 	})
@@ -2274,10 +2289,16 @@ The `net/http/httptest` package is preferable way for HTTP testing.
 ```go
 package main
 
+import (
+	"net/http"
+
+	"github.com/gin-gonic/gin"
+)
+
 func setupRouter() *gin.Engine {
 	r := gin.Default()
 	r.GET("/ping", func(c *gin.Context) {
-		c.String(200, "pong")
+		c.String(http.StatusOK, "pong")
 	})
 	return r
 }
@@ -2305,10 +2326,10 @@ func TestPingRoute(t *testing.T) {
 	router := setupRouter()
 
 	w := httptest.NewRecorder()
-	req, _ := http.NewRequest("GET", "/ping", nil)
+	req, _ := http.NewRequest(http.MethodGet, "/ping", nil)
 	router.ServeHTTP(w, req)
 
-	assert.Equal(t, 200, w.Code)
+	assert.Equal(t, http.StatusOK, w.Code)
 	assert.Equal(t, "pong", w.Body.String())
 }
 ```
