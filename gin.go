@@ -147,6 +147,9 @@ type Engine struct {
 	// UseH2C enable h2c support.
 	UseH2C bool
 
+	// ContextWithFallback enable fallback Context.Deadline(), Context.Done(), Context.Err() and Context.Value() when Context.Request.Context() is not nil.
+	ContextWithFallback bool
+
 	delims           render.Delims
 	secureJSONPrefix string
 	HTMLRender       render.HTMLRender

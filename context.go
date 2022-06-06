@@ -1158,7 +1158,7 @@ func (c *Context) SetAccepted(formats ...string) {
 
 // Deadline returns that there is no deadline (ok==false) when c.Request has no Context.
 func (c *Context) Deadline() (deadline time.Time, ok bool) {
-	if c.Request == nil || c.Request.Context() == nil {
+	if !c.engine.ContextWithFallback || c.Request == nil || c.Request.Context() == nil {
 		return
 	}
 	return c.Request.Context().Deadline()
@@ -1166,7 +1166,7 @@ func (c *Context) Deadline() (deadline time.Time, ok bool) {
 
 // Done returns nil (chan which will wait forever) when c.Request has no Context.
 func (c *Context) Done() <-chan struct{} {
-	if c.Request == nil || c.Request.Context() == nil {
+	if !c.engine.ContextWithFallback || c.Request == nil || c.Request.Context() == nil {
 		return nil
 	}
 	return c.Request.Context().Done()
@@ -1174,7 +1174,7 @@ func (c *Context) Done() <-chan struct{} {
 
 // Err returns nil when c.Request has no Context.
 func (c *Context) Err() error {
-	if c.Request == nil || c.Request.Context() == nil {
+	if !c.engine.ContextWithFallback || c.Request == nil || c.Request.Context() == nil {
 		return nil
 	}
 	return c.Request.Context().Err()
@@ -1195,7 +1195,7 @@ func (c *Context) Value(key any) any {
 			return val
 		}
 	}
-	if c.Request == nil || c.Request.Context() == nil {
+	if !c.engine.ContextWithFallback || c.Request == nil || c.Request.Context() == nil {
 		return nil
 	}
 	return c.Request.Context().Value(key)
