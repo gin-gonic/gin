@@ -1,5 +1,11 @@
 # Gin ChangeLog
 
+## Gin v1.8.1
+
+### ENHANCEMENTS
+
+* feat(context): add ContextWithFallback feature flag [#3172](https://github.com/gin-gonic/gin/pull/3172)
+
 ## Gin v1.8.0
 
 ## Break Changes
