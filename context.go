@@ -898,11 +898,11 @@ func (c *Context) Cookie(name string) (string, error) {
 }
 
 // Cookies parses and returns the HTTP cookies sent with the request.
-func (c *Context) Cookies() []string {
-	var cookies []string
+func (c *Context) Cookies() map[string]string {
+	cookies := make(map[string]string)
 	for _, cookie := range c.Request.Cookies() {
 		val, _ := url.QueryUnescape(cookie.Value)
-		cookies = append(cookies, val)
+		cookies[cookie.Name] = val
 	}
 	return cookies
 }
