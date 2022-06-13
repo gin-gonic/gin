@@ -5,8 +5,10 @@
 package gin
 
 import (
+	"io"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -131,4 +133,24 @@ func TestResponseWriterFlush(t *testing.T) {
 	resp, err := http.Get(testServer.URL)
 	assert.NoError(t, err)
 	assert.Equal(t, http.StatusInternalServerError, resp.StatusCode)
+}
+
+func TestResponseWriterReadFrom(t *testing.T) {
+	testWriter := httptest.NewRecorder()
+	writer := &responseWriter{}
+	writer.reset(testWriter)
+	w := ResponseWriter(writer)
+
+	n, err := io.Copy(w, strings.NewReader("hola"))
+	assert.Equal(t, int64(4), n)
+	assert.Equal(t, 4, w.Size())
+	assert.Equal(t, http.StatusOK, w.Status())
+	assert.Equal(t, http.StatusOK, testWriter.Code)
+	assert.Equal(t, "hola", testWriter.Body.String())
+	assert.NoError(t, err)
+	n, err = writer.ReadFrom(strings.NewReader(" adios"))
+	assert.Equal(t, int64(6), n)
+	assert.Equal(t, 10, w.Size())
+	assert.Equal(t, testWriter.Body.String(), "hola adios")
+	assert.NoError(t, err)
 }

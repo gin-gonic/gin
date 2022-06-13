@@ -22,6 +22,7 @@ type ResponseWriter interface {
 	http.Hijacker
 	http.Flusher
 	http.CloseNotifier
+	io.ReaderFrom
 
 	// Status returns the HTTP response status code of the current request.
 	Status() int
@@ -84,6 +85,15 @@ func (w *responseWriter) WriteString(s string) (n int, err error) {
 	w.WriteHeaderNow()
 	n, err = io.WriteString(w.ResponseWriter, s)
 	w.size += n
+	return
+}
+
+// ReadFrom implements the io.ReaderFrom interface, allowing Go to automatically
+// use the sendfile syscall in methods such as http.ServeFile
+func (w *responseWriter) ReadFrom(src io.Reader) (n int64, err error) {
+	w.WriteHeaderNow()
+	n, err = io.Copy(w.ResponseWriter, src)
+	w.size += int(n)
 	return
 }
 
