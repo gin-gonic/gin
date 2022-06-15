@@ -455,7 +455,7 @@ walk: // Outer loop for walking the tree
 
 				if !n.wildChild {
 					// If the path at the end of the loop is not equal to '/' and the current node has no child nodes
-					// the current node needs to roll back to last vaild skippedNode
+					// the current node needs to roll back to last valid skippedNode
 					if path != "/" {
 						for l := len(*skippedNodes); l > 0; {
 							skippedNode := (*skippedNodes)[l-1]
@@ -572,7 +572,7 @@ walk: // Outer loop for walking the tree
 
 		if path == prefix {
 			// If the current path does not equal '/' and the node does not have a registered handle and the most recently matched node has a child node
-			// the current node needs to roll back to last vaild skippedNode
+			// the current node needs to roll back to last valid skippedNode
 			if n.handlers == nil && path != "/" {
 				for l := len(*skippedNodes); l > 0; {
 					skippedNode := (*skippedNodes)[l-1]
