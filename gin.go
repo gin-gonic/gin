@@ -5,6 +5,7 @@
 package gin
 
 import (
+	"context"
 	"fmt"
 	"html/template"
 	"net"
@@ -164,6 +165,9 @@ type Engine struct {
 	maxSections      uint16
 	trustedProxies   []string
 	trustedCIDRs     []*net.IPNet
+	
+	// http.Server list for graceful Shutdown
+	serverList []*http.Server
 }
 
 var _ IRouter = &Engine{}
@@ -379,7 +383,9 @@ func (engine *Engine) Run(addr ...string) (err error) {
 
 	address := resolveAddress(addr)
 	debugPrint("Listening and serving HTTP on %s\n", address)
-	err = http.ListenAndServe(address, engine.Handler())
+	server := &http.Server{Addr: address, Handler: engine.Handler()}
+	engine.serverList = append(engine.serverList, server)
+	err = server.ListenAndServe()
 	return
 }
 
@@ -498,7 +504,9 @@ func (engine *Engine) RunTLS(addr, certFile, keyFile string) (err error) {
 			"Please check https://pkg.go.dev/github.com/gin-gonic/gin#readme-don-t-trust-all-proxies for details.")
 	}
 
-	err = http.ListenAndServeTLS(addr, certFile, keyFile, engine.Handler())
+	server := &http.Server{Addr: addr, Handler: engine.Handler()}
+	engine.serverList = append(engine.serverList, server)
+	err = server.ListenAndServeTLS(certFile, keyFile)
 	return
 }
 
@@ -521,7 +529,9 @@ func (engine *Engine) RunUnix(file string) (err error) {
 	defer listener.Close()
 	defer os.Remove(file)
 
-	err = http.Serve(listener, engine.Handler())
+	server := &http.Server{Handler: engine.Handler()}
+	engine.serverList = append(engine.serverList, server)
+	err = server.Serve(listener)
 	return
 }
 
@@ -558,7 +568,9 @@ func (engine *Engine) RunListener(listener net.Listener) (err error) {
 			"Please check https://pkg.go.dev/github.com/gin-gonic/gin#readme-don-t-trust-all-proxies for details.")
 	}
 
-	err = http.Serve(listener, engine.Handler())
+	server := &http.Server{Handler: engine.Handler()}
+	engine.serverList = append(engine.serverList, server)
+	err = server.Serve(listener)
 	return
 }
 
@@ -583,6 +595,21 @@ func (engine *Engine) HandleContext(c *Context) {
 	engine.handleHTTPRequest(c)
 
 	c.index = oldIndexValue
+}
+
+// Shutdown is Wrapper for http.Server.Shutdown(ctx)
+// Once Shutdown has been called on a server, it may not be reused;
+// future calls to methods such as Serve will return ErrServerClosed.
+func (engine *Engine) Shutdown(ctx context.Context) error {
+	for _, srv := range engine.serverList {
+		if srv == nil {
+			continue
+		}
+		if err := srv.Shutdown(ctx); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (engine *Engine) handleHTTPRequest(c *Context) {
