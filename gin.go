@@ -165,7 +165,7 @@ type Engine struct {
 	maxSections      uint16
 	trustedProxies   []string
 	trustedCIDRs     []*net.IPNet
-	
+
 	// http.Server list for graceful Shutdown
 	serverList []*http.Server
 }
