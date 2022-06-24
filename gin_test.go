@@ -696,3 +696,26 @@ func assertRoutePresent(t *testing.T, gotRoutes RoutesInfo, wantRoute RouteInfo)
 
 func handlerTest1(c *Context) {}
 func handlerTest2(c *Context) {}
+
+// TestEngine_Shutdown to test engine.Shutdown.
+func TestEngine_Shutdown(t *testing.T) {
+	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		fmt.Println(err)
+	}
+	r := Default()
+	r.serverList = append(r.serverList, nil)
+	go func() {
+		err = r.RunListener(ln)
+		assert.Equal(t, err, http.ErrServerClosed)
+	}()
+	time.Sleep(time.Millisecond)
+	assert.Equal(t, len(r.serverList), 2)
+	r.serverList = append(r.serverList, nil)
+	ctx, _ := context.WithTimeout(context.Background(), time.Nanosecond)
+	time.Sleep(time.Nanosecond)
+	err = r.Shutdown(ctx)
+	assert.Error(t, err, context.DeadlineExceeded)
+	err = r.Shutdown(context.TODO())
+	assert.Nil(t, err)
+}
