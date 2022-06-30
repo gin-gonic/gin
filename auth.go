@@ -1,4 +1,4 @@
-// Copyright 2014 Manu Martinez-Almeida.  All rights reserved.
+// Copyright 2014 Manu Martinez-Almeida. All rights reserved.
 // Use of this source code is governed by a MIT style
 // license that can be found in the LICENSE file.
 
@@ -31,7 +31,7 @@ func (a authPairs) searchCredential(authValue string) (string, bool) {
 		return "", false
 	}
 	for _, pair := range a {
-		if subtle.ConstantTimeCompare([]byte(pair.value), []byte(authValue)) == 1 {
+		if subtle.ConstantTimeCompare(bytesconv.StringToBytes(pair.value), bytesconv.StringToBytes(authValue)) == 1 {
 			return pair.user, true
 		}
 	}
