@@ -1,4 +1,4 @@
-// Copyright 2014 Manu Martinez-Almeida.  All rights reserved.
+// Copyright 2014 Manu Martinez-Almeida. All rights reserved.
 // Use of this source code is governed by a MIT style
 // license that can be found in the LICENSE file.
 
@@ -34,10 +34,14 @@ const (
 	MIMEPOSTForm          = binding.MIMEPOSTForm
 	MIMEMultipartPOSTForm = binding.MIMEMultipartPOSTForm
 	MIMEYAML              = binding.MIMEYAML
+	MIMETOML              = binding.MIMETOML
 )
 
 // BodyBytesKey indicates a default body bytes key.
 const BodyBytesKey = "_gin-gonic/gin/bodybyteskey"
+
+// ContextKey is the key that a Context returns itself for.
+const ContextKey = "_gin-gonic/gin/contextkey"
 
 // abortIndex represents a typical value used in abort functions.
 const abortIndex int8 = math.MaxInt8 >> 1
@@ -98,6 +102,7 @@ func (c *Context) reset() {
 	c.Accepted = nil
 	c.queryCache = nil
 	c.formCache = nil
+	c.sameSite = 0
 	*c.params = (*c.params)[:0]
 	*c.skippedNodes = (*c.skippedNodes)[:0]
 }
@@ -632,6 +637,11 @@ func (c *Context) BindYAML(obj any) error {
 	return c.MustBindWith(obj, binding.YAML)
 }
 
+// BindTOML is a shortcut for c.MustBindWith(obj, binding.TOML).
+func (c *Context) BindTOML(obj interface{}) error {
+	return c.MustBindWith(obj, binding.TOML)
+}
+
 // BindHeader is a shortcut for c.MustBindWith(obj, binding.Header).
 func (c *Context) BindHeader(obj any) error {
 	return c.MustBindWith(obj, binding.Header)
@@ -690,6 +700,11 @@ func (c *Context) ShouldBindYAML(obj any) error {
 	return c.ShouldBindWith(obj, binding.YAML)
 }
 
+// ShouldBindTOML is a shortcut for c.ShouldBindWith(obj, binding.TOML).
+func (c *Context) ShouldBindTOML(obj interface{}) error {
+	return c.ShouldBindWith(obj, binding.TOML)
+}
+
 // ShouldBindHeader is a shortcut for c.ShouldBindWith(obj, binding.Header).
 func (c *Context) ShouldBindHeader(obj any) error {
 	return c.ShouldBindWith(obj, binding.Header)
@@ -733,7 +748,7 @@ func (c *Context) ShouldBindBodyWith(obj any, bb binding.BindingBody) (err error
 }
 
 // ClientIP implements one best effort algorithm to return the real client IP.
-// It called c.RemoteIP() under the hood, to check if the remote IP is a trusted proxy or not.
+// It calls c.RemoteIP() under the hood, to check if the remote IP is a trusted proxy or not.
 // If it is it will then try to parse the headers defined in Engine.RemoteIPHeaders (defaulting to [X-Forwarded-For, X-Real-Ip]).
 // If the headers are not syntactically valid OR the remote IP does not correspond to a trusted proxy,
 // the remote IP (coming from Request.RemoteAddr) is returned.
@@ -961,6 +976,11 @@ func (c *Context) YAML(code int, obj any) {
 	c.Render(code, render.YAML{Data: obj})
 }
 
+// TOML serializes the given struct as TOML into the response body.
+func (c *Context) TOML(code int, obj interface{}) {
+	c.Render(code, render.TOML{Data: obj})
+}
+
 // ProtoBuf serializes the given struct as ProtoBuf into the response body.
 func (c *Context) ProtoBuf(code int, obj any) {
 	c.Render(code, render.ProtoBuf{Data: obj})
@@ -1065,6 +1085,7 @@ type Negotiate struct {
 	XMLData  any
 	YAMLData any
 	Data     any
+	TOMLData any
 }
 
 // Negotiate calls different Render according to acceptable Accept format.
@@ -1085,6 +1106,10 @@ func (c *Context) Negotiate(code int, config Negotiate) {
 	case binding.MIMEYAML:
 		data := chooseData(config.YAMLData, config.Data)
 		c.YAML(code, data)
+
+	case binding.MIMETOML:
+		data := chooseData(config.TOMLData, config.Data)
+		c.TOML(code, data)
 
 	default:
 		c.AbortWithError(http.StatusNotAcceptable, errors.New("the accepted formats are not offered by the server")) // nolint: errcheck
@@ -1133,7 +1158,7 @@ func (c *Context) SetAccepted(formats ...string) {
 
 // Deadline returns that there is no deadline (ok==false) when c.Request has no Context.
 func (c *Context) Deadline() (deadline time.Time, ok bool) {
-	if c.Request == nil || c.Request.Context() == nil {
+	if !c.engine.ContextWithFallback || c.Request == nil || c.Request.Context() == nil {
 		return
 	}
 	return c.Request.Context().Deadline()
@@ -1141,7 +1166,7 @@ func (c *Context) Deadline() (deadline time.Time, ok bool) {
 
 // Done returns nil (chan which will wait forever) when c.Request has no Context.
 func (c *Context) Done() <-chan struct{} {
-	if c.Request == nil || c.Request.Context() == nil {
+	if !c.engine.ContextWithFallback || c.Request == nil || c.Request.Context() == nil {
 		return nil
 	}
 	return c.Request.Context().Done()
@@ -1149,7 +1174,7 @@ func (c *Context) Done() <-chan struct{} {
 
 // Err returns nil when c.Request has no Context.
 func (c *Context) Err() error {
-	if c.Request == nil || c.Request.Context() == nil {
+	if !c.engine.ContextWithFallback || c.Request == nil || c.Request.Context() == nil {
 		return nil
 	}
 	return c.Request.Context().Err()
@@ -1162,12 +1187,15 @@ func (c *Context) Value(key any) any {
 	if key == 0 {
 		return c.Request
 	}
+	if key == ContextKey {
+		return c
+	}
 	if keyAsString, ok := key.(string); ok {
 		if val, exists := c.Get(keyAsString); exists {
 			return val
 		}
 	}
-	if c.Request == nil || c.Request.Context() == nil {
+	if !c.engine.ContextWithFallback || c.Request == nil || c.Request.Context() == nil {
 		return nil
 	}
 	return c.Request.Context().Value(key)
