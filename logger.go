@@ -266,7 +266,7 @@ func LoggerWithConfig(conf LoggerConfig) HandlerFunc {
 			param.Path = path
 
 			if _, err := out.Write(bytesconv.StringToBytes(formatter(param))); err != nil {
-				fmt.Println(err)
+				debugPrintError(err)
 			}
 		}
 	}
