@@ -2043,6 +2043,44 @@ func TestContextRenderDataFromReaderNoHeaders(t *testing.T) {
 	assert.Equal(t, fmt.Sprintf("%d", contentLength), w.Header().Get("Content-Length"))
 }
 
+func TestContextRenderDataFromStream(t *testing.T) {
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
+
+	pr, pw := io.Pipe()
+	defer pw.Close()
+	contentType := "image/png"
+	extraHeaders := map[string]string{"Content-Disposition": `attachment; filename="gopher.png"`}
+
+	start := make(chan struct{})
+	go func() {
+		close(start)
+		defer pr.Close()
+		c.DataFromStream(http.StatusOK, contentType, pr, extraHeaders)
+	}()
+	<-start
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Equal(t, contentType, w.Header().Get("Content-Type"))
+	assert.Equal(t, extraHeaders["Content-Disposition"], w.Header().Get("Content-Disposition"))
+
+	checkBody := func(chunk []byte) {
+		n, err := pw.Write(chunk)
+		assert.Nil(t, err)
+		assert.Equal(t, n, len(chunk))
+
+		buf, err := io.ReadAll(w.Body)
+		assert.Nil(t, err)
+		assert.Equal(t, chunk, buf)
+	}
+
+	chunks := [][]byte{[]byte("#!"), []byte("PNG")}
+
+	for _, chunk := range chunks {
+		checkBody(chunk)
+	}
+}
+
 type TestResponseRecorder struct {
 	*httptest.ResponseRecorder
 	closeChannel chan bool
