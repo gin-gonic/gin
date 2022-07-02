@@ -1308,6 +1308,37 @@ func main() {
 }
 ```
 
+### Streaming data
+
+```go
+func main() {
+	router := gin.Default()
+	router.GET("/someDataFromStream", func(c *gin.Context) {
+		pr, pw := io.Pipe()
+		defer pr.Close()
+
+		go func() {
+			defer pw.Close()
+			var counter int
+			for {
+				select {
+				case <-c.Done():
+					return
+				case <-time.Tick(500 * time.Millisecond):
+					if _, err := fmt.Fprintf(pw, "message: %d\n", counter); err != nil {
+						return
+					}
+				}
+			}
+		}()
+
+		contentType := "text/plain"
+		c.DataFromStream(http.StatusOK, contentType, pr, nil)
+	})
+	router.Run(":8080")
+}
+```
+
 ### HTML rendering
 
 Using LoadHTMLGlob() or LoadHTMLFiles()

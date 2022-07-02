@@ -1018,6 +1018,19 @@ func (c *Context) DataFromReader(code int, contentLength int64, contentType stri
 	})
 }
 
+// DataFromStream streams the specified reader into the body stream without delay and updates the HTTP code.
+func (c *Context) DataFromStream(code int, contentType string, reader io.Reader, extraHeaders map[string]string) {
+	sr := render.StreamReader{
+		Reader: render.Reader{
+			Headers:       extraHeaders,
+			ContentType:   contentType,
+			ContentLength: -1,
+			Reader:        reader,
+		},
+	}
+	c.Render(code, sr)
+}
+
 // File writes the specified file into the body stream in an efficient way.
 func (c *Context) File(filepath string) {
 	http.ServeFile(c.Writer, c.Request, filepath)
