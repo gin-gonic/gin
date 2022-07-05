@@ -1,4 +1,4 @@
-// Copyright 2017 Manu Martinez-Almeida.  All rights reserved.
+// Copyright 2017 Manu Martinez-Almeida. All rights reserved.
 // Use of this source code is governed by a MIT style
 // license that can be found in the LICENSE file.
 
@@ -17,7 +17,7 @@ type neuteredReaddirFile struct {
 	http.File
 }
 
-// Dir returns a http.Filesystem that can be used by http.FileServer(). It is used internally
+// Dir returns a http.FileSystem that can be used by http.FileServer(). It is used internally
 // in router.Static().
 // if listDirectory == true, then it works the same as http.Dir() otherwise it returns
 // a filesystem that prevents http.FileServer() to list the directory files.

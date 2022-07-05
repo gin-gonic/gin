@@ -1,4 +1,4 @@
-// Copyright 2014 Manu Martinez-Almeida.  All rights reserved.
+// Copyright 2014 Manu Martinez-Almeida. All rights reserved.
 // Use of this source code is governed by a MIT style
 // license that can be found in the LICENSE file.
 
@@ -27,7 +27,7 @@ func TestPanicClean(t *testing.T) {
 		panic("Oupps, Houston, we have a problem")
 	})
 	// RUN
-	w := performRequest(router, "GET", "/recovery",
+	w := PerformRequest(router, "GET", "/recovery",
 		header{
 			Key:   "Host",
 			Value: "www.google.com",
@@ -57,7 +57,7 @@ func TestPanicInHandler(t *testing.T) {
 		panic("Oupps, Houston, we have a problem")
 	})
 	// RUN
-	w := performRequest(router, "GET", "/recovery")
+	w := PerformRequest(router, "GET", "/recovery")
 	// TEST
 	assert.Equal(t, http.StatusInternalServerError, w.Code)
 	assert.Contains(t, buffer.String(), "panic recovered")
@@ -68,7 +68,7 @@ func TestPanicInHandler(t *testing.T) {
 	// Debug mode prints the request
 	SetMode(DebugMode)
 	// RUN
-	w = performRequest(router, "GET", "/recovery")
+	w = PerformRequest(router, "GET", "/recovery")
 	// TEST
 	assert.Equal(t, http.StatusInternalServerError, w.Code)
 	assert.Contains(t, buffer.String(), "GET /recovery")
@@ -85,21 +85,21 @@ func TestPanicWithAbort(t *testing.T) {
 		panic("Oupps, Houston, we have a problem")
 	})
 	// RUN
-	w := performRequest(router, "GET", "/recovery")
+	w := PerformRequest(router, "GET", "/recovery")
 	// TEST
 	assert.Equal(t, http.StatusBadRequest, w.Code)
 }
 
 func TestSource(t *testing.T) {
 	bs := source(nil, 0)
-	assert.Equal(t, []byte("???"), bs)
+	assert.Equal(t, dunno, bs)
 
 	in := [][]byte{
 		[]byte("Hello world."),
 		[]byte("Hi, gin.."),
 	}
 	bs = source(in, 10)
-	assert.Equal(t, []byte("???"), bs)
+	assert.Equal(t, dunno, bs)
 
 	bs = source(in, 1)
 	assert.Equal(t, []byte("Hello world."), bs)
@@ -107,7 +107,7 @@ func TestSource(t *testing.T) {
 
 func TestFunction(t *testing.T) {
 	bs := function(1)
-	assert.Equal(t, []byte("???"), bs)
+	assert.Equal(t, dunno, bs)
 }
 
 // TestPanicWithBrokenPipe asserts that recovery specifically handles
@@ -122,7 +122,6 @@ func TestPanicWithBrokenPipe(t *testing.T) {
 
 	for errno, expectMsg := range expectMsgs {
 		t.Run(expectMsg, func(t *testing.T) {
-
 			var buf bytes.Buffer
 
 			router := New()
@@ -137,7 +136,7 @@ func TestPanicWithBrokenPipe(t *testing.T) {
 				panic(e)
 			})
 			// RUN
-			w := performRequest(router, "GET", "/recovery")
+			w := PerformRequest(router, "GET", "/recovery")
 			// TEST
 			assert.Equal(t, expectCode, w.Code)
 			assert.Contains(t, strings.ToLower(buf.String()), expectMsg)
@@ -149,7 +148,7 @@ func TestCustomRecoveryWithWriter(t *testing.T) {
 	errBuffer := new(bytes.Buffer)
 	buffer := new(bytes.Buffer)
 	router := New()
-	handleRecovery := func(c *Context, err interface{}) {
+	handleRecovery := func(c *Context, err any) {
 		errBuffer.WriteString(err.(string))
 		c.AbortWithStatus(http.StatusBadRequest)
 	}
@@ -158,7 +157,7 @@ func TestCustomRecoveryWithWriter(t *testing.T) {
 		panic("Oupps, Houston, we have a problem")
 	})
 	// RUN
-	w := performRequest(router, "GET", "/recovery")
+	w := PerformRequest(router, "GET", "/recovery")
 	// TEST
 	assert.Equal(t, http.StatusBadRequest, w.Code)
 	assert.Contains(t, buffer.String(), "panic recovered")
@@ -169,7 +168,7 @@ func TestCustomRecoveryWithWriter(t *testing.T) {
 	// Debug mode prints the request
 	SetMode(DebugMode)
 	// RUN
-	w = performRequest(router, "GET", "/recovery")
+	w = PerformRequest(router, "GET", "/recovery")
 	// TEST
 	assert.Equal(t, http.StatusBadRequest, w.Code)
 	assert.Contains(t, buffer.String(), "GET /recovery")
@@ -184,7 +183,7 @@ func TestCustomRecovery(t *testing.T) {
 	buffer := new(bytes.Buffer)
 	router := New()
 	DefaultErrorWriter = buffer
-	handleRecovery := func(c *Context, err interface{}) {
+	handleRecovery := func(c *Context, err any) {
 		errBuffer.WriteString(err.(string))
 		c.AbortWithStatus(http.StatusBadRequest)
 	}
@@ -193,7 +192,7 @@ func TestCustomRecovery(t *testing.T) {
 		panic("Oupps, Houston, we have a problem")
 	})
 	// RUN
-	w := performRequest(router, "GET", "/recovery")
+	w := PerformRequest(router, "GET", "/recovery")
 	// TEST
 	assert.Equal(t, http.StatusBadRequest, w.Code)
 	assert.Contains(t, buffer.String(), "panic recovered")
@@ -204,7 +203,7 @@ func TestCustomRecovery(t *testing.T) {
 	// Debug mode prints the request
 	SetMode(DebugMode)
 	// RUN
-	w = performRequest(router, "GET", "/recovery")
+	w = PerformRequest(router, "GET", "/recovery")
 	// TEST
 	assert.Equal(t, http.StatusBadRequest, w.Code)
 	assert.Contains(t, buffer.String(), "GET /recovery")
@@ -219,7 +218,7 @@ func TestRecoveryWithWriterWithCustomRecovery(t *testing.T) {
 	buffer := new(bytes.Buffer)
 	router := New()
 	DefaultErrorWriter = buffer
-	handleRecovery := func(c *Context, err interface{}) {
+	handleRecovery := func(c *Context, err any) {
 		errBuffer.WriteString(err.(string))
 		c.AbortWithStatus(http.StatusBadRequest)
 	}
@@ -228,7 +227,7 @@ func TestRecoveryWithWriterWithCustomRecovery(t *testing.T) {
 		panic("Oupps, Houston, we have a problem")
 	})
 	// RUN
-	w := performRequest(router, "GET", "/recovery")
+	w := PerformRequest(router, "GET", "/recovery")
 	// TEST
 	assert.Equal(t, http.StatusBadRequest, w.Code)
 	assert.Contains(t, buffer.String(), "panic recovered")
@@ -239,7 +238,7 @@ func TestRecoveryWithWriterWithCustomRecovery(t *testing.T) {
 	// Debug mode prints the request
 	SetMode(DebugMode)
 	// RUN
-	w = performRequest(router, "GET", "/recovery")
+	w = PerformRequest(router, "GET", "/recovery")
 	// TEST
 	assert.Equal(t, http.StatusBadRequest, w.Code)
 	assert.Contains(t, buffer.String(), "GET /recovery")

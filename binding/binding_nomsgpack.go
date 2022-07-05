@@ -2,6 +2,7 @@
 // Use of this source code is governed by a MIT style
 // license that can be found in the LICENSE file.
 
+//go:build nomsgpack
 // +build nomsgpack
 
 package binding
@@ -19,6 +20,7 @@ const (
 	MIMEMultipartPOSTForm = "multipart/form-data"
 	MIMEPROTOBUF          = "application/x-protobuf"
 	MIMEYAML              = "application/x-yaml"
+	MIMETOML              = "application/toml"
 )
 
 // Binding describes the interface which needs to be implemented for binding the
@@ -26,42 +28,42 @@ const (
 // the form POST.
 type Binding interface {
 	Name() string
-	Bind(*http.Request, interface{}) error
+	Bind(*http.Request, any) error
 }
 
 // BindingBody adds BindBody method to Binding. BindBody is similar with Bind,
 // but it reads the body from supplied bytes instead of req.Body.
 type BindingBody interface {
 	Binding
-	BindBody([]byte, interface{}) error
+	BindBody([]byte, any) error
 }
 
 // BindingUri adds BindUri method to Binding. BindUri is similar with Bind,
-// but it read the Params.
+// but it reads the Params.
 type BindingUri interface {
 	Name() string
-	BindUri(map[string][]string, interface{}) error
+	BindUri(map[string][]string, any) error
 }
 
 // StructValidator is the minimal interface which needs to be implemented in
 // order for it to be used as the validator engine for ensuring the correctness
 // of the request. Gin provides a default implementation for this using
-// https://github.com/go-playground/validator/tree/v8.18.2.
+// https://github.com/go-playground/validator/tree/v10.6.1.
 type StructValidator interface {
 	// ValidateStruct can receive any kind of type and it should never panic, even if the configuration is not right.
 	// If the received type is not a struct, any validation should be skipped and nil must be returned.
 	// If the received type is a struct or pointer to a struct, the validation should be performed.
 	// If the struct is not valid or the validation itself fails, a descriptive error should be returned.
 	// Otherwise nil must be returned.
-	ValidateStruct(interface{}) error
+	ValidateStruct(any) error
 
 	// Engine returns the underlying validator engine which powers the
 	// StructValidator implementation.
-	Engine() interface{}
+	Engine() any
 }
 
 // Validator is the default validator which implements the StructValidator
-// interface. It uses https://github.com/go-playground/validator/tree/v8.18.2
+// interface. It uses https://github.com/go-playground/validator/tree/v10.6.1
 // under the hood.
 var Validator StructValidator = &defaultValidator{}
 
@@ -78,6 +80,7 @@ var (
 	YAML          = yamlBinding{}
 	Uri           = uriBinding{}
 	Header        = headerBinding{}
+	TOML          = tomlBinding{}
 )
 
 // Default returns the appropriate Binding instance based on the HTTP method
@@ -98,12 +101,14 @@ func Default(method, contentType string) Binding {
 		return YAML
 	case MIMEMultipartPOSTForm:
 		return FormMultipart
+	case MIMETOML:
+		return TOML
 	default: // case MIMEPOSTForm:
 		return Form
 	}
 }
 
-func validate(obj interface{}) error {
+func validate(obj any) error {
 	if Validator == nil {
 		return nil
 	}

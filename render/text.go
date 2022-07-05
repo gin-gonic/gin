@@ -1,4 +1,4 @@
-// Copyright 2014 Manu Martinez-Almeida.  All rights reserved.
+// Copyright 2014 Manu Martinez-Almeida. All rights reserved.
 // Use of this source code is governed by a MIT style
 // license that can be found in the LICENSE file.
 
@@ -14,7 +14,7 @@ import (
 // String contains the given interface object slice and its format.
 type String struct {
 	Format string
-	Data   []interface{}
+	Data   []any
 }
 
 var plainContentType = []string{"text/plain; charset=utf-8"}
@@ -30,7 +30,7 @@ func (r String) WriteContentType(w http.ResponseWriter) {
 }
 
 // WriteString writes data according to its format and write custom ContentType.
-func WriteString(w http.ResponseWriter, format string, data []interface{}, html bool) (err error) {
+func WriteString(w http.ResponseWriter, format string, data []any, html bool) (err error) {
 	if html {
 		writeContentType(w, htmlContentType)
 	} else {

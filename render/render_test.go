@@ -1,4 +1,4 @@
-// Copyright 2014 Manu Martinez-Almeida.  All rights reserved.
+// Copyright 2014 Manu Martinez-Almeida. All rights reserved.
 // Use of this source code is governed by a MIT style
 // license that can be found in the LICENSE file.
 
@@ -14,10 +14,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/golang/protobuf/proto"
-	"github.com/stretchr/testify/assert"
-
 	testdata "github.com/gin-gonic/gin/testdata/protoexample"
+	"github.com/stretchr/testify/assert"
+	"google.golang.org/protobuf/proto"
 )
 
 // TODO unit tests
@@ -25,7 +24,7 @@ import (
 
 func TestRenderJSON(t *testing.T) {
 	w := httptest.NewRecorder()
-	data := map[string]interface{}{
+	data := map[string]any{
 		"foo":  "bar",
 		"html": "<b>",
 	}
@@ -50,7 +49,7 @@ func TestRenderJSONPanics(t *testing.T) {
 
 func TestRenderIndentedJSON(t *testing.T) {
 	w := httptest.NewRecorder()
-	data := map[string]interface{}{
+	data := map[string]any{
 		"foo": "bar",
 		"bar": "foo",
 	}
@@ -73,7 +72,7 @@ func TestRenderIndentedJSONPanics(t *testing.T) {
 
 func TestRenderSecureJSON(t *testing.T) {
 	w1 := httptest.NewRecorder()
-	data := map[string]interface{}{
+	data := map[string]any{
 		"foo": "bar",
 	}
 
@@ -87,7 +86,7 @@ func TestRenderSecureJSON(t *testing.T) {
 	assert.Equal(t, "application/json; charset=utf-8", w1.Header().Get("Content-Type"))
 
 	w2 := httptest.NewRecorder()
-	datas := []map[string]interface{}{{
+	datas := []map[string]any{{
 		"foo": "bar",
 	}, {
 		"bar": "foo",
@@ -110,7 +109,7 @@ func TestRenderSecureJSONFail(t *testing.T) {
 
 func TestRenderJsonpJSON(t *testing.T) {
 	w1 := httptest.NewRecorder()
-	data := map[string]interface{}{
+	data := map[string]any{
 		"foo": "bar",
 	}
 
@@ -124,7 +123,7 @@ func TestRenderJsonpJSON(t *testing.T) {
 	assert.Equal(t, "application/javascript; charset=utf-8", w1.Header().Get("Content-Type"))
 
 	w2 := httptest.NewRecorder()
-	datas := []map[string]interface{}{{
+	datas := []map[string]any{{
 		"foo": "bar",
 	}, {
 		"bar": "foo",
@@ -138,7 +137,7 @@ func TestRenderJsonpJSON(t *testing.T) {
 
 func TestRenderJsonpJSONError2(t *testing.T) {
 	w := httptest.NewRecorder()
-	data := map[string]interface{}{
+	data := map[string]any{
 		"foo": "bar",
 	}
 	(JsonpJSON{"", data}).WriteContentType(w)
@@ -162,7 +161,7 @@ func TestRenderJsonpJSONFail(t *testing.T) {
 
 func TestRenderAsciiJSON(t *testing.T) {
 	w1 := httptest.NewRecorder()
-	data1 := map[string]interface{}{
+	data1 := map[string]any{
 		"lang": "GO语言",
 		"tag":  "<br>",
 	}
@@ -191,7 +190,7 @@ func TestRenderAsciiJSONFail(t *testing.T) {
 
 func TestRenderPureJSON(t *testing.T) {
 	w := httptest.NewRecorder()
-	data := map[string]interface{}{
+	data := map[string]any{
 		"foo":  "bar",
 		"html": "<b>",
 	}
@@ -201,7 +200,7 @@ func TestRenderPureJSON(t *testing.T) {
 	assert.Equal(t, "application/json; charset=utf-8", w.Header().Get("Content-Type"))
 }
 
-type xmlmap map[string]interface{}
+type xmlmap map[string]any
 
 // Allows type H to be used with xml.Marshal
 func (h xmlmap) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
@@ -245,7 +244,7 @@ b:
 type fail struct{}
 
 // Hook MarshalYAML
-func (ft *fail) MarshalYAML() (interface{}, error) {
+func (ft *fail) MarshalYAML() (any, error) {
 	return nil, errors.New("fail")
 }
 
@@ -359,13 +358,13 @@ func TestRenderString(t *testing.T) {
 
 	(String{
 		Format: "hello %s %d",
-		Data:   []interface{}{},
+		Data:   []any{},
 	}).WriteContentType(w)
 	assert.Equal(t, "text/plain; charset=utf-8", w.Header().Get("Content-Type"))
 
 	err := (String{
 		Format: "hola %s %d",
-		Data:   []interface{}{"manu", 2},
+		Data:   []any{"manu", 2},
 	}).Render(w)
 
 	assert.NoError(t, err)
@@ -378,7 +377,7 @@ func TestRenderStringLenZero(t *testing.T) {
 
 	err := (String{
 		Format: "hola %s %d",
-		Data:   []interface{}{},
+		Data:   []any{},
 	}).Render(w)
 
 	assert.NoError(t, err)
@@ -404,7 +403,7 @@ func TestRenderHTMLTemplate(t *testing.T) {
 	templ := template.Must(template.New("t").Parse(`Hello {{.name}}`))
 
 	htmlRender := HTMLProduction{Template: templ}
-	instance := htmlRender.Instance("t", map[string]interface{}{
+	instance := htmlRender.Instance("t", map[string]any{
 		"name": "alexandernyquist",
 	})
 
@@ -420,7 +419,7 @@ func TestRenderHTMLTemplateEmptyName(t *testing.T) {
 	templ := template.Must(template.New("").Parse(`Hello {{.name}}`))
 
 	htmlRender := HTMLProduction{Template: templ}
-	instance := htmlRender.Instance("", map[string]interface{}{
+	instance := htmlRender.Instance("", map[string]any{
 		"name": "alexandernyquist",
 	})
 
@@ -433,12 +432,13 @@ func TestRenderHTMLTemplateEmptyName(t *testing.T) {
 
 func TestRenderHTMLDebugFiles(t *testing.T) {
 	w := httptest.NewRecorder()
-	htmlRender := HTMLDebug{Files: []string{"../testdata/template/hello.tmpl"},
+	htmlRender := HTMLDebug{
+		Files:   []string{"../testdata/template/hello.tmpl"},
 		Glob:    "",
 		Delims:  Delims{Left: "{[{", Right: "}]}"},
 		FuncMap: nil,
 	}
-	instance := htmlRender.Instance("hello.tmpl", map[string]interface{}{
+	instance := htmlRender.Instance("hello.tmpl", map[string]any{
 		"name": "thinkerou",
 	})
 
@@ -451,12 +451,13 @@ func TestRenderHTMLDebugFiles(t *testing.T) {
 
 func TestRenderHTMLDebugGlob(t *testing.T) {
 	w := httptest.NewRecorder()
-	htmlRender := HTMLDebug{Files: nil,
+	htmlRender := HTMLDebug{
+		Files:   nil,
 		Glob:    "../testdata/template/hello*",
 		Delims:  Delims{Left: "{[{", Right: "}]}"},
 		FuncMap: nil,
 	}
-	instance := htmlRender.Instance("hello.tmpl", map[string]interface{}{
+	instance := htmlRender.Instance("hello.tmpl", map[string]any{
 		"name": "thinkerou",
 	})
 
@@ -468,7 +469,8 @@ func TestRenderHTMLDebugGlob(t *testing.T) {
 }
 
 func TestRenderHTMLDebugPanics(t *testing.T) {
-	htmlRender := HTMLDebug{Files: nil,
+	htmlRender := HTMLDebug{
+		Files:   nil,
 		Glob:    "",
 		Delims:  Delims{"{{", "}}"},
 		FuncMap: nil,

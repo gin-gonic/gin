@@ -1,4 +1,4 @@
-// Copyright 2014 Manu Martinez-Almeida.  All rights reserved.
+// Copyright 2014 Manu Martinez-Almeida. All rights reserved.
 // Use of this source code is governed by a MIT style
 // license that can be found in the LICENSE file.
 
@@ -12,7 +12,7 @@ import (
 
 // BindWith binds the passed struct pointer using the specified binding engine.
 // See the binding package.
-func (c *Context) BindWith(obj interface{}, b binding.Binding) error {
+func (c *Context) BindWith(obj any, b binding.Binding) error {
 	log.Println(`BindWith(\"interface{}, binding.Binding\") error is going to
 	be deprecated, please check issue #662 and either use MustBindWith() if you
 	want HTTP 400 to be automatically returned if any error occur, or use
