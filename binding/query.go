@@ -12,7 +12,6 @@ func (queryBinding) Name() string {
 	return "query"
 }
 
-// TODO: Add tests
 func (q queryBinding) Bind(req *http.Request, obj any) error {
 	values := req.URL.Query()
 	if err := mapFormByTag(obj, values, q.Name()); err != nil {
