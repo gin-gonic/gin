@@ -16,15 +16,17 @@ import (
 // AuthUserKey is the cookie name for user credential in basic auth.
 const AuthUserKey = "user"
 
-// Accounts defines a key/value for user/pass list of authorized logins.
-type Accounts map[string]string
+type (
+	// Accounts defines a key/value for user/pass list of authorized logins.
+	Accounts map[string]string
 
-type authPair struct {
-	value string
-	user  string
-}
+	authPair struct {
+		value string
+		user  string
+	}
 
-type authPairs []authPair
+	authPairs []authPair
+)
 
 func (a authPairs) searchCredential(authValue string) (string, bool) {
 	if authValue == "" {
