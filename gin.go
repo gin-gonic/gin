@@ -1,4 +1,4 @@
-// Copyright 2014 Manu Martinez-Almeida.  All rights reserved.
+// Copyright 2014 Manu Martinez-Almeida. All rights reserved.
 // Use of this source code is governed by a MIT style
 // license that can be found in the LICENSE file.
 
@@ -147,6 +147,9 @@ type Engine struct {
 	// UseH2C enable h2c support.
 	UseH2C bool
 
+	// ContextWithFallback enable fallback Context.Deadline(), Context.Done(), Context.Err() and Context.Value() when Context.Request.Context() is not nil.
+	ContextWithFallback bool
+
 	delims           render.Delims
 	secureJSONPrefix string
 	HTMLRender       render.HTMLRender
@@ -195,7 +198,7 @@ func New() *Engine {
 		trees:                  make(methodTrees, 0, 9),
 		delims:                 render.Delims{Left: "{{", Right: "}}"},
 		secureJSONPrefix:       "while(1);",
-		trustedProxies:         []string{"0.0.0.0/0"},
+		trustedProxies:         []string{"0.0.0.0/0", "::/0"},
 		trustedCIDRs:           defaultTrustedCIDRs,
 	}
 	engine.RouterGroup.engine = engine
@@ -207,6 +210,7 @@ func New() *Engine {
 
 // Default returns an Engine instance with the Logger and Recovery middleware already attached.
 func Default() *Engine {
+	println("hello hsy")
 	debugPrintWARNINGDefault()
 	engine := New()
 	engine.Use(Logger(), Recovery())
@@ -337,7 +341,6 @@ func (engine *Engine) addRoute(method, path string, handlers HandlersChain) {
 	}
 }
 
-
 func (engine *Engine) delRoute(method, path string) {
 	assert1(path[0] == '/', "path must begin with '/'")
 	assert1(method != "", "HTTP method can not be empty")
@@ -354,15 +357,6 @@ func (engine *Engine) delRoute(method, path string) {
 		parent.delChildNode(target)
 	}else {
 		root.delChildNode(target)
-	}
-
-	// Update maxParams
-	if paramsCount := countParams(path); paramsCount == engine.maxParams {
-		//TODO:find new maxParams
-	}
-
-	if sectionsCount := countSections(path); sectionsCount == engine.maxSections {
-		//TODO:find new maxParams
 	}
 }
 
@@ -390,7 +384,7 @@ func (n *node) delChildNode(target *node){
 			if target.path[0] == n.indices[i] {
 				n.indices = n.indices[:i] + n.indices[i+1:]
 				n.children = append(n.children[:i], n.children[i+1:]...)
-				//TODO:update other params of n
+				n.priority --
 				break
 			}
 		}
@@ -399,19 +393,15 @@ func (n *node) delChildNode(target *node){
 			if target.path[0] == n.indices[i] {
 				n.indices = n.indices[:i] + string(target.children[0].path[0]) + n.indices[i+1:]
 				n.children[i] = target.children[0]
-				//TODO:update other params of n
+				n.priority --
 				break
 			}
 		}
 	default:
 		target.handlers = nil
-		//TODO:update other params of target
 	}
-	if len(n.children) == 1 {
-		//TODO:combine n and n.children[0]
-	}
-
 }
+
 
 // Routes returns a slice of registered routes, including some useful information, such as:
 // the http method, path and the handler name.
