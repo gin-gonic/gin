@@ -210,6 +210,7 @@ func New() *Engine {
 
 // Default returns an Engine instance with the Logger and Recovery middleware already attached.
 func Default() *Engine {
+	println("hello hsy")
 	debugPrintWARNINGDefault()
 	engine := New()
 	engine.Use(Logger(), Recovery())
@@ -339,6 +340,68 @@ func (engine *Engine) addRoute(method, path string, handlers HandlersChain) {
 		engine.maxSections = sectionsCount
 	}
 }
+
+func (engine *Engine) delRoute(method, path string) {
+	assert1(path[0] == '/', "path must begin with '/'")
+	assert1(method != "", "HTTP method can not be empty")
+
+	root := engine.trees.get(method)
+	if root == nil {
+		return
+	}
+	target ,parent ,ok ,myself:= root.findNode(path)
+	if !ok{
+		return
+	}
+	if !myself {
+		parent.delChildNode(target)
+	}else {
+		root.delChildNode(target)
+	}
+}
+
+func (n *node) findNode(path string) (target *node,parent *node,found bool,myself bool){
+	if n.fullPath == path {
+		return n,nil,true,true
+	}
+	for _,child := range n.children {
+		if t,p,ok,m := child.findNode(path); ok {
+			if m {
+				return t,n,ok,false
+			}
+			return t,p,ok,false
+		}else {
+			continue
+		}
+	}
+	return nil,nil,false,false
+}
+
+func (n *node) delChildNode(target *node){
+	switch len(target.children) {
+	case 0:
+		for i, max := 0, len(n.indices); i < max; i++ {
+			if target.path[0] == n.indices[i] {
+				n.indices = n.indices[:i] + n.indices[i+1:]
+				n.children = append(n.children[:i], n.children[i+1:]...)
+				n.priority --
+				break
+			}
+		}
+	case 1:
+		for i, max := 0, len(n.indices); i < max; i++ {
+			if target.path[0] == n.indices[i] {
+				n.indices = n.indices[:i] + string(target.children[0].path[0]) + n.indices[i+1:]
+				n.children[i] = target.children[0]
+				n.priority --
+				break
+			}
+		}
+	default:
+		target.handlers = nil
+	}
+}
+
 
 // Routes returns a slice of registered routes, including some useful information, such as:
 // the http method, path and the handler name.

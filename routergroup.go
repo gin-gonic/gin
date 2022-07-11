@@ -89,6 +89,20 @@ func (group *RouterGroup) handle(httpMethod, relativePath string, handlers Handl
 	return group.returnObj()
 }
 
+func (group *RouterGroup) unhandle(httpMethod, relativePath string) IRoutes {
+	absolutePath := group.calculateAbsolutePath(relativePath)
+	group.engine.delRoute(httpMethod, absolutePath)
+	return group.returnObj()
+}
+
+// REMOVE is the way to delete route
+func (group *RouterGroup) REMOVE(httpMethod,relativePath string) IRoutes {
+	if matched := regEnLetter.MatchString(httpMethod); !matched {
+		panic("http method " + httpMethod + " is not valid")
+	}
+	return group.unhandle(httpMethod, relativePath)
+}
+
 // Handle registers a new request handle and middleware with the given path and method.
 // The last handler should be the real handler, the other ones should be middleware that can and should be shared among different routes.
 // See the example code in GitHub.
