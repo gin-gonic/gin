@@ -813,7 +813,7 @@ walk: // Outer loop for walking the tree
 				end++
 			}
 
-			// Add param value to case insensitive path
+			// Add param value to case-insensitive path
 			ciPath = append(ciPath, path[:end]...)
 
 			// We need to go deeper!
