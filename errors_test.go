@@ -35,7 +35,7 @@ func TestError(t *testing.T) {
 	jsonBytes, _ := json.Marshal(err)
 	assert.Equal(t, "{\"error\":\"test error\",\"meta\":\"some data\"}", string(jsonBytes))
 
-	err.SetMeta(H{ // nolint: errcheck
+	err.SetMeta(H{ // nolint: err check
 		"status": "200",
 		"data":   "some data",
 	})
