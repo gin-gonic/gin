@@ -1130,6 +1130,14 @@ func (c *Context) NegotiateFormat(offered ...string) string {
 		for _, offer := range offered {
 			// According to RFC 2616 and RFC 2396, non-ASCII characters are not allowed in headers,
 			// therefore we can just iterate over the string without casting it into []rune
+
+			//When the lengths are not equal,
+			//offer must end with '*'
+			//in order to avoid getting index out of range errors
+			if len(accepted) > len(offer) && offer[len(offer)-1] != '*' {
+				continue
+			}
+
 			i := 0
 			for ; i < len(accepted); i++ {
 				if accepted[i] == '*' || offer[i] == '*' {
@@ -1139,7 +1147,7 @@ func (c *Context) NegotiateFormat(offered ...string) string {
 					break
 				}
 			}
-			if i == len(accepted) {
+			if i == len(accepted) && i == len(offer) {
 				return offer
 			}
 		}

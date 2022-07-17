@@ -1296,6 +1296,15 @@ func TestContextNegotiationFormatWithWildcardAccept(t *testing.T) {
 	assert.Equal(t, c.NegotiateFormat(MIMEJSON), "")
 	assert.Equal(t, c.NegotiateFormat(MIMEXML), "")
 	assert.Equal(t, c.NegotiateFormat(MIMEHTML), MIMEHTML)
+
+	c, _ = CreateTestContext(httptest.NewRecorder())
+	c.Request, _ = http.NewRequest("POST", "/", nil)
+	c.Request.Header.Add("Accept", "text/html")
+
+	assert.Equal(t, c.NegotiateFormat("text/htm"), "")
+	assert.Equal(t, c.NegotiateFormat("text/htmll"), "")
+	assert.Equal(t, c.NegotiateFormat("tex/*"), "")
+	assert.Equal(t, c.NegotiateFormat("text/html"), MIMEHTML)
 }
 
 func TestContextNegotiationFormatCustom(t *testing.T) {
