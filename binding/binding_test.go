@@ -163,9 +163,6 @@ func TestBindingDefault(t *testing.T) {
 	assert.Equal(t, ProtoBuf, Default("POST", MIMEPROTOBUF))
 	assert.Equal(t, ProtoBuf, Default("PUT", MIMEPROTOBUF))
 
-	assert.Equal(t, YAML, Default("POST", MIMEYAML))
-	assert.Equal(t, YAML, Default("PUT", MIMEYAML))
-
 	assert.Equal(t, TOML, Default("POST", MIMETOML))
 	assert.Equal(t, TOML, Default("PUT", MIMETOML))
 }
@@ -469,27 +466,6 @@ func TestBindingTOMLFail(t *testing.T) {
 		TOML, "toml",
 		"/", "/",
 		`foo=\n"bar"`, `bar="foo"`)
-}
-
-func TestBindingYAML(t *testing.T) {
-	testBodyBinding(t,
-		YAML, "yaml",
-		"/", "/",
-		`foo: bar`, `bar: foo`)
-}
-
-func TestBindingYAMLStringMap(t *testing.T) {
-	// YAML is a superset of JSON, so the test below is JSON (to avoid newlines)
-	testBodyBindingStringMap(t, YAML,
-		"/", "/",
-		`{"foo": "bar", "hello": "world"}`, `{"nested": {"foo": "bar"}}`)
-}
-
-func TestBindingYAMLFail(t *testing.T) {
-	testBodyBindingFail(t,
-		YAML, "yaml",
-		"/", "/",
-		`foo:\nbar`, `bar: foo`)
 }
 
 func createFormPostRequest(t *testing.T) *http.Request {

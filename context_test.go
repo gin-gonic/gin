@@ -1666,23 +1666,6 @@ func TestContextBindWithQuery(t *testing.T) {
 	assert.Equal(t, 0, w.Body.Len())
 }
 
-func TestContextBindWithYAML(t *testing.T) {
-	w := httptest.NewRecorder()
-	c, _ := CreateTestContext(w)
-
-	c.Request, _ = http.NewRequest("POST", "/", bytes.NewBufferString("foo: bar\nbar: foo"))
-	c.Request.Header.Add("Content-Type", MIMEXML) // set fake content-type
-
-	var obj struct {
-		Foo string `yaml:"foo"`
-		Bar string `yaml:"bar"`
-	}
-	assert.NoError(t, c.BindYAML(&obj))
-	assert.Equal(t, "foo", obj.Bar)
-	assert.Equal(t, "bar", obj.Foo)
-	assert.Equal(t, 0, w.Body.Len())
-}
-
 func TestContextBindWithTOML(t *testing.T) {
 	w := httptest.NewRecorder()
 	c, _ := CreateTestContext(w)
@@ -1813,23 +1796,6 @@ func TestContextShouldBindWithQuery(t *testing.T) {
 	assert.Equal(t, "bar", obj.Foo)
 	assert.Equal(t, "foo1", obj.Bar1)
 	assert.Equal(t, "bar1", obj.Foo1)
-	assert.Equal(t, 0, w.Body.Len())
-}
-
-func TestContextShouldBindWithYAML(t *testing.T) {
-	w := httptest.NewRecorder()
-	c, _ := CreateTestContext(w)
-
-	c.Request, _ = http.NewRequest("POST", "/", bytes.NewBufferString("foo: bar\nbar: foo"))
-	c.Request.Header.Add("Content-Type", MIMEXML) // set fake content-type
-
-	var obj struct {
-		Foo string `yaml:"foo"`
-		Bar string `yaml:"bar"`
-	}
-	assert.NoError(t, c.ShouldBindYAML(&obj))
-	assert.Equal(t, "foo", obj.Bar)
-	assert.Equal(t, "bar", obj.Foo)
 	assert.Equal(t, 0, w.Body.Len())
 }
 

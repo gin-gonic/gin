@@ -632,11 +632,6 @@ func (c *Context) BindQuery(obj any) error {
 	return c.MustBindWith(obj, binding.Query)
 }
 
-// BindYAML is a shortcut for c.MustBindWith(obj, binding.YAML).
-func (c *Context) BindYAML(obj any) error {
-	return c.MustBindWith(obj, binding.YAML)
-}
-
 // BindTOML is a shortcut for c.MustBindWith(obj, binding.TOML).
 func (c *Context) BindTOML(obj interface{}) error {
 	return c.MustBindWith(obj, binding.TOML)
@@ -693,11 +688,6 @@ func (c *Context) ShouldBindXML(obj any) error {
 // ShouldBindQuery is a shortcut for c.ShouldBindWith(obj, binding.Query).
 func (c *Context) ShouldBindQuery(obj any) error {
 	return c.ShouldBindWith(obj, binding.Query)
-}
-
-// ShouldBindYAML is a shortcut for c.ShouldBindWith(obj, binding.YAML).
-func (c *Context) ShouldBindYAML(obj any) error {
-	return c.ShouldBindWith(obj, binding.YAML)
 }
 
 // ShouldBindTOML is a shortcut for c.ShouldBindWith(obj, binding.TOML).
