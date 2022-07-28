@@ -302,12 +302,11 @@ func setTimeField(val string, structField reflect.StructField, value reflect.Val
 			return err
 		}
 
-		d := time.Duration(1)
-		if tf == "unixnano" {
-			d = time.Second
+		t := time.Unix(0, tv)
+		if tf == "unix" {
+			t = time.Unix(tv, 0)
 		}
 
-		t := time.Unix(tv/int64(d), tv%int64(d))
 		value.Set(reflect.ValueOf(t))
 		return nil
 	}
