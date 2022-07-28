@@ -296,15 +296,20 @@ func setTimeField(val string, structField reflect.StructField, value reflect.Val
 	}
 
 	switch tf := strings.ToLower(timeFormat); tf {
-	case "unix", "unixnano":
+	case "unix", "unixmilli", "unixmicro", "unixnano":
 		tv, err := strconv.ParseInt(val, 10, 64)
 		if err != nil {
 			return err
 		}
 
 		t := time.Unix(0, tv)
-		if tf == "unix" {
+		switch tf {
+		case "unix":
 			t = time.Unix(tv, 0)
+		case "unixmilli":
+			t = time.Unix(tv/1e3, (tv%1e3)*1e6)
+		case "unixmicro":
+			t = time.Unix(tv/1e6, (tv%1e6)*1e3)
 		}
 
 		value.Set(reflect.ValueOf(t))
