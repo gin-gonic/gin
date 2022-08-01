@@ -204,6 +204,7 @@ go build -tags=jsoniter .
 ```sh
 go build -tags=go_json .
 ```
+
 [sonic](https://github.com/bytedance/sonic) (you have to ensure that your cpu support avx instruction.)
 
 ```sh
