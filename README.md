@@ -205,6 +205,12 @@ go build -tags=jsoniter .
 go build -tags=go_json .
 ```
 
+[sonic](https://github.com/bytedance/sonic) (you have to ensure that your cpu support avx instruction.)
+
+```sh
+$ go build -tags="sonic avx" .
+```
+
 ## Build without `MsgPack` rendering feature
 
 Gin enables `MsgPack` rendering feature by default. But you can disable this feature by specifying `nomsgpack` build tag.
