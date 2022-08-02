@@ -18,7 +18,7 @@ import (
 	"strings"
 	"sync"
 	"time"
-
+	"strconv"
 	"github.com/gin-contrib/sse"
 	"github.com/gin-gonic/gin/binding"
 	"github.com/gin-gonic/gin/render"
@@ -376,6 +376,69 @@ func (c *Context) GetStringMapStringSlice(key string) (smss map[string][]string)
 	return
 }
 
+// Force Type convert
+func StringToInt(s string) (i int) {
+	i, err := strconv.Atoi(s)
+	if err != nil {
+		return 0
+	} else {
+		return i
+	}
+}
+
+func StringToInt32(s string) (i int32) {
+	return int32(StringToInt(s))
+}
+
+func StringToUint(s string) (i uint) {
+	k, _ := strconv.ParseUint(s, 10, 64)
+	i = uint(k)
+	return i
+}
+
+func StringToUint32(s string) (i uint32) {
+	return uint32(StringToUint(s))
+}
+
+func StringToInt64(s string) (i int64) {
+	i, err := strconv.ParseInt(s, 10, 64)
+	if err != nil {
+		return 0
+	} else {
+		return i
+	}
+}
+
+func StringToUint64(s string) (i uint64) {
+	return uint64(StringToInt64(s))
+}
+
+func StringToFloat32(s string) (i float32) {
+	v, err := strconv.ParseFloat(s, 32)
+	if err != nil {
+		return 0
+	}
+	return float32(v)
+}
+
+func StringToFloat64(s string) (i float64) {
+	v, err := strconv.ParseFloat(s, 64)
+	if err != nil {
+		return 0
+	}
+	return v
+}
+
+func Int64ToString(i int64) (s string) {
+	s = strconv.FormatInt(i, 10)
+	return s
+}
+
+func IntToString(i int) (s string) {
+	s = strconv.Itoa(i)
+	return s
+}
+
 /************************************/
 /************ INPUT DATA ************/
 /************************************/
@@ -386,8 +449,59 @@ func (c *Context) GetStringMapStringSlice(key string) (smss map[string][]string)
 //         // a GET request to /user/john
 //         id := c.Param("id") // id == "john"
 //     })
+// Fetch Data from GET POST COOKIE Route/Param
 func (c *Context) Param(key string) string {
-	return c.Params.ByName(key)
+	v := c.Params.ByName(key)
+	if v == "" {
+		v := c.Query(key)
+		if v == "" {
+			v = c.PostForm(key)
+			if v == "" {
+				v, _ = c.Cookie(key)
+			}
+		}
+	}
+	return v
+}
+
+func (c *Context) ParamInt(key string) int {
+	v := c.Param(key)
+	return StringToInt(v)
+}
+
+func (c *Context) ParamUint(key string) uint {
+	v := c.Param(key)
+	return StringToUint(v)
+}
+
+func (c *Context) ParamInt32(key string) int32 {
+	v := c.Param(key)
+	return StringToInt32(v)
+}
+
+func (c *Context) ParamUint32(key string) uint32 {
+	v := c.Param(key)
+	return StringToUint32(v)
+}
+
+func (c *Context) ParamInt64(key string) int64 {
+	v := c.Param(key)
+	return StringToInt64(v)
+}
+
+func (c *Context) ParamUint64(key string) uint64 {
+	v := c.Param(key)
+	return StringToUint64(v)
+}
+
+func (c *Context) ParamFloat(key string) float32 {
+	v := c.Param(key)
+	return StringToFloat32(v)
+}
+
+func (c *Context) ParamFloat64(key string) float64 {
+	v := c.Param(key)
+	return StringToFloat64(v)
 }
 
 // AddParam adds param to context and
