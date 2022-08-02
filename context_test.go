@@ -1397,19 +1397,12 @@ func TestContextError(t *testing.T) {
 	assert.Equal(t, ErrorTypePublic, c.Errors[1].Type)
 
 	assert.Equal(t, c.Errors.Last(), c.Errors[1])
-
-	defer func() {
-		if recover() == nil {
-			t.Error("didn't panic")
-		}
-	}()
-	c.Error(nil) // nolint: errcheck
 }
 
 func TestContextTypedError(t *testing.T) {
 	c, _ := CreateTestContext(httptest.NewRecorder())
-	c.Error(errors.New("externo 0")).SetType(ErrorTypePublic)  // nolint: errcheck
-	c.Error(errors.New("interno 0")).SetType(ErrorTypePrivate) // nolint: errcheck
+	c.ErrorBindType(errors.New("externo 0"), ErrorTypePublic)
+	c.ErrorBindType(errors.New("interno 0"), ErrorTypePrivate)
 
 	for _, err := range c.Errors.ByType(ErrorTypePublic) {
 		assert.Equal(t, ErrorTypePublic, err.Type)
@@ -1424,7 +1417,8 @@ func TestContextAbortWithError(t *testing.T) {
 	w := httptest.NewRecorder()
 	c, _ := CreateTestContext(w)
 
-	c.AbortWithError(http.StatusUnauthorized, errors.New("bad input")).SetMeta("some input") // nolint: errcheck
+	err := WrapError(errors.New("bad input")).SetMeta("some input")
+	c.AbortWithError(http.StatusUnauthorized, err) // nolint: errcheck
 
 	assert.Equal(t, http.StatusUnauthorized, w.Code)
 	assert.Equal(t, abortIndex, c.index)
