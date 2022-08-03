@@ -79,6 +79,7 @@ Gin is a web framework written in Go (Golang). It features a martini-like API wi
     - [http2 server push](#http2-server-push)
     - [Define format for the log of routes](#define-format-for-the-log-of-routes)
     - [Set and get a cookie](#set-and-get-a-cookie)
+    - [Custom json codec at runtime](#custom-json-codec-at-runtime)
   - [Don't trust all proxies](#dont-trust-all-proxies)
   - [Testing](#testing)
   - [Users](#users)
@@ -2241,6 +2242,66 @@ func main() {
     })
 
     router.Run()
+}
+```
+
+### Custom json codec at runtime
+
+Gin support custom json serialization and deserialization logic without using compile tags.
+
+1. Define a custom struct implements the `api.JsonApi` interface.
+
+2. Before your engine starts, assign values to `json.Api` using the custom struct.
+
+```go
+package main
+
+import (
+    "io"
+
+    "github.com/gin-gonic/gin"
+    "github.com/gin-gonic/gin/codec/api"
+    "github.com/gin-gonic/gin/codec/json"
+    jsoniter "github.com/json-iterator/go"
+)
+
+var customConfig = jsoniter.Config{
+    EscapeHTML:             true,
+    SortMapKeys:            true,
+    ValidateJsonRawMessage: true,
+}.Froze()
+
+// implement api.JsonApi
+type customJsonApi struct {
+}
+
+func (j customJsonApi) Marshal(v any) ([]byte, error) {
+    return customConfig.Marshal(v)
+}
+
+func (j customJsonApi) Unmarshal(data []byte, v any) error {
+    return customConfig.Unmarshal(data, v)
+}
+
+func (j customJsonApi) MarshalIndent(v any, prefix, indent string) ([]byte, error) {
+    return customConfig.MarshalIndent(v, prefix, indent)
+}
+
+func (j customJsonApi) NewEncoder(writer io.Writer) api.JsonEncoder {
+    return customConfig.NewEncoder(writer)
+}
+
+func (j customJsonApi) NewDecoder(reader io.Reader) api.JsonDecoder {
+    return customConfig.NewDecoder(reader)
+}
+
+func main() {
+    //Replace the default json api
+    json.Api = customJsonApi{}
+
+    //Start your gin engine
+    router := gin.Default()
+    router.Run(":8080")
 }
 ```
 
