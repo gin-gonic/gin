@@ -160,7 +160,12 @@ func TestTreeWildcard(t *testing.T) {
 		"/info/:user/project/:project",
 		"/info/:user/project/golang",
 		"/aa/*xx",
+		"/ab/aa",
 		"/ab/*xx",
+		"/ab/zz",
+		"/abc/def",
+		"/abc/d/:ee/*all",
+		"/abc/de/*all",
 		"/:cc",
 		"/c1/:dd/e",
 		"/c1/:dd/e1",
@@ -170,6 +175,7 @@ func TestTreeWildcard(t *testing.T) {
 		"/:cc/:dd/:ee/:ff/gg",
 		"/:cc/:dd/:ee/:ff/:gg/hh",
 		"/get/test/abc/",
+		"/get/:param/*all",
 		"/get/:param/abc/",
 		"/something/:paramname/thirdthing",
 		"/something/secondthing/test",
@@ -225,7 +231,16 @@ func TestTreeWildcard(t *testing.T) {
 		{"/info/gordon/project/go", false, "/info/:user/project/:project", Params{Param{Key: "user", Value: "gordon"}, Param{Key: "project", Value: "go"}}},
 		{"/info/gordon/project/golang", false, "/info/:user/project/golang", Params{Param{Key: "user", Value: "gordon"}}},
 		{"/aa/aa", false, "/aa/*xx", Params{Param{Key: "xx", Value: "/aa"}}},
+		{"/ab/aa", false, "/ab/aa", nil},
+		{"/ab/zz", false, "/ab/zz", nil},
 		{"/ab/ab", false, "/ab/*xx", Params{Param{Key: "xx", Value: "/ab"}}},
+		{"/ab/aab", false, "/ab/*xx", Params{Param{Key: "xx", Value: "/aab"}}},
+		{"/ab/", false, "/ab/*xx", Params{Param{Key: "xx", Value: "/"}}},
+		{"/abc/d/e", true, "/abc/d/:ee/*all", Params{Param{Key: "ee", Value: "e"}}},
+		{"/abc/d//", false, "/abc/d/:ee/*all", Params{Param{Key: "ee", Value: ""}, Param{Key: "all", Value: "/"}}},
+		{"/abc/deX", true, "", Params{Param{Key: "cc", Value: "abc"}, Param{Key: "dd", Value: "deX"}}},
+		{"/abc/defX", true, "", Params{Param{Key: "cc", Value: "abc"}, Param{Key: "dd", Value: "defX"}}},
+		{"/abc/d/", true, "", Params{Param{Key: "cc", Value: "abc"}, Param{Key: "dd", Value: "d"}}},
 		{"/a", false, "/:cc", Params{Param{Key: "cc", Value: "a"}}},
 		// * Error with argument being intercepted
 		// new PR handle (/all /all/cc /a/cc)
@@ -261,6 +276,10 @@ func TestTreeWildcard(t *testing.T) {
 		{"/get/t/abc/", false, "/get/:param/abc/", Params{Param{Key: "param", Value: "t"}}},
 		{"/get/aa/abc/", false, "/get/:param/abc/", Params{Param{Key: "param", Value: "aa"}}},
 		{"/get/abas/abc/", false, "/get/:param/abc/", Params{Param{Key: "param", Value: "abas"}}},
+		{"/get/testt/abc", true, "/get/:param/abc/", Params{Param{Key: "param", Value: "testt"}}},
+		{"/get/test/", true, "/get/:param", Params{Param{Key: "param", Value: "test"}}},
+		{"/get/test/abcde/", false, "/get/:param/*all", Params{Param{Key: "param", Value: "test"}, Param{Key: "all", Value: "/abcde/"}}},
+		{"/get/test//abc", false, "/get/:param/*all", Params{Param{Key: "param", Value: "test"}, Param{Key: "all", Value: "//abc"}}},
 		{"/something/secondthing/test", false, "/something/secondthing/test", nil},
 		{"/something/abcdad/thirdthing", false, "/something/:paramname/thirdthing", Params{Param{Key: "paramname", Value: "abcdad"}}},
 		{"/something/secondthingaaaa/thirdthing", false, "/something/:paramname/thirdthing", Params{Param{Key: "paramname", Value: "secondthingaaaa"}}},
@@ -402,12 +421,12 @@ func TestTreeWildcardConflict(t *testing.T) {
 		{"/cmd/:tool/:badsub/details", true},
 		{"/src/*filepath", false},
 		{"/src/:file", true},
-		{"/src/static.json", true},
+		{"/src/static.json", false},
 		{"/src/*filepathx", true},
-		{"/src/", true},
-		{"/src/foo/bar", true},
+		{"/src/", false},
+		{"/src/foo/bar", false},
 		{"/src1/", false},
-		{"/src1/*filepath", true},
+		{"/src1/*filepath", false},
 		{"/src2*filepath", true},
 		{"/src2/*filepath", false},
 		{"/search/:query", false},
@@ -436,7 +455,7 @@ func TestTreeChildConflict(t *testing.T) {
 		{"/cmd/:tool/misc", false},
 		{"/cmd/:tool/:othersub", true},
 		{"/src/AUTHORS", false},
-		{"/src/*filepath", true},
+		{"/src/*filepath", false},
 		{"/user_x", false},
 		{"/user_:name", false},
 		{"/id/:id", false},
@@ -474,7 +493,7 @@ func TestTreeDuplicatePath(t *testing.T) {
 		}
 	}
 
-	//printChildren(tree, "")
+	// printChildren(tree, "")
 
 	checkRequests(t, tree, testRequests{
 		{"/", false, "/", nil},
@@ -515,12 +534,53 @@ func TestTreeCatchAllConflict(t *testing.T) {
 	testRoutes(t, routes)
 }
 
-func TestTreeCatchAllConflictRoot(t *testing.T) {
-	routes := []testRoute{
-		{"/", false},
-		{"/*filepath", true},
+func TestTreeCatchAllRoot(t *testing.T) {
+	tree := &node{}
+	routes := []string{
+		"/index.html",
+		"/*all",
 	}
-	testRoutes(t, routes)
+	for _, route := range routes {
+		tree.addRoute(route, fakeHandler(route))
+	}
+	checkRequests(t, tree, testRequests{
+		{"/", false, "/*all", Params{Param{"all", "/"}}},
+		{"/index.html", false, "/index.html", nil},
+		{"/users", false, "/*all", Params{Param{"all", "/users"}}},
+	}, true)
+
+	// More tests
+	tree = &node{}
+	routes = []string{
+		"/",
+		"/index.html",
+		"/*all",
+	}
+	for _, route := range routes {
+		tree.addRoute(route, fakeHandler(route))
+	}
+	checkRequests(t, tree, testRequests{
+		{"/", false, "/", nil},
+		{"/index.html", false, "/index.html", nil},
+		{"/users", false, "/*all", Params{Param{"all", "/users"}}},
+	}, true)
+}
+
+func TestCatchAllPathNoLeadingSlash(t *testing.T) {
+	tree := &node{}
+
+	routes := [...]string{
+		"/abc/defg/:param",
+		"/abc/def/*all",
+	}
+	for _, route := range routes {
+		tree.addRoute(route, fakeHandler(route))
+	}
+
+	checkRequests(t, tree, testRequests{
+		{"/abc/defX", true, "", nil},
+		{"/abc/def/X", false, "/abc/def/*all", Params{Param{"all", "/X"}}},
+	})
 }
 
 func TestTreeCatchMaxParams(t *testing.T) {
@@ -568,11 +628,13 @@ func TestTreeTrailingSlashRedirect(t *testing.T) {
 		"/b/",
 		"/search/:query",
 		"/cmd/:tool/",
+		"/src/",
 		"/src/*filepath",
 		"/x",
 		"/x/y",
 		"/y/",
 		"/y/z",
+		"/z/*all",
 		"/0/:id",
 		"/0/:id/1",
 		"/1/:id/",
@@ -614,6 +676,7 @@ func TestTreeTrailingSlashRedirect(t *testing.T) {
 		"/src",
 		"/x/",
 		"/y",
+		"/z",
 		"/0/go/",
 		"/1/go",
 		"/a",
@@ -891,9 +954,9 @@ func TestTreeWildcardConflictEx(t *testing.T) {
 		existPath    string
 		existSegPath string
 	}{
-		{"/who/are/foo", "/foo", `/who/are/\*you`, `/\*you`},
-		{"/who/are/foo/", "/foo/", `/who/are/\*you`, `/\*you`},
-		{"/who/are/foo/bar", "/foo/bar", `/who/are/\*you`, `/\*you`},
+		{"/who/are/:foo", "/:foo", `/who/are/\*you`, `/\*you`},
+		{"/who/are/:foo/", "/:foo/", `/who/are/\*you`, `/\*you`},
+		{"/who/are/*foo", `/\*foo`, `/who/are/\*you`, `/\*you`},
 		{"/con:nection", ":nection", `/con:tact`, `:tact`},
 	}
 
