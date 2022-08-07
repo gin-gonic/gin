@@ -27,9 +27,9 @@ jobs:
     needs: lint
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-latest]
-        go: [1.15, 1.16, 1.17, 1.18]
-        test-tags: ['', '-tags nomsgpack', '-tags "sonic avx"', '-tags go_json']
+        os: [ ubuntu-latest, macos-latest ]
+        go: [ 1.15, 1.16, 1.17, 1.18, 1.19 ]
+        test-tags: [ '', '-tags nomsgpack', '-tags "sonic avx"', '-tags go_json' ]
         include:
           - os: ubuntu-latest
             go-build: ~/.cache/go-build
