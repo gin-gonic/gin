@@ -352,15 +352,6 @@ func (n *node) insertChild(path string, fullPath string, handlers HandlersChain)
 			panic("catch-all routes are only allowed at the end of the path in path '" + fullPath + "'")
 		}
 
-		if len(n.path) > 0 && n.path[len(n.path)-1] == '/' {
-			pathSeg := strings.SplitN(n.children[0].path, "/", 2)[0]
-			panic("catch-all wildcard '" + path +
-				"' in new path '" + fullPath +
-				"' conflicts with existing path segment '" + pathSeg +
-				"' in existing prefix '" + n.path + pathSeg +
-				"'")
-		}
-
 		// currently fixed width 1 for '/'
 		i--
 		if path[i] != '/' {
