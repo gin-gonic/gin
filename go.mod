@@ -9,7 +9,7 @@ require (
 	github.com/goccy/go-json v0.9.10
 	github.com/json-iterator/go v1.1.12
 	github.com/mattn/go-isatty v0.0.14
-	github.com/pelletier/go-toml/v2 v2.0.2
+	github.com/pelletier/go-toml/v2 v2.0.3
 	github.com/stretchr/testify v1.8.0
 	github.com/ugorji/go/codec v1.2.7
 	golang.org/x/net v0.0.0-20210226172049-e18ecbb05110
