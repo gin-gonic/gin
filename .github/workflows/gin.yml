@@ -68,6 +68,10 @@ jobs:
         uses: codecov/codecov-action@v3
         with:
           flags: ${{ matrix.os }},go-${{ matrix.go }},${{ matrix.test-tags }}
+
+      - name: Format
+        if: matrix.go-version == '1.19.x'
+        run: diff -u <(echo -n) <(gofmt -d .)
   notification-gitter:
     needs: test
     runs-on: ubuntu-latest
