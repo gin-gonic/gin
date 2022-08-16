@@ -2354,3 +2354,11 @@ func TestContextAddParam(t *testing.T) {
 	assert.Equal(t, ok, true)
 	assert.Equal(t, value, v)
 }
+
+func TestContextValue(t *testing.T) {
+	c := &Context{}
+	id := "id"
+	// gin@v1.8.1 will panic
+	value := c.Value(id)
+	assert.Nil(t, value)
+}
