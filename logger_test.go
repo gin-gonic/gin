@@ -358,13 +358,13 @@ func TestErrorLogger(t *testing.T) {
 	router := New()
 	router.Use(ErrorLogger())
 	router.GET("/error", func(c *Context) {
-		c.Error(errors.New("this is an error")) // nolint: errcheck
+		c.Error(errors.New("this is an error")) //nolint: errcheck
 	})
 	router.GET("/abort", func(c *Context) {
-		c.AbortWithError(http.StatusUnauthorized, errors.New("no authorized")) // nolint: errcheck
+		c.AbortWithError(http.StatusUnauthorized, errors.New("no authorized")) //nolint: errcheck
 	})
 	router.GET("/print", func(c *Context) {
-		c.Error(errors.New("this is an error")) // nolint: errcheck
+		c.Error(errors.New("this is an error")) //nolint: errcheck
 		c.String(http.StatusInternalServerError, "hola!")
 	})
 
