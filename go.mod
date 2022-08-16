@@ -8,7 +8,7 @@ require (
 	github.com/go-playground/validator/v10 v10.10.0
 	github.com/goccy/go-json v0.9.10
 	github.com/json-iterator/go v1.1.12
-	github.com/mattn/go-isatty v0.0.14
+	github.com/mattn/go-isatty v0.0.16
 	github.com/pelletier/go-toml/v2 v2.0.2
 	github.com/stretchr/testify v1.8.0
 	github.com/ugorji/go/codec v1.2.7
@@ -30,7 +30,7 @@ require (
 	github.com/twitchyliquid64/golang-asm v0.15.1 // indirect
 	golang.org/x/arch v0.0.0-20220412001346-fc48f9fe4c15 // indirect
 	golang.org/x/crypto v0.0.0-20210711020723-a769d52b0f97 // indirect
-	golang.org/x/sys v0.0.0-20210806184541-e5e7981a1069 // indirect
+	golang.org/x/sys v0.0.0-20220811171246-fbc7d0a398ab // indirect
 	golang.org/x/text v0.3.6 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
