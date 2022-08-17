@@ -418,6 +418,23 @@ type skippedNode struct {
 func (n *node) getValue(path string, params *Params, skippedNodes *[]skippedNode, unescape bool) (value nodeValue) {
 	var globalParamsCount int16
 
+	rollbackSkipped := func() bool {
+		for l := len(*skippedNodes); l > 0; {
+			skippedNode := (*skippedNodes)[l-1]
+			*skippedNodes = (*skippedNodes)[:l-1]
+			if strings.HasSuffix(skippedNode.path, path) {
+				path = skippedNode.path
+				n = skippedNode.node
+				if value.params != nil {
+					*value.params = (*value.params)[:skippedNode.paramsCount]
+				}
+				globalParamsCount = skippedNode.paramsCount
+				return true
+			}
+		}
+		return false
+	}
+
 walk: // Outer loop for walking the tree
 	for {
 		prefix := n.path
@@ -457,18 +474,8 @@ walk: // Outer loop for walking the tree
 					// If the path at the end of the loop is not equal to '/' and the current node has no child nodes
 					// the current node needs to roll back to last valid skippedNode
 					if path != "/" {
-						for l := len(*skippedNodes); l > 0; {
-							skippedNode := (*skippedNodes)[l-1]
-							*skippedNodes = (*skippedNodes)[:l-1]
-							if strings.HasSuffix(skippedNode.path, path) {
-								path = skippedNode.path
-								n = skippedNode.node
-								if value.params != nil {
-									*value.params = (*value.params)[:skippedNode.paramsCount]
-								}
-								globalParamsCount = skippedNode.paramsCount
-								continue walk
-							}
+						if rollbackSkipped() {
+							continue walk
 						}
 					}
 
@@ -535,7 +542,11 @@ walk: // Outer loop for walking the tree
 						// No handle found. Check if a handle for this path + a
 						// trailing slash exists for TSR recommendation
 						n = n.children[0]
-						value.tsr = (n.path == "/" && n.handlers != nil) || (n.path == "" && n.indices == "/")
+						if (n.path == "/" && n.handlers != nil) || (n.path == "" && n.indices == "/") {
+							value.tsr = true
+						} else if rollbackSkipped() {
+							continue walk
+						}
 					}
 					return
 
@@ -574,20 +585,9 @@ walk: // Outer loop for walking the tree
 			// If the current path does not equal '/' and the node does not have a registered handle and the most recently matched node has a child node
 			// the current node needs to roll back to last valid skippedNode
 			if n.handlers == nil && path != "/" {
-				for l := len(*skippedNodes); l > 0; {
-					skippedNode := (*skippedNodes)[l-1]
-					*skippedNodes = (*skippedNodes)[:l-1]
-					if strings.HasSuffix(skippedNode.path, path) {
-						path = skippedNode.path
-						n = skippedNode.node
-						if value.params != nil {
-							*value.params = (*value.params)[:skippedNode.paramsCount]
-						}
-						globalParamsCount = skippedNode.paramsCount
-						continue walk
-					}
+				if rollbackSkipped() {
+					continue walk
 				}
-				//	n = latestNode.children[len(latestNode.children)-1]
 			}
 			// We should have reached the node containing the handle.
 			// Check if this node has a handle registered.
@@ -626,18 +626,8 @@ walk: // Outer loop for walking the tree
 
 		// roll back to last valid skippedNode
 		if !value.tsr && path != "/" {
-			for l := len(*skippedNodes); l > 0; {
-				skippedNode := (*skippedNodes)[l-1]
-				*skippedNodes = (*skippedNodes)[:l-1]
-				if strings.HasSuffix(skippedNode.path, path) {
-					path = skippedNode.path
-					n = skippedNode.node
-					if value.params != nil {
-						*value.params = (*value.params)[:skippedNode.paramsCount]
-					}
-					globalParamsCount = skippedNode.paramsCount
-					continue walk
-				}
+			if rollbackSkipped() {
+				continue walk
 			}
 		}
 
