@@ -42,7 +42,12 @@ func createMultipartRequest() *http.Request {
 	boundary := "--testboundary"
 	body := new(bytes.Buffer)
 	mw := multipart.NewWriter(body)
-	defer mw.Close()
+	defer func(mw *multipart.Writer) {
+		err := mw.Close()
+		if err != nil {
+			must(err)
+		}
+	}(mw)
 
 	must(mw.SetBoundary(boundary))
 	must(mw.WriteField("foo", "bar"))
@@ -76,7 +81,10 @@ func TestContextFormFile(t *testing.T) {
 		_, err = w.Write([]byte("test"))
 		assert.NoError(t, err)
 	}
-	mw.Close()
+	err = mw.Close()
+	if err != nil {
+		assert.Error(t, err)
+	}
 	c, _ := CreateTestContext(httptest.NewRecorder())
 	c.Request, _ = http.NewRequest("POST", "/", buf)
 	c.Request.Header.Set("Content-Type", mw.FormDataContentType())
@@ -97,7 +105,10 @@ func TestContextMultipartForm(t *testing.T) {
 		_, err = w.Write([]byte("test"))
 		assert.NoError(t, err)
 	}
-	mw.Close()
+	err = mw.Close()
+	if err != nil {
+		assert.Error(t, err)
+	}
 	c, _ := CreateTestContext(httptest.NewRecorder())
 	c.Request, _ = http.NewRequest("POST", "/", buf)
 	c.Request.Header.Set("Content-Type", mw.FormDataContentType())
@@ -112,7 +123,10 @@ func TestContextMultipartForm(t *testing.T) {
 func TestSaveUploadedOpenFailed(t *testing.T) {
 	buf := new(bytes.Buffer)
 	mw := multipart.NewWriter(buf)
-	mw.Close()
+	err := mw.Close()
+	if err != nil {
+		assert.Error(t, err)
+	}
 
 	c, _ := CreateTestContext(httptest.NewRecorder())
 	c.Request, _ = http.NewRequest("POST", "/", buf)
@@ -132,7 +146,10 @@ func TestSaveUploadedCreateFailed(t *testing.T) {
 		_, err = w.Write([]byte("test"))
 		assert.NoError(t, err)
 	}
-	mw.Close()
+	err = mw.Close()
+	if err != nil {
+		assert.Error(t, err)
+	}
 	c, _ := CreateTestContext(httptest.NewRecorder())
 	c.Request, _ = http.NewRequest("POST", "/", buf)
 	c.Request.Header.Set("Content-Type", mw.FormDataContentType())
