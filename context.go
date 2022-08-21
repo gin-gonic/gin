@@ -583,7 +583,10 @@ func (c *Context) FormFile(name string) (*multipart.FileHeader, error) {
 	if err != nil {
 		return nil, err
 	}
-	f.Close()
+	err = f.Close()
+	if err != nil {
+		return nil, err
+	}
 	return fh, err
 }
 
@@ -599,13 +602,23 @@ func (c *Context) SaveUploadedFile(file *multipart.FileHeader, dst string) error
 	if err != nil {
 		return err
 	}
-	defer src.Close()
+	defer func(src multipart.File) {
+		err = src.Close()
+		if err != nil {
+
+		}
+	}(src)
 
 	out, err := os.Create(dst)
 	if err != nil {
 		return err
 	}
-	defer out.Close()
+	defer func(out *os.File) {
+		err = out.Close()
+		if err != nil {
+
+		}
+	}(out)
 
 	_, err = io.Copy(out, src)
 	return err
