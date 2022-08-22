@@ -1,10 +1,11 @@
-// Copyright 2014 Manu Martinez-Almeida.  All rights reserved.
+// Copyright 2014 Manu Martinez-Almeida. All rights reserved.
 // Use of this source code is governed by a MIT style
 // license that can be found in the LICENSE file.
 
 package gin
 
 import (
+	"flag"
 	"io"
 	"os"
 
@@ -34,8 +35,9 @@ const (
 // Note that both Logger and Recovery provides custom ways to configure their
 // output io.Writer.
 // To support coloring in Windows use:
-// 		import "github.com/mattn/go-colorable"
-// 		gin.DefaultWriter = colorable.NewColorableStdout()
+//
+//	import "github.com/mattn/go-colorable"
+//	gin.DefaultWriter = colorable.NewColorableStdout()
 var DefaultWriter io.Writer = os.Stdout
 
 // DefaultErrorWriter is the default io.Writer used by Gin to debug errors
@@ -54,7 +56,11 @@ func init() {
 // SetMode sets gin mode according to input string.
 func SetMode(value string) {
 	if value == "" {
-		value = DebugMode
+		if flag.Lookup("test.v") != nil {
+			value = TestMode
+		} else {
+			value = DebugMode
+		}
 	}
 
 	switch value {

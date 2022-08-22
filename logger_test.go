@@ -1,4 +1,4 @@
-// Copyright 2014 Manu Martinez-Almeida.  All rights reserved.
+// Copyright 2014 Manu Martinez-Almeida. All rights reserved.
 // Use of this source code is governed by a MIT style
 // license that can be found in the LICENSE file.
 
@@ -208,6 +208,7 @@ func TestLoggerWithConfigFormatting(t *testing.T) {
 		// set dummy ClientIP
 		c.Request.Header.Set("X-Forwarded-For", "20.20.20.20")
 		gotKeys = c.Keys
+		time.Sleep(time.Millisecond)
 	})
 	PerformRequest(router, "GET", "/example?a=100")
 
@@ -357,13 +358,13 @@ func TestErrorLogger(t *testing.T) {
 	router := New()
 	router.Use(ErrorLogger())
 	router.GET("/error", func(c *Context) {
-		c.Error(errors.New("this is an error")) // nolint: errcheck
+		c.Error(errors.New("this is an error")) //nolint: errcheck
 	})
 	router.GET("/abort", func(c *Context) {
-		c.AbortWithError(http.StatusUnauthorized, errors.New("no authorized")) // nolint: errcheck
+		c.AbortWithError(http.StatusUnauthorized, errors.New("no authorized")) //nolint: errcheck
 	})
 	router.GET("/print", func(c *Context) {
-		c.Error(errors.New("this is an error")) // nolint: errcheck
+		c.Error(errors.New("this is an error")) //nolint: errcheck
 		c.String(http.StatusInternalServerError, "hola!")
 	})
 

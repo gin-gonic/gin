@@ -1,4 +1,4 @@
-// Copyright 2014 Manu Martinez-Almeida.  All rights reserved.
+// Copyright 2014 Manu Martinez-Almeida. All rights reserved.
 // Use of this source code is governed by a MIT style
 // license that can be found in the LICENSE file.
 
@@ -165,6 +165,9 @@ func TestBindingDefault(t *testing.T) {
 
 	assert.Equal(t, YAML, Default("POST", MIMEYAML))
 	assert.Equal(t, YAML, Default("PUT", MIMEYAML))
+
+	assert.Equal(t, TOML, Default("POST", MIMETOML))
+	assert.Equal(t, TOML, Default("PUT", MIMETOML))
 }
 
 func TestBindingJSONNilBody(t *testing.T) {
@@ -452,6 +455,20 @@ func TestBindingXMLFail(t *testing.T) {
 		XML, "xml",
 		"/", "/",
 		"<map><foo>bar<foo></map>", "<map><bar>foo</bar></map>")
+}
+
+func TestBindingTOML(t *testing.T) {
+	testBodyBinding(t,
+		TOML, "toml",
+		"/", "/",
+		`foo="bar"`, `bar="foo"`)
+}
+
+func TestBindingTOMLFail(t *testing.T) {
+	testBodyBindingFail(t,
+		TOML, "toml",
+		"/", "/",
+		`foo=\n"bar"`, `bar="foo"`)
 }
 
 func TestBindingYAML(t *testing.T) {
@@ -1339,10 +1356,10 @@ func testProtoBodyBindingFail(t *testing.T, b Binding, name, path, badPath, body
 	err := b.Bind(req, &obj)
 	assert.Error(t, err)
 
-	invalid_obj := FooStruct{}
+	invalidobj := FooStruct{}
 	req.Body = ioutil.NopCloser(strings.NewReader(`{"msg":"hello"}`))
 	req.Header.Add("Content-Type", MIMEPROTOBUF)
-	err = b.Bind(req, &invalid_obj)
+	err = b.Bind(req, &invalidobj)
 	assert.Error(t, err)
 	assert.Equal(t, err.Error(), "obj is not ProtoMessage")
 

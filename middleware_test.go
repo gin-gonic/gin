@@ -1,4 +1,4 @@
-// Copyright 2014 Manu Martinez-Almeida.  All rights reserved.
+// Copyright 2014 Manu Martinez-Almeida. All rights reserved.
 // Use of this source code is governed by a MIT style
 // license that can be found in the LICENSE file.
 
@@ -211,7 +211,7 @@ func TestMiddlewareFailHandlersChain(t *testing.T) {
 	router := New()
 	router.Use(func(context *Context) {
 		signature += "A"
-		context.AbortWithError(http.StatusInternalServerError, errors.New("foo")) // nolint: errcheck
+		context.AbortWithError(http.StatusInternalServerError, errors.New("foo")) //nolint: errcheck
 	})
 	router.Use(func(context *Context) {
 		signature += "B"

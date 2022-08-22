@@ -1,4 +1,4 @@
-// Copyright 2014 Manu Martinez-Almeida.  All rights reserved.
+// Copyright 2014 Manu Martinez-Almeida. All rights reserved.
 // Use of this source code is governed by a MIT style
 // license that can be found in the LICENSE file.
 
@@ -124,10 +124,11 @@ func (a errorMsgs) Last() *Error {
 
 // Errors returns an array with all the error messages.
 // Example:
-// 		c.Error(errors.New("first"))
-// 		c.Error(errors.New("second"))
-// 		c.Error(errors.New("third"))
-// 		c.Errors.Errors() // == []string{"first", "second", "third"}
+//
+//	c.Error(errors.New("first"))
+//	c.Error(errors.New("second"))
+//	c.Error(errors.New("third"))
+//	c.Errors.Errors() // == []string{"first", "second", "third"}
 func (a errorMsgs) Errors() []string {
 	if len(a) == 0 {
 		return nil
