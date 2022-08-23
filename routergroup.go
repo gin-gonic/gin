@@ -34,6 +34,7 @@ type IRoutes interface {
 	Use(...HandlerFunc) IRoutes
 
 	Handle(string, string, ...HandlerFunc) IRoutes
+	Handles([]string, string, ...HandlerFunc) IRoutes
 	Any(string, ...HandlerFunc) IRoutes
 	GET(string, ...HandlerFunc) IRoutes
 	POST(string, ...HandlerFunc) IRoutes
