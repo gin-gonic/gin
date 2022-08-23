@@ -178,6 +178,7 @@ func testRoutesInterface(t *testing.T, r IRoutes) {
 	assert.Equal(t, r, r.Use(handler))
 
 	assert.Equal(t, r, r.Handle(http.MethodGet, "/handler", handler))
+	assert.Equal(t, r, r.Handles([]string{http.MethodGet, http.MethodHead, http.MethodPost}, "/handlers", handler))
 	assert.Equal(t, r, r.Any("/any", handler))
 	assert.Equal(t, r, r.GET("/", handler))
 	assert.Equal(t, r, r.POST("/", handler))
