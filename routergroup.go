@@ -106,6 +106,19 @@ func (group *RouterGroup) Handle(httpMethod, relativePath string, handlers ...Ha
 	return group.handle(httpMethod, relativePath, handlers)
 }
 
+// Handles registers multiple new request handle with the given path and method.
+// Its specific usage is the same as the Handle method, but it supports setting multiple http methods at the same time.
+func (group *RouterGroup) Handles(httpMethods []string, relativePath string, handlers ...HandlerFunc) IRoutes {
+	for _, method := range httpMethods {
+		if matched := regEnLetter.MatchString(method); !matched {
+			panic("http method " + method + " is not valid")
+		}
+		group.handle(method, relativePath, handlers)
+	}
+
+	return group.returnObj()
+}
+
 // POST is a shortcut for router.Handle("POST", path, handle).
 func (group *RouterGroup) POST(relativePath string, handlers ...HandlerFunc) IRoutes {
 	return group.handle(http.MethodPost, relativePath, handlers)
