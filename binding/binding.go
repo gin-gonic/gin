@@ -30,7 +30,7 @@ const (
 // the form POST.
 type Binding interface {
 	Name() string
-	Bind(*http.Request, any) error
+	Bind(*http.Request, any, ...Option) error
 }
 
 // BindingBody adds BindBody method to Binding. BindBody is similar with Bind,

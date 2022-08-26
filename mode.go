@@ -94,6 +94,10 @@ func EnableJsonDecoderDisallowUnknownFields() {
 	binding.EnableDecoderDisallowUnknownFields = true
 }
 
+func EnableParamsAndQueryBinding() {
+	binding.EnableParamsAndQueryBinding = true
+}
+
 // Mode returns current gin mode.
 func Mode() string {
 	return modeName

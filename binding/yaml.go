@@ -18,7 +18,7 @@ func (yamlBinding) Name() string {
 	return "yaml"
 }
 
-func (yamlBinding) Bind(req *http.Request, obj any) error {
+func (yamlBinding) Bind(req *http.Request, obj any, opts ...Option) error {
 	return decodeYAML(req.Body, obj)
 }
 

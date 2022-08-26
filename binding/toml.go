@@ -26,7 +26,7 @@ func decodeToml(r io.Reader, obj any) error {
 	return decoder.Decode(obj)
 }
 
-func (tomlBinding) Bind(req *http.Request, obj any) error {
+func (tomlBinding) Bind(req *http.Request, obj any, opts ...Option) error {
 	return decodeToml(req.Body, obj)
 }
 

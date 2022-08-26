@@ -17,7 +17,7 @@ func (xmlBinding) Name() string {
 	return "xml"
 }
 
-func (xmlBinding) Bind(req *http.Request, obj any) error {
+func (xmlBinding) Bind(req *http.Request, obj any, opts ...Option) error {
 	return decodeXML(req.Body, obj)
 }
 

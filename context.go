@@ -732,7 +732,20 @@ func (c *Context) ShouldBindUri(obj any) error {
 // ShouldBindWith binds the passed struct pointer using the specified binding engine.
 // See the binding package.
 func (c *Context) ShouldBindWith(obj any, b binding.Binding) error {
-	return b.Bind(c.Request, obj)
+	return b.Bind(c.Request, obj, binding.WithParams(func() (ret map[string]interface{}) {
+		ret = make(map[string]interface{})
+		for _, item := range c.Params {
+			ret[item.Key] = item.Value
+		}
+		for key, val := range c.Request.URL.Query() {
+			if len(val) == 1 {
+				ret[key] = val[0]
+				continue
+			}
+			ret[key] = val
+		}
+		return
+	}()))
 }
 
 // ShouldBindBodyWith is similar with ShouldBindWith, but it stores the request

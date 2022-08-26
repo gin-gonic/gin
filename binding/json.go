@@ -24,16 +24,37 @@ var EnableDecoderUseNumber = false
 // keys which do not match any non-ignored, exported fields in the destination.
 var EnableDecoderDisallowUnknownFields = false
 
+var EnableParamsAndQueryBinding = false
+
 type jsonBinding struct{}
 
 func (jsonBinding) Name() string {
 	return "json"
 }
 
-func (jsonBinding) Bind(req *http.Request, obj any) error {
+func (jsonBinding) Bind(req *http.Request, obj any, opts ...Option) error {
 	if req == nil || req.Body == nil {
 		return errors.New("invalid request")
 	}
+
+	if EnableParamsAndQueryBinding {
+		o := &options{}
+		for _, opt := range opts {
+			if err := opt(o); nil != err {
+				return err
+			}
+		}
+		if params := o.params; len(params) > 0 {
+			b := new(bytes.Buffer)
+			if err := json.NewEncoder(b).Encode(params); nil != err {
+				return err
+			}
+			if err := decodeJSON(b, obj); err != nil {
+				return err
+			}
+		}
+	}
+
 	return decodeJSON(req.Body, obj)
 }
 

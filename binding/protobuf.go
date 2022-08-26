@@ -18,7 +18,7 @@ func (protobufBinding) Name() string {
 	return "protobuf"
 }
 
-func (b protobufBinding) Bind(req *http.Request, obj any) error {
+func (b protobufBinding) Bind(req *http.Request, obj any, opts ...Option) error {
 	buf, err := ioutil.ReadAll(req.Body)
 	if err != nil {
 		return err
