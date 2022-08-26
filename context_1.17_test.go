@@ -30,7 +30,12 @@ func (i interceptedWriter) WriteHeader(code int) {
 func TestContextFormFileFailed17(t *testing.T) {
 	buf := new(bytes.Buffer)
 	mw := multipart.NewWriter(buf)
-	mw.Close()
+	defer func(mw *multipart.Writer) {
+		err := mw.Close()
+		if err != nil {
+			assert.Error(t, err)
+		}
+	}(mw)
 	c, _ := CreateTestContext(httptest.NewRecorder())
 	c.Request, _ = http.NewRequest("POST", "/", nil)
 	c.Request.Header.Set("Content-Type", mw.FormDataContentType())
