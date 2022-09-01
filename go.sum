@@ -1,5 +1,5 @@
-github.com/bytedance/sonic v1.3.4 h1:Pq+4YeIBh5VKMctAwqeiAsf18BCU24wZnwecwjIUCvU=
-github.com/bytedance/sonic v1.3.4/go.mod h1:V973WhNhGmvHxW6nQmsHEfHaoU9F3zTF+93rH03hcUQ=
+github.com/bytedance/sonic v1.4.0 h1:d6vgPhwgHfpmEiz/9Fzea9fGzWY7RO1TQEySBiRwDLY=
+github.com/bytedance/sonic v1.4.0/go.mod h1:V973WhNhGmvHxW6nQmsHEfHaoU9F3zTF+93rH03hcUQ=
 github.com/chenzhuoyu/base64x v0.0.0-20211019084208-fb5309c8db06/go.mod h1:DH46F32mSOjUmXrMHnKwZdA8wcEefY7UVqBKYGjpdQY=
 github.com/chenzhuoyu/base64x v0.0.0-20220526154910-8bf9453eb81a h1:lmGPzuocwDxoPAMr9h16zoJY/USZR9jIh99nrmKk1uI=
 github.com/chenzhuoyu/base64x v0.0.0-20220526154910-8bf9453eb81a/go.mod h1:DH46F32mSOjUmXrMHnKwZdA8wcEefY7UVqBKYGjpdQY=
