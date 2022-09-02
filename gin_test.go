@@ -100,7 +100,7 @@ func TestH2c(t *testing.T) {
 
 	url := "http://" + ln.Addr().String() + "/"
 
-	http := http.Client{
+	httpClient := http.Client{
 		Transport: &http2.Transport{
 			AllowHTTP: true,
 			DialTLS: func(netw, addr string, cfg *tls.Config) (net.Conn, error) {
@@ -109,7 +109,7 @@ func TestH2c(t *testing.T) {
 		},
 	}
 
-	res, err := http.Get(url)
+	res, err := httpClient.Get(url)
 	if err != nil {
 		fmt.Println(err)
 	}
