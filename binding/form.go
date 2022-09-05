@@ -7,6 +7,7 @@ package binding
 import (
 	"errors"
 	"net/http"
+	"net/url"
 )
 
 const defaultMemory = 32 << 20
@@ -32,6 +33,17 @@ func (formBinding) Bind(req *http.Request, obj any) error {
 	return validate(obj)
 }
 
+func (formBinding) BindBody(body []byte, obj any) error {
+	form, err := url.ParseQuery(string(body))
+	if err != nil {
+		return err
+	}
+	if err := mapForm(obj, form); err != nil {
+		return err
+	}
+	return validate(obj)
+}
+
 func (formPostBinding) Name() string {
 	return "form-urlencoded"
 }
@@ -41,6 +53,17 @@ func (formPostBinding) Bind(req *http.Request, obj any) error {
 		return err
 	}
 	if err := mapForm(obj, req.PostForm); err != nil {
+		return err
+	}
+	return validate(obj)
+}
+
+func (formPostBinding) BindBody(body []byte, obj any) error {
+	form, err := url.ParseQuery(string(body))
+	if err != nil {
+		return err
+	}
+	if err := mapForm(obj, form); err != nil {
 		return err
 	}
 	return validate(obj)
@@ -58,5 +81,16 @@ func (formMultipartBinding) Bind(req *http.Request, obj any) error {
 		return err
 	}
 
+	return validate(obj)
+}
+
+func (formMultipartBinding) BindBody(body []byte, obj any) error {
+	form, err := url.ParseQuery(string(body))
+	if err != nil {
+		return err
+	}
+	if err := mapForm(obj, form); err != nil {
+		return err
+	}
 	return validate(obj)
 }
