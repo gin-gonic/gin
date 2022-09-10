@@ -9,16 +9,17 @@ import (
 	"io/ioutil"
 	"net/http"
 
-	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
-type protobufBinding struct{}
+type protoJSONBinding struct{}
 
-func (protobufBinding) Name() string {
-	return "protobuf"
+func (protoJSONBinding) Name() string {
+	return "protojson"
 }
 
-func (b protobufBinding) Bind(req *http.Request, obj any) error {
+func (b protoJSONBinding) Bind(req *http.Request, obj any) error {
 	buf, err := ioutil.ReadAll(req.Body)
 	if err != nil {
 		return err
@@ -26,12 +27,12 @@ func (b protobufBinding) Bind(req *http.Request, obj any) error {
 	return b.BindBody(buf, obj)
 }
 
-func (protobufBinding) BindBody(body []byte, obj any) error {
-	msg, ok := obj.(proto.Message)
+func (protoJSONBinding) BindBody(body []byte, obj any) error {
+	msg, ok := obj.(protoreflect.ProtoMessage)
 	if !ok {
 		return errors.New("obj is not ProtoMessage")
 	}
-	if err := proto.Unmarshal(body, msg); err != nil {
+	if err := protojson.Unmarshal(body, msg); err != nil {
 		return err
 	}
 	// Here it's same to return validate(obj), but util now we can't add

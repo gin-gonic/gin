@@ -21,6 +21,7 @@ import (
 
 	"github.com/gin-gonic/gin/testdata/protoexample"
 	"github.com/stretchr/testify/assert"
+	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -705,7 +706,7 @@ func TestBindingFormMultipartForMapFail(t *testing.T) {
 
 func TestBindingProtoBuf(t *testing.T) {
 	test := &protoexample.Test{
-		Label: proto.String("yes"),
+		Label: "yes",
 	}
 	data, _ := proto.Marshal(test)
 
@@ -717,12 +718,24 @@ func TestBindingProtoBuf(t *testing.T) {
 
 func TestBindingProtoBufFail(t *testing.T) {
 	test := &protoexample.Test{
-		Label: proto.String("yes"),
+		Label: "yes",
 	}
 	data, _ := proto.Marshal(test)
 
 	testProtoBodyBindingFail(t,
 		ProtoBuf, "protobuf",
+		"/", "/",
+		string(data), string(data[1:]))
+}
+
+func TestBindingProtoJSON(t *testing.T) {
+	test := &protoexample.Test{
+		Label: "yes",
+	}
+	data, _ := protojson.Marshal(test)
+
+	testProtoJSONBinding(t,
+		ProtoJSON, "protojson",
 		"/", "/",
 		string(data), string(data[1:]))
 }
@@ -1330,12 +1343,29 @@ func testProtoBodyBinding(t *testing.T, b Binding, name, path, badPath, body, ba
 	req.Header.Add("Content-Type", MIMEPROTOBUF)
 	err := b.Bind(req, &obj)
 	assert.NoError(t, err)
-	assert.Equal(t, "yes", *obj.Label)
+	assert.Equal(t, "yes", obj.Label)
 
 	obj = protoexample.Test{}
 	req = requestWithBody("POST", badPath, badBody)
 	req.Header.Add("Content-Type", MIMEPROTOBUF)
 	err = ProtoBuf.Bind(req, &obj)
+	assert.Error(t, err)
+}
+
+func testProtoJSONBinding(t *testing.T, b Binding, name, path, badPath, body, badBody string) {
+	assert.Equal(t, name, b.Name())
+
+	obj := protoexample.Test{}
+	req := requestWithBody("POST", path, body)
+	req.Header.Add("Content-Type", MIMEJSON)
+	err := b.Bind(req, &obj)
+	assert.NoError(t, err)
+	assert.Equal(t, "yes", obj.Label)
+
+	obj = protoexample.Test{}
+	req = requestWithBody("POST", badPath, badBody)
+	req.Header.Add("Content-Type", MIMEJSON)
+	err = ProtoJSON.Bind(req, &obj)
 	assert.Error(t, err)
 }
 

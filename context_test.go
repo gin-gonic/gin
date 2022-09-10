@@ -678,6 +678,23 @@ func TestContextRenderJSON(t *testing.T) {
 	assert.Equal(t, "application/json; charset=utf-8", w.Header().Get("Content-Type"))
 }
 
+// Tests that the response is serialized as JSON
+// and Content-Type is set to application/json
+// and special HTML characters are escaped
+func TestContextRenderProtoJSON(t *testing.T) {
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
+
+	c.ProtoJSON(http.StatusCreated, &testdata.Test{
+		Label:         "yes!",
+		OptionalField: proto.String("ahah"),
+	})
+
+	assert.Equal(t, http.StatusCreated, w.Code)
+	assert.Equal(t, "{\"label\":\"yes!\",\"optionalField\":\"ahah\"}", w.Body.String())
+	assert.Equal(t, "application/json; charset=utf-8", w.Header().Get("Content-Type"))
+}
+
 // Tests that the response is serialized as JSONP
 // and Content-Type is set to application/javascript
 func TestContextRenderJSONP(t *testing.T) {
@@ -1081,9 +1098,8 @@ func TestContextRenderProtoBuf(t *testing.T) {
 	c, _ := CreateTestContext(w)
 
 	reps := []int64{int64(1), int64(2)}
-	label := "test"
 	data := &testdata.Test{
-		Label: &label,
+		Label: "test",
 		Reps:  reps,
 	}
 

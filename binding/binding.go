@@ -80,6 +80,7 @@ var (
 	FormPost      = formPostBinding{}
 	FormMultipart = formMultipartBinding{}
 	ProtoBuf      = protobufBinding{}
+	ProtoJSON     = protoJSONBinding{}
 	MsgPack       = msgpackBinding{}
 	YAML          = yamlBinding{}
 	Uri           = uriBinding{}
