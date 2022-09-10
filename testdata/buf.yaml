@@ -1,0 +1,10 @@
+version: v1
+lint:
+  use:
+    - DEFAULT
+  except:
+    # `Package name "ptypes" should be suffixed with a correctly formed version, such as "ptypes.v1".`
+    - PACKAGE_VERSION_SUFFIX
+breaking:
+  use:
+    - FILE

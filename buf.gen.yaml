@@ -1,0 +1,6 @@
+version: v1
+plugins:
+  - name: go
+    out: testdata
+    path: protoc-gen-go
+    opt: paths=source_relative
