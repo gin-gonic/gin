@@ -691,7 +691,7 @@ func TestContextRenderProtoJSON(t *testing.T) {
 	})
 
 	assert.Equal(t, http.StatusCreated, w.Code)
-	assert.Equal(t, "{\"label\":\"yes!\",\"optionalField\":\"ahah\"}", w.Body.String())
+	assert.Equal(t, "{\"label\":\"yes!\", \"optionalField\":\"ahah\"}", w.Body.String())
 	assert.Equal(t, "application/json; charset=utf-8", w.Header().Get("Content-Type"))
 }
 
@@ -1623,6 +1623,20 @@ func TestContextBindWithJSON(t *testing.T) {
 	assert.Equal(t, 0, w.Body.Len())
 }
 
+func TestContextBindWithProtoJSON(t *testing.T) {
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
+
+	c.Request, _ = http.NewRequest("POST", "/", bytes.NewBufferString("{\"label\":\"bar\",\"optionalField\":\"foo\"}"))
+	c.Request.Header.Add("Content-Type", MIMEJSON)
+
+	var obj testdata.Test
+	assert.NoError(t, c.BindProtoJSON(&obj))
+	assert.Equal(t, "bar", obj.Label)
+	assert.Equal(t, "foo", *obj.OptionalField)
+	assert.Equal(t, 0, w.Body.Len())
+}
+
 func TestContextBindWithXML(t *testing.T) {
 	w := httptest.NewRecorder()
 	c, _ := CreateTestContext(w)
@@ -1766,6 +1780,20 @@ func TestContextShouldBindWithJSON(t *testing.T) {
 	assert.NoError(t, c.ShouldBindJSON(&obj))
 	assert.Equal(t, "foo", obj.Bar)
 	assert.Equal(t, "bar", obj.Foo)
+	assert.Equal(t, 0, w.Body.Len())
+}
+
+func TestContextShouldBindWithProtoJSON(t *testing.T) {
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
+
+	c.Request, _ = http.NewRequest("POST", "/", bytes.NewBufferString("{\"label\":\"bar\", \"optionalField\":\"foo\"}"))
+	c.Request.Header.Add("Content-Type", MIMEJSON) // set fake content-type
+
+	var obj testdata.Test
+	assert.NoError(t, c.ShouldBindProtoJSON(&obj))
+	assert.Equal(t, "bar", obj.Label)
+	assert.Equal(t, "foo", *obj.OptionalField)
 	assert.Equal(t, 0, w.Body.Len())
 }
 
