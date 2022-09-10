@@ -1150,15 +1150,27 @@ func main() {
 
   r.GET("/someProtoBuf", func(c *gin.Context) {
     reps := []int64{int64(1), int64(2)}
-    label := "test"
     // The specific definition of protobuf is written in the testdata/protoexample file.
     data := &protoexample.Test{
-      Label: &label,
+      Label: "test",
       Reps:  reps,
     }
     // Note that data becomes binary data in the response
     // Will output protoexample.Test protobuf serialized data
     c.ProtoBuf(http.StatusOK, data)
+  })
+
+  r.GET("/someProtoJSON", func(c *gin.Context) {
+    reps := []int64{int64(1), int64(2)}
+    // The specific definition of protobuf is written in the testdata/protoexample file.
+    data := &protoexample.Test{
+      Label: "test",
+      Reps:  reps,
+    }
+    // Note that data becomes JSON data in the response
+    // (But under the hood, this calls protojson.Marshal, which is the correct
+    // way to render protos as JSON)
+    c.ProtoJSON(http.StatusOK, data)
   })
 
   // Listen and serve on 0.0.0.0:8080
