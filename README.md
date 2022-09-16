@@ -79,6 +79,7 @@ Gin is a web framework written in Go (Golang). It features a martini-like API wi
     - [http2 server push](#http2-server-push)
     - [Define format for the log of routes](#define-format-for-the-log-of-routes)
     - [Set and get a cookie](#set-and-get-a-cookie)
+    - [Prefork](#prefork)
   - [Don't trust all proxies](#dont-trust-all-proxies)
   - [Testing](#testing)
   - [Users](#users)
@@ -2236,6 +2237,47 @@ func main() {
 }
 ```
 
+### Prefork
+
+Prefork is a functionality which makes use of SO_REUSEPORT and SO_REUSEADDR
+socket option feature (which is available on most operation systems) available
+for our router.
+
+Benefits:
+- Reduces lock contention between workers accepting new connections.
+- Improve performance on multicore systems
+
+Disadvantages:
+- when a worker is stalled by a blocking operation, the block affects not only 
+  connections that the worker has already accepted, but also connection requests
+  that the kernel has assigned to the worker since it became blocked.
+
+For actual definition and information about what this feature does and why
+it exists in gin, have a look at just the description part of [this](socket-nginx)
+release note article which made understanding of this feature a lot easier.
+
+```go
+func main() {
+    // Creates a gin router with default middleware:
+    // logger and recovery (crash-free) middleware
+    router := gin.Default()
+
+    router.GET("/ping", func(c *gin.Context) {
+        c.String(http.StatusOK, "pong")
+    })
+
+    // A number bigger than 1 or no number(in cpus with more
+    // than one core) should be passed so that this functionality
+    // actually applies on your api functionality.
+    // In this case that I did not pass any number, if we assume
+    // my cpu has 4 cores, so 4 processes will get created to
+    // serve my api.
+    router.Prefork()
+
+    router.Run(":8080")
+}
+```
+
 ## Don't trust all proxies
 
 Gin lets you specify which headers to hold the real client IP (if any),
@@ -2368,3 +2410,4 @@ Awesome project lists using [Gin](https://github.com/gin-gonic/gin) web framewor
 * [picfit](https://github.com/thoas/picfit): An image resizing server written in Go.
 * [brigade](https://github.com/brigadecore/brigade): Event-based Scripting for Kubernetes.
 * [dkron](https://github.com/distribworks/dkron): Distributed, fault tolerant job scheduling system.
+* [socket-nginx](https://www.nginx.com/blog/socket-sharding-nginx-release-1-9-1): SO_REUSEPORT and SO_REUSEADDR article

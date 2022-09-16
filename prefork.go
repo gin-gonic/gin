@@ -42,7 +42,7 @@ const (
 )
 
 // Holds process of childs
-var children map[int]*exec.Cmd
+var children = map[int]*exec.Cmd{}
 
 // IsChild determines if the current process is a child of Prefork
 func IsChild() bool {
