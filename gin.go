@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"os"
 	"path"
+	"runtime"
 	"strings"
 	"sync"
 
@@ -150,6 +151,9 @@ type Engine struct {
 	// ContextWithFallback enable fallback Context.Deadline(), Context.Done(), Context.Err() and Context.Value() when Context.Request.Context() is not nil.
 	ContextWithFallback bool
 
+	// Determines if master should create child processes or not
+	doPrefork bool
+
 	delims           render.Delims
 	secureJSONPrefix string
 	HTMLRender       render.HTMLRender
@@ -196,6 +200,7 @@ func New() *Engine {
 		UnescapePathValues:     true,
 		MaxMultipartMemory:     defaultMultipartMemory,
 		trees:                  make(methodTrees, 0, 9),
+		doPrefork:              false,
 		delims:                 render.Delims{Left: "{{", Right: "}}"},
 		secureJSONPrefix:       "while(1);",
 		trustedProxies:         []string{"0.0.0.0/0", "::/0"},
@@ -379,6 +384,12 @@ func (engine *Engine) Run(addr ...string) (err error) {
 
 	address := resolveAddress(addr)
 	debugPrint("Listening and serving HTTP on %s\n", address)
+
+	if engine.doPrefork || IsChild() {
+		err = engine.prefork(address)
+		return
+	}
+
 	err = http.ListenAndServe(address, engine.Handler())
 	return
 }
@@ -643,6 +654,32 @@ func (engine *Engine) handleHTTPRequest(c *Context) {
 	}
 	c.handlers = engine.allNoRoute
 	serveError(c, http.StatusNotFound, default404Body)
+}
+
+func (engine *Engine) prefork(addr string) (err error) {
+	return prefork(addr, engine)
+}
+
+// Prefork will create 'number' amount of child processes
+// which will listen to the same address and port as other
+// child processes if 'number' is bigger than 1.
+//
+// This is a feature which enables use of SO_REUSEPORT
+// and SO_REUSEADDR socket option which is available in
+// most operation systems out there.
+//
+// More information:
+// https://www.nginx.com/blog/socket-sharding-nginx-release-1-9-1/#
+func (engine *Engine) Prefork(number ...int) {
+	n := runtime.GOMAXPROCS(0)
+	if len(number) > 0 {
+		n = number[0]
+	}
+
+	if n > 1 {
+		runtime.GOMAXPROCS(n)
+		engine.doPrefork = true
+	}
 }
 
 var mimePlain = []string{MIMEPlain}
