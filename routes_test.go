@@ -6,7 +6,6 @@ package gin
 
 import (
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -294,7 +293,7 @@ func TestRouteParamsByNameWithExtraSlash(t *testing.T) {
 func TestRouteStaticFile(t *testing.T) {
 	// SETUP file
 	testRoot, _ := os.Getwd()
-	f, err := ioutil.TempFile(testRoot, "")
+	f, err := os.CreateTemp(testRoot, "")
 	if err != nil {
 		t.Error(err)
 	}
@@ -329,7 +328,7 @@ func TestRouteStaticFile(t *testing.T) {
 func TestRouteStaticFileFS(t *testing.T) {
 	// SETUP file
 	testRoot, _ := os.Getwd()
-	f, err := ioutil.TempFile(testRoot, "")
+	f, err := os.CreateTemp(testRoot, "")
 	if err != nil {
 		t.Error(err)
 	}
