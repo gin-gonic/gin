@@ -268,13 +268,11 @@ func (c *Context) Get(key string) (value any, exists bool) {
 // GetAs returns the value for the given key, ie: (value, true).
 // If the value does not exist it returns (nil, false)
 func (c *Context) GetAs[T any](key string) (result T, exists bool) {
-	c.mu.RLock()
-	value, exists := c.Keys[key]
-	c.mu.RUnlock()
-	
+	value, exists := c.Get(key)
 	if !exists {
 	   return	
 	}	
+	
 	result, exists = value.(T)
 	return
 }
