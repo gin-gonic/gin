@@ -5,7 +5,9 @@
 package binding
 
 import (
+	"errors"
 	"reflect"
+	"strings"
 	"testing"
 	"time"
 
@@ -287,4 +289,94 @@ func TestMappingIgnoredCircularRef(t *testing.T) {
 
 	err := mappingByPtr(&s, formSource{}, "form")
 	assert.NoError(t, err)
+}
+
+// this structure has special json unmarshaller, in order to parse email (as an example) as specific structure
+type withJsonUnmarshaller struct {
+	Name string
+	Host string
+}
+
+func (o *withJsonUnmarshaller) UnmarshalJSON(data []byte) error {
+	elems := strings.Split(string(data), "@")
+	if len(elems) != 2 {
+		return errors.New("cannot parse %q as email")
+	}
+	o.Name = elems[0]
+	o.Host = elems[1]
+	return nil
+}
+
+func TestMappingStructFieldJSONUnmarshaller(t *testing.T) {
+	var s struct {
+		Email withJsonUnmarshaller
+	}
+
+	err := mappingByPtr(&s, formSource{"Email": {`test@example.org`}}, "form")
+	assert.NoError(t, err)
+	assert.Equal(t, "test", s.Email.Name)
+	assert.Equal(t, "example.org", s.Email.Host)
+
+	err = mappingByPtr(&s, formSource{"Email": {`not an email`}}, "form")
+	assert.Error(t, err)
+}
+
+// this structure has special text unmarshaller, in order to parse email (as an example) as specific structure
+type withTextUnmarshaller struct {
+	Name string
+	Host string
+}
+
+func (o *withTextUnmarshaller) UnmarshalText(data []byte) error {
+	elems := strings.Split(string(data), "@")
+	if len(elems) != 2 {
+		return errors.New("cannot parse %q as email")
+	}
+	o.Name = elems[0]
+	o.Host = elems[1]
+	return nil
+}
+
+func TestMappingStructFieldTextUnmarshaller(t *testing.T) {
+	var s struct {
+		Email withTextUnmarshaller
+	}
+
+	err := mappingByPtr(&s, formSource{"Email": {`test@example.org`}}, "form")
+	assert.NoError(t, err)
+	assert.Equal(t, "test", s.Email.Name)
+	assert.Equal(t, "example.org", s.Email.Host)
+
+	err = mappingByPtr(&s, formSource{"Email": {`not an email`}}, "form")
+	assert.Error(t, err)
+}
+
+// this structure has special binary unmarshaller, in order to parse email (as an example) as specific structure
+type withBinaryUnmarshaller struct {
+	Name string
+	Host string
+}
+
+func (o *withBinaryUnmarshaller) UnmarshalBinary(data []byte) error {
+	elems := strings.Split(string(data), "@")
+	if len(elems) != 2 {
+		return errors.New("cannot parse %q as email")
+	}
+	o.Name = elems[0]
+	o.Host = elems[1]
+	return nil
+}
+
+func TestMappingStructFieldBinaryUnmarshaller(t *testing.T) {
+	var s struct {
+		Email withBinaryUnmarshaller
+	}
+
+	err := mappingByPtr(&s, formSource{"Email": {`test@example.org`}}, "form")
+	assert.NoError(t, err)
+	assert.Equal(t, "test", s.Email.Name)
+	assert.Equal(t, "example.org", s.Email.Host)
+
+	err = mappingByPtr(&s, formSource{"Email": {`not an email`}}, "form")
+	assert.Error(t, err)
 }

@@ -57,6 +57,7 @@
   - [Bind form-data request with custom struct](#bind-form-data-request-with-custom-struct)
   - [Try to bind body into different structs](#try-to-bind-body-into-different-structs)
   - [Bind form-data request with custom struct and custom tag](#bind-form-data-request-with-custom-struct-and-custom-tag)
+  - [Bind Query with custom unmarshalers](#bind-query-with-custom-unmarshalers)
   - [http2 server push](#http2-server-push)
   - [Define format for the log of routes](#define-format-for-the-log-of-routes)
   - [Set and get a cookie](#set-and-get-a-cookie)
@@ -1155,7 +1156,7 @@ func main() {
   router.StaticFS("/more_static", http.Dir("my_file_system"))
   router.StaticFile("/favicon.ico", "./resources/favicon.ico")
   router.StaticFileFS("/more_favicon.ico", "more_favicon.ico", http.Dir("my_file_system"))
-  
+
   // Listen and serve on 0.0.0.0:8080
   router.Run(":8080")
 }
@@ -2002,6 +2003,59 @@ func ListHandler(s *Service) func(ctx *gin.Context) {
 }
 ```
 
+### Bind Query with custom unmarshalers
+
+Any structure that has custom `UnmarshalJSON` or `UnmarshalText` or `UnmarshalBinary` can be used to parse input as necessary
+
+```go
+package main
+import (
+  "fmt"
+  "net/http"
+  "strings"
+  "github.com/gin-gonic/gin"
+)
+// Booking contains data binded using custom unmarshaler.
+type Payload struct {
+  Email  EmailDetails `form:"email"`
+}
+// this structure has special json unmarshaller, in order to parse email (as an example) as specific structure
+type EmailDetails struct {
+  Name string
+  Host string
+}
+func (o *EmailDetails) UnmarshalJSON(data []byte) error {
+  elems := strings.Split(string(data), "@")
+  if len(elems) != 2 {
+    return fmt.Errorf("cannot parse %q as email", string(data))
+  }
+  o.Name = elems[0]
+  o.Host = elems[1]
+  return nil
+}
+func main() {
+  route := gin.Default()
+  route.GET("/email", getEmail)
+  route.Run(":8085")
+}
+func getEmail(c *gin.Context) {
+  var p Payload
+  if err := c.ShouldBindQuery(&p); err == nil {
+    c.JSON(http.StatusOK, gin.H{"message": "Email information is correct"})
+  } else {
+    c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+  }
+}
+```
+
+```console
+$ curl "localhost:8085/email?email=test@example.org"
+{"message":"Email information is correct"}
+
+$ curl "localhost:8085/email?email=test-something-else"
+{"error":"cannot parse \"test-something-else\" as email"}
+```
+
 ### http2 server push
 
 http.Pusher is supported only **go1.8+**. See the [golang blog](https://go.dev/blog/h2push) for detail information.
@@ -2134,7 +2188,7 @@ or network CIDRs from where clients which their request headers related to clien
 IP can be trusted. They can be IPv4 addresses, IPv4 CIDRs, IPv6 addresses or
 IPv6 CIDRs.
 
-**Attention:** Gin trust all proxies by default if you don't specify a trusted 
+**Attention:** Gin trust all proxies by default if you don't specify a trusted
 proxy using the function above, **this is NOT safe**. At the same time, if you don't
 use any proxy, you can disable this feature by using `Engine.SetTrustedProxies(nil)`,
 then `Context.ClientIP()` will return the remote address directly to avoid some
@@ -2163,7 +2217,7 @@ func main() {
 ```
 
 **Notice:** If you are using a CDN service, you can set the `Engine.TrustedPlatform`
-to skip TrustedProxies check, it has a higher priority than TrustedProxies. 
+to skip TrustedProxies check, it has a higher priority than TrustedProxies.
 Look at the example below:
 
 ```go

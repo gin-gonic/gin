@@ -197,6 +197,18 @@ func setByForm(value reflect.Value, field reflect.StructField, form map[string][
 	}
 }
 
+type jsonUnmarshaler interface {
+	UnmarshalJSON([]byte) error
+}
+
+type textUnmarshaler interface {
+	UnmarshalText([]byte) error
+}
+
+type binaryUnmarshaler interface {
+	UnmarshalBinary([]byte) error
+}
+
 func setWithProperType(val string, value reflect.Value, field reflect.StructField) error {
 	switch value.Kind() {
 	case reflect.Int:
@@ -235,6 +247,15 @@ func setWithProperType(val string, value reflect.Value, field reflect.StructFiel
 		switch value.Interface().(type) {
 		case time.Time:
 			return setTimeField(val, field, value)
+		}
+		if unmarshaler, ok := value.Addr().Interface().(jsonUnmarshaler); ok {
+			return unmarshaler.UnmarshalJSON(bytesconv.StringToBytes(val))
+		}
+		if unmarshaler, ok := value.Addr().Interface().(textUnmarshaler); ok {
+			return unmarshaler.UnmarshalText(bytesconv.StringToBytes(val))
+		}
+		if unmarshaler, ok := value.Addr().Interface().(binaryUnmarshaler); ok {
+			return unmarshaler.UnmarshalBinary(bytesconv.StringToBytes(val))
 		}
 		return json.Unmarshal(bytesconv.StringToBytes(val), value.Addr().Interface())
 	case reflect.Map:
