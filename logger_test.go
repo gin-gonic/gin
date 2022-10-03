@@ -5,10 +5,10 @@
 package gin
 
 import (
-	"bytes"
 	"errors"
 	"fmt"
 	"net/http"
+	"strings"
 	"testing"
 	"time"
 
@@ -20,7 +20,7 @@ func init() {
 }
 
 func TestLogger(t *testing.T) {
-	buffer := new(bytes.Buffer)
+	buffer := new(strings.Builder)
 	router := New()
 	router.Use(LoggerWithWriter(buffer))
 	router.GET("/example", func(c *Context) {})
@@ -84,7 +84,7 @@ func TestLogger(t *testing.T) {
 }
 
 func TestLoggerWithConfig(t *testing.T) {
-	buffer := new(bytes.Buffer)
+	buffer := new(strings.Builder)
 	router := New()
 	router.Use(LoggerWithConfig(LoggerConfig{Output: buffer}))
 	router.GET("/example", func(c *Context) {})
@@ -148,7 +148,7 @@ func TestLoggerWithConfig(t *testing.T) {
 }
 
 func TestLoggerWithFormatter(t *testing.T) {
-	buffer := new(bytes.Buffer)
+	buffer := new(strings.Builder)
 
 	d := DefaultWriter
 	DefaultWriter = buffer
@@ -182,7 +182,7 @@ func TestLoggerWithFormatter(t *testing.T) {
 func TestLoggerWithConfigFormatting(t *testing.T) {
 	var gotParam LogFormatterParams
 	var gotKeys map[string]any
-	buffer := new(bytes.Buffer)
+	buffer := new(strings.Builder)
 
 	router := New()
 	router.engine.trustedCIDRs, _ = router.engine.prepareTrustedCIDRs()
@@ -382,7 +382,7 @@ func TestErrorLogger(t *testing.T) {
 }
 
 func TestLoggerWithWriterSkippingPaths(t *testing.T) {
-	buffer := new(bytes.Buffer)
+	buffer := new(strings.Builder)
 	router := New()
 	router.Use(LoggerWithWriter(buffer, "/skipped"))
 	router.GET("/logged", func(c *Context) {})
@@ -397,7 +397,7 @@ func TestLoggerWithWriterSkippingPaths(t *testing.T) {
 }
 
 func TestLoggerWithConfigSkippingPaths(t *testing.T) {
-	buffer := new(bytes.Buffer)
+	buffer := new(strings.Builder)
 	router := New()
 	router.Use(LoggerWithConfig(LoggerConfig{
 		Output:    buffer,
