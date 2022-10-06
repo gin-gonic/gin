@@ -32,9 +32,7 @@ func TestContextFormFileFailed17(t *testing.T) {
 	mw := multipart.NewWriter(buf)
 	defer func(mw *multipart.Writer) {
 		err := mw.Close()
-		if err != nil {
-			assert.Error(t, err)
-		}
+		assert.Equal(t, nil, err)
 	}(mw)
 	c, _ := CreateTestContext(httptest.NewRecorder())
 	c.Request, _ = http.NewRequest("POST", "/", nil)
