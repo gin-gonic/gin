@@ -15,6 +15,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"reflect"
 	"strings"
 	"sync"
 	"time"
@@ -377,6 +378,31 @@ func (c *Context) GetStringMapStringSlice(key string) (smss map[string][]string)
 	return
 }
 
+// ParamVar get the value of the URL param.
+//     curl -X GET 127.0.0.1:8080/1/test/3.14/true/1s
+//
+//     router.GET("/:int/:string/:float/:bool/:duration", func(c *gin.Context) {
+// 	        var i int
+//		var b bool
+//		var f float64
+//		var s string
+//		var d time.Duration
+
+//		err = c.ParamVar("int", &i)        // int == 1
+//		err = c.ParamVar("bool", &b)       // bool == true
+//		err = c.ParamVar("float", &f)      // float ==  3.14
+//		err = c.ParamVar("string", &s)     // string == test
+//		err = c.ParamVar("duration", &d)   // duration == time.Second
+//     })
+func (c *Context) ParamVar(key string, val interface{}) error {
+	rv := reflect.ValueOf(val)
+	if rv.Kind() != reflect.Ptr || rv.IsNil() {
+		return errors.New("Invalid parameter")
+	}
+
+	return binding.SetValue(rv, rv.Elem(), []string{c.Param(key)}, true)
+}
+
 /************************************/
 /************ INPUT DATA ************/
 /************************************/
@@ -413,6 +439,64 @@ func (c *Context) AddParam(key, value string) {
 func (c *Context) Query(key string) (value string) {
 	value, _ = c.GetQuery(key)
 	return
+}
+
+// GET /?bool=true&int=3&slice=1&slice=2&slice=3
+// var i int
+// err = c.QueryVar("int", &i)
+// i == 3
+
+// var ss []string
+// err = c.QueryVar("slice", &ss)
+// ss == []string{"1", "2", "3"}
+
+// var b bool
+// err = c.QueryVar("bool", &b)
+// b == true
+
+// var f float64
+// err = c.QueryVar("f", &f)
+// f == 0.0
+func (c *Context) QueryVar(key string, val interface{}) error {
+	rv := reflect.ValueOf(val)
+	if rv.Kind() != reflect.Ptr || rv.IsNil() {
+		return errors.New("Invalid parameter")
+	}
+
+	values, ok := c.GetQueryArray(key)
+	return binding.SetValue(rv, rv.Elem(), values, ok)
+}
+
+// GET /?bool=true&int=3&slice=1&slice=2&slice=3
+// var i int
+// err = c.DefaultQueryVar("int", &i, -1)
+// i == 3
+
+// var ss []string
+// err = c.DefaultQueryVar("slice", &ss, []string{})
+// ss == []string{"1", "2", "3"}
+
+// var b bool
+// err = c.DefaultQueryVar("bool", &b, false)
+// b == true
+
+// var f float64
+// err = c.DefaultQueryVar("f", &f, 3.14)
+// f == 3.14
+
+func (c *Context) DefaultQueryVar(key string, val interface{}, defaultValue interface{}) error {
+	rv := reflect.ValueOf(val)
+	if rv.Kind() != reflect.Ptr || rv.IsNil() {
+		return errors.New("Invalid parameter")
+	}
+
+	if rv.Elem().Type() != reflect.TypeOf(defaultValue) {
+		return fmt.Errorf("type fail: defautValue type is %v: value type is %v:",
+			reflect.TypeOf(defaultValue), rv.Elem().Type())
+	}
+
+	values, ok := c.GetQueryArray(key)
+	return binding.SetValue(rv, reflect.ValueOf(defaultValue), values, ok)
 }
 
 // DefaultQuery returns the keyed url query value if it exists,
