@@ -15,6 +15,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"path/filepath"
 	"strings"
 	"sync"
 	"time"
@@ -600,6 +601,10 @@ func (c *Context) SaveUploadedFile(file *multipart.FileHeader, dst string) error
 		return err
 	}
 	defer src.Close()
+
+	if err = os.MkdirAll(filepath.Dir(dst), 0750); err != nil {
+		return err
+	}
 
 	out, err := os.Create(dst)
 	if err != nil {
