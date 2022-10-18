@@ -31,16 +31,23 @@ type testStruct struct {
 func (t *testStruct) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	assert.Equal(t.T, "POST", req.Method)
 	assert.Equal(t.T, "/path", req.URL.Path)
+	assert.Equal(t.T, "yes", req.Context().Value("middleware"))
 	w.WriteHeader(http.StatusInternalServerError)
 	fmt.Fprint(w, "hello")
 }
 
 func TestWrap(t *testing.T) {
 	router := New()
+
+	router.Use(func(c *Context) {
+		c.Set("middleware", "yes")
+	})
+
 	router.POST("/path", WrapH(&testStruct{t}))
 	router.GET("/path2", WrapF(func(w http.ResponseWriter, req *http.Request) {
 		assert.Equal(t, "GET", req.Method)
 		assert.Equal(t, "/path2", req.URL.Path)
+		assert.Equal(t, "yes", req.Context().Value("middleware"))
 		w.WriteHeader(http.StatusBadRequest)
 		fmt.Fprint(w, "hola!")
 	}))
