@@ -566,7 +566,7 @@ func (engine *Engine) RunListener(listener net.Listener) (err error) {
 func (engine *Engine) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	c := engine.pool.Get().(*Context)
 	c.writermem.reset(w)
-	c.Request = req
+	c.setRequest(req)
 	c.reset()
 
 	engine.handleHTTPRequest(c)

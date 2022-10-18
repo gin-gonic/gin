@@ -5,6 +5,7 @@
 package gin
 
 import (
+	"context"
 	"errors"
 	"io"
 	"io/ioutil"
@@ -50,9 +51,10 @@ const abortIndex int8 = math.MaxInt8 >> 1
 // Context is the most important part of gin. It allows us to pass variables between middleware,
 // manage the flow, validate the JSON of a request and render a JSON response for example.
 type Context struct {
-	writermem responseWriter
-	Request   *http.Request
-	Writer    ResponseWriter
+	writermem      responseWriter
+	Request        *http.Request
+	Writer         ResponseWriter
+	requestContext context.Context
 
 	Params   Params
 	handlers HandlersChain
@@ -106,6 +108,22 @@ func (c *Context) reset() {
 	c.sameSite = 0
 	*c.params = (*c.params)[:0]
 	*c.skippedNodes = (*c.skippedNodes)[:0]
+}
+
+// Initializes c.Request and c.requestContext according to the ContextWithFallback feature flag
+func (c *Context) setRequest(req *http.Request) {
+	if req == nil {
+		c.Request = nil
+		c.requestContext = nil
+		return
+	}
+
+	c.requestContext = req.Context()
+	if c.engine.ContextWithFallback {
+		c.Request = req.WithContext(c)
+	} else {
+		c.Request = req
+	}
 }
 
 // Copy returns a copy of the current context that can be safely used outside the request's scope.
@@ -1173,26 +1191,26 @@ func (c *Context) SetAccepted(formats ...string) {
 
 // Deadline returns that there is no deadline (ok==false) when c.Request has no Context.
 func (c *Context) Deadline() (deadline time.Time, ok bool) {
-	if !c.engine.ContextWithFallback || c.Request == nil || c.Request.Context() == nil {
+	if !c.engine.ContextWithFallback || c.Request == nil || c.requestContext == nil {
 		return
 	}
-	return c.Request.Context().Deadline()
+	return c.requestContext.Deadline()
 }
 
 // Done returns nil (chan which will wait forever) when c.Request has no Context.
 func (c *Context) Done() <-chan struct{} {
-	if !c.engine.ContextWithFallback || c.Request == nil || c.Request.Context() == nil {
+	if !c.engine.ContextWithFallback || c.Request == nil || c.requestContext == nil {
 		return nil
 	}
-	return c.Request.Context().Done()
+	return c.requestContext.Done()
 }
 
 // Err returns nil when c.Request has no Context.
 func (c *Context) Err() error {
-	if !c.engine.ContextWithFallback || c.Request == nil || c.Request.Context() == nil {
+	if !c.engine.ContextWithFallback || c.Request == nil || c.requestContext == nil {
 		return nil
 	}
-	return c.Request.Context().Err()
+	return c.requestContext.Err()
 }
 
 // Value returns the value associated with this context for key, or nil
@@ -1210,8 +1228,8 @@ func (c *Context) Value(key any) any {
 			return val
 		}
 	}
-	if !c.engine.ContextWithFallback || c.Request == nil || c.Request.Context() == nil {
+	if !c.engine.ContextWithFallback || c.Request == nil || c.requestContext == nil {
 		return nil
 	}
-	return c.Request.Context().Value(key)
+	return c.requestContext.Value(key)
 }
