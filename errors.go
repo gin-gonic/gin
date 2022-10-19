@@ -39,7 +39,7 @@ type Error struct {
 
 type errorMsgs []*Error
 
-var _ error = &Error{}
+var _ error = (*Error)(nil)
 
 // SetType sets the error's type.
 func (msg *Error) SetType(flags ErrorType) *Error {

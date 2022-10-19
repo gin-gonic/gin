@@ -49,7 +49,7 @@ type responseWriter struct {
 	status int
 }
 
-var _ ResponseWriter = &responseWriter{}
+var _ ResponseWriter = (*responseWriter)(nil)
 
 func (w *responseWriter) reset(writer http.ResponseWriter) {
 	w.ResponseWriter = writer

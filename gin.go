@@ -166,7 +166,7 @@ type Engine struct {
 	trustedCIDRs     []*net.IPNet
 }
 
-var _ IRouter = &Engine{}
+var _ IRouter = (*Engine)(nil)
 
 // New returns a new blank Engine instance without any middleware attached.
 // By default, the configuration is:

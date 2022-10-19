@@ -30,7 +30,7 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-var _ context.Context = &Context{}
+var _ context.Context = (*Context)(nil)
 
 // Unit tests TODO
 // func (c *Context) File(filepath string) {

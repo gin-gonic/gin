@@ -58,7 +58,7 @@ type RouterGroup struct {
 	root     bool
 }
 
-var _ IRouter = &RouterGroup{}
+var _ IRouter = (*RouterGroup)(nil)
 
 // Use adds middleware to the group, see example code in GitHub.
 func (group *RouterGroup) Use(middleware ...HandlerFunc) IRoutes {

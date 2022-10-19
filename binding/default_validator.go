@@ -43,7 +43,7 @@ func (err SliceValidationError) Error() string {
 	}
 }
 
-var _ StructValidator = &defaultValidator{}
+var _ StructValidator = (*defaultValidator)(nil)
 
 // ValidateStruct receives any kind of type, but only performed struct or pointer to struct type.
 func (v *defaultValidator) ValidateStruct(obj any) error {
