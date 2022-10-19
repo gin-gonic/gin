@@ -2354,3 +2354,9 @@ func TestContextAddParam(t *testing.T) {
 	assert.Equal(t, ok, true)
 	assert.Equal(t, value, v)
 }
+
+func TestRetrieveValueNoEngineInContext(t *testing.T) {
+	c := &Context{}
+	v := c.Value("foo")
+	assert.Nil(t, v)
+}
