@@ -679,7 +679,7 @@ func TestPrepareTrustedCIRDsWith(t *testing.T) {
 func parseCIDR(cidr string) *net.IPNet {
 	_, parsedCIDR, err := net.ParseCIDR(cidr)
 	if err != nil {
-		t.Error(err)
+		fmt.Println(err)
 	}
 	return parsedCIDR
 }
