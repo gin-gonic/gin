@@ -1210,7 +1210,7 @@ func (c *Context) Value(key any) any {
 			return val
 		}
 	}
-	if !c.engine.ContextWithFallback || c.Request == nil || c.Request.Context() == nil {
+	if c.engine == nil || !c.engine.ContextWithFallback || c.Request == nil || c.Request.Context() == nil {
 		return nil
 	}
 	return c.Request.Context().Value(key)
