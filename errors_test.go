@@ -19,13 +19,13 @@ func TestError(t *testing.T) {
 		Err:  baseError,
 		Type: ErrorTypePrivate,
 	}
-	assert.Equal(t, err.Error(), baseError.Error())
+	assert.Equal(t, baseError.Error(), err.Error())
 	assert.Equal(t, H{"error": baseError.Error()}, err.JSON())
 
-	assert.Equal(t, err.SetType(ErrorTypePublic), err)
+	assert.Equal(t, err, err.SetType(ErrorTypePublic))
 	assert.Equal(t, ErrorTypePublic, err.Type)
 
-	assert.Equal(t, err.SetMeta("some data"), err)
+	assert.Equal(t, err, err.SetMeta("some data"))
 	assert.Equal(t, "some data", err.Meta)
 	assert.Equal(t, H{
 		"error": baseError.Error(),

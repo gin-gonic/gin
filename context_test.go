@@ -147,7 +147,7 @@ func TestSaveUploadedCreateFailed(t *testing.T) {
 func TestContextReset(t *testing.T) {
 	router := New()
 	c := router.allocateContext()
-	assert.Equal(t, c.engine, router)
+	assert.Equal(t, router, c.engine)
 
 	c.index = 2
 	c.Writer = &responseWriter{ResponseWriter: httptest.NewRecorder()}
@@ -163,7 +163,7 @@ func TestContextReset(t *testing.T) {
 	assert.Empty(t, c.Errors.Errors())
 	assert.Empty(t, c.Errors.ByType(ErrorTypeAny))
 	assert.Len(t, c.Params, 0)
-	assert.EqualValues(t, c.index, -1)
+	assert.EqualValues(t, -1, c.index)
 	assert.Equal(t, c.Writer.(*responseWriter), &c.writermem)
 }
 
