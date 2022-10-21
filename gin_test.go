@@ -93,7 +93,7 @@ func TestH2c(t *testing.T) {
 	go func() {
 		err := http.Serve(ln, r.Handler())
 		if err != nil {
-			t.Error(err)
+			t.Log(err)
 		}
 	}()
 	defer ln.Close()
