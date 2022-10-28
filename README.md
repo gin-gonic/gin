@@ -1884,48 +1884,56 @@ func main() {
 
 ### Build a single binary with templates
 
-You can build a server into a single binary containing templates by using [go-assets][].
-
-[go-assets]: https://github.com/jessevdk/go-assets
+You can build a server into a single binary containing templates by using the [embed](https://pkg.go.dev/embed) package.
 
 ```go
+package main
+
+import (
+  "embed"
+  "html/template"
+  "net/http"
+
+  "github.com/gin-gonic/gin"
+)
+
+//go:embed assets/* templates/*
+var f embed.FS
+
 func main() {
-  r := gin.New()
+  router := gin.Default()
+  templ := template.Must(template.New("").ParseFS(f, "templates/*.tmpl", "templates/foo/*.tmpl"))
+  router.SetHTMLTemplate(templ)
 
-  t, err := loadTemplate()
-  if err != nil {
-    panic(err)
-  }
-  r.SetHTMLTemplate(t)
+  // example: /public/assets/images/example.png
+  router.StaticFS("/public", http.FS(f))
 
-  r.GET("/", func(c *gin.Context) {
-    c.HTML(http.StatusOK, "/html/index.tmpl",nil)
+  router.GET("/", func(c *gin.Context) {
+    c.HTML(http.StatusOK, "index.tmpl", gin.H{
+      "title": "Main website",
+    })
   })
-  r.Run(":8080")
-}
 
-// loadTemplate loads templates embedded by go-assets-builder
-func loadTemplate() (*template.Template, error) {
-  t := template.New("")
-  for name, file := range Assets.Files {
-    defer file.Close()
-    if file.IsDir() || !strings.HasSuffix(name, ".tmpl") {
-      continue
-    }
-    h, err := ioutil.ReadAll(file)
-    if err != nil {
-      return nil, err
-    }
-    t, err = t.New(name).Parse(string(h))
-    if err != nil {
-      return nil, err
-    }
-  }
-  return t, nil
+  router.GET("/foo", func(c *gin.Context) {
+    c.HTML(http.StatusOK, "bar.tmpl", gin.H{
+      "title": "Foo website",
+    })
+  })
+
+  router.GET("favicon.ico", func(c *gin.Context) {
+    file, _ := f.ReadFile("assets/favicon.ico")
+    c.Data(
+      http.StatusOK,
+      "image/x-icon",
+      file,
+    )
+  })
+
+  router.Run(":8080")
 }
 ```
 
-See a complete example in the `https://github.com/gin-gonic/examples/tree/master/assets-in-binary` directory.
+See a complete example in the `https://github.com/gin-gonic/examples/tree/master/assets-in-binary/example02` directory.
 
 ### Bind form-data request with custom struct
 
