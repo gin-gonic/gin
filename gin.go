@@ -588,6 +588,16 @@ func (engine *Engine) ReleaseContext(c *Context) {
 	engine.pool.Put(c)
 }
 
+// HandleContextAsIs handles the context as is without resetting it. This means
+// that all key/values, middleware, etc. will be retained. This is useful for
+// handling a context that has been created with *Engine.GetContext.
+func (engine *Engine) HandleContextAsIs(c *Context) {
+	oldIndex := c.index
+	c.index = -1
+	engine.handleHTTPRequest(c)
+	c.index = oldIndex
+}
+
 // ServeHTTP conforms to the http.Handler interface.
 func (engine *Engine) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	c := engine.GetContext(w, req)
