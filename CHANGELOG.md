@@ -113,7 +113,7 @@
 * chore(performance): improve countParams ([#2378](https://github.com/gin-gonic/gin/pull/2378))
 * Remove some functions that have the same effect as the bytes package ([#2387](https://github.com/gin-gonic/gin/pull/2387))
 * update:SetMode function ([#2321](https://github.com/gin-gonic/gin/pull/2321))
-* remove a unused type SecureJSONPrefix ([#2391](https://github.com/gin-gonic/gin/pull/2391))
+* remove an unused type SecureJSONPrefix ([#2391](https://github.com/gin-gonic/gin/pull/2391))
 * Add a redirect sample for POST method ([#2389](https://github.com/gin-gonic/gin/pull/2389))
 * Add CustomRecovery builtin middleware ([#2322](https://github.com/gin-gonic/gin/pull/2322))
 * binding: avoid 2038 problem on 32-bit architectures ([#2450](https://github.com/gin-gonic/gin/pull/2450))

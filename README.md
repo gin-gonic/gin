@@ -293,7 +293,7 @@ func main() {
   router := gin.Default()
 
   // Query string parameters are parsed using the existing underlying request object.
-  // The request responds to a url matching:  /welcome?firstname=Jane&lastname=Doe
+  // The request responds to an url matching:  /welcome?firstname=Jane&lastname=Doe
   router.GET("/welcome", func(c *gin.Context) {
     firstname := c.DefaultQuery("firstname", "Guest")
     lastname := c.Query("lastname") // shortcut for c.Request.URL.Query().Get("lastname")
@@ -693,7 +693,7 @@ Also, Gin provides two sets of methods for binding:
 
 When using the Bind-method, Gin tries to infer the binder depending on the Content-Type header. If you are sure what you are binding, you can use `MustBindWith` or `ShouldBindWith`.
 
-You can also specify that specific fields are required. If a field is decorated with `binding:"required"` and has a empty value when binding, an error will be returned.
+You can also specify that specific fields are required. If a field is decorated with `binding:"required"` and has an empty value when binding, an error will be returned.
 
 ```go
 // Binding from JSON
@@ -2096,7 +2096,7 @@ func validate(obj interface{}) error {
 }
 
 // Now we can do this!!!
-// FormA is a external type that we can't modify it's tag
+// FormA is an external type that we can't modify it's tag
 type FormA struct {
   FieldA string `url:"field_a"`
 }
