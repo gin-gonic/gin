@@ -73,7 +73,7 @@ func TestLoadHTMLGlobDebugMode(t *testing.T) {
 
 	res, err := http.Get(fmt.Sprintf("%s/test", ts.URL))
 	if err != nil {
-		fmt.Println(err)
+		t.Error(err)
 	}
 
 	resp, _ := ioutil.ReadAll(res.Body)
@@ -83,7 +83,7 @@ func TestLoadHTMLGlobDebugMode(t *testing.T) {
 func TestH2c(t *testing.T) {
 	ln, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
-		fmt.Println(err)
+		t.Error(err)
 	}
 	r := Default()
 	r.UseH2C = true
@@ -93,7 +93,7 @@ func TestH2c(t *testing.T) {
 	go func() {
 		err := http.Serve(ln, r.Handler())
 		if err != nil {
-			fmt.Println(err)
+			t.Log(err)
 		}
 	}()
 	defer ln.Close()
@@ -111,7 +111,7 @@ func TestH2c(t *testing.T) {
 
 	res, err := httpClient.Get(url)
 	if err != nil {
-		fmt.Println(err)
+		t.Error(err)
 	}
 
 	resp, _ := ioutil.ReadAll(res.Body)
@@ -131,7 +131,7 @@ func TestLoadHTMLGlobTestMode(t *testing.T) {
 
 	res, err := http.Get(fmt.Sprintf("%s/test", ts.URL))
 	if err != nil {
-		fmt.Println(err)
+		t.Error(err)
 	}
 
 	resp, _ := ioutil.ReadAll(res.Body)
@@ -151,7 +151,7 @@ func TestLoadHTMLGlobReleaseMode(t *testing.T) {
 
 	res, err := http.Get(fmt.Sprintf("%s/test", ts.URL))
 	if err != nil {
-		fmt.Println(err)
+		t.Error(err)
 	}
 
 	resp, _ := ioutil.ReadAll(res.Body)
@@ -178,7 +178,7 @@ func TestLoadHTMLGlobUsingTLS(t *testing.T) {
 	client := &http.Client{Transport: tr}
 	res, err := client.Get(fmt.Sprintf("%s/test", ts.URL))
 	if err != nil {
-		fmt.Println(err)
+		t.Error(err)
 	}
 
 	resp, _ := ioutil.ReadAll(res.Body)
@@ -198,7 +198,7 @@ func TestLoadHTMLGlobFromFuncMap(t *testing.T) {
 
 	res, err := http.Get(fmt.Sprintf("%s/raw", ts.URL))
 	if err != nil {
-		fmt.Println(err)
+		t.Error(err)
 	}
 
 	resp, _ := ioutil.ReadAll(res.Body)
@@ -229,7 +229,7 @@ func TestLoadHTMLFilesTestMode(t *testing.T) {
 
 	res, err := http.Get(fmt.Sprintf("%s/test", ts.URL))
 	if err != nil {
-		fmt.Println(err)
+		t.Error(err)
 	}
 
 	resp, _ := ioutil.ReadAll(res.Body)
@@ -249,7 +249,7 @@ func TestLoadHTMLFilesDebugMode(t *testing.T) {
 
 	res, err := http.Get(fmt.Sprintf("%s/test", ts.URL))
 	if err != nil {
-		fmt.Println(err)
+		t.Error(err)
 	}
 
 	resp, _ := ioutil.ReadAll(res.Body)
@@ -269,7 +269,7 @@ func TestLoadHTMLFilesReleaseMode(t *testing.T) {
 
 	res, err := http.Get(fmt.Sprintf("%s/test", ts.URL))
 	if err != nil {
-		fmt.Println(err)
+		t.Error(err)
 	}
 
 	resp, _ := ioutil.ReadAll(res.Body)
@@ -296,7 +296,7 @@ func TestLoadHTMLFilesUsingTLS(t *testing.T) {
 	client := &http.Client{Transport: tr}
 	res, err := client.Get(fmt.Sprintf("%s/test", ts.URL))
 	if err != nil {
-		fmt.Println(err)
+		t.Error(err)
 	}
 
 	resp, _ := ioutil.ReadAll(res.Body)
@@ -316,7 +316,7 @@ func TestLoadHTMLFilesFuncMap(t *testing.T) {
 
 	res, err := http.Get(fmt.Sprintf("%s/raw", ts.URL))
 	if err != nil {
-		fmt.Println(err)
+		t.Error(err)
 	}
 
 	resp, _ := ioutil.ReadAll(res.Body)
