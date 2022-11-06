@@ -609,6 +609,9 @@ func TestContextPostFormMultipart(t *testing.T) {
 
 	dicts = c.PostFormMap("nokey")
 	assert.Equal(t, 0, len(dicts))
+
+	formData := c.GetPostFormData()
+	assert.Equal(t, 9, len(formData))
 }
 
 func TestContextSetCookie(t *testing.T) {
