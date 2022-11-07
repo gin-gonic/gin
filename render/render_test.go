@@ -39,12 +39,30 @@ func TestRenderJSON(t *testing.T) {
 	assert.Equal(t, "application/json; charset=utf-8", w.Header().Get("Content-Type"))
 }
 
-func TestRenderJSONPanics(t *testing.T) {
+func TestRenderJSONFail(t *testing.T) {
 	w := httptest.NewRecorder()
 	data := make(chan int)
 
 	// json: unsupported type: chan int
-	assert.Panics(t, func() { assert.NoError(t, (JSON{data}).Render(w)) })
+	assert.Error(t, (JSON{data}).Render(w))
+}
+
+type mockWriter struct {
+	*httptest.ResponseRecorder
+}
+
+func (mock *mockWriter) Write(buf []byte) (int, error) {
+	return 0, errors.New("mock write error")
+}
+
+func TestRenderJSONWriteFail(t *testing.T) {
+	w := &mockWriter{
+		ResponseRecorder: httptest.NewRecorder(),
+	}
+	err := (JSON{map[string]any{
+		"foo": "bar",
+	}}).Render(w)
+	assert.Equal(t, errors.New("mock write error"), err)
 }
 
 func TestRenderIndentedJSON(t *testing.T) {
