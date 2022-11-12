@@ -85,6 +85,7 @@ var (
 	Uri           = uriBinding{}
 	Header        = headerBinding{}
 	TOML          = tomlBinding{}
+	Cookie        = cookieBinding{}
 )
 
 // Default returns the appropriate Binding instance based on the HTTP method

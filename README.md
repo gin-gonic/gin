@@ -47,6 +47,7 @@ Gin is a web framework written in Go (Golang). It features a martini-like API wi
     - [Bind Query String or Post Data](#bind-query-string-or-post-data)
     - [Bind Uri](#bind-uri)
     - [Bind Header](#bind-header)
+    - [Bind Cookie](#bind-cookie)
     - [Bind HTML checkboxes](#bind-html-checkboxes)
     - [Multipart/Urlencoded binding](#multiparturlencoded-binding)
     - [XML, JSON, YAML and ProtoBuf rendering](#xml-json-yaml-and-protobuf-rendering)
@@ -1008,6 +1009,45 @@ func main() {
     h := testHeader{}
 
     if err := c.ShouldBindHeader(&h); err != nil {
+      c.JSON(http.StatusOK, err)
+    }
+
+    fmt.Printf("%#v\n", h)
+    c.JSON(http.StatusOK, gin.H{"Rate": h.Rate, "Domain": h.Domain})
+  })
+
+  r.Run()
+
+// client
+// curl -H "rate:300" -H "domain:music" 127.0.0.1:8080/
+// output
+// {"Domain":"music","Rate":300}
+}
+```
+
+### Bind Cookie
+
+```go
+package main
+
+import (
+  "fmt"
+  "net/http"
+
+  "github.com/gin-gonic/gin"
+)
+
+type testCookie struct {
+  Rate   int    `cookie:"Rate"`
+  Domain string `cookie:"Domain"`
+}
+
+func main() {
+  r := gin.Default()
+  r.GET("/", func(c *gin.Context) {
+    h := testCookie{}
+
+    if err := c.ShouldBindCookie(&h); err != nil {
       c.JSON(http.StatusOK, err)
     }
 
