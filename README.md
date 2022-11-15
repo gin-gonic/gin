@@ -49,7 +49,7 @@ Gin is a web framework written in Go (Golang). It features a martini-like API wi
     - [Bind Header](#bind-header)
     - [Bind HTML checkboxes](#bind-html-checkboxes)
     - [Multipart/Urlencoded binding](#multiparturlencoded-binding)
-    - [XML, JSON, YAML and ProtoBuf rendering](#xml-json-yaml-and-protobuf-rendering)
+    - [XML, JSON, YAML, TOML and ProtoBuf rendering](#xml-json-yaml-toml-and-protobuf-rendering)
       - [SecureJSON](#securejson)
       - [JSONP](#jsonp)
       - [AsciiJSON](#asciijson)
@@ -1114,7 +1114,7 @@ Test it with:
 curl -X POST -v --form name=user --form "avatar=@./avatar.png" http://localhost:8080/profile
 ```
 
-### XML, JSON, YAML and ProtoBuf rendering
+### XML, JSON, YAML, TOML and ProtoBuf rendering
 
 ```go
 func main() {
@@ -1146,6 +1146,10 @@ func main() {
 
   r.GET("/someYAML", func(c *gin.Context) {
     c.YAML(http.StatusOK, gin.H{"message": "hey", "status": http.StatusOK})
+  })
+
+  r.GET("/someTOML", func(c *gin.Context) {
+    c.TOML(http.StatusOK, gin.H{"message": "hey", "status": http.StatusOK})
   })
 
   r.GET("/someProtoBuf", func(c *gin.Context) {
