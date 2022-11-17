@@ -6,7 +6,7 @@ package binding
 
 import (
 	"bytes"
-	"io/ioutil"
+	"io"
 	"mime/multipart"
 	"net/http"
 	"testing"
@@ -129,7 +129,7 @@ func assertMultipartFileHeader(t *testing.T, fh *multipart.FileHeader, file test
 	fl, err := fh.Open()
 	assert.NoError(t, err)
 
-	body, err := ioutil.ReadAll(fl)
+	body, err := io.ReadAll(fl)
 	assert.NoError(t, err)
 	assert.Equal(t, string(file.Content), string(body))
 

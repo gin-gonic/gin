@@ -9,7 +9,6 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
-	"io/ioutil"
 	"mime/multipart"
 	"net/http"
 	"os"
@@ -656,12 +655,12 @@ func TestBindingFormFilesMultipart(t *testing.T) {
 	// file from os
 	f, _ := os.Open("form.go")
 	defer f.Close()
-	fileActual, _ := ioutil.ReadAll(f)
+	fileActual, _ := io.ReadAll(f)
 
 	// file from multipart
 	mf, _ := obj.File.Open()
 	defer mf.Close()
-	fileExpect, _ := ioutil.ReadAll(mf)
+	fileExpect, _ := io.ReadAll(mf)
 
 	assert.Equal(t, FormMultipart.Name(), "multipart/form-data")
 	assert.Equal(t, obj.Foo, "bar")
@@ -1347,13 +1346,13 @@ func testProtoBodyBindingFail(t *testing.T, b Binding, name, path, badPath, body
 	obj := protoexample.Test{}
 	req := requestWithBody("POST", path, body)
 
-	req.Body = ioutil.NopCloser(&hook{})
+	req.Body = io.NopCloser(&hook{})
 	req.Header.Add("Content-Type", MIMEPROTOBUF)
 	err := b.Bind(req, &obj)
 	assert.Error(t, err)
 
 	invalidobj := FooStruct{}
-	req.Body = ioutil.NopCloser(strings.NewReader(`{"msg":"hello"}`))
+	req.Body = io.NopCloser(strings.NewReader(`{"msg":"hello"}`))
 	req.Header.Add("Content-Type", MIMEPROTOBUF)
 	err = b.Bind(req, &invalidobj)
 	assert.Error(t, err)
