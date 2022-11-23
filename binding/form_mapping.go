@@ -236,9 +236,9 @@ func setWithProperType(val string, value reflect.Value, field reflect.StructFiel
 		case time.Time:
 			return setTimeField(val, field, value)
 		}
-		return json.Unmarshal(bytesconv.StringToBytes(val), value.Addr().Interface())
+		return json.Unmarshal(completeJSONBytes(bytesconv.StringToBytes(val)), value.Addr().Interface())
 	case reflect.Map:
-		return json.Unmarshal(bytesconv.StringToBytes(val), value.Addr().Interface())
+		return json.Unmarshal(completeJSONBytes(bytesconv.StringToBytes(val)), value.Addr().Interface())
 	default:
 		return errUnknownType
 	}
@@ -400,4 +400,16 @@ func setFormMap(ptr any, form map[string][]string) error {
 	}
 
 	return nil
+}
+
+func completeJSONBytes(bs []byte) []byte {
+	if len(bs) == 0 ||
+		bs[0] == '"' && bs[len(bs)-1] == '"' {
+		return bs
+	}
+	var cbs = make([]byte, len(bs)+2)
+	cbs[0] = '"'
+	copy(cbs[1:], bs)
+	cbs[len(cbs)-1] = '"'
+	return cbs
 }

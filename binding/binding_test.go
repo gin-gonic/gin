@@ -18,9 +18,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/gin-gonic/gin/testdata/protoexample"
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/protobuf/proto"
+
+	"github.com/gin-gonic/gin/testdata/protoexample"
 )
 
 type appkey struct {
@@ -796,12 +798,15 @@ func TestUriBinding(t *testing.T) {
 	assert.Equal(t, "uri", b.Name())
 
 	type Tag struct {
-		Name string `uri:"name"`
+		ID   uuid.NullUUID `uri:"id"`
+		Name string        `uri:"name"`
 	}
 	var tag Tag
 	m := make(map[string][]string)
+	m["id"] = []string{"5b620cc3-a5eb-4515-8fc7-4686d5cadfa9"}
 	m["name"] = []string{"thinkerou"}
 	assert.NoError(t, b.BindUri(m, &tag))
+	assert.Equal(t, uuid.NullUUID{Valid: true, UUID: uuid.MustParse("5b620cc3-a5eb-4515-8fc7-4686d5cadfa9")}, tag.ID)
 	assert.Equal(t, "thinkerou", tag.Name)
 
 	type NotSupportStruct struct {

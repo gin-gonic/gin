@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -134,6 +135,31 @@ func TestMappingURI(t *testing.T) {
 	err := mapURI(&s, map[string][]string{"field": {"6"}})
 	assert.NoError(t, err)
 	assert.Equal(t, 6, s.F)
+}
+
+func TestMappingURICompositeTypes(t *testing.T) {
+	for _, tt := range []struct {
+		name   string
+		value  any
+		uri    string
+		expect any
+	}{
+		{"uuid", struct{ F uuid.NullUUID }{}, "5b620cc3-a5eb-4515-8fc7-4686d5cadfa9", uuid.NullUUID{Valid: true, UUID: uuid.MustParse("5b620cc3-a5eb-4515-8fc7-4686d5cadfa9")}},
+	} {
+		tp := reflect.TypeOf(tt.value)
+		testName := tt.name + ":" + tp.Field(0).Type.String()
+
+		val := reflect.New(reflect.TypeOf(tt.value))
+		val.Elem().Set(reflect.ValueOf(tt.value))
+
+		field := val.Elem().Type().Field(0)
+
+		_, err := mapping(val, emptyField, formSource{field.Name: {tt.uri}}, "uri")
+		assert.NoError(t, err, testName)
+
+		actual := val.Elem().Field(0).Interface()
+		assert.Equal(t, tt.expect, actual, testName)
+	}
 }
 
 func TestMappingForm(t *testing.T) {
