@@ -562,10 +562,10 @@ func (c *Context) get(m map[string][]string, key string) (map[string]string, boo
 	dicts := make(map[string]string)
 	exist := false
 	for k, v := range m {
-		if i := strings.IndexByte(k, '['); i >= 1 && k[0:i] == key {
-			if j := strings.IndexByte(k[i+1:], ']'); j >= 1 {
+		if before, after, found := strings.Cut(k, "["); found && before == key {
+			if before, _, found := strings.Cut(after, "]"); found && before != "" {
 				exist = true
-				dicts[k[i+1:][:j]] = v[0]
+				dicts[before] = v[0]
 			}
 		}
 	}
