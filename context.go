@@ -1147,7 +1147,8 @@ func (c *Context) NegotiateFormat(offered ...string) string {
 			// According to RFC 2616 and RFC 2396, non-ASCII characters are not allowed in headers,
 			// therefore we can just iterate over the string without casting it into []rune
 			i := 0
-			for ; i < len(accepted); i++ {
+			minLen := min(len(accepted), len(offer))
+			for ; i < minLen; i++ {
 				if accepted[i] == '*' || offer[i] == '*' {
 					return offer
 				}
