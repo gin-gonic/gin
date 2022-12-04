@@ -33,9 +33,6 @@ import (
 var _ context.Context = (*Context)(nil)
 
 // Unit tests TODO
-// func (c *Context) File(filepath string) {
-// func (c *Context) Negotiate(code int, config Negotiate) {
-// BAD case: func (c *Context) Render(code int, render render.Render, obj ...interface{}) {
 // test that information is not leaked when reusing Contexts (using the Pool)
 
 func createMultipartRequest() *http.Request {
@@ -86,6 +83,31 @@ func TestContextFormFile(t *testing.T) {
 	}
 
 	assert.NoError(t, c.SaveUploadedFile(f, "test"))
+}
+
+func TestContextFormFileFailed(t *testing.T) {
+	buf := new(bytes.Buffer)
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	c.Request, _ = http.NewRequest("POST", "/", buf)
+	_, err := c.FormFile("file")
+	if assert.Error(t, err) {
+		assert.Equal(t, http.ErrNotMultipart, err)
+	}
+
+	mw := multipart.NewWriter(buf)
+	w, err := mw.CreateFormFile("file", "test")
+	if assert.NoError(t, err) {
+		_, err = w.Write([]byte("test"))
+		assert.NoError(t, err)
+	}
+	mw.Close()
+
+	c.Request, _ = http.NewRequest("POST", "/", buf)
+	c.Request.Header.Set("Content-Type", mw.FormDataContentType())
+	_, err = c.FormFile("file2")
+	if assert.Error(t, err) {
+		assert.Equal(t, http.ErrMissingFile, err)
+	}
 }
 
 func TestContextMultipartForm(t *testing.T) {
@@ -142,6 +164,7 @@ func TestSaveUploadedCreateFailed(t *testing.T) {
 	}
 
 	assert.Error(t, c.SaveUploadedFile(f, "/"))
+	assert.Error(t, c.SaveUploadedFile(f, "/file/"))
 }
 
 func TestContextReset(t *testing.T) {
@@ -609,6 +632,13 @@ func TestContextPostFormMultipart(t *testing.T) {
 
 	dicts = c.PostFormMap("nokey")
 	assert.Equal(t, 0, len(dicts))
+
+	c.Request = createMultipartRequest()
+	c.formCache = nil
+	c.Request.Header = http.Header{"Content-Type": {`multipart/form-data; boundary="foo123"`}}
+	values, ok = c.GetPostFormArray("array")
+	assert.Nil(t, values)
+	assert.False(t, ok)
 }
 
 func TestContextSetCookie(t *testing.T) {
@@ -1113,7 +1143,6 @@ func TestContextHeaders(t *testing.T) {
 	assert.False(t, exist)
 }
 
-// TODO
 func TestContextRenderRedirectWithRelativePath(t *testing.T) {
 	w := httptest.NewRecorder()
 	c, _ := CreateTestContext(w)
