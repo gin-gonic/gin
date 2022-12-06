@@ -922,7 +922,10 @@ func (c *Context) Render(code int, r render.Render) {
 	}
 
 	if err := r.Render(c.Writer); err != nil {
-		panic(err)
+		panic(Error{
+			Err:  err,
+			Type: ErrorTypeRender,
+		})
 	}
 }
 

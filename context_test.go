@@ -655,6 +655,16 @@ func TestContextRenderPanicIfErr(t *testing.T) {
 	defer func() {
 		r := recover()
 		assert.Equal(t, "TestPanicRender", fmt.Sprint(r))
+
+		// confirm the recovered object is an error
+		err, ok := r.(error)
+		assert.True(t, ok)
+
+		// the error returned should be a gin render Error
+		e := Error{}
+		assert.True(t, errors.As(err, &e))
+		assert.ErrorContains(t, e.Unwrap(), "TestPanicRender")
+		assert.True(t, e.IsType(ErrorTypeRender))
 	}()
 	w := httptest.NewRecorder()
 	c, _ := CreateTestContext(w)
