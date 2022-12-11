@@ -62,7 +62,9 @@ func CustomRecoveryWithWriter(out io.Writer, handle RecoveryFunc) HandlerFunc {
 				if ne, ok := err.(*net.OpError); ok {
 					var se *os.SyscallError
 					if errors.As(ne, &se) {
-						if strings.Contains(strings.ToLower(se.Error()), "broken pipe") || strings.Contains(strings.ToLower(se.Error()), "connection reset by peer") {
+						seStr := strings.ToLower(se.Error())
+						if strings.Contains(seStr, "broken pipe") ||
+							strings.Contains(seStr, "connection reset by peer") {
 							brokenPipe = true
 						}
 					}
