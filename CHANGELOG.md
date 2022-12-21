@@ -1,5 +1,16 @@
 # Gin ChangeLog
 
+## Gin v1.8.2
+
+### Bugs
+
+* fix(route): redirectSlash bug ([#3227]((https://github.com/gin-gonic/gin/pull/3227)))
+* fix(engine): missing route params for CreateTestContext ([#2778]((https://github.com/gin-gonic/gin/pull/2778))) ([#2803]((https://github.com/gin-gonic/gin/pull/2803)))
+
+### Security
+
+* Fix the GO-2022-1144 vulnerability ([#3432]((https://github.com/gin-gonic/gin/pull/3432)))
+
 ## Gin v1.8.1
 
 ### ENHANCEMENTS
