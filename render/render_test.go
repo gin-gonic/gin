@@ -8,6 +8,7 @@ import (
 	"encoding/xml"
 	"errors"
 	"html/template"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"strconv"
@@ -251,6 +252,27 @@ func (ft *fail) MarshalYAML() (any, error) {
 func TestRenderYAMLFail(t *testing.T) {
 	w := httptest.NewRecorder()
 	err := (YAML{&fail{}}).Render(w)
+	assert.Error(t, err)
+}
+
+func TestRenderTOML(t *testing.T) {
+	w := httptest.NewRecorder()
+	data := map[string]any{
+		"foo":  "bar",
+		"html": "<b>",
+	}
+	(TOML{data}).WriteContentType(w)
+	assert.Equal(t, "application/toml; charset=utf-8", w.Header().Get("Content-Type"))
+
+	err := (TOML{data}).Render(w)
+	assert.NoError(t, err)
+	assert.Equal(t, "foo = 'bar'\nhtml = '<b>'\n", w.Body.String())
+	assert.Equal(t, "application/toml; charset=utf-8", w.Header().Get("Content-Type"))
+}
+
+func TestRenderTOMLFail(t *testing.T) {
+	w := httptest.NewRecorder()
+	err := (TOML{net.IPv4bcast}).Render(w)
 	assert.Error(t, err)
 }
 
