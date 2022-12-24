@@ -814,6 +814,30 @@ func (c *Context) RemoteIP() string {
 	return ip
 }
 
+func (c *Context) ClientProto() string {
+	var isTls = c.Request.TLS != nil
+	remoteIP := net.ParseIP(c.RemoteIP())
+	if remoteIP == nil {
+		return ""
+	}
+	trusted := c.engine.isTrustedProxy(remoteIP)
+
+	if trusted && c.engine.ForwardedByClientProto && c.engine.RemoteProtoHeaders != nil {
+		for _, headerName := range c.engine.RemoteProtoHeaders {
+			proto, valid := c.engine.validateHeader(c.requestHeader(headerName))
+			if valid {
+				return proto
+			}
+		}
+	}
+
+	if isTls {
+		return "https"
+	} else {
+		return "http"
+	}
+}
+
 // ContentType returns the Content-Type header of the request.
 func (c *Context) ContentType() string {
 	return filterFlags(c.requestHeader("Content-Type"))

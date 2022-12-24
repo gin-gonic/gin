@@ -112,6 +112,8 @@ type Engine struct {
 	// `(*gin.Context).Request.RemoteAddr`.
 	ForwardedByClientIP bool
 
+	ForwardedByClientProto bool
+
 	// AppEngine was deprecated.
 	// Deprecated: USE `TrustedPlatform` WITH VALUE `gin.PlatformGoogleAppEngine` INSTEAD
 	// #726 #755 If enabled, it will trust some headers starting with
@@ -135,6 +137,8 @@ type Engine struct {
 	// `(*gin.Context).Request.RemoteAddr` is matched by at least one of the
 	// network origins of list defined by `(*gin.Engine).SetTrustedProxies()`.
 	RemoteIPHeaders []string
+
+	RemoteProtoHeaders []string
 
 	// TrustedPlatform if set to a constant of value gin.Platform*, trusts the headers set by
 	// that platform, for example to determine the client IP
@@ -189,7 +193,9 @@ func New() *Engine {
 		RedirectFixedPath:      false,
 		HandleMethodNotAllowed: false,
 		ForwardedByClientIP:    true,
+		ForwardedByClientProto: true,
 		RemoteIPHeaders:        []string{"X-Forwarded-For", "X-Real-IP"},
+		RemoteProtoHeaders:     []string{"X-Forwarded-Proto"},
 		TrustedPlatform:        defaultPlatform,
 		UseRawPath:             false,
 		RemoveExtraSlash:       false,
