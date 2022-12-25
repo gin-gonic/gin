@@ -12,7 +12,7 @@
 [![Release](https://img.shields.io/github/release/gin-gonic/gin.svg?style=flat-square)](https://github.com/gin-gonic/gin/releases)
 [![TODOs](https://badgen.net/https/api.tickgit.com/badgen/github.com/gin-gonic/gin)](https://www.tickgit.com/browse?repo=github.com/gin-gonic/gin)
 
-Gin is a web framework written in [Go](https://github.com/golang/go). It features a martini-like API with performance that is up to 40 times faster thanks to [httprouter](https://github.com/julienschmidt/httprouter). If you need performance and good productivity, you will love Gin.
+Gin is a web framework written in [Go](https://go.dev/). It features a martini-like API with performance that is up to 40 times faster thanks to [httprouter](https://github.com/julienschmidt/httprouter). If you need performance and good productivity, you will love Gin.
 
 **The key features of Gin are:**
 
@@ -31,9 +31,21 @@ For more feature details, please see the [Gin website introduction](https://gin-
 
 ## Getting started
 
+### Prerequisites
+
+- **[Go](https://go.dev/)**: any one of the **three latest major** [releases](https://go.dev/doc/devel/release).
+
 ### Getting Gin
 
-The first need [Go](https://golang.org/) installed (**version 1.11+ is required**), then you can use the below Go command to install Gin.
+With [Go module](https://github.com/golang/go/wiki/Modules) support (Go 1.11+), simply add the following import
+
+```
+import "github.com/gin-gonic/gin"
+```
+
+to your code, and then `go [build|run|test]` will automatically fetch the necessary dependencies.
+
+Otherwise, run the following Go command to install the `gin` package:
 
 ```sh
 $ go get -u github.com/gin-gonic/gin
