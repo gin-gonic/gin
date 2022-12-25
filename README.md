@@ -33,11 +33,11 @@ For more feature details, please see the [Gin website introduction](https://gin-
 
 ### Prerequisites
 
-- **[Go](https://go.dev/)**: any one of the **three latest major** [releases](https://go.dev/doc/devel/release).
+- **[Go](https://go.dev/)**: any one of the **three latest major** [releases](https://go.dev/doc/devel/release)(now version 1.16+ is required).
 
 ### Getting Gin
 
-With [Go module](https://github.com/golang/go/wiki/Modules) support (Go 1.11+), simply add the following import
+With [Go module](https://github.com/golang/go/wiki/Modules) support, simply add the following import
 
 ```
 import "github.com/gin-gonic/gin"
@@ -51,23 +51,27 @@ Otherwise, run the following Go command to install the `gin` package:
 $ go get -u github.com/gin-gonic/gin
 ```
 
-For more installation guides such as vendor tool, please check out [Gin quickstart](https://gin-gonic.com/docs/quickstart/).
-
 ### Running Gin
 
 First you need to import Gin package for using Gin, one simplest example likes the follow `example.go`:
 
 ```go
 package main
-import "github.com/gin-gonic/gin"
+
+import (
+  "net/http"
+
+  "github.com/gin-gonic/gin"
+)
+
 func main() {
-	r := gin.Default()
-	r.GET("/ping", func(c *gin.Context) {
-		c.JSON(200, gin.H{
-			"message": "pong",
-		})
-	})
-	r.Run() // listen and serve on 0.0.0.0:8080
+  r := gin.Default()
+  r.GET("/ping", func(c *gin.Context) {
+    c.JSON(http.StatusOK, gin.H{
+      "message": "pong",
+    })
+  })
+  r.Run() // listen and serve on 0.0.0.0:8080 (for windows "localhost:8080")
 }
 ```
 
@@ -78,13 +82,36 @@ And use the Go command to run the demo:
 $ go run example.go
 ```
 
+
+## Examples
+
+A number of ready-to-run examples demonstrating various use cases of Gin on the [Gin examples](https://github.com/gin-gonic/examples) repository.
+
+
+## Documentation
+
+See [API documentation and descriptions](https://godoc.org/github.com/gin-gonic/gin) for package.
+
+All documentation is available on the Gin website.
+
+- [English](https://gin-gonic.com/docs/)
+- [简体中文](https://gin-gonic.com/zh-cn/docs/)
+- [繁體中文](https://gin-gonic.com/zh-tw/docs/)
+- [日本語](https://gin-gonic.com/ja/docs/)
+- [Español](https://gin-gonic.com/es/docs/)
+- [한국어](https://gin-gonic.com/ko-kr/docs/)
+- [Turkish](https://gin-gonic.com/tr/docs/)
+- [Persian](https://gin-gonic.com/fa/docs/)
+
+### Articles about Gin
+
+A curated list of awesome Gin framework.
+
+- [Tutorial: Developing a RESTful API with Go and Gin](https://go.dev/doc/tutorial/web-service-gin)
+
 ## Benchmarks
 
-Please see all benchmarks details from [Gin website](https://gin-gonic.com/docs/benchmarks/).
-
-Gin uses a custom version of [HttpRouter](https://github.com/julienschmidt/httprouter)
-
-[See all benchmarks](/BENCHMARKS.md)
+Gin uses a custom version of [HttpRouter](https://github.com/julienschmidt/httprouter), [see all benchmarks details](/BENCHMARKS.md).
 
 | Benchmark name                 |       (1) |             (2) |          (3) |             (4) |
 | ------------------------------ | ---------:| ---------------:| ------------:| ---------------:|
@@ -124,25 +151,11 @@ Gin uses a custom version of [HttpRouter](https://github.com/julienschmidt/httpr
 - (3): Heap Memory (B/op), lower is better
 - (4): Average Allocations per Repetition (allocs/op), lower is better
 
+
 ## Middlewares
 
 You can find many useful Gin middlewares at [gin-contrib](https://github.com/gin-contrib).
 
-## Documentation
-
-See [API documentation and descriptions](https://godoc.org/github.com/gin-gonic/gin) for package.
-
-All documentation is available on the Gin website.
-
-- [English](https://gin-gonic.com/docs/)
-- [简体中文](https://gin-gonic.com/zh-cn/docs/)
-- [繁體中文](https://gin-gonic.com/zh-tw/docs/)
-- [日本語](https://gin-gonic.com/ja/docs/)
-
-
-## Examples
-
-A number of ready-to-run examples demonstrating various use cases of Gin on the [Gin examples](https://github.com/gin-gonic/examples) repository.
 
 ## Users
 
@@ -155,6 +168,7 @@ Awesome project lists using [Gin](https://github.com/gin-gonic/gin) web framewor
 * [picfit](https://github.com/thoas/picfit): An image resizing server written in Go.
 * [brigade](https://github.com/brigadecore/brigade): Event-based Scripting for Kubernetes.
 * [dkron](https://github.com/distribworks/dkron): Distributed, fault tolerant job scheduling system.
+
 
 ## Contributing
 
