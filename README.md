@@ -2126,6 +2126,67 @@ func ListHandler(s *Service) func(ctx *gin.Context) {
 }
 ```
 
+### Bind form-data request with custom field type
+
+Gin can support the encoding.TextUnmarshaler interface for non-struct types
+
+```go
+type HexInteger int
+
+func (f *HexInteger) UnmarshalText(text []byte) error {
+	v, err := strconv.ParseInt(string(text), 16, 64)
+	if err != nil {
+		return err
+	}
+	*f = HexInteger(v)
+	return nil
+}
+
+type FormA struct {
+	FieldA HexInteger `form:"field_a"`
+}
+
+// query with field_a = "0f"
+func GetDataA(c *gin.Context) {
+	var a FormA
+	c.Bind(&a)
+	// a.FieldA == 15
+}
+```
+
+For struct types, you can implement your own custom Unmarshaler using the `binding.BindUnmarshaler` 
+interface, which has the interface signature of `UnmarshalParam(param string) error`.
+
+```go
+type customType struct {
+	Protocol string
+	Path     string
+	Name     string
+}
+
+func (f *customType) UnmarshalParam(param string) error {
+	parts := strings.Split(param, ":")
+	if len(parts) != 3 {
+		return fmt.Errorf("invalid format")
+	}
+	f.Protocol = parts[0]
+	f.Path = parts[1]
+	f.Name = parts[2]
+	return nil
+}
+
+type FormA struct {
+	FieldA customType `form:"field_a"`
+}
+
+// query with field_a = "file:/:foo"
+func GetDataA(c *gin.Context) {
+	var a FormA
+	c.Bind(&a)
+	// a.FieldA.Protocol == "file", a.FieldA.Path == "/", and a.FieldA.Name == "foo"
+}
+```
+
 ### http2 server push
 
 http.Pusher is supported only **go1.8+**. See the [golang blog](https://go.dev/blog/h2push) for detail information.
