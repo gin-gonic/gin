@@ -26,8 +26,6 @@ Gin is a web framework written in [Go](https://go.dev/). It features a martini-l
 - Rendering built-in
 - Extendable
 
-For more feature details, please see the [Gin website introduction](https://gin-gonic.com/docs/introduction/).
-
 
 ## Getting started
 
@@ -82,6 +80,7 @@ And use the Go command to run the demo:
 $ go run example.go
 ```
 
+For more examples, please read the [Gin Quick Start](docs/doc.md).
 
 ## Examples
 
