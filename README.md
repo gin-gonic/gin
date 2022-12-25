@@ -281,6 +281,11 @@ func main() {
   router.GET("/user/groups", func(c *gin.Context) {
     c.String(http.StatusOK, "The available groups are [...]")
   })
+  
+  // This handler will match when none of the above routes match
+  router.GET("/*action", func(c *gin.Context) {
+    c.String(http.StatusOK, "Unknown Action")
+  })
 
   router.Run(":8080")
 }
@@ -1275,11 +1280,12 @@ func main() {
 ```go
 func main() {
   router := gin.Default()
+  router.StaticFS("/", http.Dir("dist"))
   router.Static("/assets", "./assets")
   router.StaticFS("/more_static", http.Dir("my_file_system"))
   router.StaticFile("/favicon.ico", "./resources/favicon.ico")
   router.StaticFileFS("/more_favicon.ico", "more_favicon.ico", http.Dir("my_file_system"))
-  
+
   // Listen and serve on 0.0.0.0:8080
   router.Run(":8080")
 }
