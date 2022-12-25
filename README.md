@@ -80,9 +80,13 @@ And use the Go command to run the demo:
 $ go run example.go
 ```
 
-For more examples, please read the [Gin Quick Start](docs/doc.md).
+### Learn more examples
 
-## Examples
+#### Quick Start
+
+Learn and practice more examples, please read the [Gin Quick Start](docs/doc.md) which includes API examples and builds tag.
+
+#### Examples
 
 A number of ready-to-run examples demonstrating various use cases of Gin on the [Gin examples](https://github.com/gin-gonic/examples) repository.
 

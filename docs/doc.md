@@ -2,8 +2,9 @@
 
 ## Contents
 
-- [Build with json replacement](#build-with-json-replacement)
-- [Build without `MsgPack` rendering feature](#build-without-msgpack-rendering-feature)
+- [Build Tags](#build-tags)
+  - [Build with json replacement](#build-with-json-replacement)
+  - [Build without `MsgPack` rendering feature](#build-without-msgpack-rendering-feature)
 - [API Examples](#api-examples)
   - [Using GET, POST, PUT, PATCH, DELETE and OPTIONS](#using-get-post-put-patch-delete-and-options)
   - [Parameters in path](#parameters-in-path)
@@ -62,7 +63,9 @@
 - [Don't trust all proxies](#dont-trust-all-proxies)
 - [Testing](#testing)
 
-## Build with json replacement
+## Build tags
+
+### Build with json replacement
 
 Gin uses `encoding/json` as default json package but you can change it by build from other tags.
 
@@ -84,7 +87,7 @@ go build -tags=go_json .
 $ go build -tags="sonic avx" .
 ```
 
-## Build without `MsgPack` rendering feature
+### Build without `MsgPack` rendering feature
 
 Gin enables `MsgPack` rendering feature by default. But you can disable this feature by specifying `nomsgpack` build tag.
 
