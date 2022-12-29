@@ -1,12 +1,19 @@
+syntax = "proto3";
+
 package protoexample;
 
-enum FOO {X=17;};
+option go_package="github.com/gin-gonic/gin/testdata/protoexample;protoexample";
+
+enum FOO {
+  FOO_UNSPECIFIED = 0;
+  FOO_A = 1;
+  FOO_B = 2;
+  FOO_C = 3;
+};
 
 message Test {
-   required string label = 1;
-   optional int32 type = 2[default=77];
-   repeated int64 reps = 3;
-   optional group OptionalGroup = 4{
-     required string RequiredField = 5;
-   }
+  string label = 1;
+  optional int32 type = 2;
+  repeated int64 reps = 3;
+  optional string optional_field = 4;
 }

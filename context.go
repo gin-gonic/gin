@@ -636,6 +636,11 @@ func (c *Context) BindJSON(obj any) error {
 	return c.MustBindWith(obj, binding.JSON)
 }
 
+// BindProtoJSON is a shortcut for c.MustBindWith(obj, binding.ProtoJSON).
+func (c *Context) BindProtoJSON(obj any) error {
+	return c.MustBindWith(obj, binding.ProtoJSON)
+}
+
 // BindXML is a shortcut for c.MustBindWith(obj, binding.BindXML).
 func (c *Context) BindXML(obj any) error {
 	return c.MustBindWith(obj, binding.XML)
@@ -699,6 +704,11 @@ func (c *Context) ShouldBind(obj any) error {
 // ShouldBindJSON is a shortcut for c.ShouldBindWith(obj, binding.JSON).
 func (c *Context) ShouldBindJSON(obj any) error {
 	return c.ShouldBindWith(obj, binding.JSON)
+}
+
+// ShouldBindProtoJSON is a shortcut for c.ShouldBindWith(obj, binding.ProtoJSON).
+func (c *Context) ShouldBindProtoJSON(obj any) error {
+	return c.ShouldBindWith(obj, binding.ProtoJSON)
 }
 
 // ShouldBindXML is a shortcut for c.ShouldBindWith(obj, binding.XML).
@@ -967,6 +977,12 @@ func (c *Context) JSONP(code int, obj any) {
 // It also sets the Content-Type as "application/json".
 func (c *Context) JSON(code int, obj any) {
 	c.Render(code, render.JSON{Data: obj})
+}
+
+// ProtoJSON serializes the given protomessage as JSON into the response body.
+// It also sets the Content-Type as "application/json".
+func (c *Context) ProtoJSON(code int, obj any) {
+	c.Render(code, render.ProtoJSON{Data: obj})
 }
 
 // AsciiJSON serializes the given struct as JSON into the response body with unicode to ASCII string.

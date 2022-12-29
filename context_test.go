@@ -678,6 +678,23 @@ func TestContextRenderJSON(t *testing.T) {
 	assert.Equal(t, "application/json; charset=utf-8", w.Header().Get("Content-Type"))
 }
 
+// Tests that the response is serialized as JSON
+// and Content-Type is set to application/json
+// and special HTML characters are escaped
+func TestContextRenderProtoJSON(t *testing.T) {
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
+
+	c.ProtoJSON(http.StatusCreated, &testdata.Test{
+		Label:         "yes!",
+		OptionalField: proto.String("ahah"),
+	})
+
+	assert.Equal(t, http.StatusCreated, w.Code)
+	assert.Equal(t, "{\"label\":\"yes!\", \"optionalField\":\"ahah\"}", w.Body.String())
+	assert.Equal(t, "application/json; charset=utf-8", w.Header().Get("Content-Type"))
+}
+
 // Tests that the response is serialized as JSONP
 // and Content-Type is set to application/javascript
 func TestContextRenderJSONP(t *testing.T) {
@@ -1081,9 +1098,8 @@ func TestContextRenderProtoBuf(t *testing.T) {
 	c, _ := CreateTestContext(w)
 
 	reps := []int64{int64(1), int64(2)}
-	label := "test"
 	data := &testdata.Test{
-		Label: &label,
+		Label: "test",
 		Reps:  reps,
 	}
 
@@ -1607,6 +1623,20 @@ func TestContextBindWithJSON(t *testing.T) {
 	assert.Equal(t, 0, w.Body.Len())
 }
 
+func TestContextBindWithProtoJSON(t *testing.T) {
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
+
+	c.Request, _ = http.NewRequest("POST", "/", bytes.NewBufferString("{\"label\":\"bar\",\"optionalField\":\"foo\"}"))
+	c.Request.Header.Add("Content-Type", MIMEJSON)
+
+	var obj testdata.Test
+	assert.NoError(t, c.BindProtoJSON(&obj))
+	assert.Equal(t, "bar", obj.Label)
+	assert.Equal(t, "foo", *obj.OptionalField)
+	assert.Equal(t, 0, w.Body.Len())
+}
+
 func TestContextBindWithXML(t *testing.T) {
 	w := httptest.NewRecorder()
 	c, _ := CreateTestContext(w)
@@ -1750,6 +1780,20 @@ func TestContextShouldBindWithJSON(t *testing.T) {
 	assert.NoError(t, c.ShouldBindJSON(&obj))
 	assert.Equal(t, "foo", obj.Bar)
 	assert.Equal(t, "bar", obj.Foo)
+	assert.Equal(t, 0, w.Body.Len())
+}
+
+func TestContextShouldBindWithProtoJSON(t *testing.T) {
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
+
+	c.Request, _ = http.NewRequest("POST", "/", bytes.NewBufferString("{\"label\":\"bar\", \"optionalField\":\"foo\"}"))
+	c.Request.Header.Add("Content-Type", MIMEJSON) // set fake content-type
+
+	var obj testdata.Test
+	assert.NoError(t, c.ShouldBindProtoJSON(&obj))
+	assert.Equal(t, "bar", obj.Label)
+	assert.Equal(t, "foo", *obj.OptionalField)
 	assert.Equal(t, 0, w.Body.Len())
 }
 

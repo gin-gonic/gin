@@ -75,3 +75,11 @@ tools:
 		$(GO) install golang.org/x/lint/golint; \
 		$(GO) install github.com/client9/misspell/cmd/misspell; \
 	fi
+
+.PHONY: buf-lint
+buf-lint:
+	@ buf lint
+
+.PHONY: buf-gen
+buf-gen:
+	@ buf gen
