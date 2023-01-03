@@ -240,6 +240,7 @@ func TestTreeWildcard(t *testing.T) {
 		{"/aaa/cc", false, "/:cc/cc", Params{Param{Key: "cc", Value: "aaa"}}},
 		{"/ab", false, "/:cc", Params{Param{Key: "cc", Value: "ab"}}},
 		{"/abb", false, "/:cc", Params{Param{Key: "cc", Value: "abb"}}},
+		{"/c1/cc", false, "/:cc/cc", Params{Param{Key: "cc", Value: "c1"}}},
 		{"/abb/cc", false, "/:cc/cc", Params{Param{Key: "cc", Value: "abb"}}},
 		{"/allxxxx", false, "/:cc", Params{Param{Key: "cc", Value: "allxxxx"}}},
 		{"/alldd", false, "/:cc", Params{Param{Key: "cc", Value: "alldd"}}},
@@ -266,6 +267,8 @@ func TestTreeWildcard(t *testing.T) {
 		{"/something/secondthingaaaa/thirdthing", false, "/something/:paramname/thirdthing", Params{Param{Key: "paramname", Value: "secondthingaaaa"}}},
 		{"/something/se/thirdthing", false, "/something/:paramname/thirdthing", Params{Param{Key: "paramname", Value: "se"}}},
 		{"/something/s/thirdthing", false, "/something/:paramname/thirdthing", Params{Param{Key: "paramname", Value: "s"}}},
+		{"/c1/dd/ee", false, "/:cc/:dd/ee", Params{Param{Key: "cc", Value: "c1"}, Param{Key: "dd", Value: "dd"}}},
+		{"/c1/dd/ee/", true, "/:cc/:dd/ee", Params{Param{Key: "cc", Value: "c1"}, Param{Key: "dd", Value: "dd"}}},
 		{"/c/d/ee", false, "/:cc/:dd/ee", Params{Param{Key: "cc", Value: "c"}, Param{Key: "dd", Value: "d"}}},
 		{"/c/d/e/ff", false, "/:cc/:dd/:ee/ff", Params{Param{Key: "cc", Value: "c"}, Param{Key: "dd", Value: "d"}, Param{Key: "ee", Value: "e"}}},
 		{"/c/d/e/f/gg", false, "/:cc/:dd/:ee/:ff/gg", Params{Param{Key: "cc", Value: "c"}, Param{Key: "dd", Value: "d"}, Param{Key: "ee", Value: "e"}, Param{Key: "ff", Value: "f"}}},
@@ -474,7 +477,7 @@ func TestTreeDuplicatePath(t *testing.T) {
 		}
 	}
 
-	//printChildren(tree, "")
+	// printChildren(tree, "")
 
 	checkRequests(t, tree, testRequests{
 		{"/", false, "/", nil},
