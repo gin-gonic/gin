@@ -450,22 +450,22 @@ func main() {
 
 ```go
 func main() {
-    // Disable Console Color, you don't need console color when writing the logs to file.
-    gin.DisableConsoleColor()
+  // Disable Console Color, you don't need console color when writing the logs to file.
+  gin.DisableConsoleColor()
 
-    // Logging to a file.
-    f, _ := os.Create("gin.log")
-    gin.DefaultWriter = io.MultiWriter(f)
+  // Logging to a file.
+  f, _ := os.Create("gin.log")
+  gin.DefaultWriter = io.MultiWriter(f)
 
-    // Use the following code if you need to write the logs to file and console at the same time.
-    // gin.DefaultWriter = io.MultiWriter(f, os.Stdout)
+  // Use the following code if you need to write the logs to file and console at the same time.
+  // gin.DefaultWriter = io.MultiWriter(f, os.Stdout)
 
-    router := gin.Default()
-    router.GET("/ping", func(c *gin.Context) {
-        c.String(http.StatusOK, "pong")
-    })
+  router := gin.Default()
+  router.GET("/ping", func(c *gin.Context) {
+      c.String(http.StatusOK, "pong")
+  })
 
-    router.Run(":8080")
+   router.Run(":8080")
 }
 ```
 
@@ -516,18 +516,18 @@ Never colorize logs:
 
 ```go
 func main() {
-    // Disable log's color
-    gin.DisableConsoleColor()
+  // Disable log's color
+  gin.DisableConsoleColor()
 
-    // Creates a gin router with default middleware:
-    // logger and recovery (crash-free) middleware
-    router := gin.Default()
+  // Creates a gin router with default middleware:
+  // logger and recovery (crash-free) middleware
+  router := gin.Default()
 
-    router.GET("/ping", func(c *gin.Context) {
-        c.String(http.StatusOK, "pong")
-    })
+  router.GET("/ping", func(c *gin.Context) {
+      c.String(http.StatusOK, "pong")
+  })
 
-    router.Run(":8080")
+  router.Run(":8080")
 }
 ```
 
@@ -535,18 +535,18 @@ Always colorize logs:
 
 ```go
 func main() {
-    // Force log's color
-    gin.ForceConsoleColor()
+  // Force log's color
+  gin.ForceConsoleColor()
 
-    // Creates a gin router with default middleware:
-    // logger and recovery (crash-free) middleware
-    router := gin.Default()
+  // Creates a gin router with default middleware:
+  // logger and recovery (crash-free) middleware
+  router := gin.Default()
 
-    router.GET("/ping", func(c *gin.Context) {
-        c.String(http.StatusOK, "pong")
-    })
+  router.GET("/ping", func(c *gin.Context) {
+      c.String(http.StatusOK, "pong")
+  })
 
-    router.Run(":8080")
+  router.Run(":8080")
 }
 ```
 
@@ -786,11 +786,11 @@ import (
 )
 
 type Person struct {
-        Name       string    `form:"name"`
-        Address    string    `form:"address"`
-        Birthday   time.Time `form:"birthday" time_format:"2006-01-02" time_utc:"1"`
-        CreateTime time.Time `form:"createTime" time_format:"unixNano"`
-        UnixTime   time.Time `form:"unixTime" time_format:"unix"`
+  Name       string    `form:"name"`
+  Address    string    `form:"address"`
+  Birthday   time.Time `form:"birthday" time_format:"2006-01-02" time_utc:"1"`
+  CreateTime time.Time `form:"createTime" time_format:"unixNano"`
+  UnixTime   time.Time `form:"unixTime" time_format:"unix"`
 }
 
 func main() {
@@ -804,13 +804,13 @@ func startPage(c *gin.Context) {
   // If `GET`, only `Form` binding engine (`query`) used.
   // If `POST`, first checks the `content-type` for `JSON` or `XML`, then uses `Form` (`form-data`).
   // See more at https://github.com/gin-gonic/gin/blob/master/binding/binding.go#L88
-        if c.ShouldBind(&person) == nil {
-                log.Println(person.Name)
-                log.Println(person.Address)
-                log.Println(person.Birthday)
-                log.Println(person.CreateTime)
-                log.Println(person.UnixTime)
-        }
+  if c.ShouldBind(&person) == nil {
+    log.Println(person.Name)
+    log.Println(person.Address)
+    log.Println(person.Birthday)
+    log.Println(person.CreateTime)
+    log.Println(person.UnixTime)
+  }
 
   c.String(http.StatusOK, "Success")
 }
@@ -1311,34 +1311,34 @@ main.go
 
 ```go
 import (
-    "fmt"
-    "html/template"
-    "net/http"
-    "time"
+  "fmt"
+  "html/template"
+  "net/http"
+  "time"
 
-    "github.com/gin-gonic/gin"
+  "github.com/gin-gonic/gin"
 )
 
 func formatAsDate(t time.Time) string {
-    year, month, day := t.Date()
-    return fmt.Sprintf("%d/%02d/%02d", year, month, day)
+  year, month, day := t.Date()
+  return fmt.Sprintf("%d/%02d/%02d", year, month, day)
 }
 
 func main() {
-    router := gin.Default()
-    router.Delims("{[{", "}]}")
-    router.SetFuncMap(template.FuncMap{
-        "formatAsDate": formatAsDate,
-    })
-    router.LoadHTMLFiles("./testdata/template/raw.tmpl")
+  router := gin.Default()
+  router.Delims("{[{", "}]}")
+  router.SetFuncMap(template.FuncMap{
+      "formatAsDate": formatAsDate,
+  })
+  router.LoadHTMLFiles("./testdata/template/raw.tmpl")
 
-    router.GET("/raw", func(c *gin.Context) {
-        c.HTML(http.StatusOK, "raw.tmpl", gin.H{
-            "now": time.Date(2017, 07, 01, 0, 0, 0, 0, time.UTC),
-        })
-    })
+  router.GET("/raw", func(c *gin.Context) {
+      c.HTML(http.StatusOK, "raw.tmpl", gin.H{
+          "now": time.Date(2017, 07, 01, 0, 0, 0, 0, time.UTC),
+      })
+  })
 
-    router.Run(":8080")
+  router.Run(":8080")
 }
 
 ```
@@ -2099,28 +2099,27 @@ func main() {
 
 ```go
 import (
-    "fmt"
+  "fmt"
 
-    "github.com/gin-gonic/gin"
+  "github.com/gin-gonic/gin"
 )
 
 func main() {
+  router := gin.Default()
 
-    router := gin.Default()
+  router.GET("/cookie", func(c *gin.Context) {
 
-    router.GET("/cookie", func(c *gin.Context) {
+      cookie, err := c.Cookie("gin_cookie")
 
-        cookie, err := c.Cookie("gin_cookie")
+      if err != nil {
+          cookie = "NotSet"
+          c.SetCookie("gin_cookie", "test", 3600, "/", "localhost", false, true)
+      }
 
-        if err != nil {
-            cookie = "NotSet"
-            c.SetCookie("gin_cookie", "test", 3600, "/", "localhost", false, true)
-        }
+      fmt.Printf("Cookie value: %s \n", cookie)
+  })
 
-        fmt.Printf("Cookie value: %s \n", cookie)
-    })
-
-    router.Run()
+  router.Run()
 }
 ```
 
@@ -2149,7 +2148,6 @@ import (
 )
 
 func main() {
-
   router := gin.Default()
   router.SetTrustedProxies([]string{"192.168.1.2"})
 
@@ -2176,7 +2174,6 @@ import (
 )
 
 func main() {
-
   router := gin.Default()
   // Use predefined header gin.PlatformXXX
   router.TrustedPlatform = gin.PlatformGoogleAppEngine
