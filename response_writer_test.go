@@ -132,3 +132,21 @@ func TestResponseWriterFlush(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, http.StatusInternalServerError, resp.StatusCode)
 }
+
+func TestResponseWriterStatusCode(t *testing.T) {
+	testWriter := httptest.NewRecorder()
+	writer := &responseWriter{}
+	writer.reset(testWriter)
+	w := ResponseWriter(writer)
+
+	w.WriteHeader(http.StatusOK)
+	w.WriteHeaderNow()
+
+	assert.Equal(t, http.StatusOK, w.Status())
+	assert.True(t, w.Written())
+
+	w.WriteHeader(http.StatusUnauthorized)
+
+	// status must be 200 although we tried to change it
+	assert.Equal(t, http.StatusOK, w.Status())
+}
