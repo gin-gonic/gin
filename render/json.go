@@ -53,7 +53,7 @@ var (
 )
 
 // Render (JSON) writes data with custom ContentType.
-func (r JSON) Render(w http.ResponseWriter) (err error) {
+func (r JSON) Render(w http.ResponseWriter) error {
 	return WriteJSON(w, r.Data)
 }
 

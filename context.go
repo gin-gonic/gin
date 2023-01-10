@@ -924,7 +924,8 @@ func (c *Context) Render(code int, r render.Render) {
 	}
 
 	if err := r.Render(c.Writer); err != nil {
-		c.Error(err)
+		// Pushing error to c.Errors
+		_ = c.Error(err)
 		c.Abort()
 	}
 }
