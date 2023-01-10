@@ -1,4 +1,4 @@
-// Copyright 2014 Manu Martinez-Almeida.  All rights reserved.
+// Copyright 2014 Manu Martinez-Almeida. All rights reserved.
 // Use of this source code is governed by a MIT style
 // license that can be found in the LICENSE file.
 
@@ -35,7 +35,7 @@ func TestMiddlewareGeneralCase(t *testing.T) {
 		signature += " XX "
 	})
 	// RUN
-	w := performRequest(router, "GET", "/")
+	w := PerformRequest(router, "GET", "/")
 
 	// TEST
 	assert.Equal(t, http.StatusOK, w.Code)
@@ -71,7 +71,7 @@ func TestMiddlewareNoRoute(t *testing.T) {
 		signature += " X "
 	})
 	// RUN
-	w := performRequest(router, "GET", "/")
+	w := PerformRequest(router, "GET", "/")
 
 	// TEST
 	assert.Equal(t, http.StatusNotFound, w.Code)
@@ -108,7 +108,7 @@ func TestMiddlewareNoMethodEnabled(t *testing.T) {
 		signature += " XX "
 	})
 	// RUN
-	w := performRequest(router, "GET", "/")
+	w := PerformRequest(router, "GET", "/")
 
 	// TEST
 	assert.Equal(t, http.StatusMethodNotAllowed, w.Code)
@@ -118,7 +118,10 @@ func TestMiddlewareNoMethodEnabled(t *testing.T) {
 func TestMiddlewareNoMethodDisabled(t *testing.T) {
 	signature := ""
 	router := New()
+
+	// NoMethod disabled
 	router.HandleMethodNotAllowed = false
+
 	router.Use(func(c *Context) {
 		signature += "A"
 		c.Next()
@@ -144,8 +147,9 @@ func TestMiddlewareNoMethodDisabled(t *testing.T) {
 	router.POST("/", func(c *Context) {
 		signature += " XX "
 	})
+
 	// RUN
-	w := performRequest(router, "GET", "/")
+	w := PerformRequest(router, "GET", "/")
 
 	// TEST
 	assert.Equal(t, http.StatusNotFound, w.Code)
@@ -171,7 +175,7 @@ func TestMiddlewareAbort(t *testing.T) {
 	})
 
 	// RUN
-	w := performRequest(router, "GET", "/")
+	w := PerformRequest(router, "GET", "/")
 
 	// TEST
 	assert.Equal(t, http.StatusUnauthorized, w.Code)
@@ -186,14 +190,13 @@ func TestMiddlewareAbortHandlersChainAndNext(t *testing.T) {
 		c.Next()
 		c.AbortWithStatus(http.StatusGone)
 		signature += "B"
-
 	})
 	router.GET("/", func(c *Context) {
 		signature += "C"
 		c.Next()
 	})
 	// RUN
-	w := performRequest(router, "GET", "/")
+	w := PerformRequest(router, "GET", "/")
 
 	// TEST
 	assert.Equal(t, http.StatusGone, w.Code)
@@ -208,7 +211,7 @@ func TestMiddlewareFailHandlersChain(t *testing.T) {
 	router := New()
 	router.Use(func(context *Context) {
 		signature += "A"
-		context.AbortWithError(http.StatusInternalServerError, errors.New("foo")) // nolint: errcheck
+		context.AbortWithError(http.StatusInternalServerError, errors.New("foo")) //nolint: errcheck
 	})
 	router.Use(func(context *Context) {
 		signature += "B"
@@ -216,7 +219,7 @@ func TestMiddlewareFailHandlersChain(t *testing.T) {
 		signature += "C"
 	})
 	// RUN
-	w := performRequest(router, "GET", "/")
+	w := PerformRequest(router, "GET", "/")
 
 	// TEST
 	assert.Equal(t, http.StatusInternalServerError, w.Code)
@@ -243,7 +246,7 @@ func TestMiddlewareWrite(t *testing.T) {
 		})
 	})
 
-	w := performRequest(router, "GET", "/")
+	w := PerformRequest(router, "GET", "/")
 
 	assert.Equal(t, http.StatusBadRequest, w.Code)
 	assert.Equal(t, strings.Replace("hola\n<map><foo>bar</foo></map>{\"foo\":\"bar\"}{\"foo\":\"bar\"}event:test\ndata:message\n\n", " ", "", -1), strings.Replace(w.Body.String(), " ", "", -1))

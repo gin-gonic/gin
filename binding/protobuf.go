@@ -1,14 +1,15 @@
-// Copyright 2014 Manu Martinez-Almeida.  All rights reserved.
+// Copyright 2014 Manu Martinez-Almeida. All rights reserved.
 // Use of this source code is governed by a MIT style
 // license that can be found in the LICENSE file.
 
 package binding
 
 import (
-	"io/ioutil"
+	"errors"
+	"io"
 	"net/http"
 
-	"github.com/golang/protobuf/proto"
+	"google.golang.org/protobuf/proto"
 )
 
 type protobufBinding struct{}
@@ -17,16 +18,20 @@ func (protobufBinding) Name() string {
 	return "protobuf"
 }
 
-func (b protobufBinding) Bind(req *http.Request, obj interface{}) error {
-	buf, err := ioutil.ReadAll(req.Body)
+func (b protobufBinding) Bind(req *http.Request, obj any) error {
+	buf, err := io.ReadAll(req.Body)
 	if err != nil {
 		return err
 	}
 	return b.BindBody(buf, obj)
 }
 
-func (protobufBinding) BindBody(body []byte, obj interface{}) error {
-	if err := proto.Unmarshal(body, obj.(proto.Message)); err != nil {
+func (protobufBinding) BindBody(body []byte, obj any) error {
+	msg, ok := obj.(proto.Message)
+	if !ok {
+		return errors.New("obj is not ProtoMessage")
+	}
+	if err := proto.Unmarshal(body, msg); err != nil {
 		return err
 	}
 	// Here it's same to return validate(obj), but util now we can't add

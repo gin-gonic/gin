@@ -1,4 +1,4 @@
-// Copyright 2014 Manu Martinez-Almeida.  All rights reserved.
+// Copyright 2014 Manu Martinez-Almeida. All rights reserved.
 // Use of this source code is governed by a MIT style
 // license that can be found in the LICENSE file.
 
@@ -37,7 +37,7 @@ func SetHTMLTemplate(templ *template.Template) {
 	engine().SetHTMLTemplate(templ)
 }
 
-// NoRoute adds handlers for NoRoute. It return a 404 code by default.
+// NoRoute adds handlers for NoRoute. It returns a 404 code by default.
 func NoRoute(handlers ...gin.HandlerFunc) {
 	engine().NoRoute(handlers...)
 }
@@ -108,7 +108,8 @@ func StaticFile(relativePath, filepath string) gin.IRoutes {
 // of the Router's NotFound handler.
 // To use the operating system's file system implementation,
 // use :
-//     router.Static("/static", "/var/www")
+//
+//	router.Static("/static", "/var/www")
 func Static(relativePath, root string) gin.IRoutes {
 	return engine().Static(relativePath, root)
 }
@@ -118,7 +119,7 @@ func StaticFS(relativePath string, fs http.FileSystem) gin.IRoutes {
 	return engine().StaticFS(relativePath, fs)
 }
 
-// Use attaches a global middleware to the router. ie. the middlewares attached though Use() will be
+// Use attaches a global middleware to the router. i.e. the middlewares attached through Use() will be
 // included in the handlers chain for every single request. Even 404, 405, static files...
 // For example, this is the right place for a logger or error management middleware.
 func Use(middlewares ...gin.HandlerFunc) gin.IRoutes {
@@ -145,7 +146,7 @@ func RunTLS(addr, certFile, keyFile string) (err error) {
 }
 
 // RunUnix attaches to a http.Server and starts listening and serving HTTP requests
-// through the specified unix socket (ie. a file)
+// through the specified unix socket (i.e. a file)
 // Note: this method will block the calling goroutine indefinitely unless an error happens.
 func RunUnix(file string) (err error) {
 	return engine().RunUnix(file)

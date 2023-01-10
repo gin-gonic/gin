@@ -1,4 +1,4 @@
-// Copyright 2014 Manu Martinez-Almeida.  All rights reserved.
+// Copyright 2014 Manu Martinez-Almeida. All rights reserved.
 // Use of this source code is governed by a MIT style
 // license that can be found in the LICENSE file.
 
@@ -31,7 +31,7 @@ func TestLogger(t *testing.T) {
 	router.HEAD("/example", func(c *Context) {})
 	router.OPTIONS("/example", func(c *Context) {})
 
-	performRequest(router, "GET", "/example?a=100")
+	PerformRequest(router, "GET", "/example?a=100")
 	assert.Contains(t, buffer.String(), "200")
 	assert.Contains(t, buffer.String(), "GET")
 	assert.Contains(t, buffer.String(), "/example")
@@ -41,43 +41,43 @@ func TestLogger(t *testing.T) {
 	// like integration tests because they test the whole logging process rather
 	// than individual functions.  Im not sure where these should go.
 	buffer.Reset()
-	performRequest(router, "POST", "/example")
+	PerformRequest(router, "POST", "/example")
 	assert.Contains(t, buffer.String(), "200")
 	assert.Contains(t, buffer.String(), "POST")
 	assert.Contains(t, buffer.String(), "/example")
 
 	buffer.Reset()
-	performRequest(router, "PUT", "/example")
+	PerformRequest(router, "PUT", "/example")
 	assert.Contains(t, buffer.String(), "200")
 	assert.Contains(t, buffer.String(), "PUT")
 	assert.Contains(t, buffer.String(), "/example")
 
 	buffer.Reset()
-	performRequest(router, "DELETE", "/example")
+	PerformRequest(router, "DELETE", "/example")
 	assert.Contains(t, buffer.String(), "200")
 	assert.Contains(t, buffer.String(), "DELETE")
 	assert.Contains(t, buffer.String(), "/example")
 
 	buffer.Reset()
-	performRequest(router, "PATCH", "/example")
+	PerformRequest(router, "PATCH", "/example")
 	assert.Contains(t, buffer.String(), "200")
 	assert.Contains(t, buffer.String(), "PATCH")
 	assert.Contains(t, buffer.String(), "/example")
 
 	buffer.Reset()
-	performRequest(router, "HEAD", "/example")
+	PerformRequest(router, "HEAD", "/example")
 	assert.Contains(t, buffer.String(), "200")
 	assert.Contains(t, buffer.String(), "HEAD")
 	assert.Contains(t, buffer.String(), "/example")
 
 	buffer.Reset()
-	performRequest(router, "OPTIONS", "/example")
+	PerformRequest(router, "OPTIONS", "/example")
 	assert.Contains(t, buffer.String(), "200")
 	assert.Contains(t, buffer.String(), "OPTIONS")
 	assert.Contains(t, buffer.String(), "/example")
 
 	buffer.Reset()
-	performRequest(router, "GET", "/notfound")
+	PerformRequest(router, "GET", "/notfound")
 	assert.Contains(t, buffer.String(), "404")
 	assert.Contains(t, buffer.String(), "GET")
 	assert.Contains(t, buffer.String(), "/notfound")
@@ -95,7 +95,7 @@ func TestLoggerWithConfig(t *testing.T) {
 	router.HEAD("/example", func(c *Context) {})
 	router.OPTIONS("/example", func(c *Context) {})
 
-	performRequest(router, "GET", "/example?a=100")
+	PerformRequest(router, "GET", "/example?a=100")
 	assert.Contains(t, buffer.String(), "200")
 	assert.Contains(t, buffer.String(), "GET")
 	assert.Contains(t, buffer.String(), "/example")
@@ -105,43 +105,43 @@ func TestLoggerWithConfig(t *testing.T) {
 	// like integration tests because they test the whole logging process rather
 	// than individual functions.  Im not sure where these should go.
 	buffer.Reset()
-	performRequest(router, "POST", "/example")
+	PerformRequest(router, "POST", "/example")
 	assert.Contains(t, buffer.String(), "200")
 	assert.Contains(t, buffer.String(), "POST")
 	assert.Contains(t, buffer.String(), "/example")
 
 	buffer.Reset()
-	performRequest(router, "PUT", "/example")
+	PerformRequest(router, "PUT", "/example")
 	assert.Contains(t, buffer.String(), "200")
 	assert.Contains(t, buffer.String(), "PUT")
 	assert.Contains(t, buffer.String(), "/example")
 
 	buffer.Reset()
-	performRequest(router, "DELETE", "/example")
+	PerformRequest(router, "DELETE", "/example")
 	assert.Contains(t, buffer.String(), "200")
 	assert.Contains(t, buffer.String(), "DELETE")
 	assert.Contains(t, buffer.String(), "/example")
 
 	buffer.Reset()
-	performRequest(router, "PATCH", "/example")
+	PerformRequest(router, "PATCH", "/example")
 	assert.Contains(t, buffer.String(), "200")
 	assert.Contains(t, buffer.String(), "PATCH")
 	assert.Contains(t, buffer.String(), "/example")
 
 	buffer.Reset()
-	performRequest(router, "HEAD", "/example")
+	PerformRequest(router, "HEAD", "/example")
 	assert.Contains(t, buffer.String(), "200")
 	assert.Contains(t, buffer.String(), "HEAD")
 	assert.Contains(t, buffer.String(), "/example")
 
 	buffer.Reset()
-	performRequest(router, "OPTIONS", "/example")
+	PerformRequest(router, "OPTIONS", "/example")
 	assert.Contains(t, buffer.String(), "200")
 	assert.Contains(t, buffer.String(), "OPTIONS")
 	assert.Contains(t, buffer.String(), "/example")
 
 	buffer.Reset()
-	performRequest(router, "GET", "/notfound")
+	PerformRequest(router, "GET", "/notfound")
 	assert.Contains(t, buffer.String(), "404")
 	assert.Contains(t, buffer.String(), "GET")
 	assert.Contains(t, buffer.String(), "/notfound")
@@ -169,7 +169,7 @@ func TestLoggerWithFormatter(t *testing.T) {
 		)
 	}))
 	router.GET("/example", func(c *Context) {})
-	performRequest(router, "GET", "/example?a=100")
+	PerformRequest(router, "GET", "/example?a=100")
 
 	// output test
 	assert.Contains(t, buffer.String(), "[FORMATTER TEST]")
@@ -181,10 +181,12 @@ func TestLoggerWithFormatter(t *testing.T) {
 
 func TestLoggerWithConfigFormatting(t *testing.T) {
 	var gotParam LogFormatterParams
-	var gotKeys map[string]interface{}
+	var gotKeys map[string]any
 	buffer := new(bytes.Buffer)
 
 	router := New()
+	router.engine.trustedCIDRs, _ = router.engine.prepareTrustedCIDRs()
+
 	router.Use(LoggerWithConfig(LoggerConfig{
 		Output: buffer,
 		Formatter: func(param LogFormatterParams) string {
@@ -206,8 +208,9 @@ func TestLoggerWithConfigFormatting(t *testing.T) {
 		// set dummy ClientIP
 		c.Request.Header.Set("X-Forwarded-For", "20.20.20.20")
 		gotKeys = c.Keys
+		time.Sleep(time.Millisecond)
 	})
-	performRequest(router, "GET", "/example?a=100")
+	PerformRequest(router, "GET", "/example?a=100")
 
 	// output test
 	assert.Contains(t, buffer.String(), "[FORMATTER TEST]")
@@ -226,7 +229,6 @@ func TestLoggerWithConfigFormatting(t *testing.T) {
 	assert.Equal(t, "/example?a=100", gotParam.Path)
 	assert.Empty(t, gotParam.ErrorMessage)
 	assert.Equal(t, gotKeys, gotParam.Keys)
-
 }
 
 func TestDefaultLogFormatter(t *testing.T) {
@@ -280,7 +282,6 @@ func TestDefaultLogFormatter(t *testing.T) {
 
 	assert.Equal(t, "[GIN] 2018/12/07 - 09:11:42 |\x1b[97;42m 200 \x1b[0m|            5s |     20.20.20.20 |\x1b[97;44m GET     \x1b[0m \"/\"\n", defaultLogFormatter(termTrueParam))
 	assert.Equal(t, "[GIN] 2018/12/07 - 09:11:42 |\x1b[97;42m 200 \x1b[0m|    2743h29m3s |     20.20.20.20 |\x1b[97;44m GET     \x1b[0m \"/\"\n", defaultLogFormatter(termTrueLongDurationParam))
-
 }
 
 func TestColorForMethod(t *testing.T) {
@@ -357,25 +358,25 @@ func TestErrorLogger(t *testing.T) {
 	router := New()
 	router.Use(ErrorLogger())
 	router.GET("/error", func(c *Context) {
-		c.Error(errors.New("this is an error")) // nolint: errcheck
+		c.Error(errors.New("this is an error")) //nolint: errcheck
 	})
 	router.GET("/abort", func(c *Context) {
-		c.AbortWithError(http.StatusUnauthorized, errors.New("no authorized")) // nolint: errcheck
+		c.AbortWithError(http.StatusUnauthorized, errors.New("no authorized")) //nolint: errcheck
 	})
 	router.GET("/print", func(c *Context) {
-		c.Error(errors.New("this is an error")) // nolint: errcheck
+		c.Error(errors.New("this is an error")) //nolint: errcheck
 		c.String(http.StatusInternalServerError, "hola!")
 	})
 
-	w := performRequest(router, "GET", "/error")
+	w := PerformRequest(router, "GET", "/error")
 	assert.Equal(t, http.StatusOK, w.Code)
 	assert.Equal(t, "{\"error\":\"this is an error\"}", w.Body.String())
 
-	w = performRequest(router, "GET", "/abort")
+	w = PerformRequest(router, "GET", "/abort")
 	assert.Equal(t, http.StatusUnauthorized, w.Code)
 	assert.Equal(t, "{\"error\":\"no authorized\"}", w.Body.String())
 
-	w = performRequest(router, "GET", "/print")
+	w = PerformRequest(router, "GET", "/print")
 	assert.Equal(t, http.StatusInternalServerError, w.Code)
 	assert.Equal(t, "hola!{\"error\":\"this is an error\"}", w.Body.String())
 }
@@ -387,11 +388,11 @@ func TestLoggerWithWriterSkippingPaths(t *testing.T) {
 	router.GET("/logged", func(c *Context) {})
 	router.GET("/skipped", func(c *Context) {})
 
-	performRequest(router, "GET", "/logged")
+	PerformRequest(router, "GET", "/logged")
 	assert.Contains(t, buffer.String(), "200")
 
 	buffer.Reset()
-	performRequest(router, "GET", "/skipped")
+	PerformRequest(router, "GET", "/skipped")
 	assert.Contains(t, buffer.String(), "")
 }
 
@@ -405,11 +406,11 @@ func TestLoggerWithConfigSkippingPaths(t *testing.T) {
 	router.GET("/logged", func(c *Context) {})
 	router.GET("/skipped", func(c *Context) {})
 
-	performRequest(router, "GET", "/logged")
+	PerformRequest(router, "GET", "/logged")
 	assert.Contains(t, buffer.String(), "200")
 
 	buffer.Reset()
-	performRequest(router, "GET", "/skipped")
+	PerformRequest(router, "GET", "/skipped")
 	assert.Contains(t, buffer.String(), "")
 }
 

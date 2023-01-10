@@ -1,4 +1,4 @@
-// Copyright 2014 Manu Martinez-Almeida.  All rights reserved.
+// Copyright 2014 Manu Martinez-Almeida. All rights reserved.
 // Use of this source code is governed by a MIT style
 // license that can be found in the LICENSE file.
 
@@ -103,8 +103,8 @@ func TestDebugPrintWARNINGDefault(t *testing.T) {
 		SetMode(TestMode)
 	})
 	m, e := getMinVer(runtime.Version())
-	if e == nil && m <= ginSupportMinGoVer {
-		assert.Equal(t, "[GIN-debug] [WARNING] Now Gin requires Go 1.11 or later and Go 1.12 will be required soon.\n\n[GIN-debug] [WARNING] Creating an Engine instance with the Logger and Recovery middleware already attached.\n\n", re)
+	if e == nil && m < ginSupportMinGoVer {
+		assert.Equal(t, "[GIN-debug] [WARNING] Now Gin requires Go 1.16+.\n\n[GIN-debug] [WARNING] Creating an Engine instance with the Logger and Recovery middleware already attached.\n\n", re)
 	} else {
 		assert.Equal(t, "[GIN-debug] [WARNING] Creating an Engine instance with the Logger and Recovery middleware already attached.\n\n", re)
 	}

@@ -1,4 +1,4 @@
-// Copyright 2014 Manu Martinez-Almeida.  All rights reserved.
+// Copyright 2014 Manu Martinez-Almeida. All rights reserved.
 // Use of this source code is governed by a MIT style
 // license that can be found in the LICENSE file.
 
@@ -20,7 +20,7 @@ type Delims struct {
 // HTMLRender interface is to be implemented by HTMLProduction and HTMLDebug.
 type HTMLRender interface {
 	// Instance returns an HTML instance.
-	Instance(string, interface{}) Render
+	Instance(string, any) Render
 }
 
 // HTMLProduction contains template reference and its delims.
@@ -41,13 +41,13 @@ type HTMLDebug struct {
 type HTML struct {
 	Template *template.Template
 	Name     string
-	Data     interface{}
+	Data     any
 }
 
 var htmlContentType = []string{"text/html; charset=utf-8"}
 
 // Instance (HTMLProduction) returns an HTML instance which it realizes Render interface.
-func (r HTMLProduction) Instance(name string, data interface{}) Render {
+func (r HTMLProduction) Instance(name string, data any) Render {
 	return HTML{
 		Template: r.Template,
 		Name:     name,
@@ -56,7 +56,7 @@ func (r HTMLProduction) Instance(name string, data interface{}) Render {
 }
 
 // Instance (HTMLDebug) returns an HTML instance which it realizes Render interface.
-func (r HTMLDebug) Instance(name string, data interface{}) Render {
+func (r HTMLDebug) Instance(name string, data any) Render {
 	return HTML{
 		Template: r.loadTemplate(),
 		Name:     name,
