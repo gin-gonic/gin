@@ -1311,6 +1311,14 @@ func TestContextNegotiationFormatCustom(t *testing.T) {
 	assert.Equal(t, MIMEJSON, c.NegotiateFormat(MIMEJSON))
 }
 
+func TestContextNegotiationFormat2(t *testing.T) {
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	c.Request, _ = http.NewRequest("POST", "/", nil)
+	c.Request.Header.Add("Accept", "image/tiff-fx")
+
+	assert.Equal(t, "", c.NegotiateFormat("image/tiff"))
+}
+
 func TestContextIsAborted(t *testing.T) {
 	c, _ := CreateTestContext(httptest.NewRecorder())
 	assert.False(t, c.IsAborted())
