@@ -5,12 +5,12 @@
 package gin
 
 import (
-	"bytes"
 	"fmt"
 	"math/rand"
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -401,7 +401,7 @@ func TestGithubAPI(t *testing.T) {
 }
 
 func exampleFromPath(path string) (string, Params) {
-	output := new(bytes.Buffer)
+	output := new(strings.Builder)
 	params := make(Params, 0, 6)
 	start := -1
 	for i, c := range path {
