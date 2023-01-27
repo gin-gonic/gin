@@ -661,6 +661,11 @@ func (c *Context) BindHeader(obj any) error {
 	return c.MustBindWith(obj, binding.Header)
 }
 
+// BindForm is a shortcut for c.MustBindWith(obj, binding.Form)
+func (c *Context) BindForm(obj any) error {
+	return c.MustBindWith(obj, binding.Form)
+}
+
 // BindUri binds the passed struct pointer using binding.Uri.
 // It will abort the request with HTTP 400 if any error occurs.
 func (c *Context) BindUri(obj any) error {
