@@ -1200,7 +1200,7 @@ func (c *Context) Err() error {
 // if no value is associated with key. Successive calls to Value with
 // the same key returns the same result.
 func (c *Context) Value(key any) any {
-	if key == 0 {
+	if _, ok := key.(int); ok && key == 0 {
 		return c.Request
 	}
 	if key == ContextKey {
