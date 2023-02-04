@@ -494,12 +494,12 @@ func (c *Context) GetQueryMap(key string) (map[string]string, bool) {
 //	c.QueryBool("force") == true
 //	c.QueryBool("name") == false
 //	c.QueryBool("delivery") == false
-func (c *Context) QueryBool(key string) bool {
+func (c *Context) QueryBool(key string) (bool, error) {
 
 	value, _ := c.GetQuery(key)
-	boolValue, _ := strconv.ParseBool(value)
+	boolValue, err := strconv.ParseBool(value)
 
-	return boolValue
+	return boolValue, err
 }
 
 // GetQueryBoolDefault returns the keyed boolean url query value if it exists and valid,
@@ -524,22 +524,22 @@ func (c *Context) GetQueryBoolDefault(key string, defaultValue bool) bool {
 
 // GetQueryBool is like QueryBool(), it returns the keyed url query value but in boolean,
 // if key exists and valid it returns (value, true)
-// but if key is not exist or not valid, it returns (false, false)
+// but if key is not exist or not valid, it returns (true, false)
 //
 //	GET /?name=alex&force=false&delivery=
 //	GetQueryBool("force") == false, true
-//	GetQueryBool("name") == false, false
-//	GetQueryBool("delivery") == false, false
+//	GetQueryBool("name") == true, false
+//	GetQueryBool("delivery") == true, false
 func (c *Context) GetQueryBool(key string) (bool, bool) {
 	if value, ok := c.GetQuery(key); ok {
 		boolValue, err := strconv.ParseBool(value)
 		if err != nil {
-			return false, false
+			return true, false
 		}
 		return boolValue, true
 	}
 
-	return false, false
+	return true, false
 }
 
 // PostForm returns the specified key from a POST urlencoded form or multipart form

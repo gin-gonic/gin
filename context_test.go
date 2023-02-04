@@ -405,11 +405,11 @@ func TestContextQuery(t *testing.T) {
 	assert.Empty(t, value)
 	assert.Empty(t, c.PostForm("foo"))
 
-	valueBool := c.QueryBool("read")
+	valueBool, _ := c.QueryBool("read")
 	assert.True(t, valueBool)
 	assert.Equal(t, true, valueBool)
 
-	valueBool = c.QueryBool("id")
+	valueBool, _ = c.QueryBool("id")
 	assert.False(t, valueBool)
 	assert.Equal(t, false, valueBool)
 
@@ -421,8 +421,8 @@ func TestContextQuery(t *testing.T) {
 
 	valueBool, ok = c.GetQueryBool("id")
 	assert.False(t, ok)
-	assert.False(t, valueBool)
-	assert.Equal(t, valueBool, false)
+	assert.True(t, valueBool)
+	assert.Equal(t, valueBool, true)
 	assert.Equal(t, ok, false)
 
 	valueBool = c.GetQueryBoolDefault("read", false)
