@@ -740,6 +740,11 @@ func (c *Context) ShouldBindUri(obj any) error {
 	return binding.Uri.BindUri(m, obj)
 }
 
+// ShouldBindForm is shortcut for c.ShouldBindWith(obj, binding.Form).
+func (c *Context) ShouldBindForm(obj any) error {
+	return c.ShouldBindWith(obj, binding.Form)
+}
+
 // ShouldBindWith binds the passed struct pointer using the specified binding engine.
 // See the binding package.
 func (c *Context) ShouldBindWith(obj any, b binding.Binding) error {
