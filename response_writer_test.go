@@ -30,6 +30,12 @@ func init() {
 	SetMode(TestMode)
 }
 
+func TestResponseWriterUnwrap(t *testing.T) {
+	testWriter := httptest.NewRecorder()
+	writer := &responseWriter{ResponseWriter: testWriter}
+	assert.Same(t, testWriter, writer.Unwrap())
+}
+
 func TestResponseWriterReset(t *testing.T) {
 	testWriter := httptest.NewRecorder()
 	writer := &responseWriter{}
