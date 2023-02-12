@@ -6,7 +6,6 @@ package gin
 
 import (
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -294,7 +293,7 @@ func TestRouteParamsByNameWithExtraSlash(t *testing.T) {
 func TestRouteStaticFile(t *testing.T) {
 	// SETUP file
 	testRoot, _ := os.Getwd()
-	f, err := ioutil.TempFile(testRoot, "")
+	f, err := os.CreateTemp(testRoot, "")
 	if err != nil {
 		t.Error(err)
 	}
@@ -329,7 +328,7 @@ func TestRouteStaticFile(t *testing.T) {
 func TestRouteStaticFileFS(t *testing.T) {
 	// SETUP file
 	testRoot, _ := os.Getwd()
-	f, err := ioutil.TempFile(testRoot, "")
+	f, err := os.CreateTemp(testRoot, "")
 	if err != nil {
 		t.Error(err)
 	}
@@ -669,5 +668,24 @@ func TestRouteContextHoldsFullPath(t *testing.T) {
 	})
 
 	w := PerformRequest(router, http.MethodGet, "/not-found")
+	assert.Equal(t, http.StatusNotFound, w.Code)
+}
+
+func TestEngineHandleMethodNotAllowedCornerCase(t *testing.T) {
+	r := New()
+	r.HandleMethodNotAllowed = true
+
+	base := r.Group("base")
+	base.GET("/metrics", handlerTest1)
+
+	v1 := base.Group("v1")
+
+	v1.GET("/:id/devices", handlerTest1)
+	v1.GET("/user/:id/groups", handlerTest1)
+
+	v1.GET("/orgs/:id", handlerTest1)
+	v1.DELETE("/orgs/:id", handlerTest1)
+
+	w := PerformRequest(r, "GET", "/base/v1/user/groups")
 	assert.Equal(t, http.StatusNotFound, w.Code)
 }

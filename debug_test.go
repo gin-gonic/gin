@@ -5,7 +5,6 @@
 package gin
 
 import (
-	"bytes"
 	"errors"
 	"fmt"
 	"html/template"
@@ -13,6 +12,7 @@ import (
 	"log"
 	"os"
 	"runtime"
+	"strings"
 	"sync"
 	"testing"
 
@@ -138,7 +138,7 @@ func captureOutput(t *testing.T, f func()) string {
 	wg := new(sync.WaitGroup)
 	wg.Add(1)
 	go func() {
-		var buf bytes.Buffer
+		var buf strings.Builder
 		wg.Done()
 		_, err := io.Copy(&buf, reader)
 		assert.NoError(t, err)

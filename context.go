@@ -7,7 +7,6 @@ package gin
 import (
 	"errors"
 	"io"
-	"io/ioutil"
 	"log"
 	"math"
 	"mime/multipart"
@@ -249,20 +248,20 @@ func (c *Context) Error(err error) *Error {
 // It also lazy initializes  c.Keys if it was not used previously.
 func (c *Context) Set(key string, value any) {
 	c.mu.Lock()
+	defer c.mu.Unlock()
 	if c.Keys == nil {
 		c.Keys = make(map[string]any)
 	}
 
 	c.Keys[key] = value
-	c.mu.Unlock()
 }
 
 // Get returns the value for the given key, ie: (value, true).
 // If the value does not exist it returns (nil, false)
 func (c *Context) Get(key string) (value any, exists bool) {
 	c.mu.RLock()
+	defer c.mu.RUnlock()
 	value, exists = c.Keys[key]
-	c.mu.RUnlock()
 	return
 }
 
@@ -387,7 +386,9 @@ func (c *Context) GetStringMapStringSlice(key string) (smss map[string][]string)
 //
 //	router.GET("/user/:id", func(c *gin.Context) {
 //	    // a GET request to /user/john
-//	    id := c.Param("id") // id == "john"
+//	    id := c.Param("id") // id == "/john"
+//	    // a GET request to /user/john/
+//	    id := c.Param("id") // id == "/john/"
 //	})
 func (c *Context) Param(key string) string {
 	return c.Params.ByName(key)
@@ -758,7 +759,7 @@ func (c *Context) ShouldBindBodyWith(obj any, bb binding.BindingBody) (err error
 		}
 	}
 	if body == nil {
-		body, err = ioutil.ReadAll(c.Request.Body)
+		body, err = io.ReadAll(c.Request.Body)
 		if err != nil {
 			return err
 		}
@@ -877,7 +878,7 @@ func (c *Context) GetHeader(key string) string {
 
 // GetRawData returns stream data.
 func (c *Context) GetRawData() ([]byte, error) {
-	return ioutil.ReadAll(c.Request.Body)
+	return io.ReadAll(c.Request.Body)
 }
 
 // SetSameSite with cookie
@@ -928,7 +929,9 @@ func (c *Context) Render(code int, r render.Render) {
 	}
 
 	if err := r.Render(c.Writer); err != nil {
-		panic(err)
+		// Pushing error to c.Errors
+		_ = c.Error(err)
+		c.Abort()
 	}
 }
 
@@ -1151,7 +1154,7 @@ func (c *Context) NegotiateFormat(offered ...string) string {
 			// According to RFC 2616 and RFC 2396, non-ASCII characters are not allowed in headers,
 			// therefore we can just iterate over the string without casting it into []rune
 			i := 0
-			for ; i < len(accepted); i++ {
+			for ; i < len(accepted) && i < len(offer); i++ {
 				if accepted[i] == '*' || offer[i] == '*' {
 					return offer
 				}

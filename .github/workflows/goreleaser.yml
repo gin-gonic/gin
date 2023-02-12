@@ -24,7 +24,7 @@ jobs:
           go-version: 1.17
       -
         name: Run GoReleaser
-        uses: goreleaser/goreleaser-action@v3
+        uses: goreleaser/goreleaser-action@v4
         with:
           # either 'goreleaser' (default) or 'goreleaser-pro'
           distribution: goreleaser

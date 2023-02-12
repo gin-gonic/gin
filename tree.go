@@ -459,9 +459,9 @@ walk: // Outer loop for walking the tree
 					// If the path at the end of the loop is not equal to '/' and the current node has no child nodes
 					// the current node needs to roll back to last valid skippedNode
 					if path != "/" {
-						for l := len(*skippedNodes); l > 0; {
-							skippedNode := (*skippedNodes)[l-1]
-							*skippedNodes = (*skippedNodes)[:l-1]
+						for length := len(*skippedNodes); length > 0; length-- {
+							skippedNode := (*skippedNodes)[length-1]
+							*skippedNodes = (*skippedNodes)[:length-1]
 							if strings.HasSuffix(skippedNode.path, path) {
 								path = skippedNode.path
 								n = skippedNode.node
@@ -576,9 +576,9 @@ walk: // Outer loop for walking the tree
 			// If the current path does not equal '/' and the node does not have a registered handle and the most recently matched node has a child node
 			// the current node needs to roll back to last valid skippedNode
 			if n.handlers == nil && path != "/" {
-				for l := len(*skippedNodes); l > 0; {
-					skippedNode := (*skippedNodes)[l-1]
-					*skippedNodes = (*skippedNodes)[:l-1]
+				for length := len(*skippedNodes); length > 0; length-- {
+					skippedNode := (*skippedNodes)[length-1]
+					*skippedNodes = (*skippedNodes)[:length-1]
 					if strings.HasSuffix(skippedNode.path, path) {
 						path = skippedNode.path
 						n = skippedNode.node
@@ -633,9 +633,9 @@ walk: // Outer loop for walking the tree
 
 		// roll back to last valid skippedNode
 		if !value.tsr && path != "/" {
-			for l := len(*skippedNodes); l > 0; {
-				skippedNode := (*skippedNodes)[l-1]
-				*skippedNodes = (*skippedNodes)[:l-1]
+			for length := len(*skippedNodes); length > 0; length-- {
+				skippedNode := (*skippedNodes)[length-1]
+				*skippedNodes = (*skippedNodes)[:length-1]
 				if strings.HasSuffix(skippedNode.path, path) {
 					path = skippedNode.path
 					n = skippedNode.node
