@@ -31,7 +31,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest]
-        go: [1.16, 1.17, 1.18, 1.19]
+        go: ['1.16', '1.17', '1.18', '1.19', '1.20']
         test-tags: ['', '-tags nomsgpack', '-tags "sonic avx"', '-tags go_json']
         include:
           - os: ubuntu-latest
