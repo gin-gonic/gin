@@ -9,6 +9,7 @@ import (
 	"html/template"
 	"net"
 	"net/http"
+	"net/url"
 	"os"
 	"path"
 	"strings"
@@ -668,6 +669,9 @@ func redirectTrailingSlash(c *Context) {
 	req := c.Request
 	p := req.URL.Path
 	if prefix := path.Clean(c.Request.Header.Get("X-Forwarded-Prefix")); prefix != "." {
+		prefix = url.QueryEscape(prefix)
+		prefix = strings.ReplaceAll(prefix, "%2F", "/")
+
 		p = prefix + "/" + req.URL.Path
 	}
 	req.URL.Path = p + "/"
