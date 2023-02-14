@@ -1634,7 +1634,9 @@ func TestContextBindForm(t *testing.T) {
 
 	c.Request, _ = http.NewRequest("POST", "/", nil)
 
-	c.Request.ParseForm()
+	if err := c.Request.ParseForm(); err != nil {
+		t.Error(err.Error())
+	}
 
 	c.Request.Form.Add("rate", "8000")
 	c.Request.Form.Add("domain", "music")
