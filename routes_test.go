@@ -185,16 +185,52 @@ func TestRouteRedirectTrailingSlash(t *testing.T) {
 	w = PerformRequest(router, http.MethodGet, "/path2/", header{Key: "X-Forwarded-Prefix", Value: "/api/"})
 	assert.Equal(t, 200, w.Code)
 
-	w = PerformRequest(router, http.MethodGet, "/path/", header{Key: "X-Forwarded-Prefix", Value: "../../bug#?"})
-	assert.Equal(t, "../../../bug%2523%253F/path", w.Header().Get("Location"))
+	w = PerformRequest(router, http.MethodGet, "/path/", header{Key: "X-Forwarded-Prefix", Value: "../../api#?"})
+	assert.Equal(t, "/api/path", w.Header().Get("Location"))
+	assert.Equal(t, 301, w.Code)
+
+	w = PerformRequest(router, http.MethodGet, "/path/", header{Key: "X-Forwarded-Prefix", Value: "../../api"})
+	assert.Equal(t, "/api/path", w.Header().Get("Location"))
+	assert.Equal(t, 301, w.Code)
+
+	w = PerformRequest(router, http.MethodGet, "/path2", header{Key: "X-Forwarded-Prefix", Value: "../../api"})
+	assert.Equal(t, "/api/path2/", w.Header().Get("Location"))
+	assert.Equal(t, 301, w.Code)
+
+	w = PerformRequest(router, http.MethodGet, "/path2", header{Key: "X-Forwarded-Prefix", Value: "/../../api"})
+	assert.Equal(t, "/api/path2/", w.Header().Get("Location"))
+	assert.Equal(t, 301, w.Code)
+
+	w = PerformRequest(router, http.MethodGet, "/path/", header{Key: "X-Forwarded-Prefix", Value: "api/../../"})
+	assert.Equal(t, "//path", w.Header().Get("Location"))
+	assert.Equal(t, 301, w.Code)
+
+	w = PerformRequest(router, http.MethodGet, "/path/", header{Key: "X-Forwarded-Prefix", Value: "api/../../../"})
+	assert.Equal(t, "/path", w.Header().Get("Location"))
+	assert.Equal(t, 301, w.Code)
+
+	w = PerformRequest(router, http.MethodGet, "/path2", header{Key: "X-Forwarded-Prefix", Value: "../../gin-gonic.com"})
+	assert.Equal(t, "/gin-goniccom/path2/", w.Header().Get("Location"))
+	assert.Equal(t, 301, w.Code)
+
+	w = PerformRequest(router, http.MethodGet, "/path2", header{Key: "X-Forwarded-Prefix", Value: "/../../gin-gonic.com"})
+	assert.Equal(t, "/gin-goniccom/path2/", w.Header().Get("Location"))
 	assert.Equal(t, 301, w.Code)
 
 	w = PerformRequest(router, http.MethodGet, "/path/", header{Key: "X-Forwarded-Prefix", Value: "https://gin-gonic.com/#"})
-	assert.Equal(t, "https%3A/gin-gonic.com/%23/https%253A/gin-gonic.com/%2523/path", w.Header().Get("Location"))
+	assert.Equal(t, "https/gin-goniccom/https/gin-goniccom/path", w.Header().Get("Location"))
 	assert.Equal(t, 301, w.Code)
 
-	w = PerformRequest(router, http.MethodGet, "/path/", header{Key: "X-Forwarded-Prefix", Value: "#bug"})
-	assert.Equal(t, "%23bug/%2523bug/path", w.Header().Get("Location"))
+	w = PerformRequest(router, http.MethodGet, "/path/", header{Key: "X-Forwarded-Prefix", Value: "#api"})
+	assert.Equal(t, "api/api/path", w.Header().Get("Location"))
+	assert.Equal(t, 301, w.Code)
+
+	w = PerformRequest(router, http.MethodGet, "/path/", header{Key: "X-Forwarded-Prefix", Value: "/nor-mal/#?a=1"})
+	assert.Equal(t, "/nor-mal/a1/path", w.Header().Get("Location"))
+	assert.Equal(t, 301, w.Code)
+
+	w = PerformRequest(router, http.MethodGet, "/path/", header{Key: "X-Forwarded-Prefix", Value: "/nor-mal/%2e%2e/"})
+	assert.Equal(t, "/nor-mal/2e2e/path", w.Header().Get("Location"))
 	assert.Equal(t, 301, w.Code)
 
 	router.RedirectTrailingSlash = false

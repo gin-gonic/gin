@@ -9,9 +9,9 @@ import (
 	"html/template"
 	"net"
 	"net/http"
-	"net/url"
 	"os"
 	"path"
+	"regexp"
 	"strings"
 	"sync"
 
@@ -40,6 +40,9 @@ var defaultTrustedCIDRs = []*net.IPNet{
 		Mask: net.IPMask{0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0},
 	},
 }
+
+var regSafePrefix = regexp.MustCompile("[^a-zA-Z0-9/-]+")
+var regRemoveRepeatedChar = regexp.MustCompile("/{2,}")
 
 // HandlerFunc defines the handler used by gin middleware as return value.
 type HandlerFunc func(*Context)
@@ -669,8 +672,8 @@ func redirectTrailingSlash(c *Context) {
 	req := c.Request
 	p := req.URL.Path
 	if prefix := path.Clean(c.Request.Header.Get("X-Forwarded-Prefix")); prefix != "." {
-		prefix = url.QueryEscape(prefix)
-		prefix = strings.ReplaceAll(prefix, "%2F", "/")
+		prefix = regSafePrefix.ReplaceAllString(prefix, "")
+		prefix = regRemoveRepeatedChar.ReplaceAllString(prefix, "/")
 
 		p = prefix + "/" + req.URL.Path
 	}
