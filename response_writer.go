@@ -51,6 +51,10 @@ type responseWriter struct {
 
 var _ ResponseWriter = (*responseWriter)(nil)
 
+func (w *responseWriter) Unwrap() http.ResponseWriter {
+	return w.ResponseWriter
+}
+
 func (w *responseWriter) reset(writer http.ResponseWriter) {
 	w.ResponseWriter = writer
 	w.size = noWritten
