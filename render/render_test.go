@@ -20,9 +20,6 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-// TODO unit tests
-// test errors
-
 func TestRenderJSON(t *testing.T) {
 	w := httptest.NewRecorder()
 	data := map[string]any{
@@ -106,6 +103,18 @@ func TestRenderSecureJSONFail(t *testing.T) {
 	// json: unsupported type: chan int
 	err := (SecureJSON{"while(1);", data}).Render(w)
 	assert.Error(t, err)
+
+	// test ResponseWriter.Write failed
+	ts := httptest.NewServer(http.HandlerFunc(
+		func(w http.ResponseWriter, r *http.Request) {
+			// Restrict the length of returned packages
+			w.Header().Set("Content-Length", "0")
+			datas := []map[string]any{{"foo": "bar"}, {"bar": "foo"}}
+			err2 := (SecureJSON{"while(1);", datas}).Render(w)
+			assert.Error(t, err2)
+		}))
+	defer ts.Close()
+	_, _ = http.Get(ts.URL)
 }
 
 func TestRenderJsonpJSON(t *testing.T) {
@@ -158,6 +167,19 @@ func TestRenderJsonpJSONFail(t *testing.T) {
 	// json: unsupported type: chan int
 	err := (JsonpJSON{"x", data}).Render(w)
 	assert.Error(t, err)
+
+	// test ResponseWriter.Write failed
+	for _, l := range []string{"0", "1", "2", "4"} {
+		ts := httptest.NewServer(http.HandlerFunc(
+			func(w http.ResponseWriter, r *http.Request) {
+				// Restrict the length of returned packages
+				w.Header().Set("Content-Length", l)
+				err2 := (JsonpJSON{"x", ""}).Render(w)
+				assert.Error(t, err2)
+			}))
+		defer ts.Close()
+		_, _ = http.Get(ts.URL)
+	}
 }
 
 func TestRenderAsciiJSON(t *testing.T) {
@@ -531,4 +553,28 @@ func TestRenderReaderNoContentLength(t *testing.T) {
 	assert.NotContains(t, "Content-Length", w.Header())
 	assert.Equal(t, headers["Content-Disposition"], w.Header().Get("Content-Disposition"))
 	assert.Equal(t, headers["x-request-id"], w.Header().Get("x-request-id"))
+}
+
+func TestReaderTOML(t *testing.T) {
+	w := httptest.NewRecorder()
+	data := `
+	title = "TOML Example"
+	[server]
+	IP = "127.0.0.1"
+	Port = ":8080"
+	`
+	(TOML{data}).WriteContentType(w)
+	err := (TOML{data}).Render(w)
+
+	assert.NoError(t, err)
+	assert.Equal(t, "application/toml; charset=utf-8", w.Header().Get("Content-Type"))
+	assert.Equal(t, "\"\\n\\ttitle = \\\"TOML Example\\\"\\n\\t[server]\\n\\tIP = \\\"127.0.0.1\\\"\\n\\tPort = \\\":8080\\\"\\n\\t\"", w.Body.String())
+}
+
+func TestRenderTOMLFail(t *testing.T) {
+	w := httptest.NewRecorder()
+	data := make(chan int)
+
+	// TOML: unsupported type: chan int
+	assert.Error(t, (TOML{data}).Render(w))
 }
