@@ -90,6 +90,19 @@ func TestContextFormFile(t *testing.T) {
 	assert.NoError(t, c.SaveUploadedFile(f, "test"))
 }
 
+func TestContextFormFileFailed(t *testing.T) {
+	buf := new(bytes.Buffer)
+	mw := multipart.NewWriter(buf)
+	mw.Close()
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	c.Request, _ = http.NewRequest("POST", "/", nil)
+	c.Request.Header.Set("Content-Type", mw.FormDataContentType())
+	c.engine.MaxMultipartMemory = 8 << 20
+	f, err := c.FormFile("file")
+	assert.Error(t, err)
+	assert.Nil(t, f)
+}
+
 func TestContextMultipartForm(t *testing.T) {
 	buf := new(bytes.Buffer)
 	mw := multipart.NewWriter(buf)
@@ -2373,4 +2386,43 @@ func TestCreateTestContextWithRouteParams(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, w.Code)
 	assert.Equal(t, "hello gin", w.Body.String())
+}
+
+type interceptedWriter struct {
+	ResponseWriter
+	b *bytes.Buffer
+}
+
+func (i interceptedWriter) WriteHeader(code int) {
+	i.Header().Del("X-Test")
+	i.ResponseWriter.WriteHeader(code)
+}
+
+func TestInterceptedHeader(t *testing.T) {
+	w := httptest.NewRecorder()
+	c, r := CreateTestContext(w)
+
+	r.Use(func(c *Context) {
+		i := interceptedWriter{
+			ResponseWriter: c.Writer,
+			b:              bytes.NewBuffer(nil),
+		}
+		c.Writer = i
+		c.Next()
+		c.Header("X-Test", "overridden")
+		c.Writer = i.ResponseWriter
+	})
+	r.GET("/", func(c *Context) {
+		c.Header("X-Test", "original")
+		c.Header("X-Test-2", "present")
+		c.String(http.StatusOK, "hello world")
+	})
+	c.Request = httptest.NewRequest("GET", "/", nil)
+	r.HandleContext(c)
+	// Result() has headers frozen when WriteHeaderNow() has been called
+	// Compared to this time, this is when the response headers will be flushed
+	// As response is flushed on c.String, the Header cannot be set by the first
+	// middleware. Assert this
+	assert.Equal(t, "", w.Result().Header.Get("X-Test"))
+	assert.Equal(t, "present", w.Result().Header.Get("X-Test-2"))
 }

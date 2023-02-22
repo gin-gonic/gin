@@ -31,7 +31,7 @@ Gin is a web framework written in [Go](https://go.dev/). It features a martini-l
 
 ### Prerequisites
 
-- **[Go](https://go.dev/)**: ~~any one of the **three latest major** [releases](https://go.dev/doc/devel/release)~~ (now version **1.16+** is required).
+- **[Go](https://go.dev/)**: any one of the **three latest major** [releases](https://go.dev/doc/devel/release) (we test it with this).
 
 ### Getting Gin
 
@@ -46,7 +46,7 @@ to your code, and then `go [build|run|test]` will automatically fetch the necess
 Otherwise, run the following Go command to install the `gin` package:
 
 ```sh
-$ go get -u github.com/gin-gonic/gin
+$ go install github.com/gin-gonic/gin@latest
 ```
 
 ### Running Gin
