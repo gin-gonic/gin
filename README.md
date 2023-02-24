@@ -46,7 +46,7 @@ to your code, and then `go [build|run|test]` will automatically fetch the necess
 Otherwise, run the following Go command to install the `gin` package:
 
 ```sh
-$ go install github.com/gin-gonic/gin@latest
+$ go get -u github.com/gin-gonic/gin
 ```
 
 ### Running Gin
