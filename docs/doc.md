@@ -425,7 +425,7 @@ func main() {
   r.Use(gin.Logger())
 
   // Recovery middleware recovers from any panics and writes a 500 if there was one.
-  r.Use(gin.CustomRecovery(func(c *gin.Context, recovered interface{}) {
+  r.Use(gin.CustomRecovery(func(c *gin.Context, recovered any) {
     if err, ok := recovered.(string); ok {
       c.String(http.StatusInternalServerError, fmt.Sprintf("error: %s", err))
     }
@@ -996,7 +996,7 @@ curl -X POST -v --form name=user --form "avatar=@./avatar.png" http://localhost:
 func main() {
   r := gin.Default()
 
-  // gin.H is a shortcut for map[string]interface{}
+  // gin.H is a shortcut for map[string]any
   r.GET("/someJSON", func(c *gin.Context) {
     c.JSON(http.StatusOK, gin.H{"message": "hey", "status": http.StatusOK})
   })
@@ -1961,7 +1961,7 @@ func (customerBinding) Name() string {
   return "form"
 }
 
-func (customerBinding) Bind(req *http.Request, obj interface{}) error {
+func (customerBinding) Bind(req *http.Request, obj any) error {
   if err := req.ParseForm(); err != nil {
     return err
   }
@@ -1976,7 +1976,7 @@ func (customerBinding) Bind(req *http.Request, obj interface{}) error {
   return validate(obj)
 }
 
-func validate(obj interface{}) error {
+func validate(obj any) error {
   if binding.Validator == nil {
     return nil
   }

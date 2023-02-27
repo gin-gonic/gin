@@ -37,7 +37,7 @@ var errTestRender = errors.New("TestRender")
 // Unit tests TODO
 // func (c *Context) File(filepath string) {
 // func (c *Context) Negotiate(code int, config Negotiate) {
-// BAD case: func (c *Context) Render(code int, render render.Render, obj ...interface{}) {
+// BAD case: func (c *Context) Render(code int, render render.Render, obj ...any) {
 // test that information is not leaked when reusing Contexts (using the Pool)
 
 func createMultipartRequest() *http.Request {
