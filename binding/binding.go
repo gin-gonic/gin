@@ -73,18 +73,18 @@ var Validator StructValidator = &defaultValidator{}
 // These implement the Binding interface and can be used to bind the data
 // present in the request to struct instances.
 var (
-	JSON          = jsonBinding{}
-	XML           = xmlBinding{}
-	Form          = formBinding{}
-	Query         = queryBinding{}
-	FormPost      = formPostBinding{}
-	FormMultipart = formMultipartBinding{}
-	ProtoBuf      = protobufBinding{}
-	MsgPack       = msgpackBinding{}
-	YAML          = yamlBinding{}
-	Uri           = uriBinding{}
-	Header        = headerBinding{}
-	TOML          = tomlBinding{}
+	JSON          BindingBody = jsonBinding{}
+	XML           BindingBody = xmlBinding{}
+	Form          Binding     = formBinding{}
+	Query         Binding     = queryBinding{}
+	FormPost      Binding     = formPostBinding{}
+	FormMultipart Binding     = formMultipartBinding{}
+	ProtoBuf      BindingBody = protobufBinding{}
+	MsgPack       BindingBody = msgpackBinding{}
+	YAML          BindingBody = yamlBinding{}
+	Uri           BindingUri  = uriBinding{}
+	Header        Binding     = headerBinding{}
+	TOML          BindingBody = tomlBinding{}
 )
 
 // Default returns the appropriate Binding instance based on the HTTP method
