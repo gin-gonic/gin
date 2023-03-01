@@ -31,7 +31,7 @@ Gin is a web framework written in [Go](https://go.dev/). It features a martini-l
 
 ### Prerequisites
 
-- **[Go](https://go.dev/)**: ~~any one of the **three latest major** [releases](https://go.dev/doc/devel/release)~~ (now version **1.16+** is required).
+- **[Go](https://go.dev/)**: any one of the **three latest major** [releases](https://go.dev/doc/devel/release) (we test it with these).
 
 ### Getting Gin
 

@@ -18,7 +18,7 @@ jobs:
       - name: Setup go
         uses: actions/setup-go@v3
         with:
-          go-version: '^1.16'
+          go-version: '^1.18'
       - name: Checkout repository
         uses: actions/checkout@v3
       - name: Setup golangci-lint
@@ -31,7 +31,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest]
-        go: ['1.16', '1.17', '1.18', '1.19', '1.20']
+        go: ['1.18', '1.19', '1.20']
         test-tags: ['', '-tags nomsgpack', '-tags "sonic avx"', '-tags go_json']
         include:
           - os: ubuntu-latest
@@ -73,7 +73,7 @@ jobs:
           flags: ${{ matrix.os }},go-${{ matrix.go }},${{ matrix.test-tags }}
 
       - name: Format
-        if: matrix.go-version == '1.19.x'
+        if: matrix.go-version == '1.20.x'
         run: diff -u <(echo -n) <(gofmt -d .)
   notification-gitter:
     needs: test
