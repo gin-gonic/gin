@@ -59,9 +59,8 @@ func (h H) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
 		Space: "",
 		Local: "map",
 	}
-	if err := e.EncodeToken(start); err != nil {
-		return err
-	}
+	_ = e.EncodeToken(start)
+
 	for key, value := range h {
 		elem := xml.StartElement{
 			Name: xml.Name{Space: "", Local: key},
