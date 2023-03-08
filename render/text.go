@@ -36,6 +36,12 @@ func WriteString(w http.ResponseWriter, format string, data []any) (err error) {
 		_, err = fmt.Fprintf(w, format, data...)
 		return
 	}
-	_, err = w.Write(bytesconv.StringToBytes(format))
+
+	bytes := bytesconv.StringToBytes(format)
+
+	writeContentLength(w, len(bytes))
+
+	_, err = w.Write(bytes)
+
 	return
 }

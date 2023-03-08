@@ -38,6 +38,8 @@ func TestRenderJSON(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, "{\"foo\":\"bar\",\"html\":\"\\u003cb\\u003e\"}", w.Body.String())
 	assert.Equal(t, "application/json; charset=utf-8", w.Header().Get("Content-Type"))
+	assert.Equal(t, "36", w.Header().Get("Content-Length"))
+
 }
 
 func TestRenderJSONError(t *testing.T) {
@@ -60,6 +62,8 @@ func TestRenderIndentedJSON(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, "{\n    \"bar\": \"foo\",\n    \"foo\": \"bar\"\n}", w.Body.String())
 	assert.Equal(t, "application/json; charset=utf-8", w.Header().Get("Content-Type"))
+	assert.Equal(t, "38", w.Header().Get("Content-Length"))
+
 }
 
 func TestRenderIndentedJSONPanics(t *testing.T) {
@@ -85,6 +89,7 @@ func TestRenderSecureJSON(t *testing.T) {
 	assert.NoError(t, err1)
 	assert.Equal(t, "{\"foo\":\"bar\"}", w1.Body.String())
 	assert.Equal(t, "application/json; charset=utf-8", w1.Header().Get("Content-Type"))
+	assert.Equal(t, "13", w1.Header().Get("Content-Length"))
 
 	w2 := httptest.NewRecorder()
 	datas := []map[string]any{{
@@ -97,6 +102,7 @@ func TestRenderSecureJSON(t *testing.T) {
 	assert.NoError(t, err2)
 	assert.Equal(t, "while(1);[{\"foo\":\"bar\"},{\"bar\":\"foo\"}]", w2.Body.String())
 	assert.Equal(t, "application/json; charset=utf-8", w2.Header().Get("Content-Type"))
+	assert.Equal(t, "38", w2.Header().Get("Content-Length"))
 }
 
 func TestRenderSecureJSONFail(t *testing.T) {
@@ -122,6 +128,7 @@ func TestRenderJsonpJSON(t *testing.T) {
 	assert.NoError(t, err1)
 	assert.Equal(t, "x({\"foo\":\"bar\"});", w1.Body.String())
 	assert.Equal(t, "application/javascript; charset=utf-8", w1.Header().Get("Content-Type"))
+	assert.Equal(t, "17", w1.Header().Get("Content-Length"))
 
 	w2 := httptest.NewRecorder()
 	datas := []map[string]any{{
@@ -134,6 +141,8 @@ func TestRenderJsonpJSON(t *testing.T) {
 	assert.NoError(t, err2)
 	assert.Equal(t, "x([{\"foo\":\"bar\"},{\"bar\":\"foo\"}]);", w2.Body.String())
 	assert.Equal(t, "application/javascript; charset=utf-8", w2.Header().Get("Content-Type"))
+	assert.Equal(t, "33", w2.Header().Get("Content-Length"))
+
 }
 
 func TestRenderJsonpJSONError2(t *testing.T) {
@@ -149,6 +158,7 @@ func TestRenderJsonpJSONError2(t *testing.T) {
 
 	assert.Equal(t, "{\"foo\":\"bar\"}", w.Body.String())
 	assert.Equal(t, "application/javascript; charset=utf-8", w.Header().Get("Content-Type"))
+	assert.Equal(t, "13", w.Header().Get("Content-Length"))
 }
 
 func TestRenderJsonpJSONFail(t *testing.T) {
@@ -172,6 +182,7 @@ func TestRenderAsciiJSON(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, "{\"lang\":\"GO\\u8bed\\u8a00\",\"tag\":\"\\u003cbr\\u003e\"}", w1.Body.String())
 	assert.Equal(t, "application/json", w1.Header().Get("Content-Type"))
+	assert.Equal(t, "48", w1.Header().Get("Content-Length"))
 
 	w2 := httptest.NewRecorder()
 	data2 := 3.1415926
@@ -179,6 +190,8 @@ func TestRenderAsciiJSON(t *testing.T) {
 	err = (AsciiJSON{data2}).Render(w2)
 	assert.NoError(t, err)
 	assert.Equal(t, "3.1415926", w2.Body.String())
+	assert.Equal(t, "9", w2.Header().Get("Content-Length"))
+
 }
 
 func TestRenderAsciiJSONFail(t *testing.T) {
@@ -240,6 +253,8 @@ b:
 	assert.NoError(t, err)
 	assert.Equal(t, "|4-\n    a : Easy!\n    b:\n    \tc: 2\n    \td: [3, 4]\n    \t\n", w.Body.String())
 	assert.Equal(t, "application/x-yaml; charset=utf-8", w.Header().Get("Content-Type"))
+	assert.Equal(t, "56", w.Header().Get("Content-Length"))
+
 }
 
 type fail struct{}
@@ -268,6 +283,8 @@ func TestRenderTOML(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, "foo = 'bar'\nhtml = '<b>'\n", w.Body.String())
 	assert.Equal(t, "application/toml; charset=utf-8", w.Header().Get("Content-Type"))
+	assert.Equal(t, "25", w.Header().Get("Content-Length"))
+
 }
 
 func TestRenderTOMLFail(t *testing.T) {
@@ -296,6 +313,8 @@ func TestRenderProtoBuf(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, string(protoData), w.Body.String())
 	assert.Equal(t, "application/x-protobuf", w.Header().Get("Content-Type"))
+	assert.Equal(t, strconv.Itoa(len(string(protoData))), w.Header().Get("Content-Length"))
+
 }
 
 func TestRenderProtoBufFail(t *testing.T) {
@@ -373,6 +392,8 @@ func TestRenderData(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, "#!PNG some raw data", w.Body.String())
 	assert.Equal(t, "image/png", w.Header().Get("Content-Type"))
+	assert.Equal(t, "19", w.Header().Get("Content-Length"))
+
 }
 
 func TestRenderString(t *testing.T) {
@@ -405,6 +426,8 @@ func TestRenderStringLenZero(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, "hola %s %d", w.Body.String())
 	assert.Equal(t, "text/plain; charset=utf-8", w.Header().Get("Content-Type"))
+	assert.Equal(t, "10", w.Header().Get("Content-Length"))
+
 }
 
 func TestRenderHTMLTemplate(t *testing.T) {
