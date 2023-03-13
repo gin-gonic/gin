@@ -6,7 +6,7 @@ require (
 	github.com/bytedance/sonic v1.8.2
 	github.com/gin-contrib/sse v0.1.0
 	github.com/go-playground/validator/v10 v10.11.2
-	github.com/goccy/go-json v0.10.0
+	github.com/goccy/go-json v0.10.1
 	github.com/json-iterator/go v1.1.12
 	github.com/mattn/go-isatty v0.0.17
 	github.com/pelletier/go-toml/v2 v2.0.6
