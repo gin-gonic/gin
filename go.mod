@@ -13,7 +13,7 @@ require (
 	github.com/stretchr/testify v1.8.2
 	github.com/ugorji/go/codec v1.2.10
 	golang.org/x/net v0.7.0
-	google.golang.org/protobuf v1.28.1
+	google.golang.org/protobuf v1.30.0
 	gopkg.in/yaml.v3 v3.0.1
 )
 
