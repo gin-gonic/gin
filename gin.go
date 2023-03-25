@@ -454,8 +454,8 @@ func (engine *Engine) isTrustedProxy(ip net.IP) bool {
 	return false
 }
 
-// validateHeader will parse X-Forwarded-For header and return the trusted client IP address
-func (engine *Engine) validateHeader(header string) (clientIP string, valid bool) {
+// getTrustedClientIP will parse X-Forwarded-For header and return the trusted client IP address
+func (engine *Engine) getTrustedClientIP(header string) (clientIP string, valid bool) {
 	if header == "" {
 		return "", false
 	}
