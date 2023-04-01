@@ -1056,7 +1056,7 @@ func (c *Context) FileFromFS(filepath string, fs http.FileSystem) {
 // On the client side, the file will typically be downloaded with the given filename
 func (c *Context) FileAttachment(filepath, filename string) {
 	if isASCII(filename) {
-		c.Writer.Header().Set("Content-Disposition", `attachment; filename="`+filename+`"`)
+		c.Writer.Header().Set("Content-Disposition", `attachment; filename="`+strings.Replace(filename, "\"", "\\\"", -1)+`"`)
 	} else {
 		c.Writer.Header().Set("Content-Disposition", `attachment; filename*=UTF-8''`+url.QueryEscape(filename))
 	}
