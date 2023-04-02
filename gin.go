@@ -395,7 +395,7 @@ func prepareTrustedCIDRs(trustedProxies []string) ([]*net.IPNet, error) {
 	cidrArr := make([]*net.IPNet, 0, len(trustedProxies))
 
 	for _, trustedProxy := range trustedProxies {
-        cidrNet, err := prepareCIDR(trustedProxy)
+		cidrNet, err := prepareCIDR(trustedProxy)
 		if err != nil {
 			return cidrArr, err
 		}
@@ -422,28 +422,28 @@ func (engine *Engine) SetTrustedProxies(trustedProxies []string) error {
 
 // converts a string CIDR or single IP to a IPNet instance
 func prepareCIDR(ipOrCidr string) (*net.IPNet, error) {
-    // not a CIDR, try to convert to cidr notation
-    if !strings.Contains(ipOrCidr, "/") {
-        ip := parseIP(ipOrCidr)
-        if ip == nil {
-            return nil, &net.ParseError{Type: "IP address", Text: ipOrCidr}
-        }
+	// not a CIDR, try to convert to cidr notation
+	if !strings.Contains(ipOrCidr, "/") {
+		ip := parseIP(ipOrCidr)
+		if ip == nil {
+			return nil, &net.ParseError{Type: "IP address", Text: ipOrCidr}
+		}
 
-        switch len(ip) {
-        case net.IPv4len:
-            ipOrCidr += "/32"
-        case net.IPv6len:
-            ipOrCidr += "/128"
-        }
-    }
+		switch len(ip) {
+		case net.IPv4len:
+			ipOrCidr += "/32"
+		case net.IPv6len:
+			ipOrCidr += "/128"
+		}
+	}
 
-    _, cidrNet, err := net.ParseCIDR(ipOrCidr)
+	_, cidrNet, err := net.ParseCIDR(ipOrCidr)
 
-    if err != nil {
-        return nil, err
-    }
+	if err != nil {
+		return nil, err
+	}
 
-    return cidrNet, err
+	return cidrNet, err
 }
 
 // isUnsafeTrustedProxies checks if Engine.trustedCIDRs contains all IPs, it's not safe if it has (returns true)
