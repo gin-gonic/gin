@@ -221,8 +221,9 @@ func New(opts ...OptionFunc) *Engine {
 // Default returns an Engine instance with the Logger and Recovery middleware already attached.
 func Default(opts ...OptionFunc) *Engine {
 	debugPrintWARNINGDefault()
-	engine := New(opts...)
+	engine := New()
 	engine.Use(Logger(), Recovery())
+	engine.With(opts...)
 	return engine
 }
 
