@@ -212,10 +212,7 @@ func New(opts ...OptionFunc) *Engine {
 	engine.pool.New = func() any {
 		return engine.allocateContext(engine.maxParams)
 	}
-	for _, opt := range opts {
-		opt(engine)
-	}
-	return engine
+	return engine.With(opts...)
 }
 
 // Default returns an Engine instance with the Logger and Recovery middleware already attached.
