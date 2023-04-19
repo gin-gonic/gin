@@ -696,3 +696,37 @@ func assertRoutePresent(t *testing.T, gotRoutes RoutesInfo, wantRoute RouteInfo)
 
 func handlerTest1(c *Context) {}
 func handlerTest2(c *Context) {}
+
+func TestNewOptionFunc(t *testing.T) {
+	var fc = func(e *Engine) {
+		e.GET("/test1", handlerTest1)
+		e.GET("/test2", handlerTest2)
+
+		e.Use(func(c *Context) {
+			c.Next()
+		})
+	}
+
+	r := New(fc)
+
+	routes := r.Routes()
+	assertRoutePresent(t, routes, RouteInfo{Path: "/test1", Method: "GET", Handler: "github.com/gin-gonic/gin.handlerTest1"})
+	assertRoutePresent(t, routes, RouteInfo{Path: "/test2", Method: "GET", Handler: "github.com/gin-gonic/gin.handlerTest2"})
+}
+
+func TestWithOptionFunc(t *testing.T) {
+	r := New()
+
+	r.With(func(e *Engine) {
+		e.GET("/test1", handlerTest1)
+		e.GET("/test2", handlerTest2)
+
+		e.Use(func(c *Context) {
+			c.Next()
+		})
+	})
+
+	routes := r.Routes()
+	assertRoutePresent(t, routes, RouteInfo{Path: "/test1", Method: "GET", Handler: "github.com/gin-gonic/gin.handlerTest1"})
+	assertRoutePresent(t, routes, RouteInfo{Path: "/test2", Method: "GET", Handler: "github.com/gin-gonic/gin.handlerTest2"})
+}

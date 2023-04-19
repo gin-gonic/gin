@@ -47,6 +47,9 @@ var regRemoveRepeatedChar = regexp.MustCompile("/{2,}")
 // HandlerFunc defines the handler used by gin middleware as return value.
 type HandlerFunc func(*Context)
 
+// OptionFunc defines the function to change the default configuration
+type OptionFunc func(*Engine)
+
 // HandlersChain defines a HandlerFunc slice.
 type HandlersChain []HandlerFunc
 
@@ -180,7 +183,7 @@ var _ IRouter = (*Engine)(nil)
 // - ForwardedByClientIP:    true
 // - UseRawPath:             false
 // - UnescapePathValues:     true
-func New() *Engine {
+func New(opts ...OptionFunc) *Engine {
 	debugPrintWARNINGNew()
 	engine := &Engine{
 		RouterGroup: RouterGroup{
@@ -209,13 +212,16 @@ func New() *Engine {
 	engine.pool.New = func() any {
 		return engine.allocateContext(engine.maxParams)
 	}
+	for _, opt := range opts {
+		opt(engine)
+	}
 	return engine
 }
 
 // Default returns an Engine instance with the Logger and Recovery middleware already attached.
-func Default() *Engine {
+func Default(opts ...OptionFunc) *Engine {
 	debugPrintWARNINGDefault()
-	engine := New()
+	engine := New(opts...)
 	engine.Use(Logger(), Recovery())
 	return engine
 }
@@ -308,6 +314,15 @@ func (engine *Engine) Use(middleware ...HandlerFunc) IRoutes {
 	engine.RouterGroup.Use(middleware...)
 	engine.rebuild404Handlers()
 	engine.rebuild405Handlers()
+	return engine
+}
+
+// With returns a new Engine instance with the provided options.
+func (engine *Engine) With(opts ...OptionFunc) *Engine {
+	for _, opt := range opts {
+		opt(engine)
+	}
+
 	return engine
 }
 
