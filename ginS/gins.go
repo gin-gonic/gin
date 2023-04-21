@@ -104,7 +104,7 @@ func StaticFile(relativePath, filepath string) gin.IRoutes {
 }
 
 // Static serves files from the given file system root.
-// Internally a http.FileServer is used, therefore http.NotFound is used instead
+// Internally an http.FileServer is used, therefore http.NotFound is used instead
 // of the Router's NotFound handler.
 // To use the operating system's file system implementation,
 // use :
@@ -131,28 +131,28 @@ func Routes() gin.RoutesInfo {
 	return engine().Routes()
 }
 
-// Run attaches to a http.Server and starts listening and serving HTTP requests.
+// Run attaches to an http.Server and starts listening and serving HTTP requests.
 // It is a shortcut for http.ListenAndServe(addr, router)
 // Note: this method will block the calling goroutine indefinitely unless an error happens.
 func Run(addr ...string) (err error) {
 	return engine().Run(addr...)
 }
 
-// RunTLS attaches to a http.Server and starts listening and serving HTTPS requests.
+// RunTLS attaches to an http.Server and starts listening and serving HTTPS requests.
 // It is a shortcut for http.ListenAndServeTLS(addr, certFile, keyFile, router)
 // Note: this method will block the calling goroutine indefinitely unless an error happens.
 func RunTLS(addr, certFile, keyFile string) (err error) {
 	return engine().RunTLS(addr, certFile, keyFile)
 }
 
-// RunUnix attaches to a http.Server and starts listening and serving HTTP requests
+// RunUnix attaches to an http.Server and starts listening and serving HTTP requests
 // through the specified unix socket (i.e. a file)
 // Note: this method will block the calling goroutine indefinitely unless an error happens.
 func RunUnix(file string) (err error) {
 	return engine().RunUnix(file)
 }
 
-// RunFd attaches the router to a http.Server and starts listening and serving HTTP requests
+// RunFd attaches the router to an http.Server and starts listening and serving HTTP requests
 // through the specified file descriptor.
 // Note: the method will block the calling goroutine indefinitely unless on error happens.
 func RunFd(fd int) (err error) {

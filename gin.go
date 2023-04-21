@@ -370,7 +370,7 @@ func iterate(path, method string, routes RoutesInfo, root *node) RoutesInfo {
 	return routes
 }
 
-// Run attaches the router to a http.Server and starts listening and serving HTTP requests.
+// Run attaches the router to an http.Server and starts listening and serving HTTP requests.
 // It is a shortcut for http.ListenAndServe(addr, router)
 // Note: this method will block the calling goroutine indefinitely unless an error happens.
 func (engine *Engine) Run(addr ...string) (err error) {
@@ -490,7 +490,7 @@ func parseIP(ip string) net.IP {
 	return parsedIP
 }
 
-// RunTLS attaches the router to a http.Server and starts listening and serving HTTPS (secure) requests.
+// RunTLS attaches the router to an http.Server and starts listening and serving HTTPS (secure) requests.
 // It is a shortcut for http.ListenAndServeTLS(addr, certFile, keyFile, router)
 // Note: this method will block the calling goroutine indefinitely unless an error happens.
 func (engine *Engine) RunTLS(addr, certFile, keyFile string) (err error) {
@@ -506,7 +506,7 @@ func (engine *Engine) RunTLS(addr, certFile, keyFile string) (err error) {
 	return
 }
 
-// RunUnix attaches the router to a http.Server and starts listening and serving HTTP requests
+// RunUnix attaches the router to an http.Server and starts listening and serving HTTP requests
 // through the specified unix socket (i.e. a file).
 // Note: this method will block the calling goroutine indefinitely unless an error happens.
 func (engine *Engine) RunUnix(file string) (err error) {
@@ -529,7 +529,7 @@ func (engine *Engine) RunUnix(file string) (err error) {
 	return
 }
 
-// RunFd attaches the router to a http.Server and starts listening and serving HTTP requests
+// RunFd attaches the router to an http.Server and starts listening and serving HTTP requests
 // through the specified file descriptor.
 // Note: this method will block the calling goroutine indefinitely unless an error happens.
 func (engine *Engine) RunFd(fd int) (err error) {
@@ -551,7 +551,7 @@ func (engine *Engine) RunFd(fd int) (err error) {
 	return
 }
 
-// RunListener attaches the router to a http.Server and starts listening and serving HTTP requests
+// RunListener attaches the router to an http.Server and starts listening and serving HTTP requests
 // through the specified net.Listener
 func (engine *Engine) RunListener(listener net.Listener) (err error) {
 	debugPrint("Listening and serving HTTP on listener what's bind with address@%s", listener.Addr())

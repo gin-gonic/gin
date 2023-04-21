@@ -188,7 +188,7 @@ func (group *RouterGroup) staticFileHandler(relativePath string, handler Handler
 }
 
 // Static serves files from the given file system root.
-// Internally a http.FileServer is used, therefore http.NotFound is used instead
+// Internally an http.FileServer is used, therefore http.NotFound is used instead
 // of the Router's NotFound handler.
 // To use the operating system's file system implementation,
 // use :
