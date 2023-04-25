@@ -581,12 +581,12 @@ func (c *Context) FormFile(name string) (*multipart.FileHeader, error) {
 			return nil, err
 		}
 	}
-	f, fh, err := c.Request.FormFile(name)
-	if err != nil {
-		return nil, err
+	if c.Request.MultipartForm != nil && c.Request.MultipartForm.File != nil {
+		if fhs := c.Request.MultipartForm.File[name]; len(fhs) > 0 {
+			return fhs[0], nil
+		}
 	}
-	f.Close()
-	return fh, err
+	return nil, http.ErrMissingFile
 }
 
 // MultipartForm is the parsed multipart form, including file uploads.
