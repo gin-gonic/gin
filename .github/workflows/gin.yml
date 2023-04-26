@@ -8,6 +8,9 @@ on:
     branches:
       - master
 
+permissions:
+  contents: read
+
 jobs:
   lint:
     runs-on: ubuntu-latest
@@ -15,21 +18,21 @@ jobs:
       - name: Setup go
         uses: actions/setup-go@v3
         with:
-          go-version: '^1.16'
+          go-version: '^1.18'
       - name: Checkout repository
         uses: actions/checkout@v3
       - name: Setup golangci-lint
-        uses: golangci/golangci-lint-action@v3.2.0
+        uses: golangci/golangci-lint-action@v3.4.0
         with:
-          version: v1.45.0
+          version: v1.52.2
           args: --verbose
   test:
     needs: lint
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest]
-        go: [1.16, 1.17, 1.18]
-        test-tags: ['', nomsgpack]
+        go: ['1.18', '1.19', '1.20']
+        test-tags: ['', '-tags nomsgpack', '-tags "sonic avx"', '-tags go_json']
         include:
           - os: ubuntu-latest
             go-build: ~/.cache/go-build
@@ -68,17 +71,7 @@ jobs:
         uses: codecov/codecov-action@v3
         with:
           flags: ${{ matrix.os }},go-${{ matrix.go }},${{ matrix.test-tags }}
-  notification-gitter:
-    needs: test
-    runs-on: ubuntu-latest
-    steps:
-      - name: Notification failure message
-        if: failure()
-        run: |
-          PR_OR_COMPARE="$(if [ "${{ github.event.pull_request }}" != "" ]; then echo "${{ github.event.pull_request.html_url }}"; else echo "${{ github.event.compare }}"; fi)"
-          curl -d message="GitHub Actions [$GITHUB_REPOSITORY]($PR_OR_COMPARE) ($GITHUB_REF) [normal]($GITHUB_API_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID) ($GITHUB_RUN_NUMBER)" -d level=error https://webhooks.gitter.im/e/7f95bf605c4d356372f4
-      - name: Notification success message
-        if: success()
-        run: |
-          PR_OR_COMPARE="$(if [ "${{ github.event.pull_request }}" != "" ]; then echo "${{ github.event.pull_request.html_url }}"; else echo "${{ github.event.compare }}"; fi)"
-          curl -d message="GitHub Actions [$GITHUB_REPOSITORY]($PR_OR_COMPARE) ($GITHUB_REF) [normal]($GITHUB_API_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID) ($GITHUB_RUN_NUMBER)" https://webhooks.gitter.im/e/7f95bf605c4d356372f4
+
+      - name: Format
+        if: matrix.go-version == '1.20.x'
+        run: diff -u <(echo -n) <(gofmt -d .)

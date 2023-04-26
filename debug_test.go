@@ -5,7 +5,6 @@
 package gin
 
 import (
-	"bytes"
 	"errors"
 	"fmt"
 	"html/template"
@@ -13,6 +12,7 @@ import (
 	"log"
 	"os"
 	"runtime"
+	"strings"
 	"sync"
 	"testing"
 
@@ -21,7 +21,7 @@ import (
 
 // TODO
 // func debugRoute(httpMethod, absolutePath string, handlers HandlersChain) {
-// func debugPrint(format string, values ...interface{}) {
+// func debugPrint(format string, values ...any) {
 
 func TestIsDebugging(t *testing.T) {
 	SetMode(DebugMode)
@@ -103,8 +103,8 @@ func TestDebugPrintWARNINGDefault(t *testing.T) {
 		SetMode(TestMode)
 	})
 	m, e := getMinVer(runtime.Version())
-	if e == nil && m <= ginSupportMinGoVer {
-		assert.Equal(t, "[GIN-debug] [WARNING] Now Gin requires Go 1.14+.\n\n[GIN-debug] [WARNING] Creating an Engine instance with the Logger and Recovery middleware already attached.\n\n", re)
+	if e == nil && m < ginSupportMinGoVer {
+		assert.Equal(t, "[GIN-debug] [WARNING] Now Gin requires Go 1.18+.\n\n[GIN-debug] [WARNING] Creating an Engine instance with the Logger and Recovery middleware already attached.\n\n", re)
 	} else {
 		assert.Equal(t, "[GIN-debug] [WARNING] Creating an Engine instance with the Logger and Recovery middleware already attached.\n\n", re)
 	}
@@ -138,7 +138,7 @@ func captureOutput(t *testing.T, f func()) string {
 	wg := new(sync.WaitGroup)
 	wg.Add(1)
 	go func() {
-		var buf bytes.Buffer
+		var buf strings.Builder
 		wg.Done()
 		_, err := io.Copy(&buf, reader)
 		assert.NoError(t, err)

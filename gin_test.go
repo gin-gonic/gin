@@ -8,7 +8,7 @@ import (
 	"crypto/tls"
 	"fmt"
 	"html/template"
-	"io/ioutil"
+	"io"
 	"net"
 	"net/http"
 	"net/http/httptest"
@@ -73,17 +73,17 @@ func TestLoadHTMLGlobDebugMode(t *testing.T) {
 
 	res, err := http.Get(fmt.Sprintf("%s/test", ts.URL))
 	if err != nil {
-		fmt.Println(err)
+		t.Error(err)
 	}
 
-	resp, _ := ioutil.ReadAll(res.Body)
+	resp, _ := io.ReadAll(res.Body)
 	assert.Equal(t, "<h1>Hello world</h1>", string(resp))
 }
 
 func TestH2c(t *testing.T) {
 	ln, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
-		fmt.Println(err)
+		t.Error(err)
 	}
 	r := Default()
 	r.UseH2C = true
@@ -93,14 +93,14 @@ func TestH2c(t *testing.T) {
 	go func() {
 		err := http.Serve(ln, r.Handler())
 		if err != nil {
-			fmt.Println(err)
+			t.Log(err)
 		}
 	}()
 	defer ln.Close()
 
 	url := "http://" + ln.Addr().String() + "/"
 
-	http := http.Client{
+	httpClient := http.Client{
 		Transport: &http2.Transport{
 			AllowHTTP: true,
 			DialTLS: func(netw, addr string, cfg *tls.Config) (net.Conn, error) {
@@ -109,12 +109,12 @@ func TestH2c(t *testing.T) {
 		},
 	}
 
-	res, err := http.Get(url)
+	res, err := httpClient.Get(url)
 	if err != nil {
-		fmt.Println(err)
+		t.Error(err)
 	}
 
-	resp, _ := ioutil.ReadAll(res.Body)
+	resp, _ := io.ReadAll(res.Body)
 	assert.Equal(t, "<h1>Hello world</h1>", string(resp))
 }
 
@@ -131,10 +131,10 @@ func TestLoadHTMLGlobTestMode(t *testing.T) {
 
 	res, err := http.Get(fmt.Sprintf("%s/test", ts.URL))
 	if err != nil {
-		fmt.Println(err)
+		t.Error(err)
 	}
 
-	resp, _ := ioutil.ReadAll(res.Body)
+	resp, _ := io.ReadAll(res.Body)
 	assert.Equal(t, "<h1>Hello world</h1>", string(resp))
 }
 
@@ -151,10 +151,10 @@ func TestLoadHTMLGlobReleaseMode(t *testing.T) {
 
 	res, err := http.Get(fmt.Sprintf("%s/test", ts.URL))
 	if err != nil {
-		fmt.Println(err)
+		t.Error(err)
 	}
 
-	resp, _ := ioutil.ReadAll(res.Body)
+	resp, _ := io.ReadAll(res.Body)
 	assert.Equal(t, "<h1>Hello world</h1>", string(resp))
 }
 
@@ -178,10 +178,10 @@ func TestLoadHTMLGlobUsingTLS(t *testing.T) {
 	client := &http.Client{Transport: tr}
 	res, err := client.Get(fmt.Sprintf("%s/test", ts.URL))
 	if err != nil {
-		fmt.Println(err)
+		t.Error(err)
 	}
 
-	resp, _ := ioutil.ReadAll(res.Body)
+	resp, _ := io.ReadAll(res.Body)
 	assert.Equal(t, "<h1>Hello world</h1>", string(resp))
 }
 
@@ -198,10 +198,10 @@ func TestLoadHTMLGlobFromFuncMap(t *testing.T) {
 
 	res, err := http.Get(fmt.Sprintf("%s/raw", ts.URL))
 	if err != nil {
-		fmt.Println(err)
+		t.Error(err)
 	}
 
-	resp, _ := ioutil.ReadAll(res.Body)
+	resp, _ := io.ReadAll(res.Body)
 	assert.Equal(t, "Date: 2017/07/01", string(resp))
 }
 
@@ -229,10 +229,10 @@ func TestLoadHTMLFilesTestMode(t *testing.T) {
 
 	res, err := http.Get(fmt.Sprintf("%s/test", ts.URL))
 	if err != nil {
-		fmt.Println(err)
+		t.Error(err)
 	}
 
-	resp, _ := ioutil.ReadAll(res.Body)
+	resp, _ := io.ReadAll(res.Body)
 	assert.Equal(t, "<h1>Hello world</h1>", string(resp))
 }
 
@@ -249,10 +249,10 @@ func TestLoadHTMLFilesDebugMode(t *testing.T) {
 
 	res, err := http.Get(fmt.Sprintf("%s/test", ts.URL))
 	if err != nil {
-		fmt.Println(err)
+		t.Error(err)
 	}
 
-	resp, _ := ioutil.ReadAll(res.Body)
+	resp, _ := io.ReadAll(res.Body)
 	assert.Equal(t, "<h1>Hello world</h1>", string(resp))
 }
 
@@ -269,10 +269,10 @@ func TestLoadHTMLFilesReleaseMode(t *testing.T) {
 
 	res, err := http.Get(fmt.Sprintf("%s/test", ts.URL))
 	if err != nil {
-		fmt.Println(err)
+		t.Error(err)
 	}
 
-	resp, _ := ioutil.ReadAll(res.Body)
+	resp, _ := io.ReadAll(res.Body)
 	assert.Equal(t, "<h1>Hello world</h1>", string(resp))
 }
 
@@ -296,10 +296,10 @@ func TestLoadHTMLFilesUsingTLS(t *testing.T) {
 	client := &http.Client{Transport: tr}
 	res, err := client.Get(fmt.Sprintf("%s/test", ts.URL))
 	if err != nil {
-		fmt.Println(err)
+		t.Error(err)
 	}
 
-	resp, _ := ioutil.ReadAll(res.Body)
+	resp, _ := io.ReadAll(res.Body)
 	assert.Equal(t, "<h1>Hello world</h1>", string(resp))
 }
 
@@ -316,10 +316,10 @@ func TestLoadHTMLFilesFuncMap(t *testing.T) {
 
 	res, err := http.Get(fmt.Sprintf("%s/raw", ts.URL))
 	if err != nil {
-		fmt.Println(err)
+		t.Error(err)
 	}
 
-	resp, _ := ioutil.ReadAll(res.Body)
+	resp, _ := io.ReadAll(res.Body)
 	assert.Equal(t, "Date: 2017/07/01", string(resp))
 }
 

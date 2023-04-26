@@ -211,7 +211,7 @@ func TestMiddlewareFailHandlersChain(t *testing.T) {
 	router := New()
 	router.Use(func(context *Context) {
 		signature += "A"
-		context.AbortWithError(http.StatusInternalServerError, errors.New("foo")) // nolint: errcheck
+		context.AbortWithError(http.StatusInternalServerError, errors.New("foo")) //nolint: errcheck
 	})
 	router.Use(func(context *Context) {
 		signature += "B"
