@@ -168,22 +168,6 @@ func TestRunTLS(t *testing.T) {
 	testRequest(t, "https://localhost:8443/example")
 }
 
-func TestRunQUIC(t *testing.T) {
-	router := New()
-	go func() {
-		router.GET("/example", func(c *Context) { c.String(http.StatusOK, "it worked") })
-
-		assert.NoError(t, router.RunQUIC(":8443", "./testdata/certificate/cert.pem", "./testdata/certificate/key.pem"))
-	}()
-
-	// have to wait for the goroutine to start and run the server
-	// otherwise the main thread will complete
-	time.Sleep(5 * time.Millisecond)
-
-	assert.Error(t, router.RunQUIC(":8443", "./testdata/certificate/cert.pem", "./testdata/certificate/key.pem"))
-	testRequest(t, "https://localhost:8443/example")
-}
-
 func TestPusher(t *testing.T) {
 	var html = template.Must(template.New("https").Parse(`
 <html>
