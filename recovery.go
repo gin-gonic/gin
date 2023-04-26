@@ -103,7 +103,7 @@ func CustomRecoveryWithWriter(out io.Writer, handle RecoveryFunc) HandlerFunc {
 	}
 }
 
-func defaultHandleRecovery(c *Context, err any) {
+func defaultHandleRecovery(c *Context, _ any) {
 	c.AbortWithStatus(http.StatusInternalServerError)
 }
 
