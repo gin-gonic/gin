@@ -456,7 +456,7 @@ func (c *Context) QueryArray(key string) (values []string) {
 }
 
 func (c *Context) initQueryCache() {
-	if c.queryCache == nil {
+	if c.queryCache == nil { // nolint: errcheck
 		if c.Request != nil {
 			c.queryCache = c.Request.URL.Query()
 		} else {
@@ -526,7 +526,7 @@ func (c *Context) PostFormArray(key string) (values []string) {
 }
 
 func (c *Context) initFormCache() {
-	if c.formCache == nil {
+	if c.formCache == nil { // nolint: errcheck
 		c.formCache = make(url.Values)
 		req := c.Request
 		if err := req.ParseMultipartForm(c.engine.MaxMultipartMemory); err != nil {
@@ -852,13 +852,19 @@ func bodyAllowedForStatus(status int) bool {
 
 // Status sets the HTTP response code.
 func (c *Context) Status(code int) {
-	c.Writer.WriteHeader(code)
+	if w, ok := c.Writer.(http.ResponseWriter); ok {
+		w.WriteHeader(code)
+	}
 }
 
 // Header is an intelligent shortcut for c.Writer.Header().Set(key, value).
 // It writes a header in the response.
 // If value == "", this method removes the header `c.Writer.Header().Del(key)`
 func (c *Context) Header(key, value string) {
+	if _, ok := c.Writer.(http.ResponseWriter); !ok {
+		return
+	}
+
 	if value == "" {
 		c.Writer.Header().Del(key)
 		return
@@ -1055,10 +1061,12 @@ func (c *Context) FileFromFS(filepath string, fs http.FileSystem) {
 // FileAttachment writes the specified file into the body stream in an efficient way
 // On the client side, the file will typically be downloaded with the given filename
 func (c *Context) FileAttachment(filepath, filename string) {
-	if isASCII(filename) {
-		c.Writer.Header().Set("Content-Disposition", `attachment; filename="`+filename+`"`)
-	} else {
-		c.Writer.Header().Set("Content-Disposition", `attachment; filename*=UTF-8''`+url.QueryEscape(filename))
+	if w, ok := c.Writer.(http.ResponseWriter); ok {
+		if isASCII(filename) {
+			w.Header().Set("Content-Disposition", `attachment; filename="`+filename+`"`) // nolint: errcheck
+		} else {
+			w.Header().Set("Content-Disposition", `attachment; filename*=UTF-8''`+url.QueryEscape(filename))
+		}
 	}
 	http.ServeFile(c.Writer, c.Request, filepath)
 }

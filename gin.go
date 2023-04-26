@@ -658,8 +658,8 @@ func serveError(c *Context, code int, defaultMessage []byte) {
 		return
 	}
 	if c.writermem.Status() == code {
-		c.writermem.Header()["Content-Type"] = mimePlain
-		_, err := c.Writer.Write(defaultMessage)
+		c.writermem.Header()["Content-Type"] = mimePlain //nolint:errcheck
+		_, err := c.Writer.Write(defaultMessage)         //nolint:errcheck
 		if err != nil {
 			debugPrint("cannot write message to writer during serve error: %v", err)
 		}
