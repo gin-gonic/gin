@@ -15,7 +15,7 @@ import (
 
 // EnableDecoderUseNumber is used to call the UseNumber method on the JSON
 // Decoder instance. UseNumber causes the Decoder to unmarshal a number into an
-// interface{} as a Number instead of as a float64.
+// any as a Number instead of as a float64.
 var EnableDecoderUseNumber = false
 
 // EnableDecoderDisallowUnknownFields is used to call the DisallowUnknownFields method

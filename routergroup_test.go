@@ -186,6 +186,7 @@ func testRoutesInterface(t *testing.T, r IRoutes) {
 	assert.Equal(t, r, r.PUT("/", handler))
 	assert.Equal(t, r, r.OPTIONS("/", handler))
 	assert.Equal(t, r, r.HEAD("/", handler))
+	assert.Equal(t, r, r.Match([]string{http.MethodPut, http.MethodPatch}, "/match", handler))
 
 	assert.Equal(t, r, r.StaticFile("/file", "."))
 	assert.Equal(t, r, r.StaticFileFS("/static2", ".", Dir(".", false)))

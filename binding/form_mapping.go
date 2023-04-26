@@ -19,7 +19,7 @@ import (
 var (
 	errUnknownType = errors.New("unknown type")
 
-	// ErrConvertMapStringSlice can not covert to map[string][]string
+	// ErrConvertMapStringSlice can not convert to map[string][]string
 	ErrConvertMapStringSlice = errors.New("can not convert to map slices of strings")
 
 	// ErrConvertToMapString can not convert to map[string]string

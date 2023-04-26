@@ -1,15 +1,15 @@
-// Copyright 2017 Bo-Yi Wu. All rights reserved.
+// Copyright 2022 Gin Core Team. All rights reserved.
 // Use of this source code is governed by a MIT style
 // license that can be found in the LICENSE file.
 
-//go:build jsoniter
+//go:build sonic && avx && (linux || windows || darwin) && amd64
 
 package json
 
-import jsoniter "github.com/json-iterator/go"
+import "github.com/bytedance/sonic"
 
 var (
-	json = jsoniter.ConfigCompatibleWithStandardLibrary
+	json = sonic.ConfigStd
 	// Marshal is exported by gin/json package.
 	Marshal = json.Marshal
 	// Unmarshal is exported by gin/json package.

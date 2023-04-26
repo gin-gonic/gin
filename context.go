@@ -7,7 +7,6 @@ package gin
 import (
 	"errors"
 	"io"
-	"io/ioutil"
 	"log"
 	"math"
 	"mime/multipart"
@@ -15,6 +14,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"path/filepath"
 	"strings"
 	"sync"
 	"time"
@@ -153,9 +153,10 @@ func (c *Context) Handler() HandlerFunc {
 
 // FullPath returns a matched route full path. For not found routes
 // returns an empty string.
-//     router.GET("/user/:id", func(c *gin.Context) {
-//         c.FullPath() == "/user/:id" // true
-//     })
+//
+//	router.GET("/user/:id", func(c *gin.Context) {
+//	    c.FullPath() == "/user/:id" // true
+//	})
 func (c *Context) FullPath() string {
 	return c.fullPath
 }
@@ -247,20 +248,20 @@ func (c *Context) Error(err error) *Error {
 // It also lazy initializes  c.Keys if it was not used previously.
 func (c *Context) Set(key string, value any) {
 	c.mu.Lock()
+	defer c.mu.Unlock()
 	if c.Keys == nil {
 		c.Keys = make(map[string]any)
 	}
 
 	c.Keys[key] = value
-	c.mu.Unlock()
 }
 
 // Get returns the value for the given key, ie: (value, true).
 // If the value does not exist it returns (nil, false)
 func (c *Context) Get(key string) (value any, exists bool) {
 	c.mu.RLock()
+	defer c.mu.RUnlock()
 	value, exists = c.Keys[key]
-	c.mu.RUnlock()
 	return
 }
 
@@ -382,10 +383,13 @@ func (c *Context) GetStringMapStringSlice(key string) (smss map[string][]string)
 
 // Param returns the value of the URL param.
 // It is a shortcut for c.Params.ByName(key)
-//     router.GET("/user/:id", func(c *gin.Context) {
-//         // a GET request to /user/john
-//         id := c.Param("id") // id == "john"
-//     })
+//
+//	router.GET("/user/:id", func(c *gin.Context) {
+//	    // a GET request to /user/john
+//	    id := c.Param("id") // id == "/john"
+//	    // a GET request to /user/john/
+//	    id := c.Param("id") // id == "/john/"
+//	})
 func (c *Context) Param(key string) string {
 	return c.Params.ByName(key)
 }
@@ -402,11 +406,12 @@ func (c *Context) AddParam(key, value string) {
 // Query returns the keyed url query value if it exists,
 // otherwise it returns an empty string `("")`.
 // It is shortcut for `c.Request.URL.Query().Get(key)`
-//     GET /path?id=1234&name=Manu&value=
-// 	   c.Query("id") == "1234"
-// 	   c.Query("name") == "Manu"
-// 	   c.Query("value") == ""
-// 	   c.Query("wtf") == ""
+//
+//	    GET /path?id=1234&name=Manu&value=
+//		   c.Query("id") == "1234"
+//		   c.Query("name") == "Manu"
+//		   c.Query("value") == ""
+//		   c.Query("wtf") == ""
 func (c *Context) Query(key string) (value string) {
 	value, _ = c.GetQuery(key)
 	return
@@ -415,10 +420,11 @@ func (c *Context) Query(key string) (value string) {
 // DefaultQuery returns the keyed url query value if it exists,
 // otherwise it returns the specified defaultValue string.
 // See: Query() and GetQuery() for further information.
-//     GET /?name=Manu&lastname=
-//     c.DefaultQuery("name", "unknown") == "Manu"
-//     c.DefaultQuery("id", "none") == "none"
-//     c.DefaultQuery("lastname", "none") == ""
+//
+//	GET /?name=Manu&lastname=
+//	c.DefaultQuery("name", "unknown") == "Manu"
+//	c.DefaultQuery("id", "none") == "none"
+//	c.DefaultQuery("lastname", "none") == ""
 func (c *Context) DefaultQuery(key, defaultValue string) string {
 	if value, ok := c.GetQuery(key); ok {
 		return value
@@ -430,10 +436,11 @@ func (c *Context) DefaultQuery(key, defaultValue string) string {
 // if it exists `(value, true)` (even when the value is an empty string),
 // otherwise it returns `("", false)`.
 // It is shortcut for `c.Request.URL.Query().Get(key)`
-//     GET /?name=Manu&lastname=
-//     ("Manu", true) == c.GetQuery("name")
-//     ("", false) == c.GetQuery("id")
-//     ("", true) == c.GetQuery("lastname")
+//
+//	GET /?name=Manu&lastname=
+//	("Manu", true) == c.GetQuery("name")
+//	("", false) == c.GetQuery("id")
+//	("", true) == c.GetQuery("lastname")
 func (c *Context) GetQuery(key string) (string, bool) {
 	if values, ok := c.GetQueryArray(key); ok {
 		return values[0], ok
@@ -500,9 +507,10 @@ func (c *Context) DefaultPostForm(key, defaultValue string) string {
 // form or multipart form when it exists `(value, true)` (even when the value is an empty string),
 // otherwise it returns ("", false).
 // For example, during a PATCH request to update the user's email:
-//     email=mail@example.com  -->  ("mail@example.com", true) := GetPostForm("email") // set email to "mail@example.com"
-// 	   email=                  -->  ("", true) := GetPostForm("email") // set email to ""
-//                             -->  ("", false) := GetPostForm("email") // do nothing with email
+//
+//	    email=mail@example.com  -->  ("mail@example.com", true) := GetPostForm("email") // set email to "mail@example.com"
+//		   email=                  -->  ("", true) := GetPostForm("email") // set email to ""
+//	                            -->  ("", false) := GetPostForm("email") // do nothing with email
 func (c *Context) GetPostForm(key string) (string, bool) {
 	if values, ok := c.GetPostFormArray(key); ok {
 		return values[0], ok
@@ -551,7 +559,7 @@ func (c *Context) GetPostFormMap(key string) (map[string]string, bool) {
 	return c.get(c.formCache, key)
 }
 
-// get is an internal method and returns a map which satisfy conditions.
+// get is an internal method and returns a map which satisfies conditions.
 func (c *Context) get(m map[string][]string, key string) (map[string]string, bool) {
 	dicts := make(map[string]string)
 	exist := false
@@ -595,6 +603,10 @@ func (c *Context) SaveUploadedFile(file *multipart.FileHeader, dst string) error
 	}
 	defer src.Close()
 
+	if err = os.MkdirAll(filepath.Dir(dst), 0750); err != nil {
+		return err
+	}
+
 	out, err := os.Create(dst)
 	if err != nil {
 		return err
@@ -607,8 +619,10 @@ func (c *Context) SaveUploadedFile(file *multipart.FileHeader, dst string) error
 
 // Bind checks the Method and Content-Type to select a binding engine automatically,
 // Depending on the "Content-Type" header different bindings are used, for example:
-//     "application/json" --> JSON binding
-//     "application/xml"  --> XML binding
+//
+//	"application/json" --> JSON binding
+//	"application/xml"  --> XML binding
+//
 // It parses the request's body as JSON if Content-Type == "application/json" using JSON or XML as a JSON input.
 // It decodes the json payload into the struct specified as a pointer.
 // It writes a 400 error and sets Content-Type header "text/plain" in the response if input is not valid.
@@ -638,7 +652,7 @@ func (c *Context) BindYAML(obj any) error {
 }
 
 // BindTOML is a shortcut for c.MustBindWith(obj, binding.TOML).
-func (c *Context) BindTOML(obj interface{}) error {
+func (c *Context) BindTOML(obj any) error {
 	return c.MustBindWith(obj, binding.TOML)
 }
 
@@ -651,7 +665,7 @@ func (c *Context) BindHeader(obj any) error {
 // It will abort the request with HTTP 400 if any error occurs.
 func (c *Context) BindUri(obj any) error {
 	if err := c.ShouldBindUri(obj); err != nil {
-		c.AbortWithError(http.StatusBadRequest, err).SetType(ErrorTypeBind) // nolint: errcheck
+		c.AbortWithError(http.StatusBadRequest, err).SetType(ErrorTypeBind) //nolint: errcheck
 		return err
 	}
 	return nil
@@ -662,7 +676,7 @@ func (c *Context) BindUri(obj any) error {
 // See the binding package.
 func (c *Context) MustBindWith(obj any, b binding.Binding) error {
 	if err := c.ShouldBindWith(obj, b); err != nil {
-		c.AbortWithError(http.StatusBadRequest, err).SetType(ErrorTypeBind) // nolint: errcheck
+		c.AbortWithError(http.StatusBadRequest, err).SetType(ErrorTypeBind) //nolint: errcheck
 		return err
 	}
 	return nil
@@ -670,8 +684,10 @@ func (c *Context) MustBindWith(obj any, b binding.Binding) error {
 
 // ShouldBind checks the Method and Content-Type to select a binding engine automatically,
 // Depending on the "Content-Type" header different bindings are used, for example:
-//     "application/json" --> JSON binding
-//     "application/xml"  --> XML binding
+//
+//	"application/json" --> JSON binding
+//	"application/xml"  --> XML binding
+//
 // It parses the request's body as JSON if Content-Type == "application/json" using JSON or XML as a JSON input.
 // It decodes the json payload into the struct specified as a pointer.
 // Like c.Bind() but this method does not set the response status code to 400 or abort if input is not valid.
@@ -701,7 +717,7 @@ func (c *Context) ShouldBindYAML(obj any) error {
 }
 
 // ShouldBindTOML is a shortcut for c.ShouldBindWith(obj, binding.TOML).
-func (c *Context) ShouldBindTOML(obj interface{}) error {
+func (c *Context) ShouldBindTOML(obj any) error {
 	return c.ShouldBindWith(obj, binding.TOML)
 }
 
@@ -738,7 +754,7 @@ func (c *Context) ShouldBindBodyWith(obj any, bb binding.BindingBody) (err error
 		}
 	}
 	if body == nil {
-		body, err = ioutil.ReadAll(c.Request.Body)
+		body, err = io.ReadAll(c.Request.Body)
 		if err != nil {
 			return err
 		}
@@ -857,7 +873,7 @@ func (c *Context) GetHeader(key string) string {
 
 // GetRawData returns stream data.
 func (c *Context) GetRawData() ([]byte, error) {
-	return ioutil.ReadAll(c.Request.Body)
+	return io.ReadAll(c.Request.Body)
 }
 
 // SetSameSite with cookie
@@ -908,7 +924,9 @@ func (c *Context) Render(code int, r render.Render) {
 	}
 
 	if err := r.Render(c.Writer); err != nil {
-		panic(err)
+		// Pushing error to c.Errors
+		_ = c.Error(err)
+		c.Abort()
 	}
 }
 
@@ -977,7 +995,7 @@ func (c *Context) YAML(code int, obj any) {
 }
 
 // TOML serializes the given struct as TOML into the response body.
-func (c *Context) TOML(code int, obj interface{}) {
+func (c *Context) TOML(code int, obj any) {
 	c.Render(code, render.TOML{Data: obj})
 }
 
@@ -1112,7 +1130,7 @@ func (c *Context) Negotiate(code int, config Negotiate) {
 		c.TOML(code, data)
 
 	default:
-		c.AbortWithError(http.StatusNotAcceptable, errors.New("the accepted formats are not offered by the server")) // nolint: errcheck
+		c.AbortWithError(http.StatusNotAcceptable, errors.New("the accepted formats are not offered by the server")) //nolint: errcheck
 	}
 }
 
@@ -1131,7 +1149,7 @@ func (c *Context) NegotiateFormat(offered ...string) string {
 			// According to RFC 2616 and RFC 2396, non-ASCII characters are not allowed in headers,
 			// therefore we can just iterate over the string without casting it into []rune
 			i := 0
-			for ; i < len(accepted); i++ {
+			for ; i < len(accepted) && i < len(offer); i++ {
 				if accepted[i] == '*' || offer[i] == '*' {
 					return offer
 				}

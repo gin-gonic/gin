@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"os"
 	"path"
+	"regexp"
 	"strings"
 	"sync"
 
@@ -40,6 +41,9 @@ var defaultTrustedCIDRs = []*net.IPNet{
 		Mask: net.IPMask{0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0},
 	},
 }
+
+var regSafePrefix = regexp.MustCompile("[^a-zA-Z0-9/-]+")
+var regRemoveRepeatedChar = regexp.MustCompile("/{2,}")
 
 // HandlerFunc defines the handler used by gin middleware as return value.
 type HandlerFunc func(*Context)
@@ -167,7 +171,7 @@ type Engine struct {
 	trustedCIDRs     []*net.IPNet
 }
 
-var _ IRouter = &Engine{}
+var _ IRouter = (*Engine)(nil)
 
 // New returns a new blank Engine instance without any middleware attached.
 // By default, the configuration is:
@@ -204,7 +208,7 @@ func New() *Engine {
 	}
 	engine.RouterGroup.engine = engine
 	engine.pool.New = func() any {
-		return engine.allocateContext()
+		return engine.allocateContext(engine.maxParams)
 	}
 	return engine
 }
@@ -226,8 +230,8 @@ func (engine *Engine) Handler() http.Handler {
 	return h2c.NewHandler(engine, h2s)
 }
 
-func (engine *Engine) allocateContext() *Context {
-	v := make(Params, 0, engine.maxParams)
+func (engine *Engine) allocateContext(maxParams uint16) *Context {
+	v := make(Params, 0, maxParams)
 	skippedNodes := make([]skippedNode, 0, engine.maxSections)
 	return &Context{engine: engine, params: &v, skippedNodes: &skippedNodes}
 }
@@ -685,6 +689,9 @@ func redirectTrailingSlash(c *Context) {
 	req := c.Request
 	p := req.URL.Path
 	if prefix := path.Clean(c.Request.Header.Get("X-Forwarded-Prefix")); prefix != "." {
+		prefix = regSafePrefix.ReplaceAllString(prefix, "")
+		prefix = regRemoveRepeatedChar.ReplaceAllString(prefix, "/")
+
 		p = prefix + "/" + req.URL.Path
 	}
 	req.URL.Path = p + "/"

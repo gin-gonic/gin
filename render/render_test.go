@@ -8,6 +8,7 @@ import (
 	"encoding/xml"
 	"errors"
 	"html/template"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"strconv"
@@ -39,12 +40,12 @@ func TestRenderJSON(t *testing.T) {
 	assert.Equal(t, "application/json; charset=utf-8", w.Header().Get("Content-Type"))
 }
 
-func TestRenderJSONPanics(t *testing.T) {
+func TestRenderJSONError(t *testing.T) {
 	w := httptest.NewRecorder()
 	data := make(chan int)
 
 	// json: unsupported type: chan int
-	assert.Panics(t, func() { assert.NoError(t, (JSON{data}).Render(w)) })
+	assert.Error(t, (JSON{data}).Render(w))
 }
 
 func TestRenderIndentedJSON(t *testing.T) {
@@ -173,7 +174,7 @@ func TestRenderAsciiJSON(t *testing.T) {
 	assert.Equal(t, "application/json", w1.Header().Get("Content-Type"))
 
 	w2 := httptest.NewRecorder()
-	data2 := float64(3.1415926)
+	data2 := 3.1415926
 
 	err = (AsciiJSON{data2}).Render(w2)
 	assert.NoError(t, err)
@@ -237,7 +238,7 @@ b:
 
 	err := (YAML{data}).Render(w)
 	assert.NoError(t, err)
-	assert.Equal(t, "\"\\na : Easy!\\nb:\\n\\tc: 2\\n\\td: [3, 4]\\n\\t\"\n", w.Body.String())
+	assert.Equal(t, "|4-\n    a : Easy!\n    b:\n    \tc: 2\n    \td: [3, 4]\n    \t\n", w.Body.String())
 	assert.Equal(t, "application/x-yaml; charset=utf-8", w.Header().Get("Content-Type"))
 }
 
@@ -251,6 +252,27 @@ func (ft *fail) MarshalYAML() (any, error) {
 func TestRenderYAMLFail(t *testing.T) {
 	w := httptest.NewRecorder()
 	err := (YAML{&fail{}}).Render(w)
+	assert.Error(t, err)
+}
+
+func TestRenderTOML(t *testing.T) {
+	w := httptest.NewRecorder()
+	data := map[string]any{
+		"foo":  "bar",
+		"html": "<b>",
+	}
+	(TOML{data}).WriteContentType(w)
+	assert.Equal(t, "application/toml; charset=utf-8", w.Header().Get("Content-Type"))
+
+	err := (TOML{data}).Render(w)
+	assert.NoError(t, err)
+	assert.Equal(t, "foo = 'bar'\nhtml = '<b>'\n", w.Body.String())
+	assert.Equal(t, "application/toml; charset=utf-8", w.Header().Get("Content-Type"))
+}
+
+func TestRenderTOMLFail(t *testing.T) {
+	w := httptest.NewRecorder()
+	err := (TOML{net.IPv4bcast}).Render(w)
 	assert.Error(t, err)
 }
 
