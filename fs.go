@@ -39,7 +39,7 @@ func (fs onlyFilesFS) Open(name string) (http.File, error) {
 }
 
 // Readdir overrides the http.File default implementation.
-func (f neuteredReaddirFile) Readdir(count int) ([]os.FileInfo, error) {
+func (f neuteredReaddirFile) Readdir(_ int) ([]os.FileInfo, error) {
 	// this disables directory listing
 	return nil, nil
 }
