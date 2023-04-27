@@ -154,7 +154,7 @@ func TestContextReset(t *testing.T) {
 	c.index = 2
 	c.Writer = &responseWriter{ResponseWriter: httptest.NewRecorder()}
 	c.Params = Params{Param{}}
-	c.Error(errors.New("test")) // nolint: errcheck
+	c.Error(errors.New("test")) //nolint: errcheck
 	c.Set("foo", "bar")
 	c.reset()
 
@@ -1382,12 +1382,12 @@ func TestContextError(t *testing.T) {
 	assert.Empty(t, c.Errors)
 
 	firstErr := errors.New("first error")
-	c.Error(firstErr) // nolint: errcheck
+	c.Error(firstErr) //nolint: errcheck
 	assert.Len(t, c.Errors, 1)
 	assert.Equal(t, "Error #01: first error\n", c.Errors.String())
 
 	secondErr := errors.New("second error")
-	c.Error(&Error{ // nolint: errcheck
+	c.Error(&Error{ //nolint: errcheck
 		Err:  secondErr,
 		Meta: "some data 2",
 		Type: ErrorTypePublic,
