@@ -220,8 +220,7 @@ func Default(opts ...OptionFunc) *Engine {
 	debugPrintWARNINGDefault()
 	engine := New()
 	engine.Use(Logger(), Recovery())
-	engine.With(opts...)
-	return engine
+	return engine.With(opts...)
 }
 
 func (engine *Engine) Handler() http.Handler {
