@@ -154,7 +154,7 @@ func TestContextReset(t *testing.T) {
 	c.index = 2
 	c.Writer = &responseWriter{ResponseWriter: httptest.NewRecorder()}
 	c.Params = Params{Param{}}
-	c.Error(errors.New("test")) //nolint: errcheck
+	c.Error(errors.New("test")) // nolint: errcheck
 	c.Set("foo", "bar")
 	c.reset()
 
@@ -998,7 +998,7 @@ func TestContextRenderFile(t *testing.T) {
 	c.File("./gin.go")
 
 	assert.Equal(t, http.StatusOK, w.Code)
-	assert.Contains(t, w.Body.String(), "func New() *Engine {")
+	assert.Contains(t, w.Body.String(), "func New(opts ...OptionFunc) *Engine {")
 	// Content-Type='text/plain; charset=utf-8' when go version <= 1.16,
 	// else, Content-Type='text/x-go; charset=utf-8'
 	assert.NotEqual(t, "", w.Header().Get("Content-Type"))
@@ -1012,7 +1012,7 @@ func TestContextRenderFileFromFS(t *testing.T) {
 	c.FileFromFS("./gin.go", Dir(".", false))
 
 	assert.Equal(t, http.StatusOK, w.Code)
-	assert.Contains(t, w.Body.String(), "func New() *Engine {")
+	assert.Contains(t, w.Body.String(), "func New(opts ...OptionFunc) *Engine {")
 	// Content-Type='text/plain; charset=utf-8' when go version <= 1.16,
 	// else, Content-Type='text/x-go; charset=utf-8'
 	assert.NotEqual(t, "", w.Header().Get("Content-Type"))
@@ -1028,7 +1028,7 @@ func TestContextRenderAttachment(t *testing.T) {
 	c.FileAttachment("./gin.go", newFilename)
 
 	assert.Equal(t, 200, w.Code)
-	assert.Contains(t, w.Body.String(), "func New() *Engine {")
+	assert.Contains(t, w.Body.String(), "func New(opts ...OptionFunc) *Engine {")
 	assert.Equal(t, fmt.Sprintf("attachment; filename=\"%s\"", newFilename), w.Header().Get("Content-Disposition"))
 }
 
@@ -1041,7 +1041,7 @@ func TestContextRenderUTF8Attachment(t *testing.T) {
 	c.FileAttachment("./gin.go", newFilename)
 
 	assert.Equal(t, 200, w.Code)
-	assert.Contains(t, w.Body.String(), "func New() *Engine {")
+	assert.Contains(t, w.Body.String(), "func New(opts ...OptionFunc) *Engine {")
 	assert.Equal(t, `attachment; filename*=UTF-8''`+url.QueryEscape(newFilename), w.Header().Get("Content-Disposition"))
 }
 
@@ -1382,12 +1382,12 @@ func TestContextError(t *testing.T) {
 	assert.Empty(t, c.Errors)
 
 	firstErr := errors.New("first error")
-	c.Error(firstErr) //nolint: errcheck
+	c.Error(firstErr) // nolint: errcheck
 	assert.Len(t, c.Errors, 1)
 	assert.Equal(t, "Error #01: first error\n", c.Errors.String())
 
 	secondErr := errors.New("second error")
-	c.Error(&Error{ //nolint: errcheck
+	c.Error(&Error{ // nolint: errcheck
 		Err:  secondErr,
 		Meta: "some data 2",
 		Type: ErrorTypePublic,
@@ -1409,13 +1409,13 @@ func TestContextError(t *testing.T) {
 			t.Error("didn't panic")
 		}
 	}()
-	c.Error(nil) //nolint: errcheck
+	c.Error(nil) // nolint: errcheck
 }
 
 func TestContextTypedError(t *testing.T) {
 	c, _ := CreateTestContext(httptest.NewRecorder())
-	c.Error(errors.New("externo 0")).SetType(ErrorTypePublic)  //nolint: errcheck
-	c.Error(errors.New("interno 0")).SetType(ErrorTypePrivate) //nolint: errcheck
+	c.Error(errors.New("externo 0")).SetType(ErrorTypePublic)  // nolint: errcheck
+	c.Error(errors.New("interno 0")).SetType(ErrorTypePrivate) // nolint: errcheck
 
 	for _, err := range c.Errors.ByType(ErrorTypePublic) {
 		assert.Equal(t, ErrorTypePublic, err.Type)
@@ -1430,7 +1430,7 @@ func TestContextAbortWithError(t *testing.T) {
 	w := httptest.NewRecorder()
 	c, _ := CreateTestContext(w)
 
-	c.AbortWithError(http.StatusUnauthorized, errors.New("bad input")).SetMeta("some input") //nolint: errcheck
+	c.AbortWithError(http.StatusUnauthorized, errors.New("bad input")).SetMeta("some input") // nolint: errcheck
 
 	assert.Equal(t, http.StatusUnauthorized, w.Code)
 	assert.Equal(t, abortIndex, c.index)
