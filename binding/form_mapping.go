@@ -17,7 +17,8 @@ import (
 )
 
 var (
-	errUnknownType = errors.New("unknown type")
+	errUnknownType      = errors.New("unknown type")
+	errRecursionTooDeep = errors.New("recursion too deep")
 
 	// ErrConvertMapStringSlice can not convert to map[string][]string
 	ErrConvertMapStringSlice = errors.New("can not convert to map slices of strings")
@@ -74,13 +75,17 @@ func (form formSource) TrySet(value reflect.Value, field reflect.StructField, ta
 }
 
 func mappingByPtr(ptr any, setter setter, tag string) error {
-	_, err := mapping(reflect.ValueOf(ptr), emptyField, setter, tag)
+	_, err := mapping(reflect.ValueOf(ptr), emptyField, setter, tag, 0)
 	return err
 }
 
-func mapping(value reflect.Value, field reflect.StructField, setter setter, tag string) (bool, error) {
+func mapping(value reflect.Value, field reflect.StructField, setter setter, tag string, deepth int) (bool, error) {
 	if field.Tag.Get(tag) == "-" { // just ignoring this field
 		return false, nil
+	}
+	if deepth >= 1000 {
+		// avoid causing stackoverflow.
+		return false, errRecursionTooDeep
 	}
 
 	vKind := value.Kind()
@@ -92,7 +97,7 @@ func mapping(value reflect.Value, field reflect.StructField, setter setter, tag 
 			isNew = true
 			vPtr = reflect.New(value.Type().Elem())
 		}
-		isSet, err := mapping(vPtr.Elem(), field, setter, tag)
+		isSet, err := mapping(vPtr.Elem(), field, setter, tag, deepth+1)
 		if err != nil {
 			return false, err
 		}
@@ -121,7 +126,7 @@ func mapping(value reflect.Value, field reflect.StructField, setter setter, tag 
 			if sf.PkgPath != "" && !sf.Anonymous { // unexported
 				continue
 			}
-			ok, err := mapping(value.Field(i), sf, setter, tag)
+			ok, err := mapping(value.Field(i), sf, setter, tag, deepth+1)
 			if err != nil {
 				return false, err
 			}

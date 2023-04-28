@@ -52,7 +52,7 @@ func TestMappingBaseTypes(t *testing.T) {
 
 		field := val.Elem().Type().Field(0)
 
-		_, err := mapping(val, emptyField, formSource{field.Name: {tt.form}}, "form")
+		_, err := mapping(val, emptyField, formSource{field.Name: {tt.form}}, "form", 0)
 		assert.NoError(t, err, testName)
 
 		actual := val.Elem().Field(0).Interface()
@@ -277,6 +277,16 @@ func TestMappingMapField(t *testing.T) {
 	err := mappingByPtr(&s, formSource{"M": {`{"one": 1}`}}, "form")
 	assert.NoError(t, err)
 	assert.Equal(t, map[string]int{"one": 1}, s.M)
+}
+
+func TestMappingCircularRef(t *testing.T) {
+	type S struct {
+		S *S `form:"s"`
+	}
+	var s S
+
+	err := mappingByPtr(&s, formSource{}, "form")
+	assert.ErrorIs(t, err, errRecursionTooDeep)
 }
 
 func TestMappingIgnoredCircularRef(t *testing.T) {
