@@ -32,7 +32,15 @@ import (
 
 var _ context.Context = (*Context)(nil)
 
-var errTestRender = errors.New("TestRender")
+var errTestRender = errors.New("TestPanicRender")
+
+var errNetOpErr = &net.OpError{
+	Op:     "testneterr",
+	Net:    "",
+	Source: nil,
+	Addr:   nil,
+	Err:    nil,
+}
 
 // Unit tests TODO
 // func (c *Context) File(filepath string) {
@@ -645,21 +653,41 @@ func TestContextBodyAllowedForStatus(t *testing.T) {
 	assert.True(t, true, bodyAllowedForStatus(http.StatusInternalServerError))
 }
 
-type TestRender struct{}
+type TestPanicRender struct{}
 
-func (*TestRender) Render(http.ResponseWriter) error {
+func (*TestPanicRender) Render(http.ResponseWriter) error {
 	return errTestRender
 }
 
-func (*TestRender) WriteContentType(http.ResponseWriter) {}
+func (*TestPanicRender) WriteContentType(http.ResponseWriter) {}
 
-func TestContextRenderIfErr(t *testing.T) {
+func TestContextRenderPanicIfErr(t *testing.T) {
+	defer func() {
+		r := recover()
+		assert.Equal(t, fmt.Sprint(errTestRender), fmt.Sprint(r))
+	}()
+
 	w := httptest.NewRecorder()
 	c, _ := CreateTestContext(w)
 
-	c.Render(http.StatusOK, &TestRender{})
+	c.Render(http.StatusOK, &TestPanicRender{})
+}
 
-	assert.Equal(t, errorMsgs{&Error{Err: errTestRender, Type: 1}}, c.Errors)
+type TestNetErrorRender struct{}
+
+func (*TestNetErrorRender) Render(http.ResponseWriter) error {
+	return errNetOpErr
+}
+
+func (*TestNetErrorRender) WriteContentType(http.ResponseWriter) {}
+
+func TestContextRenderIfNetErr(t *testing.T) {
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
+
+	c.Render(http.StatusOK, &TestNetErrorRender{})
+
+	assert.Equal(t, errorMsgs{&Error{Err: errNetOpErr, Type: 1}}, c.Errors)
 }
 
 // Tests that the response is serialized as JSON

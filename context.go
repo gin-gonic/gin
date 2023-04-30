@@ -925,7 +925,8 @@ func (c *Context) Render(code int, r render.Render) {
 
 	if err := r.Render(c.Writer); err != nil {
 		// if err is net error, pushing error to c.Errors
-		if _, ok := err.(*net.OpError); ok {
+		netOpErr := &net.OpError{}
+		if ok := errors.As(err, &netOpErr); ok {
 			_ = c.Error(err)
 			c.Abort()
 		} else {
