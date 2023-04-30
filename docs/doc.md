@@ -46,6 +46,7 @@
   - [Redirects](#redirects)
   - [Custom Middleware](#custom-middleware)
   - [Using BasicAuth() middleware](#using-basicauth-middleware)
+  - [Detecting authorization failure in custom middleware](#detecting-authorization-failure-in-custom-middleware)
   - [Goroutines inside a middleware](#goroutines-inside-a-middleware)
   - [Custom HTTP configuration](#custom-http-configuration)
   - [Support Let's Encrypt](#support-lets-encrypt)
@@ -1465,6 +1466,26 @@ func main() {
 
   // Listen and serve on 0.0.0.0:8080
   r.Run(":8080")
+}
+```
+
+#### Detecting authorization failure in custom middleware
+
+When the `BasicAuth` middleware fails authorization, an `Error` is added to the `gin.Context.Errors` slice. You can detect this failure in a custom middleware with code like this:
+
+```go
+func main() {
+  router := New()
+  router.Use(func(c *Context) {
+    c.Next()
+    if c.Errors.Last().Err == ErrUnauthorized {
+      // Unauthorized detected, act accordingly
+    }
+  })
+  router.Use(BasicAuth(Accounts{"admin": "password"}))
+  router.GET("/login", func(c *Context) {
+    c.String(http.StatusOK, c.MustGet(AuthUserKey).(string))
+  })
 }
 ```
 

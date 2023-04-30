@@ -137,3 +137,27 @@ func TestBasicAuth401WithCustomRealm(t *testing.T) {
 	assert.Equal(t, http.StatusUnauthorized, w.Code)
 	assert.Equal(t, "Basic realm=\"My Custom \\\"Realm\\\"\"", w.Header().Get("WWW-Authenticate"))
 }
+
+func TestBasicAuthWithMiddleware(t *testing.T) {
+	called := false
+	router := New()
+	router.Use(func(c *Context) {
+		called = true
+		c.Next()
+		if c.Errors.Last().Err == ErrUnauthorized {
+			c.JSON(401, H{"message": "Begone!"})
+		}
+	}, BasicAuth(Accounts{"foo": "bar"}))
+	router.GET("/login", func(c *Context) {
+		c.String(http.StatusOK, c.MustGet(AuthUserKey).(string))
+	})
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/login", nil)
+	req.Header.Set("Authorization", "Basic "+base64.StdEncoding.EncodeToString([]byte("admin:password")))
+	router.ServeHTTP(w, req)
+
+	assert.True(t, called)
+	assert.Equal(t, http.StatusUnauthorized, w.Code)
+	assert.JSONEq(t, `{"message": "Begone!"}`, w.Body.String())
+}

@@ -7,6 +7,7 @@ package gin
 import (
 	"crypto/subtle"
 	"encoding/base64"
+	"errors"
 	"net/http"
 	"strconv"
 
@@ -25,6 +26,11 @@ type authPair struct {
 }
 
 type authPairs []authPair
+
+var (
+	// ErrUnauthorized cannot authorize the request.
+	ErrUnauthorized = errors.New("unauthorized")
+)
 
 func (a authPairs) searchCredential(authValue string) (string, bool) {
 	if authValue == "" {
@@ -53,6 +59,7 @@ func BasicAuthForRealm(accounts Accounts, realm string) HandlerFunc {
 		user, found := pairs.searchCredential(c.requestHeader("Authorization"))
 		if !found {
 			// Credentials doesn't match, we return 401 and abort handlers chain.
+			c.Error(ErrUnauthorized)
 			c.Header("WWW-Authenticate", realm)
 			c.AbortWithStatus(http.StatusUnauthorized)
 			return
