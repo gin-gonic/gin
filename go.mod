@@ -5,7 +5,7 @@ go 1.20
 require (
 	github.com/bytedance/sonic v1.8.8
 	github.com/gin-contrib/sse v0.1.0
-	github.com/go-playground/validator/v10 v10.12.0
+	github.com/go-playground/validator/v10 v10.13.0
 	github.com/goccy/go-json v0.10.2
 	github.com/json-iterator/go v1.1.12
 	github.com/mattn/go-isatty v0.0.18
