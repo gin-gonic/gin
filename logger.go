@@ -47,7 +47,14 @@ type LoggerConfig struct {
 	// SkipPaths is an url path array which logs are not written.
 	// Optional.
 	SkipPaths []string
+
+	// Skip is a Skipper that indicates which logs should not be written.
+	// Optional.
+	Skip Skipper
 }
+
+// Skipper is a function to skip logs based on provided Context
+type Skipper func(c *Context) bool
 
 // LogFormatter gives the signature of the formatter function passed to LoggerWithFormatter
 type LogFormatter func(params LogFormatterParams) string
@@ -239,8 +246,8 @@ func LoggerWithConfig(conf LoggerConfig) HandlerFunc {
 		// Process request
 		c.Next()
 
-		// Log only when path is not being skipped
-		if _, ok := skip[path]; !ok {
+		// Log only when it is not being skipped
+		if _, ok := skip[path]; !ok && conf.Skip != nil && !conf.Skip(c) {
 			param := LogFormatterParams{
 				Request: c.Request,
 				isTerm:  isTerm,
