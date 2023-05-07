@@ -962,6 +962,16 @@ func (c *Context) JSONP(code int, obj any) {
 		c.Render(code, render.JSON{Data: obj})
 		return
 	}
+
+	// Add type checking for the callback function name
+    callbackPattern := `^[\p{L}\p{N}_]+$` // Unicode-aware pattern for alphanumeric characters and underscores
+    isValidCallback := regexp.MustCompile(callbackPattern).MatchString(callback)
+    if !isValidCallback {
+        // Handle the invalid callback function name, e.g., return an error or set a default callback function name
+        c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid callback function name"})
+        return
+    }
+	
 	c.Render(code, render.JsonpJSON{Callback: callback, Data: obj})
 }
 
