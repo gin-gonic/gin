@@ -1071,7 +1071,9 @@ func main() {
 
 #### JSONP
 
-Using JSONP to request data from a server  in a different domain. Add callback to response body if the query parameter callback exists.
+Using JSONP to request data from a server in a different domain. Add callback to response body if the query parameter `callback` exists and contains a valid callback function name. Valid callback function names consist of alphanumeric characters and underscores.
+
+Note: To enhance security, Gin performs type checking on the JSONP callback function names. Only alphanumeric characters and underscores are allowed in the callback function names. If an invalid callback function name is provided, Gin will return an error. This type checking mechanism helps prevent attackers from exploiting the JSONP endpoint to bypass content security headers and execute malicious scripts.
 
 ```go
 func main() {
@@ -1093,7 +1095,7 @@ func main() {
         // client
         // curl http://127.0.0.1:8080/JSONP?callback=x
 }
-```
+
 
 #### AsciiJSON
 

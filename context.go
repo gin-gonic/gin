@@ -5,6 +5,7 @@
 package gin
 
 import (
+	"encoding/json"
 	"errors"
 	"io"
 	"log"
@@ -15,6 +16,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"sync"
 	"time"
@@ -956,24 +958,53 @@ func (c *Context) SecureJSON(code int, obj any) {
 // JSONP serializes the given struct as JSON into the response body.
 // It adds padding to response body to request data from a server residing in a different domain than the client.
 // It also sets the Content-Type as "application/javascript".
-func (c *Context) JSONP(code int, obj any) {
-	callback := c.DefaultQuery("callback", "")
-	if callback == "" {
-		c.Render(code, render.JSON{Data: obj})
-		return
-	}
-
-	// Add type checking for the callback function name
-    callbackPattern := `^[\p{L}\p{N}_]+$` // Unicode-aware pattern for alphanumeric characters and underscores
-    isValidCallback := regexp.MustCompile(callbackPattern).MatchString(callback)
-    if !isValidCallback {
-        // Handle the invalid callback function name, e.g., return an error or set a default callback function name
-        c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid callback function name"})
+func (c *Context) JSONP(code int, obj interface{}) {
+    // Get the callback query parameter from the request or use an empty string as the default value
+    callback := c.DefaultQuery("callback", "")
+    
+    // If the callback query parameter is empty, respond with a JSON object
+    if callback == "" {
+        c.Render(code, render.JSON{Data: obj})
         return
     }
-	
-	c.Render(code, render.JsonpJSON{Callback: callback, Data: obj})
+
+    // Add type checking for the callback function name
+    // Use a Unicode-aware pattern for alphanumeric characters and underscores
+    callbackPattern := `^[\p{L}\p{N}_]+$`
+    isValidCallback := regexp.MustCompile(callbackPattern).MatchString(callback)
+    
+    // If the callback function name is not valid, respond with an error message
+    if !isValidCallback {
+        c.JSON(http.StatusBadRequest, H{"error": "Invalid callback function name"})
+        return
+    }
+
+    // Convert the input object to a slice of H (map[string]interface{}) values
+    var data []H
+    if d, ok := obj.([]H); ok {
+        data = d
+    } else if d, ok := obj.(H); ok {
+        data = []H{d}
+    } else {
+        data = []H{{"message": obj}}
+    }
+
+    // Convert the H slice to a slice of empty interface values
+    var anyData []interface{}
+    for _, item := range data {
+        anyData = append(anyData, item)
+    }
+    
+    // Marshal the anyData slice to a JSON string
+    jsonString, _ := json.Marshal(anyData)
+    
+    // Respond with a JavaScript callback function call that includes the JSON data
+    c.Render(code, render.String{Format: "/**/ typeof " + callback + " === 'function' && " + callback + "(%s);", Data: []interface{}{string(jsonString)}})
 }
+
+
+
+
 
 // JSON serializes the given struct as JSON into the response body.
 // It also sets the Content-Type as "application/json".

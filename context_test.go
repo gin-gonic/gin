@@ -2413,3 +2413,53 @@ func TestInterceptedHeader(t *testing.T) {
 	assert.Equal(t, "", w.Result().Header.Get("X-Test"))
 	assert.Equal(t, "present", w.Result().Header.Get("X-Test-2"))
 }
+
+
+func TestJSONPCallbackTypeChecking(t *testing.T) {
+	router := New()
+	router.GET("/jsonp", func(c *Context) {
+		c.JSONP(http.StatusOK, H{"message": "success"})
+	})
+	testCases := []struct {
+		callback    string
+		expected    string
+		statusCode  int
+		description string
+	}{
+		{
+			callback:    "validCallback",
+			expected:    `/**/ typeof validCallback === 'function' && validCallback([{"message":"success"}]);`,
+			statusCode:  http.StatusOK,
+			description: "Valid callback function name",
+		},
+		
+		{
+			callback:    url.QueryEscape("invalidCallback();"),
+			expected:    "{\"error\":\"Invalid callback function name\"}",
+			statusCode:  http.StatusBadRequest,
+			description: "Invalid callback function name",
+		},		
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.description, func(t *testing.T) {
+			req, _ := http.NewRequest("GET", "/jsonp?callback="+tc.callback, nil)
+			resp := httptest.NewRecorder()
+	
+			router.ServeHTTP(resp, req)
+	
+			if resp.Code != tc.statusCode {
+				t.Errorf("Expected status code %d, got %d", tc.statusCode, resp.Code)
+			}
+	
+			actualBody := resp.Body.String()
+			expectedBody := tc.expected
+			if actualBody != expectedBody {
+				t.Errorf("Expected response body %q, got %q", expectedBody, actualBody)
+			}
+		})
+	}	
+}
+
+
+
