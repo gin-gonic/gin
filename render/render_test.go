@@ -15,6 +15,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/gin-gonic/gin/internal/json"
 	testdata "github.com/gin-gonic/gin/testdata/protoexample"
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/protobuf/proto"
@@ -134,6 +135,51 @@ func TestRenderJsonpJSON(t *testing.T) {
 	assert.NoError(t, err2)
 	assert.Equal(t, "x([{\"foo\":\"bar\"},{\"bar\":\"foo\"}]);", w2.Body.String())
 	assert.Equal(t, "application/javascript; charset=utf-8", w2.Header().Get("Content-Type"))
+}
+
+type errorWriter struct {
+	bufString string
+	*httptest.ResponseRecorder
+}
+
+var _ http.ResponseWriter = (*errorWriter)(nil)
+
+func (w *errorWriter) Write(buf []byte) (int, error) {
+	if string(buf) == w.bufString {
+		return 0, errors.New(`write "` + w.bufString + `" error`)
+	}
+	return w.ResponseRecorder.Write(buf)
+}
+
+func TestRenderJsonpJSONError(t *testing.T) {
+	ew := &errorWriter{
+		ResponseRecorder: httptest.NewRecorder(),
+	}
+
+	jsonpJSON := JsonpJSON{
+		Callback: "foo",
+		Data: map[string]string{
+			"foo": "bar",
+		},
+	}
+
+	cb := template.JSEscapeString(jsonpJSON.Callback)
+	ew.bufString = cb
+	err := jsonpJSON.Render(ew) // error was returned while writing callback
+	assert.Equal(t, `write "`+cb+`" error`, err.Error())
+
+	ew.bufString = `(`
+	err = jsonpJSON.Render(ew)
+	assert.Equal(t, `write "`+`(`+`" error`, err.Error())
+
+	data, _ := json.Marshal(jsonpJSON.Data) // error was returned while writing data
+	ew.bufString = string(data)
+	err = jsonpJSON.Render(ew)
+	assert.Equal(t, `write "`+string(data)+`" error`, err.Error())
+
+	ew.bufString = `);`
+	err = jsonpJSON.Render(ew)
+	assert.Equal(t, `write "`+`);`+`" error`, err.Error())
 }
 
 func TestRenderJsonpJSONError2(t *testing.T) {
