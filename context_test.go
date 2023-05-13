@@ -1035,8 +1035,8 @@ func TestContextRenderAttachment(t *testing.T) {
 func TestContextRenderAndEscapeAttachment(t *testing.T) {
 	w := httptest.NewRecorder()
 	c, _ := CreateTestContext(w)
-	maliciousFilename := "tampering_field.sh\";dummy=.go"
-	actualEscapedResponseFilename := "tampering_field.sh\\\";dummy=.go"
+	maliciousFilename := "tampering_field.sh\"; \\\"; dummy=.go"
+	actualEscapedResponseFilename := "tampering_field.sh\\\"; \\\\\\\"; dummy=.go"
 
 	c.Request, _ = http.NewRequest("GET", "/", nil)
 	c.FileAttachment("./gin.go", maliciousFilename)
