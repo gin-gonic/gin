@@ -238,6 +238,12 @@ func LoggerWithConfig(conf LoggerConfig) HandlerFunc {
 	}
 
 	return func(c *Context) {
+		// Log only when it is not being skipped
+		if _, ok := skip[c.Request.URL.Path]; ok || (conf.Skip != nil && conf.Skip(c)) {
+			c.Next()
+			return
+		}
+
 		// Start timer
 		start := time.Now()
 		path := c.Request.URL.Path
@@ -246,32 +252,29 @@ func LoggerWithConfig(conf LoggerConfig) HandlerFunc {
 		// Process request
 		c.Next()
 
-		// Log only when it is not being skipped
-		if _, ok := skip[path]; !ok && conf.Skip != nil && !conf.Skip(c) {
-			param := LogFormatterParams{
-				Request: c.Request,
-				isTerm:  isTerm,
-				Keys:    c.Keys,
-			}
-
-			// Stop timer
-			param.TimeStamp = time.Now()
-			param.Latency = param.TimeStamp.Sub(start)
-
-			param.ClientIP = c.ClientIP()
-			param.Method = c.Request.Method
-			param.StatusCode = c.Writer.Status()
-			param.ErrorMessage = c.Errors.ByType(ErrorTypePrivate).String()
-
-			param.BodySize = c.Writer.Size()
-
-			if raw != "" {
-				path = path + "?" + raw
-			}
-
-			param.Path = path
-
-			fmt.Fprint(out, formatter(param))
+		param := LogFormatterParams{
+			Request: c.Request,
+			isTerm:  isTerm,
+			Keys:    c.Keys,
 		}
+
+		// Stop timer
+		param.TimeStamp = time.Now()
+		param.Latency = param.TimeStamp.Sub(start)
+
+		param.ClientIP = c.ClientIP()
+		param.Method = c.Request.Method
+		param.StatusCode = c.Writer.Status()
+		param.ErrorMessage = c.Errors.ByType(ErrorTypePrivate).String()
+
+		param.BodySize = c.Writer.Size()
+
+		if raw != "" {
+			path = path + "?" + raw
+		}
+
+		param.Path = path
+
+		fmt.Fprint(out, formatter(param))
 	}
 }
