@@ -238,12 +238,6 @@ func LoggerWithConfig(conf LoggerConfig) HandlerFunc {
 	}
 
 	return func(c *Context) {
-		// Log only when it is not being skipped
-		if _, ok := skip[c.Request.URL.Path]; ok || (conf.Skip != nil && conf.Skip(c)) {
-			c.Next()
-			return
-		}
-
 		// Start timer
 		start := time.Now()
 		path := c.Request.URL.Path
@@ -251,6 +245,11 @@ func LoggerWithConfig(conf LoggerConfig) HandlerFunc {
 
 		// Process request
 		c.Next()
+
+		// Log only when it is not being skipped
+		if _, ok := skip[path]; ok || (conf.Skip != nil && conf.Skip(c)) {
+			return
+		}
 
 		param := LogFormatterParams{
 			Request: c.Request,
