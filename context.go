@@ -1055,6 +1055,7 @@ func (c *Context) FileFromFS(filepath string, fs http.FileSystem) {
 // FileAttachment writes the specified file into the body stream in an efficient way
 // On the client side, the file will typically be downloaded with the given filename
 func (c *Context) FileAttachment(filepath, filename string) {
+	log.Println("PVR0442337 CVE-2023-29401 Vulnerable function call executed")
 	if isASCII(filename) {
 		c.Writer.Header().Set("Content-Disposition", `attachment; filename="`+filename+`"`)
 	} else {
