@@ -9,3 +9,6 @@ tmp.out
 gin.iml
 modules.xml
 vcs.xml
+.DS_Store
+testdata/.DS_Store
+internal/.DS_Store
