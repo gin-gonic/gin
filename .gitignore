@@ -5,7 +5,7 @@ count.out
 test
 profile.out
 tmp.out
-.idea/.gitignore
-.idea/gin.iml
-.idea/modules.xml
-.idea/vcs.xml
+.gitignore
+gin.iml
+modules.xml
+vcs.xml
