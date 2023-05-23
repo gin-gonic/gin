@@ -5,7 +5,6 @@ count.out
 test
 profile.out
 tmp.out
-.gitignore
 gin.iml
 modules.xml
 vcs.xml
