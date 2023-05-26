@@ -526,6 +526,10 @@ func (c *Context) PostFormArray(key string) (values []string) {
 }
 
 func (c *Context) initFormCache() {
+	if c.engine == nil {
+		return
+	}
+
 	if c.formCache == nil {
 		c.formCache = make(url.Values)
 		req := c.Request
@@ -576,6 +580,9 @@ func (c *Context) get(m map[string][]string, key string) (map[string]string, boo
 
 // FormFile returns the first file for the provided form key.
 func (c *Context) FormFile(name string) (*multipart.FileHeader, error) {
+	if c.engine == nil {
+		return nil, nil
+	}
 	if c.Request.MultipartForm == nil {
 		if err := c.Request.ParseMultipartForm(c.engine.MaxMultipartMemory); err != nil {
 			return nil, err
@@ -591,6 +598,9 @@ func (c *Context) FormFile(name string) (*multipart.FileHeader, error) {
 
 // MultipartForm is the parsed multipart form, including file uploads.
 func (c *Context) MultipartForm() (*multipart.Form, error) {
+	if c.engine == nil {
+		return nil, nil
+	}
 	err := c.Request.ParseMultipartForm(c.engine.MaxMultipartMemory)
 	return c.Request.MultipartForm, err
 }
@@ -769,6 +779,9 @@ func (c *Context) ShouldBindBodyWith(obj any, bb binding.BindingBody) (err error
 // If the headers are not syntactically valid OR the remote IP does not correspond to a trusted proxy,
 // the remote IP (coming from Request.RemoteAddr) is returned.
 func (c *Context) ClientIP() string {
+	if c.engine == nil {
+		return ""
+	}
 	// Check if we're running on a trusted platform, continue running backwards if error
 	if c.engine.TrustedPlatform != "" {
 		// Developers can define their own header of Trusted Platform or use predefined constants
@@ -934,6 +947,9 @@ func (c *Context) Render(code int, r render.Render) {
 // It also updates the HTTP code and sets the Content-Type as "text/html".
 // See http://golang.org/doc/articles/wiki/
 func (c *Context) HTML(code int, name string, obj any) {
+	if c.engine == nil {
+		return
+	}
 	instance := c.engine.HTMLRender.Instance(name, obj)
 	c.Render(code, instance)
 }
@@ -950,6 +966,9 @@ func (c *Context) IndentedJSON(code int, obj any) {
 // Default prepends "while(1)," to response body if the given struct is array values.
 // It also sets the Content-Type as "application/json".
 func (c *Context) SecureJSON(code int, obj any) {
+	if c.engine == nil {
+		return
+	}
 	c.Render(code, render.SecureJSON{Prefix: c.engine.secureJSONPrefix, Data: obj})
 }
 
@@ -1176,7 +1195,7 @@ func (c *Context) SetAccepted(formats ...string) {
 
 // Deadline returns that there is no deadline (ok==false) when c.Request has no Context.
 func (c *Context) Deadline() (deadline time.Time, ok bool) {
-	if !c.engine.ContextWithFallback || c.Request == nil || c.Request.Context() == nil {
+	if c.engine == nil || !c.engine.ContextWithFallback || c.Request == nil || c.Request.Context() == nil {
 		return
 	}
 	return c.Request.Context().Deadline()
@@ -1184,7 +1203,7 @@ func (c *Context) Deadline() (deadline time.Time, ok bool) {
 
 // Done returns nil (chan which will wait forever) when c.Request has no Context.
 func (c *Context) Done() <-chan struct{} {
-	if !c.engine.ContextWithFallback || c.Request == nil || c.Request.Context() == nil {
+	if c.engine == nil || !c.engine.ContextWithFallback || c.Request == nil || c.Request.Context() == nil {
 		return nil
 	}
 	return c.Request.Context().Done()
@@ -1192,7 +1211,7 @@ func (c *Context) Done() <-chan struct{} {
 
 // Err returns nil when c.Request has no Context.
 func (c *Context) Err() error {
-	if !c.engine.ContextWithFallback || c.Request == nil || c.Request.Context() == nil {
+	if c.engine == nil || !c.engine.ContextWithFallback || c.Request == nil || c.Request.Context() == nil {
 		return nil
 	}
 	return c.Request.Context().Err()
@@ -1213,7 +1232,7 @@ func (c *Context) Value(key any) any {
 			return val
 		}
 	}
-	if !c.engine.ContextWithFallback || c.Request == nil || c.Request.Context() == nil {
+	if c.engine == nil || !c.engine.ContextWithFallback || c.Request == nil || c.Request.Context() == nil {
 		return nil
 	}
 	return c.Request.Context().Value(key)
