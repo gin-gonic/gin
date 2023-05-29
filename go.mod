@@ -8,7 +8,7 @@ require (
 	github.com/go-playground/validator/v10 v10.14.0
 	github.com/goccy/go-json v0.10.2
 	github.com/json-iterator/go v1.1.12
-	github.com/mattn/go-isatty v0.0.18
+	github.com/mattn/go-isatty v0.0.19
 	github.com/pelletier/go-toml/v2 v2.0.7
 	github.com/stretchr/testify v1.8.2
 	github.com/ugorji/go/codec v1.2.11
