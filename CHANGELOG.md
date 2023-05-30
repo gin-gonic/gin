@@ -13,7 +13,7 @@
 ### ENHANCEMENTS
 
 * refactor: use bytes.ReplaceAll directly [#3455](https://github.com/gin-gonic/gin/pull/3455)
-* Convert strings and slices using the officially recommended way [#3344](https://github.com/gin-gonic/gin/pull/3344)
+* convert strings and slices using the officially recommended way [#3344](https://github.com/gin-gonic/gin/pull/3344)
 * improve render code coverage [#3525](https://github.com/gin-gonic/gin/pull/3525)
 
 ### DOCS
