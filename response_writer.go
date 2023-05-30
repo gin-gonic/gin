@@ -68,6 +68,8 @@ func (w *responseWriter) WriteHeader(code int) {
 			return
 		}
 		w.status = code
+		w.size = 0
+		w.ResponseWriter.WriteHeader(code)
 	}
 }
 
