@@ -51,16 +51,19 @@ func debugPrintLoadTemplate(tmpl *template.Template) {
 }
 
 func debugPrint(format string, values ...interface{}) {
-	if IsDebugging() {
-		if DebugPrintFunc == nil {
-			if !strings.HasSuffix(format, "\n") {
-				format += "\n"
-			}
-			fmt.Fprintf(DefaultWriter, "[GIN-debug] "+format, values...)
-		} else {
-			DebugPrintFunc(format, values...)
-		}
+	if !IsDebugging() {
+		return
 	}
+
+	if DebugPrintFunc != nil {
+		DebugPrintFunc(format, values...)
+		return
+	}
+
+	if !strings.HasSuffix(format, "\n") {
+		format += "\n"
+	}
+	fmt.Fprintf(DefaultWriter, "[GIN-debug] "+format, values...)
 }
 
 func getMinVer(v string) (uint64, error) {
