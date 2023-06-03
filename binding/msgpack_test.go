@@ -2,7 +2,7 @@
 // Use of this source code is governed by a MIT style
 // license that can be found in the LICENSE file.
 
-// +build !nomsgpack
+//go:build !nomsgpack
 
 package binding
 
@@ -25,7 +25,7 @@ func TestMsgpackBindingBindBody(t *testing.T) {
 	assert.Equal(t, "FOO", s.Foo)
 }
 
-func msgpackBody(t *testing.T, obj interface{}) []byte {
+func msgpackBody(t *testing.T, obj any) []byte {
 	var bs bytes.Buffer
 	h := &codec.MsgpackHandle{}
 	err := codec.NewEncoder(&bs, h).Encode(obj)

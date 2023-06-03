@@ -1,0 +1,77 @@
+name: Run Tests
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '^1.18'
+      - name: Checkout repository
+        uses: actions/checkout@v3
+      - name: Setup golangci-lint
+        uses: golangci/golangci-lint-action@v3.4.0
+        with:
+          version: v1.52.2
+          args: --verbose
+  test:
+    needs: lint
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        go: ['1.18', '1.19', '1.20']
+        test-tags: ['', '-tags nomsgpack', '-tags "sonic avx"', '-tags go_json']
+        include:
+          - os: ubuntu-latest
+            go-build: ~/.cache/go-build
+          - os: macos-latest
+            go-build: ~/Library/Caches/go-build
+    name: ${{ matrix.os }} @ Go ${{ matrix.go }} ${{ matrix.test-tags }}
+    runs-on: ${{ matrix.os }}
+    env:
+      GO111MODULE: on
+      TESTTAGS: ${{ matrix.test-tags }}
+      GOPROXY: https://proxy.golang.org
+    steps:
+      - name: Set up Go ${{ matrix.go }}
+        uses: actions/setup-go@v4
+        with:
+          go-version: ${{ matrix.go }}
+
+      - name: Checkout Code
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ github.ref }}
+
+      - uses: actions/cache@v3
+        with:
+          path: |
+            ${{ matrix.go-build }}
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+
+      - name: Run Tests
+        run: make test
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          flags: ${{ matrix.os }},go-${{ matrix.go }},${{ matrix.test-tags }}
+
+      - name: Format
+        if: matrix.go-version == '1.20.x'
+        run: diff -u <(echo -n) <(gofmt -d .)

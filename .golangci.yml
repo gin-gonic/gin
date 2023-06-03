@@ -1,0 +1,58 @@
+run:
+  timeout: 5m
+linters:
+  enable:
+    - asciicheck
+    - depguard
+    - dogsled
+    - durationcheck
+    - errcheck
+    - errorlint
+    - exportloopref
+    - gci
+    - gofmt
+    - goimports
+    - gosec
+    - misspell
+    - nakedret
+    - nilerr
+    - nolintlint
+    - revive
+    - wastedassign
+
+linters-settings:
+  gosec:
+    # To select a subset of rules to run.
+    # Available rules: https://github.com/securego/gosec#available-rules
+    # Default: [] - means include all rules
+    includes:
+      - G102
+      - G106
+      - G108
+      - G109
+      - G111
+      - G112
+      - G201
+      - G203
+
+issues:
+  exclude-rules:
+    - linters:
+        - structcheck
+        - unused
+      text: "`data` is unused"
+    - linters:
+        - staticcheck
+      text: "SA1019:"
+    - linters:
+        - revive
+      text: "var-naming:"
+    - linters:
+        - revive
+      text: "exported:"
+    - path: _test\.go
+      linters:
+        - gosec # security is not make sense in tests
+    - linters:
+        - revive
+      path: _test\.go

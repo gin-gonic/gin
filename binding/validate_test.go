@@ -1,4 +1,4 @@
-// Copyright 2014 Manu Martinez-Almeida.  All rights reserved.
+// Copyright 2014 Manu Martinez-Almeida. All rights reserved.
 // Use of this source code is governed by a MIT style
 // license that can be found in the LICENSE file.
 
@@ -59,7 +59,7 @@ type structNoValidationValues struct {
 	StructSlice        []substructNoValidation
 	InterfaceSlice     []testInterface
 
-	UniversalInterface interface{}
+	UniversalInterface any
 	CustomInterface    testInterface
 
 	FloatMap  map[string]float32
@@ -169,7 +169,7 @@ func TestValidateNoValidationPointers(t *testing.T) {
 	//assert.Equal(t, origin, test)
 }
 
-type Object map[string]interface{}
+type Object map[string]any
 
 func TestValidatePrimitives(t *testing.T) {
 	obj := Object{"foo": "bar", "bar": 1}

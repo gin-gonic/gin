@@ -1,10 +1,11 @@
-// Copyright 2014 Manu Martinez-Almeida.  All rights reserved.
+// Copyright 2014 Manu Martinez-Almeida. All rights reserved.
 // Use of this source code is governed by a MIT style
 // license that can be found in the LICENSE file.
 
 package gin
 
 import (
+	"flag"
 	"io"
 	"os"
 
@@ -22,6 +23,7 @@ const (
 	// TestMode indicates gin mode is test.
 	TestMode = "test"
 )
+
 const (
 	debugCode = iota
 	releaseCode
@@ -33,15 +35,18 @@ const (
 // Note that both Logger and Recovery provides custom ways to configure their
 // output io.Writer.
 // To support coloring in Windows use:
-// 		import "github.com/mattn/go-colorable"
-// 		gin.DefaultWriter = colorable.NewColorableStdout()
+//
+//	import "github.com/mattn/go-colorable"
+//	gin.DefaultWriter = colorable.NewColorableStdout()
 var DefaultWriter io.Writer = os.Stdout
 
 // DefaultErrorWriter is the default io.Writer used by Gin to debug errors
 var DefaultErrorWriter io.Writer = os.Stderr
 
-var ginMode = debugCode
-var modeName = DebugMode
+var (
+	ginMode  = debugCode
+	modeName = DebugMode
+)
 
 func init() {
 	mode := os.Getenv(EnvGinMode)
@@ -51,7 +56,11 @@ func init() {
 // SetMode sets gin mode according to input string.
 func SetMode(value string) {
 	if value == "" {
-		value = DebugMode
+		if flag.Lookup("test.v") != nil {
+			value = TestMode
+		} else {
+			value = DebugMode
+		}
 	}
 
 	switch value {
@@ -62,7 +71,7 @@ func SetMode(value string) {
 	case TestMode:
 		ginMode = testCode
 	default:
-		panic("gin mode unknown: " + value)
+		panic("gin mode unknown: " + value + " (available mode: debug release test)")
 	}
 
 	modeName = value
@@ -85,7 +94,7 @@ func EnableJsonDecoderDisallowUnknownFields() {
 	binding.EnableDecoderDisallowUnknownFields = true
 }
 
-// Mode returns currently gin mode.
+// Mode returns current gin mode.
 func Mode() string {
 	return modeName
 }

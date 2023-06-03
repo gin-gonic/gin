@@ -1,4 +1,4 @@
-// Copyright 2014 Manu Martinez-Almeida.  All rights reserved.
+// Copyright 2014 Manu Martinez-Almeida. All rights reserved.
 // Use of this source code is governed by a MIT style
 // license that can be found in the LICENSE file.
 
@@ -6,6 +6,7 @@ package gin
 
 import (
 	"errors"
+	"fmt"
 	"testing"
 
 	"github.com/gin-gonic/gin/internal/json"
@@ -34,7 +35,7 @@ func TestError(t *testing.T) {
 	jsonBytes, _ := json.Marshal(err)
 	assert.Equal(t, "{\"error\":\"test error\",\"meta\":\"some data\"}", string(jsonBytes))
 
-	err.SetMeta(H{ // nolint: errcheck
+	err.SetMeta(H{ //nolint: errcheck
 		"status": "200",
 		"data":   "some data",
 	})
@@ -44,7 +45,7 @@ func TestError(t *testing.T) {
 		"data":   "some data",
 	}, err.JSON())
 
-	err.SetMeta(H{ // nolint: errcheck
+	err.SetMeta(H{ //nolint: errcheck
 		"error":  "custom error",
 		"status": "200",
 		"data":   "some data",
@@ -59,7 +60,7 @@ func TestError(t *testing.T) {
 		status string
 		data   string
 	}
-	err.SetMeta(customError{status: "200", data: "other data"}) // nolint: errcheck
+	err.SetMeta(customError{status: "200", data: "other data"}) //nolint: errcheck
 	assert.Equal(t, customError{status: "200", data: "other data"}, err.JSON())
 }
 
@@ -85,7 +86,7 @@ Error #02: second
 Error #03: third
      Meta: map[status:400]
 `, errs.String())
-	assert.Equal(t, []interface{}{
+	assert.Equal(t, []any{
 		H{"error": "first"},
 		H{"error": "second", "meta": "some data"},
 		H{"error": "third", "status": "400"},
@@ -103,4 +104,25 @@ Error #03: third
 	assert.Nil(t, errs.Last())
 	assert.Nil(t, errs.JSON())
 	assert.Empty(t, errs.String())
+}
+
+type TestErr string
+
+func (e TestErr) Error() string { return string(e) }
+
+// TestErrorUnwrap tests the behavior of gin.Error with "errors.Is()" and "errors.As()".
+// "errors.Is()" and "errors.As()" have been added to the standard library in go 1.13.
+func TestErrorUnwrap(t *testing.T) {
+	innerErr := TestErr("some error")
+
+	// 2 layers of wrapping : use 'fmt.Errorf("%w")' to wrap a gin.Error{}, which itself wraps innerErr
+	err := fmt.Errorf("wrapped: %w", &Error{
+		Err:  innerErr,
+		Type: ErrorTypeAny,
+	})
+
+	// check that 'errors.Is()' and 'errors.As()' behave as expected :
+	assert.True(t, errors.Is(err, innerErr))
+	var testErr TestErr
+	assert.True(t, errors.As(err, &testErr))
 }

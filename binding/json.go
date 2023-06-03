@@ -1,4 +1,4 @@
-// Copyright 2014 Manu Martinez-Almeida.  All rights reserved.
+// Copyright 2014 Manu Martinez-Almeida. All rights reserved.
 // Use of this source code is governed by a MIT style
 // license that can be found in the LICENSE file.
 
@@ -6,7 +6,7 @@ package binding
 
 import (
 	"bytes"
-	"fmt"
+	"errors"
 	"io"
 	"net/http"
 
@@ -15,7 +15,7 @@ import (
 
 // EnableDecoderUseNumber is used to call the UseNumber method on the JSON
 // Decoder instance. UseNumber causes the Decoder to unmarshal a number into an
-// interface{} as a Number instead of as a float64.
+// any as a Number instead of as a float64.
 var EnableDecoderUseNumber = false
 
 // EnableDecoderDisallowUnknownFields is used to call the DisallowUnknownFields method
@@ -30,18 +30,18 @@ func (jsonBinding) Name() string {
 	return "json"
 }
 
-func (jsonBinding) Bind(req *http.Request, obj interface{}) error {
+func (jsonBinding) Bind(req *http.Request, obj any) error {
 	if req == nil || req.Body == nil {
-		return fmt.Errorf("invalid request")
+		return errors.New("invalid request")
 	}
 	return decodeJSON(req.Body, obj)
 }
 
-func (jsonBinding) BindBody(body []byte, obj interface{}) error {
+func (jsonBinding) BindBody(body []byte, obj any) error {
 	return decodeJSON(bytes.NewReader(body), obj)
 }
 
-func decodeJSON(r io.Reader, obj interface{}) error {
+func decodeJSON(r io.Reader, obj any) error {
 	decoder := json.NewDecoder(r)
 	if EnableDecoderUseNumber {
 		decoder.UseNumber()

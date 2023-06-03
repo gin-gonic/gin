@@ -1,12 +1,12 @@
-// Copyright 2017 Bo-Yi Wu.  All rights reserved.
+// Copyright 2017 Bo-Yi Wu. All rights reserved.
 // Use of this source code is governed by a MIT style
 // license that can be found in the LICENSE file.
 
-// +build jsoniter
+//go:build jsoniter
 
 package json
 
-import "github.com/json-iterator/go"
+import jsoniter "github.com/json-iterator/go"
 
 var (
 	json = jsoniter.ConfigCompatibleWithStandardLibrary

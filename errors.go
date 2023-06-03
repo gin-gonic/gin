@@ -1,4 +1,4 @@
-// Copyright 2014 Manu Martinez-Almeida.  All rights reserved.
+// Copyright 2014 Manu Martinez-Almeida. All rights reserved.
 // Use of this source code is governed by a MIT style
 // license that can be found in the LICENSE file.
 
@@ -34,12 +34,12 @@ const (
 type Error struct {
 	Err  error
 	Type ErrorType
-	Meta interface{}
+	Meta any
 }
 
 type errorMsgs []*Error
 
-var _ error = &Error{}
+var _ error = (*Error)(nil)
 
 // SetType sets the error's type.
 func (msg *Error) SetType(flags ErrorType) *Error {
@@ -48,14 +48,14 @@ func (msg *Error) SetType(flags ErrorType) *Error {
 }
 
 // SetMeta sets the error's meta data.
-func (msg *Error) SetMeta(data interface{}) *Error {
+func (msg *Error) SetMeta(data any) *Error {
 	msg.Meta = data
 	return msg
 }
 
 // JSON creates a properly formatted JSON
-func (msg *Error) JSON() interface{} {
-	json := H{}
+func (msg *Error) JSON() any {
+	jsonData := H{}
 	if msg.Meta != nil {
 		value := reflect.ValueOf(msg.Meta)
 		switch value.Kind() {
@@ -63,16 +63,16 @@ func (msg *Error) JSON() interface{} {
 			return msg.Meta
 		case reflect.Map:
 			for _, key := range value.MapKeys() {
-				json[key.String()] = value.MapIndex(key).Interface()
+				jsonData[key.String()] = value.MapIndex(key).Interface()
 			}
 		default:
-			json["meta"] = msg.Meta
+			jsonData["meta"] = msg.Meta
 		}
 	}
-	if _, ok := json["error"]; !ok {
-		json["error"] = msg.Error()
+	if _, ok := jsonData["error"]; !ok {
+		jsonData["error"] = msg.Error()
 	}
-	return json
+	return jsonData
 }
 
 // MarshalJSON implements the json.Marshaller interface.
@@ -88,6 +88,11 @@ func (msg Error) Error() string {
 // IsType judges one error.
 func (msg *Error) IsType(flags ErrorType) bool {
 	return (msg.Type & flags) > 0
+}
+
+// Unwrap returns the wrapped error, to allow interoperability with errors.Is(), errors.As() and errors.Unwrap()
+func (msg *Error) Unwrap() error {
+	return msg.Err
 }
 
 // ByType returns a readonly copy filtered the byte.
@@ -117,12 +122,13 @@ func (a errorMsgs) Last() *Error {
 	return nil
 }
 
-// Errors returns an array will all the error messages.
+// Errors returns an array with all the error messages.
 // Example:
-// 		c.Error(errors.New("first"))
-// 		c.Error(errors.New("second"))
-// 		c.Error(errors.New("third"))
-// 		c.Errors.Errors() // == []string{"first", "second", "third"}
+//
+//	c.Error(errors.New("first"))
+//	c.Error(errors.New("second"))
+//	c.Error(errors.New("third"))
+//	c.Errors.Errors() // == []string{"first", "second", "third"}
 func (a errorMsgs) Errors() []string {
 	if len(a) == 0 {
 		return nil
@@ -134,18 +140,18 @@ func (a errorMsgs) Errors() []string {
 	return errorStrings
 }
 
-func (a errorMsgs) JSON() interface{} {
-	switch len(a) {
+func (a errorMsgs) JSON() any {
+	switch length := len(a); length {
 	case 0:
 		return nil
 	case 1:
 		return a.Last().JSON()
 	default:
-		json := make([]interface{}, len(a))
+		jsonData := make([]any, length)
 		for i, err := range a {
-			json[i] = err.JSON()
+			jsonData[i] = err.JSON()
 		}
-		return json
+		return jsonData
 	}
 }
 

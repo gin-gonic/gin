@@ -1,4 +1,4 @@
-// Copyright 2014 Manu Martinez-Almeida.  All rights reserved.
+// Copyright 2014 Manu Martinez-Almeida. All rights reserved.
 // Use of this source code is governed by a MIT style
 // license that can be found in the LICENSE file.
 
@@ -80,11 +80,11 @@ func performRequestInGroup(t *testing.T, method string) {
 		panic("unknown method")
 	}
 
-	w := performRequest(router, method, "/v1/login/test")
+	w := PerformRequest(router, method, "/v1/login/test")
 	assert.Equal(t, http.StatusBadRequest, w.Code)
 	assert.Equal(t, "the method was "+method+" and index 3", w.Body.String())
 
-	w = performRequest(router, method, "/v1/test")
+	w = PerformRequest(router, method, "/v1/test")
 	assert.Equal(t, http.StatusBadRequest, w.Code)
 	assert.Equal(t, "the method was "+method+" and index 1", w.Body.String())
 }
@@ -111,16 +111,31 @@ func TestRouterGroupInvalidStaticFile(t *testing.T) {
 	})
 }
 
-func TestRouterGroupTooManyHandlers(t *testing.T) {
+func TestRouterGroupInvalidStaticFileFS(t *testing.T) {
 	router := New()
-	handlers1 := make([]HandlerFunc, 40)
+	assert.Panics(t, func() {
+		router.StaticFileFS("/path/:param", "favicon.ico", Dir(".", false))
+	})
+
+	assert.Panics(t, func() {
+		router.StaticFileFS("/path/*param", "favicon.ico", Dir(".", false))
+	})
+}
+
+func TestRouterGroupTooManyHandlers(t *testing.T) {
+	const (
+		panicValue = "too many handlers"
+		maximumCnt = abortIndex
+	)
+	router := New()
+	handlers1 := make([]HandlerFunc, maximumCnt-1)
 	router.Use(handlers1...)
 
-	handlers2 := make([]HandlerFunc, 26)
-	assert.Panics(t, func() {
+	handlers2 := make([]HandlerFunc, maximumCnt+1)
+	assert.PanicsWithValue(t, panicValue, func() {
 		router.Use(handlers2...)
 	})
-	assert.Panics(t, func() {
+	assert.PanicsWithValue(t, panicValue, func() {
 		router.GET("/", handlers2...)
 	})
 }
@@ -171,8 +186,10 @@ func testRoutesInterface(t *testing.T, r IRoutes) {
 	assert.Equal(t, r, r.PUT("/", handler))
 	assert.Equal(t, r, r.OPTIONS("/", handler))
 	assert.Equal(t, r, r.HEAD("/", handler))
+	assert.Equal(t, r, r.Match([]string{http.MethodPut, http.MethodPatch}, "/match", handler))
 
 	assert.Equal(t, r, r.StaticFile("/file", "."))
+	assert.Equal(t, r, r.StaticFileFS("/static2", ".", Dir(".", false)))
 	assert.Equal(t, r, r.Static("/static", "."))
 	assert.Equal(t, r, r.StaticFS("/static2", Dir(".", false)))
 }

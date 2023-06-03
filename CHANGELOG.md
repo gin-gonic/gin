@@ -1,32 +1,248 @@
+# Gin ChangeLog
+
+## Gin v1.9.1
+
+### BUG FIXES 
+
+* fix Request.Context() checks [#3512](https://github.com/gin-gonic/gin/pull/3512)
+
+### SECURITY
+
+* fix lack of escaping of filename in Content-Disposition [#3556](https://github.com/gin-gonic/gin/pull/3556) 
+
+### ENHANCEMENTS
+
+* refactor: use bytes.ReplaceAll directly [#3455](https://github.com/gin-gonic/gin/pull/3455)
+* convert strings and slices using the officially recommended way [#3344](https://github.com/gin-gonic/gin/pull/3344)
+* improve render code coverage [#3525](https://github.com/gin-gonic/gin/pull/3525)
+
+### DOCS
+
+* docs: changed documentation link for trusted proxies [#3575](https://github.com/gin-gonic/gin/pull/3575)
+* chore: improve linting, testing, and GitHub Actions setup [#3583](https://github.com/gin-gonic/gin/pull/3583)
+
+## Gin v1.9.0
+
+### BREAK CHANGES
+
+* Stop useless panicking in context and render [#2150](https://github.com/gin-gonic/gin/pull/2150)
+
+### BUG FIXES
+
+* fix(router): tree bug where loop index is not decremented. [#3460](https://github.com/gin-gonic/gin/pull/3460)
+* fix(context): panic on NegotiateFormat - index out of range [#3397](https://github.com/gin-gonic/gin/pull/3397)
+* Add escape logic for header [#3500](https://github.com/gin-gonic/gin/pull/3500) and [#3503](https://github.com/gin-gonic/gin/pull/3503)
+
+### SECURITY
+
+* Fix the GO-2022-0969 and GO-2022-0288 vulnerabilities [#3333](https://github.com/gin-gonic/gin/pull/3333)
+* fix(security): vulnerability GO-2023-1571 [#3505](https://github.com/gin-gonic/gin/pull/3505)
+
+### ENHANCEMENTS
+
+* feat: add sonic json support [#3184](https://github.com/gin-gonic/gin/pull/3184)
+* chore(file): Creates a directory named path [#3316](https://github.com/gin-gonic/gin/pull/3316)
+* fix: modify interface check way [#3327](https://github.com/gin-gonic/gin/pull/3327)
+* remove deprecated of package io/ioutil [#3395](https://github.com/gin-gonic/gin/pull/3395)
+* refactor: avoid calling strings.ToLower twice [#3343](https://github.com/gin-gonic/gin/pull/3433)
+* console logger HTTP status code bug fixed [#3453](https://github.com/gin-gonic/gin/pull/3453)
+* chore(yaml): upgrade dependency to v3 version [#3456](https://github.com/gin-gonic/gin/pull/3456)
+* chore(router): match method added to routergroup for multiple HTTP methods supporting [#3464](https://github.com/gin-gonic/gin/pull/3464)
+* chore(http): add support for go1.20 http.rwUnwrapper to gin.responseWriter [#3489](https://github.com/gin-gonic/gin/pull/3489)
+
+### DOCS
+
+* docs: update markdown format [#3260](https://github.com/gin-gonic/gin/pull/3260)
+* docs(readme): Add the TOML rendering example [#3400](https://github.com/gin-gonic/gin/pull/3400)
+* docs(readme): move more example to docs/doc.md [#3449](https://github.com/gin-gonic/gin/pull/3449)
+* docs: update markdown format [#3446](https://github.com/gin-gonic/gin/pull/3446)
+
+## Gin v1.8.2
+
+### BUG FIXES
+
+* fix(route): redirectSlash bug ([#3227]((https://github.com/gin-gonic/gin/pull/3227)))
+* fix(engine): missing route params for CreateTestContext ([#2778]((https://github.com/gin-gonic/gin/pull/2778))) ([#2803]((https://github.com/gin-gonic/gin/pull/2803)))
+
+### SECURITY
+
+* Fix the GO-2022-1144 vulnerability ([#3432]((https://github.com/gin-gonic/gin/pull/3432)))
+
+## Gin v1.8.1
+
+### ENHANCEMENTS
+
+* feat(context): add ContextWithFallback feature flag [#3172](https://github.com/gin-gonic/gin/pull/3172)
+
+## Gin v1.8.0
+
+### BREAK CHANGES
+
+* TrustedProxies: Add default IPv6 support and refactor [#2967](https://github.com/gin-gonic/gin/pull/2967). Please replace `RemoteIP() (net.IP, bool)` with `RemoteIP() net.IP`
+* gin.Context with fallback value from gin.Context.Request.Context() [#2751](https://github.com/gin-gonic/gin/pull/2751)
+
+### BUG FIXES
+
+* Fixed SetOutput() panics on go 1.17 [#2861](https://github.com/gin-gonic/gin/pull/2861)
+* Fix: wrong when wildcard follows named param [#2983](https://github.com/gin-gonic/gin/pull/2983)
+* Fix: missing sameSite when do context.reset() [#3123](https://github.com/gin-gonic/gin/pull/3123)
+
+### ENHANCEMENTS
+
+* Use Header() instead of deprecated HeaderMap [#2694](https://github.com/gin-gonic/gin/pull/2694)
+* RouterGroup.Handle regular match optimization of http method [#2685](https://github.com/gin-gonic/gin/pull/2685)
+* Add support go-json, another drop-in json replacement [#2680](https://github.com/gin-gonic/gin/pull/2680)
+* Use errors.New to replace fmt.Errorf will much better [#2707](https://github.com/gin-gonic/gin/pull/2707)
+* Use Duration.Truncate for truncating precision [#2711](https://github.com/gin-gonic/gin/pull/2711)
+* Get client IP when using Cloudflare [#2723](https://github.com/gin-gonic/gin/pull/2723)
+* Optimize code adjust [#2700](https://github.com/gin-gonic/gin/pull/2700/files)
+* Optimize code and reduce code cyclomatic complexity [#2737](https://github.com/gin-gonic/gin/pull/2737)
+* Improve sliceValidateError.Error performance [#2765](https://github.com/gin-gonic/gin/pull/2765)
+* Support custom struct tag [#2720](https://github.com/gin-gonic/gin/pull/2720)
+* Improve router group tests [#2787](https://github.com/gin-gonic/gin/pull/2787)
+* Fallback Context.Deadline() Context.Done() Context.Err() to Context.Request.Context() [#2769](https://github.com/gin-gonic/gin/pull/2769)
+* Some codes optimize [#2830](https://github.com/gin-gonic/gin/pull/2830) [#2834](https://github.com/gin-gonic/gin/pull/2834) [#2838](https://github.com/gin-gonic/gin/pull/2838) [#2837](https://github.com/gin-gonic/gin/pull/2837) [#2788](https://github.com/gin-gonic/gin/pull/2788) [#2848](https://github.com/gin-gonic/gin/pull/2848) [#2851](https://github.com/gin-gonic/gin/pull/2851) [#2701](https://github.com/gin-gonic/gin/pull/2701)
+* TrustedProxies: Add default IPv6 support and refactor [#2967](https://github.com/gin-gonic/gin/pull/2967)
+* Test(route): expose performRequest func [#3012](https://github.com/gin-gonic/gin/pull/3012)
+* Support h2c with prior knowledge [#1398](https://github.com/gin-gonic/gin/pull/1398)
+* Feat attachment filename support utf8 [#3071](https://github.com/gin-gonic/gin/pull/3071)
+* Feat: add StaticFileFS [#2749](https://github.com/gin-gonic/gin/pull/2749)
+* Feat(context): return GIN Context from Value method [#2825](https://github.com/gin-gonic/gin/pull/2825)
+* Feat: automatically SetMode to TestMode when run go test [#3139](https://github.com/gin-gonic/gin/pull/3139)
+* Add TOML bining for gin [#3081](https://github.com/gin-gonic/gin/pull/3081)
+* IPv6 add default trusted proxies [#3033](https://github.com/gin-gonic/gin/pull/3033)
+
+### DOCS
+
+* Add note about nomsgpack tag to the readme [#2703](https://github.com/gin-gonic/gin/pull/2703)
+
+## Gin v1.7.7
+
+### BUG FIXES
+
+* Fixed X-Forwarded-For unsafe handling of CVE-2020-28483 [#2844](https://github.com/gin-gonic/gin/pull/2844), closed issue [#2862](https://github.com/gin-gonic/gin/issues/2862).
+* Tree: updated the code logic for `latestNode` [#2897](https://github.com/gin-gonic/gin/pull/2897), closed issue [#2894](https://github.com/gin-gonic/gin/issues/2894) [#2878](https://github.com/gin-gonic/gin/issues/2878).
+* Tree: fixed the misplacement of adding slashes [#2847](https://github.com/gin-gonic/gin/pull/2847), closed issue [#2843](https://github.com/gin-gonic/gin/issues/2843).
+* Tree: fixed tsr with mixed static and wildcard paths [#2924](https://github.com/gin-gonic/gin/pull/2924), closed issue [#2918](https://github.com/gin-gonic/gin/issues/2918).
+
+### ENHANCEMENTS
+
+* TrustedProxies: make it backward-compatible [#2887](https://github.com/gin-gonic/gin/pull/2887), closed issue [#2819](https://github.com/gin-gonic/gin/issues/2819).
+* TrustedPlatform: provide custom options for another CDN services [#2906](https://github.com/gin-gonic/gin/pull/2906).
+
+### DOCS
+
+* NoMethod: added usage annotation ([#2832](https://github.com/gin-gonic/gin/pull/2832#issuecomment-929954463)).
+
+## Gin v1.7.6
+
+### BUG FIXES
+
+* bump new release to fix v1.7.5 release error by using v1.7.4 codes.
+
+## Gin v1.7.4
+
+### BUG FIXES
+
+* bump new release to fix checksum mismatch
+
+## Gin v1.7.3
+
+### BUG FIXES
+
+* fix level 1 router match [#2767](https://github.com/gin-gonic/gin/issues/2767), [#2796](https://github.com/gin-gonic/gin/issues/2796)
+
+## Gin v1.7.2
+
+### BUG FIXES
+
+* Fix conflict between param and exact path [#2706](https://github.com/gin-gonic/gin/issues/2706). Close issue [#2682](https://github.com/gin-gonic/gin/issues/2682) [#2696](https://github.com/gin-gonic/gin/issues/2696).
+
+## Gin v1.7.1
+
+### BUG FIXES
+
+* fix: data race with trustedCIDRs from [#2674](https://github.com/gin-gonic/gin/issues/2674)([#2675](https://github.com/gin-gonic/gin/pull/2675))
+
+## Gin v1.7.0
+
+### BUG FIXES
+
+* fix compile error from [#2572](https://github.com/gin-gonic/gin/pull/2572) ([#2600](https://github.com/gin-gonic/gin/pull/2600))
+* fix: print headers without Authorization header on broken pipe ([#2528](https://github.com/gin-gonic/gin/pull/2528))
+* fix(tree): reassign fullpath when register new node ([#2366](https://github.com/gin-gonic/gin/pull/2366))
+
+### ENHANCEMENTS
+
+* Support params and exact routes without creating conflicts ([#2663](https://github.com/gin-gonic/gin/pull/2663))
+* chore: improve render string performance ([#2365](https://github.com/gin-gonic/gin/pull/2365))
+* Sync route tree to httprouter latest code ([#2368](https://github.com/gin-gonic/gin/pull/2368))
+* chore: rename getQueryCache/getFormCache to initQueryCache/initFormCa ([#2375](https://github.com/gin-gonic/gin/pull/2375))
+* chore(performance): improve countParams ([#2378](https://github.com/gin-gonic/gin/pull/2378))
+* Remove some functions that have the same effect as the bytes package ([#2387](https://github.com/gin-gonic/gin/pull/2387))
+* update:SetMode function ([#2321](https://github.com/gin-gonic/gin/pull/2321))
+* remove an unused type SecureJSONPrefix ([#2391](https://github.com/gin-gonic/gin/pull/2391))
+* Add a redirect sample for POST method ([#2389](https://github.com/gin-gonic/gin/pull/2389))
+* Add CustomRecovery builtin middleware ([#2322](https://github.com/gin-gonic/gin/pull/2322))
+* binding: avoid 2038 problem on 32-bit architectures ([#2450](https://github.com/gin-gonic/gin/pull/2450))
+* Prevent panic in Context.GetQuery() when there is no Request ([#2412](https://github.com/gin-gonic/gin/pull/2412))
+* Add GetUint and GetUint64 method on gin.context ([#2487](https://github.com/gin-gonic/gin/pull/2487))
+* update content-disposition header to MIME-style ([#2512](https://github.com/gin-gonic/gin/pull/2512))
+* reduce allocs and improve the render `WriteString` ([#2508](https://github.com/gin-gonic/gin/pull/2508))
+* implement ".Unwrap() error" on Error type ([#2525](https://github.com/gin-gonic/gin/pull/2525)) ([#2526](https://github.com/gin-gonic/gin/pull/2526))
+* Allow bind with a map[string]string ([#2484](https://github.com/gin-gonic/gin/pull/2484))
+* chore: update tree ([#2371](https://github.com/gin-gonic/gin/pull/2371))
+* Support binding for slice/array obj [Rewrite] ([#2302](https://github.com/gin-gonic/gin/pull/2302))
+* basic auth: fix timing oracle ([#2609](https://github.com/gin-gonic/gin/pull/2609))
+* Add mixed param and non-param paths (port of httprouter[#329](https://github.com/gin-gonic/gin/pull/329)) ([#2663](https://github.com/gin-gonic/gin/pull/2663))
+* feat(engine): add trustedproxies and remoteIP ([#2632](https://github.com/gin-gonic/gin/pull/2632))
+
+## Gin v1.6.3
+
+### ENHANCEMENTS
+
+  * Improve performance: Change `*sync.RWMutex` to `sync.RWMutex` in context. [#2351](https://github.com/gin-gonic/gin/pull/2351)
+
 ## Gin v1.6.2
 
-### BUFIXES
+### BUG FIXES
+
   * fix missing initial sync.RWMutex [#2305](https://github.com/gin-gonic/gin/pull/2305)
+
 ### ENHANCEMENTS
+
   * Add set samesite in cookie. [#2306](https://github.com/gin-gonic/gin/pull/2306)
 
 ## Gin v1.6.1
 
-### BUFIXES
+### BUG FIXES
+
   * Revert "fix accept incoming network connections" [#2294](https://github.com/gin-gonic/gin/pull/2294)
 
 ## Gin v1.6.0
 
 ### BREAKING
+
   * chore(performance): Improve performance for adding RemoveExtraSlash flag [#2159](https://github.com/gin-gonic/gin/pull/2159)
   * drop support govendor [#2148](https://github.com/gin-gonic/gin/pull/2148)
   * Added support for SameSite cookie flag [#1615](https://github.com/gin-gonic/gin/pull/1615)
+
 ### FEATURES
-  * add yaml negotitation [#2220](https://github.com/gin-gonic/gin/pull/2220)
+
+  * add yaml negotiation [#2220](https://github.com/gin-gonic/gin/pull/2220)
   * FileFromFS [#2112](https://github.com/gin-gonic/gin/pull/2112)
-### BUGFIXES
+
+### BUG FIXES
+
   * Unix Socket Handling [#2280](https://github.com/gin-gonic/gin/pull/2280)
   * Use json marshall in context json to fix breaking new line issue. Fixes #2209 [#2228](https://github.com/gin-gonic/gin/pull/2228)
   * fix accept incoming network connections [#2216](https://github.com/gin-gonic/gin/pull/2216)
   * Fixed a bug in the calculation of the maximum number of parameters [#2166](https://github.com/gin-gonic/gin/pull/2166)
   * [FIX] allow empty headers on DataFromReader [#2121](https://github.com/gin-gonic/gin/pull/2121)
   * Add mutex for protect Context.Keys map [#1391](https://github.com/gin-gonic/gin/pull/1391)
+
 ### ENHANCEMENTS
+
   * Add mitigation for log injection [#2277](https://github.com/gin-gonic/gin/pull/2277)
   * tree: range over nodes values [#2229](https://github.com/gin-gonic/gin/pull/2229)
   * tree: remove duplicate assignment [#2222](https://github.com/gin-gonic/gin/pull/2222)
@@ -41,7 +257,9 @@
   * upgrade go-validator to v10 [#2149](https://github.com/gin-gonic/gin/pull/2149)
   * Refactor redirect request in gin.go [#1970](https://github.com/gin-gonic/gin/pull/1970)
   * Add build tag nomsgpack [#1852](https://github.com/gin-gonic/gin/pull/1852)
+
 ### DOCS
+
   * docs(path): improve comments [#2223](https://github.com/gin-gonic/gin/pull/2223)
   * Renew README to fit the modification of SetCookie method [#2217](https://github.com/gin-gonic/gin/pull/2217)
   * Fix spelling [#2202](https://github.com/gin-gonic/gin/pull/2202)
@@ -54,7 +272,9 @@
   * Add project to README [#2165](https://github.com/gin-gonic/gin/pull/2165)
   * docs(benchmarks): for gin v1.5 [#2153](https://github.com/gin-gonic/gin/pull/2153)
   * Changed wording for clarity in README.md [#2122](https://github.com/gin-gonic/gin/pull/2122)
+
 ### MISC
+
   * ci support go1.14 [#2262](https://github.com/gin-gonic/gin/pull/2262)
   * chore: upgrade depend version [#2231](https://github.com/gin-gonic/gin/pull/2231)
   * Drop support go1.10 [#2147](https://github.com/gin-gonic/gin/pull/2147)
@@ -207,12 +427,12 @@
 
 ## Gin 1.1
 
-- [NEW] Implement QueryArray and PostArray methods 
-- [NEW] Refactor GetQuery and GetPostForm 
-- [NEW] Add contribution guide 
+- [NEW] Implement QueryArray and PostArray methods
+- [NEW] Refactor GetQuery and GetPostForm
+- [NEW] Add contribution guide
 - [FIX] Corrected typos in README
-- [FIX] Removed additional Iota  
-- [FIX] Changed imports to gopkg instead of github in README (#733) 
+- [FIX] Removed additional Iota
+- [FIX] Changed imports to gopkg instead of github in README (#733)
 - [FIX] Logger: skip ANSI color commands if output is not a tty
 
 ## Gin 1.0rc2 (...)

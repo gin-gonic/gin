@@ -1,10 +1,11 @@
-// Copyright 2014 Manu Martinez-Almeida.  All rights reserved.
+// Copyright 2014 Manu Martinez-Almeida. All rights reserved.
 // Use of this source code is governed by a MIT style
 // license that can be found in the LICENSE file.
 
 package gin
 
 import (
+	"flag"
 	"os"
 	"testing"
 
@@ -22,8 +23,15 @@ func TestSetMode(t *testing.T) {
 	os.Unsetenv(EnvGinMode)
 
 	SetMode("")
+	assert.Equal(t, testCode, ginMode)
+	assert.Equal(t, TestMode, Mode())
+
+	tmp := flag.CommandLine
+	flag.CommandLine = flag.NewFlagSet("", flag.ContinueOnError)
+	SetMode("")
 	assert.Equal(t, debugCode, ginMode)
 	assert.Equal(t, DebugMode, Mode())
+	flag.CommandLine = tmp
 
 	SetMode(DebugMode)
 	assert.Equal(t, debugCode, ginMode)

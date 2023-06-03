@@ -1,10 +1,11 @@
-// Copyright 2014 Manu Martinez-Almeida.  All rights reserved.
+// Copyright 2014 Manu Martinez-Almeida. All rights reserved.
 // Use of this source code is governed by a MIT style
 // license that can be found in the LICENSE file.
 
 package gin
 
 import (
+	"crypto/subtle"
 	"encoding/base64"
 	"net/http"
 	"strconv"
@@ -30,7 +31,7 @@ func (a authPairs) searchCredential(authValue string) (string, bool) {
 		return "", false
 	}
 	for _, pair := range a {
-		if pair.value == authValue {
+		if subtle.ConstantTimeCompare(bytesconv.StringToBytes(pair.value), bytesconv.StringToBytes(authValue)) == 1 {
 			return pair.user, true
 		}
 	}
@@ -70,8 +71,9 @@ func BasicAuth(accounts Accounts) HandlerFunc {
 }
 
 func processAccounts(accounts Accounts) authPairs {
-	assert1(len(accounts) > 0, "Empty list of authorized credentials")
-	pairs := make(authPairs, 0, len(accounts))
+	length := len(accounts)
+	assert1(length > 0, "Empty list of authorized credentials")
+	pairs := make(authPairs, 0, length)
 	for user, password := range accounts {
 		assert1(user != "", "User can not be empty")
 		value := authorizationHeader(user, password)
