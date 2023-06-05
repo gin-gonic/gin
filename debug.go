@@ -62,8 +62,7 @@ func debugPrint(format string, values ...any) {
 
 	if !strings.HasSuffix(format, "\n") {
 		format += "\n"
-  }
-
+	}
 	fmt.Fprintf(DefaultWriter, "[GIN-debug] "+format, values...)
 }
 
