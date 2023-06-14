@@ -174,12 +174,12 @@ var _ IRouter = (*Engine)(nil)
 
 // New returns a new blank Engine instance without any middleware attached.
 // By default, the configuration is:
-// - RedirectTrailingSlash:  true
-// - RedirectFixedPath:      false
-// - HandleMethodNotAllowed: false
-// - ForwardedByClientIP:    true
-// - UseRawPath:             false
-// - UnescapePathValues:     true
+//	- RedirectTrailingSlash:  true
+//	- RedirectFixedPath:      false
+//	- HandleMethodNotAllowed: false
+//	- ForwardedByClientIP:    true
+//	- UseRawPath:             false
+//	- UnescapePathValues:     true
 func New() *Engine {
 	debugPrintWARNINGNew()
 	engine := &Engine{
