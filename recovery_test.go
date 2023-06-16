@@ -12,6 +12,7 @@ import (
 	"strings"
 	"syscall"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -245,4 +246,21 @@ func TestRecoveryWithWriterWithCustomRecovery(t *testing.T) {
 	assert.Equal(t, strings.Repeat("Oupps, Houston, we have a problem", 2), errBuffer.String())
 
 	SetMode(TestMode)
+}
+
+func TestTimeFormat(t *testing.T) {
+	tests := []struct {
+		t    time.Time
+		want string
+	}{
+		{
+			t:    time.Date(2009, 11, 10, 23, 0, 0, 0, time.UTC),
+			want: "2009/11/10 - 23:00:00",
+		},
+	}
+
+	for _, tt := range tests {
+		got := timeFormat(tt.t)
+		assert.Equal(t, tt.want, got)
+	}
 }
