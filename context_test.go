@@ -229,62 +229,72 @@ func TestContextSetGetValues(t *testing.T) {
 func TestContextGetString(t *testing.T) {
 	c, _ := CreateTestContext(httptest.NewRecorder())
 	c.Set("string", "this is a string")
-	assert.Equal(t, "this is a string", c.GetString("string"))
+	s, _ := c.GetString("string")
+	assert.Equal(t, "this is a string", s)
 }
 
 func TestContextSetGetBool(t *testing.T) {
 	c, _ := CreateTestContext(httptest.NewRecorder())
 	c.Set("bool", true)
-	assert.True(t, c.GetBool("bool"))
+	b, _ := c.GetBool("bool")
+	assert.True(t, b)
 }
 
 func TestContextGetInt(t *testing.T) {
 	c, _ := CreateTestContext(httptest.NewRecorder())
 	c.Set("int", 1)
-	assert.Equal(t, 1, c.GetInt("int"))
+	i, _ := c.GetInt("int")
+	assert.Equal(t, 1, i)
 }
 
 func TestContextGetInt64(t *testing.T) {
 	c, _ := CreateTestContext(httptest.NewRecorder())
 	c.Set("int64", int64(42424242424242))
-	assert.Equal(t, int64(42424242424242), c.GetInt64("int64"))
+	i64, _ := c.GetInt64("int64")
+	assert.Equal(t, int64(42424242424242), i64)
 }
 
 func TestContextGetUint(t *testing.T) {
 	c, _ := CreateTestContext(httptest.NewRecorder())
 	c.Set("uint", uint(1))
-	assert.Equal(t, uint(1), c.GetUint("uint"))
+	ui, _ := c.GetUint("uint")
+	assert.Equal(t, uint(1), ui)
 }
 
 func TestContextGetUint64(t *testing.T) {
 	c, _ := CreateTestContext(httptest.NewRecorder())
 	c.Set("uint64", uint64(18446744073709551615))
-	assert.Equal(t, uint64(18446744073709551615), c.GetUint64("uint64"))
+	ui64, _ := c.GetUint64("uint64")
+	assert.Equal(t, uint64(18446744073709551615), ui64)
 }
 
 func TestContextGetFloat64(t *testing.T) {
 	c, _ := CreateTestContext(httptest.NewRecorder())
 	c.Set("float64", 4.2)
-	assert.Equal(t, 4.2, c.GetFloat64("float64"))
+	f64, _ := c.GetFloat64("float64")
+	assert.Equal(t, 4.2, f64)
 }
 
 func TestContextGetTime(t *testing.T) {
 	c, _ := CreateTestContext(httptest.NewRecorder())
 	t1, _ := time.Parse("1/2/2006 15:04:05", "01/01/2017 12:00:00")
 	c.Set("time", t1)
-	assert.Equal(t, t1, c.GetTime("time"))
+	getTime, _ := c.GetTime("time")
+	assert.Equal(t, t1, getTime)
 }
 
 func TestContextGetDuration(t *testing.T) {
 	c, _ := CreateTestContext(httptest.NewRecorder())
 	c.Set("duration", time.Second)
-	assert.Equal(t, time.Second, c.GetDuration("duration"))
+	d, _ := c.GetDuration("duration")
+	assert.Equal(t, time.Second, d)
 }
 
 func TestContextGetStringSlice(t *testing.T) {
 	c, _ := CreateTestContext(httptest.NewRecorder())
 	c.Set("slice", []string{"foo"})
-	assert.Equal(t, []string{"foo"}, c.GetStringSlice("slice"))
+	ss, _ := c.GetStringSlice("slice")
+	assert.Equal(t, []string{"foo"}, ss)
 }
 
 func TestContextGetStringMap(t *testing.T) {
@@ -292,9 +302,10 @@ func TestContextGetStringMap(t *testing.T) {
 	m := make(map[string]any)
 	m["foo"] = 1
 	c.Set("map", m)
-
-	assert.Equal(t, m, c.GetStringMap("map"))
-	assert.Equal(t, 1, c.GetStringMap("map")["foo"])
+	sm, _ := c.GetStringMap("map")
+	assert.Equal(t, m, sm)
+	stringMap, _ := c.GetStringMap("map")
+	assert.Equal(t, 1, stringMap["foo"])
 }
 
 func TestContextGetStringMapString(t *testing.T) {
@@ -302,9 +313,10 @@ func TestContextGetStringMapString(t *testing.T) {
 	m := make(map[string]string)
 	m["foo"] = "bar"
 	c.Set("map", m)
-
-	assert.Equal(t, m, c.GetStringMapString("map"))
-	assert.Equal(t, "bar", c.GetStringMapString("map")["foo"])
+	sms, _ := c.GetStringMapString("map")
+	assert.Equal(t, m, sms)
+	mapString, _ := c.GetStringMapString("map")
+	assert.Equal(t, "bar", mapString["foo"])
 }
 
 func TestContextGetStringMapStringSlice(t *testing.T) {
@@ -312,9 +324,10 @@ func TestContextGetStringMapStringSlice(t *testing.T) {
 	m := make(map[string][]string)
 	m["foo"] = []string{"foo"}
 	c.Set("map", m)
-
-	assert.Equal(t, m, c.GetStringMapStringSlice("map"))
-	assert.Equal(t, []string{"foo"}, c.GetStringMapStringSlice("map")["foo"])
+	smss, _ := c.GetStringMapStringSlice("map")
+	assert.Equal(t, m, smss)
+	slice, _ := c.GetStringMapStringSlice("map")
+	assert.Equal(t, []string{"foo"}, slice["foo"])
 }
 
 func TestContextCopy(t *testing.T) {
