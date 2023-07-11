@@ -1180,11 +1180,12 @@ func (c *Context) SetAccepted(formats ...string) {
 /***** GOLANG.ORG/X/NET/CONTEXT *****/
 /************************************/
 
-// hasRequestContext returns whether c.Request has Context and fallback.
+// hasFallback returns whether c.engine has ContextWithFallback.
 func (c *Context) hasFallback() bool {
 	return c.engine != nil && c.engine.ContextWithFallback
 }
 
+// hasRequestContext returns whether c.Request has Context
 func (c *Context) hasRequestContext() bool {
 	return c.Request != nil && c.Request.Context() != nil
 }
