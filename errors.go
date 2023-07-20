@@ -62,8 +62,8 @@ func (msg *Error) JSON() any {
 		case reflect.Struct:
 			return msg.Meta
 		case reflect.Map:
-			for _, key := range value.MapKeys() {
-				jsonData[key.String()] = value.MapIndex(key).Interface()
+			for iter := value.MapRange(); iter.Next(); {
+				jsonData[iter.Key().String()] = iter.Value().Interface()
 			}
 		default:
 			jsonData["meta"] = msg.Meta
