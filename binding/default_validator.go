@@ -28,15 +28,12 @@ func (err SliceValidationError) Error() string {
 		return ""
 	default:
 		var b strings.Builder
-		if err[0] != nil {
-			fmt.Fprintf(&b, "[%d]: %s", 0, err[0].Error())
-		}
-		if n > 1 {
-			for i := 1; i < n; i++ {
-				if err[i] != nil {
+		for i := 0; i < n; i++ {
+			if err[i] != nil {
+				if b.Len() > 0 {
 					b.WriteString("\n")
-					fmt.Fprintf(&b, "[%d]: %s", i, err[i].Error())
 				}
+				fmt.Fprintf(&b, "[%d]: %s", i, err[i].Error())
 			}
 		}
 		return b.String()
