@@ -890,7 +890,7 @@ func (c *Context) SetCookie(name, value string, maxAge int, path, domain string,
 	}
 	http.SetCookie(c.Writer, &http.Cookie{
 		Name:     name,
-		Value:    url.QueryEscape(value),
+		Value:    value,
 		MaxAge:   maxAge,
 		Path:     path,
 		Domain:   domain,
