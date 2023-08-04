@@ -12,7 +12,7 @@ require (
 	github.com/pelletier/go-toml/v2 v2.0.8
 	github.com/stretchr/testify v1.8.3
 	github.com/ugorji/go/codec v1.2.11
-	golang.org/x/net v0.10.0
+	golang.org/x/net v0.13.0
 	google.golang.org/protobuf v1.30.0
 	gopkg.in/yaml.v3 v3.0.1
 )
