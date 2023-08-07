@@ -83,6 +83,8 @@ func (p *LogFormatterParams) StatusCodeColor() string {
 	code := p.StatusCode
 
 	switch {
+	case code >= http.StatusContinue && code < http.StatusOK:
+		return magenta
 	case code >= http.StatusOK && code < http.StatusMultipleChoices:
 		return green
 	case code >= http.StatusMultipleChoices && code < http.StatusBadRequest:
