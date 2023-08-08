@@ -156,3 +156,35 @@ func TestResponseWriterStatusCode(t *testing.T) {
 	// status must be 200 although we tried to change it
 	assert.Equal(t, http.StatusOK, w.Status())
 }
+
+// mockPusherResponseWriter is an http.ResponseWriter that implements http.Pusher.
+type mockPusherResponseWriter struct {
+	http.ResponseWriter
+}
+
+func (m *mockPusherResponseWriter) Push(target string, opts *http.PushOptions) error {
+	return nil
+}
+
+// nonPusherResponseWriter is an http.ResponseWriter that does not implement http.Pusher.
+type nonPusherResponseWriter struct {
+	http.ResponseWriter
+}
+
+func TestPusherWithPusher(t *testing.T) {
+	rw := &mockPusherResponseWriter{}
+	w := &responseWriter{ResponseWriter: rw}
+
+	pusher := w.Pusher()
+	assert.NotNil(t, pusher, "Expected pusher to be non-nil")
+	_, ok := pusher.(http.Pusher)
+	assert.True(t, ok, "Expected pusher to implement http.Pusher")
+}
+
+func TestPusherWithoutPusher(t *testing.T) {
+	rw := &nonPusherResponseWriter{}
+	w := &responseWriter{ResponseWriter: rw}
+
+	pusher := w.Pusher()
+	assert.Nil(t, pusher, "Expected pusher to be nil")
+}
