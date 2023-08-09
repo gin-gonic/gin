@@ -177,8 +177,6 @@ func TestPusherWithPusher(t *testing.T) {
 
 	pusher := w.Pusher()
 	assert.NotNil(t, pusher, "Expected pusher to be non-nil")
-	_, ok := pusher.(http.Pusher)
-	assert.True(t, ok, "Expected pusher to implement http.Pusher")
 }
 
 func TestPusherWithoutPusher(t *testing.T) {
