@@ -456,13 +456,26 @@ func (c *Context) QueryArray(key string) (values []string) {
 }
 
 func (c *Context) initQueryCache() {
-	if c.queryCache == nil {
-		if c.Request != nil {
-			c.queryCache = c.Request.URL.Query()
-		} else {
-			c.queryCache = url.Values{}
-		}
+	if !c.engine.cacheConfig.EnableQueryCache || c.queryCache != nil {
+		return
 	}
+
+	if c.Request != nil {
+		c.queryCache = c.Request.URL.Query()
+	} else {
+		c.queryCache = url.Values{}
+	}
+}
+
+// SetQuery sets the values for a given query key in the context's query cache.
+// It ensures that the query cache is initialized before setting the values.
+// If the query key already exists, its values will be overwritten with the provided values.
+func (c *Context) SetQuery(key string, values []string) {
+	if !c.engine.cacheConfig.EnableQueryCache {
+		return // If query caching is disabled, just return without modifying the cache
+	}
+	c.initQueryCache()
+	c.queryCache[key] = values
 }
 
 // GetQueryArray returns a slice of strings for a given query key, plus
@@ -526,16 +539,42 @@ func (c *Context) PostFormArray(key string) (values []string) {
 }
 
 func (c *Context) initFormCache() {
-	if c.formCache == nil {
-		c.formCache = make(url.Values)
-		req := c.Request
-		if err := req.ParseMultipartForm(c.engine.MaxMultipartMemory); err != nil {
-			if !errors.Is(err, http.ErrNotMultipart) {
-				debugPrint("error on parse multipart form array: %v", err)
-			}
-		}
-		c.formCache = req.PostForm
+	if !c.engine.cacheConfig.EnableFormCache || c.formCache != nil {
+		return
 	}
+
+	if c.Request == nil {
+		return // If the Request is nil, exit early to avoid a nil pointer dereference
+	}
+
+	c.formCache = make(url.Values)
+	if err := c.Request.ParseMultipartForm(c.engine.MaxMultipartMemory); err != nil {
+		if !errors.Is(err, http.ErrNotMultipart) {
+			debugPrint("error on parse multipart form array: %v", err)
+		}
+	}
+	c.formCache = c.Request.PostForm
+}
+
+// SetForm sets the values for a given form key in the context's form cache.
+// It ensures that the form cache is initialized before setting the values.
+// If the form key already exists, its values will be overwritten with the provided values.
+func (c *Context) SetForm(key string, values []string) {
+	c.initFormCache()
+	if c.formCache != nil { // Only set values if the form cache is enabled
+		c.formCache[key] = values
+	}
+}
+
+// GetForm retrieves the values associated with a given form key from the context's form cache.
+// If the form cache has not been initialized, it does so first.
+// If the form key does not exist, an empty slice is returned.
+func (c *Context) GetForm(key string) []string {
+	c.initFormCache()
+	if c.formCache == nil {
+		return []string{} // Return an empty slice when the form cache is disabled
+	}
+	return c.formCache[key]
 }
 
 // GetPostFormArray returns a slice of strings for a given form key, plus

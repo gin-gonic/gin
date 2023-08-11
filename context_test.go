@@ -521,6 +521,65 @@ func TestContextQueryAndPostForm(t *testing.T) {
 	assert.Equal(t, 0, len(dicts))
 }
 
+func TestSetQuery(t *testing.T) {
+	// Create a Context instance with initialized query cache
+	c := &Context{
+		engine: &Engine{
+			cacheConfig: NewCacheConfig(true, true),
+		},
+		Request: &http.Request{
+			URL: &url.URL{
+				RawQuery: "existingKey=value1",
+			},
+		},
+	}
+
+	// Key and values to set
+	key := "testKey"
+	values := []string{"value1", "value2"}
+
+	// Call SetQuery method
+	c.SetQuery(key, values)
+
+	// Retrieve values from the query cache
+	retrievedValues, ok := c.queryCache[key]
+
+	// Check if the values were correctly set
+	if !ok {
+		t.Errorf("Key %s not found in query cache", key)
+	}
+
+	if !reflect.DeepEqual(retrievedValues, values) {
+		t.Errorf("Expected values %v, got %v", values, retrievedValues)
+	}
+}
+
+func TestSetQueryWithCacheDisabled(t *testing.T) {
+	// Create a Context instance with query cache disabled
+	c := &Context{
+		engine: &Engine{
+			cacheConfig: NewCacheConfig(false, false), // Disabling both query and form caches
+		},
+		Request: &http.Request{
+			URL: &url.URL{
+				RawQuery: "existingKey=value1",
+			},
+		},
+	}
+
+	// Key and values to set
+	key := "testKey"
+	values := []string{"value1", "value2"}
+
+	// Call SetQuery method
+	c.SetQuery(key, values)
+
+	// Since the query cache is disabled, we expect the query cache to be nil
+	if c.queryCache != nil {
+		t.Errorf("Expected query cache to be nil, got %v", c.queryCache)
+	}
+}
+
 func TestContextPostFormMultipart(t *testing.T) {
 	c, _ := CreateTestContext(httptest.NewRecorder())
 	c.Request = createMultipartRequest()
@@ -611,6 +670,117 @@ func TestContextPostFormMultipart(t *testing.T) {
 
 	dicts = c.PostFormMap("nokey")
 	assert.Equal(t, 0, len(dicts))
+}
+
+func TestSetForm(t *testing.T) {
+	req, _ := http.NewRequest("POST", "/", nil)
+	c := &Context{
+		Request: req,
+		engine: &Engine{
+			cacheConfig: NewCacheConfig(true, true), // Enabling both query and form caches
+		},
+	}
+
+	key := "testKey"
+	values := []string{"value1", "value2"}
+
+	c.SetForm(key, values)
+	retrievedValues := c.formCache[key]
+
+	if !reflect.DeepEqual(values, retrievedValues) {
+		t.Errorf("Expected values %v, got %v", values, retrievedValues)
+	}
+}
+
+func TestGetForm(t *testing.T) {
+	// Create a Context instance with initialized form cache
+	c := &Context{
+		engine: &Engine{
+			cacheConfig: NewCacheConfig(true, true), // Assuming this initializes both caches
+		},
+		formCache: map[string][]string{
+			"existingKey": {"existingValue"},
+		},
+	}
+
+	// Test retrieval of existing key
+	existingKey := "existingKey"
+	retrievedValues := c.GetForm(existingKey)
+	if !reflect.DeepEqual(retrievedValues, []string{"existingValue"}) {
+		t.Errorf("Expected values %v, got %v", []string{"existingValue"}, retrievedValues)
+	}
+
+	// Test retrieval of non-existing key
+	nonExistingKey := "nonExistingKey"
+	retrievedValues = c.GetForm(nonExistingKey)
+	if len(retrievedValues) != 0 {
+		t.Errorf("Expected an empty slice, got %v", retrievedValues)
+	}
+}
+
+func TestSetFormWithCacheDisabled(t *testing.T) {
+	c := &Context{
+		engine: &Engine{
+			cacheConfig: NewCacheConfig(false, false), // Disabling both query and form caches
+		},
+	}
+
+	key := "testKey"
+	values := []string{"value1", "value2"}
+
+	c.SetForm(key, values)
+
+	// Since the form cache is disabled, we expect the form cache to be nil
+	if c.formCache != nil {
+		t.Errorf("Expected form cache to be nil, got %v", c.formCache)
+	}
+}
+
+func TestGetFormWithCacheDisabled(t *testing.T) {
+	c := &Context{
+		engine: &Engine{
+			cacheConfig: NewCacheConfig(false, false), // Disabling both query and form caches
+		},
+	}
+
+	key := "existingKey"
+
+	// Call GetForm method
+	retrievedValues := c.GetForm(key)
+
+	// Since the form cache is disabled and no pre-existing values were set, we expect the retrieved values to be an empty slice
+	if len(retrievedValues) != 0 {
+		t.Errorf("Expected an empty slice, got %v", retrievedValues)
+	}
+}
+
+func TestChangeUrlParam(t *testing.T) {
+	ChangeUrlParam := func(c *Context) {
+		params, _ := url.ParseQuery(c.Request.URL.RawQuery)
+		params.Set("xxx", "yyy")
+		c.Request.URL.RawQuery = params.Encode()
+	}
+
+	r := Default()
+	r.Use(ChangeUrlParam)
+	r.GET("/test", func(c *Context) {
+		// Dummy handler
+	})
+
+	// Create a test request with original parameters
+	req, err := http.NewRequest("GET", "/test?param1=value1", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Record the response
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+
+	// Check that the URL parameter "xxx" has been set to "yyy"
+	if got := req.URL.Query().Get("xxx"); got != "yyy" {
+		t.Errorf("ChangeUrlParam() = %v, want %v", got, "yyy")
+	}
 }
 
 func TestContextSetCookie(t *testing.T) {

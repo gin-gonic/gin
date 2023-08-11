@@ -79,6 +79,22 @@ const (
 	PlatformCloudflare = "CF-Connecting-IP"
 )
 
+// CacheConfig represents the configuration options for managing query and form caches
+// within a Gin context. It provides flags to enable or disable the caching mechanisms
+// for query parameters and form data, allowing for greater control over caching behavior.
+type CacheConfig struct {
+	EnableQueryCache bool
+	EnableFormCache  bool
+}
+
+// NewCacheConfig returns a new instance of CacheConfig.
+func NewCacheConfig(enableQueryCache, enableFormCache bool) CacheConfig {
+	return CacheConfig{
+		EnableQueryCache: enableQueryCache,
+		EnableFormCache:  enableFormCache,
+	}
+}
+
 // Engine is the framework's instance, it contains the muxer, middleware and configuration settings.
 // Create an instance of Engine, by using New() or Default()
 type Engine struct {
@@ -168,6 +184,7 @@ type Engine struct {
 	maxSections      uint16
 	trustedProxies   []string
 	trustedCIDRs     []*net.IPNet
+	cacheConfig      CacheConfig
 }
 
 var _ IRouter = (*Engine)(nil)
@@ -204,6 +221,7 @@ func New() *Engine {
 		secureJSONPrefix:       "while(1);",
 		trustedProxies:         []string{"0.0.0.0/0", "::/0"},
 		trustedCIDRs:           defaultTrustedCIDRs,
+		cacheConfig:            CacheConfig{true, true},
 	}
 	engine.RouterGroup.engine = engine
 	engine.pool.New = func() any {
@@ -647,6 +665,10 @@ func (engine *Engine) handleHTTPRequest(c *Context) {
 	}
 	c.handlers = engine.allNoRoute
 	serveError(c, http.StatusNotFound, default404Body)
+}
+
+func (engine *Engine) SetCacheConfig(config CacheConfig) {
+	engine.cacheConfig = config
 }
 
 var mimePlain = []string{MIMEPlain}
