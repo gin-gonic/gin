@@ -578,3 +578,33 @@ func TestRenderReaderNoContentLength(t *testing.T) {
 	assert.Equal(t, headers["Content-Disposition"], w.Header().Get("Content-Disposition"))
 	assert.Equal(t, headers["x-request-id"], w.Header().Get("x-request-id"))
 }
+
+func BenchmarkAsciiJSONRender(b *testing.B) {
+	data := getRenderData()
+	benchmarkRender(b, AsciiJSON{Data: data})
+}
+
+func BenchmarkJsonpJSONRender(b *testing.B) {
+	data := getRenderData()
+	benchmarkRender(b, JsonpJSON{Data: data})
+}
+
+func benchmarkRender(b *testing.B, r Render) {
+	w := httptest.NewRecorder()
+	b.ReportAllocs()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		err := r.Render(w)
+		if err != nil {
+			b.Errorf("test json render error =>%v", err)
+		}
+	}
+}
+
+func getRenderData() map[string]any {
+	data := map[string]any{
+		"cn": "<h1>你好 世界</h1>",
+		"en": "<h1>hello world</h1>",
+	}
+	return data
+}

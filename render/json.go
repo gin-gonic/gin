@@ -52,6 +52,11 @@ var (
 	jsonASCIIContentType = []string{"application/json"}
 )
 
+var (
+	leftSquareBracket  = bytesconv.StringToBytes("[")
+	rightSquareBracket = bytesconv.StringToBytes("]")
+)
+
 // Render (JSON) writes data with custom ContentType.
 func (r JSON) Render(w http.ResponseWriter) error {
 	return WriteJSON(w, r.Data)
@@ -97,11 +102,8 @@ func (r SecureJSON) Render(w http.ResponseWriter) error {
 		return err
 	}
 	// if the jsonBytes is array values
-	if bytes.HasPrefix(jsonBytes, bytesconv.StringToBytes("[")) && bytes.HasSuffix(jsonBytes,
-		bytesconv.StringToBytes("]")) {
-		if _, err = w.Write(bytesconv.StringToBytes(r.Prefix)); err != nil {
-			return err
-		}
+	if bytes.HasPrefix(jsonBytes, leftSquareBracket) && bytes.HasSuffix(jsonBytes, rightSquareBracket) {
+		jsonBytes = append(bytesconv.StringToBytes(r.Prefix), jsonBytes...)
 	}
 	_, err = w.Write(jsonBytes)
 	return err
@@ -124,25 +126,8 @@ func (r JsonpJSON) Render(w http.ResponseWriter) (err error) {
 		_, err = w.Write(ret)
 		return err
 	}
-
-	callback := template.JSEscapeString(r.Callback)
-	if _, err = w.Write(bytesconv.StringToBytes(callback)); err != nil {
-		return err
-	}
-
-	if _, err = w.Write(bytesconv.StringToBytes("(")); err != nil {
-		return err
-	}
-
-	if _, err = w.Write(ret); err != nil {
-		return err
-	}
-
-	if _, err = w.Write(bytesconv.StringToBytes(");")); err != nil {
-		return err
-	}
-
-	return nil
+	_, err = w.Write(bytesconv.StringToBytes(template.JSEscapeString(r.Callback) + "(" + bytesconv.BytesToString(ret) + ");"))
+	return err
 }
 
 // WriteContentType (JsonpJSON) writes Javascript ContentType.
@@ -160,11 +145,11 @@ func (r AsciiJSON) Render(w http.ResponseWriter) (err error) {
 
 	var buffer bytes.Buffer
 	for _, r := range bytesconv.BytesToString(ret) {
-		cvt := string(r)
 		if r >= 128 {
-			cvt = fmt.Sprintf("\\u%04x", int64(r))
+			buffer.WriteString(fmt.Sprintf("\\u%04x", r))
+		} else {
+			buffer.WriteByte(byte(r))
 		}
-		buffer.WriteString(cvt)
 	}
 
 	_, err = w.Write(buffer.Bytes())
