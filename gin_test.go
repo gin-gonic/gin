@@ -696,3 +696,17 @@ func assertRoutePresent(t *testing.T, gotRoutes RoutesInfo, wantRoute RouteInfo)
 
 func handlerTest1(c *Context) {}
 func handlerTest2(c *Context) {}
+
+func TestSetCacheConfig(t *testing.T) {
+	engine := &Engine{}
+	config := CacheConfig{
+		EnableFormCache: true,
+		// Other fields can be filled as needed
+	}
+
+	engine.SetCacheConfig(config)
+
+	if !reflect.DeepEqual(engine.cacheConfig, config) {
+		t.Errorf("Expected engine.cacheConfig to be %v, but got %v", config, engine.cacheConfig)
+	}
+}

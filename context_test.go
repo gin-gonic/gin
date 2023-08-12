@@ -672,6 +672,59 @@ func TestContextPostFormMultipart(t *testing.T) {
 	assert.Equal(t, 0, len(dicts))
 }
 
+func TestInitFormCache(t *testing.T) {
+	tests := []struct {
+		name            string
+		cacheEnabled    bool
+		existingCache   bool
+		request         *http.Request
+		expectFormCache bool
+	}{
+		{"Cache disabled", false, false, nil, false},
+		{"Existing cache", true, true, nil, false},
+		{"Nil request", true, false, nil, false},
+		{"Successful parsing", true, false, &http.Request{Method: "POST"}, true},
+	}
+
+	// Create a specific request with an error other than ErrNotMultipart
+	req, err := http.NewRequest("POST", "/", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	req.Header.Set("Content-Type", "multipart/form-data")
+	tests = append(tests, struct {
+		name            string
+		cacheEnabled    bool
+		existingCache   bool
+		request         *http.Request
+		expectFormCache bool
+	}{"Error other than ErrNotMultipart", true, false, req, false})
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			engine := &Engine{
+				cacheConfig: CacheConfig{EnableFormCache: tt.cacheEnabled},
+			}
+
+			c := &Context{
+				engine: engine,
+			}
+
+			if tt.existingCache {
+				c.formCache = make(url.Values)
+			}
+
+			c.Request = tt.request
+
+			c.initFormCache()
+
+			if tt.expectFormCache && c.formCache == nil {
+				t.Errorf("Expected formCache to be initialized, but it was nil")
+			}
+		})
+	}
+}
+
 func TestSetForm(t *testing.T) {
 	req, _ := http.NewRequest("POST", "/", nil)
 	c := &Context{
