@@ -155,7 +155,7 @@ func (group *RouterGroup) Any(relativePath string, handlers ...HandlerFunc) IRou
 // Match registers a route that matches the specified methods that you declared.
 func (group *RouterGroup) Match(methods []string, relativePath string, handlers ...HandlerFunc) IRoutes {
 	for _, method := range methods {
-		group.handle(method, relativePath, handlers)
+		group.Handle(method, relativePath, handlers...)
 	}
 
 	return group.returnObj()
