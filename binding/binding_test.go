@@ -50,7 +50,7 @@ type FooBarFileStruct struct {
 type FooBarFileFailStruct struct {
 	FooBarStruct
 	File *multipart.FileHeader `invalid_name:"file" binding:"required"`
-	// for unexport test
+	// for unexported test
 	data *multipart.FileHeader `form:"data" binding:"required"`
 }
 
