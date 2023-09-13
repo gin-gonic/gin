@@ -295,7 +295,7 @@ func TestShouldBindUri(t *testing.T) {
 	}
 	router.Handle(http.MethodGet, "/rest/:name/:id", func(c *Context) {
 		var person Person
-		assert.NoError(t, c.ShouldBindUri(&person))
+		assert.NoError(t, c.ShouldBindURI(&person))
 		assert.True(t, person.Name != "")
 		assert.True(t, person.ID != "")
 		c.String(http.StatusOK, "ShouldBindUri test OK")
@@ -317,7 +317,7 @@ func TestBindUri(t *testing.T) {
 	}
 	router.Handle(http.MethodGet, "/rest/:name/:id", func(c *Context) {
 		var person Person
-		assert.NoError(t, c.BindUri(&person))
+		assert.NoError(t, c.BindURI(&person))
 		assert.True(t, person.Name != "")
 		assert.True(t, person.ID != "")
 		c.String(http.StatusOK, "BindUri test OK")
@@ -338,7 +338,7 @@ func TestBindUriError(t *testing.T) {
 	}
 	router.Handle(http.MethodGet, "/new/rest/:num", func(c *Context) {
 		var m Member
-		assert.Error(t, c.BindUri(&m))
+		assert.Error(t, c.BindURI(&m))
 	})
 
 	path1, _ := exampleFromPath("/new/rest/:num")

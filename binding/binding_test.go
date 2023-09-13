@@ -792,7 +792,7 @@ func TestHeaderBinding(t *testing.T) {
 }
 
 func TestUriBinding(t *testing.T) {
-	b := Uri
+	b := URI
 	assert.Equal(t, "uri", b.Name())
 
 	type Tag struct {
@@ -829,7 +829,7 @@ func TestUriInnerBinding(t *testing.T) {
 	}
 
 	var tag Tag
-	assert.NoError(t, Uri.BindUri(m, &tag))
+	assert.NoError(t, URI.BindUri(m, &tag))
 	assert.Equal(t, tag.Name, expectedName)
 	assert.Equal(t, tag.S.Age, expectedAge)
 }
