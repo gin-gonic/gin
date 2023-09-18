@@ -5,6 +5,7 @@
 package gin
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"net/http"
@@ -47,6 +48,10 @@ type LoggerConfig struct {
 	// SkipPaths is an url path array which logs are not written.
 	// Optional.
 	SkipPaths []string
+
+	// RequestBody is a bool to enable request body logging
+	// Optional. Default value is false
+	RequestBody bool
 }
 
 // LogFormatter gives the signature of the formatter function passed to LoggerWithFormatter
@@ -236,11 +241,20 @@ func LoggerWithConfig(conf LoggerConfig) HandlerFunc {
 		path := c.Request.URL.Path
 		raw := c.Request.URL.RawQuery
 
+		var body []byte
+		if conf.RequestBody {
+			body, _ = io.ReadAll(c.Request.Body)
+			c.Request.Body = io.NopCloser(bytes.NewBuffer(body))
+		}
+
 		// Process request
 		c.Next()
 
 		// Log only when path is not being skipped
 		if _, ok := skip[path]; !ok {
+			if conf.RequestBody {
+				c.Request.Body = io.NopCloser(bytes.NewBuffer(body))
+			}
 			param := LogFormatterParams{
 				Request: c.Request,
 				isTerm:  isTerm,

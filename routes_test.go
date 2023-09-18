@@ -6,6 +6,7 @@ package gin
 
 import (
 	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -30,7 +31,15 @@ func PerformRequest(r http.Handler, method, path string, headers ...header) *htt
 	r.ServeHTTP(w, req)
 	return w
 }
-
+func PerformBodyRequest(r http.Handler, method, path string, headers []header, body io.Reader) *httptest.ResponseRecorder {
+	req := httptest.NewRequest(method, path, body)
+	for _, h := range headers {
+		req.Header.Add(h.Key, h.Value)
+	}
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+	return w
+}
 func testRouteOK(method string, t *testing.T) {
 	passed := false
 	passedAny := false
