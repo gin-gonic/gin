@@ -9,6 +9,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/mattn/go-isatty"
@@ -223,12 +224,16 @@ func LoggerWithConfig(conf LoggerConfig) HandlerFunc {
 	}
 
 	var skip map[string]struct{}
+	var skipSub bool
 
 	if length := len(notlogged); length > 0 {
 		skip = make(map[string]struct{}, length)
 
 		for _, path := range notlogged {
 			skip[path] = struct{}{}
+			if strings.HasSuffix(path, "/") {
+				skipSub = true
+			}
 		}
 	}
 
@@ -242,7 +247,7 @@ func LoggerWithConfig(conf LoggerConfig) HandlerFunc {
 		c.Next()
 
 		// Log only when path is not being skipped
-		if _, ok := skip[path]; !ok {
+		if _, ok := skip[path]; !ok && (!skipSub || !willSkipLog(path, skip)) {
 			param := LogFormatterParams{
 				Request: c.Request,
 				isTerm:  isTerm,
@@ -269,4 +274,14 @@ func LoggerWithConfig(conf LoggerConfig) HandlerFunc {
 			fmt.Fprint(out, formatter(param))
 		}
 	}
+}
+
+// willSkipLog if skip path is "/attachments/", url like "/attachments/producthunt/*" will be skipped
+func willSkipLog(path string, skip map[string]struct{}) bool {
+	for p := range skip {
+		if strings.HasPrefix(path, p[:len(p)-1]) {
+			return true
+		}
+	}
+	return false
 }
