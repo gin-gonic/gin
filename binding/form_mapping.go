@@ -12,8 +12,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/gin-gonic/gin/codec/json"
 	"github.com/gin-gonic/gin/internal/bytesconv"
-	"github.com/gin-gonic/gin/internal/json"
 )
 
 var (
@@ -236,9 +236,9 @@ func setWithProperType(val string, value reflect.Value, field reflect.StructFiel
 		case time.Time:
 			return setTimeField(val, field, value)
 		}
-		return json.Unmarshal(bytesconv.StringToBytes(val), value.Addr().Interface())
+		return json.Api.Unmarshal(bytesconv.StringToBytes(val), value.Addr().Interface())
 	case reflect.Map:
-		return json.Unmarshal(bytesconv.StringToBytes(val), value.Addr().Interface())
+		return json.Api.Unmarshal(bytesconv.StringToBytes(val), value.Addr().Interface())
 	default:
 		return errUnknownType
 	}
