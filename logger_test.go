@@ -415,6 +415,34 @@ func TestLoggerWithConfigSkippingPaths(t *testing.T) {
 	assert.Contains(t, buffer.String(), "")
 }
 
+func TestLoggerWithConfigSkippingPathPrefix(t *testing.T) {
+	buffer := new(bytes.Buffer)
+	router := New()
+	router.Use(LoggerWithConfig(LoggerConfig{
+		Output:       buffer,
+		SkipPrefixes: []string{"/skippedPrefix"},
+	}))
+	router.GET("/logged", func(c *Context) {})
+	router.GET("/skippedPrefix", func(c *Context) {})
+	router.GET("/skippedPrefix2", func(c *Context) {})
+	router.GET("/skippedPrefix/subdir", func(c *Context) {})
+
+	PerformRequest(router, "GET", "/logged")
+	assert.Contains(t, buffer.String(), "200")
+
+	buffer.Reset()
+	PerformRequest(router, "GET", "/skippedPrefix")
+	assert.Contains(t, buffer.String(), "")
+
+	buffer.Reset()
+	PerformRequest(router, "GET", "/skippedPrefix2")
+	assert.Contains(t, buffer.String(), "")
+
+	buffer.Reset()
+	PerformRequest(router, "GET", "/skippedPrefix/subdir")
+	assert.Contains(t, buffer.String(), "")
+}
+
 func TestDisableConsoleColor(t *testing.T) {
 	New()
 	assert.Equal(t, autoColor, consoleColorMode)

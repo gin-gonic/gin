@@ -9,6 +9,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/mattn/go-isatty"
@@ -47,6 +48,10 @@ type LoggerConfig struct {
 	// SkipPaths is an url path array which logs are not written.
 	// Optional.
 	SkipPaths []string
+
+	// SkipPrefixes is an url path prefix array with which logs are not written.
+	// Optional.
+	SkipPrefixes []string
 }
 
 // LogFormatter gives the signature of the formatter function passed to LoggerWithFormatter
@@ -213,8 +218,6 @@ func LoggerWithConfig(conf LoggerConfig) HandlerFunc {
 		out = DefaultWriter
 	}
 
-	notlogged := conf.SkipPaths
-
 	isTerm := true
 
 	if w, ok := out.(*os.File); !ok || os.Getenv("TERM") == "dumb" ||
@@ -222,13 +225,23 @@ func LoggerWithConfig(conf LoggerConfig) HandlerFunc {
 		isTerm = false
 	}
 
-	var skip map[string]struct{}
+	var skipPaths map[string]struct{}
 
-	if length := len(notlogged); length > 0 {
-		skip = make(map[string]struct{}, length)
+	if length := len(conf.SkipPaths); length > 0 {
+		skipPaths = make(map[string]struct{}, length)
 
-		for _, path := range notlogged {
-			skip[path] = struct{}{}
+		for _, path := range conf.SkipPaths {
+			skipPaths[path] = struct{}{}
+		}
+	}
+
+	var skipPrefixes map[string]struct{}
+
+	if length := len(conf.SkipPrefixes); length > 0 {
+		skipPrefixes = make(map[string]struct{}, length)
+
+		for _, path := range conf.SkipPrefixes {
+			skipPrefixes[path] = struct{}{}
 		}
 	}
 
@@ -242,7 +255,21 @@ func LoggerWithConfig(conf LoggerConfig) HandlerFunc {
 		c.Next()
 
 		// Log only when path is not being skipped
-		if _, ok := skip[path]; !ok {
+
+		var skipByPath bool
+		var skipByPrefix bool
+
+		_, skipByPath = skipPaths[path]
+		if !skipByPath {
+			for prefix := range skipPrefixes {
+				if strings.HasPrefix(path, prefix) {
+					skipByPrefix = true
+					break
+				}
+			}
+		}
+
+		if !skipByPath && !skipByPrefix {
 			param := LogFormatterParams{
 				Request: c.Request,
 				isTerm:  isTerm,
