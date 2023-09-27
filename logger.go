@@ -11,6 +11,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/gin-gonic/gin/internal/bytesconv"
 	"github.com/mattn/go-isatty"
 )
 
@@ -37,7 +38,7 @@ var consoleColorMode = autoColor
 
 // LoggerConfig defines the config for Logger middleware.
 type LoggerConfig struct {
-	// Optional. Default value is gin.defaultLogFormatter
+	// Formatter is optional, the default value is gin.defaultLogFormatter
 	Formatter LogFormatter
 
 	// Output is a writer where logs are written.
@@ -266,7 +267,9 @@ func LoggerWithConfig(conf LoggerConfig) HandlerFunc {
 
 			param.Path = path
 
-			fmt.Fprint(out, formatter(param))
+			if _, err := out.Write(bytesconv.StringToBytes(formatter(param))); err != nil {
+				debugPrintError(err)
+			}
 		}
 	}
 }

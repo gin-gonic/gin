@@ -147,6 +147,15 @@ func TestLoggerWithConfig(t *testing.T) {
 	assert.Contains(t, buffer.String(), "/notfound")
 }
 
+func TestLoggerWithConfigWriteError(t *testing.T) {
+	w := &mockErrWriter{}
+	router := New()
+	router.Use(LoggerWithConfig(LoggerConfig{Output: w}))
+	router.GET("/example", func(c *Context) {})
+	PerformRequest(router, "GET", "/example?a=100")
+	assert.True(t, w.triggerErrorWrite)
+}
+
 func TestLoggerWithFormatter(t *testing.T) {
 	buffer := new(strings.Builder)
 
@@ -433,4 +442,13 @@ func TestForceConsoleColor(t *testing.T) {
 
 	// reset console color mode.
 	consoleColorMode = autoColor
+}
+
+type mockErrWriter struct {
+	triggerErrorWrite bool
+}
+
+func (w *mockErrWriter) Write(p []byte) (n int, err error) {
+	w.triggerErrorWrite = true
+	return 0, errors.New("test error writer")
 }
