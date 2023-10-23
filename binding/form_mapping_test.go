@@ -269,6 +269,15 @@ func TestMappingStructField(t *testing.T) {
 	assert.Equal(t, 9, s.J.I)
 }
 
+func TestByteArray(t *testing.T) {
+	var s struct {
+		B []byte
+	}
+	err := mappingByPtr(&s, formSource{"B": {"hello"}}, "form")
+	assert.NoError(t, err)
+	assert.Equal(t, []byte("hello"), s.B)
+}
+
 func TestMappingMapField(t *testing.T) {
 	var s struct {
 		M map[string]int

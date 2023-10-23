@@ -6,6 +6,7 @@ package binding
 
 import (
 	"errors"
+	"io/ioutil"
 	"mime/multipart"
 	"net/http"
 	"reflect"
@@ -14,6 +15,7 @@ import (
 type multipartRequest http.Request
 
 var _ setter = (*multipartRequest)(nil)
+var ConstructionFailure = false
 
 var (
 	// ErrMultiFileHeader multipart.FileHeader invalid
@@ -47,6 +49,27 @@ func setByMultipartFormFile(value reflect.Value, field reflect.StructField, file
 			return true, nil
 		}
 	case reflect.Slice:
+		switch value.Interface().(type) {
+		case []byte:
+			fd, err := files[0].Open()
+			if err != nil {
+				return false, err
+			}
+			defer fd.Close()
+			c, err := ioutil.ReadAll(fd)
+
+			if ConstructionFailure {
+				err = errors.New("test use")
+			}
+
+			if err != nil {
+				return false, err
+			}
+
+			value.Set(reflect.ValueOf(c))
+			return true, nil
+		}
+
 		slice := reflect.MakeSlice(value.Type(), len(files), len(files))
 		isSet, err = setArrayOfMultipartFormFiles(slice, field, files)
 		if err != nil || !isSet {
