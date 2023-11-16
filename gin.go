@@ -334,7 +334,6 @@ func (engine *Engine) addRoute(method, path string, handlers HandlersChain) {
 	}
 	root.addRoute(path, handlers)
 
-	// Update maxParams
 	if paramsCount := countParams(path); paramsCount > engine.maxParams {
 		engine.maxParams = paramsCount
 	}
