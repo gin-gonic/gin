@@ -67,6 +67,20 @@ func (group *RouterGroup) Use(middleware ...HandlerFunc) IRoutes {
 	return group.returnObj()
 }
 
+func (group *RouterGroup) UseWithFilter(httpMethod, prefixRelativePath string, middleware ...HandlerFunc) IRoutes {
+	wrapper := func(c *Context) {
+		if c.Request.Method == httpMethod && strings.HasPrefix(c.FullPath(), group.calculateAbsolutePath(prefixRelativePath)) {
+			for _, m := range middleware {
+				m(c)
+			}
+		}
+
+		c.Next()
+	}
+
+	return group.Use(wrapper)
+}
+
 // Group creates a new router group. You should add all the routes that have common middlewares or the same path prefix.
 // For example, all the routes that use a common middleware for authorization could be grouped.
 func (group *RouterGroup) Group(relativePath string, handlers ...HandlerFunc) *RouterGroup {

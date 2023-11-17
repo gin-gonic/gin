@@ -5,7 +5,9 @@
 package gin
 
 import (
+	"fmt"
 	"net/http"
+	"net/http/httptest"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -192,4 +194,40 @@ func testRoutesInterface(t *testing.T, r IRoutes) {
 	assert.Equal(t, r, r.StaticFileFS("/static2", ".", Dir(".", false)))
 	assert.Equal(t, r, r.Static("/static", "."))
 	assert.Equal(t, r, r.StaticFS("/static2", Dir(".", false)))
+}
+
+func TestUseWithFilter(t *testing.T) {
+	router := New()
+	records := make(map[string]bool)
+	router.UseWithFilter("GET", "/api/v1", func(c *Context) {
+		records[fmt.Sprintf("%s,%s", c.Request.Method, c.FullPath())] = true
+	})
+
+	assert.Len(t, router.Handlers, 1)
+	assert.Equal(t, "/", router.BasePath())
+
+	router.GET("/api/v1/hello", func(c *Context) {
+		c.Status(http.StatusOK)
+	})
+
+	router.GET("/api/v2/hello", func(c *Context) {
+		c.Status(http.StatusOK)
+	})
+
+	router.POST("/api/v1/hello", func(c *Context) {
+		c.Status(http.StatusOK)
+	})
+
+	req, _ := http.NewRequest("GET", "/api/v1/hello", nil)
+	router.ServeHTTP(httptest.NewRecorder(), req)
+
+	req2, _ := http.NewRequest("GET", "/api/v2/hello", nil)
+	router.ServeHTTP(httptest.NewRecorder(), req2)
+
+	req3, _ := http.NewRequest("POST", "/api/v2/hello", nil)
+	router.ServeHTTP(httptest.NewRecorder(), req3)
+
+	assert.Equal(t, records["GET,/api/v1/hello"], true)
+	assert.Equal(t, records["GET,/api/v2/hello"], false)
+	assert.Equal(t, records["POST,/api/v1/hello"], false)
 }
