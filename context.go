@@ -127,6 +127,7 @@ func (c *Context) Copy() *Context {
 	paramCopy := make([]Param, len(cp.Params))
 	copy(paramCopy, cp.Params)
 	cp.Params = paramCopy
+	cp.fullPath = c.fullPath
 	return &cp
 }
 
