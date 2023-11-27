@@ -5,6 +5,7 @@
 package binding
 
 import (
+	"encoding/json"
 	"reflect"
 	"testing"
 	"time"
@@ -196,6 +197,46 @@ func TestMappingTime(t *testing.T) {
 		Time time.Time
 	}
 	err = mapForm(&wrongTime, map[string][]string{"Time": {"wrong"}})
+	assert.Error(t, err)
+}
+
+type CustomDateTime time.Time
+
+const CustomDateTimeFormat = "2006/01/02 15:04:05"
+
+func (t CustomDateTime) String() string {
+	return time.Time(t).Format(CustomDateTimeFormat)
+}
+
+func (t *CustomDateTime) UnmarshalJSON(data []byte) error {
+	var value string
+	err := json.Unmarshal(data, &value)
+	if err != nil {
+		return err
+	}
+	parseTime, err := time.Parse(CustomDateTimeFormat, value)
+	if err != nil {
+		return err
+	}
+	*t = CustomDateTime(parseTime)
+	return nil
+}
+
+func TestMappingCustomStructFromJsonString(t *testing.T) {
+	var s struct {
+		Time CustomDateTime
+	}
+	value := "2020/09/23 13:20:49"
+
+	// ok
+	err := mappingByPtr(&s, formSource{"Time": {value}}, "form")
+	assert.NoError(t, err)
+	expectedTime, err := time.Parse(CustomDateTimeFormat, value)
+	assert.NoError(t, err)
+	assert.Equal(t, CustomDateTime(expectedTime), s.Time)
+
+	// parse failed
+	err = mappingByPtr(&s, formSource{"Time": {"20200/09/23 13:20:49"}}, "form")
 	assert.Error(t, err)
 }
 

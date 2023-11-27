@@ -236,7 +236,13 @@ func setWithProperType(val string, value reflect.Value, field reflect.StructFiel
 		case time.Time:
 			return setTimeField(val, field, value)
 		}
-		return json.Unmarshal(bytesconv.StringToBytes(val), value.Addr().Interface())
+		err1 := json.Unmarshal(bytesconv.StringToBytes(val), value.Addr().Interface())
+		if err1 != nil {
+			if err2 := json.Unmarshal(bytesconv.StringToBytes(strconv.Quote(val)), value.Addr().Interface()); err2 != nil {
+				return fmt.Errorf("%v;tryping to parse with quoted json string but still failed: %v", err1, err2)
+			}
+		}
+		return nil
 	case reflect.Map:
 		return json.Unmarshal(bytesconv.StringToBytes(val), value.Addr().Interface())
 	case reflect.Ptr:
