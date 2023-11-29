@@ -1078,7 +1078,9 @@ func (c *Context) SSEvent(name string, message any) {
 }
 
 // Stream sends a streaming response and returns a boolean
-// indicates "Is client disconnected in middle of stream"
+// indicates "Will the client be connected in middle of stream"
+// i.e. if return true, the client will keep connected
+//      if return false, the client will be disconnected
 func (c *Context) Stream(step func(w io.Writer) bool) bool {
 	w := c.Writer
 	clientGone := w.CloseNotify()
