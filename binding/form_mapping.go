@@ -26,6 +26,29 @@ var (
 	ErrConvertToMapString = errors.New("can not convert to map of strings")
 )
 
+type FieldError struct {
+	Field string
+	Err   error
+}
+
+func NewFieldError(field string, err error) error {
+	if err == nil {
+		return nil
+	}
+	return &FieldError{
+		Field: field,
+		Err:   err,
+	}
+}
+
+func (e *FieldError) Error() string {
+	return fmt.Sprintf("field %q error: %s", e.Field, e.Err)
+}
+
+func (e *FieldError) Unwrap() error {
+	return e.Err
+}
+
 func mapURI(ptr any, m map[string][]string) error {
 	return mapFormByTag(ptr, m, "uri")
 }
@@ -161,7 +184,11 @@ func tryToSetValue(value reflect.Value, field reflect.StructField, setter setter
 		}
 	}
 
-	return setter.TrySet(value, field, tagValue, setOpt)
+	ok, err := setter.TrySet(value, field, tagValue, setOpt)
+	if err != nil {
+		return ok, NewFieldError(tagValue, err)
+	}
+	return ok, nil
 }
 
 func setByForm(value reflect.Value, field reflect.StructField, form map[string][]string, tagValue string, opt setOptions) (isSet bool, err error) {

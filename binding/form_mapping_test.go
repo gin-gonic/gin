@@ -5,6 +5,7 @@
 package binding
 
 import (
+	"errors"
 	"reflect"
 	"testing"
 	"time"
@@ -124,7 +125,7 @@ func TestMappingUnknownFieldType(t *testing.T) {
 
 	err := mappingByPtr(&s, formSource{"U": {"unknown"}}, "form")
 	assert.Error(t, err)
-	assert.Equal(t, errUnknownType, err)
+	assert.Equal(t, &FieldError{"U", errUnknownType}, err)
 }
 
 func TestMappingURI(t *testing.T) {
@@ -320,4 +321,21 @@ func TestMappingIgnoredCircularRef(t *testing.T) {
 
 	err := mappingByPtr(&s, formSource{}, "form")
 	assert.NoError(t, err)
+}
+
+func TestNewField(t *testing.T) {
+	assert.NoError(t, NewFieldError("foo", nil))
+
+	orig := errors.New("bad value")
+	err := NewFieldError("foo", orig)
+	if assert.Error(t, err) {
+		assert.Equal(t, `field "foo" error: bad value`, err.Error())
+
+		if fieldErr, ok := err.(*FieldError); assert.True(t, ok) { //nolint: errorlint
+			assert.Equal(t, fieldErr.Field, "foo")
+			assert.Equal(t, fieldErr.Err, orig)
+		}
+
+		assert.Equal(t, orig, errors.Unwrap(err))
+	}
 }
