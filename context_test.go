@@ -37,7 +37,7 @@ var errTestRender = errors.New("TestRender")
 // Unit tests TODO
 // func (c *Context) File(filepath string) {
 // func (c *Context) Negotiate(code int, config Negotiate) {
-// BAD case: func (c *Context) Render(code int, render render.Render, obj ...interface{}) {
+// BAD case: func (c *Context) Render(code int, render render.Render, obj ...any) {
 // test that information is not leaked when reusing Contexts (using the Pool)
 
 func createMultipartRequest() *http.Request {
@@ -1030,6 +1030,20 @@ func TestContextRenderAttachment(t *testing.T) {
 	assert.Equal(t, 200, w.Code)
 	assert.Contains(t, w.Body.String(), "func New() *Engine {")
 	assert.Equal(t, fmt.Sprintf("attachment; filename=\"%s\"", newFilename), w.Header().Get("Content-Disposition"))
+}
+
+func TestContextRenderAndEscapeAttachment(t *testing.T) {
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
+	maliciousFilename := "tampering_field.sh\"; \\\"; dummy=.go"
+	actualEscapedResponseFilename := "tampering_field.sh\\\"; \\\\\\\"; dummy=.go"
+
+	c.Request, _ = http.NewRequest("GET", "/", nil)
+	c.FileAttachment("./gin.go", maliciousFilename)
+
+	assert.Equal(t, 200, w.Code)
+	assert.Contains(t, w.Body.String(), "func New() *Engine {")
+	assert.Equal(t, fmt.Sprintf("attachment; filename=\"%s\"", actualEscapedResponseFilename), w.Header().Get("Content-Disposition"))
 }
 
 func TestContextRenderUTF8Attachment(t *testing.T) {
@@ -2162,6 +2176,24 @@ func TestRemoteIPFail(t *testing.T) {
 	assert.False(t, trust)
 }
 
+func TestHasRequestContext(t *testing.T) {
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	assert.False(t, c.hasRequestContext(), "no request, no fallback")
+	c.engine.ContextWithFallback = true
+	assert.False(t, c.hasRequestContext(), "no request, has fallback")
+	c.Request, _ = http.NewRequest(http.MethodGet, "/", nil)
+	assert.True(t, c.hasRequestContext(), "has request, has fallback")
+	c.Request, _ = http.NewRequestWithContext(nil, "", "", nil) //nolint:staticcheck
+	assert.False(t, c.hasRequestContext(), "has request with nil ctx, has fallback")
+	c.engine.ContextWithFallback = false
+	assert.False(t, c.hasRequestContext(), "has request, no fallback")
+
+	c = &Context{}
+	assert.False(t, c.hasRequestContext(), "no request, no engine")
+	c.Request, _ = http.NewRequest(http.MethodGet, "/", nil)
+	assert.False(t, c.hasRequestContext(), "has request, no engine")
+}
+
 func TestContextWithFallbackDeadlineFromRequestContext(t *testing.T) {
 	c, _ := CreateTestContext(httptest.NewRecorder())
 	// enable ContextWithFallback feature flag
@@ -2373,4 +2405,43 @@ func TestCreateTestContextWithRouteParams(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, w.Code)
 	assert.Equal(t, "hello gin", w.Body.String())
+}
+
+type interceptedWriter struct {
+	ResponseWriter
+	b *bytes.Buffer
+}
+
+func (i interceptedWriter) WriteHeader(code int) {
+	i.Header().Del("X-Test")
+	i.ResponseWriter.WriteHeader(code)
+}
+
+func TestInterceptedHeader(t *testing.T) {
+	w := httptest.NewRecorder()
+	c, r := CreateTestContext(w)
+
+	r.Use(func(c *Context) {
+		i := interceptedWriter{
+			ResponseWriter: c.Writer,
+			b:              bytes.NewBuffer(nil),
+		}
+		c.Writer = i
+		c.Next()
+		c.Header("X-Test", "overridden")
+		c.Writer = i.ResponseWriter
+	})
+	r.GET("/", func(c *Context) {
+		c.Header("X-Test", "original")
+		c.Header("X-Test-2", "present")
+		c.String(http.StatusOK, "hello world")
+	})
+	c.Request = httptest.NewRequest("GET", "/", nil)
+	r.HandleContext(c)
+	// Result() has headers frozen when WriteHeaderNow() has been called
+	// Compared to this time, this is when the response headers will be flushed
+	// As response is flushed on c.String, the Header cannot be set by the first
+	// middleware. Assert this
+	assert.Equal(t, "", w.Result().Header.Get("X-Test"))
+	assert.Equal(t, "present", w.Result().Header.Get("X-Test-2"))
 }
