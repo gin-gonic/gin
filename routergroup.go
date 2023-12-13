@@ -94,7 +94,7 @@ func (group *RouterGroup) handle(httpMethod, relativePath string, handlers Handl
 // The last handler should be the real handler, the other ones should be middleware that can and should be shared among different routes.
 // See the example code in GitHub.
 //
-// For GET, POST, PUT, PATCH and DELETE requests the respective shortcut
+// For GET, POST, PUT, PATCH, DELETE, OPTIONS and HEAD requests the respective shortcut
 // functions can be used.
 //
 // This function is intended for bulk loading and to allow the usage of less
@@ -102,7 +102,7 @@ func (group *RouterGroup) handle(httpMethod, relativePath string, handlers Handl
 // communication with a proxy).
 func (group *RouterGroup) Handle(httpMethod, relativePath string, handlers ...HandlerFunc) IRoutes {
 	if matched := regEnLetter.MatchString(httpMethod); !matched {
-		panic("http method " + httpMethod + " is not valid")
+		panic("http method " + httpMethod + " is invalid")
 	}
 	return group.handle(httpMethod, relativePath, handlers)
 }
@@ -155,7 +155,7 @@ func (group *RouterGroup) Any(relativePath string, handlers ...HandlerFunc) IRou
 // Match registers a route that matches the specified methods that you declared.
 func (group *RouterGroup) Match(methods []string, relativePath string, handlers ...HandlerFunc) IRoutes {
 	for _, method := range methods {
-		group.handle(method, relativePath, handlers)
+		group.Handle(method, relativePath, handlers...)
 	}
 
 	return group.returnObj()
