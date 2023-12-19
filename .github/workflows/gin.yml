@@ -16,7 +16,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Setup go
-        uses: actions/setup-go@v4
+        uses: actions/setup-go@v5
         with:
           go-version: '^1.18'
       - name: Checkout repository
@@ -46,7 +46,7 @@ jobs:
       GOPROXY: https://proxy.golang.org
     steps:
       - name: Set up Go ${{ matrix.go }}
-        uses: actions/setup-go@v4
+        uses: actions/setup-go@v5
         with:
           go-version: ${{ matrix.go }}
 

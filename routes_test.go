@@ -337,6 +337,45 @@ func TestRouteParamsByNameWithExtraSlash(t *testing.T) {
 	assert.Equal(t, "/is/super/great", wild)
 }
 
+// TestRouteParamsNotEmpty tests that context parameters will be set
+// even if a route with params/wildcards is registered after the context
+// initialisation (which happened in a previous requets).
+func TestRouteParamsNotEmpty(t *testing.T) {
+	name := ""
+	lastName := ""
+	wild := ""
+	router := New()
+
+	w := PerformRequest(router, http.MethodGet, "/test/john/smith/is/super/great")
+
+	assert.Equal(t, http.StatusNotFound, w.Code)
+
+	router.GET("/test/:name/:last_name/*wild", func(c *Context) {
+		name = c.Params.ByName("name")
+		lastName = c.Params.ByName("last_name")
+		var ok bool
+		wild, ok = c.Params.Get("wild")
+
+		assert.True(t, ok)
+		assert.Equal(t, name, c.Param("name"))
+		assert.Equal(t, lastName, c.Param("last_name"))
+
+		assert.Empty(t, c.Param("wtf"))
+		assert.Empty(t, c.Params.ByName("wtf"))
+
+		wtf, ok := c.Params.Get("wtf")
+		assert.Empty(t, wtf)
+		assert.False(t, ok)
+	})
+
+	w = PerformRequest(router, http.MethodGet, "/test/john/smith/is/super/great")
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Equal(t, "john", name)
+	assert.Equal(t, "smith", lastName)
+	assert.Equal(t, "/is/super/great", wild)
+}
+
 // TestHandleStaticFile - ensure the static file handles properly
 func TestRouteStaticFile(t *testing.T) {
 	// SETUP file
