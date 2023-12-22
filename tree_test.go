@@ -417,6 +417,9 @@ func TestTreeWildcardConflict(t *testing.T) {
 		{"/user_:name", false},
 		{"/id:id", false},
 		{"/id/:id", false},
+		{"/static/*file", false},
+		{"/static/", true},
+		{"/static/", false},
 	}
 	testRoutes(t, routes)
 }
