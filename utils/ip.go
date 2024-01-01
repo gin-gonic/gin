@@ -2,6 +2,7 @@ package utils
 
 import (
 	"net"
+	"strings"
 )
 
 func parseIP(ip string) (net.IP, error) {
@@ -17,6 +18,9 @@ func parseIP(ip string) (net.IP, error) {
 }
 
 func MakeTrustIP(trustedIP string) (string, error) {
+	if strings.Contains(trustedIP, "/") {
+		return trustedIP, nil	
+	}
 	ip, err := parseIP(trustedIP)
 
 	if err != nil {

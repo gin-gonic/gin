@@ -395,9 +395,8 @@ func (engine *Engine) prepareTrustedCIDRs() ([]*net.IPNet, error) {
 
 	cidr := make([]*net.IPNet, 0, len(engine.trustedProxies))
 	for _, trustedProxy := range engine.trustedProxies {
-		if !strings.Contains(trustedProxy, "/") {
-			trustedProxy, err = utils.MakeTrustIP(trustedProxy)	
-		}
+		trustedProxy, err = utils.MakeTrustIP(trustedProxy)	
+		
 		if err != nil {
 			return cidr, err
 		}
