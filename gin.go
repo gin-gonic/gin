@@ -469,20 +469,6 @@ func (engine *Engine) validateHeader(header string) (clientIP string, valid bool
 	return "", false
 }
 
-// parseIP parse a string representation of an IP and returns a net.IP with the
-// minimum byte representation or nil if input is invalid.
-func parseIP(ip string) net.IP {
-	parsedIP := net.ParseIP(ip)
-
-	if ipv4 := parsedIP.To4(); ipv4 != nil {
-		// return ip in a 4-byte representation
-		return ipv4
-	}
-
-	// return ip in a 16-byte representation or nil
-	return parsedIP
-}
-
 // RunTLS attaches the router to a http.Server and starts listening and serving HTTPS (secure) requests.
 // It is a shortcut for http.ListenAndServeTLS(addr, certFile, keyFile, router)
 // Note: this method will block the calling goroutine indefinitely unless an error happens.
