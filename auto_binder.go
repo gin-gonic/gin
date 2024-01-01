@@ -6,6 +6,13 @@ import (
 	"reflect"
 )
 
+var (
+	defaultAutoBinderErrorHandler = func(ctx *Context, err error) {
+		ctx.Error(err)
+		ctx.Abort()
+	}
+)
+
 type binderType func(obj any) error
 
 func isFunc(obj any) bool {
@@ -75,8 +82,10 @@ func callHandler(rt reflect.Type, rv reflect.Value, ctx *Context, binder binderT
 //
 // Example: func MyGetHandler(ctx *gin.Context, request *MyRequest) {}
 //
-// engine.GET("/endpoint", gin.AutoBinder(MyGetHandler))
-func AutoBinder(handler any) HandlerFunc {
+// engine.GET("/endpoint", gin.AutoBinder(MyGetHandler)) and you can handel the errors by passing a handler
+//
+// engine.GET("/endpoint", gin.AutoBinder(MyGetHandler, func(ctx *gin.Context, err error) {}))
+func AutoBinder(handler any, errorHandler ...func(*Context, error)) HandlerFunc {
 	rt := reflect.TypeOf(handler)
 
 	if rt.Kind() != reflect.Func {
@@ -88,13 +97,18 @@ func AutoBinder(handler any) HandlerFunc {
 	}
 
 	return func(ctx *Context) {
+		selectedErrorHandler := defaultAutoBinderErrorHandler
+		if len(errorHandler) > 0 && errorHandler[0] != nil {
+			selectedErrorHandler = errorHandler[0]
+		}
+
 		rt := reflect.TypeOf(handler)
 		rv := reflect.ValueOf(handler)
 
 		if err := callHandler(rt, rv, ctx, func(obj any) error {
 			return ctx.ShouldBind(obj)
 		}); err != nil {
-			ctx.Error(err)
+			selectedErrorHandler(ctx, err)
 		}
 	}
 }
