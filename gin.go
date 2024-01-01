@@ -17,6 +17,7 @@ import (
 
 	"github.com/gin-gonic/gin/internal/bytesconv"
 	"github.com/gin-gonic/gin/render"
+	"github.com/gin-gonic/gin/utils"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
 )
@@ -387,6 +388,7 @@ func (engine *Engine) Run(addr ...string) (err error) {
 }
 
 func (engine *Engine) prepareTrustedCIDRs() ([]*net.IPNet, error) {
+	var err error
 	if engine.trustedProxies == nil {
 		return nil, nil
 	}
@@ -394,17 +396,10 @@ func (engine *Engine) prepareTrustedCIDRs() ([]*net.IPNet, error) {
 	cidr := make([]*net.IPNet, 0, len(engine.trustedProxies))
 	for _, trustedProxy := range engine.trustedProxies {
 		if !strings.Contains(trustedProxy, "/") {
-			ip := parseIP(trustedProxy)
-			if ip == nil {
-				return cidr, &net.ParseError{Type: "IP address", Text: trustedProxy}
-			}
-
-			switch len(ip) {
-			case net.IPv4len:
-				trustedProxy += "/32"
-			case net.IPv6len:
-				trustedProxy += "/128"
-			}
+			trustedProxy, err = utils.MakeTrustIP(trustedProxy)	
+		}
+		if err != nil {
+			return cidr, err
 		}
 		_, cidrNet, err := net.ParseCIDR(trustedProxy)
 		if err != nil {
