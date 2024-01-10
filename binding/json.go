@@ -38,7 +38,7 @@ func (jsonBinding) Bind(req *http.Request, obj any) error {
 	if err != nil {
 		return err
 	}
-	return decodeJSON(req.Body, obj)
+	return decodeJSON(body, obj)
 }
 
 func (jsonBinding) BindBody(body []byte, obj any) error {
