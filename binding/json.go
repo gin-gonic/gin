@@ -34,6 +34,12 @@ func (jsonBinding) Bind(req *http.Request, obj any) error {
 	if req == nil || req.Body == nil {
 		return errors.New("invalid request")
 	}
+	if req.GetBody == nil {
+		req.GetBody = func()(io.ReadCloser, error) {
+			var readerCopy io.ReadCloser = req.Body
+			return readerCopy, nil
+		}
+	}
 	body, err := req.GetBody()
 	if err != nil {
 		return err
