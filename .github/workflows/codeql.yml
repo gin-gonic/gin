@@ -7,12 +7,12 @@ name: "CodeQL"
 
 on:
   push:
-    branches: [ master ]
+    branches: [master]
   pull_request:
     # The branches below must be a subset of the branches above
-    branches: [ master ]
+    branches: [master]
   schedule:
-    - cron: '0 17 * * 5'
+    - cron: "0 17 * * 5"
 
 jobs:
   analyze:
@@ -29,7 +29,7 @@ jobs:
         # Override automatic language detection by changing the below list
         # Supported options are ['csharp', 'cpp', 'go', 'java', 'javascript', 'python']
         # TODO: Enable for javascript later
-        language: [ 'go']
+        language: ["go"]
 
     steps:
       - name: Checkout repository
