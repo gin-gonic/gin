@@ -5,8 +5,10 @@
 package gin
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"strings"
 	"testing"
@@ -182,18 +184,21 @@ func TestLoggerWithFormatter(t *testing.T) {
 func TestLoggerWithConfigFormatting(t *testing.T) {
 	var gotParam LogFormatterParams
 	var gotKeys map[string]any
+	var gotBody []byte
 	buffer := new(strings.Builder)
 
 	router := New()
 	router.engine.trustedCIDRs, _ = router.engine.prepareTrustedCIDRs()
 
 	router.Use(LoggerWithConfig(LoggerConfig{
-		Output: buffer,
+		Output:      buffer,
+		RequestBody: true,
 		Formatter: func(param LogFormatterParams) string {
 			// for assert test
 			gotParam = param
+			gotBody, _ = io.ReadAll(param.Request.Body)
 
-			return fmt.Sprintf("[FORMATTER TEST] %v | %3d | %13v | %15s | %-7s %s\n%s",
+			return fmt.Sprintf("[FORMATTER TEST] %v | %3d | %13v | %15s | %-7s %s %s\n%s",
 				param.TimeStamp.Format("2006/01/02 - 15:04:05"),
 				param.StatusCode,
 				param.Latency,
@@ -201,6 +206,7 @@ func TestLoggerWithConfigFormatting(t *testing.T) {
 				param.Method,
 				param.Path,
 				param.ErrorMessage,
+				string(gotBody),
 			)
 		},
 	}))
@@ -229,6 +235,16 @@ func TestLoggerWithConfigFormatting(t *testing.T) {
 	assert.Equal(t, "/example?a=100", gotParam.Path)
 	assert.Empty(t, gotParam.ErrorMessage)
 	assert.Equal(t, gotKeys, gotParam.Keys)
+
+	router.POST("/example", func(c *Context) {
+		// set dummy ClientIP
+		c.Request.Header.Set("X-Forwarded-For", "20.20.20.20")
+		time.Sleep(time.Millisecond)
+	})
+	PerformBodyRequest(router, "POST", "/example", []header{}, bytes.NewBufferString(`{"name":"test"}`))
+
+	// LogFormatterParams post body test
+	assert.Equal(t, string(gotBody), `{"name":"test"}`)
 }
 
 func TestDefaultLogFormatter(t *testing.T) {
