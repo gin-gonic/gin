@@ -38,14 +38,15 @@ func getSkippedNodes() *[]skippedNode {
 	return &ps
 }
 
-func checkRequests(t *testing.T, tree *node, requests testRequests, unescapes ...bool) {
+func checkRequests(t *testing.T, tree *node, requests testRequests, redirectFixedPath bool, unescapes ...bool) {
 	unescape := false
+
 	if len(unescapes) >= 1 {
 		unescape = unescapes[0]
 	}
 
 	for _, request := range requests {
-		value := tree.getValue(request.path, getParams(), getSkippedNodes(), unescape)
+		value := tree.getValue(request.path, getParams(), getSkippedNodes(), unescape, redirectFixedPath)
 
 		if value.handlers == nil {
 			if !request.nilHandler {
@@ -130,7 +131,7 @@ func TestTreeAddAndGet(t *testing.T) {
 		{"/ab", false, "/ab", nil},
 		{"/α", false, "/α", nil},
 		{"/β", false, "/β", nil},
-	})
+	}, false)
 
 	checkPriorities(t, tree)
 }
@@ -315,7 +316,7 @@ func TestTreeWildcard(t *testing.T) {
 		{"/get/abc/123abg/test", false, "/get/abc/123abg/:param", Params{Param{Key: "param", Value: "test"}}},
 		{"/get/abc/123abf/testss", false, "/get/abc/123abf/:param", Params{Param{Key: "param", Value: "testss"}}},
 		{"/get/abc/123abfff/te", false, "/get/abc/123abfff/:param", Params{Param{Key: "param", Value: "te"}}},
-	})
+	}, false)
 
 	checkPriorities(t, tree)
 }
@@ -352,7 +353,7 @@ func TestUnescapeParameters(t *testing.T) {
 		{"/info/slash%2Fgordon/project/Project%20%231", false, "/info/:user/project/:project", Params{Param{Key: "user", Value: "slash/gordon"}, Param{Key: "project", Value: "Project #1"}}},
 		{"/info/slash%%%%", false, "/info/:user", Params{Param{Key: "user", Value: "slash%%%%"}}},
 		{"/info/slash%%%%2Fgordon/project/Project%%%%20%231", false, "/info/:user/project/:project", Params{Param{Key: "user", Value: "slash%%%%2Fgordon"}, Param{Key: "project", Value: "Project%%%%20%231"}}},
-	}, unescape)
+	}, false, unescape)
 
 	checkPriorities(t, tree)
 }
@@ -482,7 +483,7 @@ func TestTreeDuplicatePath(t *testing.T) {
 		{"/src/some/file.png", false, "/src/*filepath", Params{Param{"filepath", "/some/file.png"}}},
 		{"/search/someth!ng+in+ünìcodé", false, "/search/:query", Params{Param{"query", "someth!ng+in+ünìcodé"}}},
 		{"/user_gopher", false, "/user_:name", Params{Param{"name", "gopher"}}},
-	})
+	}, false)
 }
 
 func TestEmptyWildcardName(t *testing.T) {
@@ -636,7 +637,7 @@ func TestTreeTrailingSlashRedirect(t *testing.T) {
 	}
 
 	for _, route := range tsrRoutes {
-		value := tree.getValue(route, nil, getSkippedNodes(), false)
+		value := tree.getValue(route, nil, getSkippedNodes(), false, false)
 		if value.handlers != nil {
 			t.Fatalf("non-nil handler for TSR route '%s", route)
 		} else if !value.tsr {
@@ -657,7 +658,7 @@ func TestTreeTrailingSlashRedirect(t *testing.T) {
 		"/foo/p/p",
 	}
 	for _, route := range noTsrRoutes {
-		value := tree.getValue(route, nil, getSkippedNodes(), false)
+		value := tree.getValue(route, nil, getSkippedNodes(), false, false)
 		if value.handlers != nil {
 			t.Fatalf("non-nil handler for No-TSR route '%s", route)
 		} else if value.tsr {
@@ -676,7 +677,7 @@ func TestTreeRootTrailingSlashRedirect(t *testing.T) {
 		t.Fatalf("panic inserting test route: %v", recv)
 	}
 
-	value := tree.getValue("/", nil, getSkippedNodes(), false)
+	value := tree.getValue("/", nil, getSkippedNodes(), false, false)
 	if value.handlers != nil {
 		t.Fatalf("non-nil handler")
 	} else if value.tsr {
@@ -876,7 +877,7 @@ func TestTreeInvalidNodeType(t *testing.T) {
 
 	// normal lookup
 	recv := catchPanic(func() {
-		tree.getValue("/test", nil, getSkippedNodes(), false)
+		tree.getValue("/test", nil, getSkippedNodes(), false, false)
 	})
 	if rs, ok := recv.(string); !ok || rs != panicMsg {
 		t.Fatalf("Expected panic '"+panicMsg+"', got '%v'", recv)
@@ -901,7 +902,7 @@ func TestTreeInvalidParamsType(t *testing.T) {
 	params := make(Params, 0)
 
 	// try to trigger slice bounds out of range with capacity 0
-	tree.getValue("/test", &params, getSkippedNodes(), false)
+	tree.getValue("/test", &params, getSkippedNodes(), false, false)
 }
 
 func TestTreeExpandParamsCapacity(t *testing.T) {

@@ -417,7 +417,7 @@ type skippedNode struct {
 // If no handle can be found, a TSR (trailing slash redirect) recommendation is
 // made if a handle exists with an extra (without the) trailing slash for the
 // given path.
-func (n *node) getValue(path string, params *Params, skippedNodes *[]skippedNode, unescape bool) (value nodeValue) {
+func (n *node) getValue(path string, params *Params, skippedNodes *[]skippedNode, unescape, redirectFixedPath bool) (value nodeValue) {
 	var globalParamsCount int16
 
 walk: // Outer loop for walking the tree
@@ -513,8 +513,20 @@ walk: // Outer loop for walking the tree
 						*value.params = (*value.params)[:i+1]
 						val := path[:end]
 						if unescape {
-							if v, err := url.QueryUnescape(val); err == nil {
-								val = v
+							v := val
+							for {
+								beforeDecoding := v
+								decoded, err := url.QueryUnescape(v)
+								if err == nil {
+									v = decoded
+								}
+								if beforeDecoding == v || err != nil {
+									val = v
+									break
+								}
+							}
+							if redirectFixedPath {
+								val = cleanPath(val)
 							}
 						}
 						(*value.params)[i] = Param{
@@ -566,8 +578,21 @@ walk: // Outer loop for walking the tree
 						*value.params = (*value.params)[:i+1]
 						val := path
 						if unescape {
-							if v, err := url.QueryUnescape(path); err == nil {
-								val = v
+							v := val
+							for {
+								beforeDecoding := v
+								if decoded, err := url.QueryUnescape(v); err == nil {
+									v = decoded
+								} else {
+									break
+								}
+								if beforeDecoding == v {
+									val = v
+									break
+								}
+							}
+							if redirectFixedPath {
+								val = cleanPath(val)
 							}
 						}
 						(*value.params)[i] = Param{

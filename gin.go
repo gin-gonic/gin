@@ -609,7 +609,7 @@ func (engine *Engine) handleHTTPRequest(c *Context) {
 		}
 		root := t[i].root
 		// Find route in tree
-		value := root.getValue(rPath, c.params, c.skippedNodes, unescape)
+		value := root.getValue(rPath, c.params, c.skippedNodes, unescape, engine.RedirectFixedPath)
 		if value.params != nil {
 			c.Params = *value.params
 		}
@@ -637,7 +637,7 @@ func (engine *Engine) handleHTTPRequest(c *Context) {
 			if tree.method == httpMethod {
 				continue
 			}
-			if value := tree.root.getValue(rPath, nil, c.skippedNodes, unescape); value.handlers != nil {
+			if value := tree.root.getValue(rPath, nil, c.skippedNodes, unescape, engine.RedirectFixedPath); value.handlers != nil {
 				c.handlers = engine.allNoMethod
 				serveError(c, http.StatusMethodNotAllowed, default405Body)
 				return
