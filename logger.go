@@ -236,13 +236,14 @@ func LoggerWithConfig(conf LoggerConfig) HandlerFunc {
 		// Start timer
 		start := time.Now()
 		path := c.Request.URL.Path
+		fullPath := c.FullPath()
 		raw := c.Request.URL.RawQuery
 
 		// Process request
 		c.Next()
 
-		// Log only when path is not being skipped
-		if _, ok := skip[path]; !ok {
+		// Log only when fullPath is not being skipped
+		if _, ok := skip[fullPath]; !ok {
 			param := LogFormatterParams{
 				Request: c.Request,
 				isTerm:  isTerm,
