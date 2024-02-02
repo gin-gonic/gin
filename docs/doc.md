@@ -508,6 +508,44 @@ Sample Output
 ::1 - [Fri, 07 Dec 2018 17:04:38 JST] "GET /ping HTTP/1.1 200 122.767µs "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/71.0.3578.80 Safari/537.36" "
 ```
 
+### Skip logging
+
+```go
+func main() {
+  router := gin.New()
+  
+  // skip logging for desired paths by setting SkipPaths in LoggerConfig
+  loggerConfig := gin.LoggerConfig{SkipPaths: []string{"/metrics"}}
+  
+  // skip logging based on your logic by setting Skip func in LoggerConfig
+  loggerConfig.Skip = func(c *gin.Context) bool {
+      // as an example skip non server side errors
+      return c.Writer.Status() < http.StatusInternalServerError
+  }
+  
+  engine.Use(gin.LoggerWithConfig(loggerConfig))
+  router.Use(gin.Recovery())
+  
+  // skipped
+  router.GET("/metrics", func(c *gin.Context) {
+      c.Status(http.StatusNotImplemented)
+  })
+
+  // skipped
+  router.GET("/ping", func(c *gin.Context) {
+      c.String(http.StatusOK, "pong")
+  })
+
+  // not skipped
+  router.GET("/data", func(c *gin.Context) {
+    c.Status(http.StatusNotImplemented)
+  })
+  
+  router.Run(":8080")
+}
+
+```
+
 ### Controlling Log output coloring
 
 By default, logs output on console should be colorized depending on the detected TTY.
