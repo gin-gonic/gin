@@ -578,3 +578,16 @@ func TestRenderReaderNoContentLength(t *testing.T) {
 	assert.Equal(t, headers["Content-Disposition"], w.Header().Get("Content-Disposition"))
 	assert.Equal(t, headers["x-request-id"], w.Header().Get("x-request-id"))
 }
+
+func TestRenderWriteError(t *testing.T) {
+	data := []interface{}{"value1", "value2"}
+	prefix := "my-prefix:"
+	r := SecureJSON{Data: data, Prefix: prefix}
+	ew := &errorWriter{
+		bufString:        prefix,
+		ResponseRecorder: httptest.NewRecorder(),
+	}
+	err := r.Render(ew)
+	assert.NotNil(t, err)
+	assert.Equal(t, `write "my-prefix:" error`, err.Error())
+}

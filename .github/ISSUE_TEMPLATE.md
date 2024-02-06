@@ -30,7 +30,7 @@ func main() {
 
 <!-- Your expectation result of 'curl' command, like -->
 ```
-$ curl http://localhost:8201/hello/world
+$ curl http://localhost:9000/hello/world
 Hello world
 ```
 
@@ -38,7 +38,7 @@ Hello world
 
 <!-- Actual result showing the problem -->
 ```
-$ curl -i http://localhost:8201/hello/world
+$ curl -i http://localhost:9000/hello/world
 <YOUR RESULT>
 ```
 

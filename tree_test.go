@@ -417,6 +417,8 @@ func TestTreeWildcardConflict(t *testing.T) {
 		{"/user_:name", false},
 		{"/id:id", false},
 		{"/id/:id", false},
+		{"/static/*file", false},
+		{"/static/", true},
 	}
 	testRoutes(t, routes)
 }
@@ -893,15 +895,43 @@ func TestTreeInvalidNodeType(t *testing.T) {
 
 func TestTreeInvalidParamsType(t *testing.T) {
 	tree := &node{}
-	tree.wildChild = true
-	tree.children = append(tree.children, &node{})
-	tree.children[0].nType = 2
+	// add a child with wildcard
+	route := "/:path"
+	tree.addRoute(route, fakeHandler(route))
 
 	// set invalid Params type
 	params := make(Params, 0)
 
 	// try to trigger slice bounds out of range with capacity 0
 	tree.getValue("/test", &params, getSkippedNodes(), false)
+}
+
+func TestTreeExpandParamsCapacity(t *testing.T) {
+	data := []struct {
+		path string
+	}{
+		{"/:path"},
+		{"/*path"},
+	}
+
+	for _, item := range data {
+		tree := &node{}
+		tree.addRoute(item.path, fakeHandler(item.path))
+		params := make(Params, 0)
+
+		value := tree.getValue("/test", &params, getSkippedNodes(), false)
+
+		if value.params == nil {
+			t.Errorf("Expected %s params to be set, but they weren't", item.path)
+			continue
+		}
+
+		if len(*value.params) != 1 {
+			t.Errorf("Wrong number of %s params: got %d, want %d",
+				item.path, len(*value.params), 1)
+			continue
+		}
+	}
 }
 
 func TestTreeWildcardConflictEx(t *testing.T) {

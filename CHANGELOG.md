@@ -1,5 +1,26 @@
 # Gin ChangeLog
 
+## Gin v1.9.1
+
+### BUG FIXES 
+
+* fix Request.Context() checks [#3512](https://github.com/gin-gonic/gin/pull/3512)
+
+### SECURITY
+
+* fix lack of escaping of filename in Content-Disposition [#3556](https://github.com/gin-gonic/gin/pull/3556) 
+
+### ENHANCEMENTS
+
+* refactor: use bytes.ReplaceAll directly [#3455](https://github.com/gin-gonic/gin/pull/3455)
+* convert strings and slices using the officially recommended way [#3344](https://github.com/gin-gonic/gin/pull/3344)
+* improve render code coverage [#3525](https://github.com/gin-gonic/gin/pull/3525)
+
+### DOCS
+
+* docs: changed documentation link for trusted proxies [#3575](https://github.com/gin-gonic/gin/pull/3575)
+* chore: improve linting, testing, and GitHub Actions setup [#3583](https://github.com/gin-gonic/gin/pull/3583)
+
 ## Gin v1.9.0
 
 ### BREAK CHANGES
