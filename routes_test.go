@@ -337,6 +337,45 @@ func TestRouteParamsByNameWithExtraSlash(t *testing.T) {
 	assert.Equal(t, "/is/super/great", wild)
 }
 
+// TestRouteParamsNotEmpty tests that context parameters will be set
+// even if a route with params/wildcards is registered after the context
+// initialisation (which happened in a previous requets).
+func TestRouteParamsNotEmpty(t *testing.T) {
+	name := ""
+	lastName := ""
+	wild := ""
+	router := New()
+
+	w := PerformRequest(router, http.MethodGet, "/test/john/smith/is/super/great")
+
+	assert.Equal(t, http.StatusNotFound, w.Code)
+
+	router.GET("/test/:name/:last_name/*wild", func(c *Context) {
+		name = c.Params.ByName("name")
+		lastName = c.Params.ByName("last_name")
+		var ok bool
+		wild, ok = c.Params.Get("wild")
+
+		assert.True(t, ok)
+		assert.Equal(t, name, c.Param("name"))
+		assert.Equal(t, lastName, c.Param("last_name"))
+
+		assert.Empty(t, c.Param("wtf"))
+		assert.Empty(t, c.Params.ByName("wtf"))
+
+		wtf, ok := c.Params.Get("wtf")
+		assert.Empty(t, wtf)
+		assert.False(t, ok)
+	})
+
+	w = PerformRequest(router, http.MethodGet, "/test/john/smith/is/super/great")
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Equal(t, "john", name)
+	assert.Equal(t, "smith", lastName)
+	assert.Equal(t, "/is/super/great", wild)
+}
+
 // TestHandleStaticFile - ensure the static file handles properly
 func TestRouteStaticFile(t *testing.T) {
 	// SETUP file
@@ -473,6 +512,18 @@ func TestRouteNotAllowedEnabled2(t *testing.T) {
 	router.GET("/path2", func(c *Context) {})
 	w := PerformRequest(router, http.MethodPost, "/path2")
 	assert.Equal(t, http.StatusMethodNotAllowed, w.Code)
+}
+
+func TestRouteNotAllowedEnabled3(t *testing.T) {
+	router := New()
+	router.HandleMethodNotAllowed = true
+	router.GET("/path", func(c *Context) {})
+	router.POST("/path", func(c *Context) {})
+	w := PerformRequest(router, http.MethodPut, "/path")
+	assert.Equal(t, http.StatusMethodNotAllowed, w.Code)
+	allowed := w.Header().Get("Allow")
+	assert.Contains(t, allowed, "GET")
+	assert.Contains(t, allowed, "POST")
 }
 
 func TestRouteNotAllowedDisabled(t *testing.T) {
