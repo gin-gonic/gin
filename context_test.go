@@ -1569,6 +1569,12 @@ func TestContextClientIP(t *testing.T) {
 	c.Request.Header.Del("CF-Connecting-IP")
 	assert.Equal(t, "40.40.40.40", c.ClientIP())
 
+	c.engine.TrustedPlatform = PlatformFlyIO
+	assert.Equal(t, "70.70.70.70", c.ClientIP())
+
+	c.Request.Header.Del("Fly-Client-IP")
+	assert.Equal(t, "40.40.40.40", c.ClientIP())
+
 	c.engine.TrustedPlatform = ""
 
 	// no port
@@ -1581,6 +1587,7 @@ func resetContextForClientIPTests(c *Context) {
 	c.Request.Header.Set("X-Forwarded-For", "  20.20.20.20, 30.30.30.30")
 	c.Request.Header.Set("X-Appengine-Remote-Addr", "50.50.50.50")
 	c.Request.Header.Set("CF-Connecting-IP", "60.60.60.60")
+	c.Request.Header.Set("Fly-Client-IP", "70.70.70.70")
 	c.Request.RemoteAddr = "  40.40.40.40:42123 "
 	c.engine.TrustedPlatform = ""
 	c.engine.trustedCIDRs = defaultTrustedCIDRs

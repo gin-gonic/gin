@@ -77,6 +77,8 @@ const (
 	// PlatformCloudflare when using Cloudflare's CDN. Trust CF-Connecting-IP for determining
 	// the client's IP
 	PlatformCloudflare = "CF-Connecting-IP"
+	// PlatformFlyIO when running on Fly.io. Trust Fly-Client-IP for determining the client's IP
+	PlatformFlyIO = "Fly-Client-IP"
 )
 
 // Engine is the framework's instance, it contains the muxer, middleware and configuration settings.

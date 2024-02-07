@@ -2214,10 +2214,16 @@ import (
 func main() {
   router := gin.Default()
   // Use predefined header gin.PlatformXXX
+  // Google App Engine
   router.TrustedPlatform = gin.PlatformGoogleAppEngine
-  // Or set your own trusted request header for another trusted proxy service
-  // Don't set it to any suspect request header, it's unsafe
-  router.TrustedPlatform = "X-CDN-IP"
+  // Cloudflare
+  router.TrustedPlatform = gin.PlatformCloudflare
+  // Fly.io
+  router.TrustedPlatform = gin.PlatformFlyIO
+  // Or, you can set your own trusted request header. But be sure your CDN
+  // prevents users from passing this header! For example, if your CDN puts
+  // the client IP in X-CDN-Client-IP:
+  router.TrustedPlatform = "X-CDN-Client-IP"
 
   router.GET("/", func(c *gin.Context) {
     // If you set TrustedPlatform, ClientIP() will resolve the
