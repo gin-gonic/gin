@@ -297,10 +297,12 @@ func setFloatField(val string, bitSize int, field reflect.Value) error {
 	return err
 }
 
+var DefaultTimeFormat = time.RFC3339
+
 func setTimeField(val string, structField reflect.StructField, value reflect.Value) error {
 	timeFormat := structField.Tag.Get("time_format")
 	if timeFormat == "" {
-		timeFormat = time.RFC3339
+		timeFormat = DefaultTimeFormat
 	}
 
 	switch tf := strings.ToLower(timeFormat); tf {
