@@ -32,7 +32,8 @@ jobs:
       matrix:
         os: [ubuntu-latest, macos-latest]
         go: ["1.18", "1.19", "1.20", "1.21", "1.22"]
-        test-tags: ["", "-tags nomsgpack", '-tags "sonic avx"', "-tags go_json"]
+        test-tags:
+          ["", "-tags nomsgpack", '-tags "sonic avx"', "-tags go_json", "-race"]
         include:
           - os: ubuntu-latest
             go-build: ~/.cache/go-build
