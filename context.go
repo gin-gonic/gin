@@ -5,6 +5,7 @@
 package gin
 
 import (
+	"bytes"
 	"errors"
 	"io"
 	"log"
@@ -1034,6 +1035,26 @@ func (c *Context) DataFromReader(code int, contentLength int64, contentType stri
 		ContentLength: contentLength,
 		Reader:        reader,
 	})
+}
+
+func (c *Context) DataFromReaderStream(code int, offset int, contentType string, reader io.Reader, extraHeaders map[string]string) {
+	p := make([]byte, offset)
+	for {
+		n, err := reader.Read(p)
+		if err != nil {
+			if err == io.EOF {
+				break
+			}
+			panic(err)
+		}
+
+		c.Render(code, render.ReaderStream{
+			Headers:     extraHeaders,
+			ContentType: contentType,
+			Reader:      bytes.NewReader(p[:n]),
+		})
+		c.Writer.Flush()
+	}
 }
 
 // File writes the specified file into the body stream in an efficient way.

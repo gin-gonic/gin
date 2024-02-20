@@ -28,6 +28,7 @@ var (
 	_ HTMLRender = HTMLProduction{}
 	_ Render     = YAML{}
 	_ Render     = Reader{}
+	_ Render     = ReaderStream{}
 	_ Render     = AsciiJSON{}
 	_ Render     = ProtoBuf{}
 	_ Render     = TOML{}

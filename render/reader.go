@@ -46,3 +46,30 @@ func (r Reader) writeHeaders(w http.ResponseWriter, headers map[string]string) {
 		}
 	}
 }
+
+type ReaderStream struct {
+	ContentType string
+	Reader      io.Reader
+	Headers     map[string]string
+}
+
+// Render (ReaderStream) writes data with custom ContentType and headers.
+func (r ReaderStream) Render(w http.ResponseWriter) (err error) {
+	r.WriteContentType(w)
+	r.writeHeaders(w, r.Headers)
+	_, err = io.Copy(w, r.Reader)
+	return
+}
+
+func (r ReaderStream) WriteContentType(w http.ResponseWriter) {
+	writeContentType(w, []string{r.ContentType})
+}
+
+func (r ReaderStream) writeHeaders(w http.ResponseWriter, headers map[string]string) {
+	header := w.Header()
+	for k, v := range headers {
+		if val := header[k]; len(val) == 0 {
+			header[k] = []string{v}
+		}
+	}
+}
