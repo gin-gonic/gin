@@ -1060,7 +1060,7 @@ func TestContextRenderUTF8Attachment(t *testing.T) {
 }
 
 // TestContextRenderYAML tests that the response is serialized as YAML
-// and Content-Type is set to application/x-yaml
+// and Content-Type is set to application/yaml
 func TestContextRenderYAML(t *testing.T) {
 	w := httptest.NewRecorder()
 	c, _ := CreateTestContext(w)
@@ -1069,7 +1069,7 @@ func TestContextRenderYAML(t *testing.T) {
 
 	assert.Equal(t, http.StatusCreated, w.Code)
 	assert.Equal(t, "foo: bar\n", w.Body.String())
-	assert.Equal(t, "application/x-yaml; charset=utf-8", w.Header().Get("Content-Type"))
+	assert.Equal(t, "application/yaml; charset=utf-8", w.Header().Get("Content-Type"))
 }
 
 // TestContextRenderTOML tests that the response is serialized as TOML
@@ -1217,7 +1217,7 @@ func TestContextNegotiationWithYAML(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, w.Code)
 	assert.Equal(t, "foo: bar\n", w.Body.String())
-	assert.Equal(t, "application/x-yaml; charset=utf-8", w.Header().Get("Content-Type"))
+	assert.Equal(t, "application/yaml; charset=utf-8", w.Header().Get("Content-Type"))
 }
 
 func TestContextNegotiationWithTOML(t *testing.T) {
