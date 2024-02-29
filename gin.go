@@ -636,14 +636,15 @@ func (engine *Engine) handleHTTPRequest(c *Context) {
 			return
 		}
 		if httpMethod != http.MethodConnect && rPath != "/" {
+			executeRedirectionMiddlewares := len(engine.redirectMethod) > 0
 			if value.tsr && engine.RedirectTrailingSlash {
 				c.handlers = engine.allRedirectMethod
-				redirectTrailingSlash(c)
+				redirectTrailingSlash(c, executeRedirectionMiddlewares)
 				return
 			}
 			if engine.RedirectFixedPath {
 				c.handlers = engine.allRedirectMethod
-				if redirectFixedPath(c, root, engine.RedirectFixedPath) {
+				if redirectFixedPath(c, root, engine.RedirectFixedPath, executeRedirectionMiddlewares) {
 					return
 				}
 			}
@@ -694,7 +695,7 @@ func serveError(c *Context, code int, defaultMessage []byte) {
 	c.writermem.WriteHeaderNow()
 }
 
-func redirectTrailingSlash(c *Context) {
+func redirectTrailingSlash(c *Context, withRedirectionMiddlewares bool) {
 	req := c.Request
 	p := req.URL.Path
 	if prefix := path.Clean(c.Request.Header.Get("X-Forwarded-Prefix")); prefix != "." {
@@ -707,22 +708,22 @@ func redirectTrailingSlash(c *Context) {
 	if length := len(p); length > 1 && p[length-1] == '/' {
 		req.URL.Path = p[:length-1]
 	}
-	redirectRequest(c)
+	redirectRequest(c, withRedirectionMiddlewares)
 }
 
-func redirectFixedPath(c *Context, root *node, trailingSlash bool) bool {
+func redirectFixedPath(c *Context, root *node, trailingSlash, withRedirectionMiddlewares bool) bool {
 	req := c.Request
 	rPath := req.URL.Path
 
 	if fixedPath, ok := root.findCaseInsensitivePath(cleanPath(rPath), trailingSlash); ok {
 		req.URL.Path = bytesconv.BytesToString(fixedPath)
-		redirectRequest(c)
+		redirectRequest(c, withRedirectionMiddlewares)
 		return true
 	}
 	return false
 }
 
-func redirectRequest(c *Context) {
+func redirectRequest(c *Context, executeRequestChain bool) {
 	req := c.Request
 	rPath := req.URL.Path
 	rURL := req.URL.String()
@@ -732,7 +733,9 @@ func redirectRequest(c *Context) {
 		code = http.StatusTemporaryRedirect
 	}
 	debugPrint("redirecting request %d: %s --> %s", code, rPath, rURL)
-	c.Next()
+	if executeRequestChain {
+		c.Next()
+	}
 	http.Redirect(c.Writer, req, rURL, code)
 	c.writermem.WriteHeaderNow()
 }
