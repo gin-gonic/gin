@@ -113,20 +113,19 @@ func (c *Context) Copy() *Context {
 	cp := Context{
 		writermem: c.writermem,
 		Request:   c.Request,
-		Params:    c.Params,
 		engine:    c.engine,
 	}
 	cp.writermem.ResponseWriter = nil
 	cp.Writer = &cp.writermem
 	cp.index = abortIndex
 	cp.handlers = nil
-	cp.Keys = map[string]any{}
+	cp.Keys = make(map[string]any, len(c.Keys))
 	for k, v := range c.Keys {
 		cp.Keys[k] = v
 	}
-	paramCopy := make([]Param, len(cp.Params))
-	copy(paramCopy, cp.Params)
-	cp.Params = paramCopy
+	paramsCopy := make([]Param, len(c.Params))
+	copy(paramsCopy, c.Params)
+	cp.Params = paramsCopy
 	return &cp
 }
 
