@@ -121,6 +121,13 @@ func Benchmark404Many(B *testing.B) {
 	runRequest(B, router, "GET", "/viewfake")
 }
 
+func BenchmarkOnRedirect(B *testing.B) {
+	router := New()
+	router.GET("/something", func(c *Context) {})
+	router.OnRedirect(func(c *Context) {})
+	runRequest(B, router, "GET", "/something/")
+}
+
 type mockWriter struct {
 	headers http.Header
 }

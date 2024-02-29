@@ -156,20 +156,22 @@ type Engine struct {
 	// ContextWithFallback enable fallback Context.Deadline(), Context.Done(), Context.Err() and Context.Value() when Context.Request.Context() is not nil.
 	ContextWithFallback bool
 
-	delims           render.Delims
-	secureJSONPrefix string
-	HTMLRender       render.HTMLRender
-	FuncMap          template.FuncMap
-	allNoRoute       HandlersChain
-	allNoMethod      HandlersChain
-	noRoute          HandlersChain
-	noMethod         HandlersChain
-	pool             sync.Pool
-	trees            methodTrees
-	maxParams        uint16
-	maxSections      uint16
-	trustedProxies   []string
-	trustedCIDRs     []*net.IPNet
+	delims            render.Delims
+	secureJSONPrefix  string
+	HTMLRender        render.HTMLRender
+	FuncMap           template.FuncMap
+	allNoRoute        HandlersChain
+	allNoMethod       HandlersChain
+	allRedirectMethod HandlersChain
+	noRoute           HandlersChain
+	noMethod          HandlersChain
+	redirectMethod    HandlersChain
+	pool              sync.Pool
+	trees             methodTrees
+	maxParams         uint16
+	maxSections       uint16
+	trustedProxies    []string
+	trustedCIDRs      []*net.IPNet
 }
 
 var _ IRouter = (*Engine)(nil)
@@ -297,6 +299,12 @@ func (engine *Engine) NoRoute(handlers ...HandlerFunc) {
 	engine.rebuild404Handlers()
 }
 
+// OnRedirect adds handlers for when redirects are made.
+func (engine *Engine) OnRedirect(handlers ...HandlerFunc) {
+	engine.redirectMethod = handlers
+	engine.rebuildRedirectHandlers()
+}
+
 // NoMethod sets the handlers called when Engine.HandleMethodNotAllowed = true.
 func (engine *Engine) NoMethod(handlers ...HandlerFunc) {
 	engine.noMethod = handlers
@@ -310,6 +318,7 @@ func (engine *Engine) Use(middleware ...HandlerFunc) IRoutes {
 	engine.RouterGroup.Use(middleware...)
 	engine.rebuild404Handlers()
 	engine.rebuild405Handlers()
+	engine.rebuildRedirectHandlers()
 	return engine
 }
 
@@ -319,6 +328,10 @@ func (engine *Engine) rebuild404Handlers() {
 
 func (engine *Engine) rebuild405Handlers() {
 	engine.allNoMethod = engine.combineHandlers(engine.noMethod)
+}
+
+func (engine *Engine) rebuildRedirectHandlers() {
+	engine.allRedirectMethod = engine.combineHandlers(engine.redirectMethod)
 }
 
 func (engine *Engine) addRoute(method, path string, handlers HandlersChain) {
@@ -624,11 +637,15 @@ func (engine *Engine) handleHTTPRequest(c *Context) {
 		}
 		if httpMethod != http.MethodConnect && rPath != "/" {
 			if value.tsr && engine.RedirectTrailingSlash {
+				c.handlers = engine.allRedirectMethod
 				redirectTrailingSlash(c)
 				return
 			}
-			if engine.RedirectFixedPath && redirectFixedPath(c, root, engine.RedirectFixedPath) {
-				return
+			if engine.RedirectFixedPath {
+				c.handlers = engine.allRedirectMethod
+				if redirectFixedPath(c, root, engine.RedirectFixedPath) {
+					return
+				}
 			}
 		}
 		break
@@ -715,6 +732,7 @@ func redirectRequest(c *Context) {
 		code = http.StatusTemporaryRedirect
 	}
 	debugPrint("redirecting request %d: %s --> %s", code, rPath, rURL)
+	c.Next()
 	http.Redirect(c.Writer, req, rURL, code)
 	c.writermem.WriteHeaderNow()
 }

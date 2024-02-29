@@ -433,6 +433,59 @@ func TestNoMethodWithoutGlobalHandlers(t *testing.T) {
 	compareFunc(t, router.allNoMethod[1], middleware0)
 }
 
+func TestOnRedirectWithoutGlobalHandlers(t *testing.T) {
+	var middleware0 HandlerFunc = func(c *Context) {}
+	var middleware1 HandlerFunc = func(c *Context) {}
+
+	router := New()
+
+	router.OnRedirect(middleware0)
+	assert.Nil(t, router.Handlers)
+	assert.Len(t, router.redirectMethod, 1)
+	assert.Len(t, router.allRedirectMethod, 1)
+	compareFunc(t, router.redirectMethod[0], middleware0)
+	compareFunc(t, router.allRedirectMethod[0], middleware0)
+
+	router.OnRedirect(middleware1, middleware0)
+	assert.Len(t, router.redirectMethod, 2)
+	assert.Len(t, router.allRedirectMethod, 2)
+	compareFunc(t, router.redirectMethod[0], middleware1)
+	compareFunc(t, router.allRedirectMethod[0], middleware1)
+	compareFunc(t, router.redirectMethod[1], middleware0)
+	compareFunc(t, router.allRedirectMethod[1], middleware0)
+}
+
+func TestOnRedirectWithGlobalHandlers(t *testing.T) {
+	var middleware0 HandlerFunc = func(c *Context) {}
+	var middleware1 HandlerFunc = func(c *Context) {}
+	var middleware2 HandlerFunc = func(c *Context) {}
+
+	router := New()
+	router.Use(middleware2)
+
+	router.OnRedirect(middleware0)
+	assert.Len(t, router.allRedirectMethod, 2)
+	assert.Len(t, router.Handlers, 1)
+	assert.Len(t, router.redirectMethod, 1)
+
+	compareFunc(t, router.Handlers[0], middleware2)
+	compareFunc(t, router.redirectMethod[0], middleware0)
+	compareFunc(t, router.allRedirectMethod[0], middleware2)
+	compareFunc(t, router.allRedirectMethod[1], middleware0)
+
+	router.Use(middleware1)
+	assert.Len(t, router.allRedirectMethod, 3)
+	assert.Len(t, router.Handlers, 2)
+	assert.Len(t, router.redirectMethod, 1)
+
+	compareFunc(t, router.Handlers[0], middleware2)
+	compareFunc(t, router.Handlers[1], middleware1)
+	compareFunc(t, router.redirectMethod[0], middleware0)
+	compareFunc(t, router.allRedirectMethod[0], middleware2)
+	compareFunc(t, router.allRedirectMethod[1], middleware1)
+	compareFunc(t, router.allRedirectMethod[2], middleware0)
+}
+
 func TestRebuild404Handlers(t *testing.T) {
 }
 
