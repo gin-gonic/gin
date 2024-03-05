@@ -339,7 +339,7 @@ func TestRouteParamsByNameWithExtraSlash(t *testing.T) {
 
 // TestRouteParamsNotEmpty tests that context parameters will be set
 // even if a route with params/wildcards is registered after the context
-// initialisation (which happened in a previous requets).
+// initialisation (which happened in a previous requests).
 func TestRouteParamsNotEmpty(t *testing.T) {
 	name := ""
 	lastName := ""
