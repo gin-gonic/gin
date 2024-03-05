@@ -26,6 +26,8 @@ func (r YAML) Render(w http.ResponseWriter) error {
 		return err
 	}
 
+	writeContentLength(w, len(bytes))
+
 	_, err = w.Write(bytes)
 	return err
 }

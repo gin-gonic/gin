@@ -62,6 +62,11 @@ func (r JSON) WriteContentType(w http.ResponseWriter) {
 	writeContentType(w, jsonContentType)
 }
 
+// WriteContentType (JSON) writes JSON ContentType.
+func (r JSON) WriteContentLength(w http.ResponseWriter, length int) {
+	writeContentLength(w, length)
+}
+
 // WriteJSON marshals the given interface object and writes it with custom ContentType.
 func WriteJSON(w http.ResponseWriter, obj any) error {
 	writeContentType(w, jsonContentType)
@@ -69,6 +74,9 @@ func WriteJSON(w http.ResponseWriter, obj any) error {
 	if err != nil {
 		return err
 	}
+
+	writeContentLength(w, len(jsonBytes))
+
 	_, err = w.Write(jsonBytes)
 	return err
 }
@@ -80,6 +88,9 @@ func (r IndentedJSON) Render(w http.ResponseWriter) error {
 	if err != nil {
 		return err
 	}
+
+	writeContentLength(w, len(jsonBytes))
+
 	_, err = w.Write(jsonBytes)
 	return err
 }
@@ -96,13 +107,22 @@ func (r SecureJSON) Render(w http.ResponseWriter) error {
 	if err != nil {
 		return err
 	}
+
+	length := len(jsonBytes)
+
 	// if the jsonBytes is array values
 	if bytes.HasPrefix(jsonBytes, bytesconv.StringToBytes("[")) && bytes.HasSuffix(jsonBytes,
 		bytesconv.StringToBytes("]")) {
+
 		if _, err = w.Write(bytesconv.StringToBytes(r.Prefix)); err != nil {
 			return err
 		}
+		length += len(r.Prefix)
+
 	}
+
+	writeContentLength(w, length)
+
 	_, err = w.Write(jsonBytes)
 	return err
 }
@@ -115,18 +135,24 @@ func (r SecureJSON) WriteContentType(w http.ResponseWriter) {
 // Render (JsonpJSON) marshals the given interface object and writes it and its callback with custom ContentType.
 func (r JsonpJSON) Render(w http.ResponseWriter) (err error) {
 	r.WriteContentType(w)
-	ret, err := json.Marshal(r.Data)
+	jsonBytes, err := json.Marshal(r.Data)
 	if err != nil {
 		return err
 	}
 
+	length := len(jsonBytes)
+
 	if r.Callback == "" {
-		_, err = w.Write(ret)
+		writeContentLength(w, length)
+
+		_, err = w.Write(jsonBytes)
 		return err
 	}
 
 	callback := template.JSEscapeString(r.Callback)
-	if _, err = w.Write(bytesconv.StringToBytes(callback)); err != nil {
+	callbackBytes := bytesconv.StringToBytes(callback)
+
+	if _, err = w.Write(callbackBytes); err != nil {
 		return err
 	}
 
@@ -134,13 +160,17 @@ func (r JsonpJSON) Render(w http.ResponseWriter) (err error) {
 		return err
 	}
 
-	if _, err = w.Write(ret); err != nil {
+	if _, err = w.Write(jsonBytes); err != nil {
 		return err
 	}
 
 	if _, err = w.Write(bytesconv.StringToBytes(");")); err != nil {
 		return err
 	}
+
+	length += len(callbackBytes) + 3 // 3 = len("();")
+
+	writeContentLength(w, length)
 
 	return nil
 }
@@ -167,7 +197,11 @@ func (r AsciiJSON) Render(w http.ResponseWriter) (err error) {
 		buffer.WriteString(cvt)
 	}
 
-	_, err = w.Write(buffer.Bytes())
+	jsonBytes := buffer.Bytes()
+
+	writeContentLength(w, len(jsonBytes))
+
+	_, err = w.Write(jsonBytes)
 	return err
 }
 
