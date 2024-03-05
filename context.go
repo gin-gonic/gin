@@ -120,7 +120,7 @@ func (c *Context) Copy() *Context {
 	cp.Writer = &cp.writermem
 	cp.index = abortIndex
 	cp.handlers = nil
-  cp.fullPath = c.fullPath
+	cp.fullPath = c.fullPath
 
 	cKeys := c.Keys
 	cp.Keys = make(map[string]any, len(cKeys))
