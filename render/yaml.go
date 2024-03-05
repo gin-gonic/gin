@@ -15,7 +15,7 @@ type YAML struct {
 	Data any
 }
 
-var yamlContentType = []string{"application/x-yaml; charset=utf-8"}
+var yamlContentType = []string{"application/yaml; charset=utf-8"}
 
 // Render (YAML) marshals the given interface object and writes data with custom ContentType.
 func (r YAML) Render(w http.ResponseWriter) error {

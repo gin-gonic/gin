@@ -7,6 +7,7 @@ package binding
 import (
 	"errors"
 	"fmt"
+	"mime/multipart"
 	"reflect"
 	"strconv"
 	"strings"
@@ -235,6 +236,8 @@ func setWithProperType(val string, value reflect.Value, field reflect.StructFiel
 		switch value.Interface().(type) {
 		case time.Time:
 			return setTimeField(val, field, value)
+		case multipart.FileHeader:
+			return nil
 		}
 		return json.Unmarshal(bytesconv.StringToBytes(val), value.Addr().Interface())
 	case reflect.Map:

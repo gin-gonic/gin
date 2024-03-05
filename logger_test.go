@@ -415,6 +415,26 @@ func TestLoggerWithConfigSkippingPaths(t *testing.T) {
 	assert.Contains(t, buffer.String(), "")
 }
 
+func TestLoggerWithConfigSkipper(t *testing.T) {
+	buffer := new(strings.Builder)
+	router := New()
+	router.Use(LoggerWithConfig(LoggerConfig{
+		Output: buffer,
+		Skip: func(c *Context) bool {
+			return c.Writer.Status() == http.StatusNoContent
+		},
+	}))
+	router.GET("/logged", func(c *Context) { c.Status(http.StatusOK) })
+	router.GET("/skipped", func(c *Context) { c.Status(http.StatusNoContent) })
+
+	PerformRequest(router, "GET", "/logged")
+	assert.Contains(t, buffer.String(), "200")
+
+	buffer.Reset()
+	PerformRequest(router, "GET", "/skipped")
+	assert.Contains(t, buffer.String(), "")
+}
+
 func TestDisableConsoleColor(t *testing.T) {
 	New()
 	assert.Equal(t, autoColor, consoleColorMode)

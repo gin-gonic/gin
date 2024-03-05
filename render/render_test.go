@@ -280,12 +280,12 @@ b:
 	d: [3, 4]
 	`
 	(YAML{data}).WriteContentType(w)
-	assert.Equal(t, "application/x-yaml; charset=utf-8", w.Header().Get("Content-Type"))
+	assert.Equal(t, "application/yaml; charset=utf-8", w.Header().Get("Content-Type"))
 
 	err := (YAML{data}).Render(w)
 	assert.NoError(t, err)
 	assert.Equal(t, "|4-\n    a : Easy!\n    b:\n    \tc: 2\n    \td: [3, 4]\n    \t\n", w.Body.String())
-	assert.Equal(t, "application/x-yaml; charset=utf-8", w.Header().Get("Content-Type"))
+	assert.Equal(t, "application/yaml; charset=utf-8", w.Header().Get("Content-Type"))
 }
 
 type fail struct{}
