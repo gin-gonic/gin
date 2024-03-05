@@ -164,6 +164,8 @@ func TestBindingDefault(t *testing.T) {
 
 	assert.Equal(t, YAML, Default("POST", MIMEYAML))
 	assert.Equal(t, YAML, Default("PUT", MIMEYAML))
+	assert.Equal(t, YAML, Default("POST", MIMEYAML2))
+	assert.Equal(t, YAML, Default("PUT", MIMEYAML2))
 
 	assert.Equal(t, TOML, Default("POST", MIMETOML))
 	assert.Equal(t, TOML, Default("PUT", MIMETOML))
