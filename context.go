@@ -124,9 +124,11 @@ func (c *Context) Copy() *Context {
 
 	cKeys := c.Keys
 	cp.Keys = make(map[string]any, len(cKeys))
+	c.mu.RLock()
 	for k, v := range cKeys {
 		cp.Keys[k] = v
 	}
+	c.mu.RUnlock()
 
 	cParams := c.Params
 	cp.Params = make([]Param, len(cParams))
