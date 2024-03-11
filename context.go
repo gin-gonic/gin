@@ -393,7 +393,7 @@ func (c *Context) GetStringMapStringSlice(key string) (smss map[string][]string)
 //
 //	router.GET("/user/:id", func(c *gin.Context) {
 //	    // a GET request to /user/john
-//	    id := c.Param("id") // id == "/john"
+//	    id := c.Param("id") // id == "john"
 //	    // a GET request to /user/john/
 //	    id := c.Param("id") // id == "/john/"
 //	})
