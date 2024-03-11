@@ -880,6 +880,9 @@ func (c *Context) GetHeader(key string) string {
 
 // GetRawData returns stream data.
 func (c *Context) GetRawData() ([]byte, error) {
+	if c.Request.Body == nil {
+		return nil, errors.New("cannot read nil body")
+	}
 	return io.ReadAll(c.Request.Body)
 }
 
