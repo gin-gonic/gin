@@ -24,11 +24,10 @@ import (
 	"time"
 
 	"github.com/gin-contrib/sse"
-	"github.com/stretchr/testify/assert"
-	"google.golang.org/protobuf/proto"
-
 	"github.com/gin-gonic/gin/binding"
 	testdata "github.com/gin-gonic/gin/testdata/protoexample"
+	"github.com/stretchr/testify/assert"
+	"google.golang.org/protobuf/proto"
 )
 
 var _ context.Context = (*Context)(nil)
