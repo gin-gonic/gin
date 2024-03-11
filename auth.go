@@ -15,6 +15,7 @@ import (
 
 // AuthUserKey is the cookie name for user credential in basic auth.
 const AuthUserKey = "user"
+const AuthProxyUserKey = "proxy_user"
 
 // Accounts defines a key/value for user/pass list of authorized logins.
 type Accounts map[string]string
@@ -88,4 +89,24 @@ func processAccounts(accounts Accounts) authPairs {
 func authorizationHeader(user, password string) string {
 	base := user + ":" + password
 	return "Basic " + base64.StdEncoding.EncodeToString(bytesconv.StringToBytes(base))
+}
+
+func BasicAuthForProxy(accounts Accounts, realm string) HandlerFunc {
+	if realm == "" {
+		realm = "Authorization Required"
+	}
+	realm = "Basic realm=" + strconv.Quote(realm)
+	pairs := processAccounts(accounts)
+	return func(c *Context) {
+		proxyUser, found := pairs.searchCredential(c.requestHeader("Authorization"))
+		if !found {
+			// Credentials doesn't match, we return 407 and abort handlers chain.
+			c.Header("proxy-Authenticate", realm)
+			c.AbortWithStatus(http.StatusProxyAuthRequired)
+			return
+		}
+		// The proxy_user credentials was found, set proxy_user's id to key AuthUserKey in this context, the proxy_user's id can be read later using
+		// c.MustGet(gin.AuthProxyUserKey).
+		c.Set(AuthProxyUserKey, proxyUser)
+	}
 }
