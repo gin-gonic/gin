@@ -137,3 +137,40 @@ func TestBasicAuth401WithCustomRealm(t *testing.T) {
 	assert.Equal(t, http.StatusUnauthorized, w.Code)
 	assert.Equal(t, "Basic realm=\"My Custom \\\"Realm\\\"\"", w.Header().Get("WWW-Authenticate"))
 }
+
+func TestBasicAuthForProxySucceed(t *testing.T) {
+	accounts := Accounts{"admin": "password"}
+	router := New()
+	router.Use(BasicAuthForProxy(accounts, ""))
+	router.Any("/*proxyPath", func(c *Context) {
+		c.String(http.StatusOK, c.MustGet(AuthProxyUserKey).(string))
+	})
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/test", nil)
+	req.Header.Set("Proxy-Authorization", authorizationHeader("admin", "password"))
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Equal(t, "admin", w.Body.String())
+}
+
+func TestBasicAuthForProxy407(t *testing.T) {
+	called := false
+	accounts := Accounts{"foo": "bar"}
+	router := New()
+	router.Use(BasicAuthForProxy(accounts, ""))
+	router.Any("/*proxyPath", func(c *Context) {
+		called = true
+		c.String(http.StatusOK, c.MustGet(AuthProxyUserKey).(string))
+	})
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/test", nil)
+	req.Header.Set("Proxy-Authorization", "Basic "+base64.StdEncoding.EncodeToString([]byte("admin:password")))
+	router.ServeHTTP(w, req)
+
+	assert.False(t, called)
+	assert.Equal(t, http.StatusProxyAuthRequired, w.Code)
+	assert.Equal(t, "Basic realm=\"Proxy Authorization Required\"", w.Header().Get("Proxy-Authenticate"))
+}
