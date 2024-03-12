@@ -15,6 +15,8 @@ import (
 
 // AuthUserKey is the cookie name for user credential in basic auth.
 const AuthUserKey = "user"
+
+// AuthProxyUserKey is the cookie name for proxy_user credential in basic auth for proxy.
 const AuthProxyUserKey = "proxy_user"
 
 // Accounts defines a key/value for user/pass list of authorized logins.
@@ -39,11 +41,13 @@ func (a authPairs) searchCredential(authValue string) (string, bool) {
 	return "", false
 }
 
-// BasicAuthForRealm returns a Basic HTTP Authorization middleware. It takes as arguments a map[string]string where
-// the key is the user name and the value is the password, as well as the name of the Realm.
+// BasicAuthWithRealm returns a Basic HTTP Authorization middleware. It takes as arguments a map[string]string where
+// the key is the username and the value is the password, as well as the name of the Realm.
 // If the realm is empty, "Authorization Required" will be used by default.
-// (see http://tools.ietf.org/html/rfc2617#section-1.2)
-func BasicAuthForRealm(accounts Accounts, realm string) HandlerFunc {
+// In fact, 'realm' should contain at least the name of the host performing the authentication and might additionally
+// indicate the collection of users who might have access. An example might be "registered_users@go.dev".
+// (see http://tools.ietf.org/html/rfc2617#section-1.2 for more details)
+func BasicAuthWithRealm(accounts Accounts, realm string) HandlerFunc {
 	if realm == "" {
 		realm = "Authorization Required"
 	}
@@ -66,9 +70,9 @@ func BasicAuthForRealm(accounts Accounts, realm string) HandlerFunc {
 }
 
 // BasicAuth returns a Basic HTTP Authorization middleware. It takes as argument a map[string]string where
-// the key is the user name and the value is the password.
+// the key is the username and the value is the password.
 func BasicAuth(accounts Accounts) HandlerFunc {
-	return BasicAuthForRealm(accounts, "")
+	return BasicAuthWithRealm(accounts, "")
 }
 
 func processAccounts(accounts Accounts) authPairs {
@@ -91,8 +95,9 @@ func authorizationHeader(user, password string) string {
 	return "Basic " + base64.StdEncoding.EncodeToString(bytesconv.StringToBytes(base))
 }
 
-// BasicAuthForProxy returns a Basic HTTP Proxy-Authorization middleware.
-func BasicAuthForProxy(accounts Accounts, realm string) HandlerFunc {
+// BasicAuthForProxyWithRealm returns a Basic HTTP Proxy-Authorization middleware.
+// If the realm is empty, "Proxy Authorization Required" will be used by default.
+func BasicAuthForProxyWithRealm(accounts Accounts, realm string) HandlerFunc {
 	if realm == "" {
 		realm = "Proxy Authorization Required"
 	}
@@ -110,4 +115,9 @@ func BasicAuthForProxy(accounts Accounts, realm string) HandlerFunc {
 		// c.MustGet(gin.AuthProxyUserKey).
 		c.Set(AuthProxyUserKey, proxyUser)
 	}
+}
+
+// BasicAuthForProxy returns a Basic HTTP Proxy-Authorization middleware.
+func BasicAuthForProxy(accounts Accounts) HandlerFunc {
+	return BasicAuthForProxyWithRealm(accounts, "")
 }
