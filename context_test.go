@@ -2118,7 +2118,7 @@ func TestContextShouldBindBodyWithYAML(t *testing.T) {
 			Foo string `yaml:"foo" binding:"required"`
 		}
 		objYAML := typeYAML{}
-		if tt.bindingBody != binding.YAML {
+		if tt.bindingBody != binding.YAML && tt.bindingBody != binding.JSON {
 			assert.Error(t, c.ShouldBindBodyWithYAML(&objYAML))
 			assert.Equal(t, typeYAML{}, objYAML)
 		} else {
