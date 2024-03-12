@@ -91,6 +91,7 @@ func authorizationHeader(user, password string) string {
 	return "Basic " + base64.StdEncoding.EncodeToString(bytesconv.StringToBytes(base))
 }
 
+// BasicAuthForProxy returns a Basic HTTP Proxy-Authorization middleware.
 func BasicAuthForProxy(accounts Accounts, realm string) HandlerFunc {
 	if realm == "" {
 		realm = "Proxy Authorization Required"
