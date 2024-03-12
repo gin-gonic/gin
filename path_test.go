@@ -81,7 +81,10 @@ func TestPathCleanMallocs(t *testing.T) {
 		t.Skip("skipping malloc count in short mode")
 	}
 
-	runtime.GC()
+	if runtime.GOMAXPROCS(0) > 1 {
+		t.Skip("skipping malloc count; GOMAXPROCS>1")
+		return
+	}
 
 	for _, test := range cleanTests {
 		allocs := testing.AllocsPerRun(100, func() { cleanPath(test.result) })
