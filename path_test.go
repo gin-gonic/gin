@@ -6,6 +6,7 @@
 package gin
 
 import (
+	"runtime"
 	"strings"
 	"testing"
 
@@ -79,6 +80,8 @@ func TestPathCleanMallocs(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skipping malloc count in short mode")
 	}
+
+	runtime.GC()
 
 	for _, test := range cleanTests {
 		allocs := testing.AllocsPerRun(100, func() { cleanPath(test.result) })
