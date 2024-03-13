@@ -15,6 +15,8 @@ import (
 
 // AuthUserKey is the cookie name for user credential in basic auth.
 const AuthUserKey = "user"
+
+// AuthProxyUserKey is the cookie name for proxy_user credential in basic auth for proxy.
 const AuthProxyUserKey = "proxy_user"
 
 // Accounts defines a key/value for user/pass list of authorized logins.
@@ -92,6 +94,7 @@ func authorizationHeader(user, password string) string {
 }
 
 // BasicAuthForProxy returns a Basic HTTP Proxy-Authorization middleware.
+// If the realm is empty, "Proxy Authorization Required" will be used by default.
 func BasicAuthForProxy(accounts Accounts, realm string) HandlerFunc {
 	if realm == "" {
 		realm = "Proxy Authorization Required"
