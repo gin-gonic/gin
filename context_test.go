@@ -1456,7 +1456,6 @@ func TestContextAbortWithError(t *testing.T) {
 func TestContextClientIP(t *testing.T) {
 	c, _ := CreateTestContext(httptest.NewRecorder())
 	c.Request, _ = http.NewRequest("POST", "/", nil)
-	c.engine.trustedCIDRs, _ = c.engine.prepareTrustedCIDRs()
 	resetContextForClientIPTests(c)
 
 	// Legacy tests (validating that the defaults don't break the
