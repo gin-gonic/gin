@@ -30,7 +30,7 @@ func TestOption_HttpMethod(t *testing.T) {
 		{
 			method: http.MethodGet,
 			path:   "/get",
-			optionFunc: Get("/get", func(c *Context) {
+			optionFunc: GET("/get", func(c *Context) {
 				assert.Equal(t, http.MethodGet, c.Request.Method)
 				assert.Equal(t, "/get", c.Request.URL.Path)
 			}),
@@ -38,7 +38,7 @@ func TestOption_HttpMethod(t *testing.T) {
 		{
 			method: http.MethodPut,
 			path:   "/put",
-			optionFunc: Put("/put", func(c *Context) {
+			optionFunc: PUT("/put", func(c *Context) {
 				assert.Equal(t, http.MethodPut, c.Request.Method)
 				assert.Equal(t, "/put", c.Request.URL.Path)
 			}),
@@ -46,7 +46,7 @@ func TestOption_HttpMethod(t *testing.T) {
 		{
 			method: http.MethodPost,
 			path:   "/post",
-			optionFunc: Post("/post", func(c *Context) {
+			optionFunc: POST("/post", func(c *Context) {
 				assert.Equal(t, http.MethodPost, c.Request.Method)
 				assert.Equal(t, "/post", c.Request.URL.Path)
 			}),
@@ -54,7 +54,7 @@ func TestOption_HttpMethod(t *testing.T) {
 		{
 			method: http.MethodDelete,
 			path:   "/delete",
-			optionFunc: Delete("/delete", func(c *Context) {
+			optionFunc: DELETE("/delete", func(c *Context) {
 				assert.Equal(t, http.MethodDelete, c.Request.Method)
 				assert.Equal(t, "/delete", c.Request.URL.Path)
 			}),
@@ -62,7 +62,7 @@ func TestOption_HttpMethod(t *testing.T) {
 		{
 			method: http.MethodPatch,
 			path:   "/patch",
-			optionFunc: Patch("/patch", func(c *Context) {
+			optionFunc: PATCH("/patch", func(c *Context) {
 				assert.Equal(t, http.MethodPatch, c.Request.Method)
 				assert.Equal(t, "/patch", c.Request.URL.Path)
 			}),
@@ -70,7 +70,7 @@ func TestOption_HttpMethod(t *testing.T) {
 		{
 			method: http.MethodOptions,
 			path:   "/options",
-			optionFunc: Options("/options", func(c *Context) {
+			optionFunc: OPTIONS("/options", func(c *Context) {
 				assert.Equal(t, http.MethodOptions, c.Request.Method)
 				assert.Equal(t, "/options", c.Request.URL.Path)
 			}),
@@ -78,7 +78,7 @@ func TestOption_HttpMethod(t *testing.T) {
 		{
 			method: http.MethodHead,
 			path:   "/head",
-			optionFunc: Head("/head", func(c *Context) {
+			optionFunc: HEAD("/head", func(c *Context) {
 				assert.Equal(t, http.MethodHead, c.Request.Method)
 				assert.Equal(t, "/head", c.Request.URL.Path)
 			}),

@@ -12,50 +12,50 @@ func Use(middleware ...HandlerFunc) OptionFunc {
 	}
 }
 
-// Get is a shortcut for RouterGroup.Handle("GET", path, handle)
-func Get(path string, handlers ...HandlerFunc) OptionFunc {
+// GET is a shortcut for RouterGroup.Handle("GET", path, handle)
+func GET(path string, handlers ...HandlerFunc) OptionFunc {
 	return func(e *Engine) {
 		e.GET(path, handlers...)
 	}
 }
 
-// Post is a shortcut for RouterGroup.Handle("POST", path, handle)
-func Post(path string, handlers ...HandlerFunc) OptionFunc {
+// POST is a shortcut for RouterGroup.Handle("POST", path, handle)
+func POST(path string, handlers ...HandlerFunc) OptionFunc {
 	return func(e *Engine) {
 		e.POST(path, handlers...)
 	}
 }
 
-// Put is a shortcut for RouterGroup.Handle("PUT", path, handle)
-func Put(path string, handlers ...HandlerFunc) OptionFunc {
+// PUT is a shortcut for RouterGroup.Handle("PUT", path, handle)
+func PUT(path string, handlers ...HandlerFunc) OptionFunc {
 	return func(e *Engine) {
 		e.PUT(path, handlers...)
 	}
 }
 
-// Delete is a shortcut for RouterGroup.Handle("DELETE", path, handle)
-func Delete(path string, handlers ...HandlerFunc) OptionFunc {
+// DELETE is a shortcut for RouterGroup.Handle("DELETE", path, handle)
+func DELETE(path string, handlers ...HandlerFunc) OptionFunc {
 	return func(e *Engine) {
 		e.DELETE(path, handlers...)
 	}
 }
 
-// Patch is a shortcut for RouterGroup.Handle("PATCH", path, handle)
-func Patch(path string, handlers ...HandlerFunc) OptionFunc {
+// PATCH is a shortcut for RouterGroup.Handle("PATCH", path, handle)
+func PATCH(path string, handlers ...HandlerFunc) OptionFunc {
 	return func(e *Engine) {
 		e.PATCH(path, handlers...)
 	}
 }
 
-// Head is a shortcut for RouterGroup.Handle("HEAD", path, handle)
-func Head(path string, handlers ...HandlerFunc) OptionFunc {
+// HEAD is a shortcut for RouterGroup.Handle("HEAD", path, handle)
+func HEAD(path string, handlers ...HandlerFunc) OptionFunc {
 	return func(e *Engine) {
 		e.HEAD(path, handlers...)
 	}
 }
 
-// Options is a shortcut for RouterGroup.Handle("OPTIONS", path, handle)
-func Options(path string, handlers ...HandlerFunc) OptionFunc {
+// OPTIONS is a shortcut for RouterGroup.Handle("OPTIONS", path, handle)
+func OPTIONS(path string, handlers ...HandlerFunc) OptionFunc {
 	return func(e *Engine) {
 		e.OPTIONS(path, handlers...)
 	}
