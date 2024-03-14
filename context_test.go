@@ -1657,6 +1657,62 @@ func TestContextBindWithXML(t *testing.T) {
 	assert.Equal(t, 0, w.Body.Len())
 }
 
+func TestContextBindForm(t *testing.T) {
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
+
+	c.Request, _ = http.NewRequest("POST", "/", nil)
+
+	if err := c.Request.ParseForm(); err != nil {
+		t.Error(err.Error())
+	}
+
+	c.Request.Form.Add("rate", "8000")
+	c.Request.Form.Add("domain", "music")
+	c.Request.Form.Add("limit", "1000")
+
+	var testHeader struct {
+		Rate   int    `form:"rate"`
+		Domain string `form:"domain"`
+		Limit  int    `form:"limit"`
+		Fake   string `form:"fake"`
+	}
+
+	assert.NoError(t, c.BindForm(&testHeader))
+	assert.Equal(t, 8000, testHeader.Rate)
+	assert.Equal(t, "music", testHeader.Domain)
+	assert.Equal(t, 1000, testHeader.Limit)
+	assert.Equal(t, "", testHeader.Fake)
+	assert.Equal(t, 0, w.Body.Len())
+}
+
+func TestContextShouldBindForm(t *testing.T) {
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
+
+	c.Request, _ = http.NewRequest("POST", "/", nil)
+
+	c.Request.ParseForm()
+
+	c.Request.Form.Add("rate", "8000")
+	c.Request.Form.Add("domain", "music")
+	c.Request.Form.Add("limit", "1000")
+
+	var testHeader struct {
+		Rate   int    `form:"rate"`
+		Domain string `form:"domain"`
+		Limit  int    `form:"limit"`
+		Fake   string `form:"fake"`
+	}
+
+	assert.NoError(t, c.ShouldBindForm(&testHeader))
+	assert.Equal(t, 8000, testHeader.Rate)
+	assert.Equal(t, "music", testHeader.Domain)
+	assert.Equal(t, 1000, testHeader.Limit)
+	assert.Equal(t, "", testHeader.Fake)
+	assert.Equal(t, 0, w.Body.Len())
+}
+
 func TestContextBindHeader(t *testing.T) {
 	w := httptest.NewRecorder()
 	c, _ := CreateTestContext(w)
