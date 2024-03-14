@@ -1977,32 +1977,32 @@ func TestContextShouldBindBodyWith(t *testing.T) {
 
 func TestContextShouldBindBodyWithJSON(t *testing.T) {
 	for _, tt := range []struct {
-		name               string
-		bindingBody        binding.BindingBody
-		body               string
+		name        string
+		bindingBody binding.BindingBody
+		body        string
 	}{
 		{
-			name: " JSON & JSON-BODY ",
+			name:        " JSON & JSON-BODY ",
 			bindingBody: binding.JSON,
-			body:  `{"foo":"FOO"}`,
+			body:        `{"foo":"FOO"}`,
 		},
 		{
-			name: " JSON & XML-BODY ",
+			name:        " JSON & XML-BODY ",
 			bindingBody: binding.XML,
-			body:  `<?xml version="1.0" encoding="UTF-8"?>
+			body: `<?xml version="1.0" encoding="UTF-8"?>
 <root>
 <foo>FOO</foo>
 </root>`,
 		},
 		{
-			name: " JSON & YAML-BODY ",
+			name:        " JSON & YAML-BODY ",
 			bindingBody: binding.YAML,
-			body:  `foo: FOO`,
+			body:        `foo: FOO`,
 		},
 		{
-			name: " JSON & TOM-BODY ",
+			name:        " JSON & TOM-BODY ",
 			bindingBody: binding.TOML,
-			body:  `foo=FOO`,
+			body:        `foo=FOO`,
 		},
 	} {
 		t.Logf("testing: %s", tt.name)
@@ -2028,32 +2028,32 @@ func TestContextShouldBindBodyWithJSON(t *testing.T) {
 
 func TestContextShouldBindBodyWithXML(t *testing.T) {
 	for _, tt := range []struct {
-		name               string
-		bindingBody        binding.BindingBody
-		body               string
+		name        string
+		bindingBody binding.BindingBody
+		body        string
 	}{
 		{
-			name: " XML & JSON-BODY ",
+			name:        " XML & JSON-BODY ",
 			bindingBody: binding.JSON,
-			body:  `{"foo":"FOO"}`,
+			body:        `{"foo":"FOO"}`,
 		},
 		{
-			name: " XML & XML-BODY ",
+			name:        " XML & XML-BODY ",
 			bindingBody: binding.XML,
-			body:  `<?xml version="1.0" encoding="UTF-8"?>
+			body: `<?xml version="1.0" encoding="UTF-8"?>
 <root>
 <foo>FOO</foo>
 </root>`,
 		},
 		{
-			name: " XML & YAML-BODY ",
+			name:        " XML & YAML-BODY ",
 			bindingBody: binding.YAML,
-			body:  `foo: FOO`,
+			body:        `foo: FOO`,
 		},
 		{
-			name: " XML & TOM-BODY ",
+			name:        " XML & TOM-BODY ",
 			bindingBody: binding.TOML,
-			body:  `foo=FOO`,
+			body:        `foo=FOO`,
 		},
 	} {
 		t.Logf("testing: %s", tt.name)
@@ -2079,32 +2079,32 @@ func TestContextShouldBindBodyWithXML(t *testing.T) {
 
 func TestContextShouldBindBodyWithYAML(t *testing.T) {
 	for _, tt := range []struct {
-		name               string
-		bindingBody        binding.BindingBody
-		body               string
+		name        string
+		bindingBody binding.BindingBody
+		body        string
 	}{
 		{
-			name: " YAML & JSON-BODY ",
+			name:        " YAML & JSON-BODY ",
 			bindingBody: binding.JSON,
-			body:  `{"foo":"FOO"}`,
+			body:        `{"foo":"FOO"}`,
 		},
 		{
-			name: " YAML & XML-BODY ",
+			name:        " YAML & XML-BODY ",
 			bindingBody: binding.XML,
-			body:  `<?xml version="1.0" encoding="UTF-8"?>
+			body: `<?xml version="1.0" encoding="UTF-8"?>
 <root>
 <foo>FOO</foo>
 </root>`,
 		},
 		{
-			name: " YAML & YAML-BODY ",
+			name:        " YAML & YAML-BODY ",
 			bindingBody: binding.YAML,
-			body:  `foo: FOO`,
+			body:        `foo: FOO`,
 		},
 		{
-			name: " YAML & TOM-BODY ",
+			name:        " YAML & TOM-BODY ",
 			bindingBody: binding.TOML,
-			body:  `foo=FOO`,
+			body:        `foo=FOO`,
 		},
 	} {
 		t.Logf("testing: %s", tt.name)
@@ -2130,32 +2130,32 @@ func TestContextShouldBindBodyWithYAML(t *testing.T) {
 
 func TestContextShouldBindBodyWithTOML(t *testing.T) {
 	for _, tt := range []struct {
-		name               string
-		bindingBody        binding.BindingBody
-		body               string
+		name        string
+		bindingBody binding.BindingBody
+		body        string
 	}{
 		{
-			name: " TOML & JSON-BODY ",
+			name:        " TOML & JSON-BODY ",
 			bindingBody: binding.JSON,
-			body:  `{"foo":"FOO"}`,
+			body:        `{"foo":"FOO"}`,
 		},
 		{
-			name: " TOML & XML-BODY ",
+			name:        " TOML & XML-BODY ",
 			bindingBody: binding.XML,
-			body:  `<?xml version="1.0" encoding="UTF-8"?>
+			body: `<?xml version="1.0" encoding="UTF-8"?>
 <root>
 <foo>FOO</foo>
 </root>`,
 		},
 		{
-			name: " TOML & YAML-BODY ",
+			name:        " TOML & YAML-BODY ",
 			bindingBody: binding.YAML,
-			body:  `foo: FOO`,
+			body:        `foo: FOO`,
 		},
 		{
-			name: " TOML & TOM-BODY ",
+			name:        " TOML & TOM-BODY ",
 			bindingBody: binding.TOML,
-			body:  `foo = 'FOO'`,
+			body:        `foo = 'FOO'`,
 		},
 	} {
 		t.Logf("testing: %s", tt.name)
