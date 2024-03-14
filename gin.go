@@ -702,7 +702,7 @@ func redirectTrailingSlash(c *Context) {
 	if length := len(p); length > 1 && p[length-1] == '/' {
 		req.URL.Path = p[:length-1]
 	}
-	redirectRequest(c)
+	redirectRequest(c, p)
 }
 
 func redirectFixedPath(c *Context, root *node, trailingSlash bool) bool {
@@ -711,15 +711,14 @@ func redirectFixedPath(c *Context, root *node, trailingSlash bool) bool {
 
 	if fixedPath, ok := root.findCaseInsensitivePath(cleanPath(rPath), trailingSlash); ok {
 		req.URL.Path = bytesconv.BytesToString(fixedPath)
-		redirectRequest(c)
+		redirectRequest(c, rPath)
 		return true
 	}
 	return false
 }
 
-func redirectRequest(c *Context) {
+func redirectRequest(c *Context, rPath string) {
 	req := c.Request
-	rPath := req.URL.Path
 	rURL := req.URL.String()
 
 	code := http.StatusMovedPermanently // Permanent redirect, request with GET method
