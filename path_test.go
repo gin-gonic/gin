@@ -6,6 +6,7 @@
 package gin
 
 import (
+	"runtime"
 	"strings"
 	"testing"
 
@@ -78,6 +79,10 @@ func TestPathClean(t *testing.T) {
 func TestPathCleanMallocs(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skipping malloc count in short mode")
+	}
+
+	if runtime.GOMAXPROCS(0) > 1 {
+		t.Skip("skipping malloc count; GOMAXPROCS>1")
 	}
 
 	for _, test := range cleanTests {
