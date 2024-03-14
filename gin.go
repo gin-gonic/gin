@@ -14,6 +14,7 @@ import (
 	"regexp"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/gin-gonic/gin/internal/bytesconv"
 	"github.com/gin-gonic/gin/render"
@@ -396,7 +397,13 @@ func (engine *Engine) Run(addr ...string) (err error) {
 
 	address := resolveAddress(addr)
 	debugPrint("Listening and serving HTTP on %s\n", address)
-	err = http.ListenAndServe(address, engine.Handler())
+
+	server := &http.Server{
+		Addr:        address,
+		Handler:     engine.Handler(),
+		ReadTimeout: 60 * time.Second,
+	}
+	err = server.ListenAndServe()
 	return
 }
 
