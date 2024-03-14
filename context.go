@@ -384,6 +384,16 @@ func (c *Context) GetStringMapStringSlice(key string) (smss map[string][]string)
 	return
 }
 
+// Iterate iterates the key/value pairs stored in c.Keys and executes the callback.
+// It does nothing if c.Keys is nil or empty.
+func (c *Context) Iterate(fn func(key string, value interface{})) {
+	c.mu.RLock()
+	for k, v := range c.Keys {
+		fn(k, v)
+	}
+	c.mu.RUnlock()
+}
+
 /************************************/
 /************ INPUT DATA ************/
 /************************************/
