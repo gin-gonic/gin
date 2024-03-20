@@ -43,6 +43,10 @@ const BodyBytesKey = "_gin-gonic/gin/bodybyteskey"
 // ContextKey is the key that a Context returns itself for.
 const ContextKey = "_gin-gonic/gin/contextkey"
 
+type ContextKeyType int
+
+const ContextRequestKey ContextKeyType = 0
+
 // abortIndex represents a typical value used in abort functions.
 const abortIndex int8 = math.MaxInt8 >> 1
 
@@ -1225,7 +1229,7 @@ func (c *Context) Err() error {
 // if no value is associated with key. Successive calls to Value with
 // the same key returns the same result.
 func (c *Context) Value(key any) any {
-	if key == 0 {
+	if key == ContextRequestKey {
 		return c.Request
 	}
 	if key == ContextKey {
