@@ -1226,6 +1226,10 @@ func (c *Context) Err() error {
 // the same key returns the same result.
 func (c *Context) Value(key any) any {
 	if key == 0 {
+		val := c.Request.Context().Value(key)
+		if val != nil {
+			return val
+		}
 		return c.Request
 	}
 	if key == ContextKey {
