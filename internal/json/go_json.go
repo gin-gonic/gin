@@ -3,7 +3,6 @@
 // license that can be found in the LICENSE file.
 
 //go:build go_json
-// +build go_json
 
 package json
 

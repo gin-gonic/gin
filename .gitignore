@@ -5,4 +5,7 @@ count.out
 test
 profile.out
 tmp.out
-.idea
+
+# Develop tools
+.idea/
+.vscode/

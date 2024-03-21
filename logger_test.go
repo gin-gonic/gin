@@ -310,6 +310,7 @@ func TestColorForStatus(t *testing.T) {
 		return p.StatusCodeColor()
 	}
 
+	assert.Equal(t, white, colorForStatus(http.StatusContinue), "1xx should be white")
 	assert.Equal(t, green, colorForStatus(http.StatusOK), "2xx should be green")
 	assert.Equal(t, white, colorForStatus(http.StatusMovedPermanently), "3xx should be white")
 	assert.Equal(t, yellow, colorForStatus(http.StatusNotFound), "4xx should be yellow")
@@ -405,6 +406,26 @@ func TestLoggerWithConfigSkippingPaths(t *testing.T) {
 	}))
 	router.GET("/logged", func(c *Context) {})
 	router.GET("/skipped", func(c *Context) {})
+
+	PerformRequest(router, "GET", "/logged")
+	assert.Contains(t, buffer.String(), "200")
+
+	buffer.Reset()
+	PerformRequest(router, "GET", "/skipped")
+	assert.Contains(t, buffer.String(), "")
+}
+
+func TestLoggerWithConfigSkipper(t *testing.T) {
+	buffer := new(strings.Builder)
+	router := New()
+	router.Use(LoggerWithConfig(LoggerConfig{
+		Output: buffer,
+		Skip: func(c *Context) bool {
+			return c.Writer.Status() == http.StatusNoContent
+		},
+	}))
+	router.GET("/logged", func(c *Context) { c.Status(http.StatusOK) })
+	router.GET("/skipped", func(c *Context) { c.Status(http.StatusNoContent) })
 
 	PerformRequest(router, "GET", "/logged")
 	assert.Contains(t, buffer.String(), "200")

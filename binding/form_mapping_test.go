@@ -5,6 +5,7 @@
 package binding
 
 import (
+	"mime/multipart"
 	"reflect"
 	"testing"
 	"time"
@@ -43,6 +44,7 @@ func TestMappingBaseTypes(t *testing.T) {
 		{"zero value", struct{ F uint }{}, "", uint(0)},
 		{"zero value", struct{ F bool }{}, "", false},
 		{"zero value", struct{ F float32 }{}, "", float32(0)},
+		{"file value", struct{ F *multipart.FileHeader }{}, "", &multipart.FileHeader{}},
 	} {
 		tp := reflect.TypeOf(tt.value)
 		testName := tt.name + ":" + tp.Field(0).Type.String()
@@ -267,6 +269,39 @@ func TestMappingStructField(t *testing.T) {
 	err := mappingByPtr(&s, formSource{"J": {`{"I": 9}`}}, "form")
 	assert.NoError(t, err)
 	assert.Equal(t, 9, s.J.I)
+}
+
+func TestMappingPtrField(t *testing.T) {
+	type ptrStruct struct {
+		Key int64 `json:"key"`
+	}
+
+	type ptrRequest struct {
+		Items []*ptrStruct `json:"items" form:"items"`
+	}
+
+	var err error
+
+	// With 0 items.
+	var req0 ptrRequest
+	err = mappingByPtr(&req0, formSource{}, "form")
+	assert.NoError(t, err)
+	assert.Empty(t, req0.Items)
+
+	// With 1 item.
+	var req1 ptrRequest
+	err = mappingByPtr(&req1, formSource{"items": {`{"key": 1}`}}, "form")
+	assert.NoError(t, err)
+	assert.Len(t, req1.Items, 1)
+	assert.EqualValues(t, 1, req1.Items[0].Key)
+
+	// With 2 items.
+	var req2 ptrRequest
+	err = mappingByPtr(&req2, formSource{"items": {`{"key": 1}`, `{"key": 2}`}}, "form")
+	assert.NoError(t, err)
+	assert.Len(t, req2.Items, 2)
+	assert.EqualValues(t, 1, req2.Items[0].Key)
+	assert.EqualValues(t, 2, req2.Items[1].Key)
 }
 
 func TestMappingMapField(t *testing.T) {

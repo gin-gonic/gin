@@ -426,7 +426,7 @@ func main() {
   r.Use(gin.Logger())
 
   // Recovery middleware recovers from any panics and writes a 500 if there was one.
-  r.Use(gin.CustomRecovery(func(c *gin.Context, recovered interface{}) {
+  r.Use(gin.CustomRecovery(func(c *gin.Context, recovered any) {
     if err, ok := recovered.(string); ok {
       c.String(http.StatusInternalServerError, fmt.Sprintf("error: %s", err))
     }
@@ -507,6 +507,44 @@ Sample Output
 
 ```sh
 ::1 - [Fri, 07 Dec 2018 17:04:38 JST] "GET /ping HTTP/1.1 200 122.767µs "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/71.0.3578.80 Safari/537.36" "
+```
+
+### Skip logging
+
+```go
+func main() {
+  router := gin.New()
+  
+  // skip logging for desired paths by setting SkipPaths in LoggerConfig
+  loggerConfig := gin.LoggerConfig{SkipPaths: []string{"/metrics"}}
+  
+  // skip logging based on your logic by setting Skip func in LoggerConfig
+  loggerConfig.Skip = func(c *gin.Context) bool {
+      // as an example skip non server side errors
+      return c.Writer.Status() < http.StatusInternalServerError
+  }
+  
+  engine.Use(gin.LoggerWithConfig(loggerConfig))
+  router.Use(gin.Recovery())
+  
+  // skipped
+  router.GET("/metrics", func(c *gin.Context) {
+      c.Status(http.StatusNotImplemented)
+  })
+
+  // skipped
+  router.GET("/ping", func(c *gin.Context) {
+      c.String(http.StatusOK, "pong")
+  })
+
+  // not skipped
+  router.GET("/data", func(c *gin.Context) {
+    c.Status(http.StatusNotImplemented)
+  })
+  
+  router.Run(":8080")
+}
+
 ```
 
 ### Controlling Log output coloring
@@ -1036,7 +1074,7 @@ curl -X POST -v --form name=user --form "avatar=@./avatar.png" http://localhost:
 func main() {
   r := gin.Default()
 
-  // gin.H is a shortcut for map[string]interface{}
+  // gin.H is a shortcut for map[string]any
   r.GET("/someJSON", func(c *gin.Context) {
     c.JSON(http.StatusOK, gin.H{"message": "hey", "status": http.StatusOK})
   })
@@ -2001,7 +2039,7 @@ func (customerBinding) Name() string {
   return "form"
 }
 
-func (customerBinding) Bind(req *http.Request, obj interface{}) error {
+func (customerBinding) Bind(req *http.Request, obj any) error {
   if err := req.ParseForm(); err != nil {
     return err
   }
@@ -2016,7 +2054,7 @@ func (customerBinding) Bind(req *http.Request, obj interface{}) error {
   return validate(obj)
 }
 
-func validate(obj interface{}) error {
+func validate(obj any) error {
   if binding.Validator == nil {
     return nil
   }
@@ -2216,10 +2254,16 @@ import (
 func main() {
   router := gin.Default()
   // Use predefined header gin.PlatformXXX
+  // Google App Engine
   router.TrustedPlatform = gin.PlatformGoogleAppEngine
-  // Or set your own trusted request header for another trusted proxy service
-  // Don't set it to any suspect request header, it's unsafe
-  router.TrustedPlatform = "X-CDN-IP"
+  // Cloudflare
+  router.TrustedPlatform = gin.PlatformCloudflare
+  // Fly.io
+  router.TrustedPlatform = gin.PlatformFlyIO
+  // Or, you can set your own trusted request header. But be sure your CDN
+  // prevents users from passing this header! For example, if your CDN puts
+  // the client IP in X-CDN-Client-IP:
+  router.TrustedPlatform = "X-CDN-Client-IP"
 
   router.GET("/", func(c *gin.Context) {
     // If you set TrustedPlatform, ClientIP() will resolve the
