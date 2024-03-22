@@ -2016,12 +2016,25 @@ func TestContextShouldBindBodyWithJSON(t *testing.T) {
 			Foo string `json:"foo" binding:"required"`
 		}
 		objJSON := typeJSON{}
-		if tt.bindingBody != binding.JSON {
-			assert.Error(t, c.ShouldBindBodyWithJSON(&objJSON))
-			assert.Equal(t, typeJSON{}, objJSON)
-		} else {
+
+		if tt.bindingBody == binding.JSON{
 			assert.NoError(t, c.ShouldBindBodyWithJSON(&objJSON))
 			assert.Equal(t, typeJSON{"FOO"}, objJSON)
+		}
+
+		if tt.bindingBody == binding.XML {
+			assert.Error(t, c.ShouldBindBodyWithJSON(&objJSON))
+			assert.Equal(t, typeJSON{}, objJSON)
+		}
+
+		if tt.bindingBody == binding.YAML {
+			assert.Error(t, c.ShouldBindBodyWithJSON(&objJSON))
+			assert.Equal(t, typeJSON{}, objJSON)
+		}
+
+		if tt.bindingBody == binding.TOML {
+			assert.Error(t, c.ShouldBindBodyWithJSON(&objJSON))
+			assert.Equal(t, typeJSON{}, objJSON)
 		}
 	}
 }
@@ -2067,12 +2080,25 @@ func TestContextShouldBindBodyWithXML(t *testing.T) {
 			Foo string `xml:"foo" binding:"required"`
 		}
 		objXML := typeXML{}
-		if tt.bindingBody != binding.XML {
+
+		if tt.bindingBody == binding.JSON {
 			assert.Error(t, c.ShouldBindBodyWithXML(&objXML))
 			assert.Equal(t, typeXML{}, objXML)
-		} else {
+		}
+
+		if tt.bindingBody == binding.XML {
 			assert.NoError(t, c.ShouldBindBodyWithXML(&objXML))
 			assert.Equal(t, typeXML{"FOO"}, objXML)
+		}
+
+		if tt.bindingBody == binding.YAML{
+			assert.Error(t, c.ShouldBindBodyWithXML(&objXML))
+			assert.Equal(t, typeXML{}, objXML)
+		}
+
+		if tt.bindingBody == binding.TOML {
+			assert.Error(t, c.ShouldBindBodyWithXML(&objXML))
+			assert.Equal(t, typeXML{}, objXML)
 		}
 	}
 }
@@ -2118,12 +2144,26 @@ func TestContextShouldBindBodyWithYAML(t *testing.T) {
 			Foo string `yaml:"foo" binding:"required"`
 		}
 		objYAML := typeYAML{}
-		if tt.bindingBody != binding.YAML && tt.bindingBody != binding.JSON {
-			assert.Error(t, c.ShouldBindBodyWithYAML(&objYAML))
-			assert.Equal(t, typeYAML{}, objYAML)
-		} else {
+
+		// YAML belongs to a super collection of JSON, so JSON can be parsed by YAML
+		if tt.bindingBody == binding.JSON {
 			assert.NoError(t, c.ShouldBindBodyWithYAML(&objYAML))
 			assert.Equal(t, typeYAML{"FOO"}, objYAML)
+		}
+
+		if tt.bindingBody == binding.XML {
+			assert.Error(t, c.ShouldBindBodyWithYAML(&objYAML))
+			assert.Equal(t, typeYAML{}, objYAML)
+		}
+
+		if tt.bindingBody == binding.YAML {
+			assert.NoError(t, c.ShouldBindBodyWithYAML(&objYAML))
+			assert.Equal(t, typeYAML{"FOO"}, objYAML)
+		}
+
+		if tt.bindingBody == binding.TOML {
+			assert.Error(t, c.ShouldBindBodyWithYAML(&objYAML))
+			assert.Equal(t, typeYAML{}, objYAML)
 		}
 	}
 }
@@ -2169,10 +2209,23 @@ func TestContextShouldBindBodyWithTOML(t *testing.T) {
 			Foo string `toml:"foo" binding:"required"`
 		}
 		objTOML := typeTOML{}
-		if tt.bindingBody != binding.TOML {
+
+		if tt.bindingBody == binding.JSON {
 			assert.Error(t, c.ShouldBindBodyWithTOML(&objTOML))
 			assert.Equal(t, typeTOML{}, objTOML)
-		} else {
+		}
+
+		if tt.bindingBody == binding.XML {
+			assert.Error(t, c.ShouldBindBodyWithTOML(&objTOML))
+			assert.Equal(t, typeTOML{}, objTOML)
+		}
+
+		if tt.bindingBody == binding.YAML {
+			assert.Error(t, c.ShouldBindBodyWithTOML(&objTOML))
+			assert.Equal(t, typeTOML{}, objTOML)
+		}
+
+		if tt.bindingBody == binding.TOML {
 			assert.NoError(t, c.ShouldBindBodyWithTOML(&objTOML))
 			assert.Equal(t, typeTOML{"FOO"}, objTOML)
 		}
