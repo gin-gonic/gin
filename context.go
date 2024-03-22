@@ -737,6 +737,11 @@ func (c *Context) ShouldBindHeader(obj any) error {
 	return c.ShouldBindWith(obj, binding.Header)
 }
 
+// ShouldBindCookie is a shortcut for c.ShouldBindWith(obj, binding.Cookie).
+func (c *Context) ShouldBindCookie(obj any) error {
+	return c.ShouldBindWith(obj, binding.Cookie)
+}
+
 // ShouldBindUri binds the passed struct pointer using the specified binding engine.
 func (c *Context) ShouldBindUri(obj any) error {
 	m := make(map[string][]string)

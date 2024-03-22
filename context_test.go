@@ -1825,6 +1825,27 @@ func TestContextShouldBindHeader(t *testing.T) {
 	assert.Equal(t, 0, w.Body.Len())
 }
 
+func TestContextShouldBindCookie(t *testing.T) {
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
+
+	c.Request, _ = http.NewRequest("POST", "/", nil)
+	c.Request.AddCookie(&http.Cookie{Name: "rate", Value: "8000"})
+	c.Request.AddCookie(&http.Cookie{Name: "domain", Value: "music"})
+	c.Request.AddCookie(&http.Cookie{Name: "limit", Value: "1000"})
+
+	var testCookie struct {
+		Rate   int    `cookie:"rate"`
+		Domain string `cookie:"domain"`
+		Limit  int    `cookie:"limit"`
+	}
+
+	assert.NoError(t, c.ShouldBindCookie(&testCookie))
+	assert.Equal(t, 8000, testCookie.Rate)
+	assert.Equal(t, "music", testCookie.Domain)
+	assert.Equal(t, 1000, testCookie.Limit)
+}
+
 func TestContextShouldBindWithQuery(t *testing.T) {
 	w := httptest.NewRecorder()
 	c, _ := CreateTestContext(w)
