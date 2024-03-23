@@ -9,6 +9,7 @@
   - [Using GET, POST, PUT, PATCH, DELETE and OPTIONS](#using-get-post-put-patch-delete-and-options)
   - [Parameters in path](#parameters-in-path)
   - [Querystring parameters](#querystring-parameters)
+  - [Retrieving the path of a registered handler](#retrieving-the-path-of-a-registered-handler)
   - [Multipart/Urlencoded Form](#multiparturlencoded-form)
   - [Another example: query + post form](#another-example-query--post-form)
   - [Map as querystring or postform parameters](#map-as-querystring-or-postform-parameters)
@@ -178,6 +179,29 @@ func main() {
   })
   router.Run(":8080")
 }
+```
+
+### Retrieving the path of a registered handler
+
+Once a handler is registered with the router, you can retrieve its path with the `PathFor` method:
+
+```go
+func main() {
+  // Creates a gin router with default middleware:
+  // logger and recovery (crash-free) middleware
+  router := gin.Default()
+
+  getUser := func(c *Context) {
+    // Handle the GET request.
+  }
+  router.GET("/users/:name", getUser)
+  path := router.PathFor(getUser, ":name", "gopher")
+
+  print(path) // Prints /users/gopher
+
+  router.Run()
+}
+router := gin.Default()
 ```
 
 ### Multipart/Urlencoded Form
