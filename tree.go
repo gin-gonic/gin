@@ -269,7 +269,18 @@ walk:
 // Returns -1 as index, if no wildcard was found.
 func findWildcard(path string) (wildcard string, i int, valid bool) {
 	// Find start
+	escapeColon := false
 	for start, c := range []byte(path) {
+		if escapeColon {
+			if c == ':' {
+				escapeColon = false
+				continue
+			}
+		}
+		if c == '\\' {
+			escapeColon = true
+			continue
+		}
 		// A wildcard starts with ':' (param) or '*' (catch-all)
 		if c != ':' && c != '*' {
 			continue
