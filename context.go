@@ -774,6 +774,26 @@ func (c *Context) ShouldBindBodyWith(obj any, bb binding.BindingBody) (err error
 	return bb.BindBody(body, obj)
 }
 
+// ShouldBindBodyWithJSON is a shortcut for c.ShouldBindBodyWith(obj, binding.JSON).
+func (c *Context) ShouldBindBodyWithJSON(obj any) error {
+	return c.ShouldBindBodyWith(obj, binding.JSON)
+}
+
+// ShouldBindBodyWithXML is a shortcut for c.ShouldBindBodyWith(obj, binding.XML).
+func (c *Context) ShouldBindBodyWithXML(obj any) error {
+	return c.ShouldBindBodyWith(obj, binding.XML)
+}
+
+// ShouldBindBodyWithYAML is a shortcut for c.ShouldBindBodyWith(obj, binding.YAML).
+func (c *Context) ShouldBindBodyWithYAML(obj any) error {
+	return c.ShouldBindBodyWith(obj, binding.YAML)
+}
+
+// ShouldBindBodyWithTOML is a shortcut for c.ShouldBindBodyWith(obj, binding.TOML).
+func (c *Context) ShouldBindBodyWithTOML(obj any) error {
+	return c.ShouldBindBodyWith(obj, binding.TOML)
+}
+
 // ClientIP implements one best effort algorithm to return the real client IP.
 // It calls c.RemoteIP() under the hood, to check if the remote IP is a trusted proxy or not.
 // If it is it will then try to parse the headers defined in Engine.RemoteIPHeaders (defaulting to [X-Forwarded-For, X-Real-Ip]).
