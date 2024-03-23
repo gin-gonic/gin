@@ -2017,7 +2017,7 @@ func TestContextShouldBindBodyWithJSON(t *testing.T) {
 		}
 		objJSON := typeJSON{}
 
-		if tt.bindingBody == binding.JSON{
+		if tt.bindingBody == binding.JSON {
 			assert.NoError(t, c.ShouldBindBodyWithJSON(&objJSON))
 			assert.Equal(t, typeJSON{"FOO"}, objJSON)
 		}
@@ -2091,7 +2091,7 @@ func TestContextShouldBindBodyWithXML(t *testing.T) {
 			assert.Equal(t, typeXML{"FOO"}, objXML)
 		}
 
-		if tt.bindingBody == binding.YAML{
+		if tt.bindingBody == binding.YAML {
 			assert.Error(t, c.ShouldBindBodyWithXML(&objXML))
 			assert.Equal(t, typeXML{}, objXML)
 		}
