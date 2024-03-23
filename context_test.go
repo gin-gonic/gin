@@ -1977,6 +1977,263 @@ func TestContextShouldBindBodyWith(t *testing.T) {
 	}
 }
 
+func TestContextShouldBindBodyWithJSON(t *testing.T) {
+	for _, tt := range []struct {
+		name        string
+		bindingBody binding.BindingBody
+		body        string
+	}{
+		{
+			name:        " JSON & JSON-BODY ",
+			bindingBody: binding.JSON,
+			body:        `{"foo":"FOO"}`,
+		},
+		{
+			name:        " JSON & XML-BODY ",
+			bindingBody: binding.XML,
+			body: `<?xml version="1.0" encoding="UTF-8"?>
+<root>
+<foo>FOO</foo>
+</root>`,
+		},
+		{
+			name:        " JSON & YAML-BODY ",
+			bindingBody: binding.YAML,
+			body:        `foo: FOO`,
+		},
+		{
+			name:        " JSON & TOM-BODY ",
+			bindingBody: binding.TOML,
+			body:        `foo=FOO`,
+		},
+	} {
+		t.Logf("testing: %s", tt.name)
+
+		w := httptest.NewRecorder()
+		c, _ := CreateTestContext(w)
+
+		c.Request, _ = http.NewRequest("POST", "/", bytes.NewBufferString(tt.body))
+
+		type typeJSON struct {
+			Foo string `json:"foo" binding:"required"`
+		}
+		objJSON := typeJSON{}
+
+		if tt.bindingBody == binding.JSON {
+			assert.NoError(t, c.ShouldBindBodyWithJSON(&objJSON))
+			assert.Equal(t, typeJSON{"FOO"}, objJSON)
+		}
+
+		if tt.bindingBody == binding.XML {
+			assert.Error(t, c.ShouldBindBodyWithJSON(&objJSON))
+			assert.Equal(t, typeJSON{}, objJSON)
+		}
+
+		if tt.bindingBody == binding.YAML {
+			assert.Error(t, c.ShouldBindBodyWithJSON(&objJSON))
+			assert.Equal(t, typeJSON{}, objJSON)
+		}
+
+		if tt.bindingBody == binding.TOML {
+			assert.Error(t, c.ShouldBindBodyWithJSON(&objJSON))
+			assert.Equal(t, typeJSON{}, objJSON)
+		}
+	}
+}
+
+func TestContextShouldBindBodyWithXML(t *testing.T) {
+	for _, tt := range []struct {
+		name        string
+		bindingBody binding.BindingBody
+		body        string
+	}{
+		{
+			name:        " XML & JSON-BODY ",
+			bindingBody: binding.JSON,
+			body:        `{"foo":"FOO"}`,
+		},
+		{
+			name:        " XML & XML-BODY ",
+			bindingBody: binding.XML,
+			body: `<?xml version="1.0" encoding="UTF-8"?>
+<root>
+<foo>FOO</foo>
+</root>`,
+		},
+		{
+			name:        " XML & YAML-BODY ",
+			bindingBody: binding.YAML,
+			body:        `foo: FOO`,
+		},
+		{
+			name:        " XML & TOM-BODY ",
+			bindingBody: binding.TOML,
+			body:        `foo=FOO`,
+		},
+	} {
+		t.Logf("testing: %s", tt.name)
+
+		w := httptest.NewRecorder()
+		c, _ := CreateTestContext(w)
+
+		c.Request, _ = http.NewRequest("POST", "/", bytes.NewBufferString(tt.body))
+
+		type typeXML struct {
+			Foo string `xml:"foo" binding:"required"`
+		}
+		objXML := typeXML{}
+
+		if tt.bindingBody == binding.JSON {
+			assert.Error(t, c.ShouldBindBodyWithXML(&objXML))
+			assert.Equal(t, typeXML{}, objXML)
+		}
+
+		if tt.bindingBody == binding.XML {
+			assert.NoError(t, c.ShouldBindBodyWithXML(&objXML))
+			assert.Equal(t, typeXML{"FOO"}, objXML)
+		}
+
+		if tt.bindingBody == binding.YAML {
+			assert.Error(t, c.ShouldBindBodyWithXML(&objXML))
+			assert.Equal(t, typeXML{}, objXML)
+		}
+
+		if tt.bindingBody == binding.TOML {
+			assert.Error(t, c.ShouldBindBodyWithXML(&objXML))
+			assert.Equal(t, typeXML{}, objXML)
+		}
+	}
+}
+
+func TestContextShouldBindBodyWithYAML(t *testing.T) {
+	for _, tt := range []struct {
+		name        string
+		bindingBody binding.BindingBody
+		body        string
+	}{
+		{
+			name:        " YAML & JSON-BODY ",
+			bindingBody: binding.JSON,
+			body:        `{"foo":"FOO"}`,
+		},
+		{
+			name:        " YAML & XML-BODY ",
+			bindingBody: binding.XML,
+			body: `<?xml version="1.0" encoding="UTF-8"?>
+<root>
+<foo>FOO</foo>
+</root>`,
+		},
+		{
+			name:        " YAML & YAML-BODY ",
+			bindingBody: binding.YAML,
+			body:        `foo: FOO`,
+		},
+		{
+			name:        " YAML & TOM-BODY ",
+			bindingBody: binding.TOML,
+			body:        `foo=FOO`,
+		},
+	} {
+		t.Logf("testing: %s", tt.name)
+
+		w := httptest.NewRecorder()
+		c, _ := CreateTestContext(w)
+
+		c.Request, _ = http.NewRequest("POST", "/", bytes.NewBufferString(tt.body))
+
+		type typeYAML struct {
+			Foo string `yaml:"foo" binding:"required"`
+		}
+		objYAML := typeYAML{}
+
+		// YAML belongs to a super collection of JSON, so JSON can be parsed by YAML
+		if tt.bindingBody == binding.JSON {
+			assert.NoError(t, c.ShouldBindBodyWithYAML(&objYAML))
+			assert.Equal(t, typeYAML{"FOO"}, objYAML)
+		}
+
+		if tt.bindingBody == binding.XML {
+			assert.Error(t, c.ShouldBindBodyWithYAML(&objYAML))
+			assert.Equal(t, typeYAML{}, objYAML)
+		}
+
+		if tt.bindingBody == binding.YAML {
+			assert.NoError(t, c.ShouldBindBodyWithYAML(&objYAML))
+			assert.Equal(t, typeYAML{"FOO"}, objYAML)
+		}
+
+		if tt.bindingBody == binding.TOML {
+			assert.Error(t, c.ShouldBindBodyWithYAML(&objYAML))
+			assert.Equal(t, typeYAML{}, objYAML)
+		}
+	}
+}
+
+func TestContextShouldBindBodyWithTOML(t *testing.T) {
+	for _, tt := range []struct {
+		name        string
+		bindingBody binding.BindingBody
+		body        string
+	}{
+		{
+			name:        " TOML & JSON-BODY ",
+			bindingBody: binding.JSON,
+			body:        `{"foo":"FOO"}`,
+		},
+		{
+			name:        " TOML & XML-BODY ",
+			bindingBody: binding.XML,
+			body: `<?xml version="1.0" encoding="UTF-8"?>
+<root>
+<foo>FOO</foo>
+</root>`,
+		},
+		{
+			name:        " TOML & YAML-BODY ",
+			bindingBody: binding.YAML,
+			body:        `foo: FOO`,
+		},
+		{
+			name:        " TOML & TOM-BODY ",
+			bindingBody: binding.TOML,
+			body:        `foo = 'FOO'`,
+		},
+	} {
+		t.Logf("testing: %s", tt.name)
+
+		w := httptest.NewRecorder()
+		c, _ := CreateTestContext(w)
+
+		c.Request, _ = http.NewRequest("POST", "/", bytes.NewBufferString(tt.body))
+
+		type typeTOML struct {
+			Foo string `toml:"foo" binding:"required"`
+		}
+		objTOML := typeTOML{}
+
+		if tt.bindingBody == binding.JSON {
+			assert.Error(t, c.ShouldBindBodyWithTOML(&objTOML))
+			assert.Equal(t, typeTOML{}, objTOML)
+		}
+
+		if tt.bindingBody == binding.XML {
+			assert.Error(t, c.ShouldBindBodyWithTOML(&objTOML))
+			assert.Equal(t, typeTOML{}, objTOML)
+		}
+
+		if tt.bindingBody == binding.YAML {
+			assert.Error(t, c.ShouldBindBodyWithTOML(&objTOML))
+			assert.Equal(t, typeTOML{}, objTOML)
+		}
+
+		if tt.bindingBody == binding.TOML {
+			assert.NoError(t, c.ShouldBindBodyWithTOML(&objTOML))
+			assert.Equal(t, typeTOML{"FOO"}, objTOML)
+		}
+	}
+}
+
 func TestContextGolangContext(t *testing.T) {
 	c, _ := CreateTestContext(httptest.NewRecorder())
 	c.Request, _ = http.NewRequest("POST", "/", bytes.NewBufferString("{\"foo\":\"bar\", \"bar\":\"foo\"}"))
