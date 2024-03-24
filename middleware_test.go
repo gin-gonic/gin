@@ -34,6 +34,9 @@ func TestMiddlewareGeneralCase(t *testing.T) {
 	router.NoMethod(func(c *Context) {
 		signature += " XX "
 	})
+	router.OnRedirect(func(c *Context) {
+		signature += " YYY "
+	})
 	// RUN
 	w := PerformRequest(router, "GET", "/")
 
@@ -76,6 +79,50 @@ func TestMiddlewareNoRoute(t *testing.T) {
 	// TEST
 	assert.Equal(t, http.StatusNotFound, w.Code)
 	assert.Equal(t, "ACEGHFDB", signature)
+}
+
+func TestMiddlewareOnRedirect(t *testing.T) {
+	signature := ""
+	router := New()
+	router.Use(func(c *Context) {
+		signature += "A"
+		c.Next()
+		signature += "B"
+	})
+	router.Use(func(c *Context) {
+		signature += "C"
+		c.Next()
+		c.Next()
+		c.Next()
+		c.Next()
+		signature += "D"
+	})
+	router.NoRoute(func(c *Context) {
+		signature += "E"
+		c.Next()
+		signature += "F"
+	}, func(c *Context) {
+		signature += "G"
+		c.Next()
+		signature += "H"
+	})
+	router.NoMethod(func(c *Context) {
+		signature += " X "
+	})
+	router.OnRedirect(func(c *Context) {
+		signature += "Y"
+	})
+
+	router.GET("/foo", func(c *Context) {
+		c.String(200, "Hello, World!")
+	})
+
+	// RUN
+	w := PerformRequest(router, "GET", "/foo/")
+
+	// TEST
+	assert.Equal(t, http.StatusMovedPermanently, w.Code)
+	assert.Equal(t, "ACYDB", signature)
 }
 
 func TestMiddlewareNoMethodEnabled(t *testing.T) {

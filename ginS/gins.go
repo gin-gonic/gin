@@ -42,6 +42,11 @@ func NoRoute(handlers ...gin.HandlerFunc) {
 	engine().NoRoute(handlers...)
 }
 
+// OnRedirect is a wrapper for Engine.OnRedirect.
+func OnRedirect(handlers ...gin.HandlerFunc) {
+	engine().OnRedirect(handlers...)
+}
+
 // NoMethod is a wrapper for Engine.NoMethod.
 func NoMethod(handlers ...gin.HandlerFunc) {
 	engine().NoMethod(handlers...)
