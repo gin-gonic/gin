@@ -5,6 +5,7 @@
 package gin
 
 import (
+	"fmt"
 	"net/http"
 	"os"
 )
@@ -29,11 +30,12 @@ func Dir(root string, listDirectory bool) http.FileSystem {
 	return &onlyFilesFS{fs}
 }
 
-// Open conforms to http.Filesystem.
+// Open opens a file excluding directories.
+// It conforms to http.Filesystem.
 func (fs onlyFilesFS) Open(name string) (http.File, error) {
 	f, err := fs.fs.Open(name)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to open file: %w", err)
 	}
 	return neuteredReaddirFile{f}, nil
 }

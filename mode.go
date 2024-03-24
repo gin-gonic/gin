@@ -6,6 +6,7 @@ package gin
 
 import (
 	"flag"
+	"fmt"
 	"io"
 	"os"
 
@@ -53,8 +54,16 @@ func init() {
 	SetMode(mode)
 }
 
+func init() {
+	mode := os.Getenv(EnvGinMode)
+	err := SetMode(mode)
+	if err != nil {
+		panic(err)
+	}
+}
+
 // SetMode sets gin mode according to input string.
-func SetMode(value string) {
+func SetMode(value string) error {
 	if value == "" {
 		if flag.Lookup("test.v") != nil {
 			value = TestMode
@@ -71,10 +80,11 @@ func SetMode(value string) {
 	case TestMode:
 		ginMode = testCode
 	default:
-		panic("gin mode unknown: " + value + " (available mode: debug release test)")
+		return fmt.Errorf("gin mode unknown: %s (available mode: debug release test)", value)
 	}
 
 	modeName = value
+	return nil
 }
 
 // DisableBindValidation closes the default validator.

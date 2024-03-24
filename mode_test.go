@@ -22,30 +22,36 @@ func TestSetMode(t *testing.T) {
 	assert.Equal(t, TestMode, Mode())
 	os.Unsetenv(EnvGinMode)
 
-	SetMode("")
+	err := SetMode("")
+	assert.NoError(t, err)
 	assert.Equal(t, testCode, ginMode)
 	assert.Equal(t, TestMode, Mode())
 
 	tmp := flag.CommandLine
 	flag.CommandLine = flag.NewFlagSet("", flag.ContinueOnError)
-	SetMode("")
+	err = SetMode("")
+	assert.NoError(t, err)
 	assert.Equal(t, debugCode, ginMode)
 	assert.Equal(t, DebugMode, Mode())
 	flag.CommandLine = tmp
 
-	SetMode(DebugMode)
+	err = SetMode(DebugMode)
+	assert.NoError(t, err)
 	assert.Equal(t, debugCode, ginMode)
 	assert.Equal(t, DebugMode, Mode())
 
-	SetMode(ReleaseMode)
+	err = SetMode(ReleaseMode)
+	assert.NoError(t, err)
 	assert.Equal(t, releaseCode, ginMode)
 	assert.Equal(t, ReleaseMode, Mode())
 
-	SetMode(TestMode)
+	err = SetMode(TestMode)
+	assert.NoError(t, err)
 	assert.Equal(t, testCode, ginMode)
 	assert.Equal(t, TestMode, Mode())
 
-	assert.Panics(t, func() { SetMode("unknown") })
+	err = SetMode("unknown")
+	assert.Error(t, err)
 }
 
 func TestDisableBindValidation(t *testing.T) {
