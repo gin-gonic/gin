@@ -614,7 +614,7 @@ func (c *Context) SaveUploadedFile(file *multipart.FileHeader, dst string) error
 	}
 	defer src.Close()
 
-	if err = os.MkdirAll(filepath.Dir(dst), 0750); err != nil {
+	if err = os.MkdirAll(filepath.Dir(dst), 0o750); err != nil {
 		return err
 	}
 
@@ -668,7 +668,7 @@ func (c *Context) BindTOML(obj any) error {
 }
 
 // BindPlain is a shortcut for c.MustBindWith(obj, binding.Plain).
-func (c *Context) BindPlain(obj interface{}) error {
+func (c *Context) BindPlain(obj any) error {
 	return c.MustBindWith(obj, binding.Plain)
 }
 
@@ -738,7 +738,7 @@ func (c *Context) ShouldBindTOML(obj any) error {
 }
 
 // ShouldBindPlain is a shortcut for c.ShouldBindWith(obj, binding.Plain).
-func (c *Context) ShouldBindPlain(obj interface{}) error {
+func (c *Context) ShouldBindPlain(obj any) error {
 	return c.ShouldBindWith(obj, binding.Plain)
 }
 
