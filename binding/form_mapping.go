@@ -27,6 +27,8 @@ var (
 	ErrConvertToMapString = errors.New("can not convert to map of strings")
 )
 
+const maxIterDepth = 255
+
 func mapURI(ptr any, m map[string][]string) error {
 	return mapFormByTag(ptr, m, "uri")
 }
@@ -75,15 +77,17 @@ func (form formSource) TrySet(value reflect.Value, field reflect.StructField, ta
 }
 
 func mappingByPtr(ptr any, setter setter, tag string) error {
-	_, err := mapping(reflect.ValueOf(ptr), emptyField, setter, tag)
+	_, err := mapping(reflect.ValueOf(ptr), emptyField, setter, tag, 0)
 	return err
 }
 
-func mapping(value reflect.Value, field reflect.StructField, setter setter, tag string) (bool, error) {
+func mapping(value reflect.Value, field reflect.StructField, setter setter, tag string, depth int) (bool, error) {
 	if field.Tag.Get(tag) == "-" { // just ignoring this field
 		return false, nil
 	}
-
+	if depth > maxIterDepth {
+		return false, fmt.Errorf("deep of nesting is too high > %d", maxIterDepth)
+	}
 	vKind := value.Kind()
 
 	if vKind == reflect.Ptr {
@@ -93,7 +97,7 @@ func mapping(value reflect.Value, field reflect.StructField, setter setter, tag 
 			isNew = true
 			vPtr = reflect.New(value.Type().Elem())
 		}
-		isSet, err := mapping(vPtr.Elem(), field, setter, tag)
+		isSet, err := mapping(vPtr.Elem(), field, setter, tag, depth+1)
 		if err != nil {
 			return false, err
 		}
@@ -122,7 +126,7 @@ func mapping(value reflect.Value, field reflect.StructField, setter setter, tag 
 			if sf.PkgPath != "" && !sf.Anonymous { // unexported
 				continue
 			}
-			ok, err := mapping(value.Field(i), sf, setter, tag)
+			ok, err := mapping(value.Field(i), sf, setter, tag, depth+1)
 			if err != nil {
 				return false, err
 			}
