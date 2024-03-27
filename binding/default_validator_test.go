@@ -25,6 +25,13 @@ func TestSliceValidationError(t *testing.T) {
 			},
 			"[0]: first error\n[1]: second error",
 		},
+		{"has two elements, but the first one is nil",
+			SliceValidationError{
+				nil,
+				errors.New("first error at second place"),
+			},
+			"[1]: first error at second place",
+		},
 		{"has many elements",
 			SliceValidationError{
 				errors.New("first error"),
