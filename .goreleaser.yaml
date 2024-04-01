@@ -9,7 +9,7 @@ builds:
 changelog:
   # Set it to true if you wish to skip the changelog generation.
   # This may result in an empty release notes on GitHub/GitLab/Gitea.
-  skip: false
+  disable: true
 
   # Changelog generation implementation to use.
   #
