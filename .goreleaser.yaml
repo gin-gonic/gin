@@ -1,8 +1,7 @@
 project_name: gin
 
 builds:
-  -
-    # If true, skip the build.
+  - # If true, skip the build.
     # Useful for library projects.
     # Default is false
     skip: true
@@ -21,7 +20,7 @@ changelog:
   # - `github-native`: uses the GitHub release notes generation API, disables the groups feature.
   #
   # Defaults to `git`.
-  use: git
+  use: github
 
   # Sorts the changelog by the commit's messages.
   # Could either be asc, desc or empty
@@ -36,13 +35,16 @@ changelog:
   # Default is no groups.
   groups:
     - title: Features
-      regexp: "^.*feat[(\\w)]*:+.*$"
+      regexp: '^.*?feat(\([[:word:]]+\))??!?:.+$'
       order: 0
-    - title: 'Bug fixes'
-      regexp: "^.*fix[(\\w)]*:+.*$"
+    - title: "Bug fixes"
+      regexp: '^.*?fix(\([[:word:]]+\))??!?:.+$'
       order: 1
-    - title: 'Enhancements'
-      regexp: "^.*chore[(\\w)]*:+.*$"
+    - title: "Refactor"
+      regexp: '^.*?refactor(\([[:word:]]+\))??!?:.+$'
+      order: 2
+    - title: "Enhancements"
+      regexp: '^.*?chore(\([[:word:]]+\))??!?:.+$'
       order: 2
     - title: Others
       order: 999
@@ -52,6 +54,6 @@ changelog:
     # the changelog
     # Default is empty
     exclude:
-      - '^docs'
-      - 'CICD'
+      - "^docs"
+      - "CICD"
       - typo
