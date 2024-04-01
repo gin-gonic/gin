@@ -699,7 +699,7 @@ func redirectTrailingSlash(c *Context) {
 		p = prefix + "/" + req.URL.Path
 	}
 	req.URL.Path = p + "/"
-	p = regRemoveRepeatedChar.ReplaceAllString(p, "/")
+	p = regexp.MustCompile("^/{2,}").ReplaceAllString(p, "/")
 	if length := len(p); length > 1 && p[length-1] == '/' {
 		req.URL.Path = p[:length-1]
 	}
