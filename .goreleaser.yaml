@@ -35,17 +35,17 @@ changelog:
   # Default is no groups.
   groups:
     - title: Features
-      regexp: '^.*?feat(\([[:word:]]+\))??!?:.+$'
+      regexp: "^.*feat[(\\w)]*:+.*$"
       order: 0
     - title: "Bug fixes"
-      regexp: '^.*?fix(\([[:word:]]+\))??!?:.+$'
+      regexp: "^.*fix[(\\w)]*:+.*$"
       order: 1
-    - title: "Refactor"
-      regexp: '^.*?refactor(\([[:word:]]+\))??!?:.+$'
-      order: 2
     - title: "Enhancements"
-      regexp: '^.*?chore(\([[:word:]]+\))??!?:.+$'
+      regexp: "^.*chore[(\\w)]*:+.*$"
       order: 2
+    - title: "Refactor"
+      regexp: "^.*refactor[(\\w)]*:+.*$"
+      order: 3
     - title: Others
       order: 999
 
