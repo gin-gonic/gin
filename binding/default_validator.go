@@ -5,8 +5,8 @@
 package binding
 
 import (
-	"fmt"
 	"reflect"
+	"strconv"
 	"strings"
 	"sync"
 
@@ -22,13 +22,17 @@ type SliceValidationError []error
 
 // Error concatenates all error elements in SliceValidationError into a single string separated by \n.
 func (err SliceValidationError) Error() string {
+	if len(err) == 0 {
+		return ""
+	}
+
 	var b strings.Builder
-	for i := range err {
+	for i := 0; i < len(err); i++ {
 		if err[i] != nil {
 			if b.Len() > 0 {
 				b.WriteString("\n")
 			}
-			fmt.Fprintf(&b, "[%d]: %s", i, err[i].Error())
+			b.WriteString("[" + strconv.Itoa(i) + "]: " + err[i].Error())
 		}
 	}
 	return b.String()
