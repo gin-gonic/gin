@@ -17,6 +17,7 @@ import (
 
 	"github.com/gin-gonic/gin/internal/bytesconv"
 	"github.com/gin-gonic/gin/render"
+	"github.com/gin-gonic/gin/utils"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
 )
@@ -401,24 +402,17 @@ func (engine *Engine) Run(addr ...string) (err error) {
 }
 
 func (engine *Engine) prepareTrustedCIDRs() ([]*net.IPNet, error) {
+	var err error
 	if engine.trustedProxies == nil {
 		return nil, nil
 	}
 
 	cidr := make([]*net.IPNet, 0, len(engine.trustedProxies))
 	for _, trustedProxy := range engine.trustedProxies {
-		if !strings.Contains(trustedProxy, "/") {
-			ip := parseIP(trustedProxy)
-			if ip == nil {
-				return cidr, &net.ParseError{Type: "IP address", Text: trustedProxy}
-			}
-
-			switch len(ip) {
-			case net.IPv4len:
-				trustedProxy += "/32"
-			case net.IPv6len:
-				trustedProxy += "/128"
-			}
+		trustedProxy, err = utils.MakeTrustIP(trustedProxy)	
+		
+		if err != nil {
+			return cidr, err
 		}
 		_, cidrNet, err := net.ParseCIDR(trustedProxy)
 		if err != nil {
@@ -487,20 +481,6 @@ func (engine *Engine) validateHeader(header string) (clientIP string, valid bool
 		}
 	}
 	return "", false
-}
-
-// parseIP parse a string representation of an IP and returns a net.IP with the
-// minimum byte representation or nil if input is invalid.
-func parseIP(ip string) net.IP {
-	parsedIP := net.ParseIP(ip)
-
-	if ipv4 := parsedIP.To4(); ipv4 != nil {
-		// return ip in a 4-byte representation
-		return ipv4
-	}
-
-	// return ip in a 16-byte representation or nil
-	return parsedIP
 }
 
 // RunTLS attaches the router to a http.Server and starts listening and serving HTTPS (secure) requests.
