@@ -5,8 +5,11 @@
 package binding
 
 import (
+	"fmt"
 	"mime/multipart"
 	"reflect"
+	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -322,4 +325,100 @@ func TestMappingIgnoredCircularRef(t *testing.T) {
 
 	err := mappingByPtr(&s, formSource{}, "form")
 	assert.NoError(t, err)
+}
+
+type customUnmarshalParamHex int
+
+func (f *customUnmarshalParamHex) UnmarshalParam(param string) error {
+	v, err := strconv.ParseInt(param, 16, 64)
+	if err != nil {
+		return err
+	}
+	*f = customUnmarshalParamHex(v)
+	return nil
+}
+
+func TestMappingCustomUnmarshalParamHexWithFormTag(t *testing.T) {
+	var s struct {
+		Foo customUnmarshalParamHex `form:"foo"`
+	}
+	err := mappingByPtr(&s, formSource{"foo": {`f5`}}, "form")
+	assert.NoError(t, err)
+
+	assert.EqualValues(t, 245, s.Foo)
+}
+
+func TestMappingCustomUnmarshalParamHexWithURITag(t *testing.T) {
+	var s struct {
+		Foo customUnmarshalParamHex `uri:"foo"`
+	}
+	err := mappingByPtr(&s, formSource{"foo": {`f5`}}, "uri")
+	assert.NoError(t, err)
+
+	assert.EqualValues(t, 245, s.Foo)
+}
+
+type customUnmarshalParamType struct {
+	Protocol string
+	Path     string
+	Name     string
+}
+
+func (f *customUnmarshalParamType) UnmarshalParam(param string) error {
+	parts := strings.Split(param, ":")
+	if len(parts) != 3 {
+		return fmt.Errorf("invalid format")
+	}
+	f.Protocol = parts[0]
+	f.Path = parts[1]
+	f.Name = parts[2]
+	return nil
+}
+
+func TestMappingCustomStructTypeWithFormTag(t *testing.T) {
+	var s struct {
+		FileData customUnmarshalParamType `form:"data"`
+	}
+	err := mappingByPtr(&s, formSource{"data": {`file:/foo:happiness`}}, "form")
+	assert.NoError(t, err)
+
+	assert.EqualValues(t, "file", s.FileData.Protocol)
+	assert.EqualValues(t, "/foo", s.FileData.Path)
+	assert.EqualValues(t, "happiness", s.FileData.Name)
+}
+
+func TestMappingCustomStructTypeWithURITag(t *testing.T) {
+	var s struct {
+		FileData customUnmarshalParamType `uri:"data"`
+	}
+	err := mappingByPtr(&s, formSource{"data": {`file:/foo:happiness`}}, "uri")
+	assert.NoError(t, err)
+
+	assert.EqualValues(t, "file", s.FileData.Protocol)
+	assert.EqualValues(t, "/foo", s.FileData.Path)
+	assert.EqualValues(t, "happiness", s.FileData.Name)
+}
+
+func TestMappingCustomPointerStructTypeWithFormTag(t *testing.T) {
+	var s struct {
+		FileData *customUnmarshalParamType `form:"data"`
+	}
+	err := mappingByPtr(&s, formSource{"data": {`file:/foo:happiness`}}, "form")
+	assert.NoError(t, err)
+
+	assert.EqualValues(t, "file", s.FileData.Protocol)
+	assert.EqualValues(t, "/foo", s.FileData.Path)
+	assert.EqualValues(t, "happiness", s.FileData.Name)
+}
+
+func TestMappingCustomPointerStructTypeWithURITag(t *testing.T) {
+	var s struct {
+		FileData *customUnmarshalParamType `uri:"data"`
+	}
+	err := mappingByPtr(&s, formSource{"data": {`file:/foo:happiness`}}, "uri")
+	assert.NoError(t, err)
+
+	assert.EqualValues(t, "file", s.FileData.Protocol)
+	assert.EqualValues(t, "/foo", s.FileData.Path)
+	assert.EqualValues(t, "happiness", s.FileData.Name)
 }
