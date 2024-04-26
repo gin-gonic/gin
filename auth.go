@@ -9,8 +9,6 @@ import (
 	"encoding/base64"
 	"net/http"
 	"strconv"
-
-	"github.com/gin-gonic/gin/internal/bytesconv"
 )
 
 // AuthUserKey is the cookie name for user credential in basic auth.
@@ -34,7 +32,7 @@ func (a authPairs) searchCredential(authValue string) (string, bool) {
 		return "", false
 	}
 	for _, pair := range a {
-		if subtle.ConstantTimeCompare(bytesconv.StringToBytes(pair.value), bytesconv.StringToBytes(authValue)) == 1 {
+		if subtle.ConstantTimeCompare([]byte(pair.value), []byte(authValue)) == 1 {
 			return pair.user, true
 		}
 	}
@@ -90,7 +88,7 @@ func processAccounts(accounts Accounts) authPairs {
 
 func authorizationHeader(user, password string) string {
 	base := user + ":" + password
-	return "Basic " + base64.StdEncoding.EncodeToString(bytesconv.StringToBytes(base))
+	return "Basic " + base64.StdEncoding.EncodeToString([]byte(base))
 }
 
 // BasicAuthForProxy returns a Basic HTTP Proxy-Authorization middleware.

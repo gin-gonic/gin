@@ -13,7 +13,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/gin-gonic/gin/internal/bytesconv"
 	"github.com/gin-gonic/gin/internal/json"
 )
 
@@ -239,9 +238,9 @@ func setWithProperType(val string, value reflect.Value, field reflect.StructFiel
 		case multipart.FileHeader:
 			return nil
 		}
-		return json.Unmarshal(bytesconv.StringToBytes(val), value.Addr().Interface())
+		return json.Unmarshal([]byte(val), value.Addr().Interface())
 	case reflect.Map:
-		return json.Unmarshal(bytesconv.StringToBytes(val), value.Addr().Interface())
+		return json.Unmarshal([]byte(val), value.Addr().Interface())
 	case reflect.Ptr:
 		if !value.Elem().IsValid() {
 			value.Set(reflect.New(value.Type().Elem()))
