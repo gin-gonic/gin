@@ -54,12 +54,3 @@ changelog:
       order: 4
     - title: Others
       order: 999
-
-  filters:
-    # Commit messages matching the regexp listed here will be removed from
-    # the changelog
-    # Default is empty
-    exclude:
-      - "^docs"
-      - "CICD"
-      - typo
