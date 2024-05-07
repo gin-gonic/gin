@@ -47,6 +47,9 @@ var regRemoveRepeatedChar = regexp.MustCompile("/{2,}")
 // HandlerFunc defines the handler used by gin middleware as return value.
 type HandlerFunc func(*Context)
 
+// OptionFunc defines the function to change the default configuration
+type OptionFunc func(*Engine)
+
 // HandlersChain defines a HandlerFunc slice.
 type HandlersChain []HandlerFunc
 
@@ -77,6 +80,8 @@ const (
 	// PlatformCloudflare when using Cloudflare's CDN. Trust CF-Connecting-IP for determining
 	// the client's IP
 	PlatformCloudflare = "CF-Connecting-IP"
+	// PlatformFlyIO when running on Fly.io. Trust Fly-Client-IP for determining the client's IP
+	PlatformFlyIO = "Fly-Client-IP"
 )
 
 // Engine is the framework's instance, it contains the muxer, middleware and configuration settings.
@@ -180,7 +185,7 @@ var _ IRouter = (*Engine)(nil)
 // - ForwardedByClientIP:    true
 // - UseRawPath:             false
 // - UnescapePathValues:     true
-func New() *Engine {
+func New(opts ...OptionFunc) *Engine {
 	debugPrintWARNINGNew()
 	engine := &Engine{
 		RouterGroup: RouterGroup{
@@ -209,15 +214,15 @@ func New() *Engine {
 	engine.pool.New = func() any {
 		return engine.allocateContext(engine.maxParams)
 	}
-	return engine
+	return engine.With(opts...)
 }
 
 // Default returns an Engine instance with the Logger and Recovery middleware already attached.
-func Default() *Engine {
+func Default(opts ...OptionFunc) *Engine {
 	debugPrintWARNINGDefault()
 	engine := New()
 	engine.Use(Logger(), Recovery())
-	return engine
+	return engine.With(opts...)
 }
 
 func (engine *Engine) Handler() http.Handler {
@@ -311,6 +316,15 @@ func (engine *Engine) Use(middleware ...HandlerFunc) IRoutes {
 	return engine
 }
 
+// With returns a Engine with the configuration set in the OptionFunc.
+func (engine *Engine) With(opts ...OptionFunc) *Engine {
+	for _, opt := range opts {
+		opt(engine)
+	}
+
+	return engine
+}
+
 func (engine *Engine) rebuild404Handlers() {
 	engine.allNoRoute = engine.combineHandlers(engine.noRoute)
 }
@@ -334,7 +348,6 @@ func (engine *Engine) addRoute(method, path string, handlers HandlersChain) {
 	}
 	root.addRoute(path, handlers)
 
-	// Update maxParams
 	if paramsCount := countParams(path); paramsCount > engine.maxParams {
 		engine.maxParams = paramsCount
 	}
@@ -368,6 +381,24 @@ func iterate(path, method string, routes RoutesInfo, root *node) RoutesInfo {
 		routes = iterate(path, method, routes, child)
 	}
 	return routes
+}
+
+
+// Run attaches the router to a http.Server and starts listening and serving HTTP requests.
+// It is a shortcut for http.ListenAndServe(addr, router)
+// Note: this method will block the calling goroutine indefinitely unless an error happens.
+func (engine *Engine) Run(addr ...string) (err error) {
+	defer func() { debugPrintError(err) }()
+
+	if engine.isUnsafeTrustedProxies() {
+		debugPrint("[WARNING] You trusted all proxies, this is NOT safe. We recommend you to set a value.\n" +
+			"Please check https://github.com/gin-gonic/gin/blob/master/docs/doc.md#dont-trust-all-proxies for details.")
+	}
+
+	address := resolveAddress(addr)
+	debugPrint("Listening and serving HTTP on %s\n", address)
+	err = http.ListenAndServe(address, engine.Handler())
+	return
 }
 
 func (engine *Engine) prepareTrustedCIDRs() ([]*net.IPNet, error) {
@@ -473,7 +504,14 @@ func parseIP(ip string) net.IP {
 	return parsedIP
 }
 
-// Run attaches the router to a http.Server and starts listening and serving HTTP requests.
+// 
+
+
+
+
+
+
+attaches the router to a http.Server and starts listening and serving HTTP requests.
 // It is a shortcut for http.ListenAndServe(addr, router)
 // Note: this method will block the calling goroutine indefinitely unless an error happens.
 func (engine *Engine) Run(addr ...string) (err error) {
@@ -499,7 +537,7 @@ func (engine *Engine) RunTLS(addr, certFile, keyFile string) (err error) {
 
 	if engine.isUnsafeTrustedProxies() {
 		debugPrint("[WARNING] You trusted all proxies, this is NOT safe. We recommend you to set a value.\n" +
-			"Please check https://pkg.go.dev/github.com/gin-gonic/gin#readme-don-t-trust-all-proxies for details.")
+			"Please check https://github.com/gin-gonic/gin/blob/master/docs/doc.md#dont-trust-all-proxies for details.")
 	}
 
 	err = http.ListenAndServeTLS(addr, certFile, keyFile, engine.Handler())
@@ -634,17 +672,25 @@ func (engine *Engine) handleHTTPRequest(c *Context) {
 	}
 
 	if engine.HandleMethodNotAllowed {
+		// According to RFC 7231 section 6.5.5, MUST generate an Allow header field in response
+		// containing a list of the target resource's currently supported methods.
+		allowed := make([]string, 0, len(t)-1)
 		for _, tree := range engine.trees {
 			if tree.method == httpMethod {
 				continue
 			}
 			if value := tree.root.getValue(rPath, nil, c.skippedNodes, unescape); value.handlers != nil {
-				c.handlers = engine.allNoMethod
-				serveError(c, http.StatusMethodNotAllowed, default405Body)
-				return
+				allowed = append(allowed, tree.method)
 			}
 		}
+		if len(allowed) > 0 {
+			c.handlers = engine.allNoMethod
+			c.writermem.Header().Set("Allow", strings.Join(allowed, ", "))
+			serveError(c, http.StatusMethodNotAllowed, default405Body)
+			return
+		}
 	}
+
 	c.handlers = engine.allNoRoute
 	serveError(c, http.StatusNotFound, default404Body)
 }

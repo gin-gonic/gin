@@ -324,6 +324,7 @@ func TestContextCopy(t *testing.T) {
 	c.handlers = HandlersChain{func(c *Context) {}}
 	c.Params = Params{Param{Key: "foo", Value: "bar"}}
 	c.Set("foo", "bar")
+	c.fullPath = "/hola"
 
 	cp := c.Copy()
 	assert.Nil(t, cp.handlers)
@@ -336,6 +337,7 @@ func TestContextCopy(t *testing.T) {
 	assert.Equal(t, cp.Params, c.Params)
 	cp.Set("foo", "notBar")
 	assert.False(t, cp.Keys["foo"] == c.Keys["foo"])
+	assert.Equal(t, cp.fullPath, c.fullPath)
 }
 
 func TestContextHandlerName(t *testing.T) {
@@ -998,7 +1000,7 @@ func TestContextRenderFile(t *testing.T) {
 	c.File("./gin.go")
 
 	assert.Equal(t, http.StatusOK, w.Code)
-	assert.Contains(t, w.Body.String(), "func New() *Engine {")
+	assert.Contains(t, w.Body.String(), "func New(opts ...OptionFunc) *Engine {")
 	// Content-Type='text/plain; charset=utf-8' when go version <= 1.16,
 	// else, Content-Type='text/x-go; charset=utf-8'
 	assert.NotEqual(t, "", w.Header().Get("Content-Type"))
@@ -1012,7 +1014,7 @@ func TestContextRenderFileFromFS(t *testing.T) {
 	c.FileFromFS("./gin.go", Dir(".", false))
 
 	assert.Equal(t, http.StatusOK, w.Code)
-	assert.Contains(t, w.Body.String(), "func New() *Engine {")
+	assert.Contains(t, w.Body.String(), "func New(opts ...OptionFunc) *Engine {")
 	// Content-Type='text/plain; charset=utf-8' when go version <= 1.16,
 	// else, Content-Type='text/x-go; charset=utf-8'
 	assert.NotEqual(t, "", w.Header().Get("Content-Type"))
@@ -1028,8 +1030,22 @@ func TestContextRenderAttachment(t *testing.T) {
 	c.FileAttachment("./gin.go", newFilename)
 
 	assert.Equal(t, 200, w.Code)
-	assert.Contains(t, w.Body.String(), "func New() *Engine {")
+	assert.Contains(t, w.Body.String(), "func New(opts ...OptionFunc) *Engine {")
 	assert.Equal(t, fmt.Sprintf("attachment; filename=\"%s\"", newFilename), w.Header().Get("Content-Disposition"))
+}
+
+func TestContextRenderAndEscapeAttachment(t *testing.T) {
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
+	maliciousFilename := "tampering_field.sh\"; \\\"; dummy=.go"
+	actualEscapedResponseFilename := "tampering_field.sh\\\"; \\\\\\\"; dummy=.go"
+
+	c.Request, _ = http.NewRequest("GET", "/", nil)
+	c.FileAttachment("./gin.go", maliciousFilename)
+
+	assert.Equal(t, 200, w.Code)
+	assert.Contains(t, w.Body.String(), "func New(opts ...OptionFunc) *Engine {")
+	assert.Equal(t, fmt.Sprintf("attachment; filename=\"%s\"", actualEscapedResponseFilename), w.Header().Get("Content-Disposition"))
 }
 
 func TestContextRenderUTF8Attachment(t *testing.T) {
@@ -1041,12 +1057,12 @@ func TestContextRenderUTF8Attachment(t *testing.T) {
 	c.FileAttachment("./gin.go", newFilename)
 
 	assert.Equal(t, 200, w.Code)
-	assert.Contains(t, w.Body.String(), "func New() *Engine {")
+	assert.Contains(t, w.Body.String(), "func New(opts ...OptionFunc) *Engine {")
 	assert.Equal(t, `attachment; filename*=UTF-8''`+url.QueryEscape(newFilename), w.Header().Get("Content-Disposition"))
 }
 
 // TestContextRenderYAML tests that the response is serialized as YAML
-// and Content-Type is set to application/x-yaml
+// and Content-Type is set to application/yaml
 func TestContextRenderYAML(t *testing.T) {
 	w := httptest.NewRecorder()
 	c, _ := CreateTestContext(w)
@@ -1055,7 +1071,7 @@ func TestContextRenderYAML(t *testing.T) {
 
 	assert.Equal(t, http.StatusCreated, w.Code)
 	assert.Equal(t, "foo: bar\n", w.Body.String())
-	assert.Equal(t, "application/x-yaml; charset=utf-8", w.Header().Get("Content-Type"))
+	assert.Equal(t, "application/yaml; charset=utf-8", w.Header().Get("Content-Type"))
 }
 
 // TestContextRenderTOML tests that the response is serialized as TOML
@@ -1203,7 +1219,7 @@ func TestContextNegotiationWithYAML(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, w.Code)
 	assert.Equal(t, "foo: bar\n", w.Body.String())
-	assert.Equal(t, "application/x-yaml; charset=utf-8", w.Header().Get("Content-Type"))
+	assert.Equal(t, "application/yaml; charset=utf-8", w.Header().Get("Content-Type"))
 }
 
 func TestContextNegotiationWithTOML(t *testing.T) {
@@ -1555,6 +1571,12 @@ func TestContextClientIP(t *testing.T) {
 	c.Request.Header.Del("CF-Connecting-IP")
 	assert.Equal(t, "40.40.40.40", c.ClientIP())
 
+	c.engine.TrustedPlatform = PlatformFlyIO
+	assert.Equal(t, "70.70.70.70", c.ClientIP())
+
+	c.Request.Header.Del("Fly-Client-IP")
+	assert.Equal(t, "40.40.40.40", c.ClientIP())
+
 	c.engine.TrustedPlatform = ""
 
 	// no port
@@ -1567,6 +1589,7 @@ func resetContextForClientIPTests(c *Context) {
 	c.Request.Header.Set("X-Forwarded-For", "  20.20.20.20, 30.30.30.30")
 	c.Request.Header.Set("X-Appengine-Remote-Addr", "50.50.50.50")
 	c.Request.Header.Set("CF-Connecting-IP", "60.60.60.60")
+	c.Request.Header.Set("Fly-Client-IP", "70.70.70.70")
 	c.Request.RemoteAddr = "  40.40.40.40:42123 "
 	c.engine.TrustedPlatform = ""
 	c.engine.trustedCIDRs = defaultTrustedCIDRs
@@ -1954,6 +1977,263 @@ func TestContextShouldBindBodyWith(t *testing.T) {
 	}
 }
 
+func TestContextShouldBindBodyWithJSON(t *testing.T) {
+	for _, tt := range []struct {
+		name        string
+		bindingBody binding.BindingBody
+		body        string
+	}{
+		{
+			name:        " JSON & JSON-BODY ",
+			bindingBody: binding.JSON,
+			body:        `{"foo":"FOO"}`,
+		},
+		{
+			name:        " JSON & XML-BODY ",
+			bindingBody: binding.XML,
+			body: `<?xml version="1.0" encoding="UTF-8"?>
+<root>
+<foo>FOO</foo>
+</root>`,
+		},
+		{
+			name:        " JSON & YAML-BODY ",
+			bindingBody: binding.YAML,
+			body:        `foo: FOO`,
+		},
+		{
+			name:        " JSON & TOM-BODY ",
+			bindingBody: binding.TOML,
+			body:        `foo=FOO`,
+		},
+	} {
+		t.Logf("testing: %s", tt.name)
+
+		w := httptest.NewRecorder()
+		c, _ := CreateTestContext(w)
+
+		c.Request, _ = http.NewRequest("POST", "/", bytes.NewBufferString(tt.body))
+
+		type typeJSON struct {
+			Foo string `json:"foo" binding:"required"`
+		}
+		objJSON := typeJSON{}
+
+		if tt.bindingBody == binding.JSON {
+			assert.NoError(t, c.ShouldBindBodyWithJSON(&objJSON))
+			assert.Equal(t, typeJSON{"FOO"}, objJSON)
+		}
+
+		if tt.bindingBody == binding.XML {
+			assert.Error(t, c.ShouldBindBodyWithJSON(&objJSON))
+			assert.Equal(t, typeJSON{}, objJSON)
+		}
+
+		if tt.bindingBody == binding.YAML {
+			assert.Error(t, c.ShouldBindBodyWithJSON(&objJSON))
+			assert.Equal(t, typeJSON{}, objJSON)
+		}
+
+		if tt.bindingBody == binding.TOML {
+			assert.Error(t, c.ShouldBindBodyWithJSON(&objJSON))
+			assert.Equal(t, typeJSON{}, objJSON)
+		}
+	}
+}
+
+func TestContextShouldBindBodyWithXML(t *testing.T) {
+	for _, tt := range []struct {
+		name        string
+		bindingBody binding.BindingBody
+		body        string
+	}{
+		{
+			name:        " XML & JSON-BODY ",
+			bindingBody: binding.JSON,
+			body:        `{"foo":"FOO"}`,
+		},
+		{
+			name:        " XML & XML-BODY ",
+			bindingBody: binding.XML,
+			body: `<?xml version="1.0" encoding="UTF-8"?>
+<root>
+<foo>FOO</foo>
+</root>`,
+		},
+		{
+			name:        " XML & YAML-BODY ",
+			bindingBody: binding.YAML,
+			body:        `foo: FOO`,
+		},
+		{
+			name:        " XML & TOM-BODY ",
+			bindingBody: binding.TOML,
+			body:        `foo=FOO`,
+		},
+	} {
+		t.Logf("testing: %s", tt.name)
+
+		w := httptest.NewRecorder()
+		c, _ := CreateTestContext(w)
+
+		c.Request, _ = http.NewRequest("POST", "/", bytes.NewBufferString(tt.body))
+
+		type typeXML struct {
+			Foo string `xml:"foo" binding:"required"`
+		}
+		objXML := typeXML{}
+
+		if tt.bindingBody == binding.JSON {
+			assert.Error(t, c.ShouldBindBodyWithXML(&objXML))
+			assert.Equal(t, typeXML{}, objXML)
+		}
+
+		if tt.bindingBody == binding.XML {
+			assert.NoError(t, c.ShouldBindBodyWithXML(&objXML))
+			assert.Equal(t, typeXML{"FOO"}, objXML)
+		}
+
+		if tt.bindingBody == binding.YAML {
+			assert.Error(t, c.ShouldBindBodyWithXML(&objXML))
+			assert.Equal(t, typeXML{}, objXML)
+		}
+
+		if tt.bindingBody == binding.TOML {
+			assert.Error(t, c.ShouldBindBodyWithXML(&objXML))
+			assert.Equal(t, typeXML{}, objXML)
+		}
+	}
+}
+
+func TestContextShouldBindBodyWithYAML(t *testing.T) {
+	for _, tt := range []struct {
+		name        string
+		bindingBody binding.BindingBody
+		body        string
+	}{
+		{
+			name:        " YAML & JSON-BODY ",
+			bindingBody: binding.JSON,
+			body:        `{"foo":"FOO"}`,
+		},
+		{
+			name:        " YAML & XML-BODY ",
+			bindingBody: binding.XML,
+			body: `<?xml version="1.0" encoding="UTF-8"?>
+<root>
+<foo>FOO</foo>
+</root>`,
+		},
+		{
+			name:        " YAML & YAML-BODY ",
+			bindingBody: binding.YAML,
+			body:        `foo: FOO`,
+		},
+		{
+			name:        " YAML & TOM-BODY ",
+			bindingBody: binding.TOML,
+			body:        `foo=FOO`,
+		},
+	} {
+		t.Logf("testing: %s", tt.name)
+
+		w := httptest.NewRecorder()
+		c, _ := CreateTestContext(w)
+
+		c.Request, _ = http.NewRequest("POST", "/", bytes.NewBufferString(tt.body))
+
+		type typeYAML struct {
+			Foo string `yaml:"foo" binding:"required"`
+		}
+		objYAML := typeYAML{}
+
+		// YAML belongs to a super collection of JSON, so JSON can be parsed by YAML
+		if tt.bindingBody == binding.JSON {
+			assert.NoError(t, c.ShouldBindBodyWithYAML(&objYAML))
+			assert.Equal(t, typeYAML{"FOO"}, objYAML)
+		}
+
+		if tt.bindingBody == binding.XML {
+			assert.Error(t, c.ShouldBindBodyWithYAML(&objYAML))
+			assert.Equal(t, typeYAML{}, objYAML)
+		}
+
+		if tt.bindingBody == binding.YAML {
+			assert.NoError(t, c.ShouldBindBodyWithYAML(&objYAML))
+			assert.Equal(t, typeYAML{"FOO"}, objYAML)
+		}
+
+		if tt.bindingBody == binding.TOML {
+			assert.Error(t, c.ShouldBindBodyWithYAML(&objYAML))
+			assert.Equal(t, typeYAML{}, objYAML)
+		}
+	}
+}
+
+func TestContextShouldBindBodyWithTOML(t *testing.T) {
+	for _, tt := range []struct {
+		name        string
+		bindingBody binding.BindingBody
+		body        string
+	}{
+		{
+			name:        " TOML & JSON-BODY ",
+			bindingBody: binding.JSON,
+			body:        `{"foo":"FOO"}`,
+		},
+		{
+			name:        " TOML & XML-BODY ",
+			bindingBody: binding.XML,
+			body: `<?xml version="1.0" encoding="UTF-8"?>
+<root>
+<foo>FOO</foo>
+</root>`,
+		},
+		{
+			name:        " TOML & YAML-BODY ",
+			bindingBody: binding.YAML,
+			body:        `foo: FOO`,
+		},
+		{
+			name:        " TOML & TOM-BODY ",
+			bindingBody: binding.TOML,
+			body:        `foo = 'FOO'`,
+		},
+	} {
+		t.Logf("testing: %s", tt.name)
+
+		w := httptest.NewRecorder()
+		c, _ := CreateTestContext(w)
+
+		c.Request, _ = http.NewRequest("POST", "/", bytes.NewBufferString(tt.body))
+
+		type typeTOML struct {
+			Foo string `toml:"foo" binding:"required"`
+		}
+		objTOML := typeTOML{}
+
+		if tt.bindingBody == binding.JSON {
+			assert.Error(t, c.ShouldBindBodyWithTOML(&objTOML))
+			assert.Equal(t, typeTOML{}, objTOML)
+		}
+
+		if tt.bindingBody == binding.XML {
+			assert.Error(t, c.ShouldBindBodyWithTOML(&objTOML))
+			assert.Equal(t, typeTOML{}, objTOML)
+		}
+
+		if tt.bindingBody == binding.YAML {
+			assert.Error(t, c.ShouldBindBodyWithTOML(&objTOML))
+			assert.Equal(t, typeTOML{}, objTOML)
+		}
+
+		if tt.bindingBody == binding.TOML {
+			assert.NoError(t, c.ShouldBindBodyWithTOML(&objTOML))
+			assert.Equal(t, typeTOML{"FOO"}, objTOML)
+		}
+	}
+}
+
 func TestContextGolangContext(t *testing.T) {
 	c, _ := CreateTestContext(httptest.NewRecorder())
 	c.Request, _ = http.NewRequest("POST", "/", bytes.NewBufferString("{\"foo\":\"bar\", \"bar\":\"foo\"}"))
@@ -1962,7 +2242,7 @@ func TestContextGolangContext(t *testing.T) {
 	ti, ok := c.Deadline()
 	assert.Equal(t, ti, time.Time{})
 	assert.False(t, ok)
-	assert.Equal(t, c.Value(0), c.Request)
+	assert.Equal(t, c.Value(ContextRequestKey), c.Request)
 	assert.Equal(t, c.Value(ContextKey), c)
 	assert.Nil(t, c.Value("foo"))
 
@@ -2160,6 +2440,24 @@ func TestRemoteIPFail(t *testing.T) {
 	trust := c.engine.isTrustedProxy(ip)
 	assert.Nil(t, ip)
 	assert.False(t, trust)
+}
+
+func TestHasRequestContext(t *testing.T) {
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	assert.False(t, c.hasRequestContext(), "no request, no fallback")
+	c.engine.ContextWithFallback = true
+	assert.False(t, c.hasRequestContext(), "no request, has fallback")
+	c.Request, _ = http.NewRequest(http.MethodGet, "/", nil)
+	assert.True(t, c.hasRequestContext(), "has request, has fallback")
+	c.Request, _ = http.NewRequestWithContext(nil, "", "", nil) //nolint:staticcheck
+	assert.False(t, c.hasRequestContext(), "has request with nil ctx, has fallback")
+	c.engine.ContextWithFallback = false
+	assert.False(t, c.hasRequestContext(), "has request, no fallback")
+
+	c = &Context{}
+	assert.False(t, c.hasRequestContext(), "no request, no engine")
+	c.Request, _ = http.NewRequest(http.MethodGet, "/", nil)
+	assert.False(t, c.hasRequestContext(), "has request, no engine")
 }
 
 func TestContextWithFallbackDeadlineFromRequestContext(t *testing.T) {

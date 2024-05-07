@@ -1,5 +1,100 @@
 # Gin ChangeLog
 
+## Gin v1.10.0
+
+### Features
+
+* feat(auth): add proxy-server authentication (#3877) (@EndlessParadox1)
+* feat(bind): ShouldBindBodyWith shortcut and change doc (#3871) (@RedCrazyGhost)
+* feat(binding): Support custom BindUnmarshaler for binding. (#3933) (@dkkb)
+* feat(binding): support override default binding implement (#3514) (@ssfyn)
+* feat(engine): Added `OptionFunc` and `With` (#3572) (@flc1125)
+* feat(logger): ability to skip logs based on user-defined logic (#3593) (@palvaneh)
+
+### Bug fixes
+
+* Revert "fix(uri): query binding bug (#3236)" (#3899) (@appleboy)
+* fix(binding): binding error while not upload file (#3819) (#3820) (@clearcodecn)
+* fix(binding): dereference pointer to struct (#3199) (@echovl)
+* fix(context): make context Value method adhere to Go standards (#3897) (@FarmerChillax)
+* fix(engine): fix unit test (#3878) (@flc1125)
+* fix(header): Allow header according to RFC 7231 (HTTP 405) (#3759) (@Crocmagnon)
+* fix(route): Add fullPath in context copy (#3784) (@KarthikReddyPuli)
+* fix(router): catch-all conflicting wildcard (#3812) (@FirePing32)
+* fix(sec): upgrade golang.org/x/crypto to 0.17.0 (#3832) (@chncaption)
+* fix(tree): correctly expand the capacity of params (#3502) (@georgijd-form3)
+* fix(uri): query binding bug (#3236) (@illiafox)
+* fix: Add pointer support for url query params (#3659) (#3666) (@omkar-foss)
+* fix: protect Context.Keys map when call Copy method (#3873) (@kingcanfish)
+ 
+### Enhancements
+
+* chore(CI): update release args (#3595) (@qloog)
+* chore(IP): add TrustedPlatform constant for Fly.io. (#3839) (@ab)
+* chore(debug): add ability to override the debugPrint statement (#2337) (@josegonzalez)
+* chore(deps): update dependencies to latest versions (#3835) (@appleboy)
+* chore(header): Add support for RFC 9512: application/yaml (#3851) (@vincentbernat)
+* chore(http): use white color for HTTP 1XX (#3741) (@viralparmarme)
+* chore(optimize): the ShouldBindUri method of the Context struct (#3911) (@1911860538)
+* chore(perf): Optimize the Copy method of the Context struct (#3859) (@1911860538)
+* chore(refactor): modify interface check way (#3855) (@demoManito)
+* chore(request): check reader if it's nil before reading (#3419) (@noahyao1024)
+* chore(security): upgrade Protobuf for CVE-2024-24786 (#3893) (@Fotkurz)
+* chore: refactor CI and update dependencies (#3848) (@appleboy)
+* chore: refactor configuration files for better readability (#3951) (@appleboy)
+* chore: update GitHub Actions configuration (#3792) (@appleboy)
+* chore: update changelog categories and improve documentation (#3917) (@appleboy)
+* chore: update dependencies to latest versions (#3694) (@appleboy)
+* chore: update external dependencies to latest versions (#3950) (@appleboy)
+* chore: update various Go dependencies to latest versions (#3901) (@appleboy)
+
+### Build process updates
+
+* build(codecov): Added a codecov configuration (#3891) (@flc1125)
+* ci(Makefile): vet command add .PHONY (#3915) (@imalasong)
+* ci(lint): update tooling and workflows for consistency (#3834) (@appleboy)
+* ci(release): refactor changelog regex patterns and exclusions (#3914) (@appleboy)
+* ci(testing): add go1.22 version (#3842) (@appleboy)
+
+### Documentation updates
+
+* docs(context): Added deprecation comments to BindWith (#3880) (@flc1125)
+* docs(middleware): comments to function `BasicAuthForProxy` (#3881) (@EndlessParadox1)
+* docs: Add document  to constant `AuthProxyUserKey` and  `BasicAuthForProxy`. (#3887) (@EndlessParadox1)
+* docs: fix typo in comment (#3868) (@testwill)
+* docs: fix typo in function documentation (#3872) (@TotomiEcio)
+* docs: remove redundant comments (#3765) (@WeiTheShinobi)
+* feat: update version constant to v1.10.0 (#3952) (@appleboy)
+
+### Others
+
+* Upgrade golang.org/x/net -> v0.13.0 (#3684) (@cpcf)
+* test(git): gitignore add develop tools (#3370) (@demoManito)
+* test(http): use constant instead of numeric literal (#3863) (@testwill)
+* test(path): Optimize unit test execution results (#3883) (@flc1125)
+* test(render): increased unit tests coverage (#3691) (@araujo88)
+
+## Gin v1.9.1
+
+### BUG FIXES
+
+* fix Request.Context() checks [#3512](https://github.com/gin-gonic/gin/pull/3512)
+
+### SECURITY
+
+* fix lack of escaping of filename in Content-Disposition [#3556](https://github.com/gin-gonic/gin/pull/3556) 
+
+### ENHANCEMENTS
+
+* refactor: use bytes.ReplaceAll directly [#3455](https://github.com/gin-gonic/gin/pull/3455)
+* convert strings and slices using the officially recommended way [#3344](https://github.com/gin-gonic/gin/pull/3344)
+* improve render code coverage [#3525](https://github.com/gin-gonic/gin/pull/3525)
+
+### DOCS
+
+* docs: changed documentation link for trusted proxies [#3575](https://github.com/gin-gonic/gin/pull/3575)
+* chore: improve linting, testing, and GitHub Actions setup [#3583](https://github.com/gin-gonic/gin/pull/3583)
+
 ## Gin v1.9.0
 
 ### BREAK CHANGES

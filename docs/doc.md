@@ -27,6 +27,7 @@
   - [Only Bind Query String](#only-bind-query-string)
   - [Bind Query String or Post Data](#bind-query-string-or-post-data)
   - [Bind Uri](#bind-uri)
+  - [Bind custom unmarshaler](#bind-custom-unmarshaler)
   - [Bind Header](#bind-header)
   - [Bind HTML checkboxes](#bind-html-checkboxes)
   - [Multipart/Urlencoded binding](#multiparturlencoded-binding)
@@ -508,6 +509,44 @@ Sample Output
 ::1 - [Fri, 07 Dec 2018 17:04:38 JST] "GET /ping HTTP/1.1 200 122.767µs "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/71.0.3578.80 Safari/537.36" "
 ```
 
+### Skip logging
+
+```go
+func main() {
+  router := gin.New()
+  
+  // skip logging for desired paths by setting SkipPaths in LoggerConfig
+  loggerConfig := gin.LoggerConfig{SkipPaths: []string{"/metrics"}}
+  
+  // skip logging based on your logic by setting Skip func in LoggerConfig
+  loggerConfig.Skip = func(c *gin.Context) bool {
+      // as an example skip non server side errors
+      return c.Writer.Status() < http.StatusInternalServerError
+  }
+  
+  engine.Use(gin.LoggerWithConfig(loggerConfig))
+  router.Use(gin.Recovery())
+  
+  // skipped
+  router.GET("/metrics", func(c *gin.Context) {
+      c.Status(http.StatusNotImplemented)
+  })
+
+  // skipped
+  router.GET("/ping", func(c *gin.Context) {
+      c.String(http.StatusOK, "pong")
+  })
+
+  // not skipped
+  router.GET("/data", func(c *gin.Context) {
+    c.Status(http.StatusNotImplemented)
+  })
+  
+  router.Run(":8080")
+}
+
+```
+
 ### Controlling Log output coloring
 
 By default, logs output on console should be colorized depending on the detected TTY.
@@ -859,6 +898,46 @@ Test it with:
 ```sh
 curl -v localhost:8088/thinkerou/987fbc97-4bed-5078-9f07-9141ba07c9f3
 curl -v localhost:8088/thinkerou/not-uuid
+```
+
+### Bind custom unmarshaler
+
+```go
+package main
+
+import (
+  "github.com/gin-gonic/gin"
+  "strings"
+)
+
+type Birthday string
+
+func (b *Birthday) UnmarshalParam(param string) error {
+  *b = Birthday(strings.Replace(param, "-", "/", -1))
+  return nil
+}
+
+func main() {
+  route := gin.Default()
+  var request struct {
+    Birthday Birthday `form:"birthday"`
+  }
+  route.GET("/test", func(ctx *gin.Context) {
+    _ = ctx.BindQuery(&request)
+    ctx.JSON(200, request.Birthday)
+  })
+  route.Run(":8088")
+}
+```
+
+Test it with:
+
+```sh
+curl 'localhost:8088/test?birthday=2000-01-01'
+```
+Result
+```sh
+"2000/01/01"
 ```
 
 ### Bind Header
@@ -1918,7 +1997,12 @@ func SomeHandler(c *gin.Context) {
 }
 ```
 
-For this, you can use `c.ShouldBindBodyWith`.
+For this, you can use `c.ShouldBindBodyWith` or shortcuts.
+
+- `c.ShouldBindBodyWithJSON` is a shortcut for c.ShouldBindBodyWith(obj, binding.JSON).
+- `c.ShouldBindBodyWithXML` is a shortcut for c.ShouldBindBodyWith(obj, binding.XML).
+- `c.ShouldBindBodyWithYAML` is a shortcut for c.ShouldBindBodyWith(obj, binding.YAML).
+- `c.ShouldBindBodyWithTOML` is a shortcut for c.ShouldBindBodyWith(obj, binding.TOML).
 
 ```go
 func SomeHandler(c *gin.Context) {
@@ -1931,7 +2015,7 @@ func SomeHandler(c *gin.Context) {
   } else if errB := c.ShouldBindBodyWith(&objB, binding.JSON); errB == nil {
     c.String(http.StatusOK, `the body should be formB JSON`)
   // And it can accepts other formats
-  } else if errB2 := c.ShouldBindBodyWith(&objB, binding.XML); errB2 == nil {
+  } else if errB2 := c.ShouldBindBodyWithXML(&objB); errB2 == nil {
     c.String(http.StatusOK, `the body should be formB XML`)
   } else {
     ...
@@ -2176,10 +2260,16 @@ import (
 func main() {
   router := gin.Default()
   // Use predefined header gin.PlatformXXX
+  // Google App Engine
   router.TrustedPlatform = gin.PlatformGoogleAppEngine
-  // Or set your own trusted request header for another trusted proxy service
-  // Don't set it to any suspect request header, it's unsafe
-  router.TrustedPlatform = "X-CDN-IP"
+  // Cloudflare
+  router.TrustedPlatform = gin.PlatformCloudflare
+  // Fly.io
+  router.TrustedPlatform = gin.PlatformFlyIO
+  // Or, you can set your own trusted request header. But be sure your CDN
+  // prevents users from passing this header! For example, if your CDN puts
+  // the client IP in X-CDN-Client-IP:
+  router.TrustedPlatform = "X-CDN-Client-IP"
 
   router.GET("/", func(c *gin.Context) {
     // If you set TrustedPlatform, ClientIP() will resolve the
