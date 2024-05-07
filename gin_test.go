@@ -14,6 +14,7 @@ import (
 	"net/http/httptest"
 	"reflect"
 	"strconv"
+	"strings"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -729,4 +730,27 @@ func TestWithOptionFunc(t *testing.T) {
 	routes := r.Routes()
 	assertRoutePresent(t, routes, RouteInfo{Path: "/test1", Method: "GET", Handler: "github.com/gin-gonic/gin.handlerTest1"})
 	assertRoutePresent(t, routes, RouteInfo{Path: "/test2", Method: "GET", Handler: "github.com/gin-gonic/gin.handlerTest2"})
+}
+
+type Birthday string
+
+func (b *Birthday) UnmarshalParam(param string) error {
+	*b = Birthday(strings.Replace(param, "-", "/", -1))
+	return nil
+}
+
+func TestCustomUnmarshalStruct(t *testing.T) {
+	route := Default()
+	var request struct {
+		Birthday Birthday `form:"birthday"`
+	}
+	route.GET("/test", func(ctx *Context) {
+		_ = ctx.BindQuery(&request)
+		ctx.JSON(200, request.Birthday)
+	})
+	req := httptest.NewRequest("GET", "/test?birthday=2000-01-01", nil)
+	w := httptest.NewRecorder()
+	route.ServeHTTP(w, req)
+	assert.Equal(t, 200, w.Code)
+	assert.Equal(t, `"2000/01/01"`, w.Body.String())
 }

@@ -27,6 +27,7 @@
   - [Only Bind Query String](#only-bind-query-string)
   - [Bind Query String or Post Data](#bind-query-string-or-post-data)
   - [Bind Uri](#bind-uri)
+  - [Bind custom unmarshaler](#bind-custom-unmarshaler)
   - [Bind Header](#bind-header)
   - [Bind HTML checkboxes](#bind-html-checkboxes)
   - [Multipart/Urlencoded binding](#multiparturlencoded-binding)
@@ -897,6 +898,46 @@ Test it with:
 ```sh
 curl -v localhost:8088/thinkerou/987fbc97-4bed-5078-9f07-9141ba07c9f3
 curl -v localhost:8088/thinkerou/not-uuid
+```
+
+### Bind custom unmarshaler
+
+```go
+package main
+
+import (
+  "github.com/gin-gonic/gin"
+  "strings"
+)
+
+type Birthday string
+
+func (b *Birthday) UnmarshalParam(param string) error {
+  *b = Birthday(strings.Replace(param, "-", "/", -1))
+  return nil
+}
+
+func main() {
+  route := gin.Default()
+  var request struct {
+    Birthday Birthday `form:"birthday"`
+  }
+  route.GET("/test", func(ctx *gin.Context) {
+    _ = ctx.BindQuery(&request)
+    ctx.JSON(200, request.Birthday)
+  })
+  route.Run(":8088")
+}
+```
+
+Test it with:
+
+```sh
+curl 'localhost:8088/test?birthday=2000-01-01'
+```
+Result
+```sh
+"2000/01/01"
 ```
 
 ### Bind Header
