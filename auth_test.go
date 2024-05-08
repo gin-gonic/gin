@@ -1,4 +1,4 @@
-// Copyright 2014 Manu Martinez-Almeida.  All rights reserved.
+// Copyright 2014 Manu Martinez-Almeida. All rights reserved.
 // Use of this source code is governed by a MIT style
 // license that can be found in the LICENSE file.
 
@@ -81,13 +81,6 @@ func TestBasicAuthAuthorizationHeader(t *testing.T) {
 	assert.Equal(t, "Basic YWRtaW46cGFzc3dvcmQ=", authorizationHeader("admin", "password"))
 }
 
-func TestBasicAuthSecureCompare(t *testing.T) {
-	assert.True(t, secureCompare("1234567890", "1234567890"))
-	assert.False(t, secureCompare("123456789", "1234567890"))
-	assert.False(t, secureCompare("12345678900", "1234567890"))
-	assert.False(t, secureCompare("1234567891", "1234567890"))
-}
-
 func TestBasicAuthSucceed(t *testing.T) {
 	accounts := Accounts{"admin": "password"}
 	router := New()
@@ -143,4 +136,41 @@ func TestBasicAuth401WithCustomRealm(t *testing.T) {
 	assert.False(t, called)
 	assert.Equal(t, http.StatusUnauthorized, w.Code)
 	assert.Equal(t, "Basic realm=\"My Custom \\\"Realm\\\"\"", w.Header().Get("WWW-Authenticate"))
+}
+
+func TestBasicAuthForProxySucceed(t *testing.T) {
+	accounts := Accounts{"admin": "password"}
+	router := New()
+	router.Use(BasicAuthForProxy(accounts, ""))
+	router.Any("/*proxyPath", func(c *Context) {
+		c.String(http.StatusOK, c.MustGet(AuthProxyUserKey).(string))
+	})
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/test", nil)
+	req.Header.Set("Proxy-Authorization", authorizationHeader("admin", "password"))
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Equal(t, "admin", w.Body.String())
+}
+
+func TestBasicAuthForProxy407(t *testing.T) {
+	called := false
+	accounts := Accounts{"foo": "bar"}
+	router := New()
+	router.Use(BasicAuthForProxy(accounts, ""))
+	router.Any("/*proxyPath", func(c *Context) {
+		called = true
+		c.String(http.StatusOK, c.MustGet(AuthProxyUserKey).(string))
+	})
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/test", nil)
+	req.Header.Set("Proxy-Authorization", "Basic "+base64.StdEncoding.EncodeToString([]byte("admin:password")))
+	router.ServeHTTP(w, req)
+
+	assert.False(t, called)
+	assert.Equal(t, http.StatusProxyAuthRequired, w.Code)
+	assert.Equal(t, "Basic realm=\"Proxy Authorization Required\"", w.Header().Get("Proxy-Authenticate"))
 }

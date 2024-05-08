@@ -1,10 +1,11 @@
-// Copyright 2014 Manu Martinez-Almeida.  All rights reserved.
+// Copyright 2014 Manu Martinez-Almeida. All rights reserved.
 // Use of this source code is governed by a MIT style
 // license that can be found in the LICENSE file.
 
 package gin
 
 import (
+	"flag"
 	"io"
 	"os"
 	"sync/atomic"
@@ -23,6 +24,7 @@ const (
 	// TestMode indicates gin mode is test.
 	TestMode = "test"
 )
+
 const (
 	debugCode = iota
 	releaseCode
@@ -34,8 +36,9 @@ const (
 // Note that both Logger and Recovery provides custom ways to configure their
 // output io.Writer.
 // To support coloring in Windows use:
-// 		import "github.com/mattn/go-colorable"
-// 		gin.DefaultWriter = colorable.NewColorableStdout()
+//
+//	import "github.com/mattn/go-colorable"
+//	gin.DefaultWriter = colorable.NewColorableStdout()
 var DefaultWriter io.Writer = os.Stdout
 
 // DefaultErrorWriter is the default io.Writer used by Gin to debug errors
@@ -51,6 +54,14 @@ func init() {
 
 // SetMode sets gin mode according to input string.
 func SetMode(value string) {
+	if value == "" {
+		if flag.Lookup("test.v") != nil {
+			value = TestMode
+		} else {
+			value = DebugMode
+		}
+	}
+
 	switch value {
 	case DebugMode, "":
 		atomic.StoreInt32(&ginMode, debugCode)
@@ -59,10 +70,7 @@ func SetMode(value string) {
 	case TestMode:
 		atomic.StoreInt32(&ginMode, testCode)
 	default:
-		panic("gin mode unknown: " + value)
-	}
-	if value == "" {
-		value = DebugMode
+		panic("gin mode unknown: " + value + " (available mode: debug release test)")
 	}
 	modeName.Store(value)
 }
@@ -72,13 +80,19 @@ func DisableBindValidation() {
 	binding.Validator = nil
 }
 
-// EnableJsonDecoderUseNumber sets true for binding.EnableDecoderUseNumberto to
+// EnableJsonDecoderUseNumber sets true for binding.EnableDecoderUseNumber to
 // call the UseNumber method on the JSON Decoder instance.
 func EnableJsonDecoderUseNumber() {
 	binding.EnableDecoderUseNumber = true
 }
 
-// Mode returns currently gin mode.
+// EnableJsonDecoderDisallowUnknownFields sets true for binding.EnableDecoderDisallowUnknownFields to
+// call the DisallowUnknownFields method on the JSON Decoder instance.
+func EnableJsonDecoderDisallowUnknownFields() {
+	binding.EnableDecoderDisallowUnknownFields = true
+}
+
+// Mode returns current gin mode.
 func Mode() string {
 	return modeName.Load().(string)
 }

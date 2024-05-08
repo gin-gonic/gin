@@ -1,4 +1,4 @@
-// Copyright 2014 Manu Martinez-Almeida.  All rights reserved.
+// Copyright 2014 Manu Martinez-Almeida. All rights reserved.
 // Use of this source code is governed by a MIT style
 // license that can be found in the LICENSE file.
 
@@ -9,10 +9,15 @@ import (
 	"encoding/base64"
 	"net/http"
 	"strconv"
+
+	"github.com/gin-gonic/gin/internal/bytesconv"
 )
 
 // AuthUserKey is the cookie name for user credential in basic auth.
 const AuthUserKey = "user"
+
+// AuthProxyUserKey is the cookie name for proxy_user credential in basic auth for proxy.
+const AuthProxyUserKey = "proxy_user"
 
 // Accounts defines a key/value for user/pass list of authorized logins.
 type Accounts map[string]string
@@ -29,7 +34,7 @@ func (a authPairs) searchCredential(authValue string) (string, bool) {
 		return "", false
 	}
 	for _, pair := range a {
-		if pair.value == authValue {
+		if subtle.ConstantTimeCompare(bytesconv.StringToBytes(pair.value), bytesconv.StringToBytes(authValue)) == 1 {
 			return pair.user, true
 		}
 	}
@@ -69,8 +74,9 @@ func BasicAuth(accounts Accounts) HandlerFunc {
 }
 
 func processAccounts(accounts Accounts) authPairs {
-	assert1(len(accounts) > 0, "Empty list of authorized credentials")
-	pairs := make(authPairs, 0, len(accounts))
+	length := len(accounts)
+	assert1(length > 0, "Empty list of authorized credentials")
+	pairs := make(authPairs, 0, length)
 	for user, password := range accounts {
 		assert1(user != "", "User can not be empty")
 		value := authorizationHeader(user, password)
@@ -84,13 +90,27 @@ func processAccounts(accounts Accounts) authPairs {
 
 func authorizationHeader(user, password string) string {
 	base := user + ":" + password
-	return "Basic " + base64.StdEncoding.EncodeToString([]byte(base))
+	return "Basic " + base64.StdEncoding.EncodeToString(bytesconv.StringToBytes(base))
 }
 
-func secureCompare(given, actual string) bool {
-	if subtle.ConstantTimeEq(int32(len(given)), int32(len(actual))) == 1 {
-		return subtle.ConstantTimeCompare([]byte(given), []byte(actual)) == 1
+// BasicAuthForProxy returns a Basic HTTP Proxy-Authorization middleware.
+// If the realm is empty, "Proxy Authorization Required" will be used by default.
+func BasicAuthForProxy(accounts Accounts, realm string) HandlerFunc {
+	if realm == "" {
+		realm = "Proxy Authorization Required"
 	}
-	// Securely compare actual to itself to keep constant time, but always return false.
-	return subtle.ConstantTimeCompare([]byte(actual), []byte(actual)) == 1 && false
+	realm = "Basic realm=" + strconv.Quote(realm)
+	pairs := processAccounts(accounts)
+	return func(c *Context) {
+		proxyUser, found := pairs.searchCredential(c.requestHeader("Proxy-Authorization"))
+		if !found {
+			// Credentials doesn't match, we return 407 and abort handlers chain.
+			c.Header("Proxy-Authenticate", realm)
+			c.AbortWithStatus(http.StatusProxyAuthRequired)
+			return
+		}
+		// The proxy_user credentials was found, set proxy_user's id to key AuthProxyUserKey in this context, the proxy_user's id can be read later using
+		// c.MustGet(gin.AuthProxyUserKey).
+		c.Set(AuthProxyUserKey, proxyUser)
+	}
 }

@@ -1,4 +1,4 @@
-// Copyright 2018 Gin Core Team.  All rights reserved.
+// Copyright 2018 Gin Core Team. All rights reserved.
 // Use of this source code is governed by a MIT style
 // license that can be found in the LICENSE file.
 
@@ -21,7 +21,12 @@ type Reader struct {
 // Render (Reader) writes data with custom ContentType and headers.
 func (r Reader) Render(w http.ResponseWriter) (err error) {
 	r.WriteContentType(w)
-	r.Headers["Content-Length"] = strconv.FormatInt(r.ContentLength, 10)
+	if r.ContentLength >= 0 {
+		if r.Headers == nil {
+			r.Headers = map[string]string{}
+		}
+		r.Headers["Content-Length"] = strconv.FormatInt(r.ContentLength, 10)
+	}
 	r.writeHeaders(w, r.Headers)
 	_, err = io.Copy(w, r.Reader)
 	return

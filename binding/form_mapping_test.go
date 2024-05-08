@@ -5,7 +5,11 @@
 package binding
 
 import (
+	"fmt"
+	"mime/multipart"
 	"reflect"
+	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -18,9 +22,9 @@ func TestMappingBaseTypes(t *testing.T) {
 	}
 	for _, tt := range []struct {
 		name   string
-		value  interface{}
+		value  any
 		form   string
-		expect interface{}
+		expect any
 	}{
 		{"base type", struct{ F int }{}, "9", int(9)},
 		{"base type", struct{ F int8 }{}, "9", int8(9)},
@@ -43,6 +47,7 @@ func TestMappingBaseTypes(t *testing.T) {
 		{"zero value", struct{ F uint }{}, "", uint(0)},
 		{"zero value", struct{ F bool }{}, "", false},
 		{"zero value", struct{ F float32 }{}, "", float32(0)},
+		{"file value", struct{ F *multipart.FileHeader }{}, "", &multipart.FileHeader{}},
 	} {
 		tp := reflect.TypeOf(tt.value)
 		testName := tt.name + ":" + tp.Field(0).Type.String()
@@ -114,7 +119,7 @@ func TestMappingPrivateField(t *testing.T) {
 	}
 	err := mappingByPtr(&s, formSource{"field": {"6"}}, "form")
 	assert.NoError(t, err)
-	assert.Equal(t, int(0), s.f)
+	assert.Equal(t, 0, s.f)
 }
 
 func TestMappingUnknownFieldType(t *testing.T) {
@@ -131,9 +136,9 @@ func TestMappingURI(t *testing.T) {
 	var s struct {
 		F int `uri:"field"`
 	}
-	err := mapUri(&s, map[string][]string{"field": {"6"}})
+	err := mapURI(&s, map[string][]string{"field": {"6"}})
 	assert.NoError(t, err)
-	assert.Equal(t, int(6), s.F)
+	assert.Equal(t, 6, s.F)
 }
 
 func TestMappingForm(t *testing.T) {
@@ -142,7 +147,16 @@ func TestMappingForm(t *testing.T) {
 	}
 	err := mapForm(&s, map[string][]string{"field": {"6"}})
 	assert.NoError(t, err)
-	assert.Equal(t, int(6), s.F)
+	assert.Equal(t, 6, s.F)
+}
+
+func TestMapFormWithTag(t *testing.T) {
+	var s struct {
+		F int `externalTag:"field"`
+	}
+	err := MapFormWithTag(&s, map[string][]string{"field": {"6"}}, "externalTag")
+	assert.NoError(t, err)
+	assert.Equal(t, 6, s.F)
 }
 
 func TestMappingTime(t *testing.T) {
@@ -190,7 +204,7 @@ func TestMappingTime(t *testing.T) {
 	assert.Error(t, err)
 }
 
-func TestMapiingTimeDuration(t *testing.T) {
+func TestMappingTimeDuration(t *testing.T) {
 	var s struct {
 		D time.Duration
 	}
@@ -260,6 +274,39 @@ func TestMappingStructField(t *testing.T) {
 	assert.Equal(t, 9, s.J.I)
 }
 
+func TestMappingPtrField(t *testing.T) {
+	type ptrStruct struct {
+		Key int64 `json:"key"`
+	}
+
+	type ptrRequest struct {
+		Items []*ptrStruct `json:"items" form:"items"`
+	}
+
+	var err error
+
+	// With 0 items.
+	var req0 ptrRequest
+	err = mappingByPtr(&req0, formSource{}, "form")
+	assert.NoError(t, err)
+	assert.Empty(t, req0.Items)
+
+	// With 1 item.
+	var req1 ptrRequest
+	err = mappingByPtr(&req1, formSource{"items": {`{"key": 1}`}}, "form")
+	assert.NoError(t, err)
+	assert.Len(t, req1.Items, 1)
+	assert.EqualValues(t, 1, req1.Items[0].Key)
+
+	// With 2 items.
+	var req2 ptrRequest
+	err = mappingByPtr(&req2, formSource{"items": {`{"key": 1}`, `{"key": 2}`}}, "form")
+	assert.NoError(t, err)
+	assert.Len(t, req2.Items, 2)
+	assert.EqualValues(t, 1, req2.Items[0].Key)
+	assert.EqualValues(t, 2, req2.Items[1].Key)
+}
+
 func TestMappingMapField(t *testing.T) {
 	var s struct {
 		M map[string]int
@@ -268,4 +315,110 @@ func TestMappingMapField(t *testing.T) {
 	err := mappingByPtr(&s, formSource{"M": {`{"one": 1}`}}, "form")
 	assert.NoError(t, err)
 	assert.Equal(t, map[string]int{"one": 1}, s.M)
+}
+
+func TestMappingIgnoredCircularRef(t *testing.T) {
+	type S struct {
+		S *S `form:"-"`
+	}
+	var s S
+
+	err := mappingByPtr(&s, formSource{}, "form")
+	assert.NoError(t, err)
+}
+
+type customUnmarshalParamHex int
+
+func (f *customUnmarshalParamHex) UnmarshalParam(param string) error {
+	v, err := strconv.ParseInt(param, 16, 64)
+	if err != nil {
+		return err
+	}
+	*f = customUnmarshalParamHex(v)
+	return nil
+}
+
+func TestMappingCustomUnmarshalParamHexWithFormTag(t *testing.T) {
+	var s struct {
+		Foo customUnmarshalParamHex `form:"foo"`
+	}
+	err := mappingByPtr(&s, formSource{"foo": {`f5`}}, "form")
+	assert.NoError(t, err)
+
+	assert.EqualValues(t, 245, s.Foo)
+}
+
+func TestMappingCustomUnmarshalParamHexWithURITag(t *testing.T) {
+	var s struct {
+		Foo customUnmarshalParamHex `uri:"foo"`
+	}
+	err := mappingByPtr(&s, formSource{"foo": {`f5`}}, "uri")
+	assert.NoError(t, err)
+
+	assert.EqualValues(t, 245, s.Foo)
+}
+
+type customUnmarshalParamType struct {
+	Protocol string
+	Path     string
+	Name     string
+}
+
+func (f *customUnmarshalParamType) UnmarshalParam(param string) error {
+	parts := strings.Split(param, ":")
+	if len(parts) != 3 {
+		return fmt.Errorf("invalid format")
+	}
+	f.Protocol = parts[0]
+	f.Path = parts[1]
+	f.Name = parts[2]
+	return nil
+}
+
+func TestMappingCustomStructTypeWithFormTag(t *testing.T) {
+	var s struct {
+		FileData customUnmarshalParamType `form:"data"`
+	}
+	err := mappingByPtr(&s, formSource{"data": {`file:/foo:happiness`}}, "form")
+	assert.NoError(t, err)
+
+	assert.EqualValues(t, "file", s.FileData.Protocol)
+	assert.EqualValues(t, "/foo", s.FileData.Path)
+	assert.EqualValues(t, "happiness", s.FileData.Name)
+}
+
+func TestMappingCustomStructTypeWithURITag(t *testing.T) {
+	var s struct {
+		FileData customUnmarshalParamType `uri:"data"`
+	}
+	err := mappingByPtr(&s, formSource{"data": {`file:/foo:happiness`}}, "uri")
+	assert.NoError(t, err)
+
+	assert.EqualValues(t, "file", s.FileData.Protocol)
+	assert.EqualValues(t, "/foo", s.FileData.Path)
+	assert.EqualValues(t, "happiness", s.FileData.Name)
+}
+
+func TestMappingCustomPointerStructTypeWithFormTag(t *testing.T) {
+	var s struct {
+		FileData *customUnmarshalParamType `form:"data"`
+	}
+	err := mappingByPtr(&s, formSource{"data": {`file:/foo:happiness`}}, "form")
+	assert.NoError(t, err)
+
+	assert.EqualValues(t, "file", s.FileData.Protocol)
+	assert.EqualValues(t, "/foo", s.FileData.Path)
+	assert.EqualValues(t, "happiness", s.FileData.Name)
+}
+
+func TestMappingCustomPointerStructTypeWithURITag(t *testing.T) {
+	var s struct {
+		FileData *customUnmarshalParamType `uri:"data"`
+	}
+	err := mappingByPtr(&s, formSource{"data": {`file:/foo:happiness`}}, "uri")
+	assert.NoError(t, err)
+
+	assert.EqualValues(t, "file", s.FileData.Protocol)
+	assert.EqualValues(t, "/foo", s.FileData.Path)
+	assert.EqualValues(t, "happiness", s.FileData.Name)
 }

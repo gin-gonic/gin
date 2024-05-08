@@ -1,4 +1,4 @@
-// Copyright 2014 Manu Martinez-Almeida.  All rights reserved.
+// Copyright 2014 Manu Martinez-Almeida. All rights reserved.
 // Use of this source code is governed by a MIT style
 // license that can be found in the LICENSE file.
 
@@ -6,33 +6,38 @@ package gin
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"fmt"
 	"html/template"
 	"io"
 	"mime/multipart"
+	"net"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
+	"os"
 	"reflect"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
 	"github.com/gin-contrib/sse"
 	"github.com/gin-gonic/gin/binding"
-	"github.com/golang/protobuf/proto"
-	"github.com/stretchr/testify/assert"
-	"golang.org/x/net/context"
-
 	testdata "github.com/gin-gonic/gin/testdata/protoexample"
+	"github.com/stretchr/testify/assert"
+	"google.golang.org/protobuf/proto"
 )
 
-var _ context.Context = &Context{}
+var _ context.Context = (*Context)(nil)
+
+var errTestRender = errors.New("TestRender")
 
 // Unit tests TODO
 // func (c *Context) File(filepath string) {
 // func (c *Context) Negotiate(code int, config Negotiate) {
-// BAD case: func (c *Context) Render(code int, render render.Render, obj ...interface{}) {
+// BAD case: func (c *Context) Render(code int, render render.Render, obj ...any) {
 // test that information is not leaked when reusing Contexts (using the Pool)
 
 func createMultipartRequest() *http.Request {
@@ -83,19 +88,6 @@ func TestContextFormFile(t *testing.T) {
 	}
 
 	assert.NoError(t, c.SaveUploadedFile(f, "test"))
-}
-
-func TestContextFormFileFailed(t *testing.T) {
-	buf := new(bytes.Buffer)
-	mw := multipart.NewWriter(buf)
-	mw.Close()
-	c, _ := CreateTestContext(httptest.NewRecorder())
-	c.Request, _ = http.NewRequest("POST", "/", nil)
-	c.Request.Header.Set("Content-Type", mw.FormDataContentType())
-	c.engine.MaxMultipartMemory = 8 << 20
-	f, err := c.FormFile("file")
-	assert.Error(t, err)
-	assert.Nil(t, f)
 }
 
 func TestContextMultipartForm(t *testing.T) {
@@ -156,13 +148,13 @@ func TestSaveUploadedCreateFailed(t *testing.T) {
 
 func TestContextReset(t *testing.T) {
 	router := New()
-	c := router.allocateContext()
+	c := router.allocateContext(0)
 	assert.Equal(t, c.engine, router)
 
 	c.index = 2
 	c.Writer = &responseWriter{ResponseWriter: httptest.NewRecorder()}
 	c.Params = Params{Param{}}
-	c.Error(errors.New("test")) // nolint: errcheck
+	c.Error(errors.New("test")) //nolint: errcheck
 	c.Set("foo", "bar")
 	c.reset()
 
@@ -222,7 +214,7 @@ func TestContextSetGetValues(t *testing.T) {
 	c.Set("uint64", uint64(42))
 	c.Set("float32", float32(4.2))
 	c.Set("float64", 4.2)
-	var a interface{} = 1
+	var a any = 1
 	c.Set("intInterface", a)
 
 	assert.Exactly(t, c.MustGet("string").(string), "this is a string")
@@ -232,7 +224,6 @@ func TestContextSetGetValues(t *testing.T) {
 	assert.Exactly(t, c.MustGet("float32").(float32), float32(4.2))
 	assert.Exactly(t, c.MustGet("float64").(float64), 4.2)
 	assert.Exactly(t, c.MustGet("intInterface").(int), 1)
-
 }
 
 func TestContextGetString(t *testing.T) {
@@ -257,6 +248,18 @@ func TestContextGetInt64(t *testing.T) {
 	c, _ := CreateTestContext(httptest.NewRecorder())
 	c.Set("int64", int64(42424242424242))
 	assert.Equal(t, int64(42424242424242), c.GetInt64("int64"))
+}
+
+func TestContextGetUint(t *testing.T) {
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	c.Set("uint", uint(1))
+	assert.Equal(t, uint(1), c.GetUint("uint"))
+}
+
+func TestContextGetUint64(t *testing.T) {
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	c.Set("uint64", uint64(18446744073709551615))
+	assert.Equal(t, uint64(18446744073709551615), c.GetUint64("uint64"))
 }
 
 func TestContextGetFloat64(t *testing.T) {
@@ -286,7 +289,7 @@ func TestContextGetStringSlice(t *testing.T) {
 
 func TestContextGetStringMap(t *testing.T) {
 	c, _ := CreateTestContext(httptest.NewRecorder())
-	var m = make(map[string]interface{})
+	m := make(map[string]any)
 	m["foo"] = 1
 	c.Set("map", m)
 
@@ -296,7 +299,7 @@ func TestContextGetStringMap(t *testing.T) {
 
 func TestContextGetStringMapString(t *testing.T) {
 	c, _ := CreateTestContext(httptest.NewRecorder())
-	var m = make(map[string]string)
+	m := make(map[string]string)
 	m["foo"] = "bar"
 	c.Set("map", m)
 
@@ -306,7 +309,7 @@ func TestContextGetStringMapString(t *testing.T) {
 
 func TestContextGetStringMapStringSlice(t *testing.T) {
 	c, _ := CreateTestContext(httptest.NewRecorder())
-	var m = make(map[string][]string)
+	m := make(map[string][]string)
 	m["foo"] = []string{"foo"}
 	c.Set("map", m)
 
@@ -321,6 +324,7 @@ func TestContextCopy(t *testing.T) {
 	c.handlers = HandlersChain{func(c *Context) {}}
 	c.Params = Params{Param{Key: "foo", Value: "bar"}}
 	c.Set("foo", "bar")
+	c.fullPath = "/hola"
 
 	cp := c.Copy()
 	assert.Nil(t, cp.handlers)
@@ -333,6 +337,7 @@ func TestContextCopy(t *testing.T) {
 	assert.Equal(t, cp.Params, c.Params)
 	cp.Set("foo", "notBar")
 	assert.False(t, cp.Keys["foo"] == c.Keys["foo"])
+	assert.Equal(t, cp.fullPath, c.fullPath)
 }
 
 func TestContextHandlerName(t *testing.T) {
@@ -355,15 +360,12 @@ func TestContextHandlerNames(t *testing.T) {
 }
 
 func handlerNameTest(c *Context) {
-
 }
 
 func handlerNameTest2(c *Context) {
-
 }
 
 var handlerTest HandlerFunc = func(c *Context) {
-
 }
 
 func TestContextHandler(t *testing.T) {
@@ -406,6 +408,21 @@ func TestContextQuery(t *testing.T) {
 	assert.False(t, ok)
 	assert.Empty(t, value)
 	assert.Empty(t, c.PostForm("foo"))
+}
+
+func TestContextDefaultQueryOnEmptyRequest(t *testing.T) {
+	c, _ := CreateTestContext(httptest.NewRecorder()) // here c.Request == nil
+	assert.NotPanics(t, func() {
+		value, ok := c.GetQuery("NoKey")
+		assert.False(t, ok)
+		assert.Empty(t, value)
+	})
+	assert.NotPanics(t, func() {
+		assert.Equal(t, "nada", c.DefaultQuery("NoKey", "nada"))
+	})
+	assert.NotPanics(t, func() {
+		assert.Empty(t, c.Query("NoKey"))
+	})
 }
 
 func TestContextQueryAndPostForm(t *testing.T) {
@@ -600,14 +617,16 @@ func TestContextPostFormMultipart(t *testing.T) {
 
 func TestContextSetCookie(t *testing.T) {
 	c, _ := CreateTestContext(httptest.NewRecorder())
+	c.SetSameSite(http.SameSiteLaxMode)
 	c.SetCookie("user", "gin", 1, "/", "localhost", true, true)
-	assert.Equal(t, "user=gin; Path=/; Domain=localhost; Max-Age=1; HttpOnly; Secure", c.Writer.Header().Get("Set-Cookie"))
+	assert.Equal(t, "user=gin; Path=/; Domain=localhost; Max-Age=1; HttpOnly; Secure; SameSite=Lax", c.Writer.Header().Get("Set-Cookie"))
 }
 
 func TestContextSetCookiePathEmpty(t *testing.T) {
 	c, _ := CreateTestContext(httptest.NewRecorder())
+	c.SetSameSite(http.SameSiteLaxMode)
 	c.SetCookie("user", "gin", 1, "", "localhost", true, true)
-	assert.Equal(t, "user=gin; Path=/; Domain=localhost; Max-Age=1; HttpOnly; Secure", c.Writer.Header().Get("Set-Cookie"))
+	assert.Equal(t, "user=gin; Path=/; Domain=localhost; Max-Age=1; HttpOnly; Secure; SameSite=Lax", c.Writer.Header().Get("Set-Cookie"))
 }
 
 func TestContextGetCookie(t *testing.T) {
@@ -628,26 +647,21 @@ func TestContextBodyAllowedForStatus(t *testing.T) {
 	assert.True(t, true, bodyAllowedForStatus(http.StatusInternalServerError))
 }
 
-type TestPanicRender struct {
+type TestRender struct{}
+
+func (*TestRender) Render(http.ResponseWriter) error {
+	return errTestRender
 }
 
-func (*TestPanicRender) Render(http.ResponseWriter) error {
-	return errors.New("TestPanicRender")
-}
+func (*TestRender) WriteContentType(http.ResponseWriter) {}
 
-func (*TestPanicRender) WriteContentType(http.ResponseWriter) {}
-
-func TestContextRenderPanicIfErr(t *testing.T) {
-	defer func() {
-		r := recover()
-		assert.Equal(t, "TestPanicRender", fmt.Sprint(r))
-	}()
+func TestContextRenderIfErr(t *testing.T) {
 	w := httptest.NewRecorder()
 	c, _ := CreateTestContext(w)
 
-	c.Render(http.StatusOK, &TestPanicRender{})
+	c.Render(http.StatusOK, &TestRender{})
 
-	assert.Fail(t, "Panic not detected")
+	assert.Equal(t, errorMsgs{&Error{Err: errTestRender, Type: 1}}, c.Errors)
 }
 
 // Tests that the response is serialized as JSON
@@ -674,7 +688,7 @@ func TestContextRenderJSONP(t *testing.T) {
 	c.JSONP(http.StatusCreated, H{"foo": "bar"})
 
 	assert.Equal(t, http.StatusCreated, w.Code)
-	assert.Equal(t, "x({\"foo\":\"bar\"})", w.Body.String())
+	assert.Equal(t, "x({\"foo\":\"bar\"});", w.Body.String())
 	assert.Equal(t, "application/javascript; charset=utf-8", w.Header().Get("Content-Type"))
 }
 
@@ -936,7 +950,7 @@ func TestContextRenderNoContentHTMLString(t *testing.T) {
 	assert.Equal(t, "text/html; charset=utf-8", w.Header().Get("Content-Type"))
 }
 
-// TestContextData tests that the response can be written from `bytesting`
+// TestContextData tests that the response can be written from `bytestring`
 // with specified MIME type
 func TestContextRenderData(t *testing.T) {
 	w := httptest.NewRecorder()
@@ -986,8 +1000,25 @@ func TestContextRenderFile(t *testing.T) {
 	c.File("./gin.go")
 
 	assert.Equal(t, http.StatusOK, w.Code)
-	assert.Contains(t, w.Body.String(), "func New() *Engine {")
-	assert.Equal(t, "text/plain; charset=utf-8", w.Header().Get("Content-Type"))
+	assert.Contains(t, w.Body.String(), "func New(opts ...OptionFunc) *Engine {")
+	// Content-Type='text/plain; charset=utf-8' when go version <= 1.16,
+	// else, Content-Type='text/x-go; charset=utf-8'
+	assert.NotEqual(t, "", w.Header().Get("Content-Type"))
+}
+
+func TestContextRenderFileFromFS(t *testing.T) {
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
+
+	c.Request, _ = http.NewRequest("GET", "/some/path", nil)
+	c.FileFromFS("./gin.go", Dir(".", false))
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Contains(t, w.Body.String(), "func New(opts ...OptionFunc) *Engine {")
+	// Content-Type='text/plain; charset=utf-8' when go version <= 1.16,
+	// else, Content-Type='text/x-go; charset=utf-8'
+	assert.NotEqual(t, "", w.Header().Get("Content-Type"))
+	assert.Equal(t, "/some/path", c.Request.URL.Path)
 }
 
 func TestContextRenderAttachment(t *testing.T) {
@@ -999,12 +1030,39 @@ func TestContextRenderAttachment(t *testing.T) {
 	c.FileAttachment("./gin.go", newFilename)
 
 	assert.Equal(t, 200, w.Code)
-	assert.Contains(t, w.Body.String(), "func New() *Engine {")
-	assert.Equal(t, fmt.Sprintf("attachment; filename=\"%s\"", newFilename), w.HeaderMap.Get("Content-Disposition"))
+	assert.Contains(t, w.Body.String(), "func New(opts ...OptionFunc) *Engine {")
+	assert.Equal(t, fmt.Sprintf("attachment; filename=\"%s\"", newFilename), w.Header().Get("Content-Disposition"))
+}
+
+func TestContextRenderAndEscapeAttachment(t *testing.T) {
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
+	maliciousFilename := "tampering_field.sh\"; \\\"; dummy=.go"
+	actualEscapedResponseFilename := "tampering_field.sh\\\"; \\\\\\\"; dummy=.go"
+
+	c.Request, _ = http.NewRequest("GET", "/", nil)
+	c.FileAttachment("./gin.go", maliciousFilename)
+
+	assert.Equal(t, 200, w.Code)
+	assert.Contains(t, w.Body.String(), "func New(opts ...OptionFunc) *Engine {")
+	assert.Equal(t, fmt.Sprintf("attachment; filename=\"%s\"", actualEscapedResponseFilename), w.Header().Get("Content-Disposition"))
+}
+
+func TestContextRenderUTF8Attachment(t *testing.T) {
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
+	newFilename := "new🧡_filename.go"
+
+	c.Request, _ = http.NewRequest("GET", "/", nil)
+	c.FileAttachment("./gin.go", newFilename)
+
+	assert.Equal(t, 200, w.Code)
+	assert.Contains(t, w.Body.String(), "func New(opts ...OptionFunc) *Engine {")
+	assert.Equal(t, `attachment; filename*=UTF-8''`+url.QueryEscape(newFilename), w.Header().Get("Content-Disposition"))
 }
 
 // TestContextRenderYAML tests that the response is serialized as YAML
-// and Content-Type is set to application/x-yaml
+// and Content-Type is set to application/yaml
 func TestContextRenderYAML(t *testing.T) {
 	w := httptest.NewRecorder()
 	c, _ := CreateTestContext(w)
@@ -1013,7 +1071,20 @@ func TestContextRenderYAML(t *testing.T) {
 
 	assert.Equal(t, http.StatusCreated, w.Code)
 	assert.Equal(t, "foo: bar\n", w.Body.String())
-	assert.Equal(t, "application/x-yaml; charset=utf-8", w.Header().Get("Content-Type"))
+	assert.Equal(t, "application/yaml; charset=utf-8", w.Header().Get("Content-Type"))
+}
+
+// TestContextRenderTOML tests that the response is serialized as TOML
+// and Content-Type is set to application/toml
+func TestContextRenderTOML(t *testing.T) {
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
+
+	c.TOML(http.StatusCreated, H{"foo": "bar"})
+
+	assert.Equal(t, http.StatusCreated, w.Code)
+	assert.Equal(t, "foo = 'bar'\n", w.Body.String())
+	assert.Equal(t, "application/toml; charset=utf-8", w.Header().Get("Content-Type"))
 }
 
 // TestContextRenderProtoBuf tests that the response is serialized as ProtoBuf
@@ -1112,7 +1183,7 @@ func TestContextNegotiationWithJSON(t *testing.T) {
 	c.Request, _ = http.NewRequest("POST", "", nil)
 
 	c.Negotiate(http.StatusOK, Negotiate{
-		Offered: []string{MIMEJSON, MIMEXML},
+		Offered: []string{MIMEJSON, MIMEXML, MIMEYAML},
 		Data:    H{"foo": "bar"},
 	})
 
@@ -1127,13 +1198,43 @@ func TestContextNegotiationWithXML(t *testing.T) {
 	c.Request, _ = http.NewRequest("POST", "", nil)
 
 	c.Negotiate(http.StatusOK, Negotiate{
-		Offered: []string{MIMEXML, MIMEJSON},
+		Offered: []string{MIMEXML, MIMEJSON, MIMEYAML},
 		Data:    H{"foo": "bar"},
 	})
 
 	assert.Equal(t, http.StatusOK, w.Code)
 	assert.Equal(t, "<map><foo>bar</foo></map>", w.Body.String())
 	assert.Equal(t, "application/xml; charset=utf-8", w.Header().Get("Content-Type"))
+}
+
+func TestContextNegotiationWithYAML(t *testing.T) {
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
+	c.Request, _ = http.NewRequest("POST", "", nil)
+
+	c.Negotiate(http.StatusOK, Negotiate{
+		Offered: []string{MIMEYAML, MIMEXML, MIMEJSON, MIMETOML},
+		Data:    H{"foo": "bar"},
+	})
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Equal(t, "foo: bar\n", w.Body.String())
+	assert.Equal(t, "application/yaml; charset=utf-8", w.Header().Get("Content-Type"))
+}
+
+func TestContextNegotiationWithTOML(t *testing.T) {
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
+	c.Request, _ = http.NewRequest("POST", "", nil)
+
+	c.Negotiate(http.StatusOK, Negotiate{
+		Offered: []string{MIMETOML, MIMEXML, MIMEJSON, MIMEYAML},
+		Data:    H{"foo": "bar"},
+	})
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Equal(t, "foo = 'bar'\n", w.Body.String())
+	assert.Equal(t, "application/toml; charset=utf-8", w.Header().Get("Content-Type"))
 }
 
 func TestContextNegotiationWithHTML(t *testing.T) {
@@ -1224,6 +1325,14 @@ func TestContextNegotiationFormatCustom(t *testing.T) {
 	assert.Equal(t, MIMEJSON, c.NegotiateFormat(MIMEJSON))
 }
 
+func TestContextNegotiationFormat2(t *testing.T) {
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	c.Request, _ = http.NewRequest("POST", "/", nil)
+	c.Request.Header.Add("Accept", "image/tiff-fx")
+
+	assert.Equal(t, "", c.NegotiateFormat("image/tiff"))
+}
+
 func TestContextIsAborted(t *testing.T) {
 	c, _ := CreateTestContext(httptest.NewRecorder())
 	assert.False(t, c.IsAborted())
@@ -1238,7 +1347,7 @@ func TestContextIsAborted(t *testing.T) {
 	assert.True(t, c.IsAborted())
 }
 
-// TestContextData tests that the response can be written from `bytesting`
+// TestContextData tests that the response can be written from `bytestring`
 // with specified MIME type
 func TestContextAbortWithStatus(t *testing.T) {
 	w := httptest.NewRecorder()
@@ -1281,7 +1390,7 @@ func TestContextAbortWithStatusJSON(t *testing.T) {
 	_, err := buf.ReadFrom(w.Body)
 	assert.NoError(t, err)
 	jsonStringBody := buf.String()
-	assert.Equal(t, fmt.Sprint(`{"foo":"fooValue","bar":"barValue"}`), jsonStringBody)
+	assert.Equal(t, "{\"foo\":\"fooValue\",\"bar\":\"barValue\"}", jsonStringBody)
 }
 
 func TestContextError(t *testing.T) {
@@ -1289,12 +1398,12 @@ func TestContextError(t *testing.T) {
 	assert.Empty(t, c.Errors)
 
 	firstErr := errors.New("first error")
-	c.Error(firstErr) // nolint: errcheck
+	c.Error(firstErr) //nolint: errcheck
 	assert.Len(t, c.Errors, 1)
 	assert.Equal(t, "Error #01: first error\n", c.Errors.String())
 
 	secondErr := errors.New("second error")
-	c.Error(&Error{ // nolint: errcheck
+	c.Error(&Error{ //nolint: errcheck
 		Err:  secondErr,
 		Meta: "some data 2",
 		Type: ErrorTypePublic,
@@ -1316,13 +1425,13 @@ func TestContextError(t *testing.T) {
 			t.Error("didn't panic")
 		}
 	}()
-	c.Error(nil) // nolint: errcheck
+	c.Error(nil) //nolint: errcheck
 }
 
 func TestContextTypedError(t *testing.T) {
 	c, _ := CreateTestContext(httptest.NewRecorder())
-	c.Error(errors.New("externo 0")).SetType(ErrorTypePublic)  // nolint: errcheck
-	c.Error(errors.New("interno 0")).SetType(ErrorTypePrivate) // nolint: errcheck
+	c.Error(errors.New("externo 0")).SetType(ErrorTypePublic)  //nolint: errcheck
+	c.Error(errors.New("interno 0")).SetType(ErrorTypePrivate) //nolint: errcheck
 
 	for _, err := range c.Errors.ByType(ErrorTypePublic) {
 		assert.Equal(t, ErrorTypePublic, err.Type)
@@ -1337,7 +1446,7 @@ func TestContextAbortWithError(t *testing.T) {
 	w := httptest.NewRecorder()
 	c, _ := CreateTestContext(w)
 
-	c.AbortWithError(http.StatusUnauthorized, errors.New("bad input")).SetMeta("some input") // nolint: errcheck
+	c.AbortWithError(http.StatusUnauthorized, errors.New("bad input")).SetMeta("some input") //nolint: errcheck
 
 	assert.Equal(t, http.StatusUnauthorized, w.Code)
 	assert.Equal(t, abortIndex, c.index)
@@ -1347,12 +1456,11 @@ func TestContextAbortWithError(t *testing.T) {
 func TestContextClientIP(t *testing.T) {
 	c, _ := CreateTestContext(httptest.NewRecorder())
 	c.Request, _ = http.NewRequest("POST", "/", nil)
+	c.engine.trustedCIDRs, _ = c.engine.prepareTrustedCIDRs()
+	resetContextForClientIPTests(c)
 
-	c.Request.Header.Set("X-Real-IP", " 10.10.10.10  ")
-	c.Request.Header.Set("X-Forwarded-For", "  20.20.20.20, 30.30.30.30")
-	c.Request.Header.Set("X-Appengine-Remote-Addr", "50.50.50.50")
-	c.Request.RemoteAddr = "  40.40.40.40:42123 "
-
+	// Legacy tests (validating that the defaults don't break the
+	// (insecure!) old behaviour)
 	assert.Equal(t, "20.20.20.20", c.ClientIP())
 
 	c.Request.Header.Del("X-Forwarded-For")
@@ -1363,7 +1471,7 @@ func TestContextClientIP(t *testing.T) {
 
 	c.Request.Header.Del("X-Forwarded-For")
 	c.Request.Header.Del("X-Real-IP")
-	c.engine.AppEngine = true
+	c.engine.TrustedPlatform = PlatformGoogleAppEngine
 	assert.Equal(t, "50.50.50.50", c.ClientIP())
 
 	c.Request.Header.Del("X-Appengine-Remote-Addr")
@@ -1372,6 +1480,120 @@ func TestContextClientIP(t *testing.T) {
 	// no port
 	c.Request.RemoteAddr = "50.50.50.50"
 	assert.Empty(t, c.ClientIP())
+
+	// Tests exercising the TrustedProxies functionality
+	resetContextForClientIPTests(c)
+
+	// IPv6 support
+	c.Request.RemoteAddr = "[::1]:12345"
+	assert.Equal(t, "20.20.20.20", c.ClientIP())
+
+	resetContextForClientIPTests(c)
+	// No trusted proxies
+	_ = c.engine.SetTrustedProxies([]string{})
+	c.engine.RemoteIPHeaders = []string{"X-Forwarded-For"}
+	assert.Equal(t, "40.40.40.40", c.ClientIP())
+
+	// Disabled TrustedProxies feature
+	_ = c.engine.SetTrustedProxies(nil)
+	assert.Equal(t, "40.40.40.40", c.ClientIP())
+
+	// Last proxy is trusted, but the RemoteAddr is not
+	_ = c.engine.SetTrustedProxies([]string{"30.30.30.30"})
+	assert.Equal(t, "40.40.40.40", c.ClientIP())
+
+	// Only trust RemoteAddr
+	_ = c.engine.SetTrustedProxies([]string{"40.40.40.40"})
+	assert.Equal(t, "30.30.30.30", c.ClientIP())
+
+	// All steps are trusted
+	_ = c.engine.SetTrustedProxies([]string{"40.40.40.40", "30.30.30.30", "20.20.20.20"})
+	assert.Equal(t, "20.20.20.20", c.ClientIP())
+
+	// Use CIDR
+	_ = c.engine.SetTrustedProxies([]string{"40.40.25.25/16", "30.30.30.30"})
+	assert.Equal(t, "20.20.20.20", c.ClientIP())
+
+	// Use hostname that resolves to all the proxies
+	_ = c.engine.SetTrustedProxies([]string{"foo"})
+	assert.Equal(t, "40.40.40.40", c.ClientIP())
+
+	// Use hostname that returns an error
+	_ = c.engine.SetTrustedProxies([]string{"bar"})
+	assert.Equal(t, "40.40.40.40", c.ClientIP())
+
+	// X-Forwarded-For has a non-IP element
+	_ = c.engine.SetTrustedProxies([]string{"40.40.40.40"})
+	c.Request.Header.Set("X-Forwarded-For", " blah ")
+	assert.Equal(t, "40.40.40.40", c.ClientIP())
+
+	// Result from LookupHost has non-IP element. This should never
+	// happen, but we should test it to make sure we handle it
+	// gracefully.
+	_ = c.engine.SetTrustedProxies([]string{"baz"})
+	c.Request.Header.Set("X-Forwarded-For", " 30.30.30.30 ")
+	assert.Equal(t, "40.40.40.40", c.ClientIP())
+
+	_ = c.engine.SetTrustedProxies([]string{"40.40.40.40"})
+	c.Request.Header.Del("X-Forwarded-For")
+	c.engine.RemoteIPHeaders = []string{"X-Forwarded-For", "X-Real-IP"}
+	assert.Equal(t, "10.10.10.10", c.ClientIP())
+
+	c.engine.RemoteIPHeaders = []string{}
+	c.engine.TrustedPlatform = PlatformGoogleAppEngine
+	assert.Equal(t, "50.50.50.50", c.ClientIP())
+
+	// Use custom TrustedPlatform header
+	c.engine.TrustedPlatform = "X-CDN-IP"
+	c.Request.Header.Set("X-CDN-IP", "80.80.80.80")
+	assert.Equal(t, "80.80.80.80", c.ClientIP())
+	// wrong header
+	c.engine.TrustedPlatform = "X-Wrong-Header"
+	assert.Equal(t, "40.40.40.40", c.ClientIP())
+
+	c.Request.Header.Del("X-CDN-IP")
+	// TrustedPlatform is empty
+	c.engine.TrustedPlatform = ""
+	assert.Equal(t, "40.40.40.40", c.ClientIP())
+
+	// Test the legacy flag
+	c.engine.AppEngine = true
+	assert.Equal(t, "50.50.50.50", c.ClientIP())
+	c.engine.AppEngine = false
+	c.engine.TrustedPlatform = PlatformGoogleAppEngine
+
+	c.Request.Header.Del("X-Appengine-Remote-Addr")
+	assert.Equal(t, "40.40.40.40", c.ClientIP())
+
+	c.engine.TrustedPlatform = PlatformCloudflare
+	assert.Equal(t, "60.60.60.60", c.ClientIP())
+
+	c.Request.Header.Del("CF-Connecting-IP")
+	assert.Equal(t, "40.40.40.40", c.ClientIP())
+
+	c.engine.TrustedPlatform = PlatformFlyIO
+	assert.Equal(t, "70.70.70.70", c.ClientIP())
+
+	c.Request.Header.Del("Fly-Client-IP")
+	assert.Equal(t, "40.40.40.40", c.ClientIP())
+
+	c.engine.TrustedPlatform = ""
+
+	// no port
+	c.Request.RemoteAddr = "50.50.50.50"
+	assert.Empty(t, c.ClientIP())
+}
+
+func resetContextForClientIPTests(c *Context) {
+	c.Request.Header.Set("X-Real-IP", " 10.10.10.10  ")
+	c.Request.Header.Set("X-Forwarded-For", "  20.20.20.20, 30.30.30.30")
+	c.Request.Header.Set("X-Appengine-Remote-Addr", "50.50.50.50")
+	c.Request.Header.Set("CF-Connecting-IP", "60.60.60.60")
+	c.Request.Header.Set("Fly-Client-IP", "70.70.70.70")
+	c.Request.RemoteAddr = "  40.40.40.40:42123 "
+	c.engine.TrustedPlatform = ""
+	c.engine.trustedCIDRs = defaultTrustedCIDRs
+	c.engine.AppEngine = false
 }
 
 func TestContextContentType(t *testing.T) {
@@ -1413,6 +1635,7 @@ func TestContextBindWithJSON(t *testing.T) {
 	assert.Equal(t, "bar", obj.Foo)
 	assert.Equal(t, 0, w.Body.Len())
 }
+
 func TestContextBindWithXML(t *testing.T) {
 	w := httptest.NewRecorder()
 	c, _ := CreateTestContext(w)
@@ -1431,6 +1654,28 @@ func TestContextBindWithXML(t *testing.T) {
 	assert.NoError(t, c.BindXML(&obj))
 	assert.Equal(t, "FOO", obj.Foo)
 	assert.Equal(t, "BAR", obj.Bar)
+	assert.Equal(t, 0, w.Body.Len())
+}
+
+func TestContextBindHeader(t *testing.T) {
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
+
+	c.Request, _ = http.NewRequest("POST", "/", nil)
+	c.Request.Header.Add("rate", "8000")
+	c.Request.Header.Add("domain", "music")
+	c.Request.Header.Add("limit", "1000")
+
+	var testHeader struct {
+		Rate   int    `header:"Rate"`
+		Domain string `header:"Domain"`
+		Limit  int    `header:"limit"`
+	}
+
+	assert.NoError(t, c.BindHeader(&testHeader))
+	assert.Equal(t, 8000, testHeader.Rate)
+	assert.Equal(t, "music", testHeader.Domain)
+	assert.Equal(t, 1000, testHeader.Limit)
 	assert.Equal(t, 0, w.Body.Len())
 }
 
@@ -1462,6 +1707,23 @@ func TestContextBindWithYAML(t *testing.T) {
 		Bar string `yaml:"bar"`
 	}
 	assert.NoError(t, c.BindYAML(&obj))
+	assert.Equal(t, "foo", obj.Bar)
+	assert.Equal(t, "bar", obj.Foo)
+	assert.Equal(t, 0, w.Body.Len())
+}
+
+func TestContextBindWithTOML(t *testing.T) {
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
+
+	c.Request, _ = http.NewRequest("POST", "/", bytes.NewBufferString("foo = 'bar'\nbar = 'foo'"))
+	c.Request.Header.Add("Content-Type", MIMEXML) // set fake content-type
+
+	var obj struct {
+		Foo string `toml:"foo"`
+		Bar string `toml:"bar"`
+	}
+	assert.NoError(t, c.BindTOML(&obj))
 	assert.Equal(t, "foo", obj.Bar)
 	assert.Equal(t, "bar", obj.Foo)
 	assert.Equal(t, 0, w.Body.Len())
@@ -1541,6 +1803,28 @@ func TestContextShouldBindWithXML(t *testing.T) {
 	assert.Equal(t, 0, w.Body.Len())
 }
 
+func TestContextShouldBindHeader(t *testing.T) {
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
+
+	c.Request, _ = http.NewRequest("POST", "/", nil)
+	c.Request.Header.Add("rate", "8000")
+	c.Request.Header.Add("domain", "music")
+	c.Request.Header.Add("limit", "1000")
+
+	var testHeader struct {
+		Rate   int    `header:"Rate"`
+		Domain string `header:"Domain"`
+		Limit  int    `header:"limit"`
+	}
+
+	assert.NoError(t, c.ShouldBindHeader(&testHeader))
+	assert.Equal(t, 8000, testHeader.Rate)
+	assert.Equal(t, "music", testHeader.Domain)
+	assert.Equal(t, 1000, testHeader.Limit)
+	assert.Equal(t, 0, w.Body.Len())
+}
+
 func TestContextShouldBindWithQuery(t *testing.T) {
 	w := httptest.NewRecorder()
 	c, _ := CreateTestContext(w)
@@ -1573,6 +1857,23 @@ func TestContextShouldBindWithYAML(t *testing.T) {
 		Bar string `yaml:"bar"`
 	}
 	assert.NoError(t, c.ShouldBindYAML(&obj))
+	assert.Equal(t, "foo", obj.Bar)
+	assert.Equal(t, "bar", obj.Foo)
+	assert.Equal(t, 0, w.Body.Len())
+}
+
+func TestContextShouldBindWithTOML(t *testing.T) {
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
+
+	c.Request, _ = http.NewRequest("POST", "/", bytes.NewBufferString("foo='bar'\nbar= 'foo'"))
+	c.Request.Header.Add("Content-Type", MIMETOML) // set fake content-type
+
+	var obj struct {
+		Foo string `toml:"foo"`
+		Bar string `toml:"bar"`
+	}
+	assert.NoError(t, c.ShouldBindTOML(&obj))
 	assert.Equal(t, "foo", obj.Bar)
 	assert.Equal(t, "bar", obj.Foo)
 	assert.Equal(t, 0, w.Body.Len())
@@ -1676,6 +1977,263 @@ func TestContextShouldBindBodyWith(t *testing.T) {
 	}
 }
 
+func TestContextShouldBindBodyWithJSON(t *testing.T) {
+	for _, tt := range []struct {
+		name        string
+		bindingBody binding.BindingBody
+		body        string
+	}{
+		{
+			name:        " JSON & JSON-BODY ",
+			bindingBody: binding.JSON,
+			body:        `{"foo":"FOO"}`,
+		},
+		{
+			name:        " JSON & XML-BODY ",
+			bindingBody: binding.XML,
+			body: `<?xml version="1.0" encoding="UTF-8"?>
+<root>
+<foo>FOO</foo>
+</root>`,
+		},
+		{
+			name:        " JSON & YAML-BODY ",
+			bindingBody: binding.YAML,
+			body:        `foo: FOO`,
+		},
+		{
+			name:        " JSON & TOM-BODY ",
+			bindingBody: binding.TOML,
+			body:        `foo=FOO`,
+		},
+	} {
+		t.Logf("testing: %s", tt.name)
+
+		w := httptest.NewRecorder()
+		c, _ := CreateTestContext(w)
+
+		c.Request, _ = http.NewRequest("POST", "/", bytes.NewBufferString(tt.body))
+
+		type typeJSON struct {
+			Foo string `json:"foo" binding:"required"`
+		}
+		objJSON := typeJSON{}
+
+		if tt.bindingBody == binding.JSON {
+			assert.NoError(t, c.ShouldBindBodyWithJSON(&objJSON))
+			assert.Equal(t, typeJSON{"FOO"}, objJSON)
+		}
+
+		if tt.bindingBody == binding.XML {
+			assert.Error(t, c.ShouldBindBodyWithJSON(&objJSON))
+			assert.Equal(t, typeJSON{}, objJSON)
+		}
+
+		if tt.bindingBody == binding.YAML {
+			assert.Error(t, c.ShouldBindBodyWithJSON(&objJSON))
+			assert.Equal(t, typeJSON{}, objJSON)
+		}
+
+		if tt.bindingBody == binding.TOML {
+			assert.Error(t, c.ShouldBindBodyWithJSON(&objJSON))
+			assert.Equal(t, typeJSON{}, objJSON)
+		}
+	}
+}
+
+func TestContextShouldBindBodyWithXML(t *testing.T) {
+	for _, tt := range []struct {
+		name        string
+		bindingBody binding.BindingBody
+		body        string
+	}{
+		{
+			name:        " XML & JSON-BODY ",
+			bindingBody: binding.JSON,
+			body:        `{"foo":"FOO"}`,
+		},
+		{
+			name:        " XML & XML-BODY ",
+			bindingBody: binding.XML,
+			body: `<?xml version="1.0" encoding="UTF-8"?>
+<root>
+<foo>FOO</foo>
+</root>`,
+		},
+		{
+			name:        " XML & YAML-BODY ",
+			bindingBody: binding.YAML,
+			body:        `foo: FOO`,
+		},
+		{
+			name:        " XML & TOM-BODY ",
+			bindingBody: binding.TOML,
+			body:        `foo=FOO`,
+		},
+	} {
+		t.Logf("testing: %s", tt.name)
+
+		w := httptest.NewRecorder()
+		c, _ := CreateTestContext(w)
+
+		c.Request, _ = http.NewRequest("POST", "/", bytes.NewBufferString(tt.body))
+
+		type typeXML struct {
+			Foo string `xml:"foo" binding:"required"`
+		}
+		objXML := typeXML{}
+
+		if tt.bindingBody == binding.JSON {
+			assert.Error(t, c.ShouldBindBodyWithXML(&objXML))
+			assert.Equal(t, typeXML{}, objXML)
+		}
+
+		if tt.bindingBody == binding.XML {
+			assert.NoError(t, c.ShouldBindBodyWithXML(&objXML))
+			assert.Equal(t, typeXML{"FOO"}, objXML)
+		}
+
+		if tt.bindingBody == binding.YAML {
+			assert.Error(t, c.ShouldBindBodyWithXML(&objXML))
+			assert.Equal(t, typeXML{}, objXML)
+		}
+
+		if tt.bindingBody == binding.TOML {
+			assert.Error(t, c.ShouldBindBodyWithXML(&objXML))
+			assert.Equal(t, typeXML{}, objXML)
+		}
+	}
+}
+
+func TestContextShouldBindBodyWithYAML(t *testing.T) {
+	for _, tt := range []struct {
+		name        string
+		bindingBody binding.BindingBody
+		body        string
+	}{
+		{
+			name:        " YAML & JSON-BODY ",
+			bindingBody: binding.JSON,
+			body:        `{"foo":"FOO"}`,
+		},
+		{
+			name:        " YAML & XML-BODY ",
+			bindingBody: binding.XML,
+			body: `<?xml version="1.0" encoding="UTF-8"?>
+<root>
+<foo>FOO</foo>
+</root>`,
+		},
+		{
+			name:        " YAML & YAML-BODY ",
+			bindingBody: binding.YAML,
+			body:        `foo: FOO`,
+		},
+		{
+			name:        " YAML & TOM-BODY ",
+			bindingBody: binding.TOML,
+			body:        `foo=FOO`,
+		},
+	} {
+		t.Logf("testing: %s", tt.name)
+
+		w := httptest.NewRecorder()
+		c, _ := CreateTestContext(w)
+
+		c.Request, _ = http.NewRequest("POST", "/", bytes.NewBufferString(tt.body))
+
+		type typeYAML struct {
+			Foo string `yaml:"foo" binding:"required"`
+		}
+		objYAML := typeYAML{}
+
+		// YAML belongs to a super collection of JSON, so JSON can be parsed by YAML
+		if tt.bindingBody == binding.JSON {
+			assert.NoError(t, c.ShouldBindBodyWithYAML(&objYAML))
+			assert.Equal(t, typeYAML{"FOO"}, objYAML)
+		}
+
+		if tt.bindingBody == binding.XML {
+			assert.Error(t, c.ShouldBindBodyWithYAML(&objYAML))
+			assert.Equal(t, typeYAML{}, objYAML)
+		}
+
+		if tt.bindingBody == binding.YAML {
+			assert.NoError(t, c.ShouldBindBodyWithYAML(&objYAML))
+			assert.Equal(t, typeYAML{"FOO"}, objYAML)
+		}
+
+		if tt.bindingBody == binding.TOML {
+			assert.Error(t, c.ShouldBindBodyWithYAML(&objYAML))
+			assert.Equal(t, typeYAML{}, objYAML)
+		}
+	}
+}
+
+func TestContextShouldBindBodyWithTOML(t *testing.T) {
+	for _, tt := range []struct {
+		name        string
+		bindingBody binding.BindingBody
+		body        string
+	}{
+		{
+			name:        " TOML & JSON-BODY ",
+			bindingBody: binding.JSON,
+			body:        `{"foo":"FOO"}`,
+		},
+		{
+			name:        " TOML & XML-BODY ",
+			bindingBody: binding.XML,
+			body: `<?xml version="1.0" encoding="UTF-8"?>
+<root>
+<foo>FOO</foo>
+</root>`,
+		},
+		{
+			name:        " TOML & YAML-BODY ",
+			bindingBody: binding.YAML,
+			body:        `foo: FOO`,
+		},
+		{
+			name:        " TOML & TOM-BODY ",
+			bindingBody: binding.TOML,
+			body:        `foo = 'FOO'`,
+		},
+	} {
+		t.Logf("testing: %s", tt.name)
+
+		w := httptest.NewRecorder()
+		c, _ := CreateTestContext(w)
+
+		c.Request, _ = http.NewRequest("POST", "/", bytes.NewBufferString(tt.body))
+
+		type typeTOML struct {
+			Foo string `toml:"foo" binding:"required"`
+		}
+		objTOML := typeTOML{}
+
+		if tt.bindingBody == binding.JSON {
+			assert.Error(t, c.ShouldBindBodyWithTOML(&objTOML))
+			assert.Equal(t, typeTOML{}, objTOML)
+		}
+
+		if tt.bindingBody == binding.XML {
+			assert.Error(t, c.ShouldBindBodyWithTOML(&objTOML))
+			assert.Equal(t, typeTOML{}, objTOML)
+		}
+
+		if tt.bindingBody == binding.YAML {
+			assert.Error(t, c.ShouldBindBodyWithTOML(&objTOML))
+			assert.Equal(t, typeTOML{}, objTOML)
+		}
+
+		if tt.bindingBody == binding.TOML {
+			assert.NoError(t, c.ShouldBindBodyWithTOML(&objTOML))
+			assert.Equal(t, typeTOML{"FOO"}, objTOML)
+		}
+	}
+}
+
 func TestContextGolangContext(t *testing.T) {
 	c, _ := CreateTestContext(httptest.NewRecorder())
 	c.Request, _ = http.NewRequest("POST", "/", bytes.NewBufferString("{\"foo\":\"bar\", \"bar\":\"foo\"}"))
@@ -1684,7 +2242,8 @@ func TestContextGolangContext(t *testing.T) {
 	ti, ok := c.Deadline()
 	assert.Equal(t, ti, time.Time{})
 	assert.False(t, ok)
-	assert.Equal(t, c.Value(0), c.Request)
+	assert.Equal(t, c.Value(ContextRequestKey), c.Request)
+	assert.Equal(t, c.Value(ContextKey), c)
 	assert.Nil(t, c.Value("foo"))
 
 	c.Set("foo", "bar")
@@ -1751,6 +2310,23 @@ func TestContextRenderDataFromReader(t *testing.T) {
 	assert.Equal(t, contentType, w.Header().Get("Content-Type"))
 	assert.Equal(t, fmt.Sprintf("%d", contentLength), w.Header().Get("Content-Length"))
 	assert.Equal(t, extraHeaders["Content-Disposition"], w.Header().Get("Content-Disposition"))
+}
+
+func TestContextRenderDataFromReaderNoHeaders(t *testing.T) {
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
+
+	body := "#!PNG some raw data"
+	reader := strings.NewReader(body)
+	contentLength := int64(len(body))
+	contentType := "image/png"
+
+	c.DataFromReader(http.StatusOK, contentLength, contentType, reader, nil)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Equal(t, body, w.Body.String())
+	assert.Equal(t, contentType, w.Header().Get("Content-Type"))
+	assert.Equal(t, fmt.Sprintf("%d", contentLength), w.Header().Get("Content-Length"))
 }
 
 type TestResponseRecorder struct {
@@ -1820,4 +2396,318 @@ func TestContextResetInHandler(t *testing.T) {
 	assert.NotPanics(t, func() {
 		c.Next()
 	})
+}
+
+func TestRaceParamsContextCopy(t *testing.T) {
+	DefaultWriter = os.Stdout
+	router := Default()
+	nameGroup := router.Group("/:name")
+	var wg sync.WaitGroup
+	wg.Add(2)
+	{
+		nameGroup.GET("/api", func(c *Context) {
+			go func(c *Context, param string) {
+				defer wg.Done()
+				// First assert must be executed after the second request
+				time.Sleep(50 * time.Millisecond)
+				assert.Equal(t, c.Param("name"), param)
+			}(c.Copy(), c.Param("name"))
+		})
+	}
+	PerformRequest(router, "GET", "/name1/api")
+	PerformRequest(router, "GET", "/name2/api")
+	wg.Wait()
+}
+
+func TestContextWithKeysMutex(t *testing.T) {
+	c := &Context{}
+	c.Set("foo", "bar")
+
+	value, err := c.Get("foo")
+	assert.Equal(t, "bar", value)
+	assert.True(t, err)
+
+	value, err = c.Get("foo2")
+	assert.Nil(t, value)
+	assert.False(t, err)
+}
+
+func TestRemoteIPFail(t *testing.T) {
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	c.Request, _ = http.NewRequest("POST", "/", nil)
+	c.Request.RemoteAddr = "[:::]:80"
+	ip := net.ParseIP(c.RemoteIP())
+	trust := c.engine.isTrustedProxy(ip)
+	assert.Nil(t, ip)
+	assert.False(t, trust)
+}
+
+func TestHasRequestContext(t *testing.T) {
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	assert.False(t, c.hasRequestContext(), "no request, no fallback")
+	c.engine.ContextWithFallback = true
+	assert.False(t, c.hasRequestContext(), "no request, has fallback")
+	c.Request, _ = http.NewRequest(http.MethodGet, "/", nil)
+	assert.True(t, c.hasRequestContext(), "has request, has fallback")
+	c.Request, _ = http.NewRequestWithContext(nil, "", "", nil) //nolint:staticcheck
+	assert.False(t, c.hasRequestContext(), "has request with nil ctx, has fallback")
+	c.engine.ContextWithFallback = false
+	assert.False(t, c.hasRequestContext(), "has request, no fallback")
+
+	c = &Context{}
+	assert.False(t, c.hasRequestContext(), "no request, no engine")
+	c.Request, _ = http.NewRequest(http.MethodGet, "/", nil)
+	assert.False(t, c.hasRequestContext(), "has request, no engine")
+}
+
+func TestContextWithFallbackDeadlineFromRequestContext(t *testing.T) {
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	// enable ContextWithFallback feature flag
+	c.engine.ContextWithFallback = true
+
+	deadline, ok := c.Deadline()
+	assert.Zero(t, deadline)
+	assert.False(t, ok)
+
+	c2, _ := CreateTestContext(httptest.NewRecorder())
+	// enable ContextWithFallback feature flag
+	c2.engine.ContextWithFallback = true
+
+	c2.Request, _ = http.NewRequest(http.MethodGet, "/", nil)
+	d := time.Now().Add(time.Second)
+	ctx, cancel := context.WithDeadline(context.Background(), d)
+	defer cancel()
+	c2.Request = c2.Request.WithContext(ctx)
+	deadline, ok = c2.Deadline()
+	assert.Equal(t, d, deadline)
+	assert.True(t, ok)
+}
+
+func TestContextWithFallbackDoneFromRequestContext(t *testing.T) {
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	// enable ContextWithFallback feature flag
+	c.engine.ContextWithFallback = true
+
+	assert.Nil(t, c.Done())
+
+	c2, _ := CreateTestContext(httptest.NewRecorder())
+	// enable ContextWithFallback feature flag
+	c2.engine.ContextWithFallback = true
+
+	c2.Request, _ = http.NewRequest(http.MethodGet, "/", nil)
+	ctx, cancel := context.WithCancel(context.Background())
+	c2.Request = c2.Request.WithContext(ctx)
+	cancel()
+	assert.NotNil(t, <-c2.Done())
+}
+
+func TestContextWithFallbackErrFromRequestContext(t *testing.T) {
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	// enable ContextWithFallback feature flag
+	c.engine.ContextWithFallback = true
+
+	assert.Nil(t, c.Err())
+
+	c2, _ := CreateTestContext(httptest.NewRecorder())
+	// enable ContextWithFallback feature flag
+	c2.engine.ContextWithFallback = true
+
+	c2.Request, _ = http.NewRequest(http.MethodGet, "/", nil)
+	ctx, cancel := context.WithCancel(context.Background())
+	c2.Request = c2.Request.WithContext(ctx)
+	cancel()
+
+	assert.EqualError(t, c2.Err(), context.Canceled.Error())
+}
+
+func TestContextWithFallbackValueFromRequestContext(t *testing.T) {
+	type contextKey string
+
+	tests := []struct {
+		name             string
+		getContextAndKey func() (*Context, any)
+		value            any
+	}{
+		{
+			name: "c with struct context key",
+			getContextAndKey: func() (*Context, any) {
+				var key struct{}
+				c, _ := CreateTestContext(httptest.NewRecorder())
+				// enable ContextWithFallback feature flag
+				c.engine.ContextWithFallback = true
+				c.Request, _ = http.NewRequest("POST", "/", nil)
+				c.Request = c.Request.WithContext(context.WithValue(context.TODO(), key, "value"))
+				return c, key
+			},
+			value: "value",
+		},
+		{
+			name: "c with string context key",
+			getContextAndKey: func() (*Context, any) {
+				c, _ := CreateTestContext(httptest.NewRecorder())
+				// enable ContextWithFallback feature flag
+				c.engine.ContextWithFallback = true
+				c.Request, _ = http.NewRequest("POST", "/", nil)
+				c.Request = c.Request.WithContext(context.WithValue(context.TODO(), contextKey("key"), "value"))
+				return c, contextKey("key")
+			},
+			value: "value",
+		},
+		{
+			name: "c with nil http.Request",
+			getContextAndKey: func() (*Context, any) {
+				c, _ := CreateTestContext(httptest.NewRecorder())
+				// enable ContextWithFallback feature flag
+				c.engine.ContextWithFallback = true
+				c.Request = nil
+				return c, "key"
+			},
+			value: nil,
+		},
+		{
+			name: "c with nil http.Request.Context()",
+			getContextAndKey: func() (*Context, any) {
+				c, _ := CreateTestContext(httptest.NewRecorder())
+				// enable ContextWithFallback feature flag
+				c.engine.ContextWithFallback = true
+				c.Request, _ = http.NewRequest("POST", "/", nil)
+				return c, "key"
+			},
+			value: nil,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			c, key := tt.getContextAndKey()
+			assert.Equal(t, tt.value, c.Value(key))
+		})
+	}
+}
+
+func TestContextCopyShouldNotCancel(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer srv.Close()
+
+	ensureRequestIsOver := make(chan struct{})
+
+	wg := &sync.WaitGroup{}
+
+	r := New()
+	r.GET("/", func(ginctx *Context) {
+		wg.Add(1)
+
+		ginctx = ginctx.Copy()
+
+		// start async goroutine for calling srv
+		go func() {
+			defer wg.Done()
+
+			<-ensureRequestIsOver // ensure request is done
+
+			req, err := http.NewRequestWithContext(ginctx, http.MethodGet, srv.URL, nil)
+			must(err)
+
+			res, err := http.DefaultClient.Do(req)
+			if err != nil {
+				t.Error(fmt.Errorf("request error: %w", err))
+				return
+			}
+
+			if res.StatusCode != http.StatusOK {
+				t.Error(fmt.Errorf("unexpected status code: %s", res.Status))
+			}
+		}()
+	})
+
+	l, err := net.Listen("tcp", ":0")
+	must(err)
+	go func() {
+		s := &http.Server{
+			Handler: r,
+		}
+
+		must(s.Serve(l))
+	}()
+
+	addr := strings.Split(l.Addr().String(), ":")
+	res, err := http.Get(fmt.Sprintf("http://127.0.0.1:%s/", addr[len(addr)-1]))
+	if err != nil {
+		t.Error(fmt.Errorf("request error: %w", err))
+		return
+	}
+
+	close(ensureRequestIsOver)
+
+	if res.StatusCode != http.StatusOK {
+		t.Error(fmt.Errorf("unexpected status code: %s", res.Status))
+		return
+	}
+
+	wg.Wait()
+}
+
+func TestContextAddParam(t *testing.T) {
+	c := &Context{}
+	id := "id"
+	value := "1"
+	c.AddParam(id, value)
+
+	v, ok := c.Params.Get(id)
+	assert.Equal(t, ok, true)
+	assert.Equal(t, value, v)
+}
+
+func TestCreateTestContextWithRouteParams(t *testing.T) {
+	w := httptest.NewRecorder()
+	engine := New()
+	engine.GET("/:action/:name", func(ctx *Context) {
+		ctx.String(http.StatusOK, "%s %s", ctx.Param("action"), ctx.Param("name"))
+	})
+	c := CreateTestContextOnly(w, engine)
+	c.Request, _ = http.NewRequest(http.MethodGet, "/hello/gin", nil)
+	engine.HandleContext(c)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Equal(t, "hello gin", w.Body.String())
+}
+
+type interceptedWriter struct {
+	ResponseWriter
+	b *bytes.Buffer
+}
+
+func (i interceptedWriter) WriteHeader(code int) {
+	i.Header().Del("X-Test")
+	i.ResponseWriter.WriteHeader(code)
+}
+
+func TestInterceptedHeader(t *testing.T) {
+	w := httptest.NewRecorder()
+	c, r := CreateTestContext(w)
+
+	r.Use(func(c *Context) {
+		i := interceptedWriter{
+			ResponseWriter: c.Writer,
+			b:              bytes.NewBuffer(nil),
+		}
+		c.Writer = i
+		c.Next()
+		c.Header("X-Test", "overridden")
+		c.Writer = i.ResponseWriter
+	})
+	r.GET("/", func(c *Context) {
+		c.Header("X-Test", "original")
+		c.Header("X-Test-2", "present")
+		c.String(http.StatusOK, "hello world")
+	})
+	c.Request = httptest.NewRequest("GET", "/", nil)
+	r.HandleContext(c)
+	// Result() has headers frozen when WriteHeaderNow() has been called
+	// Compared to this time, this is when the response headers will be flushed
+	// As response is flushed on c.String, the Header cannot be set by the first
+	// middleware. Assert this
+	assert.Equal(t, "", w.Result().Header.Get("X-Test"))
+	assert.Equal(t, "present", w.Result().Header.Get("X-Test-2"))
 }

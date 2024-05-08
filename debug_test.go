@@ -1,17 +1,18 @@
-// Copyright 2014 Manu Martinez-Almeida.  All rights reserved.
+// Copyright 2014 Manu Martinez-Almeida. All rights reserved.
 // Use of this source code is governed by a MIT style
 // license that can be found in the LICENSE file.
 
 package gin
 
 import (
-	"bytes"
 	"errors"
+	"fmt"
 	"html/template"
 	"io"
 	"log"
 	"os"
 	"runtime"
+	"strings"
 	"sync"
 	"testing"
 
@@ -20,7 +21,7 @@ import (
 
 // TODO
 // func debugRoute(httpMethod, absolutePath string, handlers HandlersChain) {
-// func debugPrint(format string, values ...interface{}) {
+// func debugPrint(format string, values ...any) {
 
 func TestIsDebugging(t *testing.T) {
 	SetMode(DebugMode)
@@ -64,6 +65,18 @@ func TestDebugPrintRoutes(t *testing.T) {
 	assert.Regexp(t, `^\[GIN-debug\] GET    /path/to/route/:param     --> (.*/vendor/)?github.com/gin-gonic/gin.handlerNameTest \(2 handlers\)\n$`, re)
 }
 
+func TestDebugPrintRouteFunc(t *testing.T) {
+	DebugPrintRouteFunc = func(httpMethod, absolutePath, handlerName string, nuHandlers int) {
+		fmt.Fprintf(DefaultWriter, "[GIN-debug] %-6s %-40s --> %s (%d handlers)\n", httpMethod, absolutePath, handlerName, nuHandlers)
+	}
+	re := captureOutput(t, func() {
+		SetMode(DebugMode)
+		debugPrintRoute("GET", "/path/to/route/:param1/:param2", HandlersChain{func(c *Context) {}, handlerNameTest})
+		SetMode(TestMode)
+	})
+	assert.Regexp(t, `^\[GIN-debug\] GET    /path/to/route/:param1/:param2           --> (.*/vendor/)?github.com/gin-gonic/gin.handlerNameTest \(2 handlers\)\n$`, re)
+}
+
 func TestDebugPrintLoadTemplate(t *testing.T) {
 	re := captureOutput(t, func() {
 		SetMode(DebugMode)
@@ -90,8 +103,8 @@ func TestDebugPrintWARNINGDefault(t *testing.T) {
 		SetMode(TestMode)
 	})
 	m, e := getMinVer(runtime.Version())
-	if e == nil && m <= ginSupportMinGoVer {
-		assert.Equal(t, "[GIN-debug] [WARNING] Now Gin requires Go 1.8 or later and Go 1.9 will be required soon.\n\n[GIN-debug] [WARNING] Creating an Engine instance with the Logger and Recovery middleware already attached.\n\n", re)
+	if e == nil && m < ginSupportMinGoVer {
+		assert.Equal(t, "[GIN-debug] [WARNING] Now Gin requires Go 1.18+.\n\n[GIN-debug] [WARNING] Creating an Engine instance with the Logger and Recovery middleware already attached.\n\n", re)
 	} else {
 		assert.Equal(t, "[GIN-debug] [WARNING] Creating an Engine instance with the Logger and Recovery middleware already attached.\n\n", re)
 	}
@@ -111,21 +124,21 @@ func captureOutput(t *testing.T, f func()) string {
 	if err != nil {
 		panic(err)
 	}
-	stdout := os.Stdout
-	stderr := os.Stderr
+	defaultWriter := DefaultWriter
+	defaultErrorWriter := DefaultErrorWriter
 	defer func() {
-		os.Stdout = stdout
-		os.Stderr = stderr
+		DefaultWriter = defaultWriter
+		DefaultErrorWriter = defaultErrorWriter
 		log.SetOutput(os.Stderr)
 	}()
-	os.Stdout = writer
-	os.Stderr = writer
+	DefaultWriter = writer
+	DefaultErrorWriter = writer
 	log.SetOutput(writer)
 	out := make(chan string)
 	wg := new(sync.WaitGroup)
 	wg.Add(1)
 	go func() {
-		var buf bytes.Buffer
+		var buf strings.Builder
 		wg.Done()
 		_, err := io.Copy(&buf, reader)
 		assert.NoError(t, err)

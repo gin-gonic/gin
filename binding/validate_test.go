@@ -1,4 +1,4 @@
-// Copyright 2014 Manu Martinez-Almeida.  All rights reserved.
+// Copyright 2014 Manu Martinez-Almeida. All rights reserved.
 // Use of this source code is governed by a MIT style
 // license that can be found in the LICENSE file.
 
@@ -6,12 +6,11 @@ package binding
 
 import (
 	"bytes"
-	"reflect"
 	"testing"
 	"time"
 
+	"github.com/go-playground/validator/v10"
 	"github.com/stretchr/testify/assert"
-	"gopkg.in/go-playground/validator.v8"
 )
 
 type testInterface interface {
@@ -60,7 +59,7 @@ type structNoValidationValues struct {
 	StructSlice        []substructNoValidation
 	InterfaceSlice     []testInterface
 
-	UniversalInterface interface{}
+	UniversalInterface any
 	CustomInterface    testInterface
 
 	FloatMap  map[string]float32
@@ -170,7 +169,7 @@ func TestValidateNoValidationPointers(t *testing.T) {
 	//assert.Equal(t, origin, test)
 }
 
-type Object map[string]interface{}
+type Object map[string]any
 
 func TestValidatePrimitives(t *testing.T) {
 	obj := Object{"foo": "bar", "bar": 1}
@@ -193,6 +192,30 @@ func TestValidatePrimitives(t *testing.T) {
 	assert.Equal(t, "value", str)
 }
 
+type structModifyValidation struct {
+	Integer int
+}
+
+func toZero(sl validator.StructLevel) {
+	var s *structModifyValidation = sl.Top().Interface().(*structModifyValidation)
+	s.Integer = 0
+}
+
+func TestValidateAndModifyStruct(t *testing.T) {
+	// This validates that pointers to structs are passed to the validator
+	// giving us the ability to modify the struct being validated.
+	engine, ok := Validator.Engine().(*validator.Validate)
+	assert.True(t, ok)
+
+	engine.RegisterStructValidation(toZero, structModifyValidation{})
+
+	s := structModifyValidation{Integer: 1}
+	errs := validate(&s)
+
+	assert.Nil(t, errs)
+	assert.Equal(t, s, structModifyValidation{Integer: 0})
+}
+
 // structCustomValidation is a helper struct we use to check that
 // custom validation can be registered on it.
 // The `notone` binding directive is for custom validation and registered later.
@@ -200,15 +223,8 @@ type structCustomValidation struct {
 	Integer int `binding:"notone"`
 }
 
-// notOne is a custom validator meant to be used with `validator.v8` library.
-// The method signature for `v9` is significantly different and this function
-// would need to be changed for tests to pass after upgrade.
-// See https://github.com/gin-gonic/gin/pull/1015.
-func notOne(
-	v *validator.Validate, topStruct reflect.Value, currentStructOrField reflect.Value,
-	field reflect.Value, fieldType reflect.Type, fieldKind reflect.Kind, param string,
-) bool {
-	if val, ok := field.Interface().(int); ok {
+func notOne(f1 validator.FieldLevel) bool {
+	if val, ok := f1.Field().Interface().(int); ok {
 		return val != 1
 	}
 	return false

@@ -10,22 +10,26 @@ package gin
 //
 // The following rules are applied iteratively until no further processing can
 // be done:
-//	1. Replace multiple slashes with a single slash.
-//	2. Eliminate each . path name element (the current directory).
-//	3. Eliminate each inner .. path name element (the parent directory)
-//	   along with the non-.. element that precedes it.
-//	4. Eliminate .. elements that begin a rooted path:
-//	   that is, replace "/.." by "/" at the beginning of a path.
+//  1. Replace multiple slashes with a single slash.
+//  2. Eliminate each . path name element (the current directory).
+//  3. Eliminate each inner .. path name element (the parent directory)
+//     along with the non-.. element that precedes it.
+//  4. Eliminate .. elements that begin a rooted path:
+//     that is, replace "/.." by "/" at the beginning of a path.
 //
 // If the result of this process is an empty string, "/" is returned.
 func cleanPath(p string) string {
+	const stackBufSize = 128
 	// Turn empty string into "/"
 	if p == "" {
 		return "/"
 	}
 
+	// Reasonably sized buffer on stack to avoid allocations in the common case.
+	// If a larger buffer is required, it gets allocated dynamically.
+	buf := make([]byte, 0, stackBufSize)
+
 	n := len(p)
-	var buf []byte
 
 	// Invariants:
 	//      reading from path; r is index of next byte to process.
@@ -37,15 +41,21 @@ func cleanPath(p string) string {
 
 	if p[0] != '/' {
 		r = 0
-		buf = make([]byte, n+1)
+
+		if n+1 > stackBufSize {
+			buf = make([]byte, n+1)
+		} else {
+			buf = buf[:n+1]
+		}
 		buf[0] = '/'
 	}
 
 	trailing := n > 1 && p[n-1] == '/'
 
 	// A bit more clunky without a 'lazybuf' like the path package, but the loop
-	// gets completely inlined (bufApp). So in contrast to the path package this
-	// loop has no expensive function calls (except 1x make)
+	// gets completely inlined (bufApp calls).
+	// loop has no expensive function calls (except 1x make)		// So in contrast to the path package this loop has no expensive function
+	// calls (except make, if needed).
 
 	for r < n {
 		switch {
@@ -69,7 +79,7 @@ func cleanPath(p string) string {
 				// can backtrack
 				w--
 
-				if buf == nil {
+				if len(buf) == 0 {
 					for w > 1 && p[w] != '/' {
 						w--
 					}
@@ -81,14 +91,14 @@ func cleanPath(p string) string {
 			}
 
 		default:
-			// real path element.
-			// add slash if needed
+			// Real path element.
+			// Add slash if needed
 			if w > 1 {
 				bufApp(&buf, p, w, '/')
 				w++
 			}
 
-			// copy element
+			// Copy element
 			for r < n && p[r] != '/' {
 				bufApp(&buf, p, w, p[r])
 				w++
@@ -97,27 +107,44 @@ func cleanPath(p string) string {
 		}
 	}
 
-	// re-append trailing slash
+	// Re-append trailing slash
 	if trailing && w > 1 {
 		bufApp(&buf, p, w, '/')
 		w++
 	}
 
-	if buf == nil {
+	// If the original string was not modified (or only shortened at the end),
+	// return the respective substring of the original string.
+	// Otherwise return a new string from the buffer.
+	if len(buf) == 0 {
 		return p[:w]
 	}
 	return string(buf[:w])
 }
 
-// internal helper to lazily create a buffer if necessary.
+// Internal helper to lazily create a buffer if necessary.
+// Calls to this function get inlined.
 func bufApp(buf *[]byte, s string, w int, c byte) {
-	if *buf == nil {
+	b := *buf
+	if len(b) == 0 {
+		// No modification of the original string so far.
+		// If the next character is the same as in the original string, we do
+		// not yet have to allocate a buffer.
 		if s[w] == c {
 			return
 		}
 
-		*buf = make([]byte, len(s))
-		copy(*buf, s[:w])
+		// Otherwise use either the stack buffer, if it is large enough, or
+		// allocate a new buffer on the heap, and copy all previous characters.
+		length := len(s)
+		if length > cap(b) {
+			*buf = make([]byte, length)
+		} else {
+			*buf = (*buf)[:length]
+		}
+		b = *buf
+
+		copy(b, s[:w])
 	}
-	(*buf)[w] = c
+	b[w] = c
 }
