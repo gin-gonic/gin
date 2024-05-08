@@ -5,7 +5,6 @@
 package gin
 
 import (
-	"flag"
 	"os"
 	"sync/atomic"
 	"testing"
