@@ -23,8 +23,8 @@ func TestSetMode(t *testing.T) {
 	os.Unsetenv(EnvGinMode)
 
 	SetMode("")
-	assert.Equal(t, int32(debugCode), atomic.LoadInt32(&ginMode))
-	assert.Equal(t, DebugMode, Mode())
+	assert.Equal(t, int32(testCode), atomic.LoadInt32(&ginMode))
+	assert.Equal(t, TestMode, Mode())
 
 	SetMode(DebugMode)
 	assert.Equal(t, int32(debugCode), atomic.LoadInt32(&ginMode))
