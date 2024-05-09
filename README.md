@@ -25,18 +25,17 @@ Gin is a web framework written in [Go](https://go.dev/). It features a martini-l
 - Rendering built-in
 - Extendable
 
-
 ## Getting started
 
 ### Prerequisites
 
-- **[Go](https://go.dev/)**: any one of the **three latest major** [releases](https://go.dev/doc/devel/release) (we test it with these).
+The required version of [Go](https://go.dev/) language is [1.21](https://go.dev/doc/devel/release#go1.21.0) or above.
 
 ### Getting Gin
 
 With [Go module](https://github.com/golang/go/wiki/Modules) support, simply add the following import
 
-```
+```sh
 import "github.com/gin-gonic/gin"
 ```
 
@@ -45,7 +44,7 @@ to your code, and then `go [build|run|test]` will automatically fetch the necess
 Otherwise, run the following Go command to install the `gin` package:
 
 ```sh
-$ go get -u github.com/gin-gonic/gin
+go get -u github.com/gin-gonic/gin
 ```
 
 ### Running Gin
@@ -74,7 +73,7 @@ func main() {
 
 And use the Go command to run the demo:
 
-```
+```sh
 # run example.go and visit 0.0.0.0:8080/ping on browser
 $ go run example.go
 ```
@@ -88,7 +87,6 @@ Learn and practice more examples, please read the [Gin Quick Start](docs/doc.md)
 #### Examples
 
 A number of ready-to-run examples demonstrating various use cases of Gin on the [Gin examples](https://github.com/gin-gonic/examples) repository.
-
 
 ## Documentation
 
@@ -153,23 +151,20 @@ Gin uses a custom version of [HttpRouter](https://github.com/julienschmidt/httpr
 - (3): Heap Memory (B/op), lower is better
 - (4): Average Allocations per Repetition (allocs/op), lower is better
 
-
 ## Middlewares
 
 You can find many useful Gin middlewares at [gin-contrib](https://github.com/gin-contrib).
-
 
 ## Users
 
 Awesome project lists using [Gin](https://github.com/gin-gonic/gin) web framework.
 
-* [gorush](https://github.com/appleboy/gorush): A push notification server written in Go.
-* [fnproject](https://github.com/fnproject/fn): The container native, cloud agnostic serverless platform.
-* [photoprism](https://github.com/photoprism/photoprism): Personal photo management powered by Go and Google TensorFlow.
-* [lura](https://github.com/luraproject/lura): Ultra performant API Gateway with middlewares.
-* [picfit](https://github.com/thoas/picfit): An image resizing server written in Go.
-* [dkron](https://github.com/distribworks/dkron): Distributed, fault tolerant job scheduling system.
-
+- [gorush](https://github.com/appleboy/gorush): A push notification server written in Go.
+- [fnproject](https://github.com/fnproject/fn): The container native, cloud agnostic serverless platform.
+- [photoprism](https://github.com/photoprism/photoprism): Personal photo management powered by Go and Google TensorFlow.
+- [lura](https://github.com/luraproject/lura): Ultra performant API Gateway with middlewares.
+- [picfit](https://github.com/thoas/picfit): An image resizing server written in Go.
+- [dkron](https://github.com/distribworks/dkron): Distributed, fault tolerant job scheduling system.
 
 ## Contributing
 
