@@ -11,7 +11,8 @@
 [![Release](https://img.shields.io/github/release/gin-gonic/gin.svg?style=flat-square)](https://github.com/gin-gonic/gin/releases)
 [![TODOs](https://badgen.net/https/api.tickgit.com/badgen/github.com/gin-gonic/gin)](https://www.tickgit.com/browse?repo=github.com/gin-gonic/gin)
 
-Gin is a web framework written in [Go](https://go.dev/). It features a martini-like API with performance that is up to 40 times faster thanks to [httprouter](https://github.com/julienschmidt/httprouter). If you need performance and good productivity, you will love Gin.
+Gin is a web framework written in [Go](https://go.dev/). It features a martini-like API with performance that is up to 40 times faster thanks to [httprouter](https://github.com/julienschmidt/httprouter).
+If you need performance and good productivity, you will love Gin.
 
 **Gin's key features are:**
 
@@ -29,19 +30,17 @@ Gin is a web framework written in [Go](https://go.dev/). It features a martini-l
 
 ### Prerequisites
 
-[Go](https://go.dev/) version [1.21](https://go.dev/doc/devel/release#go1.21.0) or above.
+Gin requires [Go](https://go.dev/) version [1.21](https://go.dev/doc/devel/release#go1.21.0) or above.
 
 ### Getting Gin
 
-With [Go module](https://github.com/golang/go/wiki/Modules) support, simply add the following import
+With [Go's module support](https://go.dev/wiki/Modules#how-to-use-modules), `go [build|run|test]` automatically fetches the necessary dependencies when you add the import in your code:
 
 ```sh
 import "github.com/gin-gonic/gin"
 ```
 
-to your code, and then `go [build|run|test]` will automatically fetch the necessary dependencies.
-
-Alternatively, run the following Go command to install the `gin` package:
+Alternatively, use `go get`:
 
 ```sh
 go get -u github.com/gin-gonic/gin
@@ -49,7 +48,7 @@ go get -u github.com/gin-gonic/gin
 
 ### Running Gin
 
-First you need to import the Gin package. A simple example is `example.go`:
+A basic example:
 
 ```go
 package main
@@ -71,12 +70,13 @@ func main() {
 }
 ```
 
-To run the demo, use the `go run` command:
+To run the code, use the `go run` command, like:
 
 ```sh
-# run example.go and visit 0.0.0.0:8080/ping on browser
 $ go run example.go
 ```
+
+Then visit [`0.0.0.0:8080/ping`](http://0.0.0.0:8080/ping) in your browser to see the response!
 
 ### See more examples
 
@@ -155,12 +155,12 @@ You can find many useful Gin middlewares at [gin-contrib](https://github.com/gin
 
 ## Uses
 
-Here are some awesome projects using the [Gin](https://github.com/gin-gonic/gin) web framework.
+Here are some awesome projects that are using the [Gin](https://github.com/gin-gonic/gin) web framework.
 
 - [gorush](https://github.com/appleboy/gorush): A push notification server.
 - [fnproject](https://github.com/fnproject/fn): A container native, cloud agnostic serverless platform.
 - [photoprism](https://github.com/photoprism/photoprism): Personal photo management powered by Google TensorFlow.
-- [lura](https://github.com/luraproject/lura): Ultra performant API Gateway with middlewares.
+- [lura](https://github.com/luraproject/lura): Ultra performant API Gateway with middleware.
 - [picfit](https://github.com/thoas/picfit): An image resizing server.
 - [dkron](https://github.com/distribworks/dkron): Distributed, fault tolerant job scheduling system.
 
