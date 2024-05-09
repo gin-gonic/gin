@@ -1,6 +1,6 @@
 module github.com/gin-gonic/gin
 
-go 1.21
+go 1.21.0
 
 require (
 	github.com/bytedance/sonic v1.11.6
