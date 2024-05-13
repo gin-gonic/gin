@@ -34,6 +34,7 @@ const (
 	MIMEPOSTForm          = binding.MIMEPOSTForm
 	MIMEMultipartPOSTForm = binding.MIMEMultipartPOSTForm
 	MIMEYAML              = binding.MIMEYAML
+	MIMEYAML2             = binding.MIMEYAML2
 	MIMETOML              = binding.MIMETOML
 )
 
@@ -1182,7 +1183,7 @@ func (c *Context) Negotiate(code int, config Negotiate) {
 		data := chooseData(config.XMLData, config.Data)
 		c.XML(code, data)
 
-	case binding.MIMEYAML:
+	case binding.MIMEYAML, binding.MIMEYAML2:
 		data := chooseData(config.YAMLData, config.Data)
 		c.YAML(code, data)
 

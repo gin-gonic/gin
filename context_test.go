@@ -1196,7 +1196,7 @@ func TestContextNegotiationWithJSON(t *testing.T) {
 	c.Request, _ = http.NewRequest("POST", "", nil)
 
 	c.Negotiate(http.StatusOK, Negotiate{
-		Offered: []string{MIMEJSON, MIMEXML, MIMEYAML},
+		Offered: []string{MIMEJSON, MIMEXML, MIMEYAML, MIMEYAML2},
 		Data:    H{"foo": "bar"},
 	})
 
@@ -1211,7 +1211,7 @@ func TestContextNegotiationWithXML(t *testing.T) {
 	c.Request, _ = http.NewRequest("POST", "", nil)
 
 	c.Negotiate(http.StatusOK, Negotiate{
-		Offered: []string{MIMEXML, MIMEJSON, MIMEYAML},
+		Offered: []string{MIMEXML, MIMEJSON, MIMEYAML, MIMEYAML2},
 		Data:    H{"foo": "bar"},
 	})
 
@@ -1226,7 +1226,7 @@ func TestContextNegotiationWithYAML(t *testing.T) {
 	c.Request, _ = http.NewRequest("POST", "", nil)
 
 	c.Negotiate(http.StatusOK, Negotiate{
-		Offered: []string{MIMEYAML, MIMEXML, MIMEJSON, MIMETOML},
+		Offered: []string{MIMEYAML, MIMEXML, MIMEJSON, MIMETOML, MIMEYAML2},
 		Data:    H{"foo": "bar"},
 	})
 
@@ -1241,7 +1241,7 @@ func TestContextNegotiationWithTOML(t *testing.T) {
 	c.Request, _ = http.NewRequest("POST", "", nil)
 
 	c.Negotiate(http.StatusOK, Negotiate{
-		Offered: []string{MIMETOML, MIMEXML, MIMEJSON, MIMEYAML},
+		Offered: []string{MIMETOML, MIMEXML, MIMEJSON, MIMEYAML, MIMEYAML2},
 		Data:    H{"foo": "bar"},
 	})
 
