@@ -1342,6 +1342,46 @@ func (h hook) Read([]byte) (int, error) {
 	return 0, errors.New("error")
 }
 
+type failRead struct{}
+
+func (f *failRead) Read(b []byte) (n int, err error) {
+	return 0, errors.New("my fail")
+}
+
+func (f *failRead) Close() error {
+	return nil
+}
+
+func TestPlainBinding(t *testing.T) {
+	p := Plain
+	assert.Equal(t, "plain", p.Name())
+
+	var s string
+	req := requestWithBody("POST", "/", "test string")
+	assert.NoError(t, p.Bind(req, &s))
+	assert.Equal(t, s, "test string")
+
+	var bs []byte
+	req = requestWithBody("POST", "/", "test []byte")
+	assert.NoError(t, p.Bind(req, &bs))
+	assert.Equal(t, bs, []byte("test []byte"))
+
+	var i int
+	req = requestWithBody("POST", "/", "test fail")
+	assert.Error(t, p.Bind(req, &i))
+
+	req = requestWithBody("POST", "/", "")
+	req.Body = &failRead{}
+	assert.Error(t, p.Bind(req, &s))
+
+	req = requestWithBody("POST", "/", "")
+	assert.Nil(t, p.Bind(req, nil))
+
+	var ptr *string
+	req = requestWithBody("POST", "/", "")
+	assert.Nil(t, p.Bind(req, ptr))
+}
+
 func testProtoBodyBindingFail(t *testing.T, b Binding, name, path, badPath, body, badBody string) {
 	assert.Equal(t, name, b.Name())
 

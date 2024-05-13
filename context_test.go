@@ -1670,6 +1670,31 @@ func TestContextBindWithXML(t *testing.T) {
 	assert.Equal(t, 0, w.Body.Len())
 }
 
+func TestContextBindPlain(t *testing.T) {
+
+	// string
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
+	c.Request, _ = http.NewRequest("POST", "/", bytes.NewBufferString(`test string`))
+	c.Request.Header.Add("Content-Type", MIMEPlain)
+
+	var s string
+
+	assert.NoError(t, c.BindPlain(&s))
+	assert.Equal(t, "test string", s)
+	assert.Equal(t, 0, w.Body.Len())
+
+	// []byte
+	c.Request, _ = http.NewRequest("POST", "/", bytes.NewBufferString(`test []byte`))
+	c.Request.Header.Add("Content-Type", MIMEPlain)
+
+	var bs []byte
+
+	assert.NoError(t, c.BindPlain(&bs))
+	assert.Equal(t, []byte("test []byte"), bs)
+	assert.Equal(t, 0, w.Body.Len())
+}
+
 func TestContextBindHeader(t *testing.T) {
 	w := httptest.NewRecorder()
 	c, _ := CreateTestContext(w)
@@ -1814,6 +1839,31 @@ func TestContextShouldBindWithXML(t *testing.T) {
 	assert.Equal(t, "FOO", obj.Foo)
 	assert.Equal(t, "BAR", obj.Bar)
 	assert.Equal(t, 0, w.Body.Len())
+}
+
+func TestContextShouldBindPlain(t *testing.T) {
+	// string
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
+	c.Request, _ = http.NewRequest("POST", "/", bytes.NewBufferString(`test string`))
+	c.Request.Header.Add("Content-Type", MIMEPlain)
+
+	var s string
+
+	assert.NoError(t, c.ShouldBindPlain(&s))
+	assert.Equal(t, "test string", s)
+	assert.Equal(t, 0, w.Body.Len())
+	// []byte
+
+	c.Request, _ = http.NewRequest("POST", "/", bytes.NewBufferString(`test []byte`))
+	c.Request.Header.Add("Content-Type", MIMEPlain)
+
+	var bs []byte
+
+	assert.NoError(t, c.ShouldBindPlain(&bs))
+	assert.Equal(t, []byte("test []byte"), bs)
+	assert.Equal(t, 0, w.Body.Len())
+
 }
 
 func TestContextShouldBindHeader(t *testing.T) {
@@ -2247,6 +2297,80 @@ func TestContextShouldBindBodyWithTOML(t *testing.T) {
 	}
 }
 
+func TestContextShouldBindBodyWithPlain(t *testing.T) {
+	for _, tt := range []struct {
+		name        string
+		bindingBody binding.BindingBody
+		body        string
+	}{
+		{
+			name:        " JSON & JSON-BODY ",
+			bindingBody: binding.JSON,
+			body:        `{"foo":"FOO"}`,
+		},
+		{
+			name:        " JSON & XML-BODY ",
+			bindingBody: binding.XML,
+			body: `<?xml version="1.0" encoding="UTF-8"?>
+<root>
+<foo>FOO</foo>
+</root>`,
+		},
+		{
+			name:        " JSON & YAML-BODY ",
+			bindingBody: binding.YAML,
+			body:        `foo: FOO`,
+		},
+		{
+			name:        " JSON & TOM-BODY ",
+			bindingBody: binding.TOML,
+			body:        `foo=FOO`,
+		},
+		{
+			name:        " JSON & Plain-BODY ",
+			bindingBody: binding.Plain,
+			body:        `foo=FOO`,
+		},
+	} {
+		t.Logf("testing: %s", tt.name)
+
+		w := httptest.NewRecorder()
+		c, _ := CreateTestContext(w)
+
+		c.Request, _ = http.NewRequest("POST", "/", bytes.NewBufferString(tt.body))
+
+		type typeJSON struct {
+			Foo string `json:"foo" binding:"required"`
+		}
+		objJSON := typeJSON{}
+
+		if tt.bindingBody == binding.Plain {
+			body := ""
+			assert.NoError(t, c.ShouldBindBodyWithPlain(&body))
+			assert.Equal(t, body, "foo=FOO")
+		}
+
+		if tt.bindingBody == binding.JSON {
+			assert.NoError(t, c.ShouldBindBodyWithJSON(&objJSON))
+			assert.Equal(t, typeJSON{"FOO"}, objJSON)
+		}
+
+		if tt.bindingBody == binding.XML {
+			assert.Error(t, c.ShouldBindBodyWithJSON(&objJSON))
+			assert.Equal(t, typeJSON{}, objJSON)
+		}
+
+		if tt.bindingBody == binding.YAML {
+			assert.Error(t, c.ShouldBindBodyWithJSON(&objJSON))
+			assert.Equal(t, typeJSON{}, objJSON)
+		}
+
+		if tt.bindingBody == binding.TOML {
+			assert.Error(t, c.ShouldBindBodyWithJSON(&objJSON))
+			assert.Equal(t, typeJSON{}, objJSON)
+		}
+	}
+}
 func TestContextGolangContext(t *testing.T) {
 	c, _ := CreateTestContext(httptest.NewRecorder())
 	c.Request, _ = http.NewRequest("POST", "/", bytes.NewBufferString("{\"foo\":\"bar\", \"bar\":\"foo\"}"))
