@@ -152,9 +152,10 @@ func (c *Context) HandlerName() string {
 func (c *Context) HandlerNames() []string {
 	hn := make([]string, 0, len(c.handlers))
 	for _, val := range c.handlers {
-		if nil != val {
-			hn = append(hn, nameOfFunction(val))
+		if val == nil {
+			continue
 		}
+		hn = append(hn, nameOfFunction(val))
 	}
 	return hn
 }
@@ -184,9 +185,10 @@ func (c *Context) FullPath() string {
 func (c *Context) Next() {
 	c.index++
 	for c.index < int8(len(c.handlers)) {
-		if nil != c.handlers[c.index] {
-			c.handlers[c.index](c)
+		if c.handlers[c.index] == nil {
+			continue
 		}
+		c.handlers[c.index](c)
 		c.index++
 	}
 }
