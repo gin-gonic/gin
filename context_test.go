@@ -362,7 +362,7 @@ func TestContextHandlerName(t *testing.T) {
 
 func TestContextHandlerNames(t *testing.T) {
 	c, _ := CreateTestContext(httptest.NewRecorder())
-	c.handlers = HandlersChain{func(c *Context) {}, handlerNameTest, func(c *Context) {}, handlerNameTest2}
+	c.handlers = HandlersChain{func(c *Context) {}, nil, handlerNameTest, func(c *Context) {}, handlerNameTest2}
 
 	names := c.HandlerNames()
 
@@ -1671,7 +1671,6 @@ func TestContextBindWithXML(t *testing.T) {
 }
 
 func TestContextBindPlain(t *testing.T) {
-
 	// string
 	w := httptest.NewRecorder()
 	c, _ := CreateTestContext(w)
@@ -1863,7 +1862,6 @@ func TestContextShouldBindPlain(t *testing.T) {
 	assert.NoError(t, c.ShouldBindPlain(&bs))
 	assert.Equal(t, []byte("test []byte"), bs)
 	assert.Equal(t, 0, w.Body.Len())
-
 }
 
 func TestContextShouldBindHeader(t *testing.T) {
@@ -2371,6 +2369,7 @@ func TestContextShouldBindBodyWithPlain(t *testing.T) {
 		}
 	}
 }
+
 func TestContextGolangContext(t *testing.T) {
 	c, _ := CreateTestContext(httptest.NewRecorder())
 	c.Request, _ = http.NewRequest("POST", "/", bytes.NewBufferString("{\"foo\":\"bar\", \"bar\":\"foo\"}"))
