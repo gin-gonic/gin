@@ -423,6 +423,49 @@ func TestContextQuery(t *testing.T) {
 	assert.Empty(t, c.PostForm("foo"))
 }
 
+func TestContextInitQueryCache(t *testing.T) {
+	validURL, err := url.Parse("https://github.com/gin-gonic/gin/pull/3969?key=value&otherkey=othervalue")
+	assert.Nil(t, err)
+
+	tests := []struct {
+		testName           string
+		testContext        *Context
+		expectedQueryCache url.Values
+	}{
+		{
+			testName: "queryCache should remain unchanged if already not nil",
+			testContext: &Context{
+				queryCache: url.Values{"a": []string{"b"}},
+				Request:    &http.Request{URL: validURL}, // valid request for evidence that values weren't extracted
+			},
+			expectedQueryCache: url.Values{"a": []string{"b"}},
+		},
+		{
+			testName:           "queryCache should be empty when Request is nil",
+			testContext:        &Context{Request: nil}, // explicit nil for readability
+			expectedQueryCache: url.Values{},
+		},
+		{
+			testName:           "queryCache should be empty when Request.URL is nil",
+			testContext:        &Context{Request: &http.Request{URL: nil}}, // explicit nil for readability
+			expectedQueryCache: url.Values{},
+		},
+		{
+			testName:           "queryCache should be populated when it not yet populated and Request + Request.URL are non nil",
+			testContext:        &Context{Request: &http.Request{URL: validURL}}, // explicit nil for readability
+			expectedQueryCache: url.Values{"key": []string{"value"}, "otherkey": []string{"othervalue"}},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.testName, func(t *testing.T) {
+			test.testContext.initQueryCache()
+			assert.Equal(t, test.expectedQueryCache, test.testContext.queryCache)
+		})
+	}
+
+}
+
 func TestContextDefaultQueryOnEmptyRequest(t *testing.T) {
 	c, _ := CreateTestContext(httptest.NewRecorder()) // here c.Request == nil
 	assert.NotPanics(t, func() {
