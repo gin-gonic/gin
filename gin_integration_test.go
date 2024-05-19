@@ -20,25 +20,13 @@ import (
 	"testing"
 	"time"
 
+	"github.com/quic-go/quic-go"
+	"github.com/quic-go/quic-go/http3"
 	"github.com/stretchr/testify/assert"
 )
 
-// params[0]=url example:http://127.0.0.1:8080/index (cannot be empty)
-// params[1]=response status (custom compare status) default:"200 OK"
-// params[2]=response body (custom compare content)  default:"it worked"
-func testRequest(t *testing.T, params ...string) {
-
-	if len(params) == 0 {
-		t.Fatal("url cannot be empty")
-	}
-
-	tr := &http.Transport{
-		TLSClientConfig: &tls.Config{
-			InsecureSkipVerify: true,
-		},
-	}
-	client := &http.Client{Transport: tr}
-
+// This function handles the client side testing of different http versions
+func requestHTTPClient(t *testing.T, client *http.Client, params ...string) {
 	resp, err := client.Get(params[0])
 	assert.NoError(t, err)
 	defer resp.Body.Close()
@@ -59,6 +47,51 @@ func testRequest(t *testing.T, params ...string) {
 	assert.Equal(t, responseStatus, resp.Status, "should get a "+responseStatus)
 	if responseStatus == "200 OK" {
 		assert.Equal(t, responseBody, string(body), "resp body should match")
+	}
+}
+
+// params[0]=url example:http://127.0.0.1:8080/index (cannot be empty)
+// params[1]=response status (custom compare status) default:"200 OK"
+// params[2]=response body (custom compare content)  default:"it worked"
+// params[3]=HTTP Version to use (default: "HTTP/2.0")
+func testRequest(t *testing.T, params ...string) {
+
+	if len(params) == 0 {
+		t.Fatal("url cannot be empty")
+	}
+
+	tlsConfig := &tls.Config{
+		InsecureSkipVerify: true,
+	}
+
+	quicConfig := &quic.Config{}
+
+	var httpVersion = "HTTP/2.0"
+	if len(params) > 3 && params[3] != "" {
+		httpVersion = params[3]
+	}
+
+	if httpVersion == "HTTP/2.0" {
+
+		tr := &http.Transport{
+			TLSClientConfig: tlsConfig,
+		}
+		client := &http.Client{Transport: tr}
+
+		requestHTTPClient(t, client, params...)
+	}
+
+	if httpVersion == "HTTP/3.0" {
+		quicRoundTripper := &http3.RoundTripper{
+			TLSClientConfig: tlsConfig,
+			QUICConfig:      quicConfig,
+		}
+
+		quicClient := &http.Client{
+			Transport: quicRoundTripper,
+		}
+
+		requestHTTPClient(t, quicClient, params...)
 	}
 }
 
@@ -274,6 +307,23 @@ func TestBadUnixSocket(t *testing.T) {
 	assert.Error(t, router.RunUnix("#/tmp/unix_unit_test"))
 }
 
+func TestRunTLSAndQUIC(t *testing.T) {
+	router := New()
+	go func() {
+		router.GET("/example", func(c *Context) { c.String(http.StatusOK, "it worked") })
+
+		assert.NoError(t, router.RunTLSAndQUIC(":8442", "./testdata/certificate/cert.pem", "./testdata/certificate/key.pem"))
+	}()
+
+	// have to wait for the goroutine to start and run the server
+	// otherwise the main thread will complete
+	time.Sleep(5 * time.Millisecond)
+
+	assert.Error(t, router.RunTLSAndQUIC(":8442", "./testdata/certificate/cert.pem", "./testdata/certificate/key.pem"))
+	testRequest(t, "https://localhost:8442/example")
+	testRequest(t, "https://localhost:8442/example", "200 OK", "it worked", "HTTP/3.0")
+}
+
 func TestRunQUIC(t *testing.T) {
 	router := New()
 	go func() {
@@ -287,7 +337,7 @@ func TestRunQUIC(t *testing.T) {
 	time.Sleep(5 * time.Millisecond)
 
 	assert.Error(t, router.RunQUIC(":8443", "./testdata/certificate/cert.pem", "./testdata/certificate/key.pem"))
-	testRequest(t, "https://localhost:8443/example")
+	testRequest(t, "https://localhost:8443/example", "200 OK", "it worked", "HTTP/3.0")
 }
 
 func TestFileDescriptor(t *testing.T) {
