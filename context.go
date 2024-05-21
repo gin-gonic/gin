@@ -35,6 +35,7 @@ const (
 	MIMEPOSTForm          = binding.MIMEPOSTForm
 	MIMEMultipartPOSTForm = binding.MIMEMultipartPOSTForm
 	MIMEYAML              = binding.MIMEYAML
+	MIMEYAML2             = binding.MIMEYAML2
 	MIMETOML              = binding.MIMETOML
 )
 
@@ -153,6 +154,9 @@ func (c *Context) HandlerName() string {
 func (c *Context) HandlerNames() []string {
 	hn := make([]string, 0, len(c.handlers))
 	for _, val := range c.handlers {
+		if val == nil {
+			continue
+		}
 		hn = append(hn, nameOfFunction(val))
 	}
 	return hn
@@ -183,6 +187,9 @@ func (c *Context) FullPath() string {
 func (c *Context) Next() {
 	c.index++
 	for c.index < int8(len(c.handlers)) {
+		if c.handlers[c.index] == nil {
+			continue
+		}
 		c.handlers[c.index](c)
 		c.index++
 	}
@@ -469,7 +476,7 @@ func (c *Context) QueryArray(key string) (values []string) {
 
 func (c *Context) initQueryCache() {
 	if c.queryCache == nil {
-		if c.Request != nil {
+		if c.Request != nil && c.Request.URL != nil {
 			c.queryCache = c.Request.URL.Query()
 		} else {
 			c.queryCache = url.Values{}
@@ -615,7 +622,7 @@ func (c *Context) SaveUploadedFile(file *multipart.FileHeader, dst string) error
 	}
 	defer src.Close()
 
-	if err = os.MkdirAll(filepath.Dir(dst), 0750); err != nil {
+	if err = os.MkdirAll(filepath.Dir(dst), 0o750); err != nil {
 		return err
 	}
 
@@ -666,6 +673,11 @@ func (c *Context) BindYAML(obj any) error {
 // BindTOML is a shortcut for c.MustBindWith(obj, binding.TOML).
 func (c *Context) BindTOML(obj any) error {
 	return c.MustBindWith(obj, binding.TOML)
+}
+
+// BindPlain is a shortcut for c.MustBindWith(obj, binding.Plain).
+func (c *Context) BindPlain(obj any) error {
+	return c.MustBindWith(obj, binding.Plain)
 }
 
 // BindHeader is a shortcut for c.MustBindWith(obj, binding.Header).
@@ -733,6 +745,11 @@ func (c *Context) ShouldBindTOML(obj any) error {
 	return c.ShouldBindWith(obj, binding.TOML)
 }
 
+// ShouldBindPlain is a shortcut for c.ShouldBindWith(obj, binding.Plain).
+func (c *Context) ShouldBindPlain(obj any) error {
+	return c.ShouldBindWith(obj, binding.Plain)
+}
+
 // ShouldBindHeader is a shortcut for c.ShouldBindWith(obj, binding.Header).
 func (c *Context) ShouldBindHeader(obj any) error {
 	return c.ShouldBindWith(obj, binding.Header)
@@ -793,6 +810,11 @@ func (c *Context) ShouldBindBodyWithYAML(obj any) error {
 // ShouldBindBodyWithTOML is a shortcut for c.ShouldBindBodyWith(obj, binding.TOML).
 func (c *Context) ShouldBindBodyWithTOML(obj any) error {
 	return c.ShouldBindBodyWith(obj, binding.TOML)
+}
+
+// ShouldBindBodyWithJSON is a shortcut for c.ShouldBindBodyWith(obj, binding.JSON).
+func (c *Context) ShouldBindBodyWithPlain(obj any) error {
+	return c.ShouldBindBodyWith(obj, binding.Plain)
 }
 
 // ClientIP implements one best effort algorithm to return the real client IP.
@@ -1162,7 +1184,7 @@ func (c *Context) Negotiate(code int, config Negotiate) {
 		data := chooseData(config.XMLData, config.Data)
 		c.XML(code, data)
 
-	case binding.MIMEYAML:
+	case binding.MIMEYAML, binding.MIMEYAML2:
 		data := chooseData(config.YAMLData, config.Data)
 		c.YAML(code, data)
 
