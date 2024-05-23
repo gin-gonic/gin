@@ -193,14 +193,25 @@ func setByForm(value reflect.Value, field reflect.StructField, form map[string][
 		if !ok {
 			vs = []string{opt.defaultValue}
 		}
+
+		if ok, err = trySetCustom(vs[0], value); ok {
+			return ok, err
+		}
+
 		return true, setSlice(vs, value, field)
 	case reflect.Array:
 		if !ok {
 			vs = []string{opt.defaultValue}
 		}
+
+		if ok, err = trySetCustom(vs[0], value); ok {
+			return ok, err
+		}
+
 		if len(vs) != value.Len() {
 			return false, fmt.Errorf("%q is not valid value for %s", vs, value.Type().String())
 		}
+
 		return true, setArray(vs, value, field)
 	default:
 		var val string
