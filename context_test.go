@@ -90,6 +90,19 @@ func TestContextFormFile(t *testing.T) {
 	assert.NoError(t, c.SaveUploadedFile(f, "test"))
 }
 
+func TestContextFormFileFailed(t *testing.T) {
+	buf := new(bytes.Buffer)
+	mw := multipart.NewWriter(buf)
+	mw.Close()
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	c.Request, _ = http.NewRequest("POST", "/", nil)
+	c.Request.Header.Set("Content-Type", mw.FormDataContentType())
+	c.engine.MaxMultipartMemory = 8 << 20
+	f, err := c.FormFile("file")
+	assert.Error(t, err)
+	assert.Nil(t, f)
+}
+
 func TestContextMultipartForm(t *testing.T) {
 	buf := new(bytes.Buffer)
 	mw := multipart.NewWriter(buf)
@@ -349,7 +362,7 @@ func TestContextHandlerName(t *testing.T) {
 
 func TestContextHandlerNames(t *testing.T) {
 	c, _ := CreateTestContext(httptest.NewRecorder())
-	c.handlers = HandlersChain{func(c *Context) {}, handlerNameTest, func(c *Context) {}, handlerNameTest2}
+	c.handlers = HandlersChain{func(c *Context) {}, nil, handlerNameTest, func(c *Context) {}, handlerNameTest2}
 
 	names := c.HandlerNames()
 
@@ -408,6 +421,49 @@ func TestContextQuery(t *testing.T) {
 	assert.False(t, ok)
 	assert.Empty(t, value)
 	assert.Empty(t, c.PostForm("foo"))
+}
+
+func TestContextInitQueryCache(t *testing.T) {
+	validURL, err := url.Parse("https://github.com/gin-gonic/gin/pull/3969?key=value&otherkey=othervalue")
+	assert.Nil(t, err)
+
+	tests := []struct {
+		testName           string
+		testContext        *Context
+		expectedQueryCache url.Values
+	}{
+		{
+			testName: "queryCache should remain unchanged if already not nil",
+			testContext: &Context{
+				queryCache: url.Values{"a": []string{"b"}},
+				Request:    &http.Request{URL: validURL}, // valid request for evidence that values weren't extracted
+			},
+			expectedQueryCache: url.Values{"a": []string{"b"}},
+		},
+		{
+			testName:           "queryCache should be empty when Request is nil",
+			testContext:        &Context{Request: nil}, // explicit nil for readability
+			expectedQueryCache: url.Values{},
+		},
+		{
+			testName:           "queryCache should be empty when Request.URL is nil",
+			testContext:        &Context{Request: &http.Request{URL: nil}}, // explicit nil for readability
+			expectedQueryCache: url.Values{},
+		},
+		{
+			testName:           "queryCache should be populated when it not yet populated and Request + Request.URL are non nil",
+			testContext:        &Context{Request: &http.Request{URL: validURL}}, // explicit nil for readability
+			expectedQueryCache: url.Values{"key": []string{"value"}, "otherkey": []string{"othervalue"}},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.testName, func(t *testing.T) {
+			test.testContext.initQueryCache()
+			assert.Equal(t, test.expectedQueryCache, test.testContext.queryCache)
+		})
+	}
+
 }
 
 func TestContextDefaultQueryOnEmptyRequest(t *testing.T) {
@@ -1183,7 +1239,7 @@ func TestContextNegotiationWithJSON(t *testing.T) {
 	c.Request, _ = http.NewRequest("POST", "", nil)
 
 	c.Negotiate(http.StatusOK, Negotiate{
-		Offered: []string{MIMEJSON, MIMEXML, MIMEYAML},
+		Offered: []string{MIMEJSON, MIMEXML, MIMEYAML, MIMEYAML2},
 		Data:    H{"foo": "bar"},
 	})
 
@@ -1198,7 +1254,7 @@ func TestContextNegotiationWithXML(t *testing.T) {
 	c.Request, _ = http.NewRequest("POST", "", nil)
 
 	c.Negotiate(http.StatusOK, Negotiate{
-		Offered: []string{MIMEXML, MIMEJSON, MIMEYAML},
+		Offered: []string{MIMEXML, MIMEJSON, MIMEYAML, MIMEYAML2},
 		Data:    H{"foo": "bar"},
 	})
 
@@ -1213,7 +1269,7 @@ func TestContextNegotiationWithYAML(t *testing.T) {
 	c.Request, _ = http.NewRequest("POST", "", nil)
 
 	c.Negotiate(http.StatusOK, Negotiate{
-		Offered: []string{MIMEYAML, MIMEXML, MIMEJSON, MIMETOML},
+		Offered: []string{MIMEYAML, MIMEXML, MIMEJSON, MIMETOML, MIMEYAML2},
 		Data:    H{"foo": "bar"},
 	})
 
@@ -1228,7 +1284,7 @@ func TestContextNegotiationWithTOML(t *testing.T) {
 	c.Request, _ = http.NewRequest("POST", "", nil)
 
 	c.Negotiate(http.StatusOK, Negotiate{
-		Offered: []string{MIMETOML, MIMEXML, MIMEJSON, MIMEYAML},
+		Offered: []string{MIMETOML, MIMEXML, MIMEJSON, MIMEYAML, MIMEYAML2},
 		Data:    H{"foo": "bar"},
 	})
 
@@ -1657,6 +1713,30 @@ func TestContextBindWithXML(t *testing.T) {
 	assert.Equal(t, 0, w.Body.Len())
 }
 
+func TestContextBindPlain(t *testing.T) {
+	// string
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
+	c.Request, _ = http.NewRequest("POST", "/", bytes.NewBufferString(`test string`))
+	c.Request.Header.Add("Content-Type", MIMEPlain)
+
+	var s string
+
+	assert.NoError(t, c.BindPlain(&s))
+	assert.Equal(t, "test string", s)
+	assert.Equal(t, 0, w.Body.Len())
+
+	// []byte
+	c.Request, _ = http.NewRequest("POST", "/", bytes.NewBufferString(`test []byte`))
+	c.Request.Header.Add("Content-Type", MIMEPlain)
+
+	var bs []byte
+
+	assert.NoError(t, c.BindPlain(&bs))
+	assert.Equal(t, []byte("test []byte"), bs)
+	assert.Equal(t, 0, w.Body.Len())
+}
+
 func TestContextBindHeader(t *testing.T) {
 	w := httptest.NewRecorder()
 	c, _ := CreateTestContext(w)
@@ -1800,6 +1880,30 @@ func TestContextShouldBindWithXML(t *testing.T) {
 	assert.NoError(t, c.ShouldBindXML(&obj))
 	assert.Equal(t, "FOO", obj.Foo)
 	assert.Equal(t, "BAR", obj.Bar)
+	assert.Equal(t, 0, w.Body.Len())
+}
+
+func TestContextShouldBindPlain(t *testing.T) {
+	// string
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
+	c.Request, _ = http.NewRequest("POST", "/", bytes.NewBufferString(`test string`))
+	c.Request.Header.Add("Content-Type", MIMEPlain)
+
+	var s string
+
+	assert.NoError(t, c.ShouldBindPlain(&s))
+	assert.Equal(t, "test string", s)
+	assert.Equal(t, 0, w.Body.Len())
+	// []byte
+
+	c.Request, _ = http.NewRequest("POST", "/", bytes.NewBufferString(`test []byte`))
+	c.Request.Header.Add("Content-Type", MIMEPlain)
+
+	var bs []byte
+
+	assert.NoError(t, c.ShouldBindPlain(&bs))
+	assert.Equal(t, []byte("test []byte"), bs)
 	assert.Equal(t, 0, w.Body.Len())
 }
 
@@ -2230,6 +2334,81 @@ func TestContextShouldBindBodyWithTOML(t *testing.T) {
 		if tt.bindingBody == binding.TOML {
 			assert.NoError(t, c.ShouldBindBodyWithTOML(&objTOML))
 			assert.Equal(t, typeTOML{"FOO"}, objTOML)
+		}
+	}
+}
+
+func TestContextShouldBindBodyWithPlain(t *testing.T) {
+	for _, tt := range []struct {
+		name        string
+		bindingBody binding.BindingBody
+		body        string
+	}{
+		{
+			name:        " JSON & JSON-BODY ",
+			bindingBody: binding.JSON,
+			body:        `{"foo":"FOO"}`,
+		},
+		{
+			name:        " JSON & XML-BODY ",
+			bindingBody: binding.XML,
+			body: `<?xml version="1.0" encoding="UTF-8"?>
+<root>
+<foo>FOO</foo>
+</root>`,
+		},
+		{
+			name:        " JSON & YAML-BODY ",
+			bindingBody: binding.YAML,
+			body:        `foo: FOO`,
+		},
+		{
+			name:        " JSON & TOM-BODY ",
+			bindingBody: binding.TOML,
+			body:        `foo=FOO`,
+		},
+		{
+			name:        " JSON & Plain-BODY ",
+			bindingBody: binding.Plain,
+			body:        `foo=FOO`,
+		},
+	} {
+		t.Logf("testing: %s", tt.name)
+
+		w := httptest.NewRecorder()
+		c, _ := CreateTestContext(w)
+
+		c.Request, _ = http.NewRequest("POST", "/", bytes.NewBufferString(tt.body))
+
+		type typeJSON struct {
+			Foo string `json:"foo" binding:"required"`
+		}
+		objJSON := typeJSON{}
+
+		if tt.bindingBody == binding.Plain {
+			body := ""
+			assert.NoError(t, c.ShouldBindBodyWithPlain(&body))
+			assert.Equal(t, body, "foo=FOO")
+		}
+
+		if tt.bindingBody == binding.JSON {
+			assert.NoError(t, c.ShouldBindBodyWithJSON(&objJSON))
+			assert.Equal(t, typeJSON{"FOO"}, objJSON)
+		}
+
+		if tt.bindingBody == binding.XML {
+			assert.Error(t, c.ShouldBindBodyWithJSON(&objJSON))
+			assert.Equal(t, typeJSON{}, objJSON)
+		}
+
+		if tt.bindingBody == binding.YAML {
+			assert.Error(t, c.ShouldBindBodyWithJSON(&objJSON))
+			assert.Equal(t, typeJSON{}, objJSON)
+		}
+
+		if tt.bindingBody == binding.TOML {
+			assert.Error(t, c.ShouldBindBodyWithJSON(&objJSON))
+			assert.Equal(t, typeJSON{}, objJSON)
 		}
 	}
 }

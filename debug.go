@@ -10,14 +10,15 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
+	"sync/atomic"
 )
 
-const ginSupportMinGoVer = 18
+const ginSupportMinGoVer = 21
 
 // IsDebugging returns true if the framework is running in debug mode.
 // Use SetMode(gin.ReleaseMode) to disable debug mode.
 func IsDebugging() bool {
-	return ginMode == debugCode
+	return atomic.LoadInt32(&ginMode) == debugCode
 }
 
 // DebugPrintRouteFunc indicates debug log output format.
@@ -77,7 +78,7 @@ func getMinVer(v string) (uint64, error) {
 
 func debugPrintWARNINGDefault() {
 	if v, e := getMinVer(runtime.Version()); e == nil && v < ginSupportMinGoVer {
-		debugPrint(`[WARNING] Now Gin requires Go 1.18+.
+		debugPrint(`[WARNING] Now Gin requires Go 1.21+.
 
 `)
 	}

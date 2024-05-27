@@ -55,3 +55,6 @@ issues:
     - linters:
         - revive
       path: _test\.go
+    - path: gin.go
+      linters:
+        - gci
