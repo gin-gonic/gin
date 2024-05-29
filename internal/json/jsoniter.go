@@ -20,4 +20,6 @@ var (
 	NewDecoder = json.NewDecoder
 	// NewEncoder is exported by gin/json package.
 	NewEncoder = json.NewEncoder
+	// Valid is exported by gin/json package.
+	Valid = json.Valid
 )
