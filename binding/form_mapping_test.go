@@ -5,6 +5,7 @@
 package binding
 
 import (
+	"encoding/hex"
 	"fmt"
 	"mime/multipart"
 	"reflect"
@@ -421,4 +422,90 @@ func TestMappingCustomPointerStructTypeWithURITag(t *testing.T) {
 	assert.EqualValues(t, "file", s.FileData.Protocol)
 	assert.EqualValues(t, "/foo", s.FileData.Path)
 	assert.EqualValues(t, "happiness", s.FileData.Name)
+}
+
+type customPath []string
+
+func (p *customPath) UnmarshalParam(param string) error {
+	elems := strings.Split(param, "/")
+	n := len(elems)
+	if n < 2 {
+		return fmt.Errorf("invalid format")
+	}
+
+	*p = elems
+	return nil
+}
+
+func TestMappingCustomSliceUri(t *testing.T) {
+	var s struct {
+		FileData customPath `uri:"path"`
+	}
+	err := mappingByPtr(&s, formSource{"path": {`bar/foo`}}, "uri")
+	assert.NoError(t, err)
+
+	assert.EqualValues(t, "bar", s.FileData[0])
+	assert.EqualValues(t, "foo", s.FileData[1])
+}
+
+func TestMappingCustomSliceForm(t *testing.T) {
+	var s struct {
+		FileData customPath `form:"path"`
+	}
+	err := mappingByPtr(&s, formSource{"path": {`bar/foo`}}, "form")
+	assert.NoError(t, err)
+
+	assert.EqualValues(t, "bar", s.FileData[0])
+	assert.EqualValues(t, "foo", s.FileData[1])
+}
+
+type objectID [12]byte
+
+func (o *objectID) UnmarshalParam(param string) error {
+	oid, err := convertTo(param)
+	if err != nil {
+		return err
+	}
+
+	*o = oid
+	return nil
+}
+
+func convertTo(s string) (objectID, error) {
+	var nilObjectID objectID
+	if len(s) != 24 {
+		return nilObjectID, fmt.Errorf("invalid format")
+	}
+
+	var oid [12]byte
+	_, err := hex.Decode(oid[:], []byte(s))
+	if err != nil {
+		return nilObjectID, err
+	}
+
+	return oid, nil
+}
+
+func TestMappingCustomArrayUri(t *testing.T) {
+	var s struct {
+		FileData objectID `uri:"id"`
+	}
+	val := `664a062ac74a8ad104e0e80f`
+	err := mappingByPtr(&s, formSource{"id": {val}}, "uri")
+	assert.NoError(t, err)
+
+	expected, _ := convertTo(val)
+	assert.EqualValues(t, expected, s.FileData)
+}
+
+func TestMappingCustomArrayForm(t *testing.T) {
+	var s struct {
+		FileData objectID `form:"id"`
+	}
+	val := `664a062ac74a8ad104e0e80f`
+	err := mappingByPtr(&s, formSource{"id": {val}}, "form")
+	assert.NoError(t, err)
+
+	expected, _ := convertTo(val)
+	assert.EqualValues(t, expected, s.FileData)
 }

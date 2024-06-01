@@ -577,3 +577,28 @@ func TestTreeRunDynamicRouting(t *testing.T) {
 func isWindows() bool {
 	return runtime.GOOS == "windows"
 }
+
+func TestEscapedColon(t *testing.T) {
+	router := New()
+	f := func(u string) {
+		router.GET(u, func(c *Context) { c.String(http.StatusOK, u) })
+	}
+	f("/r/r\\:r")
+	f("/r/r:r")
+	f("/r/r/:r")
+	f("/r/r/\\:r")
+	f("/r/r/r\\:r")
+	assert.Panics(t, func() {
+		f("\\foo:")
+	})
+
+	router.updateRouteTrees()
+	ts := httptest.NewServer(router)
+	defer ts.Close()
+
+	testRequest(t, ts.URL+"/r/r123", "", "/r/r:r")
+	testRequest(t, ts.URL+"/r/r:r", "", "/r/r\\:r")
+	testRequest(t, ts.URL+"/r/r/r123", "", "/r/r/:r")
+	testRequest(t, ts.URL+"/r/r/:r", "", "/r/r/\\:r")
+	testRequest(t, ts.URL+"/r/r/r:r", "", "/r/r/r\\:r")
+}
