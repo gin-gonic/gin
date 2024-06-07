@@ -26,6 +26,7 @@
   - [Custom Validators](#custom-validators)
   - [Only Bind Query String](#only-bind-query-string)
   - [Bind Query String or Post Data](#bind-query-string-or-post-data)
+  - [Collection format for arrays](#collection-format-for-arrays)
   - [Bind Uri](#bind-uri)
   - [Bind custom unmarshaler](#bind-custom-unmarshaler)
   - [Bind Header](#bind-header)
@@ -859,6 +860,59 @@ Test it with:
 
 ```sh
 curl -X GET "localhost:8085/testing?name=appleboy&address=xyz&birthday=1992-03-15&createTime=1562400033000000123&unixTime=1562400033"
+```
+
+#### Collection format for arrays
+
+| Format          | Description                                               | Example                 |
+| --------------- | --------------------------------------------------------- | ----------------------- |
+| multi (default) | Multiple parameter instances rather than multiple values. | key=foo&key=bar&key=baz |
+| csv             | Comma-separated values.                                   | foo,bar,baz             |
+| ssv             | Space-separated values.                                   | foo bar baz             |
+| tsv             | Tab-separated values.                                     | "foo\tbar\tbaz"         |
+| pipes           | Pipe-separated values.                                    | foo\|bar\|baz           |
+
+```go
+package main
+
+import (
+	"log"
+	"time"
+	"github.com/gin-gonic/gin"
+)
+
+type Person struct {
+	Name       string    `form:"name"`
+	Addresses  []string  `form:"addresses" collection_format:"csv"`
+	Birthday   time.Time `form:"birthday" time_format:"2006-01-02" time_utc:"1"`
+	CreateTime time.Time `form:"createTime" time_format:"unixNano"`
+	UnixTime   time.Time `form:"unixTime" time_format:"unix"`
+}
+
+func main() {
+	route := gin.Default()
+	route.GET("/testing", startPage)
+	route.Run(":8085")
+}
+func startPage(c *gin.Context) {
+	var person Person
+	// If `GET`, only `Form` binding engine (`query`) used.
+	// If `POST`, first checks the `content-type` for `JSON` or `XML`, then uses `Form` (`form-data`).
+	// See more at https://github.com/gin-gonic/gin/blob/master/binding/binding.go#L48
+        if c.ShouldBind(&person) == nil {
+                log.Println(person.Name)
+                log.Println(person.Addresses)
+                log.Println(person.Birthday)
+                log.Println(person.CreateTime)
+                log.Println(person.UnixTime)
+        }
+	c.String(200, "Success")
+}
+```
+
+Test it with:
+```sh
+$ curl -X GET "localhost:8085/testing?name=appleboy&addresses=foo,bar&birthday=1992-03-15&createTime=1562400033000000123&unixTime=1562400033"
 ```
 
 ### Bind Uri
