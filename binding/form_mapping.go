@@ -182,6 +182,26 @@ func trySetCustom(val string, value reflect.Value) (isSet bool, err error) {
 	return false, nil
 }
 
+// trySetArrayOfCustom  works as trySetCustom but for an array of custom values
+// If the value implements the BindUnmarshaler interface, it will be used to set the values,
+// we will return `true` to skip the default value setting.
+func trySetArrayOfCustom(vals []string, arrayValue reflect.Value) (isSet bool, err error) {
+	switch arrayValue.Index(0).Addr().Interface().(type) {
+	case BindUnmarshaler:
+		for i, s := range vals {
+			{
+				err := arrayValue.Index(i).Addr().Interface().(BindUnmarshaler).UnmarshalParam(s)
+				if err != nil {
+					return true, err
+				}
+			}
+		}
+		return true, nil
+	default:
+		return false, nil
+	}
+}
+
 func setByForm(value reflect.Value, field reflect.StructField, form map[string][]string, tagValue string, opt setOptions) (isSet bool, err error) {
 	vs, ok := form[tagValue]
 	if !ok && !opt.isDefaultExists {
@@ -379,6 +399,11 @@ func setTimeField(val string, structField reflect.StructField, value reflect.Val
 }
 
 func setArray(vals []string, value reflect.Value, field reflect.StructField) error {
+	ok, err := trySetArrayOfCustom(vals, value)
+	if ok {
+		return err
+	}
+
 	for i, s := range vals {
 		err := setWithProperType(s, value.Index(i), field)
 		if err != nil {

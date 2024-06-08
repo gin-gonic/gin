@@ -509,3 +509,23 @@ func TestMappingCustomArrayForm(t *testing.T) {
 	expected, _ := convertTo(val)
 	assert.EqualValues(t, expected, s.FileData)
 }
+
+func TestMappingSliceWithCustomUnmarshal(t *testing.T) {
+	var s struct {
+		HexSlice []customUnmarshalParamHex `form:"hex_slice"`
+	}
+	err := mappingByPtr(&s, formSource{"hex_slice": {`f5`, `f6`}}, "form")
+	assert.NoError(t, err)
+
+	assert.EqualValues(t, []customUnmarshalParamHex{245, 246}, s.HexSlice)
+}
+
+func TestMappingArrayWithCustomUnmarshal(t *testing.T) {
+	var s struct {
+		HexArray [2]customUnmarshalParamHex `form:"hex_array"`
+	}
+	err := mappingByPtr(&s, formSource{"hex_array": {`f5`, `f6`}}, "form")
+	assert.NoError(t, err)
+
+	assert.EqualValues(t, [2]customUnmarshalParamHex{245, 246}, s.HexArray)
+}
