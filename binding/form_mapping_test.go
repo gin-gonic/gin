@@ -529,3 +529,14 @@ func TestMappingArrayWithCustomUnmarshal(t *testing.T) {
 
 	assert.EqualValues(t, [2]customUnmarshalParamHex{245, 246}, s.HexArray)
 }
+
+func TestMappingArrayWithUnkownType(t *testing.T) {
+	var s struct {
+		U []customUnmarshalParamHex
+	}
+	err := mappingByPtr(&s, formSource{"U": {"unknown"}}, "form")
+	assert.Error(t, err)
+
+	var expectedError *strconv.NumError
+	assert.ErrorAs(t, err, &expectedError)
+}
