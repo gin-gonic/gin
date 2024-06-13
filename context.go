@@ -1137,10 +1137,9 @@ func (c *Context) SSEvent(name string, message any) {
 // indicates "Is client disconnected in middle of stream"
 func (c *Context) Stream(step func(w io.Writer) bool) bool {
 	w := c.Writer
-	clientGone := w.CloseNotify()
 	for {
 		select {
-		case <-clientGone:
+		case <-c.Request.Context().Done():
 			return true
 		default:
 			keepOpen := step(w)
