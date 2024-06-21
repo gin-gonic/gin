@@ -685,6 +685,13 @@ func TestContextSetCookiePathEmpty(t *testing.T) {
 	assert.Equal(t, "user=gin; Path=/; Domain=localhost; Max-Age=1; HttpOnly; Secure; SameSite=Lax", c.Writer.Header().Get("Set-Cookie"))
 }
 
+func TestContextSetCookieWithSpace(t *testing.T) {
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	c.SetSameSite(http.SameSiteLaxMode)
+	c.SetCookie("user", "gin test", 1, "/", "localhost", true, true)
+	assert.Equal(t, "user=\"gin test\"; Path=/; Domain=localhost; Max-Age=1; HttpOnly; Secure; SameSite=Lax", c.Writer.Header().Get("Set-Cookie"))
+}
+
 func TestContextGetCookie(t *testing.T) {
 	c, _ := CreateTestContext(httptest.NewRecorder())
 	c.Request, _ = http.NewRequest("GET", "/get", nil)

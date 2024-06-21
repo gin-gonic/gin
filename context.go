@@ -946,7 +946,7 @@ func (c *Context) SetCookie(name, value string, maxAge int, path, domain string,
 	}
 	http.SetCookie(c.Writer, &http.Cookie{
 		Name:     name,
-		Value:    url.QueryEscape(value),
+		Value:    value,
 		MaxAge:   maxAge,
 		Path:     path,
 		Domain:   domain,
@@ -965,8 +965,7 @@ func (c *Context) Cookie(name string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	val, _ := url.QueryUnescape(cookie.Value)
-	return val, nil
+	return cookie.Value, nil
 }
 
 // Render writes the response headers and calls render.Render to render data.
