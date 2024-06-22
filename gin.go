@@ -605,6 +605,23 @@ func (engine *Engine) RunQUIC(addr, certFile, keyFile string) (err error) {
 	return
 }
 
+// RunTLSAndQUIC attaches the router to a http.Server and starts listening and serving
+// both TLS/TCP and QUIC connections in parallel requests.
+// It is a shortcut for http3.ListenAndServe(addr, certFile, keyFile, router)
+// Note: this method will block the calling goroutine indefinitely unless an error happens.
+func (engine *Engine) RunTLSAndQUIC(addr, certFile, keyFile string) (err error) {
+	debugPrint("Listening and serving both TLS/TCP and QUIC on %s\n", addr)
+	defer func() { debugPrintError(err) }()
+
+	if engine.isUnsafeTrustedProxies() {
+		debugPrint("[WARNING] You trusted all proxies, this is NOT safe. We recommend you to set a value.\n" +
+			"Please check https://pkg.go.dev/github.com/gin-gonic/gin#readme-don-t-trust-all-proxies for details.")
+	}
+
+	err = http3.ListenAndServeTLS(addr, certFile, keyFile, engine.Handler())
+	return
+}
+
 // RunListener attaches the router to a http.Server and starts listening and serving HTTP requests
 // through the specified net.Listener
 func (engine *Engine) RunListener(listener net.Listener) (err error) {
