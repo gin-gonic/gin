@@ -75,11 +75,11 @@ func (form formSource) TrySet(value reflect.Value, field reflect.StructField, ta
 }
 
 func mappingByPtr(ptr any, setter setter, tag string) error {
-	_, err := mapping(reflect.ValueOf(ptr), emptyField, setter, tag)
+	_, err := mapping(reflect.ValueOf(ptr), &emptyField, setter, tag)
 	return err
 }
 
-func mapping(value reflect.Value, field reflect.StructField, setter setter, tag string) (bool, error) {
+func mapping(value reflect.Value, field *reflect.StructField, setter setter, tag string) (bool, error) {
 	if field.Tag.Get(tag) == "-" { // just ignoring this field
 		return false, nil
 	}
@@ -97,14 +97,14 @@ func mapping(value reflect.Value, field reflect.StructField, setter setter, tag 
 		if err != nil {
 			return false, err
 		}
-		if isNew && isSet {
+		if isNew && (isSet || field == &emptyField) {
 			value.Set(vPtr)
 		}
 		return isSet, nil
 	}
 
 	if vKind != reflect.Struct || !field.Anonymous {
-		ok, err := tryToSetValue(value, field, setter, tag)
+		ok, err := tryToSetValue(value, *field, setter, tag)
 		if err != nil {
 			return false, err
 		}
@@ -122,7 +122,7 @@ func mapping(value reflect.Value, field reflect.StructField, setter setter, tag 
 			if sf.PkgPath != "" && !sf.Anonymous { // unexported
 				continue
 			}
-			ok, err := mapping(value.Field(i), sf, setter, tag)
+			ok, err := mapping(value.Field(i), &sf, setter, tag)
 			if err != nil {
 				return false, err
 			}
