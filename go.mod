@@ -3,7 +3,7 @@ module github.com/gin-gonic/gin
 go 1.21.0
 
 require (
-	github.com/bytedance/sonic v1.11.6
+	github.com/bytedance/sonic v1.11.9
 	github.com/gin-contrib/sse v0.1.0
 	github.com/go-playground/validator/v10 v10.20.0
 	github.com/goccy/go-json v0.10.2
