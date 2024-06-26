@@ -15,6 +15,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"sync"
 	"time"
@@ -292,105 +293,170 @@ func (c *Context) MustGet(key string) any {
 }
 
 // GetString returns the value associated with the key as a string.
-func (c *Context) GetString(key string) (s string) {
+func (c *Context) GetString(key string) (s string, err error) {
 	if val, ok := c.Get(key); ok && val != nil {
-		s, _ = val.(string)
+		s, ok := val.(string)
+		if ok {
+			return s, nil
+		} else {
+			return "", errors.New("can not convert type: " + reflect.TypeOf(val).String() + "to string")
+		}
 	}
 	return
 }
 
 // GetBool returns the value associated with the key as a boolean.
-func (c *Context) GetBool(key string) (b bool) {
+func (c *Context) GetBool(key string) (b bool, err error) {
 	if val, ok := c.Get(key); ok && val != nil {
-		b, _ = val.(bool)
+		b, ok := val.(bool)
+		if ok {
+			return b, nil
+		} else {
+			return false, errors.New("can not convert type: " + reflect.TypeOf(val).String() + "to bool")
+		}
 	}
 	return
 }
 
 // GetInt returns the value associated with the key as an integer.
-func (c *Context) GetInt(key string) (i int) {
+func (c *Context) GetInt(key string) (i int, err error) {
 	if val, ok := c.Get(key); ok && val != nil {
-		i, _ = val.(int)
+		i, ok := val.(int)
+		if ok {
+			return i, nil
+		} else {
+			return 0, errors.New("can not convert type: " + reflect.TypeOf(val).String() + "to int")
+		}
 	}
 	return
 }
 
 // GetInt64 returns the value associated with the key as an integer.
-func (c *Context) GetInt64(key string) (i64 int64) {
+func (c *Context) GetInt64(key string) (i64 int64, err error) {
 	if val, ok := c.Get(key); ok && val != nil {
-		i64, _ = val.(int64)
+		i64, ok := val.(int64)
+		if ok {
+			return i64, nil
+		} else {
+			return 0, errors.New("can not convert type: " + reflect.TypeOf(val).String() + "to int64")
+		}
 	}
 	return
 }
 
 // GetUint returns the value associated with the key as an unsigned integer.
-func (c *Context) GetUint(key string) (ui uint) {
+func (c *Context) GetUint(key string) (ui uint, err error) {
 	if val, ok := c.Get(key); ok && val != nil {
-		ui, _ = val.(uint)
+		ui, ok := val.(uint)
+		if ok {
+			return ui, nil
+		} else {
+			return 0, errors.New("can not convert type: " + reflect.TypeOf(val).String() + "to uint")
+		}
 	}
 	return
 }
 
 // GetUint64 returns the value associated with the key as an unsigned integer.
-func (c *Context) GetUint64(key string) (ui64 uint64) {
+func (c *Context) GetUint64(key string) (ui64 uint64, err error) {
 	if val, ok := c.Get(key); ok && val != nil {
-		ui64, _ = val.(uint64)
+		ui64, ok := val.(uint64)
+		if ok {
+			return ui64, nil
+		} else {
+			return 0, errors.New("can not convert type: " + reflect.TypeOf(val).String() + "to uint64")
+		}
 	}
 	return
 }
 
 // GetFloat64 returns the value associated with the key as a float64.
-func (c *Context) GetFloat64(key string) (f64 float64) {
+func (c *Context) GetFloat64(key string) (f64 float64, err error) {
 	if val, ok := c.Get(key); ok && val != nil {
-		f64, _ = val.(float64)
+		f64, ok := val.(float64)
+		if ok {
+			return f64, nil
+		} else {
+			return 0, errors.New("can not convert type: " + reflect.TypeOf(val).String() + "to float64")
+		}
 	}
 	return
 }
 
 // GetTime returns the value associated with the key as time.
-func (c *Context) GetTime(key string) (t time.Time) {
+func (c *Context) GetTime(key string) (t time.Time, err error) {
 	if val, ok := c.Get(key); ok && val != nil {
-		t, _ = val.(time.Time)
+		t, ok := val.(time.Time)
+		if ok {
+			return t, nil
+		} else {
+			return time.Time{}, errors.New("can not convert type: " + reflect.TypeOf(val).String() + "to time.Time")
+		}
 	}
 	return
 }
 
 // GetDuration returns the value associated with the key as a duration.
-func (c *Context) GetDuration(key string) (d time.Duration) {
+func (c *Context) GetDuration(key string) (d time.Duration, err error) {
 	if val, ok := c.Get(key); ok && val != nil {
-		d, _ = val.(time.Duration)
+		d, ok := val.(time.Duration)
+		if ok {
+			return d, nil
+		} else {
+			return 0, errors.New("can not convert type: " + reflect.TypeOf(val).String() + "to time.Duration")
+		}
 	}
 	return
 }
 
 // GetStringSlice returns the value associated with the key as a slice of strings.
-func (c *Context) GetStringSlice(key string) (ss []string) {
+func (c *Context) GetStringSlice(key string) (ss []string, err error) {
 	if val, ok := c.Get(key); ok && val != nil {
-		ss, _ = val.([]string)
+		ss, ok := val.([]string)
+		if ok {
+			return ss, nil
+		} else {
+			return []string{}, errors.New("can not convert type: " + reflect.TypeOf(val).String() + "to []string")
+		}
 	}
 	return
 }
 
 // GetStringMap returns the value associated with the key as a map of interfaces.
-func (c *Context) GetStringMap(key string) (sm map[string]any) {
+func (c *Context) GetStringMap(key string) (sm map[string]any, err error) {
 	if val, ok := c.Get(key); ok && val != nil {
-		sm, _ = val.(map[string]any)
+		sm, ok := val.(map[string]any)
+		if ok {
+			return sm, nil
+		} else {
+			return map[string]any{}, errors.New("can not convert type: " + reflect.TypeOf(val).String() + "to map[string]any")
+		}
 	}
 	return
 }
 
 // GetStringMapString returns the value associated with the key as a map of strings.
-func (c *Context) GetStringMapString(key string) (sms map[string]string) {
+func (c *Context) GetStringMapString(key string) (sms map[string]string, err error) {
 	if val, ok := c.Get(key); ok && val != nil {
-		sms, _ = val.(map[string]string)
+		sms, ok := val.(map[string]string)
+		if ok {
+			return sms, nil
+		} else {
+			return map[string]string{}, errors.New("can not convert type: " + reflect.TypeOf(val).String() + "to map[string]string")
+		}
 	}
 	return
 }
 
 // GetStringMapStringSlice returns the value associated with the key as a map to a slice of strings.
-func (c *Context) GetStringMapStringSlice(key string) (smss map[string][]string) {
+func (c *Context) GetStringMapStringSlice(key string) (smss map[string][]string, err error) {
 	if val, ok := c.Get(key); ok && val != nil {
-		smss, _ = val.(map[string][]string)
+		smss, ok := val.(map[string][]string)
+		if ok {
+			return smss, nil
+		} else {
+			return map[string][]string{}, errors.New("can not convert type: " + reflect.TypeOf(val).String() + "to map[string][]string")
+		}
 	}
 	return
 }
