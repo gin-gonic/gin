@@ -570,6 +570,48 @@ func (c *Context) PostFormMap(key string) (dicts map[string]string) {
 	return
 }
 
+// GetPostFormArrayMap returns a map for a given form key, plus a boolean value
+// whether at least one value exists for the given key.
+func (c *Context) GetPostFormArrayMap(key string) ([]map[string]string, bool) {
+	req := c.Request
+	req.ParseForm()
+	req.ParseMultipartForm(c.engine.MaxMultipartMemory)
+	dicts, exist := c.getArrayMap(req.PostForm, key)
+	if !exist && req.MultipartForm != nil && req.MultipartForm.File != nil {
+		dicts, exist = c.getArrayMap(req.MultipartForm.Value, key)
+	}
+	return dicts, exist
+}
+
+// get is an internal method and returns a map which satisfy conditions.
+func (c *Context) getArrayMap(m map[string][]string, key string) ([]map[string]string, bool) {
+	dicts := make(map[string]map[string]string)
+	exist := false
+	for k, v := range m {
+		if i := strings.IndexByte(k, '['); i >= 1 && k[0:i] == key { // 确定name[1]key
+			num := ``
+			if j := strings.IndexByte(k[i+1:], ']'); j >= 1 {
+				num = k[i+1:][:j]
+			}
+			if j := strings.IndexByte(k[i+1:], '['); j >= 1 {
+				exist = true
+				field := k[i+1:][j+1 : len(k[i+1:])-1]
+				if dict, ok := dicts[num]; ok {
+					dict[field] = v[0]
+					dicts[num] = dict
+				} else {
+					dicts[num] = map[string]string{field: v[0]}
+				}
+			}
+		}
+	}
+	arr := make([]map[string]string, 0)
+	for _, value := range dicts {
+		arr = append(arr, value)
+	}
+	return arr, exist
+}
+
 // GetPostFormMap returns a map for a given form key, plus a boolean value
 // whether at least one value exists for the given key.
 func (c *Context) GetPostFormMap(key string) (map[string]string, bool) {

@@ -58,6 +58,9 @@ func createMultipartRequest() *http.Request {
 	must(mw.WriteField("time_location", "31/12/2016 14:55"))
 	must(mw.WriteField("names[a]", "thinkerou"))
 	must(mw.WriteField("names[b]", "tianou"))
+	must(mw.WriteField("array_map[0][a]", "test a"))
+	must(mw.WriteField("array_map[0][b]", "test b"))
+
 	req, err := http.NewRequest("POST", "/", body)
 	must(err)
 	req.Header.Set("Content-Type", MIMEMultipartPOSTForm+"; boundary="+boundary)
@@ -669,6 +672,15 @@ func TestContextPostFormMultipart(t *testing.T) {
 
 	dicts = c.PostFormMap("nokey")
 	assert.Equal(t, 0, len(dicts))
+
+	arrayOfDict, ok := c.GetPostFormArrayMap("array_map")
+	assert.True(t, ok)
+	assert.Equal(t, "test a", arrayOfDict[0]["a"])
+	assert.Equal(t, "test b", arrayOfDict[0]["b"])
+
+	arrayOfDict, ok = c.GetPostFormArrayMap("array_map_fail")
+	assert.False(t, ok)
+
 }
 
 func TestContextSetCookie(t *testing.T) {
