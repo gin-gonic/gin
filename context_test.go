@@ -120,7 +120,7 @@ func TestContextMultipartForm(t *testing.T) {
 	if assert.NoError(t, err) {
 		assert.NotNil(t, f)
 	}
-
+	assert.Equal(t, c.PostForm("foo"), "bar")
 	assert.NoError(t, c.SaveUploadedFile(f.File["file"][0], "test"))
 }
 

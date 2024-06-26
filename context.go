@@ -609,8 +609,12 @@ func (c *Context) FormFile(name string) (*multipart.FileHeader, error) {
 
 // MultipartForm is the parsed multipart form, including file uploads.
 func (c *Context) MultipartForm() (*multipart.Form, error) {
-	err := c.Request.ParseMultipartForm(c.engine.MaxMultipartMemory)
-	return c.Request.MultipartForm, err
+	if c.Request.MultipartForm == nil {
+		if err := c.Request.ParseMultipartForm(c.engine.MaxMultipartMemory); err != nil {
+			return nil, err
+		}
+	}
+	return c.Request.MultipartForm, nil
 }
 
 // SaveUploadedFile uploads the form file to specific dst.
