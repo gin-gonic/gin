@@ -530,7 +530,7 @@ func TestMappingArrayWithCustomUnmarshal(t *testing.T) {
 	assert.EqualValues(t, [2]customUnmarshalParamHex{245, 246}, s.HexArray)
 }
 
-func TestMappingArrayWithUnkownType(t *testing.T) {
+func TestMappingArrayWithUnknownType(t *testing.T) {
 	var s struct {
 		U []customUnmarshalParamHex
 	}
