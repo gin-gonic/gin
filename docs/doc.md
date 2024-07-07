@@ -1442,6 +1442,8 @@ Gin allow by default use only one html.Template. Check [a multitemplate render](
 
 Issuing a HTTP redirect is easy. Both internal and external locations are supported.
 
+Note: When the location is empty, there is a security risk. Please do not bring it to production
+
 ```go
 r.GET("/test", func(c *gin.Context) {
   c.Redirect(http.StatusMovedPermanently, "http://www.google.com/")
