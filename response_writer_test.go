@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // TODO
@@ -95,13 +96,13 @@ func TestResponseWriterWrite(t *testing.T) {
 	assert.Equal(t, http.StatusOK, w.Status())
 	assert.Equal(t, http.StatusOK, testWriter.Code)
 	assert.Equal(t, "hola", testWriter.Body.String())
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	n, err = w.Write([]byte(" adios"))
 	assert.Equal(t, 6, n)
 	assert.Equal(t, 10, w.Size())
 	assert.Equal(t, "hola adios", testWriter.Body.String())
-	assert.NoError(t, err)
+	require.NoError(t, err)
 }
 
 func TestResponseWriterHijack(t *testing.T) {
@@ -112,7 +113,7 @@ func TestResponseWriterHijack(t *testing.T) {
 
 	assert.Panics(t, func() {
 		_, _, err := w.Hijack()
-		assert.NoError(t, err)
+		require.NoError(t, err)
 	})
 	assert.True(t, w.Written())
 
@@ -135,7 +136,7 @@ func TestResponseWriterFlush(t *testing.T) {
 
 	// should return 500
 	resp, err := http.Get(testServer.URL)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, http.StatusInternalServerError, resp.StatusCode)
 }
 

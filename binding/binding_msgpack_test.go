@@ -11,6 +11,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"github.com/ugorji/go/codec"
 )
 
@@ -24,7 +25,7 @@ func TestBindingMsgPack(t *testing.T) {
 	buf := bytes.NewBuffer([]byte{})
 	assert.NotNil(t, buf)
 	err := codec.NewEncoder(buf, h).Encode(test)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	data := buf.Bytes()
 
@@ -41,14 +42,14 @@ func testMsgPackBodyBinding(t *testing.T, b Binding, name, path, badPath, body, 
 	req := requestWithBody("POST", path, body)
 	req.Header.Add("Content-Type", MIMEMSGPACK)
 	err := b.Bind(req, &obj)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "bar", obj.Foo)
 
 	obj = FooStruct{}
 	req = requestWithBody("POST", badPath, badBody)
 	req.Header.Add("Content-Type", MIMEMSGPACK)
 	err = MsgPack.Bind(req, &obj)
-	assert.Error(t, err)
+	require.Error(t, err)
 }
 
 func TestBindingDefaultMsgPack(t *testing.T) {
