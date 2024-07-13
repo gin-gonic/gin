@@ -1222,6 +1222,18 @@ func TestContextRenderRedirectWith201(t *testing.T) {
 	assert.Equal(t, "/resource", w.Header().Get("Location"))
 }
 
+func TestContextRenderRedirectWithEmptyPath(t *testing.T) {
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
+
+	c.Request, _ = http.NewRequest("POST", "http://example.com", nil)
+	c.Redirect(http.StatusTemporaryRedirect, "")
+	c.Writer.WriteHeaderNow()
+
+	assert.Equal(t, http.StatusTemporaryRedirect, w.Code)
+	assert.Equal(t, "/", w.Header().Get("Location"))
+}
+
 func TestContextRenderRedirectAll(t *testing.T) {
 	c, _ := CreateTestContext(httptest.NewRecorder())
 	c.Request, _ = http.NewRequest("POST", "http://example.com", nil)
