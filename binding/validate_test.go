@@ -11,6 +11,7 @@ import (
 
 	"github.com/go-playground/validator/v10"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 type testInterface interface {
@@ -113,10 +114,10 @@ func TestValidateNoValidationValues(t *testing.T) {
 	test := createNoValidationValues()
 	empty := structNoValidationValues{}
 
-	assert.Nil(t, validate(test))
-	assert.Nil(t, validate(&test))
-	assert.Nil(t, validate(empty))
-	assert.Nil(t, validate(&empty))
+	require.NoError(t, validate(test))
+	require.NoError(t, validate(&test))
+	require.NoError(t, validate(empty))
+	require.NoError(t, validate(&empty))
 
 	assert.Equal(t, origin, test)
 }
@@ -163,8 +164,8 @@ func TestValidateNoValidationPointers(t *testing.T) {
 
 	//assert.Nil(t, validate(test))
 	//assert.Nil(t, validate(&test))
-	assert.Nil(t, validate(empty))
-	assert.Nil(t, validate(&empty))
+	require.NoError(t, validate(empty))
+	require.NoError(t, validate(&empty))
 
 	//assert.Equal(t, origin, test)
 }
@@ -173,22 +174,22 @@ type Object map[string]any
 
 func TestValidatePrimitives(t *testing.T) {
 	obj := Object{"foo": "bar", "bar": 1}
-	assert.NoError(t, validate(obj))
-	assert.NoError(t, validate(&obj))
+	require.NoError(t, validate(obj))
+	require.NoError(t, validate(&obj))
 	assert.Equal(t, Object{"foo": "bar", "bar": 1}, obj)
 
 	obj2 := []Object{{"foo": "bar", "bar": 1}, {"foo": "bar", "bar": 1}}
-	assert.NoError(t, validate(obj2))
-	assert.NoError(t, validate(&obj2))
+	require.NoError(t, validate(obj2))
+	require.NoError(t, validate(&obj2))
 
 	nu := 10
-	assert.NoError(t, validate(nu))
-	assert.NoError(t, validate(&nu))
+	require.NoError(t, validate(nu))
+	require.NoError(t, validate(&nu))
 	assert.Equal(t, 10, nu)
 
 	str := "value"
-	assert.NoError(t, validate(str))
-	assert.NoError(t, validate(&str))
+	require.NoError(t, validate(str))
+	require.NoError(t, validate(&str))
 	assert.Equal(t, "value", str)
 }
 
@@ -212,8 +213,8 @@ func TestValidateAndModifyStruct(t *testing.T) {
 	s := structModifyValidation{Integer: 1}
 	errs := validate(&s)
 
-	assert.Nil(t, errs)
-	assert.Equal(t, s, structModifyValidation{Integer: 0})
+	require.NoError(t, errs)
+	assert.Equal(t, structModifyValidation{Integer: 0}, s)
 }
 
 // structCustomValidation is a helper struct we use to check that
@@ -239,14 +240,14 @@ func TestValidatorEngine(t *testing.T) {
 
 	err := engine.RegisterValidation("notone", notOne)
 	// Check that we can register custom validation without error
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
 	// Create an instance which will fail validation
 	withOne := structCustomValidation{Integer: 1}
 	errs := validate(withOne)
 
 	// Check that we got back non-nil errs
-	assert.NotNil(t, errs)
+	require.Error(t, errs)
 	// Check that the error matches expectation
-	assert.Error(t, errs, "", "", "notone")
+	require.Error(t, errs, "", "", "notone")
 }

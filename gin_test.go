@@ -20,6 +20,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"golang.org/x/net/http2"
 )
 
@@ -547,10 +548,10 @@ func TestEngineHandleContextManyReEntries(t *testing.T) {
 	r.GET("/:count", func(c *Context) {
 		countStr := c.Param("count")
 		count, err := strconv.Atoi(countStr)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 
 		n, err := c.Writer.Write([]byte("."))
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Equal(t, 1, n)
 
 		switch {
@@ -580,7 +581,7 @@ func TestPrepareTrustedCIRDsWith(t *testing.T) {
 		expectedTrustedCIDRs := []*net.IPNet{parseCIDR("0.0.0.0/0")}
 		err := r.SetTrustedProxies([]string{"0.0.0.0/0"})
 
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Equal(t, expectedTrustedCIDRs, r.trustedCIDRs)
 	}
 
@@ -588,7 +589,7 @@ func TestPrepareTrustedCIRDsWith(t *testing.T) {
 	{
 		err := r.SetTrustedProxies([]string{"192.168.1.33/33"})
 
-		assert.Error(t, err)
+		require.Error(t, err)
 	}
 
 	// valid ipv4 address
@@ -597,7 +598,7 @@ func TestPrepareTrustedCIRDsWith(t *testing.T) {
 
 		err := r.SetTrustedProxies([]string{"192.168.1.33"})
 
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Equal(t, expectedTrustedCIDRs, r.trustedCIDRs)
 	}
 
@@ -605,7 +606,7 @@ func TestPrepareTrustedCIRDsWith(t *testing.T) {
 	{
 		err := r.SetTrustedProxies([]string{"192.168.1.256"})
 
-		assert.Error(t, err)
+		require.Error(t, err)
 	}
 
 	// valid ipv6 address
@@ -613,7 +614,7 @@ func TestPrepareTrustedCIRDsWith(t *testing.T) {
 		expectedTrustedCIDRs := []*net.IPNet{parseCIDR("2002:0000:0000:1234:abcd:ffff:c0a8:0101/128")}
 		err := r.SetTrustedProxies([]string{"2002:0000:0000:1234:abcd:ffff:c0a8:0101"})
 
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Equal(t, expectedTrustedCIDRs, r.trustedCIDRs)
 	}
 
@@ -621,7 +622,7 @@ func TestPrepareTrustedCIRDsWith(t *testing.T) {
 	{
 		err := r.SetTrustedProxies([]string{"gggg:0000:0000:1234:abcd:ffff:c0a8:0101"})
 
-		assert.Error(t, err)
+		require.Error(t, err)
 	}
 
 	// valid ipv6 cidr
@@ -629,7 +630,7 @@ func TestPrepareTrustedCIRDsWith(t *testing.T) {
 		expectedTrustedCIDRs := []*net.IPNet{parseCIDR("::/0")}
 		err := r.SetTrustedProxies([]string{"::/0"})
 
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Equal(t, expectedTrustedCIDRs, r.trustedCIDRs)
 	}
 
@@ -637,7 +638,7 @@ func TestPrepareTrustedCIRDsWith(t *testing.T) {
 	{
 		err := r.SetTrustedProxies([]string{"gggg:0000:0000:1234:abcd:ffff:c0a8:0101/129"})
 
-		assert.Error(t, err)
+		require.Error(t, err)
 	}
 
 	// valid combination
@@ -653,7 +654,7 @@ func TestPrepareTrustedCIRDsWith(t *testing.T) {
 			"172.16.0.1",
 		})
 
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Equal(t, expectedTrustedCIDRs, r.trustedCIDRs)
 	}
 
@@ -665,7 +666,7 @@ func TestPrepareTrustedCIRDsWith(t *testing.T) {
 			"172.16.0.256",
 		})
 
-		assert.Error(t, err)
+		require.Error(t, err)
 	}
 
 	// nil value
@@ -673,7 +674,7 @@ func TestPrepareTrustedCIRDsWith(t *testing.T) {
 		err := r.SetTrustedProxies(nil)
 
 		assert.Nil(t, r.trustedCIDRs)
-		assert.Nil(t, err)
+		require.NoError(t, err)
 	}
 }
 
