@@ -412,6 +412,17 @@ func (c *Context) Param(key string) string {
 	return c.Params.ByName(key)
 }
 
+// ParamInt returns the value of the URL param as an int.
+// It is a shortcut for c.Params.GetInt(key)
+//
+//	router.GET("/user/:id", func(c *gin.Context) {
+//	    // a GET request to /user/32
+//	    id := c.Param("id") // id == "32"
+//	})
+func (c *Context) ParamInt(key string) int {
+	return c.Params.GetInt(key)
+}
+
 // AddParam adds param to context and
 // replaces path param key with given value for e2e testing purposes
 // Example Route: "/user/:id"
