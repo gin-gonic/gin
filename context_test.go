@@ -27,6 +27,7 @@ import (
 	"github.com/gin-gonic/gin/binding"
 	testdata "github.com/gin-gonic/gin/testdata/protoexample"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -74,20 +75,18 @@ func TestContextFormFile(t *testing.T) {
 	buf := new(bytes.Buffer)
 	mw := multipart.NewWriter(buf)
 	w, err := mw.CreateFormFile("file", "test")
-	if assert.NoError(t, err) {
-		_, err = w.Write([]byte("test"))
-		assert.NoError(t, err)
-	}
+	require.NoError(t, err)
+	_, err = w.Write([]byte("test"))
+	require.NoError(t, err)
 	mw.Close()
 	c, _ := CreateTestContext(httptest.NewRecorder())
 	c.Request, _ = http.NewRequest("POST", "/", buf)
 	c.Request.Header.Set("Content-Type", mw.FormDataContentType())
 	f, err := c.FormFile("file")
-	if assert.NoError(t, err) {
-		assert.Equal(t, "test", f.Filename)
-	}
+	require.NoError(t, err)
+	assert.Equal(t, "test", f.Filename)
 
-	assert.NoError(t, c.SaveUploadedFile(f, "test"))
+	require.NoError(t, c.SaveUploadedFile(f, "test"))
 }
 
 func TestContextFormFileFailed(t *testing.T) {
@@ -99,29 +98,27 @@ func TestContextFormFileFailed(t *testing.T) {
 	c.Request.Header.Set("Content-Type", mw.FormDataContentType())
 	c.engine.MaxMultipartMemory = 8 << 20
 	f, err := c.FormFile("file")
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Nil(t, f)
 }
 
 func TestContextMultipartForm(t *testing.T) {
 	buf := new(bytes.Buffer)
 	mw := multipart.NewWriter(buf)
-	assert.NoError(t, mw.WriteField("foo", "bar"))
+	require.NoError(t, mw.WriteField("foo", "bar"))
 	w, err := mw.CreateFormFile("file", "test")
-	if assert.NoError(t, err) {
-		_, err = w.Write([]byte("test"))
-		assert.NoError(t, err)
-	}
+	require.NoError(t, err)
+	_, err = w.Write([]byte("test"))
+	require.NoError(t, err)
 	mw.Close()
 	c, _ := CreateTestContext(httptest.NewRecorder())
 	c.Request, _ = http.NewRequest("POST", "/", buf)
 	c.Request.Header.Set("Content-Type", mw.FormDataContentType())
 	f, err := c.MultipartForm()
-	if assert.NoError(t, err) {
-		assert.NotNil(t, f)
-	}
+	require.NoError(t, err)
+	assert.NotNil(t, f)
 
-	assert.NoError(t, c.SaveUploadedFile(f.File["file"][0], "test"))
+	require.NoError(t, c.SaveUploadedFile(f.File["file"][0], "test"))
 }
 
 func TestSaveUploadedOpenFailed(t *testing.T) {
@@ -136,27 +133,25 @@ func TestSaveUploadedOpenFailed(t *testing.T) {
 	f := &multipart.FileHeader{
 		Filename: "file",
 	}
-	assert.Error(t, c.SaveUploadedFile(f, "test"))
+	require.Error(t, c.SaveUploadedFile(f, "test"))
 }
 
 func TestSaveUploadedCreateFailed(t *testing.T) {
 	buf := new(bytes.Buffer)
 	mw := multipart.NewWriter(buf)
 	w, err := mw.CreateFormFile("file", "test")
-	if assert.NoError(t, err) {
-		_, err = w.Write([]byte("test"))
-		assert.NoError(t, err)
-	}
+	require.NoError(t, err)
+	_, err = w.Write([]byte("test"))
+	require.NoError(t, err)
 	mw.Close()
 	c, _ := CreateTestContext(httptest.NewRecorder())
 	c.Request, _ = http.NewRequest("POST", "/", buf)
 	c.Request.Header.Set("Content-Type", mw.FormDataContentType())
 	f, err := c.FormFile("file")
-	if assert.NoError(t, err) {
-		assert.Equal(t, "test", f.Filename)
-	}
+	require.NoError(t, err)
+	assert.Equal(t, "test", f.Filename)
 
-	assert.Error(t, c.SaveUploadedFile(f, "/"))
+	require.Error(t, c.SaveUploadedFile(f, "/"))
 }
 
 func TestContextReset(t *testing.T) {
@@ -174,10 +169,10 @@ func TestContextReset(t *testing.T) {
 	assert.False(t, c.IsAborted())
 	assert.Nil(t, c.Keys)
 	assert.Nil(t, c.Accepted)
-	assert.Len(t, c.Errors, 0)
+	assert.Empty(t, c.Errors)
 	assert.Empty(t, c.Errors.Errors())
 	assert.Empty(t, c.Errors.ByType(ErrorTypeAny))
-	assert.Len(t, c.Params, 0)
+	assert.Empty(t, c.Params)
 	assert.EqualValues(t, c.index, -1)
 	assert.Equal(t, c.Writer.(*responseWriter), &c.writermem)
 }
@@ -230,13 +225,13 @@ func TestContextSetGetValues(t *testing.T) {
 	var a any = 1
 	c.Set("intInterface", a)
 
-	assert.Exactly(t, c.MustGet("string").(string), "this is a string")
+	assert.Exactly(t, "this is a string", c.MustGet("string").(string))
 	assert.Exactly(t, c.MustGet("int32").(int32), int32(-42))
-	assert.Exactly(t, c.MustGet("int64").(int64), int64(42424242424242))
-	assert.Exactly(t, c.MustGet("uint64").(uint64), uint64(42))
-	assert.Exactly(t, c.MustGet("float32").(float32), float32(4.2))
-	assert.Exactly(t, c.MustGet("float64").(float64), 4.2)
-	assert.Exactly(t, c.MustGet("intInterface").(int), 1)
+	assert.Exactly(t, int64(42424242424242), c.MustGet("int64").(int64))
+	assert.Exactly(t, uint64(42), c.MustGet("uint64").(uint64))
+	assert.InDelta(t, float32(4.2), c.MustGet("float32").(float32), 0.01)
+	assert.InDelta(t, 4.2, c.MustGet("float64").(float64), 0.01)
+	assert.Exactly(t, 1, c.MustGet("intInterface").(int))
 }
 
 func TestContextGetString(t *testing.T) {
@@ -278,7 +273,7 @@ func TestContextGetUint64(t *testing.T) {
 func TestContextGetFloat64(t *testing.T) {
 	c, _ := CreateTestContext(httptest.NewRecorder())
 	c.Set("float64", 4.2)
-	assert.Equal(t, 4.2, c.GetFloat64("float64"))
+	assert.InDelta(t, 4.2, c.GetFloat64("float64"), 0.01)
 }
 
 func TestContextGetTime(t *testing.T) {
@@ -344,12 +339,12 @@ func TestContextCopy(t *testing.T) {
 	assert.Nil(t, cp.writermem.ResponseWriter)
 	assert.Equal(t, &cp.writermem, cp.Writer.(*responseWriter))
 	assert.Equal(t, cp.Request, c.Request)
-	assert.Equal(t, cp.index, abortIndex)
+	assert.Equal(t, abortIndex, cp.index)
 	assert.Equal(t, cp.Keys, c.Keys)
 	assert.Equal(t, cp.engine, c.engine)
 	assert.Equal(t, cp.Params, c.Params)
 	cp.Set("foo", "notBar")
-	assert.False(t, cp.Keys["foo"] == c.Keys["foo"])
+	assert.NotEqual(t, cp.Keys["foo"], c.Keys["foo"])
 	assert.Equal(t, cp.fullPath, c.fullPath)
 }
 
@@ -366,7 +361,7 @@ func TestContextHandlerNames(t *testing.T) {
 
 	names := c.HandlerNames()
 
-	assert.True(t, len(names) == 4)
+	assert.Len(t, names, 4)
 	for _, name := range names {
 		assert.Regexp(t, `^(.*/vendor/)?(github\.com/gin-gonic/gin\.){1}(TestContextHandlerNames\.func.*){0,1}(handlerNameTest.*){0,1}`, name)
 	}
@@ -425,7 +420,7 @@ func TestContextQuery(t *testing.T) {
 
 func TestContextInitQueryCache(t *testing.T) {
 	validURL, err := url.Parse("https://github.com/gin-gonic/gin/pull/3969?key=value&otherkey=othervalue")
-	assert.Nil(t, err)
+	require.NoError(t, err)
 
 	tests := []struct {
 		testName           string
@@ -531,7 +526,7 @@ func TestContextQueryAndPostForm(t *testing.T) {
 		Both  string   `form:"both"`
 		Array []string `form:"array[]"`
 	}
-	assert.NoError(t, c.Bind(&obj))
+	require.NoError(t, c.Bind(&obj))
 	assert.Equal(t, "bar", obj.Foo, "bar")
 	assert.Equal(t, "main", obj.ID, "main")
 	assert.Equal(t, 11, obj.Page, 11)
@@ -548,10 +543,10 @@ func TestContextQueryAndPostForm(t *testing.T) {
 	assert.Equal(t, "second", values[1])
 
 	values = c.QueryArray("nokey")
-	assert.Equal(t, 0, len(values))
+	assert.Empty(t, values)
 
 	values = c.QueryArray("both")
-	assert.Equal(t, 1, len(values))
+	assert.Len(t, values, 1)
 	assert.Equal(t, "GET", values[0])
 
 	dicts, ok := c.GetQueryMap("ids")
@@ -561,22 +556,22 @@ func TestContextQueryAndPostForm(t *testing.T) {
 
 	dicts, ok = c.GetQueryMap("nokey")
 	assert.False(t, ok)
-	assert.Equal(t, 0, len(dicts))
+	assert.Empty(t, dicts)
 
 	dicts, ok = c.GetQueryMap("both")
 	assert.False(t, ok)
-	assert.Equal(t, 0, len(dicts))
+	assert.Empty(t, dicts)
 
 	dicts, ok = c.GetQueryMap("array")
 	assert.False(t, ok)
-	assert.Equal(t, 0, len(dicts))
+	assert.Empty(t, dicts)
 
 	dicts = c.QueryMap("ids")
 	assert.Equal(t, "hi", dicts["a"])
 	assert.Equal(t, "3.14", dicts["b"])
 
 	dicts = c.QueryMap("nokey")
-	assert.Equal(t, 0, len(dicts))
+	assert.Empty(t, dicts)
 }
 
 func TestContextPostFormMultipart(t *testing.T) {
@@ -594,7 +589,7 @@ func TestContextPostFormMultipart(t *testing.T) {
 		TimeLocation time.Time `form:"time_location" time_format:"02/01/2006 15:04" time_location:"Asia/Tokyo"`
 		BlankTime    time.Time `form:"blank_time" time_format:"02/01/2006 15:04"`
 	}
-	assert.NoError(t, c.Bind(&obj))
+	require.NoError(t, c.Bind(&obj))
 	assert.Equal(t, "bar", obj.Foo)
 	assert.Equal(t, "10", obj.Bar)
 	assert.Equal(t, 10, obj.BarAsInt)
@@ -648,10 +643,10 @@ func TestContextPostFormMultipart(t *testing.T) {
 	assert.Equal(t, "second", values[1])
 
 	values = c.PostFormArray("nokey")
-	assert.Equal(t, 0, len(values))
+	assert.Empty(t, values)
 
 	values = c.PostFormArray("foo")
-	assert.Equal(t, 1, len(values))
+	assert.Len(t, values, 1)
 	assert.Equal(t, "bar", values[0])
 
 	dicts, ok := c.GetPostFormMap("names")
@@ -661,14 +656,14 @@ func TestContextPostFormMultipart(t *testing.T) {
 
 	dicts, ok = c.GetPostFormMap("nokey")
 	assert.False(t, ok)
-	assert.Equal(t, 0, len(dicts))
+	assert.Empty(t, dicts)
 
 	dicts = c.PostFormMap("names")
 	assert.Equal(t, "thinkerou", dicts["a"])
 	assert.Equal(t, "tianou", dicts["b"])
 
 	dicts = c.PostFormMap("nokey")
-	assert.Equal(t, 0, len(dicts))
+	assert.Empty(t, dicts)
 }
 
 func TestContextSetCookie(t *testing.T) {
@@ -693,7 +688,7 @@ func TestContextGetCookie(t *testing.T) {
 	assert.Equal(t, "gin", cookie)
 
 	_, err := c.Cookie("nokey")
-	assert.Error(t, err)
+	require.Error(t, err)
 }
 
 func TestContextBodyAllowedForStatus(t *testing.T) {
@@ -798,7 +793,7 @@ func TestContextRenderNoContentAPIJSON(t *testing.T) {
 
 	assert.Equal(t, http.StatusNoContent, w.Code)
 	assert.Empty(t, w.Body.String())
-	assert.Equal(t, w.Header().Get("Content-Type"), "application/vnd.api+json")
+	assert.Equal(t, "application/vnd.api+json", w.Header().Get("Content-Type"))
 }
 
 // Tests that the response is serialized as JSON
@@ -1160,7 +1155,7 @@ func TestContextRenderProtoBuf(t *testing.T) {
 	c.ProtoBuf(http.StatusCreated, data)
 
 	protoData, err := proto.Marshal(data)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	assert.Equal(t, http.StatusCreated, w.Code)
 	assert.Equal(t, string(protoData), w.Body.String())
@@ -1333,7 +1328,7 @@ func TestContextNegotiationNotSupport(t *testing.T) {
 	})
 
 	assert.Equal(t, http.StatusNotAcceptable, w.Code)
-	assert.Equal(t, c.index, abortIndex)
+	assert.Equal(t, abortIndex, c.index)
 	assert.True(t, c.IsAborted())
 }
 
@@ -1361,23 +1356,23 @@ func TestContextNegotiationFormatWithWildcardAccept(t *testing.T) {
 	c.Request, _ = http.NewRequest("POST", "/", nil)
 	c.Request.Header.Add("Accept", "*/*")
 
-	assert.Equal(t, c.NegotiateFormat("*/*"), "*/*")
-	assert.Equal(t, c.NegotiateFormat("text/*"), "text/*")
-	assert.Equal(t, c.NegotiateFormat("application/*"), "application/*")
-	assert.Equal(t, c.NegotiateFormat(MIMEJSON), MIMEJSON)
-	assert.Equal(t, c.NegotiateFormat(MIMEXML), MIMEXML)
-	assert.Equal(t, c.NegotiateFormat(MIMEHTML), MIMEHTML)
+	assert.Equal(t, "*/*", c.NegotiateFormat("*/*"))
+	assert.Equal(t, "text/*", c.NegotiateFormat("text/*"))
+	assert.Equal(t, "application/*", c.NegotiateFormat("application/*"))
+	assert.Equal(t, MIMEJSON, c.NegotiateFormat(MIMEJSON))
+	assert.Equal(t, MIMEXML, c.NegotiateFormat(MIMEXML))
+	assert.Equal(t, MIMEHTML, c.NegotiateFormat(MIMEHTML))
 
 	c, _ = CreateTestContext(httptest.NewRecorder())
 	c.Request, _ = http.NewRequest("POST", "/", nil)
 	c.Request.Header.Add("Accept", "text/*")
 
-	assert.Equal(t, c.NegotiateFormat("*/*"), "*/*")
-	assert.Equal(t, c.NegotiateFormat("text/*"), "text/*")
-	assert.Equal(t, c.NegotiateFormat("application/*"), "")
-	assert.Equal(t, c.NegotiateFormat(MIMEJSON), "")
-	assert.Equal(t, c.NegotiateFormat(MIMEXML), "")
-	assert.Equal(t, c.NegotiateFormat(MIMEHTML), MIMEHTML)
+	assert.Equal(t, "*/*", c.NegotiateFormat("*/*"))
+	assert.Equal(t, "text/*", c.NegotiateFormat("text/*"))
+	assert.Equal(t, "", c.NegotiateFormat("application/*"))
+	assert.Equal(t, "", c.NegotiateFormat(MIMEJSON))
+	assert.Equal(t, "", c.NegotiateFormat(MIMEXML))
+	assert.Equal(t, MIMEHTML, c.NegotiateFormat(MIMEHTML))
 }
 
 func TestContextNegotiationFormatCustom(t *testing.T) {
@@ -1456,7 +1451,7 @@ func TestContextAbortWithStatusJSON(t *testing.T) {
 
 	buf := new(bytes.Buffer)
 	_, err := buf.ReadFrom(w.Body)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	jsonStringBody := buf.String()
 	assert.Equal(t, "{\"foo\":\"fooValue\",\"bar\":\"barValue\"}", jsonStringBody)
 }
@@ -1681,7 +1676,7 @@ func TestContextAutoBindJSON(t *testing.T) {
 		Foo string `json:"foo"`
 		Bar string `json:"bar"`
 	}
-	assert.NoError(t, c.Bind(&obj))
+	require.NoError(t, c.Bind(&obj))
 	assert.Equal(t, "foo", obj.Bar)
 	assert.Equal(t, "bar", obj.Foo)
 	assert.Empty(t, c.Errors)
@@ -1698,7 +1693,7 @@ func TestContextBindWithJSON(t *testing.T) {
 		Foo string `json:"foo"`
 		Bar string `json:"bar"`
 	}
-	assert.NoError(t, c.BindJSON(&obj))
+	require.NoError(t, c.BindJSON(&obj))
 	assert.Equal(t, "foo", obj.Bar)
 	assert.Equal(t, "bar", obj.Foo)
 	assert.Equal(t, 0, w.Body.Len())
@@ -1719,7 +1714,7 @@ func TestContextBindWithXML(t *testing.T) {
 		Foo string `xml:"foo"`
 		Bar string `xml:"bar"`
 	}
-	assert.NoError(t, c.BindXML(&obj))
+	require.NoError(t, c.BindXML(&obj))
 	assert.Equal(t, "FOO", obj.Foo)
 	assert.Equal(t, "BAR", obj.Bar)
 	assert.Equal(t, 0, w.Body.Len())
@@ -1734,7 +1729,7 @@ func TestContextBindPlain(t *testing.T) {
 
 	var s string
 
-	assert.NoError(t, c.BindPlain(&s))
+	require.NoError(t, c.BindPlain(&s))
 	assert.Equal(t, "test string", s)
 	assert.Equal(t, 0, w.Body.Len())
 
@@ -1744,7 +1739,7 @@ func TestContextBindPlain(t *testing.T) {
 
 	var bs []byte
 
-	assert.NoError(t, c.BindPlain(&bs))
+	require.NoError(t, c.BindPlain(&bs))
 	assert.Equal(t, []byte("test []byte"), bs)
 	assert.Equal(t, 0, w.Body.Len())
 }
@@ -1764,7 +1759,7 @@ func TestContextBindHeader(t *testing.T) {
 		Limit  int    `header:"limit"`
 	}
 
-	assert.NoError(t, c.BindHeader(&testHeader))
+	require.NoError(t, c.BindHeader(&testHeader))
 	assert.Equal(t, 8000, testHeader.Rate)
 	assert.Equal(t, "music", testHeader.Domain)
 	assert.Equal(t, 1000, testHeader.Limit)
@@ -1781,7 +1776,7 @@ func TestContextBindWithQuery(t *testing.T) {
 		Foo string `form:"foo"`
 		Bar string `form:"bar"`
 	}
-	assert.NoError(t, c.BindQuery(&obj))
+	require.NoError(t, c.BindQuery(&obj))
 	assert.Equal(t, "foo", obj.Bar)
 	assert.Equal(t, "bar", obj.Foo)
 	assert.Equal(t, 0, w.Body.Len())
@@ -1798,7 +1793,7 @@ func TestContextBindWithYAML(t *testing.T) {
 		Foo string `yaml:"foo"`
 		Bar string `yaml:"bar"`
 	}
-	assert.NoError(t, c.BindYAML(&obj))
+	require.NoError(t, c.BindYAML(&obj))
 	assert.Equal(t, "foo", obj.Bar)
 	assert.Equal(t, "bar", obj.Foo)
 	assert.Equal(t, 0, w.Body.Len())
@@ -1815,7 +1810,7 @@ func TestContextBindWithTOML(t *testing.T) {
 		Foo string `toml:"foo"`
 		Bar string `toml:"bar"`
 	}
-	assert.NoError(t, c.BindTOML(&obj))
+	require.NoError(t, c.BindTOML(&obj))
 	assert.Equal(t, "foo", obj.Bar)
 	assert.Equal(t, "bar", obj.Foo)
 	assert.Equal(t, 0, w.Body.Len())
@@ -1833,7 +1828,7 @@ func TestContextBadAutoBind(t *testing.T) {
 	}
 
 	assert.False(t, c.IsAborted())
-	assert.Error(t, c.Bind(&obj))
+	require.Error(t, c.Bind(&obj))
 	c.Writer.WriteHeaderNow()
 
 	assert.Empty(t, obj.Bar)
@@ -1851,7 +1846,7 @@ func TestContextAutoShouldBindJSON(t *testing.T) {
 		Foo string `json:"foo"`
 		Bar string `json:"bar"`
 	}
-	assert.NoError(t, c.ShouldBind(&obj))
+	require.NoError(t, c.ShouldBind(&obj))
 	assert.Equal(t, "foo", obj.Bar)
 	assert.Equal(t, "bar", obj.Foo)
 	assert.Empty(t, c.Errors)
@@ -1868,7 +1863,7 @@ func TestContextShouldBindWithJSON(t *testing.T) {
 		Foo string `json:"foo"`
 		Bar string `json:"bar"`
 	}
-	assert.NoError(t, c.ShouldBindJSON(&obj))
+	require.NoError(t, c.ShouldBindJSON(&obj))
 	assert.Equal(t, "foo", obj.Bar)
 	assert.Equal(t, "bar", obj.Foo)
 	assert.Equal(t, 0, w.Body.Len())
@@ -1889,7 +1884,7 @@ func TestContextShouldBindWithXML(t *testing.T) {
 		Foo string `xml:"foo"`
 		Bar string `xml:"bar"`
 	}
-	assert.NoError(t, c.ShouldBindXML(&obj))
+	require.NoError(t, c.ShouldBindXML(&obj))
 	assert.Equal(t, "FOO", obj.Foo)
 	assert.Equal(t, "BAR", obj.Bar)
 	assert.Equal(t, 0, w.Body.Len())
@@ -1904,7 +1899,7 @@ func TestContextShouldBindPlain(t *testing.T) {
 
 	var s string
 
-	assert.NoError(t, c.ShouldBindPlain(&s))
+	require.NoError(t, c.ShouldBindPlain(&s))
 	assert.Equal(t, "test string", s)
 	assert.Equal(t, 0, w.Body.Len())
 	// []byte
@@ -1914,7 +1909,7 @@ func TestContextShouldBindPlain(t *testing.T) {
 
 	var bs []byte
 
-	assert.NoError(t, c.ShouldBindPlain(&bs))
+	require.NoError(t, c.ShouldBindPlain(&bs))
 	assert.Equal(t, []byte("test []byte"), bs)
 	assert.Equal(t, 0, w.Body.Len())
 }
@@ -1934,7 +1929,7 @@ func TestContextShouldBindHeader(t *testing.T) {
 		Limit  int    `header:"limit"`
 	}
 
-	assert.NoError(t, c.ShouldBindHeader(&testHeader))
+	require.NoError(t, c.ShouldBindHeader(&testHeader))
 	assert.Equal(t, 8000, testHeader.Rate)
 	assert.Equal(t, "music", testHeader.Domain)
 	assert.Equal(t, 1000, testHeader.Limit)
@@ -1953,7 +1948,7 @@ func TestContextShouldBindWithQuery(t *testing.T) {
 		Foo1 string `form:"Foo"`
 		Bar1 string `form:"Bar"`
 	}
-	assert.NoError(t, c.ShouldBindQuery(&obj))
+	require.NoError(t, c.ShouldBindQuery(&obj))
 	assert.Equal(t, "foo", obj.Bar)
 	assert.Equal(t, "bar", obj.Foo)
 	assert.Equal(t, "foo1", obj.Bar1)
@@ -1972,7 +1967,7 @@ func TestContextShouldBindWithYAML(t *testing.T) {
 		Foo string `yaml:"foo"`
 		Bar string `yaml:"bar"`
 	}
-	assert.NoError(t, c.ShouldBindYAML(&obj))
+	require.NoError(t, c.ShouldBindYAML(&obj))
 	assert.Equal(t, "foo", obj.Bar)
 	assert.Equal(t, "bar", obj.Foo)
 	assert.Equal(t, 0, w.Body.Len())
@@ -1989,7 +1984,7 @@ func TestContextShouldBindWithTOML(t *testing.T) {
 		Foo string `toml:"foo"`
 		Bar string `toml:"bar"`
 	}
-	assert.NoError(t, c.ShouldBindTOML(&obj))
+	require.NoError(t, c.ShouldBindTOML(&obj))
 	assert.Equal(t, "foo", obj.Bar)
 	assert.Equal(t, "bar", obj.Foo)
 	assert.Equal(t, 0, w.Body.Len())
@@ -2007,7 +2002,7 @@ func TestContextBadAutoShouldBind(t *testing.T) {
 	}
 
 	assert.False(t, c.IsAborted())
-	assert.Error(t, c.ShouldBind(&obj))
+	require.Error(t, c.ShouldBind(&obj))
 
 	assert.Empty(t, obj.Bar)
 	assert.Empty(t, obj.Foo)
@@ -2068,10 +2063,10 @@ func TestContextShouldBindBodyWith(t *testing.T) {
 			// When it binds to typeA and typeB, it finds the body is
 			// not typeB but typeA.
 			objA := typeA{}
-			assert.NoError(t, c.ShouldBindBodyWith(&objA, tt.bindingA))
+			require.NoError(t, c.ShouldBindBodyWith(&objA, tt.bindingA))
 			assert.Equal(t, typeA{"FOO"}, objA)
 			objB := typeB{}
-			assert.Error(t, c.ShouldBindBodyWith(&objB, tt.bindingB))
+			require.Error(t, c.ShouldBindBodyWith(&objB, tt.bindingB))
 			assert.NotEqual(t, typeB{"BAR"}, objB)
 		}
 		// bodyB to typeA and typeB
@@ -2084,10 +2079,10 @@ func TestContextShouldBindBodyWith(t *testing.T) {
 				"POST", "http://example.com", bytes.NewBufferString(tt.bodyB),
 			)
 			objA := typeA{}
-			assert.Error(t, c.ShouldBindBodyWith(&objA, tt.bindingA))
+			require.Error(t, c.ShouldBindBodyWith(&objA, tt.bindingA))
 			assert.NotEqual(t, typeA{"FOO"}, objA)
 			objB := typeB{}
-			assert.NoError(t, c.ShouldBindBodyWith(&objB, tt.bindingB))
+			require.NoError(t, c.ShouldBindBodyWith(&objB, tt.bindingB))
 			assert.Equal(t, typeB{"BAR"}, objB)
 		}
 	}
@@ -2136,22 +2131,22 @@ func TestContextShouldBindBodyWithJSON(t *testing.T) {
 		objJSON := typeJSON{}
 
 		if tt.bindingBody == binding.JSON {
-			assert.NoError(t, c.ShouldBindBodyWithJSON(&objJSON))
+			require.NoError(t, c.ShouldBindBodyWithJSON(&objJSON))
 			assert.Equal(t, typeJSON{"FOO"}, objJSON)
 		}
 
 		if tt.bindingBody == binding.XML {
-			assert.Error(t, c.ShouldBindBodyWithJSON(&objJSON))
+			require.Error(t, c.ShouldBindBodyWithJSON(&objJSON))
 			assert.Equal(t, typeJSON{}, objJSON)
 		}
 
 		if tt.bindingBody == binding.YAML {
-			assert.Error(t, c.ShouldBindBodyWithJSON(&objJSON))
+			require.Error(t, c.ShouldBindBodyWithJSON(&objJSON))
 			assert.Equal(t, typeJSON{}, objJSON)
 		}
 
 		if tt.bindingBody == binding.TOML {
-			assert.Error(t, c.ShouldBindBodyWithJSON(&objJSON))
+			require.Error(t, c.ShouldBindBodyWithJSON(&objJSON))
 			assert.Equal(t, typeJSON{}, objJSON)
 		}
 	}
@@ -2200,22 +2195,22 @@ func TestContextShouldBindBodyWithXML(t *testing.T) {
 		objXML := typeXML{}
 
 		if tt.bindingBody == binding.JSON {
-			assert.Error(t, c.ShouldBindBodyWithXML(&objXML))
+			require.Error(t, c.ShouldBindBodyWithXML(&objXML))
 			assert.Equal(t, typeXML{}, objXML)
 		}
 
 		if tt.bindingBody == binding.XML {
-			assert.NoError(t, c.ShouldBindBodyWithXML(&objXML))
+			require.NoError(t, c.ShouldBindBodyWithXML(&objXML))
 			assert.Equal(t, typeXML{"FOO"}, objXML)
 		}
 
 		if tt.bindingBody == binding.YAML {
-			assert.Error(t, c.ShouldBindBodyWithXML(&objXML))
+			require.Error(t, c.ShouldBindBodyWithXML(&objXML))
 			assert.Equal(t, typeXML{}, objXML)
 		}
 
 		if tt.bindingBody == binding.TOML {
-			assert.Error(t, c.ShouldBindBodyWithXML(&objXML))
+			require.Error(t, c.ShouldBindBodyWithXML(&objXML))
 			assert.Equal(t, typeXML{}, objXML)
 		}
 	}
@@ -2265,22 +2260,22 @@ func TestContextShouldBindBodyWithYAML(t *testing.T) {
 
 		// YAML belongs to a super collection of JSON, so JSON can be parsed by YAML
 		if tt.bindingBody == binding.JSON {
-			assert.NoError(t, c.ShouldBindBodyWithYAML(&objYAML))
+			require.NoError(t, c.ShouldBindBodyWithYAML(&objYAML))
 			assert.Equal(t, typeYAML{"FOO"}, objYAML)
 		}
 
 		if tt.bindingBody == binding.XML {
-			assert.Error(t, c.ShouldBindBodyWithYAML(&objYAML))
+			require.Error(t, c.ShouldBindBodyWithYAML(&objYAML))
 			assert.Equal(t, typeYAML{}, objYAML)
 		}
 
 		if tt.bindingBody == binding.YAML {
-			assert.NoError(t, c.ShouldBindBodyWithYAML(&objYAML))
+			require.NoError(t, c.ShouldBindBodyWithYAML(&objYAML))
 			assert.Equal(t, typeYAML{"FOO"}, objYAML)
 		}
 
 		if tt.bindingBody == binding.TOML {
-			assert.Error(t, c.ShouldBindBodyWithYAML(&objYAML))
+			require.Error(t, c.ShouldBindBodyWithYAML(&objYAML))
 			assert.Equal(t, typeYAML{}, objYAML)
 		}
 	}
@@ -2329,22 +2324,22 @@ func TestContextShouldBindBodyWithTOML(t *testing.T) {
 		objTOML := typeTOML{}
 
 		if tt.bindingBody == binding.JSON {
-			assert.Error(t, c.ShouldBindBodyWithTOML(&objTOML))
+			require.Error(t, c.ShouldBindBodyWithTOML(&objTOML))
 			assert.Equal(t, typeTOML{}, objTOML)
 		}
 
 		if tt.bindingBody == binding.XML {
-			assert.Error(t, c.ShouldBindBodyWithTOML(&objTOML))
+			require.Error(t, c.ShouldBindBodyWithTOML(&objTOML))
 			assert.Equal(t, typeTOML{}, objTOML)
 		}
 
 		if tt.bindingBody == binding.YAML {
-			assert.Error(t, c.ShouldBindBodyWithTOML(&objTOML))
+			require.Error(t, c.ShouldBindBodyWithTOML(&objTOML))
 			assert.Equal(t, typeTOML{}, objTOML)
 		}
 
 		if tt.bindingBody == binding.TOML {
-			assert.NoError(t, c.ShouldBindBodyWithTOML(&objTOML))
+			require.NoError(t, c.ShouldBindBodyWithTOML(&objTOML))
 			assert.Equal(t, typeTOML{"FOO"}, objTOML)
 		}
 	}
@@ -2399,27 +2394,27 @@ func TestContextShouldBindBodyWithPlain(t *testing.T) {
 
 		if tt.bindingBody == binding.Plain {
 			body := ""
-			assert.NoError(t, c.ShouldBindBodyWithPlain(&body))
-			assert.Equal(t, body, "foo=FOO")
+			require.NoError(t, c.ShouldBindBodyWithPlain(&body))
+			assert.Equal(t, "foo=FOO", body)
 		}
 
 		if tt.bindingBody == binding.JSON {
-			assert.NoError(t, c.ShouldBindBodyWithJSON(&objJSON))
+			require.NoError(t, c.ShouldBindBodyWithJSON(&objJSON))
 			assert.Equal(t, typeJSON{"FOO"}, objJSON)
 		}
 
 		if tt.bindingBody == binding.XML {
-			assert.Error(t, c.ShouldBindBodyWithJSON(&objJSON))
+			require.Error(t, c.ShouldBindBodyWithJSON(&objJSON))
 			assert.Equal(t, typeJSON{}, objJSON)
 		}
 
 		if tt.bindingBody == binding.YAML {
-			assert.Error(t, c.ShouldBindBodyWithJSON(&objJSON))
+			require.Error(t, c.ShouldBindBodyWithJSON(&objJSON))
 			assert.Equal(t, typeJSON{}, objJSON)
 		}
 
 		if tt.bindingBody == binding.TOML {
-			assert.Error(t, c.ShouldBindBodyWithJSON(&objJSON))
+			require.Error(t, c.ShouldBindBodyWithJSON(&objJSON))
 			assert.Equal(t, typeJSON{}, objJSON)
 		}
 	}
@@ -2428,10 +2423,10 @@ func TestContextShouldBindBodyWithPlain(t *testing.T) {
 func TestContextGolangContext(t *testing.T) {
 	c, _ := CreateTestContext(httptest.NewRecorder())
 	c.Request, _ = http.NewRequest("POST", "/", bytes.NewBufferString("{\"foo\":\"bar\", \"bar\":\"foo\"}"))
-	assert.NoError(t, c.Err())
+	require.NoError(t, c.Err())
 	assert.Nil(t, c.Done())
 	ti, ok := c.Deadline()
-	assert.Equal(t, ti, time.Time{})
+	assert.Equal(t, time.Time{}, ti)
 	assert.False(t, ok)
 	assert.Equal(t, c.Value(ContextRequestKey), c.Request)
 	assert.Equal(t, c.Value(ContextKey), c)
@@ -2480,7 +2475,7 @@ func TestContextGetRawData(t *testing.T) {
 	c.Request.Header.Add("Content-Type", MIMEPOSTForm)
 
 	data, err := c.GetRawData()
-	assert.Nil(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "Fetch binary post data", string(data))
 }
 
@@ -2551,7 +2546,7 @@ func TestContextStream(t *testing.T) {
 		}()
 
 		_, err := w.Write([]byte("test"))
-		assert.NoError(t, err)
+		require.NoError(t, err)
 
 		return stopStream
 	})
@@ -2569,7 +2564,7 @@ func TestContextStreamWithClientGone(t *testing.T) {
 		}()
 
 		_, err := writer.Write([]byte("test"))
-		assert.NoError(t, err)
+		require.NoError(t, err)
 
 		return true
 	})
@@ -2697,7 +2692,7 @@ func TestContextWithFallbackErrFromRequestContext(t *testing.T) {
 	// enable ContextWithFallback feature flag
 	c.engine.ContextWithFallback = true
 
-	assert.Nil(t, c.Err())
+	require.NoError(t, c.Err())
 
 	c2, _ := CreateTestContext(httptest.NewRecorder())
 	// enable ContextWithFallback feature flag
@@ -2846,7 +2841,7 @@ func TestContextAddParam(t *testing.T) {
 	c.AddParam(id, value)
 
 	v, ok := c.Params.Get(id)
-	assert.Equal(t, ok, true)
+	assert.True(t, ok)
 	assert.Equal(t, value, v)
 }
 

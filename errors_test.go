@@ -11,6 +11,7 @@ import (
 
 	"github.com/gin-gonic/gin/internal/json"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestError(t *testing.T) {
@@ -122,7 +123,7 @@ func TestErrorUnwrap(t *testing.T) {
 	})
 
 	// check that 'errors.Is()' and 'errors.As()' behave as expected :
-	assert.True(t, errors.Is(err, innerErr))
+	require.ErrorIs(t, err, innerErr)
 	var testErr TestErr
-	assert.True(t, errors.As(err, &testErr))
+	require.ErrorAs(t, err, &testErr)
 }

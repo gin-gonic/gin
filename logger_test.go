@@ -329,13 +329,13 @@ func TestIsOutputColor(t *testing.T) {
 	}
 
 	consoleColorMode = autoColor
-	assert.Equal(t, true, p.IsOutputColor())
+	assert.True(t, p.IsOutputColor())
 
 	ForceConsoleColor()
-	assert.Equal(t, true, p.IsOutputColor())
+	assert.True(t, p.IsOutputColor())
 
 	DisableConsoleColor()
-	assert.Equal(t, false, p.IsOutputColor())
+	assert.False(t, p.IsOutputColor())
 
 	// test with isTerm flag false.
 	p = LogFormatterParams{
@@ -343,13 +343,13 @@ func TestIsOutputColor(t *testing.T) {
 	}
 
 	consoleColorMode = autoColor
-	assert.Equal(t, false, p.IsOutputColor())
+	assert.False(t, p.IsOutputColor())
 
 	ForceConsoleColor()
-	assert.Equal(t, true, p.IsOutputColor())
+	assert.True(t, p.IsOutputColor())
 
 	DisableConsoleColor()
-	assert.Equal(t, false, p.IsOutputColor())
+	assert.False(t, p.IsOutputColor())
 
 	// reset console color mode.
 	consoleColorMode = autoColor

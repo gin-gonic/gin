@@ -17,6 +17,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // TODO
@@ -154,13 +155,13 @@ func TestGetMinVer(t *testing.T) {
 	var m uint64
 	var e error
 	_, e = getMinVer("go1")
-	assert.NotNil(t, e)
+	require.Error(t, e)
 	m, e = getMinVer("go1.1")
 	assert.Equal(t, uint64(1), m)
-	assert.Nil(t, e)
+	require.NoError(t, e)
 	m, e = getMinVer("go1.1.1")
-	assert.Nil(t, e)
+	require.NoError(t, e)
 	assert.Equal(t, uint64(1), m)
 	_, e = getMinVer("go1.1.1.1")
-	assert.NotNil(t, e)
+	require.Error(t, e)
 }
