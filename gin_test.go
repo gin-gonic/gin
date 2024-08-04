@@ -485,7 +485,11 @@ func TestListOfRoutes(t *testing.T) {
 	{
 		group.GET("/", handlerTest2)
 		group.GET("/:id", handlerTest1)
-		group.POST("/:id", handlerTest2)
+	}
+	postGroup := group.Group("")
+	postGroup.Use(handlerTest1)
+	{
+		postGroup.POST("/:id", handlerTest2)
 	}
 	router.Static("/static", ".")
 
@@ -493,29 +497,34 @@ func TestListOfRoutes(t *testing.T) {
 
 	assert.Len(t, list, 7)
 	assertRoutePresent(t, list, RouteInfo{
-		Method:  "GET",
-		Path:    "/favicon.ico",
-		Handler: "^(.*/vendor/)?github.com/gin-gonic/gin.handlerTest1$",
+		Method:        "GET",
+		Path:          "/favicon.ico",
+		Handler:       "^(.*/vendor/)?github.com/gin-gonic/gin.handlerTest1$",
+		HandlersChain: []HandlerFunc{handlerTest1},
 	})
 	assertRoutePresent(t, list, RouteInfo{
-		Method:  "GET",
-		Path:    "/",
-		Handler: "^(.*/vendor/)?github.com/gin-gonic/gin.handlerTest1$",
+		Method:        "GET",
+		Path:          "/",
+		Handler:       "^(.*/vendor/)?github.com/gin-gonic/gin.handlerTest1$",
+		HandlersChain: []HandlerFunc{handlerTest1},
 	})
 	assertRoutePresent(t, list, RouteInfo{
-		Method:  "GET",
-		Path:    "/users/",
-		Handler: "^(.*/vendor/)?github.com/gin-gonic/gin.handlerTest2$",
+		Method:        "GET",
+		Path:          "/users/",
+		Handler:       "^(.*/vendor/)?github.com/gin-gonic/gin.handlerTest2$",
+		HandlersChain: []HandlerFunc{handlerTest2},
 	})
 	assertRoutePresent(t, list, RouteInfo{
-		Method:  "GET",
-		Path:    "/users/:id",
-		Handler: "^(.*/vendor/)?github.com/gin-gonic/gin.handlerTest1$",
+		Method:        "GET",
+		Path:          "/users/:id",
+		Handler:       "^(.*/vendor/)?github.com/gin-gonic/gin.handlerTest1$",
+		HandlersChain: []HandlerFunc{handlerTest1},
 	})
 	assertRoutePresent(t, list, RouteInfo{
-		Method:  "POST",
-		Path:    "/users/:id",
-		Handler: "^(.*/vendor/)?github.com/gin-gonic/gin.handlerTest2$",
+		Method:        "POST",
+		Path:          "/users/:id",
+		Handler:       "^(.*/vendor/)?github.com/gin-gonic/gin.handlerTest2$",
+		HandlersChain: []HandlerFunc{handlerTest1, handlerTest2},
 	})
 }
 
@@ -689,6 +698,7 @@ func parseCIDR(cidr string) *net.IPNet {
 func assertRoutePresent(t *testing.T, gotRoutes RoutesInfo, wantRoute RouteInfo) {
 	for _, gotRoute := range gotRoutes {
 		if gotRoute.Path == wantRoute.Path && gotRoute.Method == wantRoute.Method {
+			assert.ObjectsAreEqualValues(gotRoute.HandlersChain, wantRoute.HandlersChain)
 			assert.Regexp(t, wantRoute.Handler, gotRoute.Handler)
 			return
 		}
