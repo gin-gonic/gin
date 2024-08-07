@@ -6,6 +6,7 @@ package gin
 
 import (
 	"bufio"
+	"errors"
 	"io"
 	"net"
 	"net/http"
@@ -109,7 +110,11 @@ func (w *responseWriter) Hijack() (net.Conn, *bufio.ReadWriter, error) {
 	if w.size < 0 {
 		w.size = 0
 	}
-	return w.ResponseWriter.(http.Hijacker).Hijack()
+	hijacker, ok := w.ResponseWriter.(http.Hijacker)
+	if !ok {
+		return nil, nil, errors.New("response writer does not support Hijack")
+	}
+	return hijacker.Hijack()
 }
 
 // CloseNotify implements the http.CloseNotifier interface.

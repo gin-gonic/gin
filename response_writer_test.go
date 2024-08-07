@@ -111,10 +111,8 @@ func TestResponseWriterHijack(t *testing.T) {
 	writer.reset(testWriter)
 	w := ResponseWriter(writer)
 
-	assert.Panics(t, func() {
-		_, _, err := w.Hijack()
-		require.NoError(t, err)
-	})
+	_, _, err := w.Hijack()
+	assert.Equal(t, "response writer does not support Hijack", err.Error())
 	assert.True(t, w.Written())
 
 	assert.Panics(t, func() {
