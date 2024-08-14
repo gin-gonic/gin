@@ -259,6 +259,128 @@ func main() {
 ids: map[b:hello a:1234]; names: map[second:tianou first:thinkerou]
 ```
 
+### Query string param as nested map
+
+#### Parse query params to nested map
+
+```sh
+GET /get?name=alice&page[number]=1&page[sort][order]=asc&created[days][]=5&created[days][]=7 HTTP/1.1
+```
+
+Notice that:
+- client can use standard name=value syntax and this will be mapped to the `key: value` in map
+- client can use map access syntax (`key[nested][deepNested]=value`) and this will be mapped to the nested map `key:map[nested:map[deepNested:value]]`
+- client can use array syntax even as value of map key (`key[nested][]=value1&key[nested][]=value2`) and this will be mapped to the array `key:map[nested:[value1 value2]]`
+
+```go
+package main
+
+import (
+    "fmt"
+    "github.com/gin-gonic/gin"  
+)
+
+func main() {
+  router := gin.Default()
+  
+  router.GET("/get", func(c *gin.Context) {
+    
+    paging, err := c.ShouldGetQueryNestedMap()
+    if err != nil {
+      c.JSON(400, gin.H{ "error": err.Error() })
+      return
+    }
+    
+    fmt.Printf("query: %v\n", paging)
+    c.JSON(200, paging)
+  })
+  
+  router.Run(":8080")
+}
+```
+
+```sh
+query: map[created:map[days:[5 7]] name:alice page:map[number:1 sort:map[order:asc]]]
+```
+
+#### Extract key as nested map
+
+```sh
+GET /get?page[number]=1&page[size]=50&page[sort][by]=id&page[sort][order]=asc HTTP/1.1
+```
+
+```go
+package main
+
+import (
+    "fmt"
+    "github.com/gin-gonic/gin"  
+)
+
+func main() {
+  router := gin.Default()
+  
+  router.GET("/get", func(c *gin.Context) {
+    
+    paging, err := c.ShouldGetQueryNestedMapForKey("page")
+    if err != nil {
+      c.JSON(400, gin.H{ "error": err.Error() })
+      return
+    }
+    
+    fmt.Printf("paging: %v\n", paging)
+    c.JSON(200, paging)
+  })
+  
+  router.Run(":8080")
+}
+```
+
+```sh
+paging: map[number:1 size:50 sort:map[by:id order:asc]]
+```
+
+#### Extract key as nested map with array as values
+
+It is possible to get the array values from the query string as well. 
+But the client need to use array syntax in the query string.
+
+```sh
+GET /get?filter[names][]=alice&filter[names][]=bob&filter[status]=new&filter[status]=old HTTP/1.1
+```
+
+```go
+package main
+
+import (
+  "fmt"
+  "github.com/gin-gonic/gin"
+)
+
+func main() {
+  router := gin.Default()
+  
+  router.GET("/get", func(c *gin.Context) {
+
+  filters, err := c.ShouldGetQueryNestedMapForKey("filter")
+  if err != nil {
+    c.JSON(400, gin.H{ "error": err.Error() })
+    return
+  }
+    
+    fmt.Printf("filters: %v\n", filters)
+    c.JSON(200, filters)
+  })
+  
+  router.Run(":8080")
+}
+```
+
+```sh
+filters: map[names:[alice bob] status:new]
+```
+Notice that status has only one value because it is not an explicit array.
+
 ### Upload files
 
 #### Single file
