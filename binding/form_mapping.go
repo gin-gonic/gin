@@ -202,7 +202,11 @@ func trySplit(vs []string, field reflect.StructField) (newVs []string, err error
 		return vs, fmt.Errorf("%s is not supported in the collection_format. (csv, ssv, pipes)", cfTag)
 	}
 
-	newVs = make([]string, 0)
+	totalLength := 0
+	for _, v := range vs {
+		totalLength += strings.Count(v, sep) + 1
+	}
+	newVs = make([]string, 0, totalLength)
 	for _, v := range vs {
 		newVs = append(newVs, strings.Split(v, sep)...)
 	}
