@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestMappingBaseTypes(t *testing.T) {
@@ -288,7 +289,7 @@ func TestMappingCollectionFormat(t *testing.T) {
 		"array_tsv":   {"1	2"},
 		"array_pipes": {"1|2"},
 	}, "form")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	assert.Equal(t, []int{1, 2}, s.SliceMulti)
 	assert.Equal(t, []int{1, 2}, s.SliceCsv)
