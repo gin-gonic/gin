@@ -264,6 +264,45 @@ func TestMappingArray(t *testing.T) {
 	require.Error(t, err)
 }
 
+func TestMappingCollectionFormat(t *testing.T) {
+	var s struct {
+		SliceMulti []int  `form:"slice_multi" collection_format:"multi"`
+		SliceCsv   []int  `form:"slice_csv" collection_format:"csv"`
+		SliceSsv   []int  `form:"slice_ssv" collection_format:"ssv"`
+		SliceTsv   []int  `form:"slice_tsv" collection_format:"tsv"`
+		SlicePipes []int  `form:"slice_pipes" collection_format:"pipes"`
+		ArrayMulti [2]int `form:"array_multi" collection_format:"multi"`
+		ArrayCsv   [2]int `form:"array_csv" collection_format:"csv"`
+		ArraySsv   [2]int `form:"array_ssv" collection_format:"ssv"`
+		ArrayTsv   [2]int `form:"array_tsv" collection_format:"tsv"`
+		ArrayPipes [2]int `form:"array_pipes" collection_format:"pipes"`
+	}
+	err := mappingByPtr(&s, formSource{
+		"slice_multi": {"1", "2"},
+		"slice_csv":   {"1,2"},
+		"slice_ssv":   {"1 2"},
+		"slice_tsv":   {"1	2"},
+		"slice_pipes": {"1|2"},
+		"array_multi": {"1", "2"},
+		"array_csv":   {"1,2"},
+		"array_ssv":   {"1 2"},
+		"array_tsv":   {"1	2"},
+		"array_pipes": {"1|2"},
+	}, "form")
+	require.NoError(t, err)
+
+	assert.Equal(t, []int{1, 2}, s.SliceMulti)
+	assert.Equal(t, []int{1, 2}, s.SliceCsv)
+	assert.Equal(t, []int{1, 2}, s.SliceSsv)
+	assert.Equal(t, []int{1, 2}, s.SliceTsv)
+	assert.Equal(t, []int{1, 2}, s.SlicePipes)
+	assert.Equal(t, [2]int{1, 2}, s.ArrayMulti)
+	assert.Equal(t, [2]int{1, 2}, s.ArrayCsv)
+	assert.Equal(t, [2]int{1, 2}, s.ArraySsv)
+	assert.Equal(t, [2]int{1, 2}, s.ArrayTsv)
+	assert.Equal(t, [2]int{1, 2}, s.ArrayPipes)
+}
+
 func TestMappingStructField(t *testing.T) {
 	var s struct {
 		J struct {

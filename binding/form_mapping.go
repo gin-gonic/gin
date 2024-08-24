@@ -182,6 +182,38 @@ func trySetCustom(val string, value reflect.Value) (isSet bool, err error) {
 	return false, nil
 }
 
+func trySplit(vs []string, field reflect.StructField) (newVs []string, err error) {
+	cfTag := field.Tag.Get("collection_format")
+	if cfTag == "" || cfTag == "multi" {
+		return vs, nil
+	}
+
+	var sep string
+	switch cfTag {
+	case "csv":
+		sep = ","
+	case "ssv":
+		sep = " "
+	case "tsv":
+		sep = "\t"
+	case "pipes":
+		sep = "|"
+	default:
+		return vs, fmt.Errorf("%s is not supported in the collection_format. (csv, ssv, pipes)", cfTag)
+	}
+
+	totalLength := 0
+	for _, v := range vs {
+		totalLength += strings.Count(v, sep) + 1
+	}
+	newVs = make([]string, 0, totalLength)
+	for _, v := range vs {
+		newVs = append(newVs, strings.Split(v, sep)...)
+	}
+
+	return newVs, nil
+}
+
 func setByForm(value reflect.Value, field reflect.StructField, form map[string][]string, tagValue string, opt setOptions) (isSet bool, err error) {
 	vs, ok := form[tagValue]
 	if !ok && !opt.isDefaultExists {
@@ -198,6 +230,10 @@ func setByForm(value reflect.Value, field reflect.StructField, form map[string][
 			return ok, err
 		}
 
+		if vs, err = trySplit(vs, field); err != nil {
+			return false, err
+		}
+
 		return true, setSlice(vs, value, field)
 	case reflect.Array:
 		if !ok {
@@ -206,6 +242,10 @@ func setByForm(value reflect.Value, field reflect.StructField, form map[string][
 
 		if ok, err = trySetCustom(vs[0], value); ok {
 			return ok, err
+		}
+
+		if vs, err = trySplit(vs, field); err != nil {
+			return false, err
 		}
 
 		if len(vs) != value.Len() {
