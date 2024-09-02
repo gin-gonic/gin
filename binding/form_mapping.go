@@ -159,6 +159,14 @@ func tryToSetValue(value reflect.Value, field reflect.StructField, setter setter
 		if k, v := head(opt, "="); k == "default" {
 			setOpt.isDefaultExists = true
 			setOpt.defaultValue = v
+
+			// convert semicolon-separated default values to csv-separated values for processing in setByForm
+			if field.Type.Kind() == reflect.Slice || field.Type.Kind() == reflect.Array {
+				cfTag := field.Tag.Get("collection_format")
+				if cfTag == "" || cfTag == "multi" || cfTag == "csv" {
+					setOpt.defaultValue = strings.ReplaceAll(v, ";", ",")
+				}
+			}
 		}
 	}
 
@@ -224,6 +232,12 @@ func setByForm(value reflect.Value, field reflect.StructField, form map[string][
 	case reflect.Slice:
 		if !ok {
 			vs = []string{opt.defaultValue}
+
+			// pre-process the default value for multi if present
+			cfTag := field.Tag.Get("collection_format")
+			if cfTag == "" || cfTag == "multi" {
+				vs = strings.Split(opt.defaultValue, ",")
+			}
 		}
 
 		if ok, err = trySetCustom(vs[0], value); ok {
@@ -238,6 +252,12 @@ func setByForm(value reflect.Value, field reflect.StructField, form map[string][
 	case reflect.Array:
 		if !ok {
 			vs = []string{opt.defaultValue}
+
+			// pre-process the default value for multi if present
+			cfTag := field.Tag.Get("collection_format")
+			if cfTag == "" || cfTag == "multi" {
+				vs = strings.Split(opt.defaultValue, ",")
+			}
 		}
 
 		if ok, err = trySetCustom(vs[0], value); ok {
