@@ -69,6 +69,7 @@ func TestMappingBaseTypes(t *testing.T) {
 
 func TestMappingDefault(t *testing.T) {
 	var s struct {
+		Str   string `form:",default=defaultVal"`
 		Int   int    `form:",default=9"`
 		Slice []int  `form:",default=9"`
 		Array [1]int `form:",default=9"`
@@ -76,6 +77,7 @@ func TestMappingDefault(t *testing.T) {
 	err := mappingByPtr(&s, formSource{}, "form")
 	require.NoError(t, err)
 
+	assert.Equal(t, "defaultVal", s.Str)
 	assert.Equal(t, 9, s.Int)
 	assert.Equal(t, []int{9}, s.Slice)
 	assert.Equal(t, [1]int{9}, s.Array)
@@ -150,6 +152,24 @@ func TestMappingForm(t *testing.T) {
 	err := mapForm(&s, map[string][]string{"field": {"6"}})
 	require.NoError(t, err)
 	assert.Equal(t, 6, s.F)
+}
+
+func TestMappingFormFieldNotSent(t *testing.T) {
+	var s struct {
+		F string `form:"field,default=defVal"`
+	}
+	err := mapForm(&s, map[string][]string{})
+	require.NoError(t, err)
+	assert.Equal(t, "defVal", s.F)
+}
+
+func TestMappingFormWithEmptyToDefault(t *testing.T) {
+	var s struct {
+		F string `form:"field,default=DefVal"`
+	}
+	err := mapForm(&s, map[string][]string{"field": {""}})
+	require.NoError(t, err)
+	assert.Equal(t, "DefVal", s.F)
 }
 
 func TestMapFormWithTag(t *testing.T) {
