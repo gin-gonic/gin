@@ -6,6 +6,7 @@ package gin
 
 import (
 	"errors"
+	"fmt"
 	"io"
 	"log"
 	"math"
@@ -71,7 +72,7 @@ type Context struct {
 	mu sync.RWMutex
 
 	// Keys is a key/value pair exclusively for the context of each request.
-	Keys map[string]any
+	Keys map[any]any
 
 	// Errors is a list of errors attached to all the handlers/middlewares who used this context.
 	Errors errorMsgs
@@ -128,7 +129,7 @@ func (c *Context) Copy() *Context {
 	cp.fullPath = c.fullPath
 
 	cKeys := c.Keys
-	cp.Keys = make(map[string]any, len(cKeys))
+	cp.Keys = make(map[any]any, len(cKeys))
 	c.mu.RLock()
 	for k, v := range cKeys {
 		cp.Keys[k] = v
@@ -264,11 +265,11 @@ func (c *Context) Error(err error) *Error {
 
 // Set is used to store a new key/value pair exclusively for this context.
 // It also lazy initializes  c.Keys if it was not used previously.
-func (c *Context) Set(key string, value any) {
+func (c *Context) Set(key any, value any) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	if c.Keys == nil {
-		c.Keys = make(map[string]any)
+		c.Keys = make(map[any]any)
 	}
 
 	c.Keys[key] = value
@@ -276,7 +277,7 @@ func (c *Context) Set(key string, value any) {
 
 // Get returns the value for the given key, ie: (value, true).
 // If the value does not exist it returns (nil, false)
-func (c *Context) Get(key string) (value any, exists bool) {
+func (c *Context) Get(key any) (value any, exists bool) {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 	value, exists = c.Keys[key]
@@ -284,15 +285,15 @@ func (c *Context) Get(key string) (value any, exists bool) {
 }
 
 // MustGet returns the value for the given key if it exists, otherwise it panics.
-func (c *Context) MustGet(key string) any {
+func (c *Context) MustGet(key any) any {
 	if value, exists := c.Get(key); exists {
 		return value
 	}
-	panic("Key \"" + key + "\" does not exist")
+	panic(fmt.Errorf("key \"%v\" does not exist", key))
 }
 
 // GetString returns the value associated with the key as a string.
-func (c *Context) GetString(key string) (s string) {
+func (c *Context) GetString(key any) (s string) {
 	if val, ok := c.Get(key); ok && val != nil {
 		s, _ = val.(string)
 	}
@@ -300,7 +301,7 @@ func (c *Context) GetString(key string) (s string) {
 }
 
 // GetBool returns the value associated with the key as a boolean.
-func (c *Context) GetBool(key string) (b bool) {
+func (c *Context) GetBool(key any) (b bool) {
 	if val, ok := c.Get(key); ok && val != nil {
 		b, _ = val.(bool)
 	}
@@ -308,7 +309,7 @@ func (c *Context) GetBool(key string) (b bool) {
 }
 
 // GetInt returns the value associated with the key as an integer.
-func (c *Context) GetInt(key string) (i int) {
+func (c *Context) GetInt(key any) (i int) {
 	if val, ok := c.Get(key); ok && val != nil {
 		i, _ = val.(int)
 	}
@@ -316,7 +317,7 @@ func (c *Context) GetInt(key string) (i int) {
 }
 
 // GetInt64 returns the value associated with the key as an integer.
-func (c *Context) GetInt64(key string) (i64 int64) {
+func (c *Context) GetInt64(key any) (i64 int64) {
 	if val, ok := c.Get(key); ok && val != nil {
 		i64, _ = val.(int64)
 	}
@@ -324,7 +325,7 @@ func (c *Context) GetInt64(key string) (i64 int64) {
 }
 
 // GetUint returns the value associated with the key as an unsigned integer.
-func (c *Context) GetUint(key string) (ui uint) {
+func (c *Context) GetUint(key any) (ui uint) {
 	if val, ok := c.Get(key); ok && val != nil {
 		ui, _ = val.(uint)
 	}
@@ -332,7 +333,7 @@ func (c *Context) GetUint(key string) (ui uint) {
 }
 
 // GetUint64 returns the value associated with the key as an unsigned integer.
-func (c *Context) GetUint64(key string) (ui64 uint64) {
+func (c *Context) GetUint64(key any) (ui64 uint64) {
 	if val, ok := c.Get(key); ok && val != nil {
 		ui64, _ = val.(uint64)
 	}
@@ -340,7 +341,7 @@ func (c *Context) GetUint64(key string) (ui64 uint64) {
 }
 
 // GetFloat64 returns the value associated with the key as a float64.
-func (c *Context) GetFloat64(key string) (f64 float64) {
+func (c *Context) GetFloat64(key any) (f64 float64) {
 	if val, ok := c.Get(key); ok && val != nil {
 		f64, _ = val.(float64)
 	}
@@ -348,7 +349,7 @@ func (c *Context) GetFloat64(key string) (f64 float64) {
 }
 
 // GetTime returns the value associated with the key as time.
-func (c *Context) GetTime(key string) (t time.Time) {
+func (c *Context) GetTime(key any) (t time.Time) {
 	if val, ok := c.Get(key); ok && val != nil {
 		t, _ = val.(time.Time)
 	}
@@ -356,7 +357,7 @@ func (c *Context) GetTime(key string) (t time.Time) {
 }
 
 // GetDuration returns the value associated with the key as a duration.
-func (c *Context) GetDuration(key string) (d time.Duration) {
+func (c *Context) GetDuration(key any) (d time.Duration) {
 	if val, ok := c.Get(key); ok && val != nil {
 		d, _ = val.(time.Duration)
 	}
@@ -364,7 +365,7 @@ func (c *Context) GetDuration(key string) (d time.Duration) {
 }
 
 // GetStringSlice returns the value associated with the key as a slice of strings.
-func (c *Context) GetStringSlice(key string) (ss []string) {
+func (c *Context) GetStringSlice(key any) (ss []string) {
 	if val, ok := c.Get(key); ok && val != nil {
 		ss, _ = val.([]string)
 	}
@@ -372,7 +373,7 @@ func (c *Context) GetStringSlice(key string) (ss []string) {
 }
 
 // GetStringMap returns the value associated with the key as a map of interfaces.
-func (c *Context) GetStringMap(key string) (sm map[string]any) {
+func (c *Context) GetStringMap(key any) (sm map[string]any) {
 	if val, ok := c.Get(key); ok && val != nil {
 		sm, _ = val.(map[string]any)
 	}
@@ -380,7 +381,7 @@ func (c *Context) GetStringMap(key string) (sm map[string]any) {
 }
 
 // GetStringMapString returns the value associated with the key as a map of strings.
-func (c *Context) GetStringMapString(key string) (sms map[string]string) {
+func (c *Context) GetStringMapString(key any) (sms map[string]string) {
 	if val, ok := c.Get(key); ok && val != nil {
 		sms, _ = val.(map[string]string)
 	}
@@ -388,7 +389,7 @@ func (c *Context) GetStringMapString(key string) (sms map[string]string) {
 }
 
 // GetStringMapStringSlice returns the value associated with the key as a map to a slice of strings.
-func (c *Context) GetStringMapStringSlice(key string) (smss map[string][]string) {
+func (c *Context) GetStringMapStringSlice(key any) (smss map[string][]string) {
 	if val, ok := c.Get(key); ok && val != nil {
 		smss, _ = val.(map[string][]string)
 	}
