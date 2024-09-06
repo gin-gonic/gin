@@ -261,6 +261,9 @@ func setByForm(value reflect.Value, field reflect.StructField, form map[string][
 
 		if len(vs) > 0 {
 			val = vs[0]
+			if val == "" {
+				val = opt.defaultValue
+			}
 		}
 		if ok, err := trySetCustom(val, value); ok {
 			return ok, err
