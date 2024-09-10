@@ -48,6 +48,36 @@ func TestOnlyFilesFS_Open_err(t *testing.T) {
 	assert.Nil(t, file)
 }
 
+func TestOnlyHTMLFS_Open(t *testing.T) {
+	var testFile *os.File
+	mockFS := &mockFileSystem{
+		open: func(name string) (http.File, error) {
+			return testFile, nil
+		},
+	}
+	fs := &OnlyHTMLFS{FileSystem: mockFS}
+
+	file, err := fs.Open("foo")
+
+	require.NoError(t, err)
+	assert.Equal(t, testFile, file)
+}
+
+func TestOnlyHTMLFS_Open_err(t *testing.T) {
+	testError := errors.New("mock")
+	mockFS := &mockFileSystem{
+		open: func(_ string) (http.File, error) {
+			return nil, testError
+		},
+	}
+	fs := &OnlyHTMLFS{FileSystem: mockFS}
+
+	file, err := fs.Open("foo")
+
+	require.ErrorIs(t, err, testError)
+	assert.Nil(t, file)
+}
+
 func Test_neuteredReaddirFile_Readdir(t *testing.T) {
 	n := neutralizedReaddirFile{}
 

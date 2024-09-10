@@ -326,8 +326,8 @@ func TestLoadHTMLFilesFuncMap(t *testing.T) {
 	assert.Equal(t, "Date: 2017/07/01", string(resp))
 }
 
-//go:embed testdata/template/*
-var htmlFS embed.FS
+//go:embed testdata/template/*.tmpl
+var tmplFS embed.FS
 
 func TestLoadHTMLFSTestMode(t *testing.T) {
 	ts := setupHTMLFiles(
@@ -335,7 +335,7 @@ func TestLoadHTMLFSTestMode(t *testing.T) {
 		TestMode,
 		false,
 		func(router *Engine) {
-			router.LoadHTMLFS(http.FS(htmlFS), "testdata/template/hello.tmpl", "testdata/template/raw.tmpl")
+			router.LoadHTMLFS(http.FS(tmplFS), "testdata/template/hello.tmpl", "testdata/template/raw.tmpl")
 		},
 	)
 	defer ts.Close()
@@ -355,7 +355,7 @@ func TestLoadHTMLFSDebugMode(t *testing.T) {
 		DebugMode,
 		false,
 		func(router *Engine) {
-			router.LoadHTMLFS(http.FS(htmlFS), "testdata/template/hello.tmpl", "testdata/template/raw.tmpl")
+			router.LoadHTMLFS(http.FS(tmplFS), "testdata/template/hello.tmpl", "testdata/template/raw.tmpl")
 		},
 	)
 	defer ts.Close()
@@ -375,7 +375,7 @@ func TestLoadHTMLFSReleaseMode(t *testing.T) {
 		ReleaseMode,
 		false,
 		func(router *Engine) {
-			router.LoadHTMLFS(http.FS(htmlFS), "testdata/template/hello.tmpl", "testdata/template/raw.tmpl")
+			router.LoadHTMLFS(http.FS(tmplFS), "testdata/template/hello.tmpl", "testdata/template/raw.tmpl")
 		},
 	)
 	defer ts.Close()
@@ -395,7 +395,7 @@ func TestLoadHTMLFSUsingTLS(t *testing.T) {
 		TestMode,
 		true,
 		func(router *Engine) {
-			router.LoadHTMLFS(http.FS(htmlFS), "testdata/template/hello.tmpl", "testdata/template/raw.tmpl")
+			router.LoadHTMLFS(http.FS(tmplFS), "testdata/template/hello.tmpl", "testdata/template/raw.tmpl")
 		},
 	)
 	defer ts.Close()
@@ -422,7 +422,7 @@ func TestLoadHTMLFSFuncMap(t *testing.T) {
 		TestMode,
 		false,
 		func(router *Engine) {
-			router.LoadHTMLFS(http.FS(htmlFS), "testdata/template/hello.tmpl", "testdata/template/raw.tmpl")
+			router.LoadHTMLFS(http.FS(tmplFS), "testdata/template/hello.tmpl", "testdata/template/raw.tmpl")
 		},
 	)
 	defer ts.Close()
