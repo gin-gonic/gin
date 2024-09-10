@@ -6,6 +6,7 @@ package render
 
 import (
 	"html/template"
+	"io/fs"
 	"net/http"
 )
 
@@ -31,10 +32,12 @@ type HTMLProduction struct {
 
 // HTMLDebug contains template delims and pattern and function with file list.
 type HTMLDebug struct {
-	Files   []string
-	Glob    string
-	Delims  Delims
-	FuncMap template.FuncMap
+	Files    []string
+	Glob     string
+	FS       fs.FS
+	Patterns []string
+	Delims   Delims
+	FuncMap  template.FuncMap
 }
 
 // HTML contains template reference and its name with given interface object.
@@ -73,7 +76,10 @@ func (r HTMLDebug) loadTemplate() *template.Template {
 	if r.Glob != "" {
 		return template.Must(template.New("").Delims(r.Delims.Left, r.Delims.Right).Funcs(r.FuncMap).ParseGlob(r.Glob))
 	}
-	panic("the HTML debug render was created without files or glob pattern")
+	if r.FS != nil && len(r.Patterns) > 0 {
+		return template.Must(template.New("").Delims(r.Delims.Left, r.Delims.Right).Funcs(r.FuncMap).ParseFS(r.FS, r.Patterns...))
+	}
+	panic("the HTML debug render was created without files or glob pattern or file system with patterns")
 }
 
 // Render (HTML) executes template and writes its result with custom ContentType for response.

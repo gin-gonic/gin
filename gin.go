@@ -285,6 +285,18 @@ func (engine *Engine) LoadHTMLFiles(files ...string) {
 	engine.SetHTMLTemplate(templ)
 }
 
+// LoadHTMLFS loads an http.FileSystem and a slice of patterns
+// and associates the result with HTML renderer.
+func (engine *Engine) LoadHTMLFS(fs http.FileSystem, patterns ...string) {
+	if IsDebugging() {
+		engine.HTMLRender = render.HTMLDebug{FS: OnlyHTMLFS{fs}, Patterns: patterns, FuncMap: engine.FuncMap, Delims: engine.delims}
+		return
+	}
+
+	templ := template.Must(template.New("").Delims(engine.delims.Left, engine.delims.Right).Funcs(engine.FuncMap).ParseFS(OnlyHTMLFS{fs}, patterns...))
+	engine.SetHTMLTemplate(templ)
+}
+
 // SetHTMLTemplate associate a template with HTML renderer.
 func (engine *Engine) SetHTMLTemplate(templ *template.Template) {
 	if len(engine.trees) > 0 {
