@@ -5,7 +5,6 @@
 package gin
 
 import (
-	"io/fs"
 	"net/http"
 	"os"
 )
@@ -24,22 +23,6 @@ func (o OnlyFilesFS) Open(name string) (http.File, error) {
 	}
 
 	return neutralizedReaddirFile{f}, nil
-}
-
-// OnlyHTMLFS implements an [fs.FS].
-type OnlyHTMLFS struct {
-	FileSystem http.FileSystem
-}
-
-// Open passes `Open` to the upstream implementation and return an [fs.File].
-func (o OnlyHTMLFS) Open(name string) (fs.File, error) {
-	f, err := o.FileSystem.Open(name)
-
-	if err != nil {
-		return nil, err
-	}
-
-	return fs.File(f), nil
 }
 
 // neutralizedReaddirFile wraps http.File with a specific implementation of `Readdir`.
