@@ -252,6 +252,30 @@ func TestContextGetInt(t *testing.T) {
 	assert.Equal(t, 1, c.GetInt("int"))
 }
 
+func TestContextGetInt8(t *testing.T) {
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	key := "int8"
+	value := int8(0x7F)
+	c.Set(key, value)
+	assert.Equal(t, value, c.GetInt8(key))
+}
+
+func TestContextGetInt16(t *testing.T) {
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	key := "int16"
+	value := int16(0x7FFF)
+	c.Set(key, value)
+	assert.Equal(t, value, c.GetInt16(key))
+}
+
+func TestContextGetInt32(t *testing.T) {
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	key := "int32"
+	value := int32(0x7FFFFFFF)
+	c.Set(key, value)
+	assert.Equal(t, value, c.GetInt32(key))
+}
+
 func TestContextGetInt64(t *testing.T) {
 	c, _ := CreateTestContext(httptest.NewRecorder())
 	c.Set("int64", int64(42424242424242))
@@ -264,10 +288,42 @@ func TestContextGetUint(t *testing.T) {
 	assert.Equal(t, uint(1), c.GetUint("uint"))
 }
 
+func TestContextGetUint8(t *testing.T) {
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	key := "uint8"
+	value := uint8(0xFF)
+	c.Set(key, value)
+	assert.Equal(t, value, c.GetUint8(key))
+}
+
+func TestContextGetUint16(t *testing.T) {
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	key := "uint16"
+	value := uint16(0xFFFF)
+	c.Set(key, value)
+	assert.Equal(t, value, c.GetUint16(key))
+}
+
+func TestContextGetUint32(t *testing.T) {
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	key := "uint32"
+	value := uint32(0xFFFFFFFF)
+	c.Set(key, value)
+	assert.Equal(t, value, c.GetUint32(key))
+}
+
 func TestContextGetUint64(t *testing.T) {
 	c, _ := CreateTestContext(httptest.NewRecorder())
 	c.Set("uint64", uint64(18446744073709551615))
 	assert.Equal(t, uint64(18446744073709551615), c.GetUint64("uint64"))
+}
+
+func TestContextGetFloat32(t *testing.T) {
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	key := "float32"
+	value := float32(3.14)
+	c.Set(key, value)
+	assert.Equal(t, value, c.GetFloat32(key))
 }
 
 func TestContextGetFloat64(t *testing.T) {
@@ -287,6 +343,102 @@ func TestContextGetDuration(t *testing.T) {
 	c, _ := CreateTestContext(httptest.NewRecorder())
 	c.Set("duration", time.Second)
 	assert.Equal(t, time.Second, c.GetDuration("duration"))
+}
+
+func TestContextGetIntSlice(t *testing.T) {
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	key := "int-slice"
+	value := []int{1, 2}
+	c.Set(key, value)
+	assert.Equal(t, value, c.GetIntSlice(key))
+}
+
+func TestContextGetInt8Slice(t *testing.T) {
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	key := "int8-slice"
+	value := []int8{1, 2}
+	c.Set(key, value)
+	assert.Equal(t, value, c.GetInt8Slice(key))
+}
+
+func TestContextGetInt16Slice(t *testing.T) {
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	key := "int16-slice"
+	value := []int16{1, 2}
+	c.Set(key, value)
+	assert.Equal(t, value, c.GetInt16Slice(key))
+}
+
+func TestContextGetInt32Slice(t *testing.T) {
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	key := "int32-slice"
+	value := []int32{1, 2}
+	c.Set(key, value)
+	assert.Equal(t, value, c.GetInt32Slice(key))
+}
+
+func TestContextGetInt64Slice(t *testing.T) {
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	key := "int64-slice"
+	value := []int64{1, 2}
+	c.Set(key, value)
+	assert.Equal(t, value, c.GetInt64Slice(key))
+}
+
+func TestContextGetUintSlice(t *testing.T) {
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	key := "uint-slice"
+	value := []uint{1, 2}
+	c.Set(key, value)
+	assert.Equal(t, value, c.GetUintSlice(key))
+}
+
+func TestContextGetUint8Slice(t *testing.T) {
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	key := "uint8-slice"
+	value := []uint8{1, 2}
+	c.Set(key, value)
+	assert.Equal(t, value, c.GetUint8Slice(key))
+}
+
+func TestContextGetUint16Slice(t *testing.T) {
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	key := "uint16-slice"
+	value := []uint16{1, 2}
+	c.Set(key, value)
+	assert.Equal(t, value, c.GetUint16Slice(key))
+}
+
+func TestContextGetUint32Slice(t *testing.T) {
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	key := "uint32-slice"
+	value := []uint32{1, 2}
+	c.Set(key, value)
+	assert.Equal(t, value, c.GetUint32Slice(key))
+}
+
+func TestContextGetUint64Slice(t *testing.T) {
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	key := "uint64-slice"
+	value := []uint64{1, 2}
+	c.Set(key, value)
+	assert.Equal(t, value, c.GetUint64Slice(key))
+}
+
+func TestContextGetFloat32Slice(t *testing.T) {
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	key := "float32-slice"
+	value := []float32{1, 2}
+	c.Set(key, value)
+	assert.Equal(t, value, c.GetFloat32Slice(key))
+}
+
+func TestContextGetFloat64Slice(t *testing.T) {
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	key := "float64-slice"
+	value := []float64{1, 2}
+	c.Set(key, value)
+	assert.Equal(t, value, c.GetFloat64Slice(key))
 }
 
 func TestContextGetStringSlice(t *testing.T) {

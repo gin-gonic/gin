@@ -315,7 +315,31 @@ func (c *Context) GetInt(key string) (i int) {
 	return
 }
 
-// GetInt64 returns the value associated with the key as an integer.
+// GetInt8 returns the value associated with the key as an integer 8.
+func (c *Context) GetInt8(key string) (i8 int8) {
+	if val, ok := c.Get(key); ok && val != nil {
+		i8, _ = val.(int8)
+	}
+	return
+}
+
+// GetInt16 returns the value associated with the key as an integer 16.
+func (c *Context) GetInt16(key string) (i16 int16) {
+	if val, ok := c.Get(key); ok && val != nil {
+		i16, _ = val.(int16)
+	}
+	return
+}
+
+// GetInt32 returns the value associated with the key as an integer 32.
+func (c *Context) GetInt32(key string) (i32 int32) {
+	if val, ok := c.Get(key); ok && val != nil {
+		i32, _ = val.(int32)
+	}
+	return
+}
+
+// GetInt64 returns the value associated with the key as an integer 64.
 func (c *Context) GetInt64(key string) (i64 int64) {
 	if val, ok := c.Get(key); ok && val != nil {
 		i64, _ = val.(int64)
@@ -331,10 +355,42 @@ func (c *Context) GetUint(key string) (ui uint) {
 	return
 }
 
-// GetUint64 returns the value associated with the key as an unsigned integer.
+// GetUint8 returns the value associated with the key as an unsigned integer 8.
+func (c *Context) GetUint8(key string) (ui8 uint8) {
+	if val, ok := c.Get(key); ok && val != nil {
+		ui8, _ = val.(uint8)
+	}
+	return
+}
+
+// GetUint16 returns the value associated with the key as an unsigned integer 16.
+func (c *Context) GetUint16(key string) (ui16 uint16) {
+	if val, ok := c.Get(key); ok && val != nil {
+		ui16, _ = val.(uint16)
+	}
+	return
+}
+
+// GetUint32 returns the value associated with the key as an unsigned integer 32.
+func (c *Context) GetUint32(key string) (ui32 uint32) {
+	if val, ok := c.Get(key); ok && val != nil {
+		ui32, _ = val.(uint32)
+	}
+	return
+}
+
+// GetUint64 returns the value associated with the key as an unsigned integer 64.
 func (c *Context) GetUint64(key string) (ui64 uint64) {
 	if val, ok := c.Get(key); ok && val != nil {
 		ui64, _ = val.(uint64)
+	}
+	return
+}
+
+// GetFloat32 returns the value associated with the key as a float32.
+func (c *Context) GetFloat32(key string) (f32 float32) {
+	if val, ok := c.Get(key); ok && val != nil {
+		f32, _ = val.(float32)
 	}
 	return
 }
@@ -359,6 +415,90 @@ func (c *Context) GetTime(key string) (t time.Time) {
 func (c *Context) GetDuration(key string) (d time.Duration) {
 	if val, ok := c.Get(key); ok && val != nil {
 		d, _ = val.(time.Duration)
+	}
+	return
+}
+
+func (c *Context) GetIntSlice(key string) (is []int) {
+	if val, ok := c.Get(key); ok && val != nil {
+		is, _ = val.([]int)
+	}
+	return
+}
+
+func (c *Context) GetInt8Slice(key string) (i8s []int8) {
+	if val, ok := c.Get(key); ok && val != nil {
+		i8s, _ = val.([]int8)
+	}
+	return
+}
+
+func (c *Context) GetInt16Slice(key string) (i16s []int16) {
+	if val, ok := c.Get(key); ok && val != nil {
+		i16s, _ = val.([]int16)
+	}
+	return
+}
+
+func (c *Context) GetInt32Slice(key string) (i32s []int32) {
+	if val, ok := c.Get(key); ok && val != nil {
+		i32s, _ = val.([]int32)
+	}
+	return
+}
+
+func (c *Context) GetInt64Slice(key string) (i64s []int64) {
+	if val, ok := c.Get(key); ok && val != nil {
+		i64s, _ = val.([]int64)
+	}
+	return
+}
+
+func (c *Context) GetUintSlice(key string) (uis []uint) {
+	if val, ok := c.Get(key); ok && val != nil {
+		uis, _ = val.([]uint)
+	}
+	return
+}
+
+func (c *Context) GetUint8Slice(key string) (ui8s []uint8) {
+	if val, ok := c.Get(key); ok && val != nil {
+		ui8s, _ = val.([]uint8)
+	}
+	return
+}
+
+func (c *Context) GetUint16Slice(key string) (ui16s []uint16) {
+	if val, ok := c.Get(key); ok && val != nil {
+		ui16s, _ = val.([]uint16)
+	}
+	return
+}
+
+func (c *Context) GetUint32Slice(key string) (ui32s []uint32) {
+	if val, ok := c.Get(key); ok && val != nil {
+		ui32s, _ = val.([]uint32)
+	}
+	return
+}
+
+func (c *Context) GetUint64Slice(key string) (ui64s []uint64) {
+	if val, ok := c.Get(key); ok && val != nil {
+		ui64s, _ = val.([]uint64)
+	}
+	return
+}
+
+func (c *Context) GetFloat32Slice(key string) (f32s []float32) {
+	if val, ok := c.Get(key); ok && val != nil {
+		f32s, _ = val.([]float32)
+	}
+	return
+}
+
+func (c *Context) GetFloat64Slice(key string) (f64s []float64) {
+	if val, ok := c.Get(key); ok && val != nil {
+		f64s, _ = val.([]float64)
 	}
 	return
 }
