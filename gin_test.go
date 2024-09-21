@@ -678,6 +678,25 @@ func TestPrepareTrustedCIRDsWith(t *testing.T) {
 	}
 }
 
+func TestPathFor(t *testing.T) {
+	r := New()
+
+	getIndex := func(c *Context) {}
+	r.GET("/", getIndex)
+
+	users := r.Group("/users")
+
+	postUser := func(c *Context) {}
+	users.POST("", postUser)
+
+	getUser := func(c *Context) {}
+	users.GET("/:name", getUser)
+
+	assert.Equal(t, "/", r.PathFor(getIndex))
+	assert.Equal(t, "/users", r.PathFor(postUser))
+	assert.Equal(t, "/users/gopher", r.PathFor(getUser, ":name", "gopher"))
+}
+
 func parseCIDR(cidr string) *net.IPNet {
 	_, parsedCIDR, err := net.ParseCIDR(cidr)
 	if err != nil {

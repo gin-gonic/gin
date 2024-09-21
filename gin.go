@@ -371,6 +371,24 @@ func (engine *Engine) Routes() (routes RoutesInfo) {
 	return routes
 }
 
+// Routes returns a slice of registered routes, including some useful information, such as:
+// the http method, path and the handler name.
+func (engine *Engine) Route(handler HandlerFunc) (route RouteInfo, ok bool) {
+	handlerName := nameOfFunction(handler)
+	routes := RoutesInfo{}
+	for _, tree := range engine.trees {
+		routes = iterate("", tree.method, routes, tree.root)
+
+		for _, route := range routes {
+			if route.Handler == handlerName {
+				return route, true
+			}
+		}
+	}
+
+	return RouteInfo{}, false
+}
+
 func iterate(path, method string, routes RoutesInfo, root *node) RoutesInfo {
 	path += root.path
 	if len(root.handlers) > 0 {
@@ -643,6 +661,43 @@ func (engine *Engine) HandleContext(c *Context) {
 	c.index = oldIndexValue
 }
 
+// PathFor returns the path registered for the specified handler function.
+// Route values are passed pair-wise as key value.
+func (engine *Engine) PathFor(handler HandlerFunc, values ...interface{}) string {
+	route, ok := engine.Route(handler)
+
+	if !ok || len(route.Path) == 0 || len(values)%2 != 0 {
+		return ""
+	}
+
+	url := route.Path
+	params := make(map[string]string)
+	if len(values) > 0 {
+		key := ""
+		for k, v := range values {
+			if k%2 == 0 {
+				key = fmt.Sprint(v)
+			} else {
+				params[key] = fmt.Sprint(v)
+			}
+		}
+	}
+	urls := strings.Split(url, "/")
+	for _, v := range urls {
+		if v == "" {
+			continue
+		}
+		if v[0:1] == ":" {
+			if u, ok := params[v]; ok {
+				delete(params, v)
+				url = strings.Replace(url, v, u, 1)
+			}
+		}
+	}
+
+	return url + toQuerystring(params)
+}
+
 func (engine *Engine) handleHTTPRequest(c *Context) {
 	httpMethod := c.Request.Method
 	rPath := c.Request.URL.Path
@@ -770,4 +825,15 @@ func redirectRequest(c *Context) {
 	debugPrint("redirecting request %d: %s --> %s", code, rPath, rURL)
 	http.Redirect(c.Writer, req, rURL, code)
 	c.writermem.WriteHeaderNow()
+}
+
+func toQuerystring(params map[string]string) string {
+	if len(params) == 0 {
+		return ""
+	}
+	u := "?"
+	for k, v := range params {
+		u += k + "=" + v + "&"
+	}
+	return strings.TrimRight(u, "&")
 }
