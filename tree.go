@@ -86,14 +86,14 @@ func (n *node) addChild(child *node) {
 
 func countParams(path string) uint16 {
 	var n uint16
-	s := bytesconv.StringToBytes(path)
+	s := []byte(path)
 	n += uint16(bytes.Count(s, strColon))
 	n += uint16(bytes.Count(s, strStar))
 	return n
 }
 
 func countSections(path string) uint16 {
-	s := bytesconv.StringToBytes(path)
+	s := []byte(path)
 	return uint16(bytes.Count(s, strSlash))
 }
 
