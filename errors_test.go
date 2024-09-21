@@ -9,7 +9,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/gin-gonic/gin/internal/json"
+	"github.com/gin-gonic/gin/codec/json"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -33,7 +33,7 @@ func TestError(t *testing.T) {
 		"meta":  "some data",
 	}, err.JSON())
 
-	jsonBytes, _ := json.Marshal(err)
+	jsonBytes, _ := json.Api.Marshal(err)
 	assert.Equal(t, "{\"error\":\"test error\",\"meta\":\"some data\"}", string(jsonBytes))
 
 	err.SetMeta(H{ //nolint: errcheck
@@ -92,13 +92,13 @@ Error #03: third
 		H{"error": "second", "meta": "some data"},
 		H{"error": "third", "status": "400"},
 	}, errs.JSON())
-	jsonBytes, _ := json.Marshal(errs)
+	jsonBytes, _ := json.Api.Marshal(errs)
 	assert.Equal(t, "[{\"error\":\"first\"},{\"error\":\"second\",\"meta\":\"some data\"},{\"error\":\"third\",\"status\":\"400\"}]", string(jsonBytes))
 	errs = errorMsgs{
 		{Err: errors.New("first"), Type: ErrorTypePrivate},
 	}
 	assert.Equal(t, H{"error": "first"}, errs.JSON())
-	jsonBytes, _ = json.Marshal(errs)
+	jsonBytes, _ = json.Api.Marshal(errs)
 	assert.Equal(t, "{\"error\":\"first\"}", string(jsonBytes))
 
 	errs = errorMsgs{}
