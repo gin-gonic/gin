@@ -5,6 +5,7 @@
 package gin
 
 import (
+	"bytes"
 	"errors"
 	"io"
 	"log"
@@ -926,6 +927,10 @@ func (c *Context) ShouldBindBodyWith(obj any, bb binding.BindingBody) (err error
 		if err != nil {
 			return err
 		}
+		// close the body
+		c.Request.Body.Close()
+		// reset the body to the original unread state
+		c.Request.Body = ioutil.NopCloser(bytes.NewBuffer(body))
 		c.Set(BodyBytesKey, body)
 	}
 	return bb.BindBody(body, obj)
