@@ -237,7 +237,8 @@ func TestContextSetGetValues(t *testing.T) {
 func TestContextGetString(t *testing.T) {
 	c, _ := CreateTestContext(httptest.NewRecorder())
 	c.Set("string", "this is a string")
-	assert.Equal(t, "this is a string", c.GetString("string"))
+	val, _ := c.GetString("string")
+	assert.Equal(t, "this is a string", val)
 }
 
 func TestContextSetGetBool(t *testing.T) {

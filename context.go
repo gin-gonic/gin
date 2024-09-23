@@ -6,6 +6,7 @@ package gin
 
 import (
 	"errors"
+	"fmt"
 	"io"
 	"log"
 	"math"
@@ -292,12 +293,21 @@ func (c *Context) MustGet(key string) any {
 }
 
 // GetString returns the value associated with the key as a string.
-func (c *Context) GetString(key string) (s string) {
+func (c *Context) GetString(key string) (s string, err error) {
 	if val, ok := c.Get(key); ok && val != nil {
-		s, _ = val.(string)
+		if str, ok := val.(string); ok {
+			s = str
+			return s, nil
+		} else {
+			err = fmt.Errorf("value associated with key '%s' cannot be converted to a string", key)
+			return "", err
+		}
+	} else {
+		err = fmt.Errorf("no value found for key '%s'", key)
+		return "", err
 	}
-	return
 }
+
 
 // GetBool returns the value associated with the key as a boolean.
 func (c *Context) GetBool(key string) (b bool) {
