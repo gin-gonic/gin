@@ -169,3 +169,7 @@ Here are some awesome projects that are using the [Gin](https://github.com/gin-g
 Gin is the work of hundreds of contributors. We appreciate your help!
 
 Please see [CONTRIBUTING.md](CONTRIBUTING.md) for details on submitting patches and the contribution workflow.
+
+### Contributors
+
+<img src="https://markupgo.com/github/gin-gonic/gin/contributors?count=0&circleSize=32&circleRadius=32&center=true" width="100%" /> 
