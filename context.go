@@ -951,7 +951,7 @@ func (c *Context) ShouldBindBodyWithTOML(obj any) error {
 	return c.ShouldBindBodyWith(obj, binding.TOML)
 }
 
-// ShouldBindBodyWithJSON is a shortcut for c.ShouldBindBodyWith(obj, binding.JSON).
+// ShouldBindBodyWithPlain is a shortcut for c.ShouldBindBodyWith(obj, binding.Plain).
 func (c *Context) ShouldBindBodyWithPlain(obj any) error {
 	return c.ShouldBindBodyWith(obj, binding.Plain)
 }
