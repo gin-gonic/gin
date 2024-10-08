@@ -172,12 +172,13 @@ func main() {
   router := gin.Default()
 
   // Query string parameters are parsed using the existing underlying request object.
-  // The request responds to an url matching:  /welcome?firstname=Jane&lastname=Doe
+  // The request responds to an url matching:  /welcome?firstname=Jane&lastname=Doe&want_pizza=true
   router.GET("/welcome", func(c *gin.Context) {
     firstname := c.DefaultQuery("firstname", "Guest")
     lastname := c.Query("lastname") // shortcut for c.Request.URL.Query().Get("lastname")
+	wantPizza := c.QueryBool("want_pizza")
 
-    c.String(http.StatusOK, "Hello %s %s", firstname, lastname)
+    c.String(http.StatusOK, "%s %s want a pizza? %v", firstname, lastname, wantPizza)
   })
   router.Run(":8080")
 }

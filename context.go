@@ -15,6 +15,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -642,6 +643,61 @@ func (c *Context) QueryMap(key string) (dicts map[string]string) {
 func (c *Context) GetQueryMap(key string) (map[string]string, bool) {
 	c.initQueryCache()
 	return c.get(c.queryCache, key)
+}
+
+// QueryBool returns a value of boolean type for given query key.
+// HINT: if given key is not exist or not valid, it returns false.
+//
+//	GET /?name=alex&force=true&delivery=
+//	c.QueryBool("force") == true
+//	c.QueryBool("name") == false
+//	c.QueryBool("delivery") == false
+func (c *Context) QueryBool(key string) (bool, error) {
+
+	value, _ := c.GetQuery(key)
+	boolValue, err := strconv.ParseBool(value)
+
+	return boolValue, err
+}
+
+// GetQueryBoolDefault returns the keyed boolean url query value if it exists and valid,
+// otherwise it returns the specified defaultValue string.
+//
+//	GET /?name=alex&force=true&delivery=
+//	c.GetQueryBoolDefault("force", false) == true
+//	c.GetQueryBoolDefault("name", false) == false
+//	c.GetQueryBoolDefault("delivery", false) == false
+func (c *Context) GetQueryBoolDefault(key string, defaultValue bool) bool {
+
+	if value, ok := c.GetQuery(key); ok {
+		boolValue, err := strconv.ParseBool(value)
+		if err != nil {
+			return defaultValue
+		}
+		return boolValue
+	}
+
+	return defaultValue
+}
+
+// GetQueryBool is like QueryBool(), it returns the keyed url query value but in boolean,
+// if key exists and valid it returns (value, true)
+// but if key is not exist or not valid, it returns (true, false)
+//
+//	GET /?name=alex&force=false&delivery=
+//	GetQueryBool("force") == false, true
+//	GetQueryBool("name") == true, false
+//	GetQueryBool("delivery") == true, false
+func (c *Context) GetQueryBool(key string) (bool, bool) {
+	if value, ok := c.GetQuery(key); ok {
+		boolValue, err := strconv.ParseBool(value)
+		if err != nil {
+			return true, false
+		}
+		return boolValue, true
+	}
+
+	return true, false
 }
 
 // PostForm returns the specified key from a POST urlencoded form or multipart form

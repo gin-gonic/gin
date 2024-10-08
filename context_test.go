@@ -537,7 +537,7 @@ func TestContextHandler(t *testing.T) {
 
 func TestContextQuery(t *testing.T) {
 	c, _ := CreateTestContext(httptest.NewRecorder())
-	c.Request, _ = http.NewRequest("GET", "http://example.com/?foo=bar&page=10&id=", nil)
+	c.Request, _ = http.NewRequest("GET", "http://example.com/?foo=bar&page=10&read=true&id=", nil)
 
 	value, ok := c.GetQuery("foo")
 	assert.True(t, ok)
@@ -568,6 +568,35 @@ func TestContextQuery(t *testing.T) {
 	assert.False(t, ok)
 	assert.Empty(t, value)
 	assert.Empty(t, c.PostForm("foo"))
+
+	valueBool, _ := c.QueryBool("read")
+	assert.True(t, valueBool)
+	assert.Equal(t, true, valueBool)
+
+	valueBool, _ = c.QueryBool("id")
+	assert.False(t, valueBool)
+	assert.Equal(t, false, valueBool)
+
+	valueBool, ok = c.GetQueryBool("read")
+	assert.True(t, ok)
+	assert.True(t, valueBool)
+	assert.Equal(t, true, valueBool)
+	assert.Equal(t, true, ok)
+
+	valueBool, ok = c.GetQueryBool("id")
+	assert.False(t, ok)
+	assert.True(t, valueBool)
+	assert.Equal(t, valueBool, true)
+	assert.Equal(t, ok, false)
+
+	valueBool = c.GetQueryBoolDefault("read", false)
+	assert.True(t, valueBool)
+	assert.Equal(t, true, valueBool)
+
+	valueBool = c.GetQueryBoolDefault("id", true)
+	assert.True(t, valueBool)
+	assert.Equal(t, true, valueBool)
+
 }
 
 func TestContextInitQueryCache(t *testing.T) {
