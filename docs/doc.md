@@ -172,7 +172,7 @@ func main() {
   router := gin.Default()
 
   // Query string parameters are parsed using the existing underlying request object.
-  // The request responds to an url matching:  /welcome?firstname=Jane&lastname=Doe
+  // The request responds to an url matching: /welcome?firstname=Jane&lastname=Doe
   router.GET("/welcome", func(c *gin.Context) {
     firstname := c.DefaultQuery("firstname", "Guest")
     lastname := c.Query("lastname") // shortcut for c.Request.URL.Query().Get("lastname")
@@ -516,19 +516,19 @@ Sample Output
 ```go
 func main() {
   router := gin.New()
-  
+
   // skip logging for desired paths by setting SkipPaths in LoggerConfig
   loggerConfig := gin.LoggerConfig{SkipPaths: []string{"/metrics"}}
-  
+
   // skip logging based on your logic by setting Skip func in LoggerConfig
   loggerConfig.Skip = func(c *gin.Context) bool {
       // as an example skip non server side errors
       return c.Writer.Status() < http.StatusInternalServerError
   }
-  
+
   router.Use(gin.LoggerWithConfig(loggerConfig))
   router.Use(gin.Recovery())
-  
+
   // skipped
   router.GET("/metrics", func(c *gin.Context) {
       c.Status(http.StatusNotImplemented)
@@ -543,7 +543,7 @@ func main() {
   router.GET("/data", func(c *gin.Context) {
     c.Status(http.StatusNotImplemented)
   })
-  
+
   router.Run(":8080")
 }
 
@@ -615,7 +615,7 @@ You can also specify that specific fields are required. If a field is decorated 
 ```go
 // Binding from JSON
 type Login struct {
-  User     string `form:"user" json:"user" xml:"user"  binding:"required"`
+  User     string `form:"user" json:"user" xml:"user" binding:"required"`
   Password string `form:"password" json:"password" xml:"password" binding:"required"`
 }
 
@@ -1252,7 +1252,7 @@ func main() {
 
 #### JSONP
 
-Using JSONP to request data from a server  in a different domain. Add callback to response body if the query parameter callback exists.
+Using JSONP to request data from a server in a different domain. Add callback to response body if the query parameter callback exists.
 
 ```go
 func main() {
@@ -1301,7 +1301,7 @@ func main() {
 
 #### PureJSON
 
-Normally, JSON replaces special HTML characters with their unicode entities, e.g. `<` becomes  `\u003c`. If you want to encode such characters literally, you can use PureJSON instead.
+Normally, JSON replaces special HTML characters with their unicode entities, e.g. `<` becomes `\u003c`. If you want to encode such characters literally, you can use PureJSON instead.
 This feature is unavailable in Go 1.6 and lower.
 
 ```go
@@ -1336,7 +1336,7 @@ func main() {
   router.StaticFS("/more_static", http.Dir("my_file_system"))
   router.StaticFile("/favicon.ico", "./resources/favicon.ico")
   router.StaticFileFS("/more_favicon.ico", "more_favicon.ico", http.Dir("my_file_system"))
-  
+
   // Listen and serve on 0.0.0.0:8080
   router.Run(":8080")
 }
@@ -2320,7 +2320,7 @@ or network CIDRs from where clients which their request headers related to clien
 IP can be trusted. They can be IPv4 addresses, IPv4 CIDRs, IPv6 addresses or
 IPv6 CIDRs.
 
-**Attention:** Gin trust all proxies by default if you don't specify a trusted 
+**Attention:** Gin trust all proxies by default if you don't specify a trusted
 proxy using the function above, **this is NOT safe**. At the same time, if you don't
 use any proxy, you can disable this feature by using `Engine.SetTrustedProxies(nil)`,
 then `Context.ClientIP()` will return the remote address directly to avoid some
@@ -2349,7 +2349,7 @@ func main() {
 ```
 
 **Notice:** If you are using a CDN service, you can set the `Engine.TrustedPlatform`
-to skip TrustedProxies check, it has a higher priority than TrustedProxies. 
+to skip TrustedProxies check, it has a higher priority than TrustedProxies.
 Look at the example below:
 
 ```go
