@@ -632,7 +632,7 @@ func TestContextQueryAndPostForm(t *testing.T) {
 	c, _ := CreateTestContext(httptest.NewRecorder())
 	body := bytes.NewBufferString("foo=bar&page=11&both=&foo=second")
 	c.Request, _ = http.NewRequest("POST",
-		"/?both=GET&id=main&id=omit&array[]=first&array[]=second&ids[a]=hi&ids[b]=3.14", body)
+		"/?both=GET&id=main&id=omit&array[]=first&array[]=second&ids[a]=hi&ids[b]=3.14&filter[t]=hi&filter[t]=hello", body)
 	c.Request.Header.Add("Content-Type", MIMEPOSTForm)
 
 	assert.Equal(t, "bar", c.DefaultPostForm("foo", "none"))
@@ -721,6 +721,10 @@ func TestContextQueryAndPostForm(t *testing.T) {
 	dicts = c.QueryMap("ids")
 	assert.Equal(t, "hi", dicts["a"])
 	assert.Equal(t, "3.14", dicts["b"])
+
+	maparr := c.QueryMapArray("filter")
+	assert.Equal(t, "hi", maparr["t"][0])
+	assert.Equal(t, "hello", maparr["t"][1])
 
 	dicts = c.QueryMap("nokey")
 	assert.Empty(t, dicts)

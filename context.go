@@ -644,6 +644,20 @@ func (c *Context) GetQueryMap(key string) (map[string]string, bool) {
 	return c.get(c.queryCache, key)
 }
 
+// QueryMapArray returns a map for a given query key.
+// Same as QueryMap, but the value in the map is an array
+func (c *Context) QueryMapArray(key string) map[string][]string {
+	dicts, _ := c.GetQueryMapArray(key)
+	return dicts
+}
+
+// GetQueryMapArray returns a map for a given query key, plus a boolean value
+// whether at least one value exists for the given key.
+func (c *Context) GetQueryMapArray(key string) (map[string][]string, bool) {
+	c.initQueryCache()
+	return c.getarr(c.queryCache, key)
+}
+
 // PostForm returns the specified key from a POST urlencoded form or multipart form
 // when it exists, otherwise it returns an empty string `("")`.
 func (c *Context) PostForm(key string) (value string) {
@@ -726,6 +740,22 @@ func (c *Context) get(m map[string][]string, key string) (map[string]string, boo
 			if j := strings.IndexByte(k[i+1:], ']'); j >= 1 {
 				exist = true
 				dicts[k[i+1:][:j]] = v[0]
+			}
+		}
+	}
+	return dicts, exist
+}
+
+// getarr is an internal method. same as get, but the value in the map is an array
+// since get only returns the first value
+func (c *Context) getarr(m map[string][]string, key string) (map[string][]string, bool) {
+	dicts := make(map[string][]string)
+	exist := false
+	for k, v := range m {
+		if i := strings.IndexByte(k, '['); i >= 1 && k[0:i] == key {
+			if j := strings.IndexByte(k[i+1:], ']'); j >= 1 {
+				exist = true
+				dicts[k[i+1:][:j]] = v
 			}
 		}
 	}
