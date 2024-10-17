@@ -369,7 +369,7 @@ func (n *node) insertChild(path string, fullPath string, handlers HandlersChain)
 
 		// currently fixed width 1 for '/'
 		i--
-		if path[i] != '/' {
+		if i < 0 || path[i] != '/' {
 			panic("no / before catch-all in path '" + fullPath + "'")
 		}
 
