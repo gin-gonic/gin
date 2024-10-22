@@ -13,6 +13,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 type header struct {
@@ -386,7 +387,7 @@ func TestRouteStaticFile(t *testing.T) {
 	}
 	defer os.Remove(f.Name())
 	_, err = f.WriteString("Gin Web Framework")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	f.Close()
 
 	dir, filename := filepath.Split(f.Name())
@@ -421,7 +422,7 @@ func TestRouteStaticFileFS(t *testing.T) {
 	}
 	defer os.Remove(f.Name())
 	_, err = f.WriteString("Gin Web Framework")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	f.Close()
 
 	dir, filename := filepath.Split(f.Name())
@@ -484,7 +485,7 @@ func TestRouterMiddlewareAndStatic(t *testing.T) {
 	// Content-Type='text/plain; charset=utf-8' when go version <= 1.16,
 	// else, Content-Type='text/x-go; charset=utf-8'
 	assert.NotEqual(t, "", w.Header().Get("Content-Type"))
-	assert.NotEqual(t, w.Header().Get("Last-Modified"), "Mon, 02 Jan 2006 15:04:05 MST")
+	assert.NotEqual(t, "Mon, 02 Jan 2006 15:04:05 MST", w.Header().Get("Last-Modified"))
 	assert.Equal(t, "Mon, 02 Jan 2006 15:04:05 MST", w.Header().Get("Expires"))
 	assert.Equal(t, "Gin Framework", w.Header().Get("x-GIN"))
 }

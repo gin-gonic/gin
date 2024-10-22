@@ -17,6 +17,7 @@ linters:
     - nilerr
     - nolintlint
     - revive
+    - testifylint
     - wastedassign
 
 linters-settings:
@@ -33,6 +34,8 @@ linters-settings:
       - G112
       - G201
       - G203
+  testifylint:
+    enable-all: true
 
 issues:
   exclude-rules:

@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 type mockFileSystem struct {
@@ -28,7 +29,7 @@ func TestOnlyFilesFS_Open(t *testing.T) {
 
 	file, err := fs.Open("foo")
 
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, testFile, file.(neutralizedReaddirFile).File)
 }
 
@@ -43,7 +44,7 @@ func TestOnlyFilesFS_Open_err(t *testing.T) {
 
 	file, err := fs.Open("foo")
 
-	assert.ErrorIs(t, err, testError)
+	require.ErrorIs(t, err, testError)
 	assert.Nil(t, file)
 }
 
@@ -52,7 +53,7 @@ func Test_neuteredReaddirFile_Readdir(t *testing.T) {
 
 	res, err := n.Readdir(0)
 
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Nil(t, res)
 }
 

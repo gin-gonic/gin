@@ -26,6 +26,8 @@
   - [Custom Validators](#custom-validators)
   - [Only Bind Query String](#only-bind-query-string)
   - [Bind Query String or Post Data](#bind-query-string-or-post-data)
+  - [Bind default value if none provided](#bind-default-value-if-none-provided)
+  - [Collection format for arrays](#collection-format-for-arrays)
   - [Bind Uri](#bind-uri)
   - [Bind custom unmarshaler](#bind-custom-unmarshaler)
   - [Bind Header](#bind-header)
@@ -338,16 +340,16 @@ func main() {
   router := gin.Default()
 
   // Simple group: v1
-  v1 := router.Group("/v1")
   {
+    v1 := router.Group("/v1")
     v1.POST("/login", loginEndpoint)
     v1.POST("/submit", submitEndpoint)
     v1.POST("/read", readEndpoint)
   }
 
   // Simple group: v2
-  v2 := router.Group("/v2")
   {
+    v2 := router.Group("/v2")
     v2.POST("/login", loginEndpoint)
     v2.POST("/submit", submitEndpoint)
     v2.POST("/read", readEndpoint)
@@ -524,7 +526,7 @@ func main() {
       return c.Writer.Status() < http.StatusInternalServerError
   }
   
-  engine.Use(gin.LoggerWithConfig(loggerConfig))
+  router.Use(gin.LoggerWithConfig(loggerConfig))
   router.Use(gin.Recovery())
   
   // skipped
@@ -859,6 +861,106 @@ Test it with:
 
 ```sh
 curl -X GET "localhost:8085/testing?name=appleboy&address=xyz&birthday=1992-03-15&createTime=1562400033000000123&unixTime=1562400033"
+```
+
+
+### Bind default value if none provided
+
+If the server should bind a default value to a field when the client does not provide one, specify the default value using the `default` key within the `form` tag:
+
+```
+package main
+
+import (
+	"net/http"
+
+	"github.com/gin-gonic/gin"
+)
+
+type Person struct {
+	Name      string    `form:"name,default=William"`
+	Age       int       `form:"age,default=10"`
+	Friends   []string  `form:"friends,default=Will;Bill"`
+	Addresses [2]string `form:"addresses,default=foo bar" collection_format:"ssv"`
+	LapTimes  []int     `form:"lap_times,default=1;2;3" collection_format:"csv"`
+}
+
+func main() {
+	g := gin.Default()
+	g.POST("/person", func(c *gin.Context) {
+		var req Person
+		if err := c.ShouldBindQuery(&req); err != nil {
+			c.JSON(http.StatusBadRequest, err)
+			return
+		}
+		c.JSON(http.StatusOK, req)
+	})
+	_ = g.Run("localhost:8080")
+}
+```
+
+```
+curl -X POST http://localhost:8080/person
+{"Name":"William","Age":10,"Friends":["Will","Bill"],"Colors":["red","blue"],"LapTimes":[1,2,3]}
+```
+
+NOTE: For default [collection values](#collection-format-for-arrays), the following rules apply:
+- Since commas are used to delimit tag options, they are not supported within a default value and will result in undefined behavior
+- For the collection formats "multi" and "csv", a semicolon should be used in place of a comma to delimited default values
+- Since semicolons are used to delimit default values for "multi" and "csv", they are not supported within a default value for "multi" and "csv"
+
+
+#### Collection format for arrays
+
+| Format          | Description                                               | Example                 |
+| --------------- | --------------------------------------------------------- | ----------------------- |
+| multi (default) | Multiple parameter instances rather than multiple values. | key=foo&key=bar&key=baz |
+| csv             | Comma-separated values.                                   | foo,bar,baz             |
+| ssv             | Space-separated values.                                   | foo bar baz             |
+| tsv             | Tab-separated values.                                     | "foo\tbar\tbaz"         |
+| pipes           | Pipe-separated values.                                    | foo\|bar\|baz           |
+
+```go
+package main
+
+import (
+	"log"
+	"time"
+	"github.com/gin-gonic/gin"
+)
+
+type Person struct {
+	Name       string    `form:"name"`
+	Addresses  []string  `form:"addresses" collection_format:"csv"`
+	Birthday   time.Time `form:"birthday" time_format:"2006-01-02" time_utc:"1"`
+	CreateTime time.Time `form:"createTime" time_format:"unixNano"`
+	UnixTime   time.Time `form:"unixTime" time_format:"unix"`
+}
+
+func main() {
+	route := gin.Default()
+	route.GET("/testing", startPage)
+	route.Run(":8085")
+}
+func startPage(c *gin.Context) {
+	var person Person
+	// If `GET`, only `Form` binding engine (`query`) used.
+	// If `POST`, first checks the `content-type` for `JSON` or `XML`, then uses `Form` (`form-data`).
+	// See more at https://github.com/gin-gonic/gin/blob/master/binding/binding.go#L48
+        if c.ShouldBind(&person) == nil {
+                log.Println(person.Name)
+                log.Println(person.Addresses)
+                log.Println(person.Birthday)
+                log.Println(person.CreateTime)
+                log.Println(person.UnixTime)
+        }
+	c.String(200, "Success")
+}
+```
+
+Test it with:
+```sh
+$ curl -X GET "localhost:8085/testing?name=appleboy&addresses=foo,bar&birthday=1992-03-15&createTime=1562400033000000123&unixTime=1562400033"
 ```
 
 ### Bind Uri
