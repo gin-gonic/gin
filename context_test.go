@@ -1153,7 +1153,7 @@ func TestContextRenderNoContentHTMLString(t *testing.T) {
 	assert.Equal(t, "text/html; charset=utf-8", w.Header().Get("Content-Type"))
 }
 
-// TestContextData tests that the response can be written from `bytestring`
+// TestContextRenderData tests that the response can be written from `bytestring`
 // with specified MIME type
 func TestContextRenderData(t *testing.T) {
 	w := httptest.NewRecorder()
@@ -1550,7 +1550,7 @@ func TestContextIsAborted(t *testing.T) {
 	assert.True(t, c.IsAborted())
 }
 
-// TestContextData tests that the response can be written from `bytestring`
+// TestContextAbortWithStatus tests that the response can be written from `bytestring`
 // with specified MIME type
 func TestContextAbortWithStatus(t *testing.T) {
 	w := httptest.NewRecorder()
