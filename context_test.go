@@ -323,7 +323,7 @@ func TestContextGetFloat32(t *testing.T) {
 	key := "float32"
 	value := float32(3.14)
 	c.Set(key, value)
-	assert.Equal(t, value, c.GetFloat32(key))
+	assert.InDelta(t, value, c.GetFloat32(key), 0.01)
 }
 
 func TestContextGetFloat64(t *testing.T) {
@@ -2857,7 +2857,8 @@ func TestContextWithFallbackValueFromRequestContext(t *testing.T) {
 		{
 			name: "c with struct context key",
 			getContextAndKey: func() (*Context, any) {
-				var key struct{}
+				type KeyStruct struct{} // https://staticcheck.dev/docs/checks/#SA1029
+				var key KeyStruct
 				c, _ := CreateTestContext(httptest.NewRecorder())
 				// enable ContextWithFallback feature flag
 				c.engine.ContextWithFallback = true
