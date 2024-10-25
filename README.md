@@ -102,6 +102,7 @@ The documentation is also available on [gin-gonic.com](https://gin-gonic.com) in
 - [한국어](https://gin-gonic.com/ko-kr/docs/)
 - [Turkish](https://gin-gonic.com/tr/docs/)
 - [Persian](https://gin-gonic.com/fa/docs/)
+- [Português](https://gin-gonic.com/pt/docs/)
 
 ### Articles
 
