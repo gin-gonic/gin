@@ -323,7 +323,7 @@ func TestContextGetFloat32(t *testing.T) {
 	key := "float32"
 	value := float32(3.14)
 	c.Set(key, value)
-	assert.Equal(t, value, c.GetFloat32(key))
+	assert.InDelta(t, value, c.GetFloat32(key), 0.0001)
 }
 
 func TestContextGetFloat64(t *testing.T) {
@@ -610,7 +610,6 @@ func TestContextInitQueryCache(t *testing.T) {
 			assert.Equal(t, test.expectedQueryCache, test.testContext.queryCache)
 		})
 	}
-
 }
 
 func TestContextDefaultQueryOnEmptyRequest(t *testing.T) {
@@ -2857,13 +2856,13 @@ func TestContextWithFallbackValueFromRequestContext(t *testing.T) {
 		{
 			name: "c with struct context key",
 			getContextAndKey: func() (*Context, any) {
-				var key struct{}
+				type contextKey struct{}
 				c, _ := CreateTestContext(httptest.NewRecorder())
 				// enable ContextWithFallback feature flag
 				c.engine.ContextWithFallback = true
 				c.Request, _ = http.NewRequest("POST", "/", nil)
-				c.Request = c.Request.WithContext(context.WithValue(context.TODO(), key, "value"))
-				return c, key
+				c.Request = c.Request.WithContext(context.WithValue(context.TODO(), contextKey{}, "value"))
+				return c, contextKey(contextKey{})
 			},
 			value: "value",
 		},
