@@ -69,6 +69,9 @@ func CustomRecoveryWithWriter(out io.Writer, handle RecoveryFunc) HandlerFunc {
 						}
 					}
 				}
+				if errors.Is(err, http.ErrAbortHandler) {
+					brokenPipe = true
+				}
 				if logger != nil {
 					stack := stack(3)
 					httpRequest, _ := httputil.DumpRequest(c.Request, false)
