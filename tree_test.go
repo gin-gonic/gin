@@ -993,3 +993,28 @@ func TestTreeInvalidEscape(t *testing.T) {
 		}
 	}
 }
+
+func TestWildcardInvalidSlash(t *testing.T) {
+	const panicMsgPrefix = "no / before catch-all in path"
+
+	routes := map[string]bool{
+		"/foo/bar":  true,
+		"/foo/x*zy": false,
+		"/foo/b*r":  false,
+	}
+
+	for route, valid := range routes {
+		tree := &node{}
+		recv := catchPanic(func() {
+			tree.addRoute(route, nil)
+		})
+
+		if recv == nil != valid {
+			t.Fatalf("%s should be %t but got %v", route, valid, recv)
+		}
+
+		if rs, ok := recv.(string); recv != nil && (!ok || !strings.HasPrefix(rs, panicMsgPrefix)) {
+			t.Fatalf(`"Expected panic "%s" for route '%s', got "%v"`, panicMsgPrefix, route, recv)
+		}
+	}
+}
