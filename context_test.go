@@ -1378,6 +1378,7 @@ func TestContextRenderRedirectAll(t *testing.T) {
 	assert.Panics(t, func() { c.Redirect(309, "/resource") })
 	assert.NotPanics(t, func() { c.Redirect(http.StatusMultipleChoices, "/resource") })
 	assert.NotPanics(t, func() { c.Redirect(http.StatusPermanentRedirect, "/resource") })
+	assert.NotPanics(t, func() { c.Redirect(http.StatusTemporaryRedirect, "")})
 }
 
 func TestContextNegotiationWithJSON(t *testing.T) {
