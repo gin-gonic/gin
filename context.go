@@ -231,6 +231,16 @@ func (c *Context) AbortWithError(code int, err error) *Error {
 	return c.Error(err)
 }
 
+// GraceError calls `Error` internally.
+// This method does not panic when err is nil, and no return value.
+// See Context.Error() for more details.
+func (c *Context) GraceError(err error) {
+	if err == nil {
+		return
+	}
+	c.Error(err) // nolint: errcheck
+}
+
 /************************************/
 /********* ERROR MANAGEMENT *********/
 /************************************/
