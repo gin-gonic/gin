@@ -683,13 +683,13 @@ func TestRouteRawPath(t *testing.T) {
 
 	route.POST("/project/:name/build/:num", func(c *Context) {
 		name := c.Params.ByName("name")
-		num := c.Params.ByName("num")
+		num := c.Params.GetInt("num")
 
 		assert.Equal(t, name, c.Param("name"))
-		assert.Equal(t, num, c.Param("num"))
+		assert.Equal(t, num, c.ParamInt("num"))
 
 		assert.Equal(t, "Some/Other/Project", name)
-		assert.Equal(t, "222", num)
+		assert.Equal(t, 222, num)
 	})
 
 	w := PerformRequest(route, http.MethodPost, "/project/Some%2FOther%2FProject/build/222")
@@ -703,13 +703,13 @@ func TestRouteRawPathNoUnescape(t *testing.T) {
 
 	route.POST("/project/:name/build/:num", func(c *Context) {
 		name := c.Params.ByName("name")
-		num := c.Params.ByName("num")
+		num := c.Params.GetInt("num")
 
 		assert.Equal(t, name, c.Param("name"))
-		assert.Equal(t, num, c.Param("num"))
+		assert.Equal(t, num, c.ParamInt("num"))
 
 		assert.Equal(t, "Some%2FOther%2FProject", name)
-		assert.Equal(t, "333", num)
+		assert.Equal(t, 333, num)
 	})
 
 	w := PerformRequest(route, http.MethodPost, "/project/Some%2FOther%2FProject/build/333")
