@@ -32,6 +32,11 @@ func LoadHTMLFiles(files ...string) {
 	engine().LoadHTMLFiles(files...)
 }
 
+// LoadHTMLFS is a wrapper for Engine.LoadHTMLFS.
+func LoadHTMLFS(fs http.FileSystem, patterns ...string) {
+	engine().LoadHTMLFS(fs, patterns...)
+}
+
 // SetHTMLTemplate is a wrapper for Engine.SetHTMLTemplate.
 func SetHTMLTemplate(templ *template.Template) {
 	engine().SetHTMLTemplate(templ)
