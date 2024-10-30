@@ -97,9 +97,9 @@ func (r SecureJSON) Render(w http.ResponseWriter) error {
 		return err
 	}
 	// if the jsonBytes is array values
-	if bytes.HasPrefix(jsonBytes, bytesconv.StringToBytes("[")) && bytes.HasSuffix(jsonBytes,
-		bytesconv.StringToBytes("]")) {
-		if _, err = w.Write(bytesconv.StringToBytes(r.Prefix)); err != nil {
+	if bytes.HasPrefix(jsonBytes, []byte("[")) && bytes.HasSuffix(jsonBytes,
+		[]byte("]")) {
+		if _, err = w.Write([]byte(r.Prefix)); err != nil {
 			return err
 		}
 	}
@@ -126,11 +126,11 @@ func (r JsonpJSON) Render(w http.ResponseWriter) (err error) {
 	}
 
 	callback := template.JSEscapeString(r.Callback)
-	if _, err = w.Write(bytesconv.StringToBytes(callback)); err != nil {
+	if _, err = w.Write([]byte(callback)); err != nil {
 		return err
 	}
 
-	if _, err = w.Write(bytesconv.StringToBytes("(")); err != nil {
+	if _, err = w.Write([]byte("(")); err != nil {
 		return err
 	}
 
@@ -138,7 +138,7 @@ func (r JsonpJSON) Render(w http.ResponseWriter) (err error) {
 		return err
 	}
 
-	if _, err = w.Write(bytesconv.StringToBytes(");")); err != nil {
+	if _, err = w.Write([]byte(");")); err != nil {
 		return err
 	}
 
