@@ -7,6 +7,7 @@ package gin
 import (
 	"errors"
 	"io"
+	"io/fs"
 	"log"
 	"math"
 	"mime/multipart"
@@ -677,14 +678,18 @@ func (c *Context) MultipartForm() (*multipart.Form, error) {
 }
 
 // SaveUploadedFile uploads the form file to specific dst.
-func (c *Context) SaveUploadedFile(file *multipart.FileHeader, dst string) error {
+func (c *Context) SaveUploadedFile(file *multipart.FileHeader, dst string, perm ...fs.FileMode) error {
 	src, err := file.Open()
 	if err != nil {
 		return err
 	}
 	defer src.Close()
 
-	if err = os.MkdirAll(filepath.Dir(dst), 0o750); err != nil {
+	if len(perm) <= 0 {
+		perm = append(perm, 0o750)
+	}
+
+	if err = os.MkdirAll(filepath.Dir(dst), perm[0]); err != nil {
 		return err
 	}
 
