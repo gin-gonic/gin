@@ -689,7 +689,12 @@ func (c *Context) SaveUploadedFile(file *multipart.FileHeader, dst string, perm 
 		perm = append(perm, 0o750)
 	}
 
-	if err = os.MkdirAll(filepath.Dir(dst), perm[0]); err != nil {
+	dirPath := filepath.Dir(dst)
+	if err = os.MkdirAll(dirPath, perm[0]); err != nil {
+		return err
+	}
+	
+	if err = os.Chmod(dirPath, perm[0]); err != nil {
 		return err
 	}
 
