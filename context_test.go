@@ -170,10 +170,8 @@ func TestSaveUploadedFileWithPermission(t *testing.T) {
 	f, err := c.FormFile("file")
 	require.NoError(t, err)
 	assert.Equal(t, "permission_test", f.Filename)
-
 	var mode fs.FileMode = 0o755
 	require.NoError(t, c.SaveUploadedFile(f, "permission_test", mode))
-
 	info, err := os.Stat(filepath.Dir("permission_test"))
 	require.NoError(t, err)
 
@@ -194,7 +192,6 @@ func TestSaveUploadedFileWithPermissionFailed(t *testing.T) {
 	f, err := c.FormFile("file")
 	require.NoError(t, err)
 	assert.Equal(t, "permission_test", f.Filename)
-
 	var mode fs.FileMode = 0o644
 	require.Error(t, c.SaveUploadedFile(f, "test/permission_test", mode))
 }
