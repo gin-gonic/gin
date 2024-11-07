@@ -11,12 +11,14 @@ import (
 	"fmt"
 	"html/template"
 	"io"
+	"io/fs"
 	"mime/multipart"
 	"net"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"os"
+	"path/filepath"
 	"reflect"
 	"strings"
 	"sync"
@@ -152,6 +154,45 @@ func TestSaveUploadedCreateFailed(t *testing.T) {
 	assert.Equal(t, "test", f.Filename)
 
 	require.Error(t, c.SaveUploadedFile(f, "/"))
+}
+
+func TestSaveUploadedFileWithPermission(t *testing.T) {
+	buf := new(bytes.Buffer)
+	mw := multipart.NewWriter(buf)
+	w, err := mw.CreateFormFile("file", "permission_test")
+	require.NoError(t, err)
+	_, err = w.Write([]byte("permission_test"))
+	require.NoError(t, err)
+	mw.Close()
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	c.Request, _ = http.NewRequest("POST", "/", buf)
+	c.Request.Header.Set("Content-Type", mw.FormDataContentType())
+	f, err := c.FormFile("file")
+	require.NoError(t, err)
+	assert.Equal(t, "permission_test", f.Filename)
+	var mode fs.FileMode = 0o755
+	require.NoError(t, c.SaveUploadedFile(f, "permission_test", mode))
+	info, err := os.Stat(filepath.Dir("permission_test"))
+	require.NoError(t, err)
+	assert.Equal(t, info.Mode().Perm(), mode)
+}
+
+func TestSaveUploadedFileWithPermissionFailed(t *testing.T) {
+	buf := new(bytes.Buffer)
+	mw := multipart.NewWriter(buf)
+	w, err := mw.CreateFormFile("file", "permission_test")
+	require.NoError(t, err)
+	_, err = w.Write([]byte("permission_test"))
+	require.NoError(t, err)
+	mw.Close()
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	c.Request, _ = http.NewRequest("POST", "/", buf)
+	c.Request.Header.Set("Content-Type", mw.FormDataContentType())
+	f, err := c.FormFile("file")
+	require.NoError(t, err)
+	assert.Equal(t, "permission_test", f.Filename)
+	var mode fs.FileMode = 0o644
+	require.Error(t, c.SaveUploadedFile(f, "test/permission_test", mode))
 }
 
 func TestContextReset(t *testing.T) {
