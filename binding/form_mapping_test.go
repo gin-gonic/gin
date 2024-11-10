@@ -6,7 +6,7 @@ package binding
 
 import (
 	"encoding/hex"
-	"fmt"
+	"errors"
 	"mime/multipart"
 	"reflect"
 	"strconv"
@@ -494,7 +494,7 @@ type customUnmarshalParamType struct {
 func (f *customUnmarshalParamType) UnmarshalParam(param string) error {
 	parts := strings.Split(param, ":")
 	if len(parts) != 3 {
-		return fmt.Errorf("invalid format")
+		return errors.New("invalid format")
 	}
 	f.Protocol = parts[0]
 	f.Path = parts[1]
@@ -556,7 +556,7 @@ func (p *customPath) UnmarshalParam(param string) error {
 	elems := strings.Split(param, "/")
 	n := len(elems)
 	if n < 2 {
-		return fmt.Errorf("invalid format")
+		return errors.New("invalid format")
 	}
 
 	*p = elems
@@ -600,7 +600,7 @@ func (o *objectID) UnmarshalParam(param string) error {
 func convertTo(s string) (objectID, error) {
 	var nilObjectID objectID
 	if len(s) != 24 {
-		return nilObjectID, fmt.Errorf("invalid format")
+		return nilObjectID, errors.New("invalid format")
 	}
 
 	var oid [12]byte

@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -411,7 +412,7 @@ func exampleFromPath(path string) (string, Params) {
 		}
 		if start >= 0 {
 			if c == '/' {
-				value := fmt.Sprint(rand.Intn(100000))
+				value := strconv.Itoa(rand.Intn(100000))
 				params = append(params, Param{
 					Key:   path[start:i],
 					Value: value,
@@ -425,7 +426,7 @@ func exampleFromPath(path string) (string, Params) {
 		}
 	}
 	if start >= 0 {
-		value := fmt.Sprint(rand.Intn(100000))
+		value := strconv.Itoa(rand.Intn(100000))
 		params = append(params, Param{
 			Key:   path[start:],
 			Value: value,
