@@ -18,6 +18,7 @@ linters:
     - nolintlint
     - revive
     - testifylint
+    - usestdlibvars
     - wastedassign
 
 linters-settings:

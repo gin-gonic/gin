@@ -523,8 +523,8 @@ func TestRouteNotAllowedEnabled3(t *testing.T) {
 	w := PerformRequest(router, http.MethodPut, "/path")
 	assert.Equal(t, http.StatusMethodNotAllowed, w.Code)
 	allowed := w.Header().Get("Allow")
-	assert.Contains(t, allowed, "GET")
-	assert.Contains(t, allowed, "POST")
+	assert.Contains(t, allowed, http.MethodGet)
+	assert.Contains(t, allowed, http.MethodPost)
 }
 
 func TestRouteNotAllowedDisabled(t *testing.T) {
@@ -557,7 +557,7 @@ func TestRouterNotFoundWithRemoveExtraSlash(t *testing.T) {
 		{"/nope", http.StatusNotFound, ""}, // NotFound
 	}
 	for _, tr := range testRoutes {
-		w := PerformRequest(router, "GET", tr.route)
+		w := PerformRequest(router, http.MethodGet, tr.route)
 		assert.Equal(t, tr.code, w.Code)
 		if w.Code != http.StatusNotFound {
 			assert.Equal(t, tr.location, fmt.Sprint(w.Header().Get("Location")))
@@ -786,6 +786,6 @@ func TestEngineHandleMethodNotAllowedCornerCase(t *testing.T) {
 	v1.GET("/orgs/:id", handlerTest1)
 	v1.DELETE("/orgs/:id", handlerTest1)
 
-	w := PerformRequest(r, "GET", "/base/v1/user/groups")
+	w := PerformRequest(r, http.MethodGet, "/base/v1/user/groups")
 	assert.Equal(t, http.StatusNotFound, w.Code)
 }

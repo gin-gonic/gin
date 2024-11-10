@@ -369,7 +369,7 @@ func TestRenderXML(t *testing.T) {
 }
 
 func TestRenderRedirect(t *testing.T) {
-	req, err := http.NewRequest("GET", "/test-redirect", nil)
+	req, err := http.NewRequest(http.MethodGet, "/test-redirect", nil)
 	require.NoError(t, err)
 
 	data1 := Redirect{

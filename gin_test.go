@@ -327,31 +327,31 @@ func TestLoadHTMLFilesFuncMap(t *testing.T) {
 
 func TestAddRoute(t *testing.T) {
 	router := New()
-	router.addRoute("GET", "/", HandlersChain{func(_ *Context) {}})
+	router.addRoute(http.MethodGet, "/", HandlersChain{func(_ *Context) {}})
 
 	assert.Len(t, router.trees, 1)
-	assert.NotNil(t, router.trees.get("GET"))
-	assert.Nil(t, router.trees.get("POST"))
+	assert.NotNil(t, router.trees.get(http.MethodGet))
+	assert.Nil(t, router.trees.get(http.MethodPost))
 
-	router.addRoute("POST", "/", HandlersChain{func(_ *Context) {}})
+	router.addRoute(http.MethodPost, "/", HandlersChain{func(_ *Context) {}})
 
 	assert.Len(t, router.trees, 2)
-	assert.NotNil(t, router.trees.get("GET"))
-	assert.NotNil(t, router.trees.get("POST"))
+	assert.NotNil(t, router.trees.get(http.MethodGet))
+	assert.NotNil(t, router.trees.get(http.MethodPost))
 
-	router.addRoute("POST", "/post", HandlersChain{func(_ *Context) {}})
+	router.addRoute(http.MethodPost, "/post", HandlersChain{func(_ *Context) {}})
 	assert.Len(t, router.trees, 2)
 }
 
 func TestAddRouteFails(t *testing.T) {
 	router := New()
 	assert.Panics(t, func() { router.addRoute("", "/", HandlersChain{func(_ *Context) {}}) })
-	assert.Panics(t, func() { router.addRoute("GET", "a", HandlersChain{func(_ *Context) {}}) })
-	assert.Panics(t, func() { router.addRoute("GET", "/", HandlersChain{}) })
+	assert.Panics(t, func() { router.addRoute(http.MethodGet, "a", HandlersChain{func(_ *Context) {}}) })
+	assert.Panics(t, func() { router.addRoute(http.MethodGet, "/", HandlersChain{}) })
 
-	router.addRoute("POST", "/post", HandlersChain{func(_ *Context) {}})
+	router.addRoute(http.MethodPost, "/post", HandlersChain{func(_ *Context) {}})
 	assert.Panics(t, func() {
-		router.addRoute("POST", "/post", HandlersChain{func(_ *Context) {}})
+		router.addRoute(http.MethodPost, "/post", HandlersChain{func(_ *Context) {}})
 	})
 }
 
@@ -493,27 +493,27 @@ func TestListOfRoutes(t *testing.T) {
 
 	assert.Len(t, list, 7)
 	assertRoutePresent(t, list, RouteInfo{
-		Method:  "GET",
+		Method:  http.MethodGet,
 		Path:    "/favicon.ico",
 		Handler: "^(.*/vendor/)?github.com/gin-gonic/gin.handlerTest1$",
 	})
 	assertRoutePresent(t, list, RouteInfo{
-		Method:  "GET",
+		Method:  http.MethodGet,
 		Path:    "/",
 		Handler: "^(.*/vendor/)?github.com/gin-gonic/gin.handlerTest1$",
 	})
 	assertRoutePresent(t, list, RouteInfo{
-		Method:  "GET",
+		Method:  http.MethodGet,
 		Path:    "/users/",
 		Handler: "^(.*/vendor/)?github.com/gin-gonic/gin.handlerTest2$",
 	})
 	assertRoutePresent(t, list, RouteInfo{
-		Method:  "GET",
+		Method:  http.MethodGet,
 		Path:    "/users/:id",
 		Handler: "^(.*/vendor/)?github.com/gin-gonic/gin.handlerTest1$",
 	})
 	assertRoutePresent(t, list, RouteInfo{
-		Method:  "POST",
+		Method:  http.MethodPost,
 		Path:    "/users/:id",
 		Handler: "^(.*/vendor/)?github.com/gin-gonic/gin.handlerTest2$",
 	})
@@ -531,7 +531,7 @@ func TestEngineHandleContext(t *testing.T) {
 	}
 
 	assert.NotPanics(t, func() {
-		w := PerformRequest(r, "GET", "/")
+		w := PerformRequest(r, http.MethodGet, "/")
 		assert.Equal(t, 301, w.Code)
 	})
 }
@@ -564,7 +564,7 @@ func TestEngineHandleContextManyReEntries(t *testing.T) {
 	})
 
 	assert.NotPanics(t, func() {
-		w := PerformRequest(r, "GET", "/"+strconv.Itoa(expectValue-1)) // include 0 value
+		w := PerformRequest(r, http.MethodGet, "/"+strconv.Itoa(expectValue-1)) // include 0 value
 		assert.Equal(t, 200, w.Code)
 		assert.Equal(t, expectValue, w.Body.Len())
 	})
@@ -712,8 +712,8 @@ func TestNewOptionFunc(t *testing.T) {
 	r := New(fc)
 
 	routes := r.Routes()
-	assertRoutePresent(t, routes, RouteInfo{Path: "/test1", Method: "GET", Handler: "github.com/gin-gonic/gin.handlerTest1"})
-	assertRoutePresent(t, routes, RouteInfo{Path: "/test2", Method: "GET", Handler: "github.com/gin-gonic/gin.handlerTest2"})
+	assertRoutePresent(t, routes, RouteInfo{Path: "/test1", Method: http.MethodGet, Handler: "github.com/gin-gonic/gin.handlerTest1"})
+	assertRoutePresent(t, routes, RouteInfo{Path: "/test2", Method: http.MethodGet, Handler: "github.com/gin-gonic/gin.handlerTest2"})
 }
 
 func TestWithOptionFunc(t *testing.T) {
@@ -729,8 +729,8 @@ func TestWithOptionFunc(t *testing.T) {
 	})
 
 	routes := r.Routes()
-	assertRoutePresent(t, routes, RouteInfo{Path: "/test1", Method: "GET", Handler: "github.com/gin-gonic/gin.handlerTest1"})
-	assertRoutePresent(t, routes, RouteInfo{Path: "/test2", Method: "GET", Handler: "github.com/gin-gonic/gin.handlerTest2"})
+	assertRoutePresent(t, routes, RouteInfo{Path: "/test1", Method: http.MethodGet, Handler: "github.com/gin-gonic/gin.handlerTest1"})
+	assertRoutePresent(t, routes, RouteInfo{Path: "/test2", Method: http.MethodGet, Handler: "github.com/gin-gonic/gin.handlerTest2"})
 }
 
 type Birthday string
@@ -749,7 +749,7 @@ func TestCustomUnmarshalStruct(t *testing.T) {
 		_ = ctx.BindQuery(&request)
 		ctx.JSON(200, request.Birthday)
 	})
-	req := httptest.NewRequest("GET", "/test?birthday=2000-01-01", nil)
+	req := httptest.NewRequest(http.MethodGet, "/test?birthday=2000-01-01", nil)
 	w := httptest.NewRecorder()
 	route.ServeHTTP(w, req)
 	assert.Equal(t, 200, w.Code)
@@ -761,7 +761,7 @@ func TestMethodNotAllowedNoRoute(t *testing.T) {
 	g := New()
 	g.HandleMethodNotAllowed = true
 
-	req := httptest.NewRequest("GET", "/", nil)
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
 	resp := httptest.NewRecorder()
 	assert.NotPanics(t, func() { g.ServeHTTP(resp, req) })
 	assert.Equal(t, http.StatusNotFound, resp.Code)
