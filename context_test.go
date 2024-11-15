@@ -1532,6 +1532,18 @@ func TestContextNegotiationFormatWithAccept(t *testing.T) {
 	assert.Empty(t, c.NegotiateFormat(MIMEJSON))
 }
 
+func TestContextNegotiationFormatWithMultipleAccept(t *testing.T) {
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	c.Request, _ = http.NewRequest("POST", "/", nil)
+	c.Request.Header.Add("Accept", "text/html")
+	c.Request.Header.Add("Accept", "application/xhtml+xml")
+	c.Request.Header.Add("Accept", "application/xml;q=0.9;q=0.8")
+
+	assert.Equal(t, MIMEXML, c.NegotiateFormat(MIMEJSON, MIMEXML))
+	assert.Equal(t, MIMEHTML, c.NegotiateFormat(MIMEXML, MIMEHTML))
+	assert.Empty(t, c.NegotiateFormat(MIMEJSON))
+}
+
 func TestContextNegotiationFormatWithWildcardAccept(t *testing.T) {
 	c, _ := CreateTestContext(httptest.NewRecorder())
 	c.Request, _ = http.NewRequest(http.MethodPost, "/", nil)
