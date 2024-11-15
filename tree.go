@@ -7,6 +7,7 @@ package gin
 import (
 	"bytes"
 	"net/url"
+	"strconv"
 	"strings"
 	"unicode"
 	"unicode/utf8"
@@ -46,6 +47,18 @@ func (ps Params) Get(name string) (string, bool) {
 // If no matching Param is found, an empty string is returned.
 func (ps Params) ByName(name string) (va string) {
 	va, _ = ps.Get(name)
+	return
+}
+
+// GetInt returns the param associated with the name as an integer.
+func (ps Params) GetInt(name string) (i int) {
+	if val, exist := ps.Get(name); exist {
+		i, err := strconv.Atoi(val)
+		if err != nil {
+			return 0
+		}
+		return i
+	}
 	return
 }
 
