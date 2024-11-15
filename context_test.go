@@ -9,6 +9,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/gin-gonic/gin/render"
 	"html/template"
 	"io"
 	"io/fs"
@@ -3122,4 +3123,33 @@ func TestContextNext(t *testing.T) {
 	value, exists = c.Get("key3")
 	assert.True(t, exists)
 	assert.Equal(t, "value3", value)
+}
+
+// MyJSON customizing JSON rendering
+type MyJSON struct {
+	Data any
+	render.JSON
+}
+
+// Render rewrite the Render function
+func (r MyJSON) Render(w http.ResponseWriter) error {
+	_, err := w.Write([]byte("test"))
+	return err
+}
+
+func NewMyJSON(data any) render.Render {
+	return &MyJSON{Data: data}
+}
+
+// TestCustomJSONRender the test uses a custom JSON render.
+// The final result is that the user can customize the JSON render without affecting the original function.
+func TestCustomJSONRender(t *testing.T) {
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
+	c.RegisterJsonRender("MyTestJSON", NewMyJSON)
+	c.SetJSONRender("MyTestJSON")
+
+	c.JSON(http.StatusCreated, H{"foo": "bar", "html": "<b>"})
+
+	t.Log(w.Body.String())
 }
