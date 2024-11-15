@@ -610,7 +610,6 @@ func TestContextInitQueryCache(t *testing.T) {
 			assert.Equal(t, test.expectedQueryCache, test.testContext.queryCache)
 		})
 	}
-
 }
 
 func TestContextDefaultQueryOnEmptyRequest(t *testing.T) {
@@ -3037,4 +3036,48 @@ func TestInterceptedHeader(t *testing.T) {
 	// middleware. Assert this
 	assert.Equal(t, "", w.Result().Header.Get("X-Test"))
 	assert.Equal(t, "present", w.Result().Header.Get("X-Test-2"))
+}
+
+func TestContextNext(t *testing.T) {
+	c, _ := CreateTestContext(httptest.NewRecorder())
+
+	// Test with no handlers
+	c.Next()
+	assert.Equal(t, int8(0), c.index)
+
+	// Test with one handler
+	c.index = -1
+	c.handlers = HandlersChain{func(c *Context) {
+		c.Set("key", "value")
+	}}
+	c.Next()
+	assert.Equal(t, int8(1), c.index)
+	value, exists := c.Get("key")
+	assert.True(t, exists)
+	assert.Equal(t, "value", value)
+
+	// Test with multiple handlers
+	c.handlers = HandlersChain{
+		func(c *Context) {
+			c.Set("key1", "value1")
+			c.Next()
+			c.Set("key2", "value2")
+		},
+		nil,
+		func(c *Context) {
+			c.Set("key3", "value3")
+		},
+	}
+	c.index = -1
+	c.Next()
+	assert.Equal(t, int8(4), c.index)
+	value, exists = c.Get("key1")
+	assert.True(t, exists)
+	assert.Equal(t, "value1", value)
+	value, exists = c.Get("key2")
+	assert.True(t, exists)
+	assert.Equal(t, "value2", value)
+	value, exists = c.Get("key3")
+	assert.True(t, exists)
+	assert.Equal(t, "value3", value)
 }
