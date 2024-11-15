@@ -145,31 +145,31 @@ type FooStructForMapPtrType struct {
 }
 
 func TestBindingDefault(t *testing.T) {
-	assert.Equal(t, Form, Default("GET", ""))
-	assert.Equal(t, Form, Default("GET", MIMEJSON))
+	assert.Equal(t, Form, Default(http.MethodGet, ""))
+	assert.Equal(t, Form, Default(http.MethodGet, MIMEJSON))
 
-	assert.Equal(t, JSON, Default("POST", MIMEJSON))
-	assert.Equal(t, JSON, Default("PUT", MIMEJSON))
+	assert.Equal(t, JSON, Default(http.MethodPost, MIMEJSON))
+	assert.Equal(t, JSON, Default(http.MethodPut, MIMEJSON))
 
-	assert.Equal(t, XML, Default("POST", MIMEXML))
-	assert.Equal(t, XML, Default("PUT", MIMEXML2))
+	assert.Equal(t, XML, Default(http.MethodPost, MIMEXML))
+	assert.Equal(t, XML, Default(http.MethodPut, MIMEXML2))
 
-	assert.Equal(t, Form, Default("POST", MIMEPOSTForm))
-	assert.Equal(t, Form, Default("PUT", MIMEPOSTForm))
+	assert.Equal(t, Form, Default(http.MethodPost, MIMEPOSTForm))
+	assert.Equal(t, Form, Default(http.MethodPut, MIMEPOSTForm))
 
-	assert.Equal(t, FormMultipart, Default("POST", MIMEMultipartPOSTForm))
-	assert.Equal(t, FormMultipart, Default("PUT", MIMEMultipartPOSTForm))
+	assert.Equal(t, FormMultipart, Default(http.MethodPost, MIMEMultipartPOSTForm))
+	assert.Equal(t, FormMultipart, Default(http.MethodPut, MIMEMultipartPOSTForm))
 
-	assert.Equal(t, ProtoBuf, Default("POST", MIMEPROTOBUF))
-	assert.Equal(t, ProtoBuf, Default("PUT", MIMEPROTOBUF))
+	assert.Equal(t, ProtoBuf, Default(http.MethodPost, MIMEPROTOBUF))
+	assert.Equal(t, ProtoBuf, Default(http.MethodPut, MIMEPROTOBUF))
 
-	assert.Equal(t, YAML, Default("POST", MIMEYAML))
-	assert.Equal(t, YAML, Default("PUT", MIMEYAML))
-	assert.Equal(t, YAML, Default("POST", MIMEYAML2))
-	assert.Equal(t, YAML, Default("PUT", MIMEYAML2))
+	assert.Equal(t, YAML, Default(http.MethodPost, MIMEYAML))
+	assert.Equal(t, YAML, Default(http.MethodPut, MIMEYAML))
+	assert.Equal(t, YAML, Default(http.MethodPost, MIMEYAML2))
+	assert.Equal(t, YAML, Default(http.MethodPut, MIMEYAML2))
 
-	assert.Equal(t, TOML, Default("POST", MIMETOML))
-	assert.Equal(t, TOML, Default("PUT", MIMETOML))
+	assert.Equal(t, TOML, Default(http.MethodPost, MIMETOML))
+	assert.Equal(t, TOML, Default(http.MethodPut, MIMETOML))
 }
 
 func TestBindingJSONNilBody(t *testing.T) {
@@ -227,137 +227,137 @@ func TestBindingJSONStringMap(t *testing.T) {
 }
 
 func TestBindingForm(t *testing.T) {
-	testFormBinding(t, "POST",
+	testFormBinding(t, http.MethodPost,
 		"/", "/",
 		"foo=bar&bar=foo", "bar2=foo")
 }
 
 func TestBindingForm2(t *testing.T) {
-	testFormBinding(t, "GET",
+	testFormBinding(t, http.MethodGet,
 		"/?foo=bar&bar=foo", "/?bar2=foo",
 		"", "")
 }
 
 func TestBindingFormEmbeddedStruct(t *testing.T) {
-	testFormBindingEmbeddedStruct(t, "POST",
+	testFormBindingEmbeddedStruct(t, http.MethodPost,
 		"/", "/",
 		"page=1&size=2&appkey=test-appkey", "bar2=foo")
 }
 
 func TestBindingFormEmbeddedStruct2(t *testing.T) {
-	testFormBindingEmbeddedStruct(t, "GET",
+	testFormBindingEmbeddedStruct(t, http.MethodGet,
 		"/?page=1&size=2&appkey=test-appkey", "/?bar2=foo",
 		"", "")
 }
 
 func TestBindingFormDefaultValue(t *testing.T) {
-	testFormBindingDefaultValue(t, "POST",
+	testFormBindingDefaultValue(t, http.MethodPost,
 		"/", "/",
 		"foo=bar", "bar2=foo")
 }
 
 func TestBindingFormDefaultValue2(t *testing.T) {
-	testFormBindingDefaultValue(t, "GET",
+	testFormBindingDefaultValue(t, http.MethodGet,
 		"/?foo=bar", "/?bar2=foo",
 		"", "")
 }
 
 func TestBindingFormForTime(t *testing.T) {
-	testFormBindingForTime(t, "POST",
+	testFormBindingForTime(t, http.MethodPost,
 		"/", "/",
 		"time_foo=2017-11-15&time_bar=&createTime=1562400033000000123&unixTime=1562400033", "bar2=foo")
-	testFormBindingForTimeNotUnixFormat(t, "POST",
+	testFormBindingForTimeNotUnixFormat(t, http.MethodPost,
 		"/", "/",
 		"time_foo=2017-11-15&createTime=bad&unixTime=bad", "bar2=foo")
-	testFormBindingForTimeNotFormat(t, "POST",
+	testFormBindingForTimeNotFormat(t, http.MethodPost,
 		"/", "/",
 		"time_foo=2017-11-15", "bar2=foo")
-	testFormBindingForTimeFailFormat(t, "POST",
+	testFormBindingForTimeFailFormat(t, http.MethodPost,
 		"/", "/",
 		"time_foo=2017-11-15", "bar2=foo")
-	testFormBindingForTimeFailLocation(t, "POST",
+	testFormBindingForTimeFailLocation(t, http.MethodPost,
 		"/", "/",
 		"time_foo=2017-11-15", "bar2=foo")
 }
 
 func TestBindingFormForTime2(t *testing.T) {
-	testFormBindingForTime(t, "GET",
+	testFormBindingForTime(t, http.MethodGet,
 		"/?time_foo=2017-11-15&time_bar=&createTime=1562400033000000123&unixTime=1562400033", "/?bar2=foo",
 		"", "")
-	testFormBindingForTimeNotUnixFormat(t, "POST",
+	testFormBindingForTimeNotUnixFormat(t, http.MethodPost,
 		"/", "/",
 		"time_foo=2017-11-15&createTime=bad&unixTime=bad", "bar2=foo")
-	testFormBindingForTimeNotFormat(t, "GET",
+	testFormBindingForTimeNotFormat(t, http.MethodGet,
 		"/?time_foo=2017-11-15", "/?bar2=foo",
 		"", "")
-	testFormBindingForTimeFailFormat(t, "GET",
+	testFormBindingForTimeFailFormat(t, http.MethodGet,
 		"/?time_foo=2017-11-15", "/?bar2=foo",
 		"", "")
-	testFormBindingForTimeFailLocation(t, "GET",
+	testFormBindingForTimeFailLocation(t, http.MethodGet,
 		"/?time_foo=2017-11-15", "/?bar2=foo",
 		"", "")
 }
 
 func TestFormBindingIgnoreField(t *testing.T) {
-	testFormBindingIgnoreField(t, "POST",
+	testFormBindingIgnoreField(t, http.MethodPost,
 		"/", "/",
 		"-=bar", "")
 }
 
 func TestBindingFormInvalidName(t *testing.T) {
-	testFormBindingInvalidName(t, "POST",
+	testFormBindingInvalidName(t, http.MethodPost,
 		"/", "/",
 		"test_name=bar", "bar2=foo")
 }
 
 func TestBindingFormInvalidName2(t *testing.T) {
-	testFormBindingInvalidName2(t, "POST",
+	testFormBindingInvalidName2(t, http.MethodPost,
 		"/", "/",
 		"map_foo=bar", "bar2=foo")
 }
 
 func TestBindingFormForType(t *testing.T) {
-	testFormBindingForType(t, "POST",
+	testFormBindingForType(t, http.MethodPost,
 		"/", "/",
 		"map_foo={\"bar\":123}", "map_foo=1", "Map")
 
-	testFormBindingForType(t, "POST",
+	testFormBindingForType(t, http.MethodPost,
 		"/", "/",
 		"slice_foo=1&slice_foo=2", "bar2=1&bar2=2", "Slice")
 
-	testFormBindingForType(t, "GET",
+	testFormBindingForType(t, http.MethodGet,
 		"/?slice_foo=1&slice_foo=2", "/?bar2=1&bar2=2",
 		"", "", "Slice")
 
-	testFormBindingForType(t, "POST",
+	testFormBindingForType(t, http.MethodPost,
 		"/", "/",
 		"slice_map_foo=1&slice_map_foo=2", "bar2=1&bar2=2", "SliceMap")
 
-	testFormBindingForType(t, "GET",
+	testFormBindingForType(t, http.MethodGet,
 		"/?slice_map_foo=1&slice_map_foo=2", "/?bar2=1&bar2=2",
 		"", "", "SliceMap")
 
-	testFormBindingForType(t, "POST",
+	testFormBindingForType(t, http.MethodPost,
 		"/", "/",
 		"ptr_bar=test", "bar2=test", "Ptr")
 
-	testFormBindingForType(t, "GET",
+	testFormBindingForType(t, http.MethodGet,
 		"/?ptr_bar=test", "/?bar2=test",
 		"", "", "Ptr")
 
-	testFormBindingForType(t, "POST",
+	testFormBindingForType(t, http.MethodPost,
 		"/", "/",
 		"idx=123", "id1=1", "Struct")
 
-	testFormBindingForType(t, "GET",
+	testFormBindingForType(t, http.MethodGet,
 		"/?idx=123", "/?id1=1",
 		"", "", "Struct")
 
-	testFormBindingForType(t, "POST",
+	testFormBindingForType(t, http.MethodPost,
 		"/", "/",
 		"name=thinkerou", "name1=ou", "StructPointer")
 
-	testFormBindingForType(t, "GET",
+	testFormBindingForType(t, http.MethodGet,
 		"/?name=thinkerou", "/?name1=ou",
 		"", "", "StructPointer")
 }
@@ -374,7 +374,7 @@ func TestBindingFormStringMap(t *testing.T) {
 
 func TestBindingFormStringSliceMap(t *testing.T) {
 	obj := make(map[string][]string)
-	req := requestWithBody("POST", "/", "foo=something&foo=bar&hello=world")
+	req := requestWithBody(http.MethodPost, "/", "foo=something&foo=bar&hello=world")
 	req.Header.Add("Content-Type", MIMEPOSTForm)
 	err := Form.Bind(req, &obj)
 	require.NoError(t, err)
@@ -387,38 +387,38 @@ func TestBindingFormStringSliceMap(t *testing.T) {
 	assert.True(t, reflect.DeepEqual(obj, target))
 
 	objInvalid := make(map[string][]int)
-	req = requestWithBody("POST", "/", "foo=something&foo=bar&hello=world")
+	req = requestWithBody(http.MethodPost, "/", "foo=something&foo=bar&hello=world")
 	req.Header.Add("Content-Type", MIMEPOSTForm)
 	err = Form.Bind(req, &objInvalid)
 	require.Error(t, err)
 }
 
 func TestBindingQuery(t *testing.T) {
-	testQueryBinding(t, "POST",
+	testQueryBinding(t, http.MethodPost,
 		"/?foo=bar&bar=foo", "/",
 		"foo=unused", "bar2=foo")
 }
 
 func TestBindingQuery2(t *testing.T) {
-	testQueryBinding(t, "GET",
+	testQueryBinding(t, http.MethodGet,
 		"/?foo=bar&bar=foo", "/?bar2=foo",
 		"foo=unused", "")
 }
 
 func TestBindingQueryFail(t *testing.T) {
-	testQueryBindingFail(t, "POST",
+	testQueryBindingFail(t, http.MethodPost,
 		"/?map_foo=", "/",
 		"map_foo=unused", "bar2=foo")
 }
 
 func TestBindingQueryFail2(t *testing.T) {
-	testQueryBindingFail(t, "GET",
+	testQueryBindingFail(t, http.MethodGet,
 		"/?map_foo=", "/?bar2=foo",
 		"map_foo=unused", "")
 }
 
 func TestBindingQueryBoolFail(t *testing.T) {
-	testQueryBindingBoolFail(t, "GET",
+	testQueryBindingBoolFail(t, http.MethodGet,
 		"/?bool_foo=fasl", "/?bar2=foo",
 		"bool_foo=unused", "")
 }
@@ -427,7 +427,7 @@ func TestBindingQueryStringMap(t *testing.T) {
 	b := Query
 
 	obj := make(map[string]string)
-	req := requestWithBody("GET", "/?foo=bar&hello=world", "")
+	req := requestWithBody(http.MethodGet, "/?foo=bar&hello=world", "")
 	err := b.Bind(req, &obj)
 	require.NoError(t, err)
 	assert.NotNil(t, obj)
@@ -436,7 +436,7 @@ func TestBindingQueryStringMap(t *testing.T) {
 	assert.Equal(t, "world", obj["hello"])
 
 	obj = make(map[string]string)
-	req = requestWithBody("GET", "/?foo=bar&foo=2&hello=world", "") // should pick last
+	req = requestWithBody(http.MethodGet, "/?foo=bar&foo=2&hello=world", "") // should pick last
 	err = b.Bind(req, &obj)
 	require.NoError(t, err)
 	assert.NotNil(t, obj)
@@ -495,28 +495,28 @@ func TestBindingYAMLFail(t *testing.T) {
 }
 
 func createFormPostRequest(t *testing.T) *http.Request {
-	req, err := http.NewRequest("POST", "/?foo=getfoo&bar=getbar", bytes.NewBufferString("foo=bar&bar=foo"))
+	req, err := http.NewRequest(http.MethodPost, "/?foo=getfoo&bar=getbar", bytes.NewBufferString("foo=bar&bar=foo"))
 	require.NoError(t, err)
 	req.Header.Set("Content-Type", MIMEPOSTForm)
 	return req
 }
 
 func createDefaultFormPostRequest(t *testing.T) *http.Request {
-	req, err := http.NewRequest("POST", "/?foo=getfoo&bar=getbar", bytes.NewBufferString("foo=bar"))
+	req, err := http.NewRequest(http.MethodPost, "/?foo=getfoo&bar=getbar", bytes.NewBufferString("foo=bar"))
 	require.NoError(t, err)
 	req.Header.Set("Content-Type", MIMEPOSTForm)
 	return req
 }
 
 func createFormPostRequestForMap(t *testing.T) *http.Request {
-	req, err := http.NewRequest("POST", "/?map_foo=getfoo", bytes.NewBufferString("map_foo={\"bar\":123}"))
+	req, err := http.NewRequest(http.MethodPost, "/?map_foo=getfoo", bytes.NewBufferString("map_foo={\"bar\":123}"))
 	require.NoError(t, err)
 	req.Header.Set("Content-Type", MIMEPOSTForm)
 	return req
 }
 
 func createFormPostRequestForMapFail(t *testing.T) *http.Request {
-	req, err := http.NewRequest("POST", "/?map_foo=getfoo", bytes.NewBufferString("map_foo=hello"))
+	req, err := http.NewRequest(http.MethodPost, "/?map_foo=getfoo", bytes.NewBufferString("map_foo=hello"))
 	require.NoError(t, err)
 	req.Header.Set("Content-Type", MIMEPOSTForm)
 	return req
@@ -540,7 +540,7 @@ func createFormFilesMultipartRequest(t *testing.T) *http.Request {
 	_, err = io.Copy(fw, f)
 	require.NoError(t, err)
 
-	req, err2 := http.NewRequest("POST", "/?foo=getfoo&bar=getbar", body)
+	req, err2 := http.NewRequest(http.MethodPost, "/?foo=getfoo&bar=getbar", body)
 	require.NoError(t, err2)
 	req.Header.Set("Content-Type", MIMEMultipartPOSTForm+"; boundary="+boundary)
 
@@ -565,7 +565,7 @@ func createFormFilesMultipartRequestFail(t *testing.T) *http.Request {
 	_, err = io.Copy(fw, f)
 	require.NoError(t, err)
 
-	req, err2 := http.NewRequest("POST", "/?foo=getfoo&bar=getbar", body)
+	req, err2 := http.NewRequest(http.MethodPost, "/?foo=getfoo&bar=getbar", body)
 	require.NoError(t, err2)
 	req.Header.Set("Content-Type", MIMEMultipartPOSTForm+"; boundary="+boundary)
 
@@ -581,7 +581,7 @@ func createFormMultipartRequest(t *testing.T) *http.Request {
 	require.NoError(t, mw.SetBoundary(boundary))
 	require.NoError(t, mw.WriteField("foo", "bar"))
 	require.NoError(t, mw.WriteField("bar", "foo"))
-	req, err := http.NewRequest("POST", "/?foo=getfoo&bar=getbar", body)
+	req, err := http.NewRequest(http.MethodPost, "/?foo=getfoo&bar=getbar", body)
 	require.NoError(t, err)
 	req.Header.Set("Content-Type", MIMEMultipartPOSTForm+"; boundary="+boundary)
 	return req
@@ -595,7 +595,7 @@ func createFormMultipartRequestForMap(t *testing.T) *http.Request {
 
 	require.NoError(t, mw.SetBoundary(boundary))
 	require.NoError(t, mw.WriteField("map_foo", "{\"bar\":123, \"name\":\"thinkerou\", \"pai\": 3.14}"))
-	req, err := http.NewRequest("POST", "/?map_foo=getfoo", body)
+	req, err := http.NewRequest(http.MethodPost, "/?map_foo=getfoo", body)
 	require.NoError(t, err)
 	req.Header.Set("Content-Type", MIMEMultipartPOSTForm+"; boundary="+boundary)
 	return req
@@ -609,7 +609,7 @@ func createFormMultipartRequestForMapFail(t *testing.T) *http.Request {
 
 	require.NoError(t, mw.SetBoundary(boundary))
 	require.NoError(t, mw.WriteField("map_foo", "3.14"))
-	req, err := http.NewRequest("POST", "/?map_foo=getfoo", body)
+	req, err := http.NewRequest(http.MethodPost, "/?map_foo=getfoo", body)
 	require.NoError(t, err)
 	req.Header.Set("Content-Type", MIMEMultipartPOSTForm+"; boundary="+boundary)
 	return req
@@ -731,7 +731,7 @@ func TestBindingProtoBufFail(t *testing.T) {
 
 func TestValidationFails(t *testing.T) {
 	var obj FooStruct
-	req := requestWithBody("POST", "/", `{"bar": "foo"}`)
+	req := requestWithBody(http.MethodPost, "/", `{"bar": "foo"}`)
 	err := JSON.Bind(req, &obj)
 	require.Error(t, err)
 }
@@ -742,7 +742,7 @@ func TestValidationDisabled(t *testing.T) {
 	defer func() { Validator = backup }()
 
 	var obj FooStruct
-	req := requestWithBody("POST", "/", `{"bar": "foo"}`)
+	req := requestWithBody(http.MethodPost, "/", `{"bar": "foo"}`)
 	err := JSON.Bind(req, &obj)
 	require.NoError(t, err)
 }
@@ -753,7 +753,7 @@ func TestRequiredSucceeds(t *testing.T) {
 	}
 
 	var obj HogeStruct
-	req := requestWithBody("POST", "/", `{"hoge": 0}`)
+	req := requestWithBody(http.MethodPost, "/", `{"hoge": 0}`)
 	err := JSON.Bind(req, &obj)
 	require.NoError(t, err)
 }
@@ -764,7 +764,7 @@ func TestRequiredFails(t *testing.T) {
 	}
 
 	var obj HogeStruct
-	req := requestWithBody("POST", "/", `{"boen": 0}`)
+	req := requestWithBody(http.MethodPost, "/", `{"boen": 0}`)
 	err := JSON.Bind(req, &obj)
 	require.Error(t, err)
 }
@@ -778,12 +778,12 @@ func TestHeaderBinding(t *testing.T) {
 	}
 
 	var theader tHeader
-	req := requestWithBody("GET", "/", "")
+	req := requestWithBody(http.MethodGet, "/", "")
 	req.Header.Add("limit", "1000")
 	require.NoError(t, h.Bind(req, &theader))
 	assert.Equal(t, 1000, theader.Limit)
 
-	req = requestWithBody("GET", "/", "")
+	req = requestWithBody(http.MethodGet, "/", "")
 	req.Header.Add("fail", `{fail:fail}`)
 
 	type failStruct struct {
@@ -843,7 +843,7 @@ func testFormBindingEmbeddedStruct(t *testing.T, method, path, badPath, body, ba
 
 	obj := QueryTest{}
 	req := requestWithBody(method, path, body)
-	if method == "POST" {
+	if method == http.MethodPost {
 		req.Header.Add("Content-Type", MIMEPOSTForm)
 	}
 	err := b.Bind(req, &obj)
@@ -859,7 +859,7 @@ func testFormBinding(t *testing.T, method, path, badPath, body, badBody string) 
 
 	obj := FooBarStruct{}
 	req := requestWithBody(method, path, body)
-	if method == "POST" {
+	if method == http.MethodPost {
 		req.Header.Add("Content-Type", MIMEPOSTForm)
 	}
 	err := b.Bind(req, &obj)
@@ -879,7 +879,7 @@ func testFormBindingDefaultValue(t *testing.T, method, path, badPath, body, badB
 
 	obj := FooDefaultBarStruct{}
 	req := requestWithBody(method, path, body)
-	if method == "POST" {
+	if method == http.MethodPost {
 		req.Header.Add("Content-Type", MIMEPOSTForm)
 	}
 	err := b.Bind(req, &obj)
@@ -898,14 +898,14 @@ func TestFormBindingFail(t *testing.T) {
 	assert.Equal(t, "form", b.Name())
 
 	obj := FooBarStruct{}
-	req, _ := http.NewRequest("POST", "/", nil)
+	req, _ := http.NewRequest(http.MethodPost, "/", nil)
 	err := b.Bind(req, &obj)
 	require.Error(t, err)
 }
 
 func TestFormBindingMultipartFail(t *testing.T) {
 	obj := FooBarStruct{}
-	req, err := http.NewRequest("POST", "/", strings.NewReader("foo=bar"))
+	req, err := http.NewRequest(http.MethodPost, "/", strings.NewReader("foo=bar"))
 	require.NoError(t, err)
 	req.Header.Set("Content-Type", MIMEMultipartPOSTForm+";boundary=testboundary")
 	_, err = req.MultipartReader()
@@ -919,7 +919,7 @@ func TestFormPostBindingFail(t *testing.T) {
 	assert.Equal(t, "form-urlencoded", b.Name())
 
 	obj := FooBarStruct{}
-	req, _ := http.NewRequest("POST", "/", nil)
+	req, _ := http.NewRequest(http.MethodPost, "/", nil)
 	err := b.Bind(req, &obj)
 	require.Error(t, err)
 }
@@ -929,7 +929,7 @@ func TestFormMultipartBindingFail(t *testing.T) {
 	assert.Equal(t, "multipart/form-data", b.Name())
 
 	obj := FooBarStruct{}
-	req, _ := http.NewRequest("POST", "/", nil)
+	req, _ := http.NewRequest(http.MethodPost, "/", nil)
 	err := b.Bind(req, &obj)
 	require.Error(t, err)
 }
@@ -940,7 +940,7 @@ func testFormBindingForTime(t *testing.T, method, path, badPath, body, badBody s
 
 	obj := FooBarStructForTimeType{}
 	req := requestWithBody(method, path, body)
-	if method == "POST" {
+	if method == http.MethodPost {
 		req.Header.Add("Content-Type", MIMEPOSTForm)
 	}
 	err := b.Bind(req, &obj)
@@ -965,7 +965,7 @@ func testFormBindingForTimeNotUnixFormat(t *testing.T, method, path, badPath, bo
 
 	obj := FooStructForTimeTypeNotUnixFormat{}
 	req := requestWithBody(method, path, body)
-	if method == "POST" {
+	if method == http.MethodPost {
 		req.Header.Add("Content-Type", MIMEPOSTForm)
 	}
 	err := b.Bind(req, &obj)
@@ -983,7 +983,7 @@ func testFormBindingForTimeNotFormat(t *testing.T, method, path, badPath, body, 
 
 	obj := FooStructForTimeTypeNotFormat{}
 	req := requestWithBody(method, path, body)
-	if method == "POST" {
+	if method == http.MethodPost {
 		req.Header.Add("Content-Type", MIMEPOSTForm)
 	}
 	err := b.Bind(req, &obj)
@@ -1001,7 +1001,7 @@ func testFormBindingForTimeFailFormat(t *testing.T, method, path, badPath, body,
 
 	obj := FooStructForTimeTypeFailFormat{}
 	req := requestWithBody(method, path, body)
-	if method == "POST" {
+	if method == http.MethodPost {
 		req.Header.Add("Content-Type", MIMEPOSTForm)
 	}
 	err := b.Bind(req, &obj)
@@ -1019,7 +1019,7 @@ func testFormBindingForTimeFailLocation(t *testing.T, method, path, badPath, bod
 
 	obj := FooStructForTimeTypeFailLocation{}
 	req := requestWithBody(method, path, body)
-	if method == "POST" {
+	if method == http.MethodPost {
 		req.Header.Add("Content-Type", MIMEPOSTForm)
 	}
 	err := b.Bind(req, &obj)
@@ -1037,7 +1037,7 @@ func testFormBindingIgnoreField(t *testing.T, method, path, badPath, body, badBo
 
 	obj := FooStructForIgnoreFormTag{}
 	req := requestWithBody(method, path, body)
-	if method == "POST" {
+	if method == http.MethodPost {
 		req.Header.Add("Content-Type", MIMEPOSTForm)
 	}
 	err := b.Bind(req, &obj)
@@ -1052,7 +1052,7 @@ func testFormBindingInvalidName(t *testing.T, method, path, badPath, body, badBo
 
 	obj := InvalidNameType{}
 	req := requestWithBody(method, path, body)
-	if method == "POST" {
+	if method == http.MethodPost {
 		req.Header.Add("Content-Type", MIMEPOSTForm)
 	}
 	err := b.Bind(req, &obj)
@@ -1071,7 +1071,7 @@ func testFormBindingInvalidName2(t *testing.T, method, path, badPath, body, badB
 
 	obj := InvalidNameMapType{}
 	req := requestWithBody(method, path, body)
-	if method == "POST" {
+	if method == http.MethodPost {
 		req.Header.Add("Content-Type", MIMEPOSTForm)
 	}
 	err := b.Bind(req, &obj)
@@ -1088,7 +1088,7 @@ func testFormBindingForType(t *testing.T, method, path, badPath, body, badBody s
 	assert.Equal(t, "form", b.Name())
 
 	req := requestWithBody(method, path, body)
-	if method == "POST" {
+	if method == http.MethodPost {
 		req.Header.Add("Content-Type", MIMEPOSTForm)
 	}
 	switch typ {
@@ -1159,7 +1159,7 @@ func testQueryBinding(t *testing.T, method, path, badPath, body, badBody string)
 
 	obj := FooBarStruct{}
 	req := requestWithBody(method, path, body)
-	if method == "POST" {
+	if method == http.MethodPost {
 		req.Header.Add("Content-Type", MIMEPOSTForm)
 	}
 	err := b.Bind(req, &obj)
@@ -1174,7 +1174,7 @@ func testQueryBindingFail(t *testing.T, method, path, badPath, body, badBody str
 
 	obj := FooStructForMapType{}
 	req := requestWithBody(method, path, body)
-	if method == "POST" {
+	if method == http.MethodPost {
 		req.Header.Add("Content-Type", MIMEPOSTForm)
 	}
 	err := b.Bind(req, &obj)
@@ -1187,7 +1187,7 @@ func testQueryBindingBoolFail(t *testing.T, method, path, badPath, body, badBody
 
 	obj := FooStructForBoolType{}
 	req := requestWithBody(method, path, body)
-	if method == "POST" {
+	if method == http.MethodPost {
 		req.Header.Add("Content-Type", MIMEPOSTForm)
 	}
 	err := b.Bind(req, &obj)
@@ -1198,13 +1198,13 @@ func testBodyBinding(t *testing.T, b Binding, name, path, badPath, body, badBody
 	assert.Equal(t, name, b.Name())
 
 	obj := FooStruct{}
-	req := requestWithBody("POST", path, body)
+	req := requestWithBody(http.MethodPost, path, body)
 	err := b.Bind(req, &obj)
 	require.NoError(t, err)
 	assert.Equal(t, "bar", obj.Foo)
 
 	obj = FooStruct{}
-	req = requestWithBody("POST", badPath, badBody)
+	req = requestWithBody(http.MethodPost, badPath, badBody)
 	err = JSON.Bind(req, &obj)
 	require.Error(t, err)
 }
@@ -1213,19 +1213,19 @@ func testBodyBindingSlice(t *testing.T, b Binding, name, path, badPath, body, ba
 	assert.Equal(t, name, b.Name())
 
 	var obj1 []FooStruct
-	req := requestWithBody("POST", path, body)
+	req := requestWithBody(http.MethodPost, path, body)
 	err := b.Bind(req, &obj1)
 	require.NoError(t, err)
 
 	var obj2 []FooStruct
-	req = requestWithBody("POST", badPath, badBody)
+	req = requestWithBody(http.MethodPost, badPath, badBody)
 	err = JSON.Bind(req, &obj2)
 	require.Error(t, err)
 }
 
 func testBodyBindingStringMap(t *testing.T, b Binding, path, badPath, body, badBody string) {
 	obj := make(map[string]string)
-	req := requestWithBody("POST", path, body)
+	req := requestWithBody(http.MethodPost, path, body)
 	if b.Name() == "form" {
 		req.Header.Add("Content-Type", MIMEPOSTForm)
 	}
@@ -1238,13 +1238,13 @@ func testBodyBindingStringMap(t *testing.T, b Binding, path, badPath, body, badB
 
 	if badPath != "" && badBody != "" {
 		obj = make(map[string]string)
-		req = requestWithBody("POST", badPath, badBody)
+		req = requestWithBody(http.MethodPost, badPath, badBody)
 		err = b.Bind(req, &obj)
 		require.Error(t, err)
 	}
 
 	objInt := make(map[string]int)
-	req = requestWithBody("POST", path, body)
+	req = requestWithBody(http.MethodPost, path, body)
 	err = b.Bind(req, &objInt)
 	require.Error(t, err)
 }
@@ -1253,7 +1253,7 @@ func testBodyBindingUseNumber(t *testing.T, b Binding, name, path, badPath, body
 	assert.Equal(t, name, b.Name())
 
 	obj := FooStructUseNumber{}
-	req := requestWithBody("POST", path, body)
+	req := requestWithBody(http.MethodPost, path, body)
 	EnableDecoderUseNumber = true
 	err := b.Bind(req, &obj)
 	require.NoError(t, err)
@@ -1263,7 +1263,7 @@ func testBodyBindingUseNumber(t *testing.T, b Binding, name, path, badPath, body
 	assert.Equal(t, int64(123), v)
 
 	obj = FooStructUseNumber{}
-	req = requestWithBody("POST", badPath, badBody)
+	req = requestWithBody(http.MethodPost, badPath, badBody)
 	err = JSON.Bind(req, &obj)
 	require.Error(t, err)
 }
@@ -1272,7 +1272,7 @@ func testBodyBindingUseNumber2(t *testing.T, b Binding, name, path, badPath, bod
 	assert.Equal(t, name, b.Name())
 
 	obj := FooStructUseNumber{}
-	req := requestWithBody("POST", path, body)
+	req := requestWithBody(http.MethodPost, path, body)
 	EnableDecoderUseNumber = false
 	err := b.Bind(req, &obj)
 	require.NoError(t, err)
@@ -1281,7 +1281,7 @@ func testBodyBindingUseNumber2(t *testing.T, b Binding, name, path, badPath, bod
 	assert.InDelta(t, float64(123), obj.Foo, 0.01)
 
 	obj = FooStructUseNumber{}
-	req = requestWithBody("POST", badPath, badBody)
+	req = requestWithBody(http.MethodPost, badPath, badBody)
 	err = JSON.Bind(req, &obj)
 	require.Error(t, err)
 }
@@ -1293,13 +1293,13 @@ func testBodyBindingDisallowUnknownFields(t *testing.T, b Binding, path, badPath
 	}()
 
 	obj := FooStructDisallowUnknownFields{}
-	req := requestWithBody("POST", path, body)
+	req := requestWithBody(http.MethodPost, path, body)
 	err := b.Bind(req, &obj)
 	require.NoError(t, err)
 	assert.Equal(t, "bar", obj.Foo)
 
 	obj = FooStructDisallowUnknownFields{}
-	req = requestWithBody("POST", badPath, badBody)
+	req = requestWithBody(http.MethodPost, badPath, badBody)
 	err = JSON.Bind(req, &obj)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "what")
@@ -1309,13 +1309,13 @@ func testBodyBindingFail(t *testing.T, b Binding, name, path, badPath, body, bad
 	assert.Equal(t, name, b.Name())
 
 	obj := FooStruct{}
-	req := requestWithBody("POST", path, body)
+	req := requestWithBody(http.MethodPost, path, body)
 	err := b.Bind(req, &obj)
 	require.Error(t, err)
 	assert.Equal(t, "", obj.Foo)
 
 	obj = FooStruct{}
-	req = requestWithBody("POST", badPath, badBody)
+	req = requestWithBody(http.MethodPost, badPath, badBody)
 	err = JSON.Bind(req, &obj)
 	require.Error(t, err)
 }
@@ -1324,14 +1324,14 @@ func testProtoBodyBinding(t *testing.T, b Binding, name, path, badPath, body, ba
 	assert.Equal(t, name, b.Name())
 
 	obj := protoexample.Test{}
-	req := requestWithBody("POST", path, body)
+	req := requestWithBody(http.MethodPost, path, body)
 	req.Header.Add("Content-Type", MIMEPROTOBUF)
 	err := b.Bind(req, &obj)
 	require.NoError(t, err)
 	assert.Equal(t, "yes", *obj.Label)
 
 	obj = protoexample.Test{}
-	req = requestWithBody("POST", badPath, badBody)
+	req = requestWithBody(http.MethodPost, badPath, badBody)
 	req.Header.Add("Content-Type", MIMEPROTOBUF)
 	err = ProtoBuf.Bind(req, &obj)
 	require.Error(t, err)
@@ -1358,28 +1358,28 @@ func TestPlainBinding(t *testing.T) {
 	assert.Equal(t, "plain", p.Name())
 
 	var s string
-	req := requestWithBody("POST", "/", "test string")
+	req := requestWithBody(http.MethodPost, "/", "test string")
 	require.NoError(t, p.Bind(req, &s))
 	assert.Equal(t, "test string", s)
 
 	var bs []byte
-	req = requestWithBody("POST", "/", "test []byte")
+	req = requestWithBody(http.MethodPost, "/", "test []byte")
 	require.NoError(t, p.Bind(req, &bs))
 	assert.Equal(t, bs, []byte("test []byte"))
 
 	var i int
-	req = requestWithBody("POST", "/", "test fail")
+	req = requestWithBody(http.MethodPost, "/", "test fail")
 	require.Error(t, p.Bind(req, &i))
 
-	req = requestWithBody("POST", "/", "")
+	req = requestWithBody(http.MethodPost, "/", "")
 	req.Body = &failRead{}
 	require.Error(t, p.Bind(req, &s))
 
-	req = requestWithBody("POST", "/", "")
+	req = requestWithBody(http.MethodPost, "/", "")
 	require.NoError(t, p.Bind(req, nil))
 
 	var ptr *string
-	req = requestWithBody("POST", "/", "")
+	req = requestWithBody(http.MethodPost, "/", "")
 	require.NoError(t, p.Bind(req, ptr))
 }
 
@@ -1387,7 +1387,7 @@ func testProtoBodyBindingFail(t *testing.T, b Binding, name, path, badPath, body
 	assert.Equal(t, name, b.Name())
 
 	obj := protoexample.Test{}
-	req := requestWithBody("POST", path, body)
+	req := requestWithBody(http.MethodPost, path, body)
 
 	req.Body = io.NopCloser(&hook{})
 	req.Header.Add("Content-Type", MIMEPROTOBUF)
@@ -1402,7 +1402,7 @@ func testProtoBodyBindingFail(t *testing.T, b Binding, name, path, badPath, body
 	assert.Equal(t, "obj is not ProtoMessage", err.Error())
 
 	obj = protoexample.Test{}
-	req = requestWithBody("POST", badPath, badBody)
+	req = requestWithBody(http.MethodPost, badPath, badBody)
 	req.Header.Add("Content-Type", MIMEPROTOBUF)
 	err = ProtoBuf.Bind(req, &obj)
 	require.Error(t, err)

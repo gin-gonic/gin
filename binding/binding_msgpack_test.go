@@ -8,6 +8,7 @@ package binding
 
 import (
 	"bytes"
+	"net/http"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -39,20 +40,20 @@ func testMsgPackBodyBinding(t *testing.T, b Binding, name, path, badPath, body, 
 	assert.Equal(t, name, b.Name())
 
 	obj := FooStruct{}
-	req := requestWithBody("POST", path, body)
+	req := requestWithBody(http.MethodPost, path, body)
 	req.Header.Add("Content-Type", MIMEMSGPACK)
 	err := b.Bind(req, &obj)
 	require.NoError(t, err)
 	assert.Equal(t, "bar", obj.Foo)
 
 	obj = FooStruct{}
-	req = requestWithBody("POST", badPath, badBody)
+	req = requestWithBody(http.MethodPost, badPath, badBody)
 	req.Header.Add("Content-Type", MIMEMSGPACK)
 	err = MsgPack.Bind(req, &obj)
 	require.Error(t, err)
 }
 
 func TestBindingDefaultMsgPack(t *testing.T) {
-	assert.Equal(t, MsgPack, Default("POST", MIMEMSGPACK))
-	assert.Equal(t, MsgPack, Default("PUT", MIMEMSGPACK2))
+	assert.Equal(t, MsgPack, Default(http.MethodPost, MIMEMSGPACK))
+	assert.Equal(t, MsgPack, Default(http.MethodPut, MIMEMSGPACK2))
 }

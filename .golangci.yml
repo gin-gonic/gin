@@ -19,6 +19,7 @@ linters:
     - perfsprint
     - revive
     - testifylint
+    - usestdlibvars
     - wastedassign
 
 linters-settings:
