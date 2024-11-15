@@ -18,6 +18,7 @@ import (
 	"net/url"
 	"os"
 	"reflect"
+	"strconv"
 	"strings"
 	"sync"
 	"testing"
@@ -2633,7 +2634,7 @@ func TestContextRenderDataFromReader(t *testing.T) {
 	assert.Equal(t, http.StatusOK, w.Code)
 	assert.Equal(t, body, w.Body.String())
 	assert.Equal(t, contentType, w.Header().Get("Content-Type"))
-	assert.Equal(t, fmt.Sprintf("%d", contentLength), w.Header().Get("Content-Length"))
+	assert.Equal(t, strconv.FormatInt(contentLength, 10), w.Header().Get("Content-Length"))
 	assert.Equal(t, extraHeaders["Content-Disposition"], w.Header().Get("Content-Disposition"))
 }
 
@@ -2651,7 +2652,7 @@ func TestContextRenderDataFromReaderNoHeaders(t *testing.T) {
 	assert.Equal(t, http.StatusOK, w.Code)
 	assert.Equal(t, body, w.Body.String())
 	assert.Equal(t, contentType, w.Header().Get("Content-Type"))
-	assert.Equal(t, fmt.Sprintf("%d", contentLength), w.Header().Get("Content-Length"))
+	assert.Equal(t, strconv.FormatInt(contentLength, 10), w.Header().Get("Content-Length"))
 }
 
 type TestResponseRecorder struct {

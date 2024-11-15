@@ -73,7 +73,7 @@ func TestLoadHTMLGlobDebugMode(t *testing.T) {
 	)
 	defer ts.Close()
 
-	res, err := http.Get(fmt.Sprintf("%s/test", ts.URL))
+	res, err := http.Get(ts.URL + "/test")
 	if err != nil {
 		t.Error(err)
 	}
@@ -131,7 +131,7 @@ func TestLoadHTMLGlobTestMode(t *testing.T) {
 	)
 	defer ts.Close()
 
-	res, err := http.Get(fmt.Sprintf("%s/test", ts.URL))
+	res, err := http.Get(ts.URL + "/test")
 	if err != nil {
 		t.Error(err)
 	}
@@ -151,7 +151,7 @@ func TestLoadHTMLGlobReleaseMode(t *testing.T) {
 	)
 	defer ts.Close()
 
-	res, err := http.Get(fmt.Sprintf("%s/test", ts.URL))
+	res, err := http.Get(ts.URL + "/test")
 	if err != nil {
 		t.Error(err)
 	}
@@ -178,7 +178,7 @@ func TestLoadHTMLGlobUsingTLS(t *testing.T) {
 		},
 	}
 	client := &http.Client{Transport: tr}
-	res, err := client.Get(fmt.Sprintf("%s/test", ts.URL))
+	res, err := client.Get(ts.URL + "/test")
 	if err != nil {
 		t.Error(err)
 	}
@@ -198,7 +198,7 @@ func TestLoadHTMLGlobFromFuncMap(t *testing.T) {
 	)
 	defer ts.Close()
 
-	res, err := http.Get(fmt.Sprintf("%s/raw", ts.URL))
+	res, err := http.Get(ts.URL + "/raw")
 	if err != nil {
 		t.Error(err)
 	}
@@ -229,7 +229,7 @@ func TestLoadHTMLFilesTestMode(t *testing.T) {
 	)
 	defer ts.Close()
 
-	res, err := http.Get(fmt.Sprintf("%s/test", ts.URL))
+	res, err := http.Get(ts.URL + "/test")
 	if err != nil {
 		t.Error(err)
 	}
@@ -249,7 +249,7 @@ func TestLoadHTMLFilesDebugMode(t *testing.T) {
 	)
 	defer ts.Close()
 
-	res, err := http.Get(fmt.Sprintf("%s/test", ts.URL))
+	res, err := http.Get(ts.URL + "/test")
 	if err != nil {
 		t.Error(err)
 	}
@@ -269,7 +269,7 @@ func TestLoadHTMLFilesReleaseMode(t *testing.T) {
 	)
 	defer ts.Close()
 
-	res, err := http.Get(fmt.Sprintf("%s/test", ts.URL))
+	res, err := http.Get(ts.URL + "/test")
 	if err != nil {
 		t.Error(err)
 	}
@@ -296,7 +296,7 @@ func TestLoadHTMLFilesUsingTLS(t *testing.T) {
 		},
 	}
 	client := &http.Client{Transport: tr}
-	res, err := client.Get(fmt.Sprintf("%s/test", ts.URL))
+	res, err := client.Get(ts.URL + "/test")
 	if err != nil {
 		t.Error(err)
 	}
@@ -316,7 +316,7 @@ func TestLoadHTMLFilesFuncMap(t *testing.T) {
 	)
 	defer ts.Close()
 
-	res, err := http.Get(fmt.Sprintf("%s/raw", ts.URL))
+	res, err := http.Get(ts.URL + "/raw")
 	if err != nil {
 		t.Error(err)
 	}

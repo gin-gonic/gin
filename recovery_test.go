@@ -5,7 +5,6 @@
 package gin
 
 import (
-	"fmt"
 	"net"
 	"net/http"
 	"os"
@@ -33,7 +32,7 @@ func TestPanicClean(t *testing.T) {
 		},
 		header{
 			Key:   "Authorization",
-			Value: fmt.Sprintf("Bearer %s", password),
+			Value: "Bearer " + password,
 		},
 		header{
 			Key:   "Content-Type",

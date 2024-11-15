@@ -560,7 +560,7 @@ func TestRouterNotFoundWithRemoveExtraSlash(t *testing.T) {
 		w := PerformRequest(router, "GET", tr.route)
 		assert.Equal(t, tr.code, w.Code)
 		if w.Code != http.StatusNotFound {
-			assert.Equal(t, tr.location, fmt.Sprint(w.Header().Get("Location")))
+			assert.Equal(t, tr.location, w.Header().Get("Location"))
 		}
 	}
 }
@@ -590,7 +590,7 @@ func TestRouterNotFound(t *testing.T) {
 		w := PerformRequest(router, http.MethodGet, tr.route)
 		assert.Equal(t, tr.code, w.Code)
 		if w.Code != http.StatusNotFound {
-			assert.Equal(t, tr.location, fmt.Sprint(w.Header().Get("Location")))
+			assert.Equal(t, tr.location, w.Header().Get("Location"))
 		}
 	}
 
