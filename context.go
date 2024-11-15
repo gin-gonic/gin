@@ -87,7 +87,7 @@ type Context struct {
 	// or PUT body parameters.
 	formCache url.Values
 
-	// SameSite allows a server to define a cookie attribute making it impossible for
+	// sameSite allows a server to define a cookie attribute making it impossible for
 	// the browser to send this cookie along with cross-site requests.
 	sameSite http.SameSite
 }
