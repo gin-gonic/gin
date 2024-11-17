@@ -44,6 +44,11 @@ type LoggerConfig struct {
 	// Optional. Default value is gin.DefaultWriter.
 	Output io.Writer
 
+	// SkipQueryString indicates that query strings should not be written
+	// for cases such as when API keys are passed via query strings.
+	// Optional. Default value is false.
+	SkipQueryString bool
+
 	// SkipPaths is an url path array which logs are not written.
 	// Optional.
 	SkipPaths []string
@@ -270,7 +275,7 @@ func LoggerWithConfig(conf LoggerConfig) HandlerFunc {
 
 		param.BodySize = c.Writer.Size()
 
-		if raw != "" {
+		if raw != "" && !conf.SkipQueryString {
 			path = path + "?" + raw
 		}
 
