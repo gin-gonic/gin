@@ -52,26 +52,6 @@ const ContextRequestKey ContextKeyType = 0
 // abortIndex represents a typical value used in abort functions.
 const abortIndex int8 = math.MaxInt8 >> 1
 
-// defaultJsonRenderName, default JSON render name
-const defaultJsonRenderName string = "render.JSON"
-
-// jsonRenderRegistry, storing JSON render types and their corresponding creation factory functions
-var jsonRenderRegistry = make(map[string]func(data any) render.Render)
-
-// RegisterJsonRender allows users to register JSON render factory functions
-func (c *Context) RegisterJsonRender(name string, jsonRender func(data any) render.Render) {
-	jsonRenderRegistry[name] = jsonRender
-}
-
-// createInstance, Create a JSON render instance through a factory function
-func createInstance(name string, data any) render.Render {
-	jsonRender, exists := jsonRenderRegistry[name]
-	if !exists {
-		return jsonRenderRegistry[defaultJsonRenderName](data)
-	}
-	return jsonRender(data)
-}
-
 // Context is the most important part of gin. It allows us to pass variables between middleware,
 // manage the flow, validate the JSON of a request and render a JSON response for example.
 type Context struct {
@@ -111,14 +91,14 @@ type Context struct {
 	// the browser to send this cookie along with cross-site requests.
 	sameSite http.SameSite
 
-	// jsonRenderName the name of the JSON render currently used. The default value is render.JSON
-	// this is used to get the JSON render type when executing the c.JSON function.
-	jsonRenderName string
+	// jsonRender the JSON renderer currently used. The default value is render.JSON,
+	// which is used to get the JSON rendering type when executing the c.JSON function.
+	jsonRender func(data any) render.Render
 }
 
-// SetJSONRender set the name of the current JSON render
-func (c *Context) SetJSONRender(jsonRenderName string) {
-	c.jsonRenderName = jsonRenderName
+// SetJSONRender set the current JSON render
+func (c *Context) SetJSONRender(jsonRender func(data any) render.Render) {
+	c.jsonRender = jsonRender
 }
 
 /************************************/
@@ -139,8 +119,7 @@ func (c *Context) reset() {
 	c.formCache = nil
 	c.sameSite = 0
 	// registering a default JSON renderer
-	c.jsonRenderName = defaultJsonRenderName
-	c.RegisterJsonRender(defaultJsonRenderName, render.NewJSON)
+	c.jsonRender = render.NewJSON
 	*c.params = (*c.params)[:0]
 	*c.skippedNodes = (*c.skippedNodes)[:0]
 }
@@ -1127,7 +1106,7 @@ func (c *Context) JSONP(code int, obj any) {
 // JSON serializes the given struct as JSON into the response body.
 // It also sets the Content-Type as "application/json".
 func (c *Context) JSON(code int, obj any) {
-	c.Render(code, createInstance(c.jsonRenderName, obj))
+	c.Render(code, c.jsonRender(obj))
 }
 
 // AsciiJSON serializes the given struct as JSON into the response body with unicode to ASCII string.

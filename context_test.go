@@ -3146,8 +3146,7 @@ func NewMyJSON(data any) render.Render {
 func TestCustomJSONRender(t *testing.T) {
 	w := httptest.NewRecorder()
 	c, _ := CreateTestContext(w)
-	c.RegisterJsonRender("MyTestJSON", NewMyJSON)
-	c.SetJSONRender("MyTestJSON")
+	c.SetJSONRender(NewMyJSON)
 
 	c.JSON(http.StatusCreated, H{"foo": "bar", "html": "<b>"})
 
