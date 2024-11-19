@@ -245,6 +245,10 @@ func (engine *Engine) allocateContext(maxParams uint16) *Context {
 	return &Context{engine: engine, params: &v, skippedNodes: &skippedNodes}
 }
 
+func (e *Engine) ResetTrees() {
+	e.trees = make(methodTrees, 0, 9)
+}
+
 // Delims sets template left and right delims and returns an Engine instance.
 func (engine *Engine) Delims(left, right string) *Engine {
 	engine.delims = render.Delims{Left: left, Right: right}
