@@ -9,6 +9,7 @@ import (
 	"html/template"
 	"net"
 	"net/http"
+	"net/url"
 	"os"
 	"path"
 	"regexp"
@@ -643,11 +644,57 @@ func (engine *Engine) HandleContext(c *Context) {
 	c.index = oldIndexValue
 }
 
+// compareRawWithEscaped compares the RawPath with the EscapedPath of a URL.
+// It returns true if they are equal, false otherwise.
+func compareRawWithEscaped(url *url.URL) bool {
+	rawPath := url.RawPath
+	escapedPath := url.EscapedPath()
+
+	if len(rawPath) != len(escapedPath) {
+		return false
+	}
+
+	for i := 0; i < len(rawPath); i++ {
+		if rawPath[i] != escapedPath[i] {
+			return false
+		}
+
+		if rawPath[i] == '%' && i+2 < len(rawPath) {
+			if rawPath[i+1] == '2' && (rawPath[i+2] == 'F' || rawPath[i+2] == 'f') {
+				return false
+			}
+
+			var diff byte
+			if rawPath[i+1] > escapedPath[i+1] {
+				diff = rawPath[i+1] - escapedPath[i+1]
+			} else {
+				diff = escapedPath[i+1] - rawPath[i+1]
+			}
+			if diff != 0 && diff != 32 {
+				return false
+			}
+
+			if rawPath[i+2] > escapedPath[i+2] {
+				diff = rawPath[i+2] - escapedPath[i+2]
+			} else {
+				diff = escapedPath[i+2] - rawPath[i+2]
+			}
+			if diff != 0 && diff != 32 {
+				return false
+			}
+
+			i += 2
+		}
+	}
+
+	return true
+}
+
 func (engine *Engine) handleHTTPRequest(c *Context) {
 	httpMethod := c.Request.Method
 	rPath := c.Request.URL.Path
 	unescape := false
-	if engine.UseRawPath && len(c.Request.URL.RawPath) > 0 {
+	if engine.UseRawPath && len(c.Request.URL.RawPath) > 0 && !compareRawWithEscaped(c.Request.URL) {
 		rPath = c.Request.URL.RawPath
 		unescape = engine.UnescapePathValues
 	}
