@@ -71,6 +71,9 @@ type Context struct {
 	// This mutex protects Keys map.
 	mu sync.RWMutex
 
+	// This mutex protects headers map
+	hmu sync.RWMutex
+
 	// Keys is a key/value pair exclusively for the context of each request.
 	Keys map[string]any
 
@@ -983,6 +986,8 @@ func (c *Context) Status(code int) {
 // It writes a header in the response.
 // If value == "", this method removes the header `c.Writer.Header().Del(key)`
 func (c *Context) Header(key, value string) {
+	c.hmu.Lock()
+	defer c.hmu.Unlock()
 	if value == "" {
 		c.Writer.Header().Del(key)
 		return
@@ -992,6 +997,8 @@ func (c *Context) Header(key, value string) {
 
 // GetHeader returns value from request headers.
 func (c *Context) GetHeader(key string) string {
+	c.hmu.RLock()
+	defer c.hmu.RUnlock()
 	return c.requestHeader(key)
 }
 
