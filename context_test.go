@@ -3323,4 +3323,22 @@ func TestContextSetCookieData(t *testing.T) {
 		setCookie := c.Writer.Header().Get("Set-Cookie")
 		assert.Contains(t, setCookie, "SameSite=None")
 	})
+func TestParallelHeaderWrite(t *testing.T) {
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	wg := sync.WaitGroup{}
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		for i := 0; i < 1000; i++ {
+			c.Header("key", "value")
+		}
+	}()
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		for i := 0; i < 1000; i++ {
+			c.Header("key", "value")
+		}
+	}()
+	wg.Wait()
 }
