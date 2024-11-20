@@ -789,3 +789,19 @@ func TestEngineHandleMethodNotAllowedCornerCase(t *testing.T) {
 	w := PerformRequest(r, "GET", "/base/v1/user/groups")
 	assert.Equal(t, http.StatusNotFound, w.Code)
 }
+
+// Test the fix for https://github.com/gin-gonic/gin/issues/4034
+func TestLowercasePercentEncodePath(t *testing.T) {
+	route := Default()
+	route.UnescapePathValues = false
+	route.UseRawPath = true
+	route.RedirectFixedPath = true
+	route.GET("/핫", func(ctx *Context) {
+		ctx.JSON(200, H{})
+	})
+	req := httptest.NewRequest("GET", "/%ed%95%ab", nil)
+	w := httptest.NewRecorder()
+	route.ServeHTTP(w, req)
+	assert.Equal(t, 200, w.Code)
+	assert.Equal(t, "{}", w.Body.String())
+}
