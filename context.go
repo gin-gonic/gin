@@ -87,9 +87,18 @@ type Context struct {
 	// or PUT body parameters.
 	formCache url.Values
 
-	// SameSite allows a server to define a cookie attribute making it impossible for
+	// sameSite allows a server to define a cookie attribute making it impossible for
 	// the browser to send this cookie along with cross-site requests.
 	sameSite http.SameSite
+
+	// jsonRender the JSON renderer currently used. The default value is render.JSON,
+	// which is used to get the JSON rendering type when executing the c.JSON function.
+	jsonRender func(data any) render.Render
+}
+
+// SetJSONRender set the current JSON render
+func (c *Context) SetJSONRender(jsonRender func(data any) render.Render) {
+	c.jsonRender = jsonRender
 }
 
 /************************************/
@@ -109,6 +118,8 @@ func (c *Context) reset() {
 	c.queryCache = nil
 	c.formCache = nil
 	c.sameSite = 0
+	// registering a default JSON renderer
+	c.jsonRender = render.NewJSON
 	*c.params = (*c.params)[:0]
 	*c.skippedNodes = (*c.skippedNodes)[:0]
 }
@@ -1095,7 +1106,7 @@ func (c *Context) JSONP(code int, obj any) {
 // JSON serializes the given struct as JSON into the response body.
 // It also sets the Content-Type as "application/json".
 func (c *Context) JSON(code int, obj any) {
-	c.Render(code, render.JSON{Data: obj})
+	c.Render(code, c.jsonRender(obj))
 }
 
 // AsciiJSON serializes the given struct as JSON into the response body with unicode to ASCII string.

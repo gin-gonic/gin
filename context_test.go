@@ -9,6 +9,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/gin-gonic/gin/render"
 	"html/template"
 	"io"
 	"io/fs"
@@ -166,7 +167,7 @@ func TestSaveUploadedFileWithPermission(t *testing.T) {
 	require.NoError(t, err)
 	mw.Close()
 	c, _ := CreateTestContext(httptest.NewRecorder())
-	c.Request, _ = http.NewRequest("POST", "/", buf)
+	c.Request, _ = http.NewRequest(http.MethodPost,, "/", buf)
 	c.Request.Header.Set("Content-Type", mw.FormDataContentType())
 	f, err := c.FormFile("file")
 	require.NoError(t, err)
@@ -187,7 +188,7 @@ func TestSaveUploadedFileWithPermissionFailed(t *testing.T) {
 	require.NoError(t, err)
 	mw.Close()
 	c, _ := CreateTestContext(httptest.NewRecorder())
-	c.Request, _ = http.NewRequest("POST", "/", buf)
+	c.Request, _ = http.NewRequest(http.MethodPost, "/", buf)
 	c.Request.Header.Set("Content-Type", mw.FormDataContentType())
 	f, err := c.FormFile("file")
 	require.NoError(t, err)
@@ -3122,4 +3123,32 @@ func TestContextNext(t *testing.T) {
 	value, exists = c.Get("key3")
 	assert.True(t, exists)
 	assert.Equal(t, "value3", value)
+}
+
+// MyJSON customizing JSON rendering
+type MyJSON struct {
+	Data any
+	render.JSON
+}
+
+// Render rewrite the Render function
+func (r MyJSON) Render(w http.ResponseWriter) error {
+	_, err := w.Write([]byte("test"))
+	return err
+}
+
+func NewMyJSON(data any) render.Render {
+	return &MyJSON{Data: data}
+}
+
+// TestCustomJSONRender the test uses a custom JSON render.
+// The final result is that the user can customize the JSON render without affecting the original function.
+func TestCustomJSONRender(t *testing.T) {
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
+	c.SetJSONRender(NewMyJSON)
+
+	c.JSON(http.StatusCreated, H{"foo": "bar", "html": "<b>"})
+
+	t.Log(w.Body.String())
 }
