@@ -399,6 +399,10 @@ func setTimeField(val string, structField reflect.StructField, value reflect.Val
 
 	switch tf := strings.ToLower(timeFormat); tf {
 	case "unix", "unixnano":
+		if val == "" {
+			val = "0"
+		}
+
 		tv, err := strconv.ParseInt(val, 10, 64)
 		if err != nil {
 			return err
