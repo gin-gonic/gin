@@ -6,17 +6,36 @@
 
 package json
 
-import "encoding/json"
+import (
+	"encoding/json"
+	"io"
 
-var (
-	// Marshal is exported by gin/json package.
-	Marshal = json.Marshal
-	// Unmarshal is exported by gin/json package.
-	Unmarshal = json.Unmarshal
-	// MarshalIndent is exported by gin/json package.
-	MarshalIndent = json.MarshalIndent
-	// NewDecoder is exported by gin/json package.
-	NewDecoder = json.NewDecoder
-	// NewEncoder is exported by gin/json package.
-	NewEncoder = json.NewEncoder
+	"github.com/gin-gonic/gin/codec/api"
 )
+
+func init() {
+	Api = jsonApi{}
+}
+
+type jsonApi struct {
+}
+
+func (j jsonApi) Marshal(v any) ([]byte, error) {
+	return json.Marshal(v)
+}
+
+func (j jsonApi) Unmarshal(data []byte, v any) error {
+	return json.Unmarshal(data, v)
+}
+
+func (j jsonApi) MarshalIndent(v any, prefix, indent string) ([]byte, error) {
+	return json.MarshalIndent(v, prefix, indent)
+}
+
+func (j jsonApi) NewEncoder(writer io.Writer) api.JsonEncoder {
+	return json.NewEncoder(writer)
+}
+
+func (j jsonApi) NewDecoder(reader io.Reader) api.JsonDecoder {
+	return json.NewDecoder(reader)
+}

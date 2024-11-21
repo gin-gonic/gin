@@ -6,18 +6,38 @@
 
 package json
 
-import "github.com/bytedance/sonic"
+import (
+	"io"
 
-var (
-	json = sonic.ConfigStd
-	// Marshal is exported by gin/json package.
-	Marshal = json.Marshal
-	// Unmarshal is exported by gin/json package.
-	Unmarshal = json.Unmarshal
-	// MarshalIndent is exported by gin/json package.
-	MarshalIndent = json.MarshalIndent
-	// NewDecoder is exported by gin/json package.
-	NewDecoder = json.NewDecoder
-	// NewEncoder is exported by gin/json package.
-	NewEncoder = json.NewEncoder
+	"github.com/bytedance/sonic"
+	"github.com/gin-gonic/gin/codec/api"
 )
+
+func init() {
+	Api = sonicApi{}
+}
+
+var json = sonic.ConfigStd
+
+type sonicApi struct {
+}
+
+func (j sonicApi) Marshal(v any) ([]byte, error) {
+	return json.Marshal(v)
+}
+
+func (j sonicApi) Unmarshal(data []byte, v any) error {
+	return json.Unmarshal(data, v)
+}
+
+func (j sonicApi) MarshalIndent(v any, prefix, indent string) ([]byte, error) {
+	return json.MarshalIndent(v, prefix, indent)
+}
+
+func (j sonicApi) NewEncoder(writer io.Writer) api.JsonEncoder {
+	return json.NewEncoder(writer)
+}
+
+func (j sonicApi) NewDecoder(reader io.Reader) api.JsonDecoder {
+	return json.NewDecoder(reader)
+}
