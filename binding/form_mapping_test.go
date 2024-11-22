@@ -635,3 +635,25 @@ func TestMappingCustomArrayForm(t *testing.T) {
 	expected, _ := convertTo(val)
 	assert.EqualValues(t, expected, s.FileData)
 }
+
+func TestMappingTimeUnixAndUnixNano(t *testing.T) {
+	var s struct {
+		Unix               time.Time `time_format:"unix"`
+		UnixNano           time.Time `time_format:"unixnano"`
+		EmptyValueUnix     time.Time `time_format:"unix"`
+		EmptyValueUnixNano time.Time `time_format:"unixnano"`
+	}
+
+	err := mapForm(&s, map[string][]string{
+		"Unix":               {"1548000000"},
+		"UnixNano":           {"1548000000000000000"},
+		"EmptyValue":         {""},
+		"EmptyValueUnixNano": {""},
+	})
+	require.NoError(t, err)
+
+	assert.Equal(t, "2019-01-20 16:00:00 +0000 UTC", s.Unix.UTC().String())
+	assert.Equal(t, "2019-01-20 16:00:00 +0000 UTC", s.UnixNano.UTC().String())
+	assert.Zero(t, s.EmptyValueUnix)
+	assert.Zero(t, s.EmptyValueUnixNano)
+}
