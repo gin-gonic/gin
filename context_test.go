@@ -166,7 +166,7 @@ func TestSaveUploadedFileWithPermission(t *testing.T) {
 	require.NoError(t, err)
 	mw.Close()
 	c, _ := CreateTestContext(httptest.NewRecorder())
-	c.Request, _ = http.NewRequest("POST", "/", buf)
+	c.Request, _ = http.NewRequest(http.MethodPost, "/", buf)
 	c.Request.Header.Set("Content-Type", mw.FormDataContentType())
 	f, err := c.FormFile("file")
 	require.NoError(t, err)
@@ -187,7 +187,7 @@ func TestSaveUploadedFileWithPermissionFailed(t *testing.T) {
 	require.NoError(t, err)
 	mw.Close()
 	c, _ := CreateTestContext(httptest.NewRecorder())
-	c.Request, _ = http.NewRequest("POST", "/", buf)
+	c.Request, _ = http.NewRequest(http.MethodPost, "/", buf)
 	c.Request.Header.Set("Content-Type", mw.FormDataContentType())
 	f, err := c.FormFile("file")
 	require.NoError(t, err)
@@ -3122,4 +3122,24 @@ func TestContextNext(t *testing.T) {
 	value, exists = c.Get("key3")
 	assert.True(t, exists)
 	assert.Equal(t, "value3", value)
+}
+
+func TestParallelHeaderWrite(t *testing.T) {
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	wg := sync.WaitGroup{}
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		for i := 0; i < 1000; i++ {
+			c.Header("key", "value")
+		}
+	}()
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		for i := 0; i < 1000; i++ {
+			c.Header("key", "value")
+		}
+	}()
+	wg.Wait()
 }
