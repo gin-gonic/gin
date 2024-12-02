@@ -52,9 +52,6 @@ var regRemoveRepeatedChar = regexp.MustCompile("/{2,}")
 // HandlerFunc defines the handler used by gin middleware as return value.
 type HandlerFunc func(*Context)
 
-// OptionFunc defines the function to change the default configuration
-type OptionFunc func(*Engine)
-
 // HandlersChain defines a HandlerFunc slice.
 type HandlersChain []HandlerFunc
 
