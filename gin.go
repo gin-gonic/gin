@@ -654,6 +654,7 @@ func (engine *Engine) handleHTTPRequest(c *Context) {
 
 	if engine.RemoveExtraSlash {
 		rPath = cleanPath(rPath)
+		c.Request.URL.Path = rPath
 	}
 
 	// Find root of the tree for the given HTTP method
