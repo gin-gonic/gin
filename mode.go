@@ -21,7 +21,7 @@ const (
 	DebugMode = "debug"
 	// ReleaseMode indicates gin mode is release.
 	ReleaseMode = "release"
-	// TestMode indicates gin mode is test.
+	// TestMode indicates gin mode is tested.
 	TestMode = "test"
 )
 
