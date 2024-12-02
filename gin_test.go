@@ -678,6 +678,24 @@ func TestPrepareTrustedCIRDsWith(t *testing.T) {
 	}
 }
 
+func TestGetHandlerPath(t *testing.T) {
+	r := New()
+	r.GET("/foo", handlerTest1)
+	r.POST("/bar", handlerTest2)
+
+	v := r.Group("/users")
+	{
+		v.GET("/:id1", handlerTest1)
+		v.POST("/:id2", handlerTest2)
+	}
+
+	p1 := r.GetHandlerPath("handlerTest1")
+	assert.Equal(t, p1, []string{"/foo", "/users/:id1"})
+
+	p2 := r.GetHandlerPath("handlerTest2")
+	assert.Equal(t, p2, []string{"/bar", "/users/:id2"})
+}
+
 func parseCIDR(cidr string) *net.IPNet {
 	_, parsedCIDR, err := net.ParseCIDR(cidr)
 	if err != nil {
