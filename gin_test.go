@@ -573,6 +573,46 @@ func TestEngineHandleContextManyReEntries(t *testing.T) {
 	assert.Equal(t, int64(expectValue), middlewareCounter)
 }
 
+func TestEngineHandleContextReEntriesWithDifferentMiddlewares(t *testing.T) {
+	var (
+		expectedResp                                                     = "ok"
+		v1MiddlewareCounter1, v2MiddlewareCounter1, v2MiddlewareCounter2 int64
+	)
+
+	r := New()
+
+	r.GET("/v1",
+		func(c *Context) { /* V1middleware1 */
+			atomic.AddInt64(&v1MiddlewareCounter1, 1)
+		},
+		func(c *Context) {
+			c.Request.URL.Path = "/v2"
+			r.HandleContext(c)
+		})
+
+	r.GET("/v2",
+		func(c *Context) { /* V2middleware1 */
+			atomic.AddInt64(&v2MiddlewareCounter1, 1)
+		},
+		func(c *Context) { /* v2middleware2 */
+			atomic.AddInt64(&v2MiddlewareCounter2, 1)
+		},
+		func(c *Context) {
+			c.String(200, expectedResp)
+		})
+
+	assert.NotPanics(t, func() {
+		w := PerformRequest(r, "GET", "/v1")
+		assert.Equal(t, 200, w.Code)
+		assert.Equal(t, expectedResp, w.Body.String())
+	})
+
+	// all the middlewares should be called independently from each router
+	assert.Equal(t, int64(1), v1MiddlewareCounter1)
+	assert.Equal(t, int64(1), v2MiddlewareCounter1)
+	assert.Equal(t, int64(1), v2MiddlewareCounter2)
+}
+
 func TestPrepareTrustedCIRDsWith(t *testing.T) {
 	r := New()
 
