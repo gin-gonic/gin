@@ -16,159 +16,139 @@ import (
 type ErrorType uint64
 
 const (
-	// ErrorTypeBind is used when Context.Bind() fails.
-	ErrorTypeBind ErrorType = 1 << 63
-	// ErrorTypeRender is used when Context.Render() fails.
-	ErrorTypeRender ErrorType = 1 << 62
-	// ErrorTypePrivate indicates a private error.
-	ErrorTypePrivate ErrorType = 1 << 0
-	// ErrorTypePublic indicates a public error.
-	ErrorTypePublic ErrorType = 1 << 1
-	// ErrorTypeAny indicates any other error.
-	ErrorTypeAny ErrorType = 1<<64 - 1
-	// ErrorTypeNu indicates any other error.
-	ErrorTypeNu = 2
+	ErrorTypeBind      ErrorType = 1 << 63
+	ErrorTypeRender    ErrorType = 1 << 62
+	ErrorTypePrivate   ErrorType = 1 << 0
+	ErrorTypePublic    ErrorType = 1 << 1
+	ErrorTypeAny       ErrorType = 1<<64 - 1
+	ErrorTypeNu        = 2
 )
 
-// Error represents a error's specification.
+// Error represents an error's specification.
 type Error struct {
 	Err  error
 	Type ErrorType
-	Meta any
+	Meta interface{}
 }
 
+// errorMsgs is a slice of errors.
 type errorMsgs []*Error
 
-var _ error = (*Error)(nil)
-
 // SetType sets the error's type.
-func (msg *Error) SetType(flags ErrorType) *Error {
-	msg.Type = flags
-	return msg
+func (err *Error) SetType(flags ErrorType) *Error {
+	err.Type = flags
+	return err
 }
 
 // SetMeta sets the error's meta data.
-func (msg *Error) SetMeta(data any) *Error {
-	msg.Meta = data
-	return msg
+func (err *Error) SetMeta(data interface{}) *Error {
+	err.Meta = data
+	return err
 }
 
-// JSON creates a properly formatted JSON
-func (msg *Error) JSON() any {
-	jsonData := H{}
-	if msg.Meta != nil {
-		value := reflect.ValueOf(msg.Meta)
+// JSON creates a properly formatted JSON.
+func (err *Error) JSON() interface{} {
+	jsonData := map[string]interface{}{
+		"error": err.Err.Error(),
+	}
+
+	if err.Meta != nil {
+		value := reflect.ValueOf(err.Meta)
 		switch value.Kind() {
 		case reflect.Struct:
-			return msg.Meta
+			return err.Meta
 		case reflect.Map:
 			for _, key := range value.MapKeys() {
 				jsonData[key.String()] = value.MapIndex(key).Interface()
 			}
 		default:
-			jsonData["meta"] = msg.Meta
+			jsonData["meta"] = err.Meta
 		}
 	}
-	if _, ok := jsonData["error"]; !ok {
-		jsonData["error"] = msg.Error()
-	}
+
 	return jsonData
 }
 
 // MarshalJSON implements the json.Marshaller interface.
-func (msg *Error) MarshalJSON() ([]byte, error) {
-	return json.Marshal(msg.JSON())
+func (err *Error) MarshalJSON() ([]byte, error) {
+	return json.Marshal(err.JSON())
 }
 
 // Error implements the error interface.
-func (msg Error) Error() string {
-	return msg.Err.Error()
+func (err Error) Error() string {
+	return fmt.Sprintf("error: %v", err.Err)
 }
 
-// IsType judges one error.
-func (msg *Error) IsType(flags ErrorType) bool {
-	return (msg.Type & flags) > 0
+// IsType checks if the error has a specific type.
+func (err *Error) IsType(flags ErrorType) bool {
+	return (err.Type & flags) > 0
 }
 
-// Unwrap returns the wrapped error, to allow interoperability with errors.Is(), errors.As() and errors.Unwrap()
-func (msg *Error) Unwrap() error {
-	return msg.Err
+// Unwrap returns the wrapped error.
+func (err *Error) Unwrap() error {
+	return err.Err
 }
 
-// ByType returns a readonly copy filtered the byte.
-// ie ByType(gin.ErrorTypePublic) returns a slice of errors with type=ErrorTypePublic.
-func (a errorMsgs) ByType(typ ErrorType) errorMsgs {
-	if len(a) == 0 {
-		return nil
+// ByType returns a readonly copy filtered by the error type.
+func (errs errorMsgs) ByType(typ ErrorType) errorMsgs {
+	if len(errs) == 0 || typ == ErrorTypeAny {
+		return errs
 	}
-	if typ == ErrorTypeAny {
-		return a
-	}
+
 	var result errorMsgs
-	for _, msg := range a {
-		if msg.IsType(typ) {
-			result = append(result, msg)
+	for _, err := range errs {
+		if err.IsType(typ) {
+			result = append(result, err)
 		}
 	}
 	return result
 }
 
-// Last returns the last error in the slice. It returns nil if the array is empty.
-// Shortcut for errors[len(errors)-1].
-func (a errorMsgs) Last() *Error {
-	if length := len(a); length > 0 {
-		return a[length-1]
+// Last returns the last error in the slice.
+func (errs errorMsgs) Last() *Error {
+	if length := len(errs); length > 0 {
+		return errs[length-1]
 	}
 	return nil
 }
 
 // Errors returns an array with all the error messages.
-// Example:
-//
-//	c.Error(errors.New("first"))
-//	c.Error(errors.New("second"))
-//	c.Error(errors.New("third"))
-//	c.Errors.Errors() // == []string{"first", "second", "third"}
-func (a errorMsgs) Errors() []string {
-	if len(a) == 0 {
-		return nil
-	}
-	errorStrings := make([]string, len(a))
-	for i, err := range a {
+func (errs errorMsgs) Errors() []string {
+	errorStrings := make([]string, len(errs))
+	for i, err := range errs {
 		errorStrings[i] = err.Error()
 	}
 	return errorStrings
 }
 
-func (a errorMsgs) JSON() any {
-	switch length := len(a); length {
+// JSON creates a JSON representation of the error slice.
+func (errs errorMsgs) JSON() interface{} {
+	switch length := len(errs); length {
 	case 0:
 		return nil
 	case 1:
-		return a.Last().JSON()
+		return errs.Last().JSON()
 	default:
-		jsonData := make([]any, length)
-		for i, err := range a {
+		jsonData := make([]interface{}, length)
+		for i, err := range errs {
 			jsonData[i] = err.JSON()
 		}
 		return jsonData
 	}
 }
 
-// MarshalJSON implements the json.Marshaller interface.
-func (a errorMsgs) MarshalJSON() ([]byte, error) {
-	return json.Marshal(a.JSON())
+// MarshalJSON implements the json.Marshaller interface for the error slice.
+func (errs errorMsgs) MarshalJSON() ([]byte, error) {
+	return json.Marshal(errs.JSON())
 }
 
-func (a errorMsgs) String() string {
-	if len(a) == 0 {
-		return ""
-	}
+// String returns a formatted string representation of the error slice.
+func (errs errorMsgs) String() string {
 	var buffer strings.Builder
-	for i, msg := range a {
-		fmt.Fprintf(&buffer, "Error #%02d: %s\n", i+1, msg.Err)
-		if msg.Meta != nil {
-			fmt.Fprintf(&buffer, "     Meta: %v\n", msg.Meta)
+	for i, err := range errs {
+		fmt.Fprintf(&buffer, "Error #%02d: %v\n", i+1, err)
+		if err.Meta != nil {
+			fmt.Fprintf(&buffer, "     Meta: %v\n", err.Meta)
 		}
 	}
 	return buffer.String()
