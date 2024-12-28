@@ -19,6 +19,10 @@ type JSON struct {
 	Data any
 }
 
+func NewJSON(data any) Render {
+	return &JSON{Data: data}
+}
+
 // IndentedJSON contains the given interface object.
 type IndentedJSON struct {
 	Data any
