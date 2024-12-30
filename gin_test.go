@@ -325,6 +325,115 @@ func TestLoadHTMLFilesFuncMap(t *testing.T) {
 	assert.Equal(t, "Date: 2017/07/01", string(resp))
 }
 
+var tmplFS = http.Dir("testdata/template")
+
+func TestLoadHTMLFSTestMode(t *testing.T) {
+	ts := setupHTMLFiles(
+		t,
+		TestMode,
+		false,
+		func(router *Engine) {
+			router.LoadHTMLFS(tmplFS, "hello.tmpl", "raw.tmpl")
+		},
+	)
+	defer ts.Close()
+
+	res, err := http.Get(fmt.Sprintf("%s/test", ts.URL))
+	if err != nil {
+		t.Error(err)
+	}
+
+	resp, _ := io.ReadAll(res.Body)
+	assert.Equal(t, "<h1>Hello world</h1>", string(resp))
+}
+
+func TestLoadHTMLFSDebugMode(t *testing.T) {
+	ts := setupHTMLFiles(
+		t,
+		DebugMode,
+		false,
+		func(router *Engine) {
+			router.LoadHTMLFS(tmplFS, "hello.tmpl", "raw.tmpl")
+		},
+	)
+	defer ts.Close()
+
+	res, err := http.Get(fmt.Sprintf("%s/test", ts.URL))
+	if err != nil {
+		t.Error(err)
+	}
+
+	resp, _ := io.ReadAll(res.Body)
+	assert.Equal(t, "<h1>Hello world</h1>", string(resp))
+}
+
+func TestLoadHTMLFSReleaseMode(t *testing.T) {
+	ts := setupHTMLFiles(
+		t,
+		ReleaseMode,
+		false,
+		func(router *Engine) {
+			router.LoadHTMLFS(tmplFS, "hello.tmpl", "raw.tmpl")
+		},
+	)
+	defer ts.Close()
+
+	res, err := http.Get(fmt.Sprintf("%s/test", ts.URL))
+	if err != nil {
+		t.Error(err)
+	}
+
+	resp, _ := io.ReadAll(res.Body)
+	assert.Equal(t, "<h1>Hello world</h1>", string(resp))
+}
+
+func TestLoadHTMLFSUsingTLS(t *testing.T) {
+	ts := setupHTMLFiles(
+		t,
+		TestMode,
+		true,
+		func(router *Engine) {
+			router.LoadHTMLFS(tmplFS, "hello.tmpl", "raw.tmpl")
+		},
+	)
+	defer ts.Close()
+
+	// Use InsecureSkipVerify for avoiding `x509: certificate signed by unknown authority` error
+	tr := &http.Transport{
+		TLSClientConfig: &tls.Config{
+			InsecureSkipVerify: true,
+		},
+	}
+	client := &http.Client{Transport: tr}
+	res, err := client.Get(fmt.Sprintf("%s/test", ts.URL))
+	if err != nil {
+		t.Error(err)
+	}
+
+	resp, _ := io.ReadAll(res.Body)
+	assert.Equal(t, "<h1>Hello world</h1>", string(resp))
+}
+
+func TestLoadHTMLFSFuncMap(t *testing.T) {
+	ts := setupHTMLFiles(
+		t,
+		TestMode,
+		false,
+		func(router *Engine) {
+			router.LoadHTMLFS(tmplFS, "hello.tmpl", "raw.tmpl")
+		},
+	)
+	defer ts.Close()
+
+	res, err := http.Get(fmt.Sprintf("%s/raw", ts.URL))
+	if err != nil {
+		t.Error(err)
+	}
+
+	resp, _ := io.ReadAll(res.Body)
+	assert.Equal(t, "Date: 2017/07/01", string(resp))
+}
+
 func TestAddRoute(t *testing.T) {
 	router := New()
 	router.addRoute(http.MethodGet, "/", HandlersChain{func(_ *Context) {}})
