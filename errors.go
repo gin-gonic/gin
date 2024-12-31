@@ -77,7 +77,7 @@ func (msg *Error) JSON() any {
 
 // MarshalJSON implements the json.Marshaller interface.
 func (msg *Error) MarshalJSON() ([]byte, error) {
-	return json.Marshal(msg.JSON())
+	return json.API.Marshal(msg.JSON())
 }
 
 // Error implements the error interface.
@@ -157,7 +157,7 @@ func (a errorMsgs) JSON() any {
 
 // MarshalJSON implements the json.Marshaller interface.
 func (a errorMsgs) MarshalJSON() ([]byte, error) {
-	return json.Marshal(a.JSON())
+	return json.API.Marshal(a.JSON())
 }
 
 func (a errorMsgs) String() string {
