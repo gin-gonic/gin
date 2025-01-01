@@ -1272,7 +1272,9 @@ func (c *Context) NegotiateFormat(offered ...string) string {
 	assert1(len(offered) > 0, "you must provide at least one offer")
 
 	if c.Accepted == nil {
-		c.Accepted = parseAccept(c.requestHeader("Accept"))
+		for _, a := range c.Request.Header.Values("Accept") {
+			c.Accepted = append(c.Accepted, parseAccept(a)...)
+		}
 	}
 	if len(c.Accepted) == 0 {
 		return offered[0]
