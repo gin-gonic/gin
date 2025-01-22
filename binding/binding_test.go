@@ -21,6 +21,7 @@ import (
 	"github.com/gin-gonic/gin/testdata/protoexample"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.mongodb.org/mongo-driver/bson"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -172,6 +173,9 @@ func TestBindingDefault(t *testing.T) {
 
 	assert.Equal(t, TOML, Default(http.MethodPost, MIMETOML))
 	assert.Equal(t, TOML, Default(http.MethodPut, MIMETOML))
+
+	assert.Equal(t, BSON, Default(http.MethodPost, MIMEBSON))
+	assert.Equal(t, BSON, Default(http.MethodPut, MIMEBSON))
 }
 
 func TestBindingJSONNilBody(t *testing.T) {
@@ -729,6 +733,18 @@ func TestBindingProtoBufFail(t *testing.T) {
 		ProtoBuf, "protobuf",
 		"/", "/",
 		string(data), string(data[1:]))
+}
+
+func TestBindingBSON(t *testing.T) {
+	var obj FooStruct
+	obj.Foo = "bar"
+	data, _ := bson.Marshal(&obj)
+	testBodyBinding(t,
+		BSON, "bson",
+		"/", "/",
+		string(data),
+		// note: for badbody, we remove first byte to make it invalid
+		string(data[1:]))
 }
 
 func TestValidationFails(t *testing.T) {

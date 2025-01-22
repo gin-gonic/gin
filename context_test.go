@@ -32,6 +32,7 @@ import (
 	testdata "github.com/gin-gonic/gin/testdata/protoexample"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.mongodb.org/mongo-driver/bson"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -1699,6 +1700,23 @@ func TestContextNegotiationWithPROTOBUF(t *testing.T) {
 	assert.Equal(t, http.StatusCreated, w.Code)
 	assert.Equal(t, string(protoData), w.Body.String())
 	assert.Equal(t, "application/x-protobuf", w.Header().Get("Content-Type"))
+}
+
+func TestContextNegotiationWithBSON(t *testing.T) {
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
+	c.Request, _ = http.NewRequest(http.MethodPost, "", nil)
+
+	c.Negotiate(http.StatusOK, Negotiate{
+		Offered: []string{MIMEBSON, MIMEXML, MIMEJSON, MIMEYAML, MIMEYAML2},
+		Data:    H{"foo": "bar"},
+	})
+
+	bData, _ := bson.Marshal(H{"foo": "bar"})
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Equal(t, string(bData), w.Body.String())
+	assert.Equal(t, "application/bson", w.Header().Get("Content-Type"))
 }
 
 func TestContextNegotiationNotSupport(t *testing.T) {
