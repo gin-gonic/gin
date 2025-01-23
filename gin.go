@@ -299,6 +299,22 @@ func (engine *Engine) SetFuncMap(funcMap template.FuncMap) {
 	engine.FuncMap = funcMap
 }
 
+// GetHandlerPath takes a name of a handler and returns a slice of matched paths associated with that handler.
+func (engine *Engine) GetHandlerPath(handlerName string) []string {
+	handlers := engine.Routes()
+	var paths []string
+
+	for _, f := range handlers {
+		handler := strings.Split(f.Handler, ".")
+
+		if handler[len(handler)-1] == handlerName {
+			paths = append(paths, f.Path)
+		}
+	}
+
+	return paths
+}
+
 // NoRoute adds handlers for NoRoute. It returns a 404 code by default.
 func (engine *Engine) NoRoute(handlers ...HandlerFunc) {
 	engine.noRoute = handlers
