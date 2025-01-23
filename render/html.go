@@ -32,7 +32,7 @@ type HTMLProduction struct {
 // HTMLDebug contains template delims and pattern and function with file list.
 type HTMLDebug struct {
 	Files   []string
-	Glob    string
+	Glob    []string
 	Delims  Delims
 	FuncMap template.FuncMap
 }
@@ -70,8 +70,11 @@ func (r HTMLDebug) loadTemplate() *template.Template {
 	if len(r.Files) > 0 {
 		return template.Must(template.New("").Delims(r.Delims.Left, r.Delims.Right).Funcs(r.FuncMap).ParseFiles(r.Files...))
 	}
-	if r.Glob != "" {
-		return template.Must(template.New("").Delims(r.Delims.Left, r.Delims.Right).Funcs(r.FuncMap).ParseGlob(r.Glob))
+	if len(r.Glob) > 0 {
+		tmpl := template.New("").Delims(r.Delims.Left, r.Delims.Right).Funcs(r.FuncMap)
+		for _, g := range r.Glob {
+			tmpl = template.Must(tmpl.ParseGlob(g))
+		}
 	}
 	panic("the HTML debug render was created without files or glob pattern")
 }
