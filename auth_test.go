@@ -90,7 +90,7 @@ func TestBasicAuthSucceed(t *testing.T) {
 	})
 
 	w := httptest.NewRecorder()
-	req, _ := http.NewRequest("GET", "/login", nil)
+	req, _ := http.NewRequest(http.MethodGet, "/login", nil)
 	req.Header.Set("Authorization", authorizationHeader("admin", "password"))
 	router.ServeHTTP(w, req)
 
@@ -109,7 +109,7 @@ func TestBasicAuth401(t *testing.T) {
 	})
 
 	w := httptest.NewRecorder()
-	req, _ := http.NewRequest("GET", "/login", nil)
+	req, _ := http.NewRequest(http.MethodGet, "/login", nil)
 	req.Header.Set("Authorization", "Basic "+base64.StdEncoding.EncodeToString([]byte("admin:password")))
 	router.ServeHTTP(w, req)
 
@@ -129,7 +129,7 @@ func TestBasicAuth401WithCustomRealm(t *testing.T) {
 	})
 
 	w := httptest.NewRecorder()
-	req, _ := http.NewRequest("GET", "/login", nil)
+	req, _ := http.NewRequest(http.MethodGet, "/login", nil)
 	req.Header.Set("Authorization", "Basic "+base64.StdEncoding.EncodeToString([]byte("admin:password")))
 	router.ServeHTTP(w, req)
 
@@ -147,7 +147,7 @@ func TestBasicAuthForProxySucceed(t *testing.T) {
 	})
 
 	w := httptest.NewRecorder()
-	req, _ := http.NewRequest("GET", "/test", nil)
+	req, _ := http.NewRequest(http.MethodGet, "/test", nil)
 	req.Header.Set("Proxy-Authorization", authorizationHeader("admin", "password"))
 	router.ServeHTTP(w, req)
 
@@ -166,7 +166,7 @@ func TestBasicAuthForProxy407(t *testing.T) {
 	})
 
 	w := httptest.NewRecorder()
-	req, _ := http.NewRequest("GET", "/test", nil)
+	req, _ := http.NewRequest(http.MethodGet, "/test", nil)
 	req.Header.Set("Proxy-Authorization", "Basic "+base64.StdEncoding.EncodeToString([]byte("admin:password")))
 	router.ServeHTTP(w, req)
 

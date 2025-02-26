@@ -35,7 +35,7 @@ func TestMiddlewareGeneralCase(t *testing.T) {
 		signature += " XX "
 	})
 	// RUN
-	w := PerformRequest(router, "GET", "/")
+	w := PerformRequest(router, http.MethodGet, "/")
 
 	// TEST
 	assert.Equal(t, http.StatusOK, w.Code)
@@ -71,7 +71,7 @@ func TestMiddlewareNoRoute(t *testing.T) {
 		signature += " X "
 	})
 	// RUN
-	w := PerformRequest(router, "GET", "/")
+	w := PerformRequest(router, http.MethodGet, "/")
 
 	// TEST
 	assert.Equal(t, http.StatusNotFound, w.Code)
@@ -108,7 +108,7 @@ func TestMiddlewareNoMethodEnabled(t *testing.T) {
 		signature += " XX "
 	})
 	// RUN
-	w := PerformRequest(router, "GET", "/")
+	w := PerformRequest(router, http.MethodGet, "/")
 
 	// TEST
 	assert.Equal(t, http.StatusMethodNotAllowed, w.Code)
@@ -149,7 +149,7 @@ func TestMiddlewareNoMethodDisabled(t *testing.T) {
 	})
 
 	// RUN
-	w := PerformRequest(router, "GET", "/")
+	w := PerformRequest(router, http.MethodGet, "/")
 
 	// TEST
 	assert.Equal(t, http.StatusNotFound, w.Code)
@@ -175,7 +175,7 @@ func TestMiddlewareAbort(t *testing.T) {
 	})
 
 	// RUN
-	w := PerformRequest(router, "GET", "/")
+	w := PerformRequest(router, http.MethodGet, "/")
 
 	// TEST
 	assert.Equal(t, http.StatusUnauthorized, w.Code)
@@ -196,7 +196,7 @@ func TestMiddlewareAbortHandlersChainAndNext(t *testing.T) {
 		c.Next()
 	})
 	// RUN
-	w := PerformRequest(router, "GET", "/")
+	w := PerformRequest(router, http.MethodGet, "/")
 
 	// TEST
 	assert.Equal(t, http.StatusGone, w.Code)
@@ -219,7 +219,7 @@ func TestMiddlewareFailHandlersChain(t *testing.T) {
 		signature += "C"
 	})
 	// RUN
-	w := PerformRequest(router, "GET", "/")
+	w := PerformRequest(router, http.MethodGet, "/")
 
 	// TEST
 	assert.Equal(t, http.StatusInternalServerError, w.Code)
@@ -246,7 +246,7 @@ func TestMiddlewareWrite(t *testing.T) {
 		})
 	})
 
-	w := PerformRequest(router, "GET", "/")
+	w := PerformRequest(router, http.MethodGet, "/")
 
 	assert.Equal(t, http.StatusBadRequest, w.Code)
 	assert.Equal(t, strings.Replace("hola\n<map><foo>bar</foo></map>{\"foo\":\"bar\"}{\"foo\":\"bar\"}event:test\ndata:message\n\n", " ", "", -1), strings.Replace(w.Body.String(), " ", "", -1))

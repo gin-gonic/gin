@@ -7,6 +7,7 @@ package gin
 import (
 	"errors"
 	"io"
+	"io/fs"
 	"log"
 	"math"
 	"mime/multipart"
@@ -186,10 +187,9 @@ func (c *Context) FullPath() string {
 func (c *Context) Next() {
 	c.index++
 	for c.index < int8(len(c.handlers)) {
-		if c.handlers[c.index] == nil {
-			continue
+		if c.handlers[c.index] != nil {
+			c.handlers[c.index](c)
 		}
-		c.handlers[c.index](c)
 		c.index++
 	}
 }
@@ -291,108 +291,171 @@ func (c *Context) MustGet(key string) any {
 	panic("Key \"" + key + "\" does not exist")
 }
 
-// GetString returns the value associated with the key as a string.
-func (c *Context) GetString(key string) (s string) {
+func getTyped[T any](c *Context, key string) (res T) {
 	if val, ok := c.Get(key); ok && val != nil {
-		s, _ = val.(string)
+		res, _ = val.(T)
 	}
 	return
+}
+
+// GetString returns the value associated with the key as a string.
+func (c *Context) GetString(key string) (s string) {
+	return getTyped[string](c, key)
 }
 
 // GetBool returns the value associated with the key as a boolean.
 func (c *Context) GetBool(key string) (b bool) {
-	if val, ok := c.Get(key); ok && val != nil {
-		b, _ = val.(bool)
-	}
-	return
+	return getTyped[bool](c, key)
 }
 
 // GetInt returns the value associated with the key as an integer.
 func (c *Context) GetInt(key string) (i int) {
-	if val, ok := c.Get(key); ok && val != nil {
-		i, _ = val.(int)
-	}
-	return
+	return getTyped[int](c, key)
 }
 
-// GetInt64 returns the value associated with the key as an integer.
+// GetInt8 returns the value associated with the key as an integer 8.
+func (c *Context) GetInt8(key string) (i8 int8) {
+	return getTyped[int8](c, key)
+}
+
+// GetInt16 returns the value associated with the key as an integer 16.
+func (c *Context) GetInt16(key string) (i16 int16) {
+	return getTyped[int16](c, key)
+}
+
+// GetInt32 returns the value associated with the key as an integer 32.
+func (c *Context) GetInt32(key string) (i32 int32) {
+	return getTyped[int32](c, key)
+}
+
+// GetInt64 returns the value associated with the key as an integer 64.
 func (c *Context) GetInt64(key string) (i64 int64) {
-	if val, ok := c.Get(key); ok && val != nil {
-		i64, _ = val.(int64)
-	}
-	return
+	return getTyped[int64](c, key)
 }
 
 // GetUint returns the value associated with the key as an unsigned integer.
 func (c *Context) GetUint(key string) (ui uint) {
-	if val, ok := c.Get(key); ok && val != nil {
-		ui, _ = val.(uint)
-	}
-	return
+	return getTyped[uint](c, key)
 }
 
-// GetUint64 returns the value associated with the key as an unsigned integer.
+// GetUint8 returns the value associated with the key as an unsigned integer 8.
+func (c *Context) GetUint8(key string) (ui8 uint8) {
+	return getTyped[uint8](c, key)
+}
+
+// GetUint16 returns the value associated with the key as an unsigned integer 16.
+func (c *Context) GetUint16(key string) (ui16 uint16) {
+	return getTyped[uint16](c, key)
+}
+
+// GetUint32 returns the value associated with the key as an unsigned integer 32.
+func (c *Context) GetUint32(key string) (ui32 uint32) {
+	return getTyped[uint32](c, key)
+}
+
+// GetUint64 returns the value associated with the key as an unsigned integer 64.
 func (c *Context) GetUint64(key string) (ui64 uint64) {
-	if val, ok := c.Get(key); ok && val != nil {
-		ui64, _ = val.(uint64)
-	}
-	return
+	return getTyped[uint64](c, key)
+}
+
+// GetFloat32 returns the value associated with the key as a float32.
+func (c *Context) GetFloat32(key string) (f32 float32) {
+	return getTyped[float32](c, key)
 }
 
 // GetFloat64 returns the value associated with the key as a float64.
 func (c *Context) GetFloat64(key string) (f64 float64) {
-	if val, ok := c.Get(key); ok && val != nil {
-		f64, _ = val.(float64)
-	}
-	return
+	return getTyped[float64](c, key)
 }
 
 // GetTime returns the value associated with the key as time.
 func (c *Context) GetTime(key string) (t time.Time) {
-	if val, ok := c.Get(key); ok && val != nil {
-		t, _ = val.(time.Time)
-	}
-	return
+	return getTyped[time.Time](c, key)
 }
 
 // GetDuration returns the value associated with the key as a duration.
 func (c *Context) GetDuration(key string) (d time.Duration) {
-	if val, ok := c.Get(key); ok && val != nil {
-		d, _ = val.(time.Duration)
-	}
-	return
+	return getTyped[time.Duration](c, key)
+}
+
+// GetIntSlice returns the value associated with the key as a slice of integers.
+func (c *Context) GetIntSlice(key string) (is []int) {
+	return getTyped[[]int](c, key)
+}
+
+// GetInt8Slice returns the value associated with the key as a slice of int8 integers.
+func (c *Context) GetInt8Slice(key string) (i8s []int8) {
+	return getTyped[[]int8](c, key)
+}
+
+// GetInt16Slice returns the value associated with the key as a slice of int16 integers.
+func (c *Context) GetInt16Slice(key string) (i16s []int16) {
+	return getTyped[[]int16](c, key)
+}
+
+// GetInt32Slice returns the value associated with the key as a slice of int32 integers.
+func (c *Context) GetInt32Slice(key string) (i32s []int32) {
+	return getTyped[[]int32](c, key)
+}
+
+// GetInt64Slice returns the value associated with the key as a slice of int64 integers.
+func (c *Context) GetInt64Slice(key string) (i64s []int64) {
+	return getTyped[[]int64](c, key)
+}
+
+// GetUintSlice returns the value associated with the key as a slice of unsigned integers.
+func (c *Context) GetUintSlice(key string) (uis []uint) {
+	return getTyped[[]uint](c, key)
+}
+
+// GetUint8Slice returns the value associated with the key as a slice of uint8 integers.
+func (c *Context) GetUint8Slice(key string) (ui8s []uint8) {
+	return getTyped[[]uint8](c, key)
+}
+
+// GetUint16Slice returns the value associated with the key as a slice of uint16 integers.
+func (c *Context) GetUint16Slice(key string) (ui16s []uint16) {
+	return getTyped[[]uint16](c, key)
+}
+
+// GetUint32Slice returns the value associated with the key as a slice of uint32 integers.
+func (c *Context) GetUint32Slice(key string) (ui32s []uint32) {
+	return getTyped[[]uint32](c, key)
+}
+
+// GetUint64Slice returns the value associated with the key as a slice of uint64 integers.
+func (c *Context) GetUint64Slice(key string) (ui64s []uint64) {
+	return getTyped[[]uint64](c, key)
+}
+
+// GetFloat32Slice returns the value associated with the key as a slice of float32 numbers.
+func (c *Context) GetFloat32Slice(key string) (f32s []float32) {
+	return getTyped[[]float32](c, key)
+}
+
+// GetFloat64Slice returns the value associated with the key as a slice of float64 numbers.
+func (c *Context) GetFloat64Slice(key string) (f64s []float64) {
+	return getTyped[[]float64](c, key)
 }
 
 // GetStringSlice returns the value associated with the key as a slice of strings.
 func (c *Context) GetStringSlice(key string) (ss []string) {
-	if val, ok := c.Get(key); ok && val != nil {
-		ss, _ = val.([]string)
-	}
-	return
+	return getTyped[[]string](c, key)
 }
 
 // GetStringMap returns the value associated with the key as a map of interfaces.
 func (c *Context) GetStringMap(key string) (sm map[string]any) {
-	if val, ok := c.Get(key); ok && val != nil {
-		sm, _ = val.(map[string]any)
-	}
-	return
+	return getTyped[map[string]any](c, key)
 }
 
 // GetStringMapString returns the value associated with the key as a map of strings.
 func (c *Context) GetStringMapString(key string) (sms map[string]string) {
-	if val, ok := c.Get(key); ok && val != nil {
-		sms, _ = val.(map[string]string)
-	}
-	return
+	return getTyped[map[string]string](c, key)
 }
 
 // GetStringMapStringSlice returns the value associated with the key as a map to a slice of strings.
 func (c *Context) GetStringMapStringSlice(key string) (smss map[string][]string) {
-	if val, ok := c.Get(key); ok && val != nil {
-		smss, _ = val.(map[string][]string)
-	}
-	return
+	return getTyped[map[string][]string](c, key)
 }
 
 /************************************/
@@ -614,14 +677,22 @@ func (c *Context) MultipartForm() (*multipart.Form, error) {
 }
 
 // SaveUploadedFile uploads the form file to specific dst.
-func (c *Context) SaveUploadedFile(file *multipart.FileHeader, dst string) error {
+func (c *Context) SaveUploadedFile(file *multipart.FileHeader, dst string, perm ...fs.FileMode) error {
 	src, err := file.Open()
 	if err != nil {
 		return err
 	}
 	defer src.Close()
 
-	if err = os.MkdirAll(filepath.Dir(dst), 0o750); err != nil {
+	if len(perm) <= 0 {
+		perm = append(perm, 0o750)
+	}
+
+	if err = os.MkdirAll(filepath.Dir(dst), perm[0]); err != nil {
+		return err
+	}
+
+	if err = os.Chmod(filepath.Dir(dst), perm[0]); err != nil {
 		return err
 	}
 
@@ -811,7 +882,7 @@ func (c *Context) ShouldBindBodyWithTOML(obj any) error {
 	return c.ShouldBindBodyWith(obj, binding.TOML)
 }
 
-// ShouldBindBodyWithJSON is a shortcut for c.ShouldBindBodyWith(obj, binding.JSON).
+// ShouldBindBodyWithPlain is a shortcut for c.ShouldBindBodyWith(obj, binding.Plain).
 func (c *Context) ShouldBindBodyWithPlain(obj any) error {
 	return c.ShouldBindBodyWith(obj, binding.Plain)
 }

@@ -26,14 +26,14 @@ jobs:
       - name: Setup golangci-lint
         uses: golangci/golangci-lint-action@v6
         with:
-          version: v1.58.1
+          version: v1.61.0
           args: --verbose
   test:
     needs: lint
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest]
-        go: ["1.21", "1.22"]
+        go: ["1.22", "1.23", "1.24"]
         test-tags:
           ["", "-tags nomsgpack", '-tags "sonic avx"', "-tags go_json", "-race"]
         include:

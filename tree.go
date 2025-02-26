@@ -262,7 +262,19 @@ walk:
 // Returns -1 as index, if no wildcard was found.
 func findWildcard(path string) (wildcard string, i int, valid bool) {
 	// Find start
+	escapeColon := false
 	for start, c := range []byte(path) {
+		if escapeColon {
+			escapeColon = false
+			if c == ':' {
+				continue
+			}
+			panic("invalid escape string in path '" + path + "'")
+		}
+		if c == '\\' {
+			escapeColon = true
+			continue
+		}
 		// A wildcard starts with ':' (param) or '*' (catch-all)
 		if c != ':' && c != '*' {
 			continue
@@ -357,7 +369,7 @@ func (n *node) insertChild(path string, fullPath string, handlers HandlersChain)
 
 		// currently fixed width 1 for '/'
 		i--
-		if path[i] != '/' {
+		if i < 0 || path[i] != '/' {
 			panic("no / before catch-all in path '" + fullPath + "'")
 		}
 

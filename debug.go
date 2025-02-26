@@ -78,7 +78,7 @@ func getMinVer(v string) (uint64, error) {
 
 func debugPrintWARNINGDefault() {
 	if v, e := getMinVer(runtime.Version()); e == nil && v < ginSupportMinGoVer {
-		debugPrint(`[WARNING] Now Gin requires Go 1.21+.
+		debugPrint(`[WARNING] Now Gin requires Go 1.22+.
 
 `)
 	}
