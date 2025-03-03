@@ -5,6 +5,7 @@
 package gin
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -92,6 +93,10 @@ type Context struct {
 	// SameSite allows a server to define a cookie attribute making it impossible for
 	// the browser to send this cookie along with cross-site requests.
 	sameSite http.SameSite
+
+	internalContextMu          sync.RWMutex
+	internalContext            context.Context
+	internalContextCancelCause context.CancelCauseFunc
 }
 
 /************************************/
@@ -113,6 +118,10 @@ func (c *Context) reset() {
 	c.sameSite = 0
 	*c.params = (*c.params)[:0]
 	*c.skippedNodes = (*c.skippedNodes)[:0]
+
+	if c.useInternalContext() {
+		c.WithInternalContext(context.Background())
+	}
 }
 
 // Copy returns a copy of the current context that can be safely used outside the request's scope.
@@ -1358,6 +1367,49 @@ func (c *Context) SetAccepted(formats ...string) {
 /***** GOLANG.ORG/X/NET/CONTEXT *****/
 /************************************/
 
+// WithInternalContext replaces the internal context stored with the provided one in a thread safe manner.
+// It's important that any context you pass in is not something the wraps *gin.Context,
+// if you want to wrap a context and then provide it to WithInternalContext, use InternalContext().
+// If you don't plan to provide the context back to WithInternalContext you can safely use *Context directly.
+// Otherwise you'll end up with a stack overflow.
+//
+// For example:
+// var c *Context // given a context
+// // you can safely wrap it and pass it downstream
+// myDownstreamFunction(context.WithValue(c, ...))
+//
+// // but when you want to call WithInternalContext you should do it like this
+// c.WithInternalContext(context.WithValue(c.InternalContext(), ...))
+func (c *Context) WithInternalContext(ctx context.Context) {
+	if !c.useInternalContext() {
+		panic("Can't use WithInternalContext when UseInternalContext is false")
+	}
+
+	c.internalContextMu.Lock()
+	defer c.internalContextMu.Unlock()
+
+	c.internalContext, c.internalContextCancelCause = context.WithCancelCause(ctx)
+}
+
+// InternalContext provides the currently stored internal context in a thread safe manner.
+// Use this if you want to wrap a context.Context which you'll end up providing to WithInternalContext.
+// If you don't plan to provide the context back to WithInternalContext you can safely use *Context directly.
+func (c *Context) InternalContext() context.Context {
+	if !c.useInternalContext() {
+		panic("Can't use InternalContext when UseInternalContext is false")
+	}
+
+	c.internalContextMu.RLock()
+	defer c.internalContextMu.RUnlock()
+
+	return c.internalContext
+}
+
+// hasRequestContext returns whether c.Request has Context and fallback.
+func (c *Context) useInternalContext() bool {
+	return c.engine != nil && c.engine.UseInternalContext
+}
+
 // hasRequestContext returns whether c.Request has Context and fallback.
 func (c *Context) hasRequestContext() bool {
 	hasFallback := c.engine != nil && c.engine.ContextWithFallback
@@ -1367,26 +1419,44 @@ func (c *Context) hasRequestContext() bool {
 
 // Deadline returns that there is no deadline (ok==false) when c.Request has no Context.
 func (c *Context) Deadline() (deadline time.Time, ok bool) {
-	if !c.hasRequestContext() {
-		return
+	if c.useInternalContext() {
+		c.internalContextMu.RLock()
+		defer c.internalContextMu.RUnlock()
+
+		return c.internalContext.Deadline()
+	} else if c.hasRequestContext() {
+		return c.Request.Context().Deadline()
 	}
-	return c.Request.Context().Deadline()
+
+	return
 }
 
 // Done returns nil (chan which will wait forever) when c.Request has no Context.
 func (c *Context) Done() <-chan struct{} {
-	if !c.hasRequestContext() {
-		return nil
+	if c.useInternalContext() {
+		c.internalContextMu.RLock()
+		defer c.internalContextMu.RUnlock()
+
+		return c.internalContext.Done()
+	} else if c.hasRequestContext() {
+		return c.Request.Context().Done()
 	}
-	return c.Request.Context().Done()
+
+	return nil
 }
 
 // Err returns nil when c.Request has no Context.
 func (c *Context) Err() error {
-	if !c.hasRequestContext() {
-		return nil
+	if c.useInternalContext() {
+		c.internalContextMu.RLock()
+		defer c.internalContextMu.RUnlock()
+
+		return c.internalContext.Err()
+	} else if c.hasRequestContext() {
+		return c.Request.Context().Err()
 	}
-	return c.Request.Context().Err()
+
+	return nil
 }
 
 // Value returns the value associated with this context for key, or nil
@@ -1404,8 +1474,14 @@ func (c *Context) Value(key any) any {
 			return val
 		}
 	}
-	if !c.hasRequestContext() {
-		return nil
+	if c.useInternalContext() {
+		c.internalContextMu.RLock()
+		defer c.internalContextMu.RUnlock()
+
+		return c.internalContext.Value(key)
+	} else if c.hasRequestContext() {
+		return c.Request.Context().Value(key)
 	}
-	return c.Request.Context().Value(key)
+
+	return nil
 }
