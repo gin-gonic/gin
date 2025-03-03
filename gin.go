@@ -161,8 +161,13 @@ type Engine struct {
 	// UseH2C enable h2c support.
 	UseH2C bool
 
-	// ContextWithFallback enable fallback Context.Deadline(), Context.Done(), Context.Err() and Context.Value() when Context.Request.Context() is not nil.
+	// ContextWithFallback enable fallback Context.Deadline(), Context.Done(), Context.Err() and Context.Value()
+	// through Context.Request when Context.Request.Context() is not nil.
 	ContextWithFallback bool
+
+	// UseInternalContext enable fallback Context.Deadline(), Context.Done(), Context.Err()
+	// through InternalContext and supersedes ContextWithFallback
+	UseInternalContext bool
 
 	delims           render.Delims
 	secureJSONPrefix string
@@ -639,6 +644,24 @@ func (engine *Engine) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	c.writermem.reset(w)
 	c.Request = req
 	c.reset()
+
+	// If we're using internalContext then we need to pass on errors from the request context
+	if c.useInternalContext() {
+		reqCtx := req.Context()
+
+		// we need to get the cancelCause function now, so that we have the function for this request
+		// because the c is a pointer to a Context that will possibly go back into the pool and be reused
+		c.internalContextMu.RLock()
+		cancelCause := c.internalContextCancelCause
+		c.internalContextMu.RUnlock()
+
+		go func() {
+			<-reqCtx.Done()
+			if err := reqCtx.Err(); err != nil {
+				cancelCause(err)
+			}
+		}()
+	}
 
 	engine.handleHTTPRequest(c)
 
