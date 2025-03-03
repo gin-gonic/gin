@@ -15,24 +15,27 @@ jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
-      - name: Setup go
-        uses: actions/setup-go@v4
+      - name: Checkout
+        uses: actions/checkout@v4
         with:
-          go-version: '^1.18'
-      - name: Checkout repository
-        uses: actions/checkout@v3
+          fetch-depth: 0
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "^1"
       - name: Setup golangci-lint
-        uses: golangci/golangci-lint-action@v3.4.0
+        uses: golangci/golangci-lint-action@v6
         with:
-          version: v1.52.2
+          version: v1.61.0
           args: --verbose
   test:
     needs: lint
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest]
-        go: ['1.18', '1.19', '1.20']
-        test-tags: ['', '-tags nomsgpack', '-tags "sonic avx"', '-tags go_json']
+        go: ["1.22", "1.23", "1.24"]
+        test-tags:
+          ["", "-tags nomsgpack", '-tags "sonic avx"', "-tags go_json", "-race"]
         include:
           - os: ubuntu-latest
             go-build: ~/.cache/go-build
@@ -46,16 +49,17 @@ jobs:
       GOPROXY: https://proxy.golang.org
     steps:
       - name: Set up Go ${{ matrix.go }}
-        uses: actions/setup-go@v4
+        uses: actions/setup-go@v5
         with:
           go-version: ${{ matrix.go }}
+          cache: false
 
       - name: Checkout Code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           ref: ${{ github.ref }}
 
-      - uses: actions/cache@v3
+      - uses: actions/cache@v4
         with:
           path: |
             ${{ matrix.go-build }}
@@ -68,10 +72,10 @@ jobs:
         run: make test
 
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v4
         with:
           flags: ${{ matrix.os }},go-${{ matrix.go }},${{ matrix.test-tags }}
 
       - name: Format
-        if: matrix.go-version == '1.20.x'
+        if: matrix.go-version == '1.22.x'
         run: diff -u <(echo -n) <(gofmt -d .)

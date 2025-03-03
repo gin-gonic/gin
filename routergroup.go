@@ -218,7 +218,7 @@ func (group *RouterGroup) createStaticHandler(relativePath string, fs http.FileS
 	fileServer := http.StripPrefix(absolutePath, http.FileServer(fs))
 
 	return func(c *Context) {
-		if _, noListing := fs.(*onlyFilesFS); noListing {
+		if _, noListing := fs.(*OnlyFilesFS); noListing {
 			c.Writer.WriteHeader(http.StatusNotFound)
 		}
 

@@ -26,7 +26,10 @@
   - [Custom Validators](#custom-validators)
   - [Only Bind Query String](#only-bind-query-string)
   - [Bind Query String or Post Data](#bind-query-string-or-post-data)
+  - [Bind default value if none provided](#bind-default-value-if-none-provided)
+  - [Collection format for arrays](#collection-format-for-arrays)
   - [Bind Uri](#bind-uri)
+  - [Bind custom unmarshaler](#bind-custom-unmarshaler)
   - [Bind Header](#bind-header)
   - [Bind HTML checkboxes](#bind-html-checkboxes)
   - [Multipart/Urlencoded binding](#multiparturlencoded-binding)
@@ -169,7 +172,7 @@ func main() {
   router := gin.Default()
 
   // Query string parameters are parsed using the existing underlying request object.
-  // The request responds to an url matching:  /welcome?firstname=Jane&lastname=Doe
+  // The request responds to an url matching: /welcome?firstname=Jane&lastname=Doe
   router.GET("/welcome", func(c *gin.Context) {
     firstname := c.DefaultQuery("firstname", "Guest")
     lastname := c.Query("lastname") // shortcut for c.Request.URL.Query().Get("lastname")
@@ -337,16 +340,16 @@ func main() {
   router := gin.Default()
 
   // Simple group: v1
-  v1 := router.Group("/v1")
   {
+    v1 := router.Group("/v1")
     v1.POST("/login", loginEndpoint)
     v1.POST("/submit", submitEndpoint)
     v1.POST("/read", readEndpoint)
   }
 
   // Simple group: v2
-  v2 := router.Group("/v2")
   {
+    v2 := router.Group("/v2")
     v2.POST("/login", loginEndpoint)
     v2.POST("/submit", submitEndpoint)
     v2.POST("/read", readEndpoint)
@@ -508,6 +511,44 @@ Sample Output
 ::1 - [Fri, 07 Dec 2018 17:04:38 JST] "GET /ping HTTP/1.1 200 122.767µs "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/71.0.3578.80 Safari/537.36" "
 ```
 
+### Skip logging
+
+```go
+func main() {
+  router := gin.New()
+
+  // skip logging for desired paths by setting SkipPaths in LoggerConfig
+  loggerConfig := gin.LoggerConfig{SkipPaths: []string{"/metrics"}}
+
+  // skip logging based on your logic by setting Skip func in LoggerConfig
+  loggerConfig.Skip = func(c *gin.Context) bool {
+      // as an example skip non server side errors
+      return c.Writer.Status() < http.StatusInternalServerError
+  }
+
+  router.Use(gin.LoggerWithConfig(loggerConfig))
+  router.Use(gin.Recovery())
+
+  // skipped
+  router.GET("/metrics", func(c *gin.Context) {
+      c.Status(http.StatusNotImplemented)
+  })
+
+  // skipped
+  router.GET("/ping", func(c *gin.Context) {
+      c.String(http.StatusOK, "pong")
+  })
+
+  // not skipped
+  router.GET("/data", func(c *gin.Context) {
+    c.Status(http.StatusNotImplemented)
+  })
+
+  router.Run(":8080")
+}
+
+```
+
 ### Controlling Log output coloring
 
 By default, logs output on console should be colorized depending on the detected TTY.
@@ -574,7 +615,7 @@ You can also specify that specific fields are required. If a field is decorated 
 ```go
 // Binding from JSON
 type Login struct {
-  User     string `form:"user" json:"user" xml:"user"  binding:"required"`
+  User     string `form:"user" json:"user" xml:"user" binding:"required"`
   Password string `form:"password" json:"password" xml:"password" binding:"required"`
 }
 
@@ -822,6 +863,106 @@ Test it with:
 curl -X GET "localhost:8085/testing?name=appleboy&address=xyz&birthday=1992-03-15&createTime=1562400033000000123&unixTime=1562400033"
 ```
 
+
+### Bind default value if none provided
+
+If the server should bind a default value to a field when the client does not provide one, specify the default value using the `default` key within the `form` tag:
+
+```
+package main
+
+import (
+	"net/http"
+
+	"github.com/gin-gonic/gin"
+)
+
+type Person struct {
+	Name      string    `form:"name,default=William"`
+	Age       int       `form:"age,default=10"`
+	Friends   []string  `form:"friends,default=Will;Bill"`
+	Addresses [2]string `form:"addresses,default=foo bar" collection_format:"ssv"`
+	LapTimes  []int     `form:"lap_times,default=1;2;3" collection_format:"csv"`
+}
+
+func main() {
+	g := gin.Default()
+	g.POST("/person", func(c *gin.Context) {
+		var req Person
+		if err := c.ShouldBindQuery(&req); err != nil {
+			c.JSON(http.StatusBadRequest, err)
+			return
+		}
+		c.JSON(http.StatusOK, req)
+	})
+	_ = g.Run("localhost:8080")
+}
+```
+
+```
+curl -X POST http://localhost:8080/person
+{"Name":"William","Age":10,"Friends":["Will","Bill"],"Colors":["red","blue"],"LapTimes":[1,2,3]}
+```
+
+NOTE: For default [collection values](#collection-format-for-arrays), the following rules apply:
+- Since commas are used to delimit tag options, they are not supported within a default value and will result in undefined behavior
+- For the collection formats "multi" and "csv", a semicolon should be used in place of a comma to delimited default values
+- Since semicolons are used to delimit default values for "multi" and "csv", they are not supported within a default value for "multi" and "csv"
+
+
+#### Collection format for arrays
+
+| Format          | Description                                               | Example                 |
+| --------------- | --------------------------------------------------------- | ----------------------- |
+| multi (default) | Multiple parameter instances rather than multiple values. | key=foo&key=bar&key=baz |
+| csv             | Comma-separated values.                                   | foo,bar,baz             |
+| ssv             | Space-separated values.                                   | foo bar baz             |
+| tsv             | Tab-separated values.                                     | "foo\tbar\tbaz"         |
+| pipes           | Pipe-separated values.                                    | foo\|bar\|baz           |
+
+```go
+package main
+
+import (
+	"log"
+	"time"
+	"github.com/gin-gonic/gin"
+)
+
+type Person struct {
+	Name       string    `form:"name"`
+	Addresses  []string  `form:"addresses" collection_format:"csv"`
+	Birthday   time.Time `form:"birthday" time_format:"2006-01-02" time_utc:"1"`
+	CreateTime time.Time `form:"createTime" time_format:"unixNano"`
+	UnixTime   time.Time `form:"unixTime" time_format:"unix"`
+}
+
+func main() {
+	route := gin.Default()
+	route.GET("/testing", startPage)
+	route.Run(":8085")
+}
+func startPage(c *gin.Context) {
+	var person Person
+	// If `GET`, only `Form` binding engine (`query`) used.
+	// If `POST`, first checks the `content-type` for `JSON` or `XML`, then uses `Form` (`form-data`).
+	// See more at https://github.com/gin-gonic/gin/blob/master/binding/binding.go#L48
+        if c.ShouldBind(&person) == nil {
+                log.Println(person.Name)
+                log.Println(person.Addresses)
+                log.Println(person.Birthday)
+                log.Println(person.CreateTime)
+                log.Println(person.UnixTime)
+        }
+	c.String(200, "Success")
+}
+```
+
+Test it with:
+```sh
+$ curl -X GET "localhost:8085/testing?name=appleboy&addresses=foo,bar&birthday=1992-03-15&createTime=1562400033000000123&unixTime=1562400033"
+```
+
 ### Bind Uri
 
 See the [detail information](https://github.com/gin-gonic/gin/issues/846).
@@ -859,6 +1000,46 @@ Test it with:
 ```sh
 curl -v localhost:8088/thinkerou/987fbc97-4bed-5078-9f07-9141ba07c9f3
 curl -v localhost:8088/thinkerou/not-uuid
+```
+
+### Bind custom unmarshaler
+
+```go
+package main
+
+import (
+  "github.com/gin-gonic/gin"
+  "strings"
+)
+
+type Birthday string
+
+func (b *Birthday) UnmarshalParam(param string) error {
+  *b = Birthday(strings.Replace(param, "-", "/", -1))
+  return nil
+}
+
+func main() {
+  route := gin.Default()
+  var request struct {
+    Birthday Birthday `form:"birthday"`
+  }
+  route.GET("/test", func(ctx *gin.Context) {
+    _ = ctx.BindQuery(&request)
+    ctx.JSON(200, request.Birthday)
+  })
+  route.Run(":8088")
+}
+```
+
+Test it with:
+
+```sh
+curl 'localhost:8088/test?birthday=2000-01-01'
+```
+Result
+```sh
+"2000/01/01"
 ```
 
 ### Bind Header
@@ -1071,7 +1252,7 @@ func main() {
 
 #### JSONP
 
-Using JSONP to request data from a server  in a different domain. Add callback to response body if the query parameter callback exists.
+Using JSONP to request data from a server in a different domain. Add callback to response body if the query parameter callback exists.
 
 ```go
 func main() {
@@ -1120,7 +1301,7 @@ func main() {
 
 #### PureJSON
 
-Normally, JSON replaces special HTML characters with their unicode entities, e.g. `<` becomes  `\u003c`. If you want to encode such characters literally, you can use PureJSON instead.
+Normally, JSON replaces special HTML characters with their unicode entities, e.g. `<` becomes `\u003c`. If you want to encode such characters literally, you can use PureJSON instead.
 This feature is unavailable in Go 1.6 and lower.
 
 ```go
@@ -1155,7 +1336,7 @@ func main() {
   router.StaticFS("/more_static", http.Dir("my_file_system"))
   router.StaticFile("/favicon.ico", "./resources/favicon.ico")
   router.StaticFileFS("/more_favicon.ico", "more_favicon.ico", http.Dir("my_file_system"))
-  
+
   // Listen and serve on 0.0.0.0:8080
   router.Run(":8080")
 }
@@ -1918,7 +2099,12 @@ func SomeHandler(c *gin.Context) {
 }
 ```
 
-For this, you can use `c.ShouldBindBodyWith`.
+For this, you can use `c.ShouldBindBodyWith` or shortcuts.
+
+- `c.ShouldBindBodyWithJSON` is a shortcut for c.ShouldBindBodyWith(obj, binding.JSON).
+- `c.ShouldBindBodyWithXML` is a shortcut for c.ShouldBindBodyWith(obj, binding.XML).
+- `c.ShouldBindBodyWithYAML` is a shortcut for c.ShouldBindBodyWith(obj, binding.YAML).
+- `c.ShouldBindBodyWithTOML` is a shortcut for c.ShouldBindBodyWith(obj, binding.TOML).
 
 ```go
 func SomeHandler(c *gin.Context) {
@@ -1931,7 +2117,7 @@ func SomeHandler(c *gin.Context) {
   } else if errB := c.ShouldBindBodyWith(&objB, binding.JSON); errB == nil {
     c.String(http.StatusOK, `the body should be formB JSON`)
   // And it can accepts other formats
-  } else if errB2 := c.ShouldBindBodyWith(&objB, binding.XML); errB2 == nil {
+  } else if errB2 := c.ShouldBindBodyWithXML(&objB); errB2 == nil {
     c.String(http.StatusOK, `the body should be formB XML`)
   } else {
     ...
@@ -2134,7 +2320,7 @@ or network CIDRs from where clients which their request headers related to clien
 IP can be trusted. They can be IPv4 addresses, IPv4 CIDRs, IPv6 addresses or
 IPv6 CIDRs.
 
-**Attention:** Gin trust all proxies by default if you don't specify a trusted 
+**Attention:** Gin trust all proxies by default if you don't specify a trusted
 proxy using the function above, **this is NOT safe**. At the same time, if you don't
 use any proxy, you can disable this feature by using `Engine.SetTrustedProxies(nil)`,
 then `Context.ClientIP()` will return the remote address directly to avoid some
@@ -2163,7 +2349,7 @@ func main() {
 ```
 
 **Notice:** If you are using a CDN service, you can set the `Engine.TrustedPlatform`
-to skip TrustedProxies check, it has a higher priority than TrustedProxies. 
+to skip TrustedProxies check, it has a higher priority than TrustedProxies.
 Look at the example below:
 
 ```go
@@ -2176,10 +2362,16 @@ import (
 func main() {
   router := gin.Default()
   // Use predefined header gin.PlatformXXX
+  // Google App Engine
   router.TrustedPlatform = gin.PlatformGoogleAppEngine
-  // Or set your own trusted request header for another trusted proxy service
-  // Don't set it to any suspect request header, it's unsafe
-  router.TrustedPlatform = "X-CDN-IP"
+  // Cloudflare
+  router.TrustedPlatform = gin.PlatformCloudflare
+  // Fly.io
+  router.TrustedPlatform = gin.PlatformFlyIO
+  // Or, you can set your own trusted request header. But be sure your CDN
+  // prevents users from passing this header! For example, if your CDN puts
+  // the client IP in X-CDN-Client-IP:
+  router.TrustedPlatform = "X-CDN-Client-IP"
 
   router.GET("/", func(c *gin.Context) {
     // If you set TrustedPlatform, ClientIP() will resolve the
