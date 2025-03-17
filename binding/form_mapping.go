@@ -333,7 +333,20 @@ func setWithProperType(val string, value reflect.Value, field reflect.StructFiel
 		case multipart.FileHeader:
 			return nil
 		}
-		return json.Unmarshal(bytesconv.StringToBytes(val), value.Addr().Interface())
+
+		err := json.Unmarshal(bytesconv.StringToBytes(val), value.Addr().Interface())
+
+		if err == nil {
+			return err
+		}
+
+		mv, err := json.Marshal(val)
+
+		if err != nil {
+			return err
+		}
+
+		return json.Unmarshal(mv, value.Addr().Interface())
 	case reflect.Map:
 		return json.Unmarshal(bytesconv.StringToBytes(val), value.Addr().Interface())
 	case reflect.Ptr:
