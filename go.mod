@@ -1,7 +1,7 @@
 module github.com/gin-gonic/gin
 
 go 1.22
-toolchain go1.23.7
+toolchain go1.24.1
 
 require (
 	github.com/bytedance/sonic v1.11.6
@@ -15,7 +15,7 @@ require (
 	github.com/stretchr/testify v1.9.0
 	github.com/ugorji/go/codec v1.2.12
 	golang.org/x/net v0.37.0
-	google.golang.org/protobuf v1.34.1
+	google.golang.org/protobuf v1.36.5
 	gopkg.in/yaml.v3 v3.0.1
 )
 
