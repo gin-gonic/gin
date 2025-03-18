@@ -33,9 +33,15 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest]
-        go: ["1.22", "1.23", "1.24"]
+        go: ["1.23", "1.24"]
         test-tags:
-          ["", "-tags nomsgpack", '-tags "sonic avx"', "-tags go_json", "-race"]
+          [
+            "",
+            "-tags nomsgpack",
+            '--ldflags="-checklinkname=0" -tags "sonic avx"',
+            "-tags go_json",
+            "-race",
+          ]
         include:
           - os: ubuntu-latest
             go-build: ~/.cache/go-build
@@ -75,7 +81,3 @@ jobs:
         uses: codecov/codecov-action@v4
         with:
           flags: ${{ matrix.os }},go-${{ matrix.go }},${{ matrix.test-tags }}
-
-      - name: Format
-        if: matrix.go-version == '1.22.x'
-        run: diff -u <(echo -n) <(gofmt -d .)

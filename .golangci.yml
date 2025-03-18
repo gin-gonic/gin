@@ -42,8 +42,6 @@ linters-settings:
     int-conversion: true
     sprintf1: true
     strconcat: true
-  goimports:
-    fiximports: true
   testifylint:
     enable-all: true
 
