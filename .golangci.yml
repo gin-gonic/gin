@@ -7,7 +7,7 @@ linters:
     - durationcheck
     - errcheck
     - errorlint
-    - exportloopref
+    - copyloopvar
     - gci
     - gofmt
     - goimports
@@ -39,10 +39,11 @@ linters-settings:
   perfsprint:
     err-error: true
     errorf: true
-    fiximports: true
     int-conversion: true
     sprintf1: true
     strconcat: true
+  goimports:
+    fiximports: true
   testifylint:
     enable-all: true
 
