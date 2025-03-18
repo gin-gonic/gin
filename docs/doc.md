@@ -832,6 +832,8 @@ type Person struct {
   Birthday   time.Time `form:"birthday" time_format:"2006-01-02" time_utc:"1"`
   CreateTime time.Time `form:"createTime" time_format:"unixNano"`
   UnixTime   time.Time `form:"unixTime" time_format:"unix"`
+  UnixMilliTime   time.Time `form:"unixMilliTime" time_format:"unixmilli"`
+  UnixMicroTime   time.Time `form:"unixMicroTime" time_format:"uNiXmIcRo"` // case does not matter for "unix*" time formats
 }
 
 func main() {
@@ -851,6 +853,8 @@ func startPage(c *gin.Context) {
     log.Println(person.Birthday)
     log.Println(person.CreateTime)
     log.Println(person.UnixTime)
+    log.Println(person.UnixMilliTime)
+    log.Println(person.UnixMicroTime)
   }
 
   c.String(http.StatusOK, "Success")
@@ -860,7 +864,7 @@ func startPage(c *gin.Context) {
 Test it with:
 
 ```sh
-curl -X GET "localhost:8085/testing?name=appleboy&address=xyz&birthday=1992-03-15&createTime=1562400033000000123&unixTime=1562400033"
+curl -X GET "localhost:8085/testing?name=appleboy&address=xyz&birthday=1992-03-15&createTime=1562400033000000123&unixTime=1562400033&unixMilliTime=1562400033001&unixMicroTime=1562400033000012"
 ```
 
 
