@@ -684,15 +684,15 @@ func (c *Context) SaveUploadedFile(file *multipart.FileHeader, dst string, perm 
 	}
 	defer src.Close()
 
-	if len(perm) <= 0 {
-		perm = append(perm, 0o750)
+	var mode os.FileMode = 0o750
+	if len(perm) > 0 {
+		mode = perm[0]
 	}
-
-	if err = os.MkdirAll(filepath.Dir(dst), perm[0]); err != nil {
+	dir := filepath.Dir(dst)
+	if err = os.MkdirAll(dir, mode); err != nil {
 		return err
 	}
-
-	if err = os.Chmod(filepath.Dir(dst), perm[0]); err != nil {
+	if err = os.Chmod(dir, mode); err != nil {
 		return err
 	}
 
