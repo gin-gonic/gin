@@ -75,7 +75,3 @@ jobs:
         uses: codecov/codecov-action@v4
         with:
           flags: ${{ matrix.os }},go-${{ matrix.go }},${{ matrix.test-tags }}
-
-      - name: Format
-        if: matrix.go-version == '1.22.x'
-        run: diff -u <(echo -n) <(gofmt -d .)

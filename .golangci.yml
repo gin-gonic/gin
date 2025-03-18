@@ -39,7 +39,6 @@ linters-settings:
   perfsprint:
     err-error: true
     errorf: true
-    fiximports: true
     int-conversion: true
     sprintf1: true
     strconcat: true
