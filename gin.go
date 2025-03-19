@@ -5,6 +5,7 @@
 package gin
 
 import (
+	"context"
 	"fmt"
 	"html/template"
 	"net"
@@ -178,6 +179,7 @@ type Engine struct {
 	maxSections      uint16
 	trustedProxies   []string
 	trustedCIDRs     []*net.IPNet
+	shutdown         func(ctx context.Context) error
 }
 
 var _ IRouter = (*Engine)(nil)
@@ -524,7 +526,10 @@ func (engine *Engine) Run(addr ...string) (err error) {
 	engine.updateRouteTrees()
 	address := resolveAddress(addr)
 	debugPrint("Listening and serving HTTP on %s\n", address)
-	err = http.ListenAndServe(address, engine.Handler())
+
+	s := &http.Server{Addr: address, Handler: engine.Handler()}
+	err = s.ListenAndServe()
+	engine.shutdown = s.Shutdown
 	return
 }
 
@@ -540,7 +545,9 @@ func (engine *Engine) RunTLS(addr, certFile, keyFile string) (err error) {
 			"Please check https://github.com/gin-gonic/gin/blob/master/docs/doc.md#dont-trust-all-proxies for details.")
 	}
 
-	err = http.ListenAndServeTLS(addr, certFile, keyFile, engine.Handler())
+	s := &http.Server{Addr: addr, Handler: engine.Handler()}
+	err = s.ListenAndServeTLS(certFile, keyFile)
+	engine.shutdown = s.Shutdown
 	return
 }
 
@@ -563,7 +570,9 @@ func (engine *Engine) RunUnix(file string) (err error) {
 	defer listener.Close()
 	defer os.Remove(file)
 
-	err = http.Serve(listener, engine.Handler())
+	s := &http.Server{Handler: engine.Handler()}
+	err = s.Serve(listener)
+	engine.shutdown = s.Shutdown
 	return
 }
 
@@ -601,7 +610,9 @@ func (engine *Engine) RunQUIC(addr, certFile, keyFile string) (err error) {
 			"Please check https://github.com/gin-gonic/gin/blob/master/docs/doc.md#dont-trust-all-proxies for details.")
 	}
 
-	err = http3.ListenAndServeQUIC(addr, certFile, keyFile, engine.Handler())
+	s := &http3.Server{Addr: addr, Handler: engine.Handler()}
+	err = s.ListenAndServeTLS(certFile, keyFile)
+	engine.shutdown = s.Shutdown
 	return
 }
 
@@ -616,8 +627,24 @@ func (engine *Engine) RunListener(listener net.Listener) (err error) {
 			"Please check https://github.com/gin-gonic/gin/blob/master/docs/doc.md#dont-trust-all-proxies for details.")
 	}
 
-	err = http.Serve(listener, engine.Handler())
+	s := &http.Server{Handler: engine.Handler()}
+	err = s.Serve(listener)
+	engine.shutdown = s.Shutdown
 	return
+}
+
+// GetShutdown Obtain an gracefully shuts down method.
+func (engine *Engine) GetShutdown() func(ctx context.Context) error {
+	return engine.shutdown
+}
+
+// Shutdown gracefully shuts down the server without interrupting any
+// active connections.
+func (engine *Engine) Shutdown(ctx context.Context) error {
+	if engine.shutdown != nil {
+		return engine.shutdown(ctx)
+	}
+	return nil
 }
 
 // ServeHTTP conforms to the http.Handler interface.
