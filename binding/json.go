@@ -13,6 +13,11 @@ import (
 	"github.com/gin-gonic/gin/internal/json"
 )
 
+var (
+	// ErrInvalidJSON invalid json
+	ErrInvalidJSON = errors.New("invalid JSON")
+)
+
 // EnableDecoderUseNumber is used to call the UseNumber method on the JSON
 // Decoder instance. UseNumber causes the Decoder to unmarshal a number into an
 // any as a Number instead of as a float64.
@@ -34,10 +39,19 @@ func (jsonBinding) Bind(req *http.Request, obj any) error {
 	if req == nil || req.Body == nil {
 		return errors.New("invalid request")
 	}
-	return decodeJSON(req.Body, obj)
+	body, _ := io.ReadAll(req.Body)
+	ok := json.Valid(body)
+	if !ok {
+		return ErrInvalidJSON
+	}
+	return decodeJSON(bytes.NewReader(body), obj)
 }
 
 func (jsonBinding) BindBody(body []byte, obj any) error {
+	ok := json.Valid(body)
+	if !ok {
+		return ErrInvalidJSON
+	}
 	return decodeJSON(bytes.NewReader(body), obj)
 }
 
