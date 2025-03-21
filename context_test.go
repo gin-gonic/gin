@@ -3123,3 +3123,23 @@ func TestContextNext(t *testing.T) {
 	assert.True(t, exists)
 	assert.Equal(t, "value3", value)
 }
+
+func TestParallelHeaderWrite(t *testing.T) {
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	wg := sync.WaitGroup{}
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		for i := 0; i < 1000; i++ {
+			c.Header("key", "value")
+		}
+	}()
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		for i := 0; i < 1000; i++ {
+			c.Header("key", "value")
+		}
+	}()
+	wg.Wait()
+}
