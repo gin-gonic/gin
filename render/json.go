@@ -125,10 +125,7 @@ func (r JsonpJSON) Render(w http.ResponseWriter) (err error) {
 		return err
 	}
 
-	callback := template.JSEscapeString(r.Callback)
-	if _, err = w.Write(bytesconv.StringToBytes(callback)); err != nil {
-		return err
-	}
+	template.JSEscape(w, bytesconv.StringToBytes(r.Callback))
 
 	if _, err = w.Write(bytesconv.StringToBytes("(")); err != nil {
 		return err
