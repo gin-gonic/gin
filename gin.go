@@ -464,17 +464,20 @@ func (engine *Engine) validateHeader(header string) (clientIP string, valid bool
 	for i := len(items) - 1; i >= 0; i-- {
 		ipStr := strings.TrimSpace(items[i])
 		ip := net.ParseIP(ipStr)
+		valid = true
+
 		if ip == nil {
-			break
+			ipStr = ""
+			valid = false
 		}
 
 		// X-Forwarded-For is appended by proxy
 		// Check IPs in reverse order and stop when find untrusted proxy
-		if (i == 0) || (!engine.isTrustedProxy(ip)) {
-			return ipStr, true
+		if valid && (!engine.isTrustedProxy(ip)) {
+			return ipStr, valid
 		}
 	}
-	return "", false
+	return "", valid
 }
 
 // updateRouteTree do update to the route tree recursively
