@@ -620,16 +620,49 @@ func (engine *Engine) RunListener(listener net.Listener) (err error) {
 	return
 }
 
-// ServeHTTP conforms to the http.Handler interface.
-func (engine *Engine) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+// GetContext transforms a http.ResponseWriter and *http.Request into a new
+// *Context without handling the request. This new context can then be passed
+// to *Engine.HandleContext for handling.
+//
+// Any contexts created with this method are not automatically returned to the
+// pool, so it is recommended that you call *Engine.ReleaseContext when you are
+// done with it, though this is not required.
+func (engine *Engine) GetContext(w http.ResponseWriter, req *http.Request) *Context {
 	c := engine.pool.Get().(*Context)
 	c.writermem.reset(w)
 	c.Request = req
 	c.reset()
 
+	return c
+}
+
+// ReleaseContext releases a context created with *Engine.GetContext back into
+// the pool. Releasing a context marks it as available for reuse and therefore
+// must only be called once the context is no longer in use. Releasing a context
+// is not required, but it is recommended to improve performance. Calling this
+// method on a context that is not created with *Engine.GetContext will result
+// in undefined behavior.
+func (engine *Engine) ReleaseContext(c *Context) {
+	engine.pool.Put(c)
+}
+
+// HandleContextAsIs handles the context as is without resetting it. This means
+// that all key/values, middleware, etc. will be retained. This is useful for
+// handling a context that has been created with *Engine.GetContext.
+func (engine *Engine) HandleContextAsIs(c *Context) {
+	oldIndex := c.index
+	c.index = -1
+	engine.handleHTTPRequest(c)
+	c.index = oldIndex
+}
+
+// ServeHTTP conforms to the http.Handler interface.
+func (engine *Engine) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	c := engine.GetContext(w, req)
+
 	engine.handleHTTPRequest(c)
 
-	engine.pool.Put(c)
+	engine.ReleaseContext(c)
 }
 
 // HandleContext re-enters a context that has been rewritten.
