@@ -259,10 +259,14 @@ func (engine *Engine) SecureJsonPrefix(prefix string) *Engine {
 
 // LoadHTMLGlob loads HTML files identified by glob pattern
 // and associates the result with HTML renderer.
-func (engine *Engine) LoadHTMLGlob(pattern string) {
+func (engine *Engine) LoadHTMLGlob(pattern ...string) {
 	left := engine.delims.Left
 	right := engine.delims.Right
-	templ := template.Must(template.New("").Delims(left, right).Funcs(engine.FuncMap).ParseGlob(pattern))
+
+	templ := template.New("").Delims(left, right).Funcs(engine.FuncMap)
+	for _, p := range pattern {
+		templ = template.Must(templ.ParseGlob(p))
+	}
 
 	if IsDebugging() {
 		debugPrintLoadTemplate(templ)
