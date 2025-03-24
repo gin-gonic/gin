@@ -552,22 +552,28 @@ func TestContextCopyErrors(t *testing.T) {
     // Copy the context
     cp := c.Copy()
 
-    // Verify the copied context has the same errors
+    // Verify the copied context has the same number of errors
     assert.Equal(t, len(c.Errors), len(cp.Errors), "Copied context should have the same number of errors")
-    assert.False(t, c.Errors == cp.Errors, "Copied errors should be a different slice (deep copy)")
+    
+    // Verify that the slices are distinct (deep copy) by checking contents and ensuring independence
+    assert.True(t, reflect.DeepEqual(c.Errors, cp.Errors), "Copied errors should have the same content initially")
+    // Since we can’t compare slices with ==, we rely on content equality and test isolation below
 
-    // Check each error in the copied context
+    // Check each error in the copied context matches the original
     for i, origErr := range c.Errors {
         copiedErr := cp.Errors[i]
         assert.Equal(t, origErr.Err, copiedErr.Err, "Error message should match")
         assert.Equal(t, origErr.Type, copiedErr.Type, "Error type should match")
         assert.Equal(t, origErr.Meta, copiedErr.Meta, "Error metadata should match")
+        // Ensure pointers are different (deep copy)
+        assert.NotSame(t, origErr, copiedErr, "Each error should be a distinct instance")
     }
 
     // Modify original context errors and ensure copy remains unchanged
     c.Error(fmt.Errorf("third error")) // nolint: errcheck
     assert.Equal(t, 2, len(cp.Errors), "Copied context errors should not reflect changes to original")
     assert.Equal(t, 3, len(c.Errors), "Original context should have new error")
+    assert.False(t, reflect.DeepEqual(c.Errors, cp.Errors), "Copied errors should differ after modification")
 }
 
 
