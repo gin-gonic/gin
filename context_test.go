@@ -542,6 +542,35 @@ func TestContextCopy(t *testing.T) {
 	assert.Equal(t, cp.fullPath, c.fullPath)
 }
 
+func TestContextCopyErrors(t *testing.T) {
+    c, _ := CreateTestContext(httptest.NewRecorder())
+    
+    // Add errors to the original context
+    c.Error(fmt.Errorf("first error")).SetType(ErrorTypePublic).SetMeta("meta1")  // nolint: errcheck
+    c.Error(fmt.Errorf("second error")).SetType(ErrorTypePrivate).SetMeta(42)    // nolint: errcheck
+
+    // Copy the context
+    cp := c.Copy()
+
+    // Verify the copied context has the same errors
+    assert.Equal(t, len(c.Errors), len(cp.Errors), "Copied context should have the same number of errors")
+    assert.False(t, c.Errors == cp.Errors, "Copied errors should be a different slice (deep copy)")
+
+    // Check each error in the copied context
+    for i, origErr := range c.Errors {
+        copiedErr := cp.Errors[i]
+        assert.Equal(t, origErr.Err, copiedErr.Err, "Error message should match")
+        assert.Equal(t, origErr.Type, copiedErr.Type, "Error type should match")
+        assert.Equal(t, origErr.Meta, copiedErr.Meta, "Error metadata should match")
+    }
+
+    // Modify original context errors and ensure copy remains unchanged
+    c.Error(fmt.Errorf("third error")) // nolint: errcheck
+    assert.Equal(t, 2, len(cp.Errors), "Copied context errors should not reflect changes to original")
+    assert.Equal(t, 3, len(c.Errors), "Original context should have new error")
+}
+
+
 func TestContextHandlerName(t *testing.T) {
 	c, _ := CreateTestContext(httptest.NewRecorder())
 	c.handlers = HandlersChain{func(c *Context) {}, handlerNameTest}
