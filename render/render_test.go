@@ -421,7 +421,7 @@ func TestRenderData(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, "#!PNG some raw data", w.Body.String())
 	assert.Equal(t, "image/png", w.Header().Get("Content-Type"))
-	assert.Equal(t, "", w.Header().Get("Content-Length"))
+	assert.Equal(t, "19", w.Header().Get("Content-Length"))
 }
 
 func TestRenderDataContentLength(t *testing.T) {
