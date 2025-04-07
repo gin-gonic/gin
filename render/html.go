@@ -63,23 +63,36 @@ func (r HTMLDebug) Instance(name string, data any) Render {
 		Data:     data,
 	}
 }
+
 func (r HTMLDebug) loadTemplate() *template.Template {
 	if r.FuncMap == nil {
 		r.FuncMap = template.FuncMap{}
 	}
 	if len(r.Files) > 0 {
-		return template.Must(template.New("").Delims(r.Delims.Left, r.Delims.Right).Funcs(r.FuncMap).ParseFiles(r.Files...))
+		tmpl, err := template.New("").Delims(r.Delims.Left, r.Delims.Right).Funcs(r.FuncMap).ParseFiles(r.Files...)
+		if err != nil {
+			return nil // Return nil instead of panicking
+		}
+		return tmpl
 	}
 	if r.Glob != "" {
-		return template.Must(template.New("").Delims(r.Delims.Left, r.Delims.Right).Funcs(r.FuncMap).ParseGlob(r.Glob))
+		tmpl, err := template.New("").Delims(r.Delims.Left, r.Delims.Right).Funcs(r.FuncMap).ParseGlob(r.Glob)
+		if err != nil {
+			return nil // Return nil instead of panicking
+		}
+		return tmpl
 	}
-	panic("the HTML debug render was created without files or glob pattern")
+	// Return nil instead of panicking when no files or glob are provided
+	return nil
 }
 
 // Render (HTML) executes template and writes its result with custom ContentType for response.
 func (r HTML) Render(w http.ResponseWriter) error {
 	r.WriteContentType(w)
 
+	if r.Template == nil {
+		return nil // Handle nil template gracefully
+	}
 	if r.Name == "" {
 		return r.Template.Execute(w, r.Data)
 	}

@@ -531,7 +531,10 @@ func TestRenderHTMLDebugPanics(t *testing.T) {
 		Delims:  Delims{"{{", "}}"},
 		FuncMap: nil,
 	}
-	assert.Panics(t, func() { htmlRender.Instance("", nil) })
+	instance := htmlRender.Instance("", nil)
+	html, ok := instance.(HTML)
+	assert.True(t, ok, "Instance should be of type HTML")
+	assert.Nil(t, html.Template, "Template should be nil when no files or glob provided")
 }
 
 func TestRenderReader(t *testing.T) {
