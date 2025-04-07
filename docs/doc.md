@@ -70,7 +70,7 @@
 
 ### Build with json replacement
 
-Gin uses `encoding/json` as the default JSON package but you can change it by build from other tags.
+Gin uses `encoding/json` as the default JSON package but you can change it by building from other tags.
 
 [jsoniter](https://github.com/json-iterator/go)
 
@@ -84,7 +84,7 @@ go build -tags=jsoniter .
 go build -tags=go_json .
 ```
 
-[sonic](https://github.com/bytedance/sonic) (you have to ensure that your cpu support avx instruction.)
+[sonic](https://github.com/bytedance/sonic) (you have to ensure that your cpu supports avx instruction.)
 
 ```sh
 $ go build -tags="sonic avx" .
