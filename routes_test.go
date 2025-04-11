@@ -150,8 +150,13 @@ func TestRouteRedirectTrailingSlash(t *testing.T) {
 	router.GET("/path2/", func(c *Context) {})
 	router.POST("/path3", func(c *Context) {})
 	router.PUT("/path4/", func(c *Context) {})
+	router.GET("/:param1/:param2", func(c *Context) {})
 
-	w := PerformRequest(router, http.MethodGet, "/path/")
+	w := PerformRequest(router, http.MethodGet, "//path/")
+	assert.Equal(t, "/path", w.Header().Get("Location"))
+	assert.Equal(t, http.StatusMovedPermanently, w.Code)
+
+	w = PerformRequest(router, http.MethodGet, "/path/")
 	assert.Equal(t, "/path", w.Header().Get("Location"))
 	assert.Equal(t, http.StatusMovedPermanently, w.Code)
 
