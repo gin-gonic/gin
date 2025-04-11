@@ -24,6 +24,7 @@ var (
 	centerDot = []byte("·")
 	dot       = []byte(".")
 	slash     = []byte("/")
+	fileCache = make(map[string][][]byte) // 优化：缓存文件内容，避免重复读取
 )
 
 // RecoveryFunc defines the function passable to CustomRecovery.
@@ -56,15 +57,13 @@ func CustomRecoveryWithWriter(out io.Writer, handle RecoveryFunc) HandlerFunc {
 	return func(c *Context) {
 		defer func() {
 			if err := recover(); err != nil {
-				// Check for a broken connection, as it is not really a
-				// condition that warrants a panic stack trace.
+				// Check for a broken connection, as it is not really a condition that warrants a panic stack trace.
 				var brokenPipe bool
 				if ne, ok := err.(*net.OpError); ok {
 					var se *os.SyscallError
 					if errors.As(ne, &se) {
 						seStr := strings.ToLower(se.Error())
-						if strings.Contains(seStr, "broken pipe") ||
-							strings.Contains(seStr, "connection reset by peer") {
+						if strings.Contains(seStr, "broken pipe") || strings.Contains(seStr, "connection reset by peer") {
 							brokenPipe = true
 						}
 					}
@@ -73,25 +72,18 @@ func CustomRecoveryWithWriter(out io.Writer, handle RecoveryFunc) HandlerFunc {
 					stack := stack(3)
 					httpRequest, _ := httputil.DumpRequest(c.Request, false)
 					headers := strings.Split(string(httpRequest), "\r\n")
-					for idx, header := range headers {
-						current := strings.Split(header, ":")
-						if current[0] == "Authorization" {
-							headers[idx] = current[0] + ": *"
-						}
-					}
-					headersToStr := strings.Join(headers, "\r\n")
+					headersToStr := sanitizeHeaders(headers) // 优化：抽离出对 headers 的处理
 					if brokenPipe {
-						logger.Printf("%s\n%s%s", err, headersToStr, reset)
+						go logger.Printf("%s\n%s%s", err, headersToStr, reset) // 优化：并行化日志输出
 					} else if IsDebugging() {
-						logger.Printf("[Recovery] %s panic recovered:\n%s\n%s\n%s%s",
+						go logger.Printf("[Recovery] %s panic recovered:\n%s\n%s\n%s%s",
 							timeFormat(time.Now()), headersToStr, err, stack, reset)
 					} else {
-						logger.Printf("[Recovery] %s panic recovered:\n%s\n%s%s",
+						go logger.Printf("[Recovery] %s panic recovered:\n%s\n%s%s",
 							timeFormat(time.Now()), err, stack, reset)
 					}
 				}
 				if brokenPipe {
-					// If the connection is dead, we can't write a status to it.
 					c.Error(err.(error)) //nolint: errcheck
 					c.Abort()
 				} else {
@@ -109,29 +101,45 @@ func defaultHandleRecovery(c *Context, _ any) {
 
 // stack returns a nicely formatted stack frame, skipping skip frames.
 func stack(skip int) []byte {
-	buf := new(bytes.Buffer) // the returned data
-	// As we loop, we open files and read them. These variables record the currently
-	// loaded file.
+	buf := new(bytes.Buffer)
 	var lines [][]byte
 	var lastFile string
-	for i := skip; ; i++ { // Skip the expected number of frames
+
+	for i := skip; ; i++ {
 		pc, file, line, ok := runtime.Caller(i)
 		if !ok {
 			break
 		}
-		// Print this much at least.  If we can't find the source, it won't show.
+
 		fmt.Fprintf(buf, "%s:%d (0x%x)\n", file, line, pc)
 		if file != lastFile {
-			data, err := os.ReadFile(file)
-			if err != nil {
-				continue
+			if cachedLines, found := fileCache[file]; found { // 优化：使用缓存避免重复读取文件
+				lines = cachedLines
+			} else {
+				data, err := os.ReadFile(file)
+				if err != nil {
+					continue
+				}
+				lines = bytes.Split(data, []byte{'\n'})
+				fileCache[file] = lines
 			}
-			lines = bytes.Split(data, []byte{'\n'})
 			lastFile = file
 		}
 		fmt.Fprintf(buf, "\t%s: %s\n", function(pc), source(lines, line))
 	}
 	return buf.Bytes()
+}
+
+// sanitizeHeaders masks sensitive header information (e.g., Authorization).
+// 优化：抽离出 header 处理函数，简化主逻辑
+func sanitizeHeaders(headers []string) string {
+	for idx, header := range headers {
+		current := strings.Split(header, ":")
+		if current[0] == "Authorization" {
+			headers[idx] = current[0] + ": *"
+		}
+	}
+	return strings.Join(headers, "\r\n")
 }
 
 // source returns a space-trimmed slice of the n'th line.
@@ -150,14 +158,6 @@ func function(pc uintptr) []byte {
 		return dunno
 	}
 	name := []byte(fn.Name())
-	// The name includes the path name to the package, which is unnecessary
-	// since the file name is already included.  Plus, it has center dots.
-	// That is, we see
-	//	runtime/debug.*T·ptrmethod
-	// and want
-	//	*T.ptrmethod
-	// Also the package path might contain dot (e.g. code.google.com/...),
-	// so first eliminate the path prefix
 	if lastSlash := bytes.LastIndex(name, slash); lastSlash >= 0 {
 		name = name[lastSlash+1:]
 	}
