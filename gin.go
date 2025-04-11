@@ -7,6 +7,7 @@ package gin
 import (
 	"fmt"
 	"html/template"
+	"io/fs"
 	"net"
 	"net/http"
 	"os"
@@ -282,6 +283,23 @@ func (engine *Engine) LoadHTMLFiles(files ...string) {
 	}
 
 	templ := template.Must(template.New("").Delims(engine.delims.Left, engine.delims.Right).Funcs(engine.FuncMap).ParseFiles(files...))
+	engine.SetHTMLTemplate(templ)
+}
+
+
+// LoadHTMLFromFS loads HTML files identified by glob pattern
+// from a filesytem interface and associates the result with HTML renderer.
+func (engine *Engine) LoadHTMLFromFS(filesystem fs.FS, patterns ...string) {
+	left := engine.delims.Left
+	right := engine.delims.Right
+	templ := template.Must(template.New("").Delims(left, right).Funcs(engine.FuncMap).ParseFS(filesystem, patterns...))
+
+	if IsDebugging() {
+		debugPrintLoadTemplate(templ)
+		engine.HTMLRender = render.HTMLDebug{Glob: pattern, FuncMap: engine.FuncMap, Delims: engine.delims}
+		return
+	}
+
 	engine.SetHTMLTemplate(templ)
 }
 
