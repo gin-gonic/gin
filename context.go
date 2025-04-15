@@ -120,21 +120,21 @@ func (c *Context) Copy() *Context {
 		writermem: c.writermem,
 		Request:   c.Request,
 		engine:    c.engine,
+		fullPath:  c.fullPath,
 	}
 
 	cp.writermem.ResponseWriter = nil
 	cp.Writer = &cp.writermem
 	cp.index = abortIndex
 	cp.handlers = nil
-	cp.fullPath = c.fullPath
 
-	cKeys := c.Keys
-	cp.Keys = make(map[string]any, len(cKeys))
 	c.mu.RLock()
+	cKeys := c.Keys
+	c.mu.RUnlock()
+	cp.Keys = make(map[string]any, len(cKeys))
 	for k, v := range cKeys {
 		cp.Keys[k] = v
 	}
-	c.mu.RUnlock()
 
 	cParams := c.Params
 	cp.Params = make([]Param, len(cParams))
