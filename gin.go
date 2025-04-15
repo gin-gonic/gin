@@ -16,6 +16,7 @@ import (
 	"sync"
 
 	"github.com/gin-gonic/gin/internal/bytesconv"
+	filesystem "github.com/gin-gonic/gin/internal/fs"
 	"github.com/gin-gonic/gin/render"
 
 	"github.com/quic-go/quic-go/http3"
@@ -282,6 +283,19 @@ func (engine *Engine) LoadHTMLFiles(files ...string) {
 	}
 
 	templ := template.Must(template.New("").Delims(engine.delims.Left, engine.delims.Right).Funcs(engine.FuncMap).ParseFiles(files...))
+	engine.SetHTMLTemplate(templ)
+}
+
+// LoadHTMLFS loads an http.FileSystem and a slice of patterns
+// and associates the result with HTML renderer.
+func (engine *Engine) LoadHTMLFS(fs http.FileSystem, patterns ...string) {
+	if IsDebugging() {
+		engine.HTMLRender = render.HTMLDebug{FileSystem: fs, Patterns: patterns, FuncMap: engine.FuncMap, Delims: engine.delims}
+		return
+	}
+
+	templ := template.Must(template.New("").Delims(engine.delims.Left, engine.delims.Right).Funcs(engine.FuncMap).ParseFS(
+		filesystem.FileSystem{FileSystem: fs}, patterns...))
 	engine.SetHTMLTemplate(templ)
 }
 
