@@ -1,0 +1,67 @@
+# https://docs.github.com/en/communities/using-templates-to-encourage-useful-issues-and-pull-requests/configuring-issue-templates-for-your-repository#creating-issue-forms
+# https://docs.github.com/en/communities/using-templates-to-encourage-useful-issues-and-pull-requests/syntax-for-githubs-form-schema
+name: Bugs
+description: I found a bug
+title: "issue title"
+labels:
+  - bug
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for helping us improve! 🙏 Please answer these questions and provide as much information as possible about your problem.
+
+  - type: input
+    id: go-version
+    attributes:
+      label: Go version
+      description: |
+        What version of Go are you using (`go version`)?
+      placeholder: ex. go version go1.20.7 darwin/arm64
+    validations:
+      required: true
+
+  - type: input
+    id: gin-version
+    attributes:
+      label: Gin version
+      description: |
+        What version(or commit ref) of Gin are you using?
+      placeholder: ex. 1.9.1
+    validations:
+      required: true
+
+  - type: dropdown
+    id: is-reproducible
+    attributes:
+      label: Can this bug be reproduced with the latest release?
+      options:
+        - Option Yes
+        - Option No
+    validations:
+      required: true
+
+  - type: textarea
+    id: what-did-you-do
+    attributes:
+      label: "What did you do?"
+      description: "If possible, provide a recipe for reproducing the error. A complete runnable program is good. A link on [go.dev/play](https://go.dev/play) is best."
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual-behavior
+    attributes:
+      label: "What did you see happen?"
+      description: Command invocations and their associated output, functions with their arguments and return results, full stacktraces for panics (upload a file if it is very long), etc. Prefer copying text output over using screenshots.
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected-behavior
+    attributes:
+      label: "What did you expect to see?"
+      description: Why is the current output incorrect, and any additional context we may need to understand the issue.
+    validations:
+      required: true
