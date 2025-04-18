@@ -70,7 +70,7 @@
 
 ### Build with json replacement
 
-Gin uses `encoding/json` as default json package but you can change it by build from other tags.
+Gin uses `encoding/json` as the default JSON package but you can change it by building from other tags.
 
 [jsoniter](https://github.com/json-iterator/go)
 
@@ -84,7 +84,7 @@ go build -tags=jsoniter .
 go build -tags=go_json .
 ```
 
-[sonic](https://github.com/bytedance/sonic) (you have to ensure that your cpu support avx instruction.)
+[sonic](https://github.com/bytedance/sonic) (you have to ensure that your cpu supports avx instruction.)
 
 ```sh
 $ go build -tags="sonic avx" .
@@ -120,7 +120,7 @@ func main() {
   router.HEAD("/someHead", head)
   router.OPTIONS("/someOptions", options)
 
-  // By default it serves on :8080 unless a
+  // By default, it serves on :8080 unless a
   // PORT environment variable was defined.
   router.Run()
   // router.Run(":3000") for a hard coded port
@@ -172,7 +172,7 @@ func main() {
   router := gin.Default()
 
   // Query string parameters are parsed using the existing underlying request object.
-  // The request responds to an url matching: /welcome?firstname=Jane&lastname=Doe
+  // The request responds to a URL matching: /welcome?firstname=Jane&lastname=Doe
   router.GET("/welcome", func(c *gin.Context) {
     firstname := c.DefaultQuery("firstname", "Guest")
     lastname := c.Query("lastname") // shortcut for c.Request.URL.Query().Get("lastname")
@@ -300,7 +300,7 @@ curl -X POST http://localhost:8080/upload \
 
 #### Multiple files
 
-See the detail [example code](https://github.com/gin-gonic/examples/tree/master/upload-file/multiple).
+See the detailed [example code](https://github.com/gin-gonic/examples/tree/master/upload-file/multiple).
 
 ```go
 func main() {
@@ -704,7 +704,7 @@ $ curl -v -X POST \
 {"error":"Key: 'Login.Password' Error:Field validation for 'Password' failed on the 'required' tag"}
 ```
 
-Skip validate: when running the above example using the above the `curl` command, it returns error. Because the example use `binding:"required"` for `Password`. If use `binding:"-"` for `Password`, then it will not return error when running the above example again.
+Skip-validation: Running the example above using the `curl` command returns an error. This is because the example uses `binding:"required"` for `Password`. If instead, you use `binding:"-"` for `Password`, then it will not return an error when you run the example again.
 
 ### Custom Validators
 
@@ -832,6 +832,8 @@ type Person struct {
   Birthday   time.Time `form:"birthday" time_format:"2006-01-02" time_utc:"1"`
   CreateTime time.Time `form:"createTime" time_format:"unixNano"`
   UnixTime   time.Time `form:"unixTime" time_format:"unix"`
+  UnixMilliTime   time.Time `form:"unixMilliTime" time_format:"unixmilli"`
+  UnixMicroTime   time.Time `form:"unixMicroTime" time_format:"uNiXmIcRo"` // case does not matter for "unix*" time formats
 }
 
 func main() {
@@ -851,6 +853,8 @@ func startPage(c *gin.Context) {
     log.Println(person.Birthday)
     log.Println(person.CreateTime)
     log.Println(person.UnixTime)
+    log.Println(person.UnixMilliTime)
+    log.Println(person.UnixMicroTime)
   }
 
   c.String(http.StatusOK, "Success")
@@ -860,7 +864,7 @@ func startPage(c *gin.Context) {
 Test it with:
 
 ```sh
-curl -X GET "localhost:8085/testing?name=appleboy&address=xyz&birthday=1992-03-15&createTime=1562400033000000123&unixTime=1562400033"
+curl -X GET "localhost:8085/testing?name=appleboy&address=xyz&birthday=1992-03-15&createTime=1562400033000000123&unixTime=1562400033&unixMilliTime=1562400033001&unixMicroTime=1562400033000012"
 ```
 
 
@@ -1183,7 +1187,7 @@ func main() {
   })
 
   r.GET("/moreJSON", func(c *gin.Context) {
-    // You also can use a struct
+    // You can also use a struct
     var msg struct {
       Name    string `json:"user"`
       Message string
@@ -1486,7 +1490,7 @@ You may use custom delims
 
 #### Custom Template Funcs
 
-See the detail [example code](https://github.com/gin-gonic/examples/tree/master/template).
+See the detailed [example code](https://github.com/gin-gonic/examples/tree/master/template).
 
 main.go
 
@@ -1538,7 +1542,7 @@ Date: 2017/07/01
 
 ### Multitemplate
 
-Gin allow by default use only one html.Template. Check [a multitemplate render](https://github.com/gin-contrib/multitemplate) for using features like go 1.6 `block template`.
+Gin allows only one html.Template by default. Check [a multitemplate render](https://github.com/gin-contrib/multitemplate) for using features like go 1.6 `block template`.
 
 ### Redirects
 
@@ -2087,7 +2091,7 @@ type formB struct {
 func SomeHandler(c *gin.Context) {
   objA := formA{}
   objB := formB{}
-  // This c.ShouldBind consumes c.Request.Body and it cannot be reused.
+  // Calling c.ShouldBind consumes c.Request.Body and it cannot be reused.
   if errA := c.ShouldBind(&objA); errA == nil {
     c.String(http.StatusOK, `the body should be formA`)
   // Always an error is occurred by this because c.Request.Body is EOF now.
@@ -2320,7 +2324,7 @@ or network CIDRs from where clients which their request headers related to clien
 IP can be trusted. They can be IPv4 addresses, IPv4 CIDRs, IPv6 addresses or
 IPv6 CIDRs.
 
-**Attention:** Gin trust all proxies by default if you don't specify a trusted
+**Attention:** Gin trusts all proxies by default if you don't specify a trusted
 proxy using the function above, **this is NOT safe**. At the same time, if you don't
 use any proxy, you can disable this feature by using `Engine.SetTrustedProxies(nil)`,
 then `Context.ClientIP()` will return the remote address directly to avoid some

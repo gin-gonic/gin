@@ -488,7 +488,7 @@
 - [FIX] Refactor render
 - [FIX] Reworked tests
 - [FIX] logger now supports cygwin
-- [FIX] Use X-Forwarded-For before X-Real-Ip
+- [FIX] Use X-Forwarded-For before X-Real-IP
 - [FIX] time.Time binding (#904)
 
 ## Gin 1.1.4
