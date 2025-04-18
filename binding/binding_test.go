@@ -69,15 +69,19 @@ type FooStructDisallowUnknownFields struct {
 }
 
 type FooBarStructForTimeType struct {
-	TimeFoo    time.Time `form:"time_foo" time_format:"2006-01-02" time_utc:"1" time_location:"Asia/Chongqing"`
-	TimeBar    time.Time `form:"time_bar" time_format:"2006-01-02" time_utc:"1"`
-	CreateTime time.Time `form:"createTime" time_format:"unixNano"`
-	UnixTime   time.Time `form:"unixTime" time_format:"unix"`
+	TimeFoo       time.Time `form:"time_foo" time_format:"2006-01-02" time_utc:"1" time_location:"Asia/Chongqing"`
+	TimeBar       time.Time `form:"time_bar" time_format:"2006-01-02" time_utc:"1"`
+	CreateTime    time.Time `form:"createTime" time_format:"unixNano"`
+	UnixTime      time.Time `form:"unixTime" time_format:"unix"`
+	UnixMilliTime time.Time `form:"unixMilliTime" time_format:"unixmilli"`
+	UnixMicroTime time.Time `form:"unixMicroTime" time_format:"uNiXmiCrO"`
 }
 
 type FooStructForTimeTypeNotUnixFormat struct {
-	CreateTime time.Time `form:"createTime" time_format:"unixNano"`
-	UnixTime   time.Time `form:"unixTime" time_format:"unix"`
+	CreateTime    time.Time `form:"createTime" time_format:"unixNano"`
+	UnixTime      time.Time `form:"unixTime" time_format:"unix"`
+	UnixMilliTime time.Time `form:"unixMilliTime" time_format:"unixMilli"`
+	UnixMicroTime time.Time `form:"unixMicroTime" time_format:"unixMicro"`
 }
 
 type FooStructForTimeTypeNotFormat struct {
@@ -265,10 +269,10 @@ func TestBindingFormDefaultValue2(t *testing.T) {
 func TestBindingFormForTime(t *testing.T) {
 	testFormBindingForTime(t, http.MethodPost,
 		"/", "/",
-		"time_foo=2017-11-15&time_bar=&createTime=1562400033000000123&unixTime=1562400033", "bar2=foo")
+		"time_foo=2017-11-15&time_bar=&createTime=1562400033000000123&unixTime=1562400033&unixMilliTime=1562400033001&unixMicroTime=1562400033000012", "bar2=foo")
 	testFormBindingForTimeNotUnixFormat(t, http.MethodPost,
 		"/", "/",
-		"time_foo=2017-11-15&createTime=bad&unixTime=bad", "bar2=foo")
+		"time_foo=2017-11-15&createTime=bad&unixTime=bad&unixMilliTime=bad&unixMicroTime=bad", "bar2=foo")
 	testFormBindingForTimeNotFormat(t, http.MethodPost,
 		"/", "/",
 		"time_foo=2017-11-15", "bar2=foo")
@@ -282,11 +286,11 @@ func TestBindingFormForTime(t *testing.T) {
 
 func TestBindingFormForTime2(t *testing.T) {
 	testFormBindingForTime(t, http.MethodGet,
-		"/?time_foo=2017-11-15&time_bar=&createTime=1562400033000000123&unixTime=1562400033", "/?bar2=foo",
+		"/?time_foo=2017-11-15&time_bar=&createTime=1562400033000000123&unixTime=1562400033&unixMilliTime=1562400033001&unixMicroTime=1562400033000012", "/?bar2=foo",
 		"", "")
 	testFormBindingForTimeNotUnixFormat(t, http.MethodPost,
 		"/", "/",
-		"time_foo=2017-11-15&createTime=bad&unixTime=bad", "bar2=foo")
+		"time_foo=2017-11-15&createTime=bad&unixTime=bad&unixMilliTime=bad&unixMicroTime=bad", "bar2=foo")
 	testFormBindingForTimeNotFormat(t, http.MethodGet,
 		"/?time_foo=2017-11-15", "/?bar2=foo",
 		"", "")
@@ -952,6 +956,8 @@ func testFormBindingForTime(t *testing.T, method, path, badPath, body, badBody s
 	assert.Equal(t, "UTC", obj.TimeBar.Location().String())
 	assert.Equal(t, int64(1562400033000000123), obj.CreateTime.UnixNano())
 	assert.Equal(t, int64(1562400033), obj.UnixTime.Unix())
+	assert.Equal(t, int64(1562400033001), obj.UnixMilliTime.UnixMilli())
+	assert.Equal(t, int64(1562400033000012), obj.UnixMicroTime.UnixMicro())
 
 	obj = FooBarStructForTimeType{}
 	req = requestWithBody(method, badPath, badBody)

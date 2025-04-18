@@ -154,7 +154,7 @@ func RunUnix(file string) (err error) {
 
 // RunFd attaches the router to a http.Server and starts listening and serving HTTP requests
 // through the specified file descriptor.
-// Note: the method will block the calling goroutine indefinitely unless on error happens.
+// Note: the method will block the calling goroutine indefinitely unless an error happens.
 func RunFd(fd int) (err error) {
 	return engine().RunFd(fd)
 }
