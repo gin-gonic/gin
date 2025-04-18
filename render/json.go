@@ -151,7 +151,7 @@ func (r JsonpJSON) WriteContentType(w http.ResponseWriter) {
 }
 
 // Render (AsciiJSON) marshals the given interface object and writes it with custom ContentType.
-func (r AsciiJSON) Render(w http.ResponseWriter) (err error) {
+func (r AsciiJSON) Render(w http.ResponseWriter) error {
 	r.WriteContentType(w)
 	ret, err := json.Marshal(r.Data)
 	if err != nil {
@@ -159,12 +159,15 @@ func (r AsciiJSON) Render(w http.ResponseWriter) (err error) {
 	}
 
 	var buffer bytes.Buffer
+	escapeBuf := make([]byte, 0, 6) // Preallocate 6 bytes for Unicode escape sequences
+
 	for _, r := range bytesconv.BytesToString(ret) {
-		cvt := string(r)
 		if r >= 128 {
-			cvt = fmt.Sprintf("\\u%04x", int64(r))
+			escapeBuf = fmt.Appendf(escapeBuf[:0], "\\u%04x", r) // Reuse escapeBuf
+			buffer.Write(escapeBuf)
+		} else {
+			buffer.WriteByte(byte(r))
 		}
-		buffer.WriteString(cvt)
 	}
 
 	_, err = w.Write(buffer.Bytes())
