@@ -1393,13 +1393,19 @@ func main() {
 
 ### HTML rendering
 
-Using LoadHTMLGlob() or LoadHTMLFiles()
+Using LoadHTMLGlob() or LoadHTMLFiles() or LoadHTMLFS()
 
 ```go
+//go:embed templates/*
+var templates embed.FS
+
 func main() {
   router := gin.Default()
   router.LoadHTMLGlob("templates/*")
   //router.LoadHTMLFiles("templates/template1.html", "templates/template2.html")
+  //router.LoadHTMLFS(http.Dir("templates"), "template1.html", "template2.html")
+  //or
+  //router.LoadHTMLFS(http.FS(templates), "templates/template1.html", "templates/template2.html")
   router.GET("/index", func(c *gin.Context) {
     c.HTML(http.StatusOK, "index.tmpl", gin.H{
       "title": "Main website",

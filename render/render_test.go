@@ -489,10 +489,12 @@ func TestRenderHTMLTemplateEmptyName(t *testing.T) {
 func TestRenderHTMLDebugFiles(t *testing.T) {
 	w := httptest.NewRecorder()
 	htmlRender := HTMLDebug{
-		Files:   []string{"../testdata/template/hello.tmpl"},
-		Glob:    "",
-		Delims:  Delims{Left: "{[{", Right: "}]}"},
-		FuncMap: nil,
+		Files:      []string{"../testdata/template/hello.tmpl"},
+		Glob:       "",
+		FileSystem: nil,
+		Patterns:   nil,
+		Delims:     Delims{Left: "{[{", Right: "}]}"},
+		FuncMap:    nil,
 	}
 	instance := htmlRender.Instance("hello.tmpl", map[string]any{
 		"name": "thinkerou",
@@ -508,10 +510,33 @@ func TestRenderHTMLDebugFiles(t *testing.T) {
 func TestRenderHTMLDebugGlob(t *testing.T) {
 	w := httptest.NewRecorder()
 	htmlRender := HTMLDebug{
-		Files:   nil,
-		Glob:    "../testdata/template/hello*",
-		Delims:  Delims{Left: "{[{", Right: "}]}"},
-		FuncMap: nil,
+		Files:      nil,
+		Glob:       "../testdata/template/hello*",
+		FileSystem: nil,
+		Patterns:   nil,
+		Delims:     Delims{Left: "{[{", Right: "}]}"},
+		FuncMap:    nil,
+	}
+	instance := htmlRender.Instance("hello.tmpl", map[string]any{
+		"name": "thinkerou",
+	})
+
+	err := instance.Render(w)
+
+	require.NoError(t, err)
+	assert.Equal(t, "<h1>Hello thinkerou</h1>", w.Body.String())
+	assert.Equal(t, "text/html; charset=utf-8", w.Header().Get("Content-Type"))
+}
+
+func TestRenderHTMLDebugFS(t *testing.T) {
+	w := httptest.NewRecorder()
+	htmlRender := HTMLDebug{
+		Files:      nil,
+		Glob:       "",
+		FileSystem: http.Dir("../testdata/template"),
+		Patterns:   []string{"hello.tmpl"},
+		Delims:     Delims{Left: "{[{", Right: "}]}"},
+		FuncMap:    nil,
 	}
 	instance := htmlRender.Instance("hello.tmpl", map[string]any{
 		"name": "thinkerou",
@@ -526,10 +551,12 @@ func TestRenderHTMLDebugGlob(t *testing.T) {
 
 func TestRenderHTMLDebugPanics(t *testing.T) {
 	htmlRender := HTMLDebug{
-		Files:   nil,
-		Glob:    "",
-		Delims:  Delims{"{{", "}}"},
-		FuncMap: nil,
+		Files:      nil,
+		Glob:       "",
+		FileSystem: nil,
+		Patterns:   nil,
+		Delims:     Delims{"{{", "}}"},
+		FuncMap:    nil,
 	}
 	assert.Panics(t, func() { htmlRender.Instance("", nil) })
 }
