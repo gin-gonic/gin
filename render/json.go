@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"html/template"
 	"net/http"
+	"unicode"
 
 	"github.com/gin-gonic/gin/internal/bytesconv"
 	"github.com/gin-gonic/gin/internal/json"
@@ -162,7 +163,7 @@ func (r AsciiJSON) Render(w http.ResponseWriter) error {
 	escapeBuf := make([]byte, 0, 6) // Preallocate 6 bytes for Unicode escape sequences
 
 	for _, r := range bytesconv.BytesToString(ret) {
-		if r >= 128 {
+		if r > unicode.MaxASCII {
 			escapeBuf = fmt.Appendf(escapeBuf[:0], "\\u%04x", r) // Reuse escapeBuf
 			buffer.Write(escapeBuf)
 		} else {
