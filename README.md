@@ -94,7 +94,7 @@ See the [API documentation on go.dev](https://pkg.go.dev/github.com/gin-gonic/gi
 
 The documentation is also available on [gin-gonic.com](https://gin-gonic.com) in several languages:
 
-- [English](https://gin-gonic.com/docs/)
+- [English](https://gin-gonic.com/en/docs/)
 - [简体中文](https://gin-gonic.com/zh-cn/docs/)
 - [繁體中文](https://gin-gonic.com/zh-tw/docs/)
 - [日本語](https://gin-gonic.com/ja/docs/)
