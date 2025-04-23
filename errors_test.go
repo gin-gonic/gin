@@ -34,7 +34,7 @@ func TestError(t *testing.T) {
 	}, err.JSON())
 
 	jsonBytes, _ := json.Marshal(err)
-	assert.Equal(t, "{\"error\":\"test error\",\"meta\":\"some data\"}", string(jsonBytes))
+	assert.JSONEq(t, "{\"error\":\"test error\",\"meta\":\"some data\"}", string(jsonBytes))
 
 	err.SetMeta(H{ //nolint: errcheck
 		"status": "200",
@@ -93,13 +93,13 @@ Error #03: third
 		H{"error": "third", "status": "400"},
 	}, errs.JSON())
 	jsonBytes, _ := json.Marshal(errs)
-	assert.Equal(t, "[{\"error\":\"first\"},{\"error\":\"second\",\"meta\":\"some data\"},{\"error\":\"third\",\"status\":\"400\"}]", string(jsonBytes))
+	assert.JSONEq(t, "[{\"error\":\"first\"},{\"error\":\"second\",\"meta\":\"some data\"},{\"error\":\"third\",\"status\":\"400\"}]", string(jsonBytes))
 	errs = errorMsgs{
 		{Err: errors.New("first"), Type: ErrorTypePrivate},
 	}
 	assert.Equal(t, H{"error": "first"}, errs.JSON())
 	jsonBytes, _ = json.Marshal(errs)
-	assert.Equal(t, "{\"error\":\"first\"}", string(jsonBytes))
+	assert.JSONEq(t, "{\"error\":\"first\"}", string(jsonBytes))
 
 	errs = errorMsgs{}
 	assert.Nil(t, errs.Last())
