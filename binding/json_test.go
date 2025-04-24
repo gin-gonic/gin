@@ -5,6 +5,7 @@
 package binding
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -27,4 +28,12 @@ func TestJSONBindingBindBodyMap(t *testing.T) {
 	assert.Len(t, s, 2)
 	assert.Equal(t, "FOO", s["foo"])
 	assert.Equal(t, "world", s["hello"])
+}
+
+func TestJSONBindingBindEmpty(t *testing.T) {
+	var s struct {
+		Foo string `binding:"required"`
+	}
+	err := jsonBinding{}.BindBody([]byte(""), &s)
+	require.True(t, strings.Contains(err.Error(), "empty body"))
 }
