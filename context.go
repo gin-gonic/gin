@@ -5,7 +5,9 @@
 package gin
 
 import (
+	"bytes"
 	"errors"
+	"fmt"
 	"io"
 	"io/fs"
 	"log"
@@ -722,6 +724,21 @@ func (c *Context) Bind(obj any) error {
 
 // BindJSON is a shortcut for c.MustBindWith(obj, binding.JSON).
 func (c *Context) BindJSON(obj any) error {
+
+	body, err := io.ReadAll(c.Request.Body)
+	if err != nil {
+		return fmt.Errorf("failed to read body: %v", err)
+	}
+
+	// If the body is empty, set it to {}
+	if len(body) == 0 {
+		body = []byte("{}")
+		c.Request.Body = io.NopCloser(bytes.NewBuffer(body)) // Set to {} to trigger the error
+		return c.MustBindWith(obj, binding.JSON)
+	}
+
+	// Restore the body since it was read
+	c.Request.Body = io.NopCloser(bytes.NewBuffer(body))
 	return c.MustBindWith(obj, binding.JSON)
 }
 
