@@ -1852,7 +1852,7 @@ func TestContextBindRequestTooLarge(t *testing.T) {
 	w := httptest.NewRecorder()
 	c, _ := CreateTestContext(w)
 
-	c.Request, _ = http.NewRequest("POST", "/", strings.NewReader(`{"foo":"bar", "bar":"foo"}`))
+	c.Request, _ = http.NewRequest(http.MethodPost, "/", strings.NewReader(`{"foo":"bar", "bar":"foo"}`))
 	c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, 10)
 
 	var obj struct {

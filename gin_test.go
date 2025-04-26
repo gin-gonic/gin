@@ -338,7 +338,7 @@ func TestLoadHTMLFSTestMode(t *testing.T) {
 	)
 	defer ts.Close()
 
-	res, err := http.Get(fmt.Sprintf("%s/test", ts.URL))
+	res, err := http.Get(ts.URL + "/test")
 	if err != nil {
 		t.Error(err)
 	}
@@ -358,7 +358,7 @@ func TestLoadHTMLFSDebugMode(t *testing.T) {
 	)
 	defer ts.Close()
 
-	res, err := http.Get(fmt.Sprintf("%s/test", ts.URL))
+	res, err := http.Get(ts.URL + "/test")
 	if err != nil {
 		t.Error(err)
 	}
@@ -378,7 +378,7 @@ func TestLoadHTMLFSReleaseMode(t *testing.T) {
 	)
 	defer ts.Close()
 
-	res, err := http.Get(fmt.Sprintf("%s/test", ts.URL))
+	res, err := http.Get(ts.URL + "/test")
 	if err != nil {
 		t.Error(err)
 	}
