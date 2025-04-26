@@ -769,8 +769,15 @@ func (c *Context) BindUri(obj any) error {
 // It will abort the request with HTTP 400 if any error occurs.
 // See the binding package.
 func (c *Context) MustBindWith(obj any, b binding.Binding) error {
-	if err := c.ShouldBindWith(obj, b); err != nil {
-		c.AbortWithError(http.StatusBadRequest, err).SetType(ErrorTypeBind) //nolint: errcheck
+	err := c.ShouldBindWith(obj, b)
+	if err != nil {
+		maxBytesErr := &http.MaxBytesError{}
+		switch {
+		case errors.As(err, &maxBytesErr):
+			c.AbortWithError(http.StatusRequestEntityTooLarge, err).SetType(ErrorTypeBind) //nolint: errcheck
+		default:
+			c.AbortWithError(http.StatusBadRequest, err).SetType(ErrorTypeBind) //nolint: errcheck
+		}
 		return err
 	}
 	return nil
