@@ -31,5 +31,5 @@ func decodeToml(r io.Reader, obj any) error {
 	if err := decoder.Decode(obj); err != nil {
 		return err
 	}
-	return decoder.Decode(obj)
+	return validate(obj)
 }

@@ -16,12 +16,18 @@ import (
 	"sync"
 
 	"github.com/gin-gonic/gin/internal/bytesconv"
+	filesystem "github.com/gin-gonic/gin/internal/fs"
 	"github.com/gin-gonic/gin/render"
+
+	"github.com/quic-go/quic-go/http3"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
 )
 
 const defaultMultipartMemory = 32 << 20 // 32 MB
+const escapedColon = "\\:"
+const colon = ":"
+const backslash = "\\"
 
 var (
 	default404Body = []byte("404 page not found")
@@ -46,6 +52,9 @@ var regRemoveRepeatedChar = regexp.MustCompile("/{2,}")
 
 // HandlerFunc defines the handler used by gin middleware as return value.
 type HandlerFunc func(*Context)
+
+// OptionFunc defines the function to change the default configuration
+type OptionFunc func(*Engine)
 
 // HandlersChain defines a HandlerFunc slice.
 type HandlersChain []HandlerFunc
@@ -182,7 +191,7 @@ var _ IRouter = (*Engine)(nil)
 // - ForwardedByClientIP:    true
 // - UseRawPath:             false
 // - UnescapePathValues:     true
-func New() *Engine {
+func New(opts ...OptionFunc) *Engine {
 	debugPrintWARNINGNew()
 	engine := &Engine{
 		RouterGroup: RouterGroup{
@@ -211,15 +220,15 @@ func New() *Engine {
 	engine.pool.New = func() any {
 		return engine.allocateContext(engine.maxParams)
 	}
-	return engine
+	return engine.With(opts...)
 }
 
 // Default returns an Engine instance with the Logger and Recovery middleware already attached.
-func Default() *Engine {
+func Default(opts ...OptionFunc) *Engine {
 	debugPrintWARNINGDefault()
 	engine := New()
 	engine.Use(Logger(), Recovery())
-	return engine
+	return engine.With(opts...)
 }
 
 func (engine *Engine) Handler() http.Handler {
@@ -277,6 +286,19 @@ func (engine *Engine) LoadHTMLFiles(files ...string) {
 	engine.SetHTMLTemplate(templ)
 }
 
+// LoadHTMLFS loads an http.FileSystem and a slice of patterns
+// and associates the result with HTML renderer.
+func (engine *Engine) LoadHTMLFS(fs http.FileSystem, patterns ...string) {
+	if IsDebugging() {
+		engine.HTMLRender = render.HTMLDebug{FileSystem: fs, Patterns: patterns, FuncMap: engine.FuncMap, Delims: engine.delims}
+		return
+	}
+
+	templ := template.Must(template.New("").Delims(engine.delims.Left, engine.delims.Right).Funcs(engine.FuncMap).ParseFS(
+		filesystem.FileSystem{FileSystem: fs}, patterns...))
+	engine.SetHTMLTemplate(templ)
+}
+
 // SetHTMLTemplate associate a template with HTML renderer.
 func (engine *Engine) SetHTMLTemplate(templ *template.Template) {
 	if len(engine.trees) > 0 {
@@ -310,6 +332,15 @@ func (engine *Engine) Use(middleware ...HandlerFunc) IRoutes {
 	engine.RouterGroup.Use(middleware...)
 	engine.rebuild404Handlers()
 	engine.rebuild405Handlers()
+	return engine
+}
+
+// With returns a Engine with the configuration set in the OptionFunc.
+func (engine *Engine) With(opts ...OptionFunc) *Engine {
+	for _, opt := range opts {
+		opt(engine)
+	}
+
 	return engine
 }
 
@@ -369,23 +400,6 @@ func iterate(path, method string, routes RoutesInfo, root *node) RoutesInfo {
 		routes = iterate(path, method, routes, child)
 	}
 	return routes
-}
-
-// Run attaches the router to a http.Server and starts listening and serving HTTP requests.
-// It is a shortcut for http.ListenAndServe(addr, router)
-// Note: this method will block the calling goroutine indefinitely unless an error happens.
-func (engine *Engine) Run(addr ...string) (err error) {
-	defer func() { debugPrintError(err) }()
-
-	if engine.isUnsafeTrustedProxies() {
-		debugPrint("[WARNING] You trusted all proxies, this is NOT safe. We recommend you to set a value.\n" +
-			"Please check https://pkg.go.dev/github.com/gin-gonic/gin#readme-don-t-trust-all-proxies for details.")
-	}
-
-	address := resolveAddress(addr)
-	debugPrint("Listening and serving HTTP on %s\n", address)
-	err = http.ListenAndServe(address, engine.Handler())
-	return
 }
 
 func (engine *Engine) prepareTrustedCIDRs() ([]*net.IPNet, error) {
@@ -477,6 +491,26 @@ func (engine *Engine) validateHeader(header string) (clientIP string, valid bool
 	return "", false
 }
 
+// updateRouteTree do update to the route tree recursively
+func updateRouteTree(n *node) {
+	n.path = strings.ReplaceAll(n.path, escapedColon, colon)
+	n.fullPath = strings.ReplaceAll(n.fullPath, escapedColon, colon)
+	n.indices = strings.ReplaceAll(n.indices, backslash, colon)
+	if n.children == nil {
+		return
+	}
+	for _, child := range n.children {
+		updateRouteTree(child)
+	}
+}
+
+// updateRouteTrees do update to the route trees
+func (engine *Engine) updateRouteTrees() {
+	for _, tree := range engine.trees {
+		updateRouteTree(tree.root)
+	}
+}
+
 // parseIP parse a string representation of an IP and returns a net.IP with the
 // minimum byte representation or nil if input is invalid.
 func parseIP(ip string) net.IP {
@@ -491,6 +525,23 @@ func parseIP(ip string) net.IP {
 	return parsedIP
 }
 
+// Run attaches the router to a http.Server and starts listening and serving HTTP requests.
+// It is a shortcut for http.ListenAndServe(addr, router)
+// Note: this method will block the calling goroutine indefinitely unless an error happens.
+func (engine *Engine) Run(addr ...string) (err error) {
+	defer func() { debugPrintError(err) }()
+
+	if engine.isUnsafeTrustedProxies() {
+		debugPrint("[WARNING] You trusted all proxies, this is NOT safe. We recommend you to set a value.\n" +
+			"Please check https://github.com/gin-gonic/gin/blob/master/docs/doc.md#dont-trust-all-proxies for details.")
+	}
+	engine.updateRouteTrees()
+	address := resolveAddress(addr)
+	debugPrint("Listening and serving HTTP on %s\n", address)
+	err = http.ListenAndServe(address, engine.Handler())
+	return
+}
+
 // RunTLS attaches the router to a http.Server and starts listening and serving HTTPS (secure) requests.
 // It is a shortcut for http.ListenAndServeTLS(addr, certFile, keyFile, router)
 // Note: this method will block the calling goroutine indefinitely unless an error happens.
@@ -500,7 +551,7 @@ func (engine *Engine) RunTLS(addr, certFile, keyFile string) (err error) {
 
 	if engine.isUnsafeTrustedProxies() {
 		debugPrint("[WARNING] You trusted all proxies, this is NOT safe. We recommend you to set a value.\n" +
-			"Please check https://pkg.go.dev/github.com/gin-gonic/gin#readme-don-t-trust-all-proxies for details.")
+			"Please check https://github.com/gin-gonic/gin/blob/master/docs/doc.md#dont-trust-all-proxies for details.")
 	}
 
 	err = http.ListenAndServeTLS(addr, certFile, keyFile, engine.Handler())
@@ -552,6 +603,22 @@ func (engine *Engine) RunFd(fd int) (err error) {
 	return
 }
 
+// RunQUIC attaches the router to a http.Server and starts listening and serving QUIC requests.
+// It is a shortcut for http3.ListenAndServeQUIC(addr, certFile, keyFile, router)
+// Note: this method will block the calling goroutine indefinitely unless an error happens.
+func (engine *Engine) RunQUIC(addr, certFile, keyFile string) (err error) {
+	debugPrint("Listening and serving QUIC on %s\n", addr)
+	defer func() { debugPrintError(err) }()
+
+	if engine.isUnsafeTrustedProxies() {
+		debugPrint("[WARNING] You trusted all proxies, this is NOT safe. We recommend you to set a value.\n" +
+			"Please check https://github.com/gin-gonic/gin/blob/master/docs/doc.md#dont-trust-all-proxies for details.")
+	}
+
+	err = http3.ListenAndServeQUIC(addr, certFile, keyFile, engine.Handler())
+	return
+}
+
 // RunListener attaches the router to a http.Server and starts listening and serving HTTP requests
 // through the specified net.Listener
 func (engine *Engine) RunListener(listener net.Listener) (err error) {
@@ -584,10 +651,12 @@ func (engine *Engine) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 // Disclaimer: You can loop yourself to deal with this, use wisely.
 func (engine *Engine) HandleContext(c *Context) {
 	oldIndexValue := c.index
+	oldHandlers := c.handlers
 	c.reset()
 	engine.handleHTTPRequest(c)
 
 	c.index = oldIndexValue
+	c.handlers = oldHandlers
 }
 
 func (engine *Engine) handleHTTPRequest(c *Context) {
@@ -634,7 +703,7 @@ func (engine *Engine) handleHTTPRequest(c *Context) {
 		break
 	}
 
-	if engine.HandleMethodNotAllowed {
+	if engine.HandleMethodNotAllowed && len(t) > 0 {
 		// According to RFC 7231 section 6.5.5, MUST generate an Allow header field in response
 		// containing a list of the target resource's currently supported methods.
 		allowed := make([]string, 0, len(t)-1)

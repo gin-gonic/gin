@@ -192,6 +192,7 @@ func TestTreeWildcard(t *testing.T) {
 		"/get/abc/123abg/:param",
 		"/get/abc/123abf/:param",
 		"/get/abc/123abfff/:param",
+		"/get/abc/escaped_colon/test\\:param",
 	}
 	for _, route := range routes {
 		tree.addRoute(route, fakeHandler(route))
@@ -315,6 +316,7 @@ func TestTreeWildcard(t *testing.T) {
 		{"/get/abc/123abg/test", false, "/get/abc/123abg/:param", Params{Param{Key: "param", Value: "test"}}},
 		{"/get/abc/123abf/testss", false, "/get/abc/123abf/:param", Params{Param{Key: "param", Value: "testss"}}},
 		{"/get/abc/123abfff/te", false, "/get/abc/123abfff/:param", Params{Param{Key: "param", Value: "te"}}},
+		{"/get/abc/escaped_colon/test\\:param", false, "/get/abc/escaped_colon/test\\:param", nil},
 	})
 
 	checkPriorities(t, tree)
@@ -419,6 +421,9 @@ func TestTreeWildcardConflict(t *testing.T) {
 		{"/id/:id", false},
 		{"/static/*file", false},
 		{"/static/", true},
+		{"/escape/test\\:d1", false},
+		{"/escape/test\\:d2", false},
+		{"/escape/test:param", false},
 	}
 	testRoutes(t, routes)
 }
@@ -968,6 +973,48 @@ func TestTreeWildcardConflictEx(t *testing.T) {
 
 		if !regexp.MustCompile(fmt.Sprintf("'%s' in new path .* conflicts with existing wildcard '%s' in existing prefix '%s'", conflict.segPath, conflict.existSegPath, conflict.existPath)).MatchString(fmt.Sprint(recv)) {
 			t.Fatalf("invalid wildcard conflict error (%v)", recv)
+		}
+	}
+}
+
+func TestTreeInvalidEscape(t *testing.T) {
+	routes := map[string]bool{
+		"/r1/r":    true,
+		"/r2/:r":   true,
+		"/r3/\\:r": true,
+	}
+	tree := &node{}
+	for route, valid := range routes {
+		recv := catchPanic(func() {
+			tree.addRoute(route, fakeHandler(route))
+		})
+		if recv == nil != valid {
+			t.Fatalf("%s should be %t but got %v", route, valid, recv)
+		}
+	}
+}
+
+func TestWildcardInvalidSlash(t *testing.T) {
+	const panicMsgPrefix = "no / before catch-all in path"
+
+	routes := map[string]bool{
+		"/foo/bar":  true,
+		"/foo/x*zy": false,
+		"/foo/b*r":  false,
+	}
+
+	for route, valid := range routes {
+		tree := &node{}
+		recv := catchPanic(func() {
+			tree.addRoute(route, nil)
+		})
+
+		if recv == nil != valid {
+			t.Fatalf("%s should be %t but got %v", route, valid, recv)
+		}
+
+		if rs, ok := recv.(string); recv != nil && (!ok || !strings.HasPrefix(rs, panicMsgPrefix)) {
+			t.Fatalf(`"Expected panic "%s" for route '%s', got "%v"`, panicMsgPrefix, route, recv)
 		}
 	}
 }

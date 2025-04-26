@@ -15,24 +15,33 @@ jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
-      - name: Setup go
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: "^1.18"
-      - name: Checkout repository
-        uses: actions/checkout@v4
+          go-version: "^1"
       - name: Setup golangci-lint
-        uses: golangci/golangci-lint-action@v3.7.0
+        uses: golangci/golangci-lint-action@v6
         with:
-          version: v1.55.2
+          version: v1.61.0
           args: --verbose
   test:
     needs: lint
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest]
-        go: ["1.18", "1.19", "1.20", "1.21"]
-        test-tags: ["", "-tags nomsgpack", '-tags "sonic avx"', "-tags go_json"]
+        go: ["1.23", "1.24"]
+        test-tags:
+          [
+            "",
+            "-tags nomsgpack",
+            '--ldflags="-checklinkname=0" -tags "sonic avx"',
+            "-tags go_json",
+            "-race",
+          ]
         include:
           - os: ubuntu-latest
             go-build: ~/.cache/go-build
@@ -72,7 +81,3 @@ jobs:
         uses: codecov/codecov-action@v4
         with:
           flags: ${{ matrix.os }},go-${{ matrix.go }},${{ matrix.test-tags }}
-
-      - name: Format
-        if: matrix.go-version == '1.21.x'
-        run: diff -u <(echo -n) <(gofmt -d .)
