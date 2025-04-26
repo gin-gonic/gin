@@ -405,7 +405,7 @@ func TestLoadHTMLFSUsingTLS(t *testing.T) {
 		},
 	}
 	client := &http.Client{Transport: tr}
-	res, err := client.Get(fmt.Sprintf("%s/test", ts.URL))
+	res, err := client.Get(ts.URL + "/test")
 	if err != nil {
 		t.Error(err)
 	}
@@ -425,7 +425,7 @@ func TestLoadHTMLFSFuncMap(t *testing.T) {
 	)
 	defer ts.Close()
 
-	res, err := http.Get(fmt.Sprintf("%s/raw", ts.URL))
+	res, err := http.Get(ts.URL + "/raw")
 	if err != nil {
 		t.Error(err)
 	}

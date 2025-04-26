@@ -1859,7 +1859,7 @@ func TestContextBindRequestTooLarge(t *testing.T) {
 		Foo string `json:"foo"`
 		Bar string `json:"bar"`
 	}
-	assert.Error(t, c.BindJSON(&obj))
+	require.Error(t, c.BindJSON(&obj))
 	c.Writer.WriteHeaderNow()
 
 	assert.Empty(t, obj.Bar)
