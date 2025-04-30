@@ -325,6 +325,115 @@ func TestLoadHTMLFilesFuncMap(t *testing.T) {
 	assert.Equal(t, "Date: 2017/07/01", string(resp))
 }
 
+var tmplFS = http.Dir("testdata/template")
+
+func TestLoadHTMLFSTestMode(t *testing.T) {
+	ts := setupHTMLFiles(
+		t,
+		TestMode,
+		false,
+		func(router *Engine) {
+			router.LoadHTMLFS(tmplFS, "hello.tmpl", "raw.tmpl")
+		},
+	)
+	defer ts.Close()
+
+	res, err := http.Get(fmt.Sprintf("%s/test", ts.URL))
+	if err != nil {
+		t.Error(err)
+	}
+
+	resp, _ := io.ReadAll(res.Body)
+	assert.Equal(t, "<h1>Hello world</h1>", string(resp))
+}
+
+func TestLoadHTMLFSDebugMode(t *testing.T) {
+	ts := setupHTMLFiles(
+		t,
+		DebugMode,
+		false,
+		func(router *Engine) {
+			router.LoadHTMLFS(tmplFS, "hello.tmpl", "raw.tmpl")
+		},
+	)
+	defer ts.Close()
+
+	res, err := http.Get(fmt.Sprintf("%s/test", ts.URL))
+	if err != nil {
+		t.Error(err)
+	}
+
+	resp, _ := io.ReadAll(res.Body)
+	assert.Equal(t, "<h1>Hello world</h1>", string(resp))
+}
+
+func TestLoadHTMLFSReleaseMode(t *testing.T) {
+	ts := setupHTMLFiles(
+		t,
+		ReleaseMode,
+		false,
+		func(router *Engine) {
+			router.LoadHTMLFS(tmplFS, "hello.tmpl", "raw.tmpl")
+		},
+	)
+	defer ts.Close()
+
+	res, err := http.Get(fmt.Sprintf("%s/test", ts.URL))
+	if err != nil {
+		t.Error(err)
+	}
+
+	resp, _ := io.ReadAll(res.Body)
+	assert.Equal(t, "<h1>Hello world</h1>", string(resp))
+}
+
+func TestLoadHTMLFSUsingTLS(t *testing.T) {
+	ts := setupHTMLFiles(
+		t,
+		TestMode,
+		true,
+		func(router *Engine) {
+			router.LoadHTMLFS(tmplFS, "hello.tmpl", "raw.tmpl")
+		},
+	)
+	defer ts.Close()
+
+	// Use InsecureSkipVerify for avoiding `x509: certificate signed by unknown authority` error
+	tr := &http.Transport{
+		TLSClientConfig: &tls.Config{
+			InsecureSkipVerify: true,
+		},
+	}
+	client := &http.Client{Transport: tr}
+	res, err := client.Get(fmt.Sprintf("%s/test", ts.URL))
+	if err != nil {
+		t.Error(err)
+	}
+
+	resp, _ := io.ReadAll(res.Body)
+	assert.Equal(t, "<h1>Hello world</h1>", string(resp))
+}
+
+func TestLoadHTMLFSFuncMap(t *testing.T) {
+	ts := setupHTMLFiles(
+		t,
+		TestMode,
+		false,
+		func(router *Engine) {
+			router.LoadHTMLFS(tmplFS, "hello.tmpl", "raw.tmpl")
+		},
+	)
+	defer ts.Close()
+
+	res, err := http.Get(fmt.Sprintf("%s/raw", ts.URL))
+	if err != nil {
+		t.Error(err)
+	}
+
+	resp, _ := io.ReadAll(res.Body)
+	assert.Equal(t, "Date: 2017/07/01", string(resp))
+}
+
 func TestAddRoute(t *testing.T) {
 	router := New()
 	router.addRoute(http.MethodGet, "/", HandlersChain{func(_ *Context) {}})
@@ -571,6 +680,44 @@ func TestEngineHandleContextManyReEntries(t *testing.T) {
 
 	assert.Equal(t, int64(expectValue), handlerCounter)
 	assert.Equal(t, int64(expectValue), middlewareCounter)
+}
+
+func TestEngineHandleContextPreventsMiddlewareReEntry(t *testing.T) {
+	// given
+	var handlerCounterV1, handlerCounterV2, middlewareCounterV1 int64
+
+	r := New()
+	v1 := r.Group("/v1")
+	{
+		v1.Use(func(c *Context) {
+			atomic.AddInt64(&middlewareCounterV1, 1)
+		})
+		v1.GET("/test", func(c *Context) {
+			atomic.AddInt64(&handlerCounterV1, 1)
+			c.Status(http.StatusOK)
+		})
+	}
+
+	v2 := r.Group("/v2")
+	{
+		v2.GET("/test", func(c *Context) {
+			c.Request.URL.Path = "/v1/test"
+			r.HandleContext(c)
+		}, func(c *Context) {
+			atomic.AddInt64(&handlerCounterV2, 1)
+		})
+	}
+
+	// when
+	responseV1 := PerformRequest(r, "GET", "/v1/test")
+	responseV2 := PerformRequest(r, "GET", "/v2/test")
+
+	// then
+	assert.Equal(t, 200, responseV1.Code)
+	assert.Equal(t, 200, responseV2.Code)
+	assert.Equal(t, int64(2), handlerCounterV1)
+	assert.Equal(t, int64(2), middlewareCounterV1)
+	assert.Equal(t, int64(1), handlerCounterV2)
 }
 
 func TestPrepareTrustedCIRDsWith(t *testing.T) {

@@ -30,7 +30,7 @@ If you need performance and good productivity, you will love Gin.
 
 ### Prerequisites
 
-Gin requires [Go](https://go.dev/) version [1.22](https://go.dev/doc/devel/release#go1.22.0) or above.
+Gin requires [Go](https://go.dev/) version [1.23](https://go.dev/doc/devel/release#go1.23.0) or above.
 
 ### Getting Gin
 
@@ -73,7 +73,7 @@ func main() {
 To run the code, use the `go run` command, like:
 
 ```sh
-$ go run example.go
+go run example.go
 ```
 
 Then visit [`0.0.0.0:8080/ping`](http://0.0.0.0:8080/ping) in your browser to see the response!
@@ -94,7 +94,7 @@ See the [API documentation on go.dev](https://pkg.go.dev/github.com/gin-gonic/gi
 
 The documentation is also available on [gin-gonic.com](https://gin-gonic.com) in several languages:
 
-- [English](https://gin-gonic.com/docs/)
+- [English](https://gin-gonic.com/en/docs/)
 - [简体中文](https://gin-gonic.com/zh-cn/docs/)
 - [繁體中文](https://gin-gonic.com/zh-tw/docs/)
 - [日本語](https://gin-gonic.com/ja/docs/)
@@ -103,6 +103,7 @@ The documentation is also available on [gin-gonic.com](https://gin-gonic.com) in
 - [Turkish](https://gin-gonic.com/tr/docs/)
 - [Persian](https://gin-gonic.com/fa/docs/)
 - [Português](https://gin-gonic.com/pt/docs/)
+- [Russian](https://gin-gonic.com/ru/docs/)
 
 ### Articles
 
