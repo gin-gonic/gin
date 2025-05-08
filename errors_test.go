@@ -126,4 +126,15 @@ func TestErrorUnwrap(t *testing.T) {
 	require.ErrorIs(t, err, innerErr)
 	var testErr TestErr
 	require.ErrorAs(t, err, &testErr)
+
+	// Test non-pointer usage of gin.Error
+	errNonPointer := Error{
+		Err:  innerErr,
+		Type: ErrorTypeAny,
+	}
+	wrappedErr := fmt.Errorf("wrapped: %w", errNonPointer)
+	// Check that 'errors.Is()' and 'errors.As()' behave as expected for non-pointer usage
+	require.ErrorIs(t, wrappedErr, innerErr)
+	var testErrNonPointer TestErr
+	require.ErrorAs(t, wrappedErr, &testErrNonPointer)
 }
