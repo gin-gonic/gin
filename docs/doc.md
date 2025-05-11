@@ -84,10 +84,10 @@ go build -tags=jsoniter .
 go build -tags=go_json .
 ```
 
-[sonic](https://github.com/bytedance/sonic) (you have to ensure that your cpu supports avx instruction.)
+[sonic](https://github.com/bytedance/sonic)
 
 ```sh
-$ go build -tags="sonic avx" .
+$ go build -tags=sonic .
 ```
 
 ### Build without `MsgPack` rendering feature

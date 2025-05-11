@@ -2,7 +2,7 @@
 // Use of this source code is governed by a MIT style
 // license that can be found in the LICENSE file.
 
-//go:build sonic && avx && (linux || windows || darwin) && amd64
+//go:build sonic && (linux || windows || darwin)
 
 package json
 
