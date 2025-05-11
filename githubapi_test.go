@@ -1,19 +1,21 @@
-// Copyright 2014 Manu Martinez-Almeida.  All rights reserved.
+// Copyright 2014 Manu Martinez-Almeida. All rights reserved.
 // Use of this source code is governed by a MIT style
 // license that can be found in the LICENSE file.
 
 package gin
 
 import (
-	"bytes"
 	"fmt"
 	"math/rand"
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"strconv"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 type route struct {
@@ -295,14 +297,14 @@ func TestShouldBindUri(t *testing.T) {
 	}
 	router.Handle(http.MethodGet, "/rest/:name/:id", func(c *Context) {
 		var person Person
-		assert.NoError(t, c.ShouldBindUri(&person))
-		assert.True(t, "" != person.Name)
-		assert.True(t, "" != person.ID)
+		require.NoError(t, c.ShouldBindUri(&person))
+		assert.NotEqual(t, "", person.Name)
+		assert.NotEqual(t, "", person.ID)
 		c.String(http.StatusOK, "ShouldBindUri test OK")
 	})
 
 	path, _ := exampleFromPath("/rest/:name/:id")
-	w := performRequest(router, http.MethodGet, path)
+	w := PerformRequest(router, http.MethodGet, path)
 	assert.Equal(t, "ShouldBindUri test OK", w.Body.String())
 	assert.Equal(t, http.StatusOK, w.Code)
 }
@@ -317,14 +319,14 @@ func TestBindUri(t *testing.T) {
 	}
 	router.Handle(http.MethodGet, "/rest/:name/:id", func(c *Context) {
 		var person Person
-		assert.NoError(t, c.BindUri(&person))
-		assert.True(t, "" != person.Name)
-		assert.True(t, "" != person.ID)
+		require.NoError(t, c.BindUri(&person))
+		assert.NotEqual(t, "", person.Name)
+		assert.NotEqual(t, "", person.ID)
 		c.String(http.StatusOK, "BindUri test OK")
 	})
 
 	path, _ := exampleFromPath("/rest/:name/:id")
-	w := performRequest(router, http.MethodGet, path)
+	w := PerformRequest(router, http.MethodGet, path)
 	assert.Equal(t, "BindUri test OK", w.Body.String())
 	assert.Equal(t, http.StatusOK, w.Code)
 }
@@ -338,11 +340,11 @@ func TestBindUriError(t *testing.T) {
 	}
 	router.Handle(http.MethodGet, "/new/rest/:num", func(c *Context) {
 		var m Member
-		assert.Error(t, c.BindUri(&m))
+		require.Error(t, c.BindUri(&m))
 	})
 
 	path1, _ := exampleFromPath("/new/rest/:num")
-	w1 := performRequest(router, http.MethodGet, path1)
+	w1 := PerformRequest(router, http.MethodGet, path1)
 	assert.Equal(t, http.StatusBadRequest, w1.Code)
 }
 
@@ -358,7 +360,7 @@ func TestRaceContextCopy(t *testing.T) {
 		go readWriteKeys(c.Copy())
 		c.String(http.StatusOK, "run OK, no panics")
 	})
-	w := performRequest(router, http.MethodGet, "/test/copy/race")
+	w := PerformRequest(router, http.MethodGet, "/test/copy/race")
 	assert.Equal(t, "run OK, no panics", w.Body.String())
 }
 
@@ -389,7 +391,7 @@ func TestGithubAPI(t *testing.T) {
 
 	for _, route := range githubAPI {
 		path, values := exampleFromPath(route.path)
-		w := performRequest(router, route.method, path)
+		w := PerformRequest(router, route.method, path)
 
 		// TEST
 		assert.Contains(t, w.Body.String(), "\"status\":\"good\"")
@@ -401,7 +403,7 @@ func TestGithubAPI(t *testing.T) {
 }
 
 func exampleFromPath(path string) (string, Params) {
-	output := new(bytes.Buffer)
+	output := new(strings.Builder)
 	params := make(Params, 0, 6)
 	start := -1
 	for i, c := range path {
@@ -410,7 +412,7 @@ func exampleFromPath(path string) (string, Params) {
 		}
 		if start >= 0 {
 			if c == '/' {
-				value := fmt.Sprint(rand.Intn(100000))
+				value := strconv.Itoa(rand.Intn(100000))
 				params = append(params, Param{
 					Key:   path[start:i],
 					Value: value,
@@ -424,7 +426,7 @@ func exampleFromPath(path string) (string, Params) {
 		}
 	}
 	if start >= 0 {
-		value := fmt.Sprint(rand.Intn(100000))
+		value := strconv.Itoa(rand.Intn(100000))
 		params = append(params, Param{
 			Key:   path[start:],
 			Value: value,

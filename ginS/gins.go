@@ -1,4 +1,4 @@
-// Copyright 2014 Manu Martinez-Almeida.  All rights reserved.
+// Copyright 2014 Manu Martinez-Almeida. All rights reserved.
 // Use of this source code is governed by a MIT style
 // license that can be found in the LICENSE file.
 
@@ -30,6 +30,11 @@ func LoadHTMLGlob(pattern string) {
 // LoadHTMLFiles is a wrapper for Engine.LoadHTMLFiles.
 func LoadHTMLFiles(files ...string) {
 	engine().LoadHTMLFiles(files...)
+}
+
+// LoadHTMLFS is a wrapper for Engine.LoadHTMLFS.
+func LoadHTMLFS(fs http.FileSystem, patterns ...string) {
+	engine().LoadHTMLFS(fs, patterns...)
 }
 
 // SetHTMLTemplate is a wrapper for Engine.SetHTMLTemplate.
@@ -108,7 +113,8 @@ func StaticFile(relativePath, filepath string) gin.IRoutes {
 // of the Router's NotFound handler.
 // To use the operating system's file system implementation,
 // use :
-//     router.Static("/static", "/var/www")
+//
+//	router.Static("/static", "/var/www")
 func Static(relativePath, root string) gin.IRoutes {
 	return engine().Static(relativePath, root)
 }
@@ -118,7 +124,7 @@ func StaticFS(relativePath string, fs http.FileSystem) gin.IRoutes {
 	return engine().StaticFS(relativePath, fs)
 }
 
-// Use attaches a global middleware to the router. i.e. the middlewares attached though Use() will be
+// Use attaches a global middleware to the router. i.e. the middlewares attached through Use() will be
 // included in the handlers chain for every single request. Even 404, 405, static files...
 // For example, this is the right place for a logger or error management middleware.
 func Use(middlewares ...gin.HandlerFunc) gin.IRoutes {
@@ -153,7 +159,7 @@ func RunUnix(file string) (err error) {
 
 // RunFd attaches the router to a http.Server and starts listening and serving HTTP requests
 // through the specified file descriptor.
-// Note: the method will block the calling goroutine indefinitely unless on error happens.
+// Note: the method will block the calling goroutine indefinitely unless an error happens.
 func RunFd(fd int) (err error) {
 	return engine().RunFd(fd)
 }

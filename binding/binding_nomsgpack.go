@@ -3,7 +3,6 @@
 // license that can be found in the LICENSE file.
 
 //go:build nomsgpack
-// +build nomsgpack
 
 package binding
 
@@ -20,6 +19,8 @@ const (
 	MIMEMultipartPOSTForm = "multipart/form-data"
 	MIMEPROTOBUF          = "application/x-protobuf"
 	MIMEYAML              = "application/x-yaml"
+	MIMEYAML2             = "application/yaml"
+	MIMETOML              = "application/toml"
 )
 
 // Binding describes the interface which needs to be implemented for binding the
@@ -27,21 +28,21 @@ const (
 // the form POST.
 type Binding interface {
 	Name() string
-	Bind(*http.Request, interface{}) error
+	Bind(*http.Request, any) error
 }
 
 // BindingBody adds BindBody method to Binding. BindBody is similar with Bind,
 // but it reads the body from supplied bytes instead of req.Body.
 type BindingBody interface {
 	Binding
-	BindBody([]byte, interface{}) error
+	BindBody([]byte, any) error
 }
 
 // BindingUri adds BindUri method to Binding. BindUri is similar with Bind,
 // but it reads the Params.
 type BindingUri interface {
 	Name() string
-	BindUri(map[string][]string, interface{}) error
+	BindUri(map[string][]string, any) error
 }
 
 // StructValidator is the minimal interface which needs to be implemented in
@@ -54,11 +55,11 @@ type StructValidator interface {
 	// If the received type is a struct or pointer to a struct, the validation should be performed.
 	// If the struct is not valid or the validation itself fails, a descriptive error should be returned.
 	// Otherwise nil must be returned.
-	ValidateStruct(interface{}) error
+	ValidateStruct(any) error
 
 	// Engine returns the underlying validator engine which powers the
 	// StructValidator implementation.
-	Engine() interface{}
+	Engine() any
 }
 
 // Validator is the default validator which implements the StructValidator
@@ -79,6 +80,8 @@ var (
 	YAML          = yamlBinding{}
 	Uri           = uriBinding{}
 	Header        = headerBinding{}
+	TOML          = tomlBinding{}
+	Plain         = plainBinding{}
 )
 
 // Default returns the appropriate Binding instance based on the HTTP method
@@ -95,16 +98,18 @@ func Default(method, contentType string) Binding {
 		return XML
 	case MIMEPROTOBUF:
 		return ProtoBuf
-	case MIMEYAML:
+	case MIMEYAML, MIMEYAML2:
 		return YAML
 	case MIMEMultipartPOSTForm:
 		return FormMultipart
+	case MIMETOML:
+		return TOML
 	default: // case MIMEPOSTForm:
 		return Form
 	}
 }
 
-func validate(obj interface{}) error {
+func validate(obj any) error {
 	if Validator == nil {
 		return nil
 	}

@@ -1,12 +1,12 @@
-// Copyright 2017 Manu Martinez-Almeida.  All rights reserved.
+// Copyright 2017 Manu Martinez-Almeida. All rights reserved.
 // Use of this source code is governed by a MIT style
 // license that can be found in the LICENSE file.
 
 package binding
 
 import (
-	"fmt"
 	"reflect"
+	"strconv"
 	"strings"
 	"sync"
 
@@ -22,31 +22,26 @@ type SliceValidationError []error
 
 // Error concatenates all error elements in SliceValidationError into a single string separated by \n.
 func (err SliceValidationError) Error() string {
-	n := len(err)
-	switch n {
-	case 0:
+	if len(err) == 0 {
 		return ""
-	default:
-		var b strings.Builder
-		if err[0] != nil {
-			fmt.Fprintf(&b, "[%d]: %s", 0, err[0].Error())
-		}
-		if n > 1 {
-			for i := 1; i < n; i++ {
-				if err[i] != nil {
-					b.WriteString("\n")
-					fmt.Fprintf(&b, "[%d]: %s", i, err[i].Error())
-				}
-			}
-		}
-		return b.String()
 	}
+
+	var b strings.Builder
+	for i := 0; i < len(err); i++ {
+		if err[i] != nil {
+			if b.Len() > 0 {
+				b.WriteString("\n")
+			}
+			b.WriteString("[" + strconv.Itoa(i) + "]: " + err[i].Error())
+		}
+	}
+	return b.String()
 }
 
-var _ StructValidator = &defaultValidator{}
+var _ StructValidator = (*defaultValidator)(nil)
 
 // ValidateStruct receives any kind of type, but only performed struct or pointer to struct type.
-func (v *defaultValidator) ValidateStruct(obj interface{}) error {
+func (v *defaultValidator) ValidateStruct(obj any) error {
 	if obj == nil {
 		return nil
 	}
@@ -54,7 +49,10 @@ func (v *defaultValidator) ValidateStruct(obj interface{}) error {
 	value := reflect.ValueOf(obj)
 	switch value.Kind() {
 	case reflect.Ptr:
-		return v.ValidateStruct(value.Elem().Interface())
+		if value.Elem().Kind() != reflect.Struct {
+			return v.ValidateStruct(value.Elem().Interface())
+		}
+		return v.validateStruct(obj)
 	case reflect.Struct:
 		return v.validateStruct(obj)
 	case reflect.Slice, reflect.Array:
@@ -75,7 +73,7 @@ func (v *defaultValidator) ValidateStruct(obj interface{}) error {
 }
 
 // validateStruct receives struct type
-func (v *defaultValidator) validateStruct(obj interface{}) error {
+func (v *defaultValidator) validateStruct(obj any) error {
 	v.lazyinit()
 	return v.validate.Struct(obj)
 }
@@ -84,7 +82,7 @@ func (v *defaultValidator) validateStruct(obj interface{}) error {
 // Validator instance. This is useful if you want to register custom validations
 // or struct level validations. See validator GoDoc for more info -
 // https://pkg.go.dev/github.com/go-playground/validator/v10
-func (v *defaultValidator) Engine() interface{} {
+func (v *defaultValidator) Engine() any {
 	v.lazyinit()
 	return v.validate
 }

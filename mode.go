@@ -1,12 +1,14 @@
-// Copyright 2014 Manu Martinez-Almeida.  All rights reserved.
+// Copyright 2014 Manu Martinez-Almeida. All rights reserved.
 // Use of this source code is governed by a MIT style
 // license that can be found in the LICENSE file.
 
 package gin
 
 import (
+	"flag"
 	"io"
 	"os"
+	"sync/atomic"
 
 	"github.com/gin-gonic/gin/binding"
 )
@@ -34,17 +36,16 @@ const (
 // Note that both Logger and Recovery provides custom ways to configure their
 // output io.Writer.
 // To support coloring in Windows use:
-// 		import "github.com/mattn/go-colorable"
-// 		gin.DefaultWriter = colorable.NewColorableStdout()
+//
+//	import "github.com/mattn/go-colorable"
+//	gin.DefaultWriter = colorable.NewColorableStdout()
 var DefaultWriter io.Writer = os.Stdout
 
 // DefaultErrorWriter is the default io.Writer used by Gin to debug errors
 var DefaultErrorWriter io.Writer = os.Stderr
 
-var (
-	ginMode  = debugCode
-	modeName = DebugMode
-)
+var ginMode int32 = debugCode
+var modeName atomic.Value
 
 func init() {
 	mode := os.Getenv(EnvGinMode)
@@ -54,21 +55,24 @@ func init() {
 // SetMode sets gin mode according to input string.
 func SetMode(value string) {
 	if value == "" {
-		value = DebugMode
+		if flag.Lookup("test.v") != nil {
+			value = TestMode
+		} else {
+			value = DebugMode
+		}
 	}
 
 	switch value {
-	case DebugMode:
-		ginMode = debugCode
+	case DebugMode, "":
+		atomic.StoreInt32(&ginMode, debugCode)
 	case ReleaseMode:
-		ginMode = releaseCode
+		atomic.StoreInt32(&ginMode, releaseCode)
 	case TestMode:
-		ginMode = testCode
+		atomic.StoreInt32(&ginMode, testCode)
 	default:
 		panic("gin mode unknown: " + value + " (available mode: debug release test)")
 	}
-
-	modeName = value
+	modeName.Store(value)
 }
 
 // DisableBindValidation closes the default validator.
@@ -90,5 +94,5 @@ func EnableJsonDecoderDisallowUnknownFields() {
 
 // Mode returns current gin mode.
 func Mode() string {
-	return modeName
+	return modeName.Load().(string)
 }

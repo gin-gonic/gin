@@ -1,4 +1,4 @@
-// Copyright 2017 Manu Martinez-Almeida.  All rights reserved.
+// Copyright 2017 Manu Martinez-Almeida. All rights reserved.
 // Use of this source code is governed by a MIT style
 // license that can be found in the LICENSE file.
 
@@ -9,17 +9,19 @@ import (
 	"crypto/tls"
 	"fmt"
 	"html/template"
-	"io/ioutil"
+	"io"
 	"net"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"runtime"
 	"sync"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // params[0]=url example:http://127.0.0.1:8080/index (cannot be empty)
@@ -39,11 +41,11 @@ func testRequest(t *testing.T, params ...string) {
 	client := &http.Client{Transport: tr}
 
 	resp, err := client.Get(params[0])
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	defer resp.Body.Close()
 
-	body, ioerr := ioutil.ReadAll(resp.Body)
-	assert.NoError(t, ioerr)
+	body, ioerr := io.ReadAll(resp.Body)
+	require.NoError(t, ioerr)
 
 	var responseStatus = "200 OK"
 	if len(params) > 1 && params[1] != "" {
@@ -72,13 +74,13 @@ func TestRunEmpty(t *testing.T) {
 	// otherwise the main thread will complete
 	time.Sleep(5 * time.Millisecond)
 
-	assert.Error(t, router.Run(":8080"))
+	require.Error(t, router.Run(":8080"))
 	testRequest(t, "http://localhost:8080/example")
 }
 
 func TestBadTrustedCIDRs(t *testing.T) {
 	router := New()
-	assert.Error(t, router.SetTrustedProxies([]string{"hello/world"}))
+	require.Error(t, router.SetTrustedProxies([]string{"hello/world"}))
 }
 
 /* legacy tests
@@ -86,7 +88,7 @@ func TestBadTrustedCIDRsForRun(t *testing.T) {
 	os.Setenv("PORT", "")
 	router := New()
 	router.TrustedProxies = []string{"hello/world"}
-	assert.Error(t, router.Run(":8080"))
+	require.Error(t, router.Run(":8080"))
 }
 
 func TestBadTrustedCIDRsForRunUnix(t *testing.T) {
@@ -99,7 +101,7 @@ func TestBadTrustedCIDRsForRunUnix(t *testing.T) {
 
 	go func() {
 		router.GET("/example", func(c *Context) { c.String(http.StatusOK, "it worked") })
-		assert.Error(t, router.RunUnix(unixTestSocket))
+		require.Error(t, router.RunUnix(unixTestSocket))
 	}()
 	// have to wait for the goroutine to start and run the server
 	// otherwise the main thread will complete
@@ -111,15 +113,15 @@ func TestBadTrustedCIDRsForRunFd(t *testing.T) {
 	router.TrustedProxies = []string{"hello/world"}
 
 	addr, err := net.ResolveTCPAddr("tcp", "localhost:0")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	listener, err := net.ListenTCP("tcp", addr)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	socketFile, err := listener.File()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	go func() {
 		router.GET("/example", func(c *Context) { c.String(http.StatusOK, "it worked") })
-		assert.Error(t, router.RunFd(int(socketFile.Fd())))
+		require.Error(t, router.RunFd(int(socketFile.Fd())))
 	}()
 	// have to wait for the goroutine to start and run the server
 	// otherwise the main thread will complete
@@ -131,12 +133,12 @@ func TestBadTrustedCIDRsForRunListener(t *testing.T) {
 	router.TrustedProxies = []string{"hello/world"}
 
 	addr, err := net.ResolveTCPAddr("tcp", "localhost:0")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	listener, err := net.ListenTCP("tcp", addr)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	go func() {
 		router.GET("/example", func(c *Context) { c.String(http.StatusOK, "it worked") })
-		assert.Error(t, router.RunListener(listener))
+		require.Error(t, router.RunListener(listener))
 	}()
 	// have to wait for the goroutine to start and run the server
 	// otherwise the main thread will complete
@@ -147,7 +149,7 @@ func TestBadTrustedCIDRsForRunTLS(t *testing.T) {
 	os.Setenv("PORT", "")
 	router := New()
 	router.TrustedProxies = []string{"hello/world"}
-	assert.Error(t, router.RunTLS(":8080", "./testdata/certificate/cert.pem", "./testdata/certificate/key.pem"))
+	require.Error(t, router.RunTLS(":8080", "./testdata/certificate/cert.pem", "./testdata/certificate/key.pem"))
 }
 */
 
@@ -163,7 +165,7 @@ func TestRunTLS(t *testing.T) {
 	// otherwise the main thread will complete
 	time.Sleep(5 * time.Millisecond)
 
-	assert.Error(t, router.RunTLS(":8443", "./testdata/certificate/cert.pem", "./testdata/certificate/key.pem"))
+	require.Error(t, router.RunTLS(":8443", "./testdata/certificate/cert.pem", "./testdata/certificate/key.pem"))
 	testRequest(t, "https://localhost:8443/example")
 }
 
@@ -200,7 +202,7 @@ func TestPusher(t *testing.T) {
 	// otherwise the main thread will complete
 	time.Sleep(5 * time.Millisecond)
 
-	assert.Error(t, router.RunTLS(":8449", "./testdata/certificate/cert.pem", "./testdata/certificate/key.pem"))
+	require.Error(t, router.RunTLS(":8449", "./testdata/certificate/cert.pem", "./testdata/certificate/key.pem"))
 	testRequest(t, "https://localhost:8449/pusher")
 }
 
@@ -215,14 +217,14 @@ func TestRunEmptyWithEnv(t *testing.T) {
 	// otherwise the main thread will complete
 	time.Sleep(5 * time.Millisecond)
 
-	assert.Error(t, router.Run(":3123"))
+	require.Error(t, router.Run(":3123"))
 	testRequest(t, "http://localhost:3123/example")
 }
 
 func TestRunTooMuchParams(t *testing.T) {
 	router := New()
 	assert.Panics(t, func() {
-		assert.NoError(t, router.Run("2", "2"))
+		require.NoError(t, router.Run("2", "2"))
 	})
 }
 
@@ -236,7 +238,7 @@ func TestRunWithPort(t *testing.T) {
 	// otherwise the main thread will complete
 	time.Sleep(5 * time.Millisecond)
 
-	assert.Error(t, router.Run(":5150"))
+	require.Error(t, router.Run(":5150"))
 	testRequest(t, "http://localhost:5150/example")
 }
 
@@ -256,7 +258,7 @@ func TestUnixSocket(t *testing.T) {
 	time.Sleep(5 * time.Millisecond)
 
 	c, err := net.Dial("unix", unixTestSocket)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	fmt.Fprint(c, "GET /example HTTP/1.0\r\n\r\n")
 	scanner := bufio.NewScanner(c)
@@ -270,18 +272,43 @@ func TestUnixSocket(t *testing.T) {
 
 func TestBadUnixSocket(t *testing.T) {
 	router := New()
-	assert.Error(t, router.RunUnix("#/tmp/unix_unit_test"))
+	require.Error(t, router.RunUnix("#/tmp/unix_unit_test"))
+}
+
+func TestRunQUIC(t *testing.T) {
+	router := New()
+	go func() {
+		router.GET("/example", func(c *Context) { c.String(http.StatusOK, "it worked") })
+
+		assert.NoError(t, router.RunQUIC(":8443", "./testdata/certificate/cert.pem", "./testdata/certificate/key.pem"))
+	}()
+
+	// have to wait for the goroutine to start and run the server
+	// otherwise the main thread will complete
+	time.Sleep(5 * time.Millisecond)
+
+	require.Error(t, router.RunQUIC(":8443", "./testdata/certificate/cert.pem", "./testdata/certificate/key.pem"))
+	testRequest(t, "https://localhost:8443/example")
 }
 
 func TestFileDescriptor(t *testing.T) {
 	router := New()
 
 	addr, err := net.ResolveTCPAddr("tcp", "localhost:0")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	listener, err := net.ListenTCP("tcp", addr)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	socketFile, err := listener.File()
-	assert.NoError(t, err)
+	if isWindows() {
+		// not supported by windows, it is unimplemented now
+		require.Error(t, err)
+	} else {
+		require.NoError(t, err)
+	}
+
+	if socketFile == nil {
+		return
+	}
 
 	go func() {
 		router.GET("/example", func(c *Context) { c.String(http.StatusOK, "it worked") })
@@ -292,7 +319,7 @@ func TestFileDescriptor(t *testing.T) {
 	time.Sleep(5 * time.Millisecond)
 
 	c, err := net.Dial("tcp", listener.Addr().String())
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	fmt.Fprintf(c, "GET /example HTTP/1.0\r\n\r\n")
 	scanner := bufio.NewScanner(c)
@@ -306,15 +333,15 @@ func TestFileDescriptor(t *testing.T) {
 
 func TestBadFileDescriptor(t *testing.T) {
 	router := New()
-	assert.Error(t, router.RunFd(0))
+	require.Error(t, router.RunFd(0))
 }
 
 func TestListener(t *testing.T) {
 	router := New()
 	addr, err := net.ResolveTCPAddr("tcp", "localhost:0")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	listener, err := net.ListenTCP("tcp", addr)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	go func() {
 		router.GET("/example", func(c *Context) { c.String(http.StatusOK, "it worked") })
 		assert.NoError(t, router.RunListener(listener))
@@ -324,7 +351,7 @@ func TestListener(t *testing.T) {
 	time.Sleep(5 * time.Millisecond)
 
 	c, err := net.Dial("tcp", listener.Addr().String())
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	fmt.Fprintf(c, "GET /example HTTP/1.0\r\n\r\n")
 	scanner := bufio.NewScanner(c)
@@ -339,11 +366,11 @@ func TestListener(t *testing.T) {
 func TestBadListener(t *testing.T) {
 	router := New()
 	addr, err := net.ResolveTCPAddr("tcp", "localhost:10086")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	listener, err := net.ListenTCP("tcp", addr)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	listener.Close()
-	assert.Error(t, router.RunListener(listener))
+	require.Error(t, router.RunListener(listener))
 }
 
 func TestWithHttptestWithAutoSelectedPort(t *testing.T) {
@@ -369,7 +396,14 @@ func TestConcurrentHandleContext(t *testing.T) {
 	wg.Add(iterations)
 	for i := 0; i < iterations; i++ {
 		go func() {
-			testGetRequestHandler(t, router, "/")
+			req, err := http.NewRequest(http.MethodGet, "/", nil)
+			assert.NoError(t, err)
+
+			w := httptest.NewRecorder()
+			router.ServeHTTP(w, req)
+
+			assert.Equal(t, "it worked", w.Body.String(), "resp body should match")
+			assert.Equal(t, 200, w.Code, "should get a 200")
 			wg.Done()
 		}()
 	}
@@ -390,17 +424,6 @@ func TestConcurrentHandleContext(t *testing.T) {
 
 // 	testRequest(t, "http://localhost:8033/example")
 // }
-
-func testGetRequestHandler(t *testing.T, h http.Handler, url string) {
-	req, err := http.NewRequest(http.MethodGet, url, nil)
-	assert.NoError(t, err)
-
-	w := httptest.NewRecorder()
-	h.ServeHTTP(w, req)
-
-	assert.Equal(t, "it worked", w.Body.String(), "resp body should match")
-	assert.Equal(t, 200, w.Code, "should get a 200")
-}
 
 func TestTreeRunDynamicRouting(t *testing.T) {
 	router := New()
@@ -546,4 +569,33 @@ func TestTreeRunDynamicRouting(t *testing.T) {
 	testRequest(t, ts.URL+"/a/dd", "404 Not Found")
 	testRequest(t, ts.URL+"/addr/dd/aa", "404 Not Found")
 	testRequest(t, ts.URL+"/something/secondthing/121", "404 Not Found")
+}
+
+func isWindows() bool {
+	return runtime.GOOS == "windows"
+}
+
+func TestEscapedColon(t *testing.T) {
+	router := New()
+	f := func(u string) {
+		router.GET(u, func(c *Context) { c.String(http.StatusOK, u) })
+	}
+	f("/r/r\\:r")
+	f("/r/r:r")
+	f("/r/r/:r")
+	f("/r/r/\\:r")
+	f("/r/r/r\\:r")
+	assert.Panics(t, func() {
+		f("\\foo:")
+	})
+
+	router.updateRouteTrees()
+	ts := httptest.NewServer(router)
+	defer ts.Close()
+
+	testRequest(t, ts.URL+"/r/r123", "", "/r/r:r")
+	testRequest(t, ts.URL+"/r/r:r", "", "/r/r\\:r")
+	testRequest(t, ts.URL+"/r/r/r123", "", "/r/r/:r")
+	testRequest(t, ts.URL+"/r/r/:r", "", "/r/r/\\:r")
+	testRequest(t, ts.URL+"/r/r/r:r", "", "/r/r/r\\:r")
 }

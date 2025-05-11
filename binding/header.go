@@ -1,3 +1,7 @@
+// Copyright 2022 Gin Core Team. All rights reserved.
+// Use of this source code is governed by a MIT style
+// license that can be found in the LICENSE file.
+
 package binding
 
 import (
@@ -12,7 +16,7 @@ func (headerBinding) Name() string {
 	return "header"
 }
 
-func (headerBinding) Bind(req *http.Request, obj interface{}) error {
+func (headerBinding) Bind(req *http.Request, obj any) error {
 
 	if err := mapHeader(obj, req.Header); err != nil {
 		return err
@@ -21,7 +25,7 @@ func (headerBinding) Bind(req *http.Request, obj interface{}) error {
 	return validate(obj)
 }
 
-func mapHeader(ptr interface{}, h map[string][]string) error {
+func mapHeader(ptr any, h map[string][]string) error {
 	return mappingByPtr(ptr, headerSource(h), "header")
 }
 

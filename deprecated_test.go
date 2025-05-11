@@ -1,4 +1,4 @@
-// Copyright 2014 Manu Martinez-Almeida.  All rights reserved.
+// Copyright 2014 Manu Martinez-Almeida. All rights reserved.
 // Use of this source code is governed by a MIT style
 // license that can be found in the LICENSE file.
 
@@ -18,7 +18,7 @@ func TestBindWith(t *testing.T) {
 	w := httptest.NewRecorder()
 	c, _ := CreateTestContext(w)
 
-	c.Request, _ = http.NewRequest("POST", "/?foo=bar&bar=foo", bytes.NewBufferString("foo=unused"))
+	c.Request, _ = http.NewRequest(http.MethodPost, "/?foo=bar&bar=foo", bytes.NewBufferString("foo=unused"))
 
 	var obj struct {
 		Foo string `form:"foo"`

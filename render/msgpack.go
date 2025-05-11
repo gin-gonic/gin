@@ -1,9 +1,8 @@
-// Copyright 2017 Manu Martinez-Almeida.  All rights reserved.
+// Copyright 2017 Manu Martinez-Almeida. All rights reserved.
 // Use of this source code is governed by a MIT style
 // license that can be found in the LICENSE file.
 
 //go:build !nomsgpack
-// +build !nomsgpack
 
 package render
 
@@ -21,7 +20,7 @@ var (
 
 // MsgPack contains the given interface object.
 type MsgPack struct {
-	Data interface{}
+	Data any
 }
 
 var msgpackContentType = []string{"application/msgpack; charset=utf-8"}
@@ -37,7 +36,7 @@ func (r MsgPack) Render(w http.ResponseWriter) error {
 }
 
 // WriteMsgPack writes MsgPack ContentType and encodes the given interface object.
-func WriteMsgPack(w http.ResponseWriter, obj interface{}) error {
+func WriteMsgPack(w http.ResponseWriter, obj any) error {
 	writeContentType(w, msgpackContentType)
 	var mh codec.MsgpackHandle
 	return codec.NewEncoder(w, &mh).Encode(obj)

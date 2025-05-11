@@ -54,7 +54,7 @@ func TestDefaultValidator(t *testing.T) {
 	tests := []struct {
 		name    string
 		v       *defaultValidator
-		obj     interface{}
+		obj     any
 		wantErr bool
 	}{
 		{"validate nil obj", &defaultValidator{}, nil, false},

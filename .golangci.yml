@@ -3,12 +3,11 @@ run:
 linters:
   enable:
     - asciicheck
-    - depguard
     - dogsled
     - durationcheck
     - errcheck
     - errorlint
-    - exportloopref
+    - copyloopvar
     - gci
     - gofmt
     - goimports
@@ -17,8 +16,35 @@ linters:
     - nakedret
     - nilerr
     - nolintlint
+    - perfsprint
     - revive
+    - testifylint
+    - usestdlibvars
     - wastedassign
+
+linters-settings:
+  gosec:
+    # To select a subset of rules to run.
+    # Available rules: https://github.com/securego/gosec#available-rules
+    # Default: [] - means include all rules
+    includes:
+      - G102
+      - G106
+      - G108
+      - G109
+      - G111
+      - G112
+      - G201
+      - G203
+  perfsprint:
+    err-error: true
+    errorf: true
+    int-conversion: true
+    sprintf1: true
+    strconcat: true
+  testifylint:
+    enable-all: true
+
 issues:
   exclude-rules:
     - linters:
@@ -37,3 +63,9 @@ issues:
     - path: _test\.go
       linters:
         - gosec # security is not make sense in tests
+    - linters:
+        - revive
+      path: _test\.go
+    - path: gin.go
+      linters:
+        - gci

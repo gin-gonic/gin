@@ -1,4 +1,4 @@
-// Copyright 2014 Manu Martinez-Almeida.  All rights reserved.
+// Copyright 2014 Manu Martinez-Almeida. All rights reserved.
 // Use of this source code is governed by a MIT style
 // license that can be found in the LICENSE file.
 
@@ -12,7 +12,7 @@ import (
 )
 
 var (
-	// reg match english letters for http method name
+	// regEnLetter matches english letters for http method name
 	regEnLetter = regexp.MustCompile("^[A-Z]+$")
 
 	// anyMethods for RouterGroup Any method
@@ -42,8 +42,10 @@ type IRoutes interface {
 	PUT(string, ...HandlerFunc) IRoutes
 	OPTIONS(string, ...HandlerFunc) IRoutes
 	HEAD(string, ...HandlerFunc) IRoutes
+	Match([]string, string, ...HandlerFunc) IRoutes
 
 	StaticFile(string, string) IRoutes
+	StaticFileFS(string, string, http.FileSystem) IRoutes
 	Static(string, string) IRoutes
 	StaticFS(string, http.FileSystem) IRoutes
 }
@@ -57,7 +59,7 @@ type RouterGroup struct {
 	root     bool
 }
 
-var _ IRouter = &RouterGroup{}
+var _ IRouter = (*RouterGroup)(nil)
 
 // Use adds middleware to the group, see example code in GitHub.
 func (group *RouterGroup) Use(middleware ...HandlerFunc) IRoutes {
@@ -105,37 +107,37 @@ func (group *RouterGroup) Handle(httpMethod, relativePath string, handlers ...Ha
 	return group.handle(httpMethod, relativePath, handlers)
 }
 
-// POST is a shortcut for router.Handle("POST", path, handle).
+// POST is a shortcut for router.Handle("POST", path, handlers).
 func (group *RouterGroup) POST(relativePath string, handlers ...HandlerFunc) IRoutes {
 	return group.handle(http.MethodPost, relativePath, handlers)
 }
 
-// GET is a shortcut for router.Handle("GET", path, handle).
+// GET is a shortcut for router.Handle("GET", path, handlers).
 func (group *RouterGroup) GET(relativePath string, handlers ...HandlerFunc) IRoutes {
 	return group.handle(http.MethodGet, relativePath, handlers)
 }
 
-// DELETE is a shortcut for router.Handle("DELETE", path, handle).
+// DELETE is a shortcut for router.Handle("DELETE", path, handlers).
 func (group *RouterGroup) DELETE(relativePath string, handlers ...HandlerFunc) IRoutes {
 	return group.handle(http.MethodDelete, relativePath, handlers)
 }
 
-// PATCH is a shortcut for router.Handle("PATCH", path, handle).
+// PATCH is a shortcut for router.Handle("PATCH", path, handlers).
 func (group *RouterGroup) PATCH(relativePath string, handlers ...HandlerFunc) IRoutes {
 	return group.handle(http.MethodPatch, relativePath, handlers)
 }
 
-// PUT is a shortcut for router.Handle("PUT", path, handle).
+// PUT is a shortcut for router.Handle("PUT", path, handlers).
 func (group *RouterGroup) PUT(relativePath string, handlers ...HandlerFunc) IRoutes {
 	return group.handle(http.MethodPut, relativePath, handlers)
 }
 
-// OPTIONS is a shortcut for router.Handle("OPTIONS", path, handle).
+// OPTIONS is a shortcut for router.Handle("OPTIONS", path, handlers).
 func (group *RouterGroup) OPTIONS(relativePath string, handlers ...HandlerFunc) IRoutes {
 	return group.handle(http.MethodOptions, relativePath, handlers)
 }
 
-// HEAD is a shortcut for router.Handle("HEAD", path, handle).
+// HEAD is a shortcut for router.Handle("HEAD", path, handlers).
 func (group *RouterGroup) HEAD(relativePath string, handlers ...HandlerFunc) IRoutes {
 	return group.handle(http.MethodHead, relativePath, handlers)
 }
@@ -150,14 +152,35 @@ func (group *RouterGroup) Any(relativePath string, handlers ...HandlerFunc) IRou
 	return group.returnObj()
 }
 
+// Match registers a route that matches the specified methods that you declared.
+func (group *RouterGroup) Match(methods []string, relativePath string, handlers ...HandlerFunc) IRoutes {
+	for _, method := range methods {
+		group.handle(method, relativePath, handlers)
+	}
+
+	return group.returnObj()
+}
+
 // StaticFile registers a single route in order to serve a single file of the local filesystem.
 // router.StaticFile("favicon.ico", "./resources/favicon.ico")
 func (group *RouterGroup) StaticFile(relativePath, filepath string) IRoutes {
+	return group.staticFileHandler(relativePath, func(c *Context) {
+		c.File(filepath)
+	})
+}
+
+// StaticFileFS works just like `StaticFile` but a custom `http.FileSystem` can be used instead..
+// router.StaticFileFS("favicon.ico", "./resources/favicon.ico", Dir{".", false})
+// Gin by default uses: gin.Dir()
+func (group *RouterGroup) StaticFileFS(relativePath, filepath string, fs http.FileSystem) IRoutes {
+	return group.staticFileHandler(relativePath, func(c *Context) {
+		c.FileFromFS(filepath, fs)
+	})
+}
+
+func (group *RouterGroup) staticFileHandler(relativePath string, handler HandlerFunc) IRoutes {
 	if strings.Contains(relativePath, ":") || strings.Contains(relativePath, "*") {
 		panic("URL parameters can not be used when serving a static file")
-	}
-	handler := func(c *Context) {
-		c.File(filepath)
 	}
 	group.GET(relativePath, handler)
 	group.HEAD(relativePath, handler)
@@ -169,13 +192,14 @@ func (group *RouterGroup) StaticFile(relativePath, filepath string) IRoutes {
 // of the Router's NotFound handler.
 // To use the operating system's file system implementation,
 // use :
-//     router.Static("/static", "/var/www")
+//
+//	router.Static("/static", "/var/www")
 func (group *RouterGroup) Static(relativePath, root string) IRoutes {
 	return group.StaticFS(relativePath, Dir(root, false))
 }
 
 // StaticFS works just like `Static()` but a custom `http.FileSystem` can be used instead.
-// Gin by default user: gin.Dir()
+// Gin by default uses: gin.Dir()
 func (group *RouterGroup) StaticFS(relativePath string, fs http.FileSystem) IRoutes {
 	if strings.Contains(relativePath, ":") || strings.Contains(relativePath, "*") {
 		panic("URL parameters can not be used when serving a static folder")
@@ -194,7 +218,7 @@ func (group *RouterGroup) createStaticHandler(relativePath string, fs http.FileS
 	fileServer := http.StripPrefix(absolutePath, http.FileServer(fs))
 
 	return func(c *Context) {
-		if _, noListing := fs.(*onlyFilesFS); noListing {
+		if _, noListing := fs.(*OnlyFilesFS); noListing {
 			c.Writer.WriteHeader(http.StatusNotFound)
 		}
 

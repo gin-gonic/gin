@@ -231,7 +231,7 @@ func file_test_proto_rawDescGZIP() []byte {
 
 var file_test_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
 var file_test_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
-var file_test_proto_goTypes = []interface{}{
+var file_test_proto_goTypes = []any{
 	(FOO)(0),                   // 0: protoexample.FOO
 	(*Test)(nil),               // 1: protoexample.Test
 	(*Test_OptionalGroup)(nil), // 2: protoexample.Test.OptionalGroup
@@ -251,7 +251,7 @@ func file_test_proto_init() {
 		return
 	}
 	if !protoimpl.UnsafeEnabled {
-		file_test_proto_msgTypes[0].Exporter = func(v interface{}, i int) interface{} {
+		file_test_proto_msgTypes[0].Exporter = func(v any, i int) any {
 			switch v := v.(*Test); i {
 			case 0:
 				return &v.state
@@ -263,7 +263,7 @@ func file_test_proto_init() {
 				return nil
 			}
 		}
-		file_test_proto_msgTypes[1].Exporter = func(v interface{}, i int) interface{} {
+		file_test_proto_msgTypes[1].Exporter = func(v any, i int) any {
 			switch v := v.(*Test_OptionalGroup); i {
 			case 0:
 				return &v.state

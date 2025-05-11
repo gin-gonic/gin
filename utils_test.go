@@ -1,4 +1,4 @@
-// Copyright 2014 Manu Martinez-Almeida.  All rights reserved.
+// Copyright 2014 Manu Martinez-Almeida. All rights reserved.
 // Use of this source code is governed by a MIT style
 // license that can be found in the LICENSE file.
 
@@ -29,7 +29,7 @@ type testStruct struct {
 }
 
 func (t *testStruct) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	assert.Equal(t.T, "POST", req.Method)
+	assert.Equal(t.T, http.MethodPost, req.Method)
 	assert.Equal(t.T, "/path", req.URL.Path)
 	w.WriteHeader(http.StatusInternalServerError)
 	fmt.Fprint(w, "hello")
@@ -39,17 +39,17 @@ func TestWrap(t *testing.T) {
 	router := New()
 	router.POST("/path", WrapH(&testStruct{t}))
 	router.GET("/path2", WrapF(func(w http.ResponseWriter, req *http.Request) {
-		assert.Equal(t, "GET", req.Method)
+		assert.Equal(t, http.MethodGet, req.Method)
 		assert.Equal(t, "/path2", req.URL.Path)
 		w.WriteHeader(http.StatusBadRequest)
 		fmt.Fprint(w, "hola!")
 	}))
 
-	w := performRequest(router, "POST", "/path")
+	w := PerformRequest(router, http.MethodPost, "/path")
 	assert.Equal(t, http.StatusInternalServerError, w.Code)
 	assert.Equal(t, "hello", w.Body.String())
 
-	w = performRequest(router, "GET", "/path2")
+	w = PerformRequest(router, http.MethodGet, "/path2")
 	assert.Equal(t, http.StatusBadRequest, w.Code)
 	assert.Equal(t, "hola!", w.Body.String())
 }
@@ -119,13 +119,13 @@ func TestBindMiddleware(t *testing.T) {
 		called = true
 		value = c.MustGet(BindKey).(*bindTestStruct)
 	})
-	performRequest(router, "GET", "/?foo=hola&bar=10")
+	PerformRequest(router, http.MethodGet, "/?foo=hola&bar=10")
 	assert.True(t, called)
 	assert.Equal(t, "hola", value.Foo)
 	assert.Equal(t, 10, value.Bar)
 
 	called = false
-	performRequest(router, "GET", "/?foo=hola&bar=1")
+	PerformRequest(router, http.MethodGet, "/?foo=hola&bar=1")
 	assert.False(t, called)
 
 	assert.Panics(t, func() {
@@ -142,4 +142,9 @@ func TestMarshalXMLforH(t *testing.T) {
 	var x xml.StartElement
 	e := h.MarshalXML(enc, x)
 	assert.Error(t, e)
+}
+
+func TestIsASCII(t *testing.T) {
+	assert.True(t, isASCII("test"))
+	assert.False(t, isASCII("🧡💛💚💙💜"))
 }
