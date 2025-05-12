@@ -5,6 +5,7 @@
 package binding
 
 import (
+	"encoding"
 	"encoding/hex"
 	"errors"
 	"mime/multipart"
@@ -454,44 +455,44 @@ func TestMappingIgnoredCircularRef(t *testing.T) {
 	require.NoError(t, err)
 }
 
-type customUnmarshalParamHex int
+// ====  BindUmarshaler tests START ====
 
-func (f *customUnmarshalParamHex) UnmarshalParam(param string) error {
+type customHexUnmarshalParam int
+
+func (f *customHexUnmarshalParam) UnmarshalParam(param string) error {
 	v, err := strconv.ParseInt(param, 16, 64)
 	if err != nil {
 		return err
 	}
-	*f = customUnmarshalParamHex(v)
+	*f = customHexUnmarshalParam(v)
 	return nil
 }
 
-func TestMappingCustomUnmarshalParamHexWithFormTag(t *testing.T) {
-	var s struct {
-		Foo customUnmarshalParamHex `form:"foo"`
-	}
-	err := mappingByPtr(&s, formSource{"foo": {`f5`}}, "form")
-	require.NoError(t, err)
+func TestMappingCustomHexUnmarshalParam(t *testing.T) {
+	RunMappingUsingUriAndFormTagAndAssertForUnmarshalParam[customHexUnmarshalParam](
+		t,
+		`f5`,
+		func(hex customHexUnmarshalParam, t *testing.T) {
+			assert.EqualValues(t, 245, hex)
+		},
+	)
 
-	assert.EqualValues(t, 245, s.Foo)
+	// verify default binding works with UnmarshalParam
+	var sDefaultValue struct {
+		Field1 customHexUnmarshalParam `form:"field1,default=f5"`
+	}
+	err := mappingByPtr(&sDefaultValue, formSource{"field1": {}}, "form")
+	require.NoError(t, err)
+	assert.EqualValues(t, 0xf5, sDefaultValue.Field1)
 }
 
-func TestMappingCustomUnmarshalParamHexWithURITag(t *testing.T) {
-	var s struct {
-		Foo customUnmarshalParamHex `uri:"foo"`
-	}
-	err := mappingByPtr(&s, formSource{"foo": {`f5`}}, "uri")
-	require.NoError(t, err)
-
-	assert.EqualValues(t, 245, s.Foo)
-}
-
-type customUnmarshalParamType struct {
+type customTypeUnmarshalParam struct {
 	Protocol string
 	Path     string
 	Name     string
 }
 
-func (f *customUnmarshalParamType) UnmarshalParam(param string) error {
+func (f *customTypeUnmarshalParam) UnmarshalParam(param string) error {
 	parts := strings.Split(param, ":")
 	if len(parts) != 3 {
 		return errors.New("invalid format")
@@ -502,52 +503,28 @@ func (f *customUnmarshalParamType) UnmarshalParam(param string) error {
 	return nil
 }
 
-func TestMappingCustomStructTypeWithFormTag(t *testing.T) {
-	var s struct {
-		FileData customUnmarshalParamType `form:"data"`
-	}
-	err := mappingByPtr(&s, formSource{"data": {`file:/foo:happiness`}}, "form")
-	require.NoError(t, err)
-
-	assert.EqualValues(t, "file", s.FileData.Protocol)
-	assert.EqualValues(t, "/foo", s.FileData.Path)
-	assert.EqualValues(t, "happiness", s.FileData.Name)
+func TestMappingCustomStructType(t *testing.T) {
+	RunMappingUsingUriAndFormTagAndAssertForUnmarshalParam[customTypeUnmarshalParam](
+		t,
+		`file:/foo:happiness`,
+		func(data customTypeUnmarshalParam, t *testing.T) {
+			assert.EqualValues(t, "file", data.Protocol)
+			assert.EqualValues(t, "/foo", data.Path)
+			assert.EqualValues(t, "happiness", data.Name)
+		},
+	)
 }
 
-func TestMappingCustomStructTypeWithURITag(t *testing.T) {
-	var s struct {
-		FileData customUnmarshalParamType `uri:"data"`
-	}
-	err := mappingByPtr(&s, formSource{"data": {`file:/foo:happiness`}}, "uri")
-	require.NoError(t, err)
-
-	assert.EqualValues(t, "file", s.FileData.Protocol)
-	assert.EqualValues(t, "/foo", s.FileData.Path)
-	assert.EqualValues(t, "happiness", s.FileData.Name)
-}
-
-func TestMappingCustomPointerStructTypeWithFormTag(t *testing.T) {
-	var s struct {
-		FileData *customUnmarshalParamType `form:"data"`
-	}
-	err := mappingByPtr(&s, formSource{"data": {`file:/foo:happiness`}}, "form")
-	require.NoError(t, err)
-
-	assert.EqualValues(t, "file", s.FileData.Protocol)
-	assert.EqualValues(t, "/foo", s.FileData.Path)
-	assert.EqualValues(t, "happiness", s.FileData.Name)
-}
-
-func TestMappingCustomPointerStructTypeWithURITag(t *testing.T) {
-	var s struct {
-		FileData *customUnmarshalParamType `uri:"data"`
-	}
-	err := mappingByPtr(&s, formSource{"data": {`file:/foo:happiness`}}, "uri")
-	require.NoError(t, err)
-
-	assert.EqualValues(t, "file", s.FileData.Protocol)
-	assert.EqualValues(t, "/foo", s.FileData.Path)
-	assert.EqualValues(t, "happiness", s.FileData.Name)
+func TestMappingCustomPointerStructType(t *testing.T) {
+	RunMappingUsingUriAndFormTagAndAssertForUnmarshalParam[*customTypeUnmarshalParam](
+		t,
+		`file:/foo:happiness`,
+		func(data *customTypeUnmarshalParam, t *testing.T) {
+			assert.EqualValues(t, "file", data.Protocol)
+			assert.EqualValues(t, "/foo", data.Path)
+			assert.EqualValues(t, "happiness", data.Name)
+		},
+	)
 }
 
 type customPath []string
@@ -563,32 +540,49 @@ func (p *customPath) UnmarshalParam(param string) error {
 	return nil
 }
 
-func TestMappingCustomSliceUri(t *testing.T) {
-	var s struct {
-		FileData customPath `uri:"path"`
-	}
-	err := mappingByPtr(&s, formSource{"path": {`bar/foo`}}, "uri")
-	require.NoError(t, err)
-
-	assert.EqualValues(t, "bar", s.FileData[0])
-	assert.EqualValues(t, "foo", s.FileData[1])
+func TestMappingCustomSlice(t *testing.T) {
+	RunMappingUsingUriAndFormTagAndAssertForUnmarshalParam[customPath](
+		t,
+		`bar/foo`,
+		func(path customPath, t *testing.T) {
+			assert.EqualValues(t, "bar", path[0])
+			assert.EqualValues(t, "foo", path[1])
+		},
+	)
 }
 
-func TestMappingCustomSliceForm(t *testing.T) {
-	var s struct {
-		FileData customPath `form:"path"`
+func TestMappingCustomSliceStopsWhenError(t *testing.T) {
+	var sForm struct {
+		Field1 customPath `form:"field1"`
 	}
-	err := mappingByPtr(&s, formSource{"path": {`bar/foo`}}, "form")
-	require.NoError(t, err)
+	err := mappingByPtr(&sForm, formSource{"field1": {"invalid"}}, "form")
+	require.ErrorContains(t, err, "invalid format")
+	require.Empty(t, sForm.Field1)
+}
 
-	assert.EqualValues(t, "bar", s.FileData[0])
-	assert.EqualValues(t, "foo", s.FileData[1])
+func TestMappingCustomSliceOfSlice(t *testing.T) {
+	val := `bar/foo,bar/foo/spam`
+	expected := []customPath{{"bar", "foo"}, {"bar", "foo", "spam"}}
+
+	var sUri struct {
+		Field1 []customPath `uri:"field1" collection_format:"csv"`
+	}
+	err := mappingByPtr(&sUri, formSource{"field1": {val}}, "uri")
+	require.NoError(t, err)
+	assert.EqualValues(t, expected, sUri.Field1)
+
+	var sForm struct {
+		Field1 []customPath `form:"field1" collection_format:"csv"`
+	}
+	err = mappingByPtr(&sForm, formSource{"field1": {val}}, "form")
+	require.NoError(t, err)
+	assert.EqualValues(t, expected, sForm.Field1)
 }
 
 type objectID [12]byte
 
 func (o *objectID) UnmarshalParam(param string) error {
-	oid, err := convertTo(param)
+	oid, err := convertTo[objectID](param)
 	if err != nil {
 		return err
 	}
@@ -597,8 +591,8 @@ func (o *objectID) UnmarshalParam(param string) error {
 	return nil
 }
 
-func convertTo(s string) (objectID, error) {
-	var nilObjectID objectID
+func convertTo[T ~[12]byte](s string) (T, error) {
+	var nilObjectID T
 	if len(s) != 24 {
 		return nilObjectID, errors.New("invalid format")
 	}
@@ -612,26 +606,351 @@ func convertTo(s string) (objectID, error) {
 	return oid, nil
 }
 
-func TestMappingCustomArrayUri(t *testing.T) {
-	var s struct {
-		FileData objectID `uri:"id"`
-	}
-	val := `664a062ac74a8ad104e0e80f`
-	err := mappingByPtr(&s, formSource{"id": {val}}, "uri")
-	require.NoError(t, err)
-
-	expected, _ := convertTo(val)
-	assert.EqualValues(t, expected, s.FileData)
+func TestMappingCustomArray(t *testing.T) {
+	RunMappingUsingUriAndFormTagAndAssertForUnmarshalParam[objectID](
+		t,
+		`664a062ac74a8ad104e0e80f`,
+		func(oid objectID, t *testing.T) {
+			expected, _ := convertTo[objectID](`664a062ac74a8ad104e0e80f`)
+			assert.EqualValues(t, expected, oid)
+		},
+	)
 }
 
-func TestMappingCustomArrayForm(t *testing.T) {
-	var s struct {
-		FileData objectID `form:"id"`
+func TestMappingCustomArrayOfArray(t *testing.T) {
+	val := `664a062ac74a8ad104e0e80e,664a062ac74a8ad104e0e80f`
+	expected1, _ := convertTo[objectID](`664a062ac74a8ad104e0e80e`)
+	expected2, _ := convertTo[objectID](`664a062ac74a8ad104e0e80f`)
+	expected := []objectID{expected1, expected2}
+
+	var sUri struct {
+		Field1 []objectID `uri:"field1" collection_format:"csv"`
 	}
-	val := `664a062ac74a8ad104e0e80f`
-	err := mappingByPtr(&s, formSource{"id": {val}}, "form")
+	err := mappingByPtr(&sUri, formSource{"field1": {val}}, "uri")
+	require.NoError(t, err)
+	assert.EqualValues(t, expected, sUri.Field1)
+
+	var sForm struct {
+		Field1 []objectID `form:"field1" collection_format:"csv"`
+	}
+	err = mappingByPtr(&sForm, formSource{"field1": {val}}, "form")
+	require.NoError(t, err)
+	assert.EqualValues(t, expected, sForm.Field1)
+
+	var sDefaultValue struct {
+		Field1 []objectID `form:"field1,default=664a062ac74a8ad104e0e80e;664a062ac74a8ad104e0e80f" collection_format:"csv"`
+	}
+	err = mappingByPtr(&sDefaultValue, formSource{"field1": {}}, "form")
+	require.NoError(t, err)
+	assert.EqualValues(t, expected, sDefaultValue.Field1)
+}
+
+// RunMappingUsingUriAndFormTagAndAssertForUnmarshalParam declares a struct with a field of the given generic type T
+// and runs a mapping test using the given value for both the uri and form tag. Any asserts that should be done on the
+// result are passed as a function in the last parameter.
+//
+// This method eliminates the need for writing duplicate tests to verify both form+uri tags for BindUnmarshaler tests
+func RunMappingUsingUriAndFormTagAndAssertForUnmarshalParam[T any](
+	t *testing.T,
+	valueToBind string,
+	assertsToRunAfterBind func(T, *testing.T),
+) {
+	var sUri struct {
+		Field1 T `uri:"field1"`
+	}
+	err := mappingByPtr(&sUri, formSource{"field1": {valueToBind}}, "uri")
+	require.NoError(t, err)
+	assertsToRunAfterBind(sUri.Field1, t)
+
+	var sForm struct {
+		Field1 T `form:"field1"`
+	}
+	err = mappingByPtr(&sForm, formSource{"field1": {valueToBind}}, "form")
+	require.NoError(t, err)
+	assertsToRunAfterBind(sForm.Field1, t)
+}
+
+// ====  BindUmarshaler tests END ====
+
+// ====  TextUnmarshaler tests START ====
+
+type customHexUnmarshalText int
+
+func (f *customHexUnmarshalText) UnmarshalText(text []byte) error {
+	v, err := strconv.ParseInt(string(text), 16, 64)
+	if err != nil {
+		return err
+	}
+	*f = customHexUnmarshalText(v)
+	return nil
+}
+
+// verify type implements TextUnmarshaler
+var _ encoding.TextUnmarshaler = (*customHexUnmarshalText)(nil)
+
+func TestMappingCustomHexUnmarshalText(t *testing.T) {
+	RunMappingUsingUriAndFormTagAndAssertForUnmarshalText[customHexUnmarshalText](
+		t,
+		`f5`,
+		func(hex customHexUnmarshalText, t *testing.T) {
+			assert.EqualValues(t, 245, hex)
+		},
+	)
+
+	// verify default binding works with UnmarshalText
+	var sDefaultValue struct {
+		Field1 customHexUnmarshalText `form:"field1,default=f5,parser=encoding.TextUnmarshaler"`
+	}
+	err := mappingByPtr(&sDefaultValue, formSource{"field1": {}}, "form")
+	require.NoError(t, err)
+	assert.EqualValues(t, 0xf5, sDefaultValue.Field1)
+}
+
+type customTypeUnmarshalText struct {
+	Protocol string
+	Path     string
+	Name     string
+}
+
+func (f *customTypeUnmarshalText) UnmarshalText(text []byte) error {
+	parts := strings.Split(string(text), ":")
+	if len(parts) != 3 {
+		return errors.New("invalid format")
+	}
+	f.Protocol = parts[0]
+	f.Path = parts[1]
+	f.Name = parts[2]
+	return nil
+}
+
+var _ encoding.TextUnmarshaler = (*customTypeUnmarshalText)(nil)
+
+func TestMappingCustomStructTypeUnmarshalText(t *testing.T) {
+	RunMappingUsingUriAndFormTagAndAssertForUnmarshalText[customTypeUnmarshalText](
+		t,
+		`file:/foo:happiness`,
+		func(data customTypeUnmarshalText, t *testing.T) {
+			assert.EqualValues(t, "file", data.Protocol)
+			assert.EqualValues(t, "/foo", data.Path)
+			assert.EqualValues(t, "happiness", data.Name)
+		},
+	)
+}
+
+func TestMappingCustomPointerStructTypeUnmarshalText(t *testing.T) {
+	RunMappingUsingUriAndFormTagAndAssertForUnmarshalText[*customTypeUnmarshalText](
+		t,
+		`file:/foo:happiness`,
+		func(data *customTypeUnmarshalText, t *testing.T) {
+			assert.EqualValues(t, "file", data.Protocol)
+			assert.EqualValues(t, "/foo", data.Path)
+			assert.EqualValues(t, "happiness", data.Name)
+		},
+	)
+}
+
+type customPathUnmarshalText []string
+
+func (p *customPathUnmarshalText) UnmarshalText(text []byte) error {
+	elems := strings.Split(string(text), "/")
+	n := len(elems)
+	if n < 2 {
+		return errors.New("invalid format")
+	}
+
+	*p = elems
+	return nil
+}
+
+var _ encoding.TextUnmarshaler = (*customPathUnmarshalText)(nil)
+
+func TestMappingCustomSliceUnmarshalText(t *testing.T) {
+	RunMappingUsingUriAndFormTagAndAssertForUnmarshalText[customPathUnmarshalText](
+		t,
+		`bar/foo`,
+		func(path customPathUnmarshalText, t *testing.T) {
+			assert.EqualValues(t, "bar", path[0])
+			assert.EqualValues(t, "foo", path[1])
+		},
+	)
+}
+
+func TestMappingCustomSliceUnmarshalTextStopsWhenError(t *testing.T) {
+	var sForm struct {
+		Field1 customPathUnmarshalText `form:"field1,parser=encoding.TextUnmarshaler"`
+	}
+	err := mappingByPtr(&sForm, formSource{"field1": {"invalid"}}, "form")
+	require.ErrorContains(t, err, "invalid format")
+	require.Empty(t, sForm.Field1)
+}
+
+func TestMappingCustomSliceOfSliceUnmarshalText(t *testing.T) {
+	val := `bar/foo,bar/foo/spam`
+	expected := []customPathUnmarshalText{{"bar", "foo"}, {"bar", "foo", "spam"}}
+
+	var sUri struct {
+		Field1 []customPathUnmarshalText `uri:"field1,parser=encoding.TextUnmarshaler" collection_format:"csv"`
+	}
+	err := mappingByPtr(&sUri, formSource{"field1": {val}}, "uri")
+	require.NoError(t, err)
+	assert.EqualValues(t, expected, sUri.Field1)
+
+	var sForm struct {
+		Field1 []customPathUnmarshalText `form:"field1,parser=encoding.TextUnmarshaler" collection_format:"csv"`
+	}
+	err = mappingByPtr(&sForm, formSource{"field1": {val}}, "form")
+	require.NoError(t, err)
+	assert.EqualValues(t, expected, sForm.Field1)
+
+	var sDefaultValue struct {
+		Field1 []customPathUnmarshalText `form:"field1,default=bar/foo;bar/foo/spam,parser=encoding.TextUnmarshaler" collection_format:"csv"`
+	}
+	err = mappingByPtr(&sDefaultValue, formSource{"field1": {}}, "form")
+	require.NoError(t, err)
+	assert.EqualValues(t, expected, sDefaultValue.Field1)
+}
+
+type objectIDUnmarshalText [12]byte
+
+func (o *objectIDUnmarshalText) UnmarshalText(text []byte) error {
+	oid, err := convertTo[objectIDUnmarshalText](string(text))
+	if err != nil {
+		return err
+	}
+
+	*o = oid
+	return nil
+}
+
+var _ encoding.TextUnmarshaler = (*objectIDUnmarshalText)(nil)
+
+func TestMappingCustomArrayUnmarshalText(t *testing.T) {
+	RunMappingUsingUriAndFormTagAndAssertForUnmarshalText[objectIDUnmarshalText](
+		t,
+		`664a062ac74a8ad104e0e80f`,
+		func(oid objectIDUnmarshalText, t *testing.T) {
+			expected, _ := convertTo[objectIDUnmarshalText](`664a062ac74a8ad104e0e80f`)
+			assert.EqualValues(t, expected, oid)
+		},
+	)
+}
+
+func TestMappingCustomArrayOfArrayUnmarshalText(t *testing.T) {
+	val := `664a062ac74a8ad104e0e80e,664a062ac74a8ad104e0e80f`
+	expected1, _ := convertTo[objectIDUnmarshalText](`664a062ac74a8ad104e0e80e`)
+	expected2, _ := convertTo[objectIDUnmarshalText](`664a062ac74a8ad104e0e80f`)
+	expected := []objectIDUnmarshalText{expected1, expected2}
+
+	var sUri struct {
+		Field1 []objectIDUnmarshalText `uri:"field1,parser=encoding.TextUnmarshaler" collection_format:"csv"`
+	}
+	err := mappingByPtr(&sUri, formSource{"field1": {val}}, "uri")
+	require.NoError(t, err)
+	assert.EqualValues(t, expected, sUri.Field1)
+
+	var sForm struct {
+		Field1 []objectIDUnmarshalText `form:"field1,parser=encoding.TextUnmarshaler" collection_format:"csv"`
+	}
+	err = mappingByPtr(&sForm, formSource{"field1": {val}}, "form")
+	require.NoError(t, err)
+	assert.EqualValues(t, expected, sForm.Field1)
+
+	var sDefaultValue struct {
+		Field1 []objectIDUnmarshalText `form:"field1,default=664a062ac74a8ad104e0e80e;664a062ac74a8ad104e0e80f,parser=encoding.TextUnmarshaler" collection_format:"csv"`
+	}
+	err = mappingByPtr(&sDefaultValue, formSource{"field1": {}}, "form")
+	require.NoError(t, err)
+	assert.EqualValues(t, expected, sDefaultValue.Field1)
+}
+
+// RunMappingUsingUriAndFormTagAndAssertForUnmarshalText declares a struct with a field of the given generic type T
+// and runs a mapping test using the given value for both the uri and form tag. Any asserts that should be done on the
+// result are passed as a function in the last parameter.
+//
+// This method eliminates the need for writing duplicate tests to verify both form+uri tags for TextUnmarshaler tests
+func RunMappingUsingUriAndFormTagAndAssertForUnmarshalText[T any](
+	t *testing.T,
+	valueToBind string,
+	assertsToRunAfterBind func(T, *testing.T),
+) {
+	var sUri struct {
+		Field1 T `uri:"field1,parser=encoding.TextUnmarshaler"`
+	}
+	err := mappingByPtr(&sUri, formSource{"field1": {valueToBind}}, "uri")
+	require.NoError(t, err)
+	assertsToRunAfterBind(sUri.Field1, t)
+
+	var sForm struct {
+		Field1 T `form:"field1,parser=encoding.TextUnmarshaler"`
+	}
+	err = mappingByPtr(&sForm, formSource{"field1": {valueToBind}}, "form")
+	require.NoError(t, err)
+	assertsToRunAfterBind(sForm.Field1, t)
+}
+
+// If someone specifies parser=TextUnmarshaler and it's not defined for the type, gin should revert to using its default
+// binding logic.
+func TestMappingUsingBindUnmarshalerAndTextUnmarshalerWhenOnlyBindUnmarshalerDefined(t *testing.T) {
+	var s struct {
+		Hex                customHexUnmarshalParam `form:"hex"`
+		HexByUnmarshalText customHexUnmarshalParam `form:"hex2,parser=encoding.TextUnmarshaler"`
+	}
+	err := mappingByPtr(&s, formSource{
+		"hex":  {`f5`},
+		"hex2": {`f5`},
+	}, "form")
 	require.NoError(t, err)
 
-	expected, _ := convertTo(val)
-	assert.EqualValues(t, expected, s.FileData)
+	assert.EqualValues(t, 0xf5, s.Hex)
+	assert.EqualValues(t, 0xf5, s.HexByUnmarshalText) // reverts to BindUnmarshaler binding
 }
+
+// If someone does not specify parser=TextUnmarshaler even when it's defined for the type, gin should ignore the
+// UnmarshalText logic and continue using its default binding logic. (This ensures gin does not break backwards
+// compatibility)
+func TestMappingUsingBindUnmarshalerAndTextUnmarshalerWhenOnlyTextUnmarshalerDefined(t *testing.T) {
+	var s struct {
+		Hex                customHexUnmarshalText `form:"hex"`
+		HexByUnmarshalText customHexUnmarshalText `form:"hex2,parser=encoding.TextUnmarshaler"`
+	}
+	err := mappingByPtr(&s, formSource{
+		"hex":  {`11`},
+		"hex2": {`11`},
+	}, "form")
+	require.NoError(t, err)
+
+	assert.EqualValues(t, 11, s.Hex)                  // this is using default int binding, not our custom hex binding. 0x11 should be 17 in decimal
+	assert.EqualValues(t, 0x11, s.HexByUnmarshalText) // correct expected value for hex binding
+}
+
+type customHexUnmarshalParamAndUnmarshalText int
+
+func (f *customHexUnmarshalParamAndUnmarshalText) UnmarshalParam(param string) error {
+	return errors.New("should not be called in unit test if parser tag present")
+}
+
+func (f *customHexUnmarshalParamAndUnmarshalText) UnmarshalText(text []byte) error {
+	v, err := strconv.ParseInt(string(text), 16, 64)
+	if err != nil {
+		return err
+	}
+	*f = customHexUnmarshalParamAndUnmarshalText(v)
+	return nil
+
+}
+
+// If a type has both UnmarshalParam and UnmarshalText methods defined, but the parser tag is set to TextUnmarshaler,
+// then only the UnmarshalText method should be invoked.
+func TestMappingUsingTextUnmarshalerWhenBindUnmarshalerAlsoDefined(t *testing.T) {
+	var s struct {
+		Hex customHexUnmarshalParamAndUnmarshalText `form:"hex,parser=encoding.TextUnmarshaler"`
+	}
+	err := mappingByPtr(&s, formSource{
+		"hex": {`f5`},
+	}, "form")
+	require.NoError(t, err)
+
+	assert.EqualValues(t, 0xf5, s.Hex)
+}
+
+// ====  TextUnmarshaler tests END ====
