@@ -142,6 +142,14 @@ func (group *RouterGroup) HEAD(relativePath string, handlers ...HandlerFunc) IRo
 	return group.handle(http.MethodHead, relativePath, handlers)
 }
 
+// Customize almost same with router.Handle but no HTTP method limited.
+func (group *RouterGroup) Customize(method string,relativePath string, handlers ...HandlerFunc) IRoutes {
+	matched,err := regexp.MatchString("^[A-Za-z]+$",method)
+	assert1(matched == true, "HTTP method can only be letters")
+	assert1(err == nil, "HTTP method is wrong")
+	return group.handle(method, relativePath, handlers)
+}
+
 // Any registers a route that matches all the HTTP methods.
 // GET, POST, PUT, PATCH, HEAD, OPTIONS, DELETE, CONNECT, TRACE.
 func (group *RouterGroup) Any(relativePath string, handlers ...HandlerFunc) IRoutes {
