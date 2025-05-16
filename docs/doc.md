@@ -2319,6 +2319,47 @@ func main() {
 }
 ```
 
+You can also use the `SetCookieStruct` method, which accepts a `*http.Cookie` directly for more flexibility:
+
+```go
+import (
+  "fmt"
+  "net/http"
+  "time"
+
+  "github.com/gin-gonic/gin"
+)
+
+func main() {
+  router := gin.Default()
+
+  router.GET("/cookie", func(c *gin.Context) {
+      cookie, err := c.Cookie("gin_cookie")
+
+      if err != nil {
+          cookie = "NotSet"
+          // Using http.Cookie struct for more control
+          c.SetCookieStruct(&http.Cookie{
+              Name:       "gin_cookie",
+              Value:      "test",
+              Path:       "/",
+              Domain:     "localhost",
+              MaxAge:     3600,
+              Secure:     false,
+              HttpOnly:   true,
+              // Additional fields available in http.Cookie
+              Expires:    time.Now().Add(24 * time.Hour),
+              // Partitioned: true, // Available in newer Go versions
+          })
+      }
+
+      fmt.Printf("Cookie value: %s \n", cookie)
+  })
+
+  router.Run()
+}
+```
+
 ## Don't trust all proxies
 
 Gin lets you specify which headers to hold the real client IP (if any),
