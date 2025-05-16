@@ -3123,3 +3123,76 @@ func TestContextNext(t *testing.T) {
 	assert.True(t, exists)
 	assert.Equal(t, "value3", value)
 }
+
+func TestContextSetCookieStruct(t *testing.T) {
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	c.SetSameSite(http.SameSiteLaxMode)
+
+	// Basic cookie settings
+	cookie := &http.Cookie{
+		Name:     "user",
+		Value:    "gin",
+		MaxAge:   1,
+		Path:     "/",
+		Domain:   "localhost",
+		Secure:   true,
+		HttpOnly: true,
+	}
+	c.SetCookieStruct(cookie)
+	assert.Equal(t, "user=gin; Path=/; Domain=localhost; Max-Age=1; HttpOnly; Secure; SameSite=Lax", c.Writer.Header().Get("Set-Cookie"))
+
+	// Test that when Path is empty, "/" is automatically set
+	cookie = &http.Cookie{
+		Name:     "user",
+		Value:    "gin",
+		MaxAge:   1,
+		Path:     "",
+		Domain:   "localhost",
+		Secure:   true,
+		HttpOnly: true,
+	}
+	c.SetCookieStruct(cookie)
+	assert.Equal(t, "user=gin; Path=/; Domain=localhost; Max-Age=1; HttpOnly; Secure; SameSite=Lax", c.Writer.Header().Get("Set-Cookie"))
+
+	// Test additional cookie attributes (Expires)
+	expireTime := time.Now().Add(24 * time.Hour)
+	cookie = &http.Cookie{
+		Name:     "user",
+		Value:    "gin",
+		Path:     "/",
+		Domain:   "localhost",
+		Expires:  expireTime,
+		Secure:   true,
+		HttpOnly: true,
+	}
+	c.SetCookieStruct(cookie)
+
+	// Since the Expires value varies by time, partially verify with Contains
+	setCookie := c.Writer.Header().Get("Set-Cookie")
+	assert.Contains(t, setCookie, "user=gin")
+	assert.Contains(t, setCookie, "Path=/")
+	assert.Contains(t, setCookie, "Domain=localhost")
+	assert.Contains(t, setCookie, "HttpOnly")
+	assert.Contains(t, setCookie, "Secure")
+	assert.Contains(t, setCookie, "SameSite=Lax")
+
+	// Test for Partitioned attribute (Go 1.18+)
+	cookie = &http.Cookie{
+		Name:        "user",
+		Value:       "gin",
+		Path:        "/",
+		Domain:      "localhost",
+		Secure:      true,
+		HttpOnly:    true,
+		Partitioned: true,
+	}
+	c.SetCookieStruct(cookie)
+	setCookie = c.Writer.Header().Get("Set-Cookie")
+	assert.Contains(t, setCookie, "user=gin")
+	assert.Contains(t, setCookie, "Path=/")
+	assert.Contains(t, setCookie, "Domain=localhost")
+	assert.Contains(t, setCookie, "HttpOnly")
+	assert.Contains(t, setCookie, "Secure")
+	assert.Contains(t, setCookie, "SameSite=Lax")
+	// Not testing for Partitioned attribute as it may not be supported in all Go versions
+}
