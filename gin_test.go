@@ -338,7 +338,7 @@ func TestLoadHTMLFSTestMode(t *testing.T) {
 	)
 	defer ts.Close()
 
-	res, err := http.Get(fmt.Sprintf("%s/test", ts.URL))
+	res, err := http.Get(ts.URL + "/test")
 	if err != nil {
 		t.Error(err)
 	}
@@ -358,7 +358,7 @@ func TestLoadHTMLFSDebugMode(t *testing.T) {
 	)
 	defer ts.Close()
 
-	res, err := http.Get(fmt.Sprintf("%s/test", ts.URL))
+	res, err := http.Get(ts.URL + "/test")
 	if err != nil {
 		t.Error(err)
 	}
@@ -378,7 +378,7 @@ func TestLoadHTMLFSReleaseMode(t *testing.T) {
 	)
 	defer ts.Close()
 
-	res, err := http.Get(fmt.Sprintf("%s/test", ts.URL))
+	res, err := http.Get(ts.URL + "/test")
 	if err != nil {
 		t.Error(err)
 	}
@@ -405,7 +405,7 @@ func TestLoadHTMLFSUsingTLS(t *testing.T) {
 		},
 	}
 	client := &http.Client{Transport: tr}
-	res, err := client.Get(fmt.Sprintf("%s/test", ts.URL))
+	res, err := client.Get(ts.URL + "/test")
 	if err != nil {
 		t.Error(err)
 	}
@@ -425,7 +425,7 @@ func TestLoadHTMLFSFuncMap(t *testing.T) {
 	)
 	defer ts.Close()
 
-	res, err := http.Get(fmt.Sprintf("%s/raw", ts.URL))
+	res, err := http.Get(ts.URL + "/raw")
 	if err != nil {
 		t.Error(err)
 	}
@@ -847,7 +847,7 @@ func handlerTest1(c *Context) {}
 func handlerTest2(c *Context) {}
 
 func TestNewOptionFunc(t *testing.T) {
-	var fc = func(e *Engine) {
+	fc := func(e *Engine) {
 		e.GET("/test1", handlerTest1)
 		e.GET("/test2", handlerTest2)
 
