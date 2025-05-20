@@ -3124,7 +3124,7 @@ func TestContextNext(t *testing.T) {
 	assert.Equal(t, "value3", value)
 }
 
-func TestContextSetCookieStruct(t *testing.T) {
+func TestContextSetCookieData(t *testing.T) {
 	c, _ := CreateTestContext(httptest.NewRecorder())
 	c.SetSameSite(http.SameSiteLaxMode)
 	var setCookie string
@@ -3139,7 +3139,7 @@ func TestContextSetCookieStruct(t *testing.T) {
 		Secure:   true,
 		HttpOnly: true,
 	}
-	c.SetCookieStruct(cookie)
+	c.SetCookieData(cookie)
 	setCookie = c.Writer.Header().Get("Set-Cookie")
 	assert.Contains(t, setCookie, "user=gin")
 	assert.Contains(t, setCookie, "Path=/")
@@ -3159,7 +3159,7 @@ func TestContextSetCookieStruct(t *testing.T) {
 		Secure:   true,
 		HttpOnly: true,
 	}
-	c.SetCookieStruct(cookie)
+	c.SetCookieData(cookie)
 	setCookie = c.Writer.Header().Get("Set-Cookie")
 	assert.Contains(t, setCookie, "user=gin")
 	assert.Contains(t, setCookie, "Path=/")
@@ -3180,7 +3180,7 @@ func TestContextSetCookieStruct(t *testing.T) {
 		Secure:   true,
 		HttpOnly: true,
 	}
-	c.SetCookieStruct(cookie)
+	c.SetCookieData(cookie)
 
 	// Since the Expires value varies by time, partially verify with Contains
 	setCookie = c.Writer.Header().Get("Set-Cookie")
@@ -3201,7 +3201,7 @@ func TestContextSetCookieStruct(t *testing.T) {
 		HttpOnly:    true,
 		Partitioned: true,
 	}
-	c.SetCookieStruct(cookie)
+	c.SetCookieData(cookie)
 	setCookie = c.Writer.Header().Get("Set-Cookie")
 	assert.Contains(t, setCookie, "user=gin")
 	assert.Contains(t, setCookie, "Path=/")

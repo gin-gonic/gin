@@ -1027,10 +1027,10 @@ func (c *Context) SetCookie(name, value string, maxAge int, path, domain string,
 	})
 }
 
-// SetCookieStruct adds a Set-Cookie header to the ResponseWriter's headers.
+// SetCookieData adds a Set-Cookie header to the ResponseWriter's headers.
 // It accepts a pointer to http.Cookie structure for more flexibility in setting cookie attributes.
 // The provided cookie must have a valid Name. Invalid cookies may be silently dropped.
-func (c *Context) SetCookieStruct(cookie *http.Cookie) {
+func (c *Context) SetCookieData(cookie *http.Cookie) {
 	if cookie.Path == "" {
 		cookie.Path = "/"
 	}
