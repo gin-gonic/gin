@@ -1034,7 +1034,9 @@ func (c *Context) SetCookieData(cookie *http.Cookie) {
 	if cookie.Path == "" {
 		cookie.Path = "/"
 	}
-	cookie.SameSite = c.sameSite
+	if cookie.SameSite == http.SameSiteDefaultMode {
+		cookie.SameSite = c.sameSite
+	}
 	http.SetCookie(c.Writer, cookie)
 }
 
