@@ -234,7 +234,7 @@ walk:
 				// Wildcard conflict
 				pathSeg := path
 				if n.nType != catchAll {
-					pathSeg = strings.SplitN(pathSeg, "/", 2)[0]
+					pathSeg, _, _ = strings.Cut(pathSeg, "/")
 				}
 				prefix := fullPath[:strings.Index(fullPath, pathSeg)] + n.path
 				panic("'" + pathSeg +
@@ -358,7 +358,7 @@ func (n *node) insertChild(path string, fullPath string, handlers HandlersChain)
 		if len(n.path) > 0 && n.path[len(n.path)-1] == '/' {
 			pathSeg := ""
 			if len(n.children) != 0 {
-				pathSeg = strings.SplitN(n.children[0].path, "/", 2)[0]
+				pathSeg, _, _ = strings.Cut(n.children[0].path, "/")
 			}
 			panic("catch-all wildcard '" + path +
 				"' in new path '" + fullPath +
