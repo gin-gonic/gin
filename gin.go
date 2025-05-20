@@ -5,6 +5,7 @@
 package gin
 
 import (
+	"crypto/tls"
 	"fmt"
 	"html/template"
 	"net"
@@ -41,8 +42,10 @@ var defaultTrustedCIDRs = []*net.IPNet{
 	},
 }
 
-var regSafePrefix = regexp.MustCompile("[^a-zA-Z0-9/-]+")
-var regRemoveRepeatedChar = regexp.MustCompile("/{2,}")
+var (
+	regSafePrefix         = regexp.MustCompile("[^a-zA-Z0-9/-]+")
+	regRemoveRepeatedChar = regexp.MustCompile("/{2,}")
+)
 
 // HandlerFunc defines the handler used by gin middleware as return value.
 type HandlerFunc func(*Context)
@@ -515,7 +518,15 @@ func (engine *Engine) RunTLS(addr, certFile, keyFile string) (err error) {
 			"Please check https://pkg.go.dev/github.com/gin-gonic/gin#readme-don-t-trust-all-proxies for details.")
 	}
 
-	err = http.ListenAndServeTLS(addr, certFile, keyFile, engine.Handler())
+	server := &http.Server{
+		Addr:    addr,
+		Handler: engine.Handler(),
+		TLSConfig: &tls.Config{
+			MinVersion: tls.VersionTLS12, // TLS 1.2 or higher
+		},
+	}
+
+	err = server.ListenAndServeTLS(certFile, keyFile)
 	return
 }
 
