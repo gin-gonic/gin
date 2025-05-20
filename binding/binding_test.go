@@ -744,7 +744,7 @@ func TestBindingBSON(t *testing.T) {
 	testBodyBinding(t,
 		BSON, "bson",
 		"/", "/",
-		string(data), string(data[1:]))
+		string(data), string(data[1:])) //note: for badbody, we remove first byte
 }
 
 func TestValidationFails(t *testing.T) {

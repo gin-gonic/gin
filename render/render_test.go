@@ -371,7 +371,7 @@ func TestRenderBSON(t *testing.T) {
 	err = (BSON{data}).Render(w)
 
 	require.NoError(t, err)
-	assert.Equal(t, string(bsonData), w.Body.String())
+	assert.Equal(t, bsonData, w.Body.Bytes())
 	assert.Equal(t, "application/bson", w.Header().Get("Content-Type"))
 }
 
