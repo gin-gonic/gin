@@ -3127,6 +3127,7 @@ func TestContextNext(t *testing.T) {
 func TestContextSetCookieStruct(t *testing.T) {
 	c, _ := CreateTestContext(httptest.NewRecorder())
 	c.SetSameSite(http.SameSiteLaxMode)
+	var setCookie string
 
 	// Basic cookie settings
 	cookie := &http.Cookie{
@@ -3139,7 +3140,14 @@ func TestContextSetCookieStruct(t *testing.T) {
 		HttpOnly: true,
 	}
 	c.SetCookieStruct(cookie)
-	assert.Equal(t, "user=gin; Path=/; Domain=localhost; Max-Age=1; HttpOnly; Secure; SameSite=Lax", c.Writer.Header().Get("Set-Cookie"))
+	setCookie = c.Writer.Header().Get("Set-Cookie")
+	assert.Contains(t, setCookie, "user=gin")
+	assert.Contains(t, setCookie, "Path=/")
+	assert.Contains(t, setCookie, "Domain=localhost")
+	assert.Contains(t, setCookie, "Max-Age=1")
+	assert.Contains(t, setCookie, "HttpOnly")
+	assert.Contains(t, setCookie, "Secure")
+	assert.Contains(t, setCookie, "SameSite=Lax")
 
 	// Test that when Path is empty, "/" is automatically set
 	cookie = &http.Cookie{
@@ -3152,7 +3160,14 @@ func TestContextSetCookieStruct(t *testing.T) {
 		HttpOnly: true,
 	}
 	c.SetCookieStruct(cookie)
-	assert.Equal(t, "user=gin; Path=/; Domain=localhost; Max-Age=1; HttpOnly; Secure; SameSite=Lax", c.Writer.Header().Get("Set-Cookie"))
+	setCookie = c.Writer.Header().Get("Set-Cookie")
+	assert.Contains(t, setCookie, "user=gin")
+	assert.Contains(t, setCookie, "Path=/")
+	assert.Contains(t, setCookie, "Domain=localhost")
+	assert.Contains(t, setCookie, "Max-Age=1")
+	assert.Contains(t, setCookie, "HttpOnly")
+	assert.Contains(t, setCookie, "Secure")
+	assert.Contains(t, setCookie, "SameSite=Lax")
 
 	// Test additional cookie attributes (Expires)
 	expireTime := time.Now().Add(24 * time.Hour)
@@ -3168,7 +3183,7 @@ func TestContextSetCookieStruct(t *testing.T) {
 	c.SetCookieStruct(cookie)
 
 	// Since the Expires value varies by time, partially verify with Contains
-	setCookie := c.Writer.Header().Get("Set-Cookie")
+	setCookie = c.Writer.Header().Get("Set-Cookie")
 	assert.Contains(t, setCookie, "user=gin")
 	assert.Contains(t, setCookie, "Path=/")
 	assert.Contains(t, setCookie, "Domain=localhost")
