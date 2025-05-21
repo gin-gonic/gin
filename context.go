@@ -319,7 +319,6 @@ func (c *Context) GetInt8(key any) (i8 int8) {
 	return getTyped[int8](c, key)
 }
 
-
 // GetInt16 returns the value associated with the key as an integer 16.
 func (c *Context) GetInt16(key any) (i16 int16) {
 	return getTyped[int16](c, key)
@@ -379,7 +378,6 @@ func (c *Context) GetTime(key any) (t time.Time) {
 func (c *Context) GetDuration(key any) (d time.Duration) {
 	return getTyped[time.Duration](c, key)
 }
-
 
 // GetIntSlice returns the value associated with the key as a slice of integers.
 func (c *Context) GetIntSlice(key any) (is []int) {
@@ -453,7 +451,6 @@ func (c *Context) GetStringSlice(key any) (ss []string) {
 func (c *Context) GetStringMap(key any) (sm map[string]any) {
 	return getTyped[map[string]any](c, key)
 }
-
 
 // GetStringMapString returns the value associated with the key as a map of strings.
 func (c *Context) GetStringMapString(key any) (sms map[string]string) {
