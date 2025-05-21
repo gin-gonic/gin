@@ -74,9 +74,9 @@ func CustomRecoveryWithWriter(out io.Writer, handle RecoveryFunc) HandlerFunc {
 					httpRequest, _ := httputil.DumpRequest(c.Request, false)
 					headers := strings.Split(string(httpRequest), "\r\n")
 					for idx, header := range headers {
-						current := strings.Split(header, ":")
-						if current[0] == "Authorization" {
-							headers[idx] = current[0] + ": *"
+						key, _, _ := strings.Cut(header, ":")
+						if key == "Authorization" {
+							headers[idx] = key + ": *"
 						}
 					}
 					headersToStr := strings.Join(headers, "\r\n")

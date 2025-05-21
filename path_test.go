@@ -87,7 +87,7 @@ func TestPathCleanMallocs(t *testing.T) {
 
 	for _, test := range cleanTests {
 		allocs := testing.AllocsPerRun(100, func() { cleanPath(test.result) })
-		assert.EqualValues(t, allocs, 0)
+		assert.InDelta(t, 0, allocs, 0.01)
 	}
 }
 

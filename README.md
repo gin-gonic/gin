@@ -5,7 +5,7 @@
 [![Build Status](https://github.com/gin-gonic/gin/workflows/Run%20Tests/badge.svg?branch=master)](https://github.com/gin-gonic/gin/actions?query=branch%3Amaster)
 [![codecov](https://codecov.io/gh/gin-gonic/gin/branch/master/graph/badge.svg)](https://codecov.io/gh/gin-gonic/gin)
 [![Go Report Card](https://goreportcard.com/badge/github.com/gin-gonic/gin)](https://goreportcard.com/report/github.com/gin-gonic/gin)
-[![GoDoc](https://pkg.go.dev/badge/github.com/gin-gonic/gin?status.svg)](https://pkg.go.dev/github.com/gin-gonic/gin?tab=doc)
+[![Go Reference](https://pkg.go.dev/badge/github.com/gin-gonic/gin?status.svg)](https://pkg.go.dev/github.com/gin-gonic/gin?tab=doc)
 [![Sourcegraph](https://sourcegraph.com/github.com/gin-gonic/gin/-/badge.svg)](https://sourcegraph.com/github.com/gin-gonic/gin?badge)
 [![Open Source Helpers](https://www.codetriage.com/gin-gonic/gin/badges/users.svg)](https://www.codetriage.com/gin-gonic/gin)
 [![Release](https://img.shields.io/github/release/gin-gonic/gin.svg?style=flat-square)](https://github.com/gin-gonic/gin/releases)
@@ -30,7 +30,7 @@ If you need performance and good productivity, you will love Gin.
 
 ### Prerequisites
 
-Gin requires [Go](https://go.dev/) version [1.21](https://go.dev/doc/devel/release#go1.21.0) or above.
+Gin requires [Go](https://go.dev/) version [1.23](https://go.dev/doc/devel/release#go1.23.0) or above.
 
 ### Getting Gin
 
@@ -73,7 +73,7 @@ func main() {
 To run the code, use the `go run` command, like:
 
 ```sh
-$ go run example.go
+go run example.go
 ```
 
 Then visit [`0.0.0.0:8080/ping`](http://0.0.0.0:8080/ping) in your browser to see the response!
@@ -90,11 +90,11 @@ A number of ready-to-run examples demonstrating various use cases of Gin are ava
 
 ## Documentation
 
-See the [API documentation on godoc.org](https://godoc.org/github.com/gin-gonic/gin).
+See the [API documentation on go.dev](https://pkg.go.dev/github.com/gin-gonic/gin).
 
 The documentation is also available on [gin-gonic.com](https://gin-gonic.com) in several languages:
 
-- [English](https://gin-gonic.com/docs/)
+- [English](https://gin-gonic.com/en/docs/)
 - [简体中文](https://gin-gonic.com/zh-cn/docs/)
 - [繁體中文](https://gin-gonic.com/zh-tw/docs/)
 - [日本語](https://gin-gonic.com/ja/docs/)
@@ -102,6 +102,8 @@ The documentation is also available on [gin-gonic.com](https://gin-gonic.com) in
 - [한국어](https://gin-gonic.com/ko-kr/docs/)
 - [Turkish](https://gin-gonic.com/tr/docs/)
 - [Persian](https://gin-gonic.com/fa/docs/)
+- [Português](https://gin-gonic.com/pt/docs/)
+- [Russian](https://gin-gonic.com/ru/docs/)
 
 ### Articles
 
@@ -112,7 +114,7 @@ The documentation is also available on [gin-gonic.com](https://gin-gonic.com) in
 Gin uses a custom version of [HttpRouter](https://github.com/julienschmidt/httprouter), [see all benchmarks](/BENCHMARKS.md).
 
 | Benchmark name                 |       (1) |             (2) |          (3) |             (4) |
-| ------------------------------ | ---------:| ---------------:| ------------:| ---------------:|
+| ------------------------------ | --------: | --------------: | -----------: | --------------: |
 | BenchmarkGin_GithubAll         | **43550** | **27364 ns/op** |   **0 B/op** | **0 allocs/op** |
 | BenchmarkAce_GithubAll         |     40543 |     29670 ns/op |       0 B/op |     0 allocs/op |
 | BenchmarkAero_GithubAll        |     57632 |     20648 ns/op |       0 B/op |     0 allocs/op |
@@ -151,7 +153,7 @@ Gin uses a custom version of [HttpRouter](https://github.com/julienschmidt/httpr
 
 ## Middleware
 
-You can find many useful Gin middlewares at [gin-contrib](https://github.com/gin-contrib).
+You can find many useful Gin middlewares at [gin-contrib](https://github.com/gin-contrib) and [gin-gonic/contrib](https://github.com/gin-gonic/contrib).
 
 ## Uses
 

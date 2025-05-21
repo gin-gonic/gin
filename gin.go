@@ -16,6 +16,7 @@ import (
 	"sync"
 
 	"github.com/gin-gonic/gin/internal/bytesconv"
+	filesystem "github.com/gin-gonic/gin/internal/fs"
 	"github.com/gin-gonic/gin/render"
 
 	"github.com/quic-go/quic-go/http3"
@@ -24,6 +25,9 @@ import (
 )
 
 const defaultMultipartMemory = 32 << 20 // 32 MB
+const escapedColon = "\\:"
+const colon = ":"
+const backslash = "\\"
 
 var (
 	default404Body = []byte("404 page not found")
@@ -282,6 +286,19 @@ func (engine *Engine) LoadHTMLFiles(files ...string) {
 	engine.SetHTMLTemplate(templ)
 }
 
+// LoadHTMLFS loads an http.FileSystem and a slice of patterns
+// and associates the result with HTML renderer.
+func (engine *Engine) LoadHTMLFS(fs http.FileSystem, patterns ...string) {
+	if IsDebugging() {
+		engine.HTMLRender = render.HTMLDebug{FileSystem: fs, Patterns: patterns, FuncMap: engine.FuncMap, Delims: engine.delims}
+		return
+	}
+
+	templ := template.Must(template.New("").Delims(engine.delims.Left, engine.delims.Right).Funcs(engine.FuncMap).ParseFS(
+		filesystem.FileSystem{FileSystem: fs}, patterns...))
+	engine.SetHTMLTemplate(templ)
+}
+
 // SetHTMLTemplate associate a template with HTML renderer.
 func (engine *Engine) SetHTMLTemplate(templ *template.Template) {
 	if len(engine.trees) > 0 {
@@ -474,6 +491,26 @@ func (engine *Engine) validateHeader(header string) (clientIP string, valid bool
 	return "", false
 }
 
+// updateRouteTree do update to the route tree recursively
+func updateRouteTree(n *node) {
+	n.path = strings.ReplaceAll(n.path, escapedColon, colon)
+	n.fullPath = strings.ReplaceAll(n.fullPath, escapedColon, colon)
+	n.indices = strings.ReplaceAll(n.indices, backslash, colon)
+	if n.children == nil {
+		return
+	}
+	for _, child := range n.children {
+		updateRouteTree(child)
+	}
+}
+
+// updateRouteTrees do update to the route trees
+func (engine *Engine) updateRouteTrees() {
+	for _, tree := range engine.trees {
+		updateRouteTree(tree.root)
+	}
+}
+
 // parseIP parse a string representation of an IP and returns a net.IP with the
 // minimum byte representation or nil if input is invalid.
 func parseIP(ip string) net.IP {
@@ -498,7 +535,7 @@ func (engine *Engine) Run(addr ...string) (err error) {
 		debugPrint("[WARNING] You trusted all proxies, this is NOT safe. We recommend you to set a value.\n" +
 			"Please check https://github.com/gin-gonic/gin/blob/master/docs/doc.md#dont-trust-all-proxies for details.")
 	}
-
+	engine.updateRouteTrees()
 	address := resolveAddress(addr)
 	debugPrint("Listening and serving HTTP on %s\n", address)
 	err = http.ListenAndServe(address, engine.Handler())
@@ -575,7 +612,7 @@ func (engine *Engine) RunQUIC(addr, certFile, keyFile string) (err error) {
 
 	if engine.isUnsafeTrustedProxies() {
 		debugPrint("[WARNING] You trusted all proxies, this is NOT safe. We recommend you to set a value.\n" +
-			"Please check https://pkg.go.dev/github.com/gin-gonic/gin#readme-don-t-trust-all-proxies for details.")
+			"Please check https://github.com/gin-gonic/gin/blob/master/docs/doc.md#dont-trust-all-proxies for details.")
 	}
 
 	err = http3.ListenAndServeQUIC(addr, certFile, keyFile, engine.Handler())
@@ -614,10 +651,12 @@ func (engine *Engine) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 // Disclaimer: You can loop yourself to deal with this, use wisely.
 func (engine *Engine) HandleContext(c *Context) {
 	oldIndexValue := c.index
+	oldHandlers := c.handlers
 	c.reset()
 	engine.handleHTTPRequest(c)
 
 	c.index = oldIndexValue
+	c.handlers = oldHandlers
 }
 
 func (engine *Engine) handleHTTPRequest(c *Context) {
@@ -664,7 +703,7 @@ func (engine *Engine) handleHTTPRequest(c *Context) {
 		break
 	}
 
-	if engine.HandleMethodNotAllowed {
+	if engine.HandleMethodNotAllowed && len(t) > 0 {
 		// According to RFC 7231 section 6.5.5, MUST generate an Allow header field in response
 		// containing a list of the target resource's currently supported methods.
 		allowed := make([]string, 0, len(t)-1)
