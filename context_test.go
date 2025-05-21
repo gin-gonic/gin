@@ -1518,7 +1518,7 @@ func TestContextNegotiationFormat(t *testing.T) {
 	c.Request, _ = http.NewRequest(http.MethodPost, "", nil)
 
 	assert.Panics(t, func() { c.NegotiateFormat() })
-	assert.JSONEq(t, MIMEJSON, c.NegotiateFormat(MIMEJSON, MIMEXML))
+	assert.Equal(t, MIMEJSON, c.NegotiateFormat(MIMEJSON, MIMEXML))
 	assert.Equal(t, MIMEHTML, c.NegotiateFormat(MIMEHTML, MIMEJSON))
 }
 
@@ -1540,7 +1540,7 @@ func TestContextNegotiationFormatWithWildcardAccept(t *testing.T) {
 	assert.Equal(t, "*/*", c.NegotiateFormat("*/*"))
 	assert.Equal(t, "text/*", c.NegotiateFormat("text/*"))
 	assert.Equal(t, "application/*", c.NegotiateFormat("application/*"))
-	assert.JSONEq(t, MIMEJSON, c.NegotiateFormat(MIMEJSON))
+	assert.Equal(t, MIMEJSON, c.NegotiateFormat(MIMEJSON))
 	assert.Equal(t, MIMEXML, c.NegotiateFormat(MIMEXML))
 	assert.Equal(t, MIMEHTML, c.NegotiateFormat(MIMEHTML))
 
@@ -1564,9 +1564,9 @@ func TestContextNegotiationFormatCustom(t *testing.T) {
 	c.Accepted = nil
 	c.SetAccepted(MIMEJSON, MIMEXML)
 
-	assert.JSONEq(t, MIMEJSON, c.NegotiateFormat(MIMEJSON, MIMEXML))
+	assert.Equal(t, MIMEJSON, c.NegotiateFormat(MIMEJSON, MIMEXML))
 	assert.Equal(t, MIMEXML, c.NegotiateFormat(MIMEXML, MIMEHTML))
-	assert.JSONEq(t, MIMEJSON, c.NegotiateFormat(MIMEJSON))
+	assert.Equal(t, MIMEJSON, c.NegotiateFormat(MIMEJSON))
 }
 
 func TestContextNegotiationFormat2(t *testing.T) {
