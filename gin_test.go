@@ -883,7 +883,7 @@ func TestWithOptionFunc(t *testing.T) {
 type Birthday string
 
 func (b *Birthday) UnmarshalParam(param string) error {
-	*b = Birthday(strings.Replace(param, "-", "/", -1))
+	*b = Birthday(strings.ReplaceAll(param, "-", "/"))
 	return nil
 }
 
