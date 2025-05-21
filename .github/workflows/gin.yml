@@ -26,7 +26,7 @@ jobs:
       - name: Setup golangci-lint
         uses: golangci/golangci-lint-action@v8
         with:
-          version: v2.3.4
+          version: v2.1.6
           args: --verbose
   test:
     needs: lint
