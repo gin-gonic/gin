@@ -441,10 +441,7 @@ func (c *Context) GetFloat64Slice(key any) (f64s []float64) {
 
 // GetStringSlice returns the value associated with the key as a slice of strings.
 func (c *Context) GetStringSlice(key any) (ss []string) {
-	if val, ok := c.Get(key); ok && val != nil {
-		ss, _ = val.([]string)
-	}
-	return
+	return getTyped[[]string](c, key)
 }
 
 // GetStringMap returns the value associated with the key as a map of interfaces.
