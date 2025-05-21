@@ -1027,6 +1027,19 @@ func (c *Context) SetCookie(name, value string, maxAge int, path, domain string,
 	})
 }
 
+// SetCookieData adds a Set-Cookie header to the ResponseWriter's headers.
+// It accepts a pointer to http.Cookie structure for more flexibility in setting cookie attributes.
+// The provided cookie must have a valid Name. Invalid cookies may be silently dropped.
+func (c *Context) SetCookieData(cookie *http.Cookie) {
+	if cookie.Path == "" {
+		cookie.Path = "/"
+	}
+	if cookie.SameSite == http.SameSiteDefaultMode {
+		cookie.SameSite = c.sameSite
+	}
+	http.SetCookie(c.Writer, cookie)
+}
+
 // Cookie returns the named cookie provided in the request or
 // ErrNoCookie if not found. And return the named cookie is unescaped.
 // If multiple cookies match the given name, only one cookie will
