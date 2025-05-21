@@ -918,7 +918,7 @@ func TestContextRenderJSON(t *testing.T) {
 	c.JSON(http.StatusCreated, H{"foo": "bar", "html": "<b>"})
 
 	assert.Equal(t, http.StatusCreated, w.Code)
-	assert.Equal(t, "{\"foo\":\"bar\",\"html\":\"\\u003cb\\u003e\"}", w.Body.String())
+	assert.JSONEq(t, "{\"foo\":\"bar\",\"html\":\"\\u003cb\\u003e\"}", w.Body.String())
 	assert.Equal(t, "application/json; charset=utf-8", w.Header().Get("Content-Type"))
 }
 
@@ -946,7 +946,7 @@ func TestContextRenderJSONPWithoutCallback(t *testing.T) {
 	c.JSONP(http.StatusCreated, H{"foo": "bar"})
 
 	assert.Equal(t, http.StatusCreated, w.Code)
-	assert.Equal(t, "{\"foo\":\"bar\"}", w.Body.String())
+	assert.JSONEq(t, "{\"foo\":\"bar\"}", w.Body.String())
 	assert.Equal(t, "application/json; charset=utf-8", w.Header().Get("Content-Type"))
 }
 
@@ -972,7 +972,7 @@ func TestContextRenderAPIJSON(t *testing.T) {
 	c.JSON(http.StatusCreated, H{"foo": "bar"})
 
 	assert.Equal(t, http.StatusCreated, w.Code)
-	assert.Equal(t, "{\"foo\":\"bar\"}", w.Body.String())
+	assert.JSONEq(t, "{\"foo\":\"bar\"}", w.Body.String())
 	assert.Equal(t, "application/vnd.api+json", w.Header().Get("Content-Type"))
 }
 
@@ -998,7 +998,7 @@ func TestContextRenderIndentedJSON(t *testing.T) {
 	c.IndentedJSON(http.StatusCreated, H{"foo": "bar", "bar": "foo", "nested": H{"foo": "bar"}})
 
 	assert.Equal(t, http.StatusCreated, w.Code)
-	assert.Equal(t, "{\n    \"bar\": \"foo\",\n    \"foo\": \"bar\",\n    \"nested\": {\n        \"foo\": \"bar\"\n    }\n}", w.Body.String())
+	assert.JSONEq(t, "{\n    \"bar\": \"foo\",\n    \"foo\": \"bar\",\n    \"nested\": {\n        \"foo\": \"bar\"\n    }\n}", w.Body.String())
 	assert.Equal(t, "application/json; charset=utf-8", w.Header().Get("Content-Type"))
 }
 
@@ -1059,7 +1059,7 @@ func TestContextRenderPureJSON(t *testing.T) {
 	c, _ := CreateTestContext(w)
 	c.PureJSON(http.StatusCreated, H{"foo": "bar", "html": "<b>"})
 	assert.Equal(t, http.StatusCreated, w.Code)
-	assert.Equal(t, "{\"foo\":\"bar\",\"html\":\"<b>\"}\n", w.Body.String())
+	assert.JSONEq(t, "{\"foo\":\"bar\",\"html\":\"<b>\"}\n", w.Body.String())
 	assert.Equal(t, "application/json; charset=utf-8", w.Header().Get("Content-Type"))
 }
 
@@ -1432,7 +1432,7 @@ func TestContextNegotiationWithJSON(t *testing.T) {
 	})
 
 	assert.Equal(t, http.StatusOK, w.Code)
-	assert.Equal(t, "{\"foo\":\"bar\"}", w.Body.String())
+	assert.JSONEq(t, "{\"foo\":\"bar\"}", w.Body.String())
 	assert.Equal(t, "application/json; charset=utf-8", w.Header().Get("Content-Type"))
 }
 
@@ -1518,7 +1518,7 @@ func TestContextNegotiationFormat(t *testing.T) {
 	c.Request, _ = http.NewRequest(http.MethodPost, "", nil)
 
 	assert.Panics(t, func() { c.NegotiateFormat() })
-	assert.Equal(t, MIMEJSON, c.NegotiateFormat(MIMEJSON, MIMEXML))
+	assert.JSONEq(t, MIMEJSON, c.NegotiateFormat(MIMEJSON, MIMEXML))
 	assert.Equal(t, MIMEHTML, c.NegotiateFormat(MIMEHTML, MIMEJSON))
 }
 
@@ -1540,7 +1540,7 @@ func TestContextNegotiationFormatWithWildcardAccept(t *testing.T) {
 	assert.Equal(t, "*/*", c.NegotiateFormat("*/*"))
 	assert.Equal(t, "text/*", c.NegotiateFormat("text/*"))
 	assert.Equal(t, "application/*", c.NegotiateFormat("application/*"))
-	assert.Equal(t, MIMEJSON, c.NegotiateFormat(MIMEJSON))
+	assert.JSONEq(t, MIMEJSON, c.NegotiateFormat(MIMEJSON))
 	assert.Equal(t, MIMEXML, c.NegotiateFormat(MIMEXML))
 	assert.Equal(t, MIMEHTML, c.NegotiateFormat(MIMEHTML))
 
@@ -1564,9 +1564,9 @@ func TestContextNegotiationFormatCustom(t *testing.T) {
 	c.Accepted = nil
 	c.SetAccepted(MIMEJSON, MIMEXML)
 
-	assert.Equal(t, MIMEJSON, c.NegotiateFormat(MIMEJSON, MIMEXML))
+	assert.JSONEq(t, MIMEJSON, c.NegotiateFormat(MIMEJSON, MIMEXML))
 	assert.Equal(t, MIMEXML, c.NegotiateFormat(MIMEXML, MIMEHTML))
-	assert.Equal(t, MIMEJSON, c.NegotiateFormat(MIMEJSON))
+	assert.JSONEq(t, MIMEJSON, c.NegotiateFormat(MIMEJSON))
 }
 
 func TestContextNegotiationFormat2(t *testing.T) {
@@ -1634,7 +1634,7 @@ func TestContextAbortWithStatusJSON(t *testing.T) {
 	_, err := buf.ReadFrom(w.Body)
 	require.NoError(t, err)
 	jsonStringBody := buf.String()
-	assert.Equal(t, "{\"foo\":\"fooValue\",\"bar\":\"barValue\"}", jsonStringBody)
+	assert.JSONEq(t, "{\"foo\":\"fooValue\",\"bar\":\"barValue\"}", jsonStringBody)
 }
 
 func TestContextError(t *testing.T) {
