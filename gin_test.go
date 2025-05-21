@@ -46,7 +46,7 @@ func setupHTMLFiles(t *testing.T, mode string, tls bool, loadMethod func(*Engine
 		})
 		router.GET("/raw", func(c *Context) {
 			c.HTML(http.StatusOK, "raw.tmpl", map[string]any{
-				"now": time.Date(2017, 07, 01, 0, 0, 0, 0, time.UTC),
+				"now": time.Date(2017, 07, 01, 0, 0, 0, 0, time.UTC), //nolint:gofumpt
 			})
 		})
 	})
