@@ -255,8 +255,13 @@ func TestContextSetGet(t *testing.T) {
 	assert.Equal(t, "bar", c.MustGet("foo"))
 	assert.Panics(t, func() { c.MustGet("no_exist") })
 
-	// other types
+}
+
+func TestContextSetGetAnyKey(t *testing.T) {
+	c, _ := CreateTestContext(httptest.NewRecorder())
+
 	type key struct{}
+
 	tests := []struct {
 		key any
 	}{
@@ -272,11 +277,16 @@ func TestContextSetGet(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(reflect.TypeOf(tt.key).String(), func(t *testing.T) {
 			c.Set(tt.key, 1)
-			assert.Equal(t, 1, c.MustGet(tt.key))
+			value, ok := c.Get(tt.key)
+			assert.True(t, ok)
+			assert.Equal(t, 1, value)
 		})
 	}
+}
 
-	// no comparable
+func TestContextSetGetPanicsWhenKeyNotComparable(t *testing.T) {
+	c, _ := CreateTestContext(httptest.NewRecorder())
+
 	assert.Panics(t, func() {
 		c.Set([]int{1}, 1)
 		c.Set(func() {}, 1)
