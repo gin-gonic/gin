@@ -923,10 +923,10 @@ func TestContextGetCookie(t *testing.T) {
 }
 
 func TestContextBodyAllowedForStatus(t *testing.T) {
-	assert.False(t, false, bodyAllowedForStatus(http.StatusProcessing))
-	assert.False(t, false, bodyAllowedForStatus(http.StatusNoContent))
-	assert.False(t, false, bodyAllowedForStatus(http.StatusNotModified))
-	assert.True(t, true, bodyAllowedForStatus(http.StatusInternalServerError))
+	assert.False(t, bodyAllowedForStatus(http.StatusProcessing))
+	assert.False(t, bodyAllowedForStatus(http.StatusNoContent))
+	assert.False(t, bodyAllowedForStatus(http.StatusNotModified))
+	assert.True(t, bodyAllowedForStatus(http.StatusInternalServerError))
 }
 
 type TestRender struct{}
@@ -1180,7 +1180,7 @@ func TestContextRenderNoContentXML(t *testing.T) {
 	assert.Equal(t, "application/xml; charset=utf-8", w.Header().Get("Content-Type"))
 }
 
-// TestContextString tests that the response is returned
+// TestContextRenderString tests that the response is returned
 // with Content-Type set to text/plain
 func TestContextRenderString(t *testing.T) {
 	w := httptest.NewRecorder()
@@ -1205,7 +1205,7 @@ func TestContextRenderNoContentString(t *testing.T) {
 	assert.Equal(t, "text/plain; charset=utf-8", w.Header().Get("Content-Type"))
 }
 
-// TestContextString tests that the response is returned
+// TestContextRenderHTMLString tests that the response is returned
 // with Content-Type set to text/html
 func TestContextRenderHTMLString(t *testing.T) {
 	w := httptest.NewRecorder()
