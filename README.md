@@ -153,7 +153,7 @@ Gin uses a custom version of [HttpRouter](https://github.com/julienschmidt/httpr
 
 ## Middleware
 
-You can find many useful Gin middlewares at [gin-contrib](https://github.com/gin-contrib).
+You can find many useful Gin middlewares at [gin-contrib](https://github.com/gin-contrib) and [gin-gonic/contrib](https://github.com/gin-gonic/contrib).
 
 ## Uses
 
