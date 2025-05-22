@@ -26,8 +26,13 @@ func (xmlBinding) BindBody(body []byte, obj any) error {
 }
 func decodeXML(r io.Reader, obj any) error {
 	decoder := xml.NewDecoder(r)
-	if err := decoder.Decode(obj); err != nil {
-		return err
+	for  {
+		if err := decoder.Decode(obj); err != nil {
+			if err == io.EOF{
+				break
+			}
+			return err
+		}
 	}
 	return validate(obj)
 }
