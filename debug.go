@@ -22,20 +22,23 @@ func IsDebugging() bool {
 }
 
 // DebugPrintRouteFunc indicates debug log output format.
-var DebugPrintRouteFunc func(httpMethod, absolutePath, handlerName string, nuHandlers int)
+var DebugPrintRouteFunc = func(httpMethod, absolutePath, handlerName string, nuHandlers int) {
+	debugPrint("%-6s %-25s --> %s (%d handlers)\n", httpMethod, absolutePath, handlerName, nuHandlers)
+}
+
+// DebugPrintRouteRawFunc indicates debug log output format with handlers.
+var DebugPrintRouteRawFunc = func(httpMethod, absolutePath string, handlers HandlersChain) {
+	if DebugPrintRouteFunc != nil {
+		DebugPrintRouteFunc(httpMethod, absolutePath, nameOfFunction(handlers.Last()), len(handlers))
+	}
+}
 
 // DebugPrintFunc indicates debug log output format.
 var DebugPrintFunc func(format string, values ...interface{})
 
 func debugPrintRoute(httpMethod, absolutePath string, handlers HandlersChain) {
-	if IsDebugging() {
-		nuHandlers := len(handlers)
-		handlerName := nameOfFunction(handlers.Last())
-		if DebugPrintRouteFunc == nil {
-			debugPrint("%-6s %-25s --> %s (%d handlers)\n", httpMethod, absolutePath, handlerName, nuHandlers)
-		} else {
-			DebugPrintRouteFunc(httpMethod, absolutePath, handlerName, nuHandlers)
-		}
+	if IsDebugging() && DebugPrintRouteRawFunc != nil {
+		DebugPrintRouteRawFunc(httpMethod, absolutePath, handlers)
 	}
 }
 
