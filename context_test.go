@@ -206,6 +206,7 @@ func TestContextReset(t *testing.T) {
 	c.Params = Params{Param{}}
 	c.Error(errors.New("test")) //nolint: errcheck
 	c.Set("foo", "bar")
+	c.SetSameSite(http.SameSiteLaxMode)
 	c.reset()
 
 	assert.False(t, c.IsAborted())
@@ -215,6 +216,7 @@ func TestContextReset(t *testing.T) {
 	assert.Empty(t, c.Errors.Errors())
 	assert.Empty(t, c.Errors.ByType(ErrorTypeAny))
 	assert.Empty(t, c.Params)
+	assert.Empty(t, c.cookieOptions)
 	assert.EqualValues(t, c.index, -1)
 	assert.Equal(t, c.Writer.(*responseWriter), &c.writermem)
 }
@@ -864,6 +866,18 @@ func TestContextSetCookie(t *testing.T) {
 	c.SetSameSite(http.SameSiteLaxMode)
 	c.SetCookie("user", "gin", 1, "/", "localhost", true, true)
 	assert.Equal(t, "user=gin; Path=/; Domain=localhost; Max-Age=1; HttpOnly; Secure; SameSite=Lax", c.Writer.Header().Get("Set-Cookie"))
+}
+
+func TestContextSetCookieWithOptions(t *testing.T) {
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	c.SetCookie("user", "gin", 1, "/", "localhost", true, true, WithSameSiteCookie(http.SameSiteLaxMode), WithPartitionedCookie(true))
+	assert.Equal(t, "user=gin; Path=/; Domain=localhost; Max-Age=1; HttpOnly; Secure; SameSite=Lax; Partitioned", c.Writer.Header().Get("Set-Cookie"))
+}
+
+func TestContextSetCookieWithNonSecurePartition(t *testing.T) {
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	c.SetCookie("user", "gin", 1, "/", "localhost", false, true, WithPartitionedCookie(true))
+	assert.Equal(t, "user=gin; Path=/; Domain=localhost; Max-Age=1; HttpOnly; Partitioned", c.Writer.Header().Get("Set-Cookie"))
 }
 
 func TestContextSetCookiePathEmpty(t *testing.T) {
