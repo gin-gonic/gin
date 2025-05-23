@@ -1850,15 +1850,16 @@ func TestContextContentType(t *testing.T) {
 }
 
 func TestContextBindRequestTooLarge(t *testing.T) {
-	// Disabling this test when using sonic or go-json as JSON encoder because it doesn't cascade the error correctly
+	// When using sonic or go-json as JSON encoder, they do not propagate the http.MaxBytesError error
+	// The response will fail with a generic 400 instead of 413
 	// https://github.com/goccy/go-json/issues/485
 	// https://github.com/bytedance/sonic/issues/800
+	var expectedCode int
 	switch json.Package {
 	case "github.com/goccy/go-json", "github.com/bytedance/sonic":
-		t.Skip()
-		return
+		expectedCode = http.StatusBadRequest
 	default:
-		// We can test
+		expectedCode = http.StatusRequestEntityTooLarge
 	}
 
 	w := httptest.NewRecorder()
@@ -1876,7 +1877,7 @@ func TestContextBindRequestTooLarge(t *testing.T) {
 
 	assert.Empty(t, obj.Bar)
 	assert.Empty(t, obj.Foo)
-	assert.Equal(t, http.StatusRequestEntityTooLarge, w.Code)
+	assert.Equal(t, expectedCode, w.Code)
 	assert.True(t, c.IsAborted())
 }
 

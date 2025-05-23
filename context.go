@@ -772,6 +772,10 @@ func (c *Context) MustBindWith(obj any, b binding.Binding) error {
 	err := c.ShouldBindWith(obj, b)
 	if err != nil {
 		var maxBytesErr *http.MaxBytesError
+
+		// Note: When using sonic or go-json as JSON encoder, they do not propagate the http.MaxBytesError error
+		// https://github.com/goccy/go-json/issues/485
+		// https://github.com/bytedance/sonic/issues/800
 		switch {
 		case errors.As(err, &maxBytesErr):
 			c.AbortWithError(http.StatusRequestEntityTooLarge, err).SetType(ErrorTypeBind) //nolint: errcheck
