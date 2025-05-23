@@ -18,7 +18,7 @@ func (m *mockFileSystem) Open(name string) (http.File, error) {
 	return m.open(name)
 }
 
-func TesFileSystem_Open(t *testing.T) {
+func TestFileSystem_Open(t *testing.T) {
 	var testFile *os.File
 	mockFS := &mockFileSystem{
 		open: func(name string) (http.File, error) {

@@ -44,8 +44,10 @@ var DefaultWriter io.Writer = os.Stdout
 // DefaultErrorWriter is the default io.Writer used by Gin to debug errors
 var DefaultErrorWriter io.Writer = os.Stderr
 
-var ginMode int32 = debugCode
-var modeName atomic.Value
+var (
+	ginMode  int32 = debugCode
+	modeName atomic.Value
+)
 
 func init() {
 	mode := os.Getenv(EnvGinMode)

@@ -481,7 +481,7 @@ func TestTreeDuplicatePath(t *testing.T) {
 		}
 	}
 
-	//printChildren(tree, "")
+	// printChildren(tree, "")
 
 	checkRequests(t, tree, testRequests{
 		{"/", false, "/", nil},
@@ -532,7 +532,7 @@ func TestTreeCatchAllConflictRoot(t *testing.T) {
 
 func TestTreeCatchMaxParams(t *testing.T) {
 	tree := &node{}
-	var route = "/cmd/*filepath"
+	route := "/cmd/*filepath"
 	tree.addRoute(route, fakeHandler(route))
 }
 
@@ -692,7 +692,7 @@ func TestTreeRootTrailingSlashRedirect(t *testing.T) {
 }
 
 func TestRedirectTrailingSlash(t *testing.T) {
-	var data = []struct {
+	data := []struct {
 		path string
 	}{
 		{"/hello/:name"},

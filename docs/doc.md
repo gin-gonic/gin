@@ -84,10 +84,10 @@ go build -tags=jsoniter .
 go build -tags=go_json .
 ```
 
-[sonic](https://github.com/bytedance/sonic) (you have to ensure that your cpu supports avx instruction.)
+[sonic](https://github.com/bytedance/sonic)
 
 ```sh
-$ go build -tags="sonic avx" .
+$ go build -tags=sonic .
 ```
 
 ### Build without `MsgPack` rendering feature
@@ -2304,12 +2304,64 @@ func main() {
   router := gin.Default()
 
   router.GET("/cookie", func(c *gin.Context) {
+    cookie, err := c.Cookie("gin_cookie")
 
+    if err != nil {
+      cookie = "NotSet"
+      // Using http.Cookie struct for more control
+      c.SetCookieData(&http.Cookie{
+        Name:       "gin_cookie",
+        Value:      "test",
+        Path:       "/",
+        Domain:     "localhost",
+        MaxAge:     3600,
+        Secure:     false,
+        HttpOnly:   true,
+        // Additional fields available in http.Cookie
+        Expires:    time.Now().Add(24 * time.Hour),
+        // Partitioned: true, // Available in newer Go versions
+      })
+    }
+
+    fmt.Printf("Cookie value: %s \n", cookie)
+  })
+
+  router.Run()
+}
+```
+
+You can also use the `SetCookieData` method, which accepts a `*http.Cookie` directly for more flexibility:
+
+```go
+import (
+  "fmt"
+  "net/http"
+  "time"
+
+  "github.com/gin-gonic/gin"
+)
+
+func main() {
+  router := gin.Default()
+
+  router.GET("/cookie", func(c *gin.Context) {
       cookie, err := c.Cookie("gin_cookie")
 
       if err != nil {
           cookie = "NotSet"
-          c.SetCookie("gin_cookie", "test", 3600, "/", "localhost", false, true)
+          // Using http.Cookie struct for more control
+          c.SetCookieData(&http.Cookie{
+              Name:       "gin_cookie",
+              Value:      "test",
+              Path:       "/",
+              Domain:     "localhost",
+              MaxAge:     3600,
+              Secure:     false,
+              HttpOnly:   true,
+              // Additional fields available in http.Cookie
+              Expires:    time.Now().Add(24 * time.Hour),
+              // Partitioned: true, // Available in newer Go versions
+          })
       }
 
       fmt.Printf("Cookie value: %s \n", cookie)
