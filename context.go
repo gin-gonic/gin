@@ -289,7 +289,7 @@ func (c *Context) MustGet(key any) any {
 	if value, exists := c.Get(key); exists {
 		return value
 	}
-	panic(fmt.Errorf("key \"%v\" does not exist", key))
+	panic(fmt.Sprintf("key \"%v\" does not exist", key))
 }
 
 func getTyped[T any](c *Context, key any) (res T) {
