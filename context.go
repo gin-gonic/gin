@@ -37,6 +37,7 @@ const (
 	MIMEYAML              = binding.MIMEYAML
 	MIMEYAML2             = binding.MIMEYAML2
 	MIMETOML              = binding.MIMETOML
+	MIMEBSON              = binding.MIMEBSON
 )
 
 // BodyBytesKey indicates a default body bytes key.
@@ -1144,6 +1145,11 @@ func (c *Context) ProtoBuf(code int, obj any) {
 	c.Render(code, render.ProtoBuf{Data: obj})
 }
 
+// BSON serializes the given struct as BSON into the response body.
+func (c *Context) BSON(code int, obj any) {
+	c.Render(code, render.BSON{Data: obj})
+}
+
 // String writes the given string into the response body.
 func (c *Context) String(code int, format string, values ...any) {
 	c.Render(code, render.String{Format: format, Data: values})
@@ -1250,6 +1256,7 @@ type Negotiate struct {
 	YAMLData any
 	Data     any
 	TOMLData any
+	BSONData any
 }
 
 // Negotiate calls different Render according to acceptable Accept format.
@@ -1274,6 +1281,10 @@ func (c *Context) Negotiate(code int, config Negotiate) {
 	case binding.MIMETOML:
 		data := chooseData(config.TOMLData, config.Data)
 		c.TOML(code, data)
+
+	case binding.MIMEBSON:
+		data := chooseData(config.BSONData, config.Data)
+		c.BSON(code, data)
 
 	default:
 		c.AbortWithError(http.StatusNotAcceptable, errors.New("the accepted formats are not offered by the server")) //nolint: errcheck
