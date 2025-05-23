@@ -20,3 +20,6 @@ var (
 	// NewEncoder is exported by gin/json package.
 	NewEncoder = json.NewEncoder
 )
+
+// IsSonic indicates whether the sonic library is being used for JSON encoding.
+const IsSonic = false

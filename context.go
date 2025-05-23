@@ -771,7 +771,7 @@ func (c *Context) BindUri(obj any) error {
 func (c *Context) MustBindWith(obj any, b binding.Binding) error {
 	err := c.ShouldBindWith(obj, b)
 	if err != nil {
-		maxBytesErr := &http.MaxBytesError{}
+		var maxBytesErr *http.MaxBytesError
 		switch {
 		case errors.As(err, &maxBytesErr):
 			c.AbortWithError(http.StatusRequestEntityTooLarge, err).SetType(ErrorTypeBind) //nolint: errcheck
