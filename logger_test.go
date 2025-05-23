@@ -371,11 +371,11 @@ func TestErrorLogger(t *testing.T) {
 
 	w := PerformRequest(router, http.MethodGet, "/error")
 	assert.Equal(t, http.StatusOK, w.Code)
-	assert.Equal(t, "{\"error\":\"this is an error\"}", w.Body.String())
+	assert.JSONEq(t, "{\"error\":\"this is an error\"}", w.Body.String())
 
 	w = PerformRequest(router, http.MethodGet, "/abort")
 	assert.Equal(t, http.StatusUnauthorized, w.Code)
-	assert.Equal(t, "{\"error\":\"no authorized\"}", w.Body.String())
+	assert.JSONEq(t, "{\"error\":\"no authorized\"}", w.Body.String())
 
 	w = PerformRequest(router, http.MethodGet, "/print")
 	assert.Equal(t, http.StatusInternalServerError, w.Code)

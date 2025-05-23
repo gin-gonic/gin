@@ -158,16 +158,16 @@ type structNoValidationPointer struct {
 }
 
 func TestValidateNoValidationPointers(t *testing.T) {
-	//origin := createNoValidation_values()
-	//test := createNoValidation_values()
+	// origin := createNoValidation_values()
+	// test := createNoValidation_values()
 	empty := structNoValidationPointer{}
 
-	//assert.Nil(t, validate(test))
-	//assert.Nil(t, validate(&test))
+	// assert.Nil(t, validate(test))
+	// assert.Nil(t, validate(&test))
 	require.NoError(t, validate(empty))
 	require.NoError(t, validate(&empty))
 
-	//assert.Equal(t, origin, test)
+	// assert.Equal(t, origin, test)
 }
 
 type Object map[string]any
@@ -198,7 +198,7 @@ type structModifyValidation struct {
 }
 
 func toZero(sl validator.StructLevel) {
-	var s *structModifyValidation = sl.Top().Interface().(*structModifyValidation)
+	s := sl.Top().Interface().(*structModifyValidation)
 	s.Integer = 0
 }
 
@@ -249,5 +249,5 @@ func TestValidatorEngine(t *testing.T) {
 	// Check that we got back non-nil errs
 	require.Error(t, errs)
 	// Check that the error matches expectation
-	require.Error(t, errs, "", "", "notone")
+	require.Error(t, errs, "notone")
 }

@@ -13,7 +13,6 @@ type FileSystem struct {
 // Open passes `Open` to the upstream implementation and return an [fs.File].
 func (o FileSystem) Open(name string) (fs.File, error) {
 	f, err := o.FileSystem.Open(name)
-
 	if err != nil {
 		return nil, err
 	}
