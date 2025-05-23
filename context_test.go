@@ -1851,6 +1851,8 @@ func TestContextContentType(t *testing.T) {
 
 func TestContextBindRequestTooLarge(t *testing.T) {
 	// Disabling this test when using sonic or go-json as JSON encoder because it doesn't cascade the error correctly
+	// https://github.com/goccy/go-json/issues/485
+	// https://github.com/bytedance/sonic/issues/800
 	switch json.Package {
 	case "github.com/goccy/go-json", "github.com/bytedance/sonic":
 		t.Skip()
