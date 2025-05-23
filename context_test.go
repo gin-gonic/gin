@@ -254,7 +254,6 @@ func TestContextSetGet(t *testing.T) {
 
 	assert.Equal(t, "bar", c.MustGet("foo"))
 	assert.Panics(t, func() { c.MustGet("no_exist") })
-
 }
 
 func TestContextSetGetAnyKey(t *testing.T) {
