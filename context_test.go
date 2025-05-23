@@ -1851,7 +1851,7 @@ func TestContextContentType(t *testing.T) {
 
 func TestContextBindRequestTooLarge(t *testing.T) {
 	// Disabling this test when using sonic as JSON encoder because it doesn't cascade the error correctly
-	if json.IsSonic {
+	if json.Package == "github.com/bytedance/sonic" {
 		t.Skip()
 		return
 	}

@@ -22,5 +22,5 @@ var (
 	NewEncoder = json.NewEncoder
 )
 
-// IsSonic indicates whether the sonic library is being used for JSON encoding.
-const IsSonic = true
+// Package indicates what library is being used for JSON encoding.
+const Package = "github.com/bytedance/sonic"
