@@ -769,8 +769,19 @@ func (c *Context) BindUri(obj any) error {
 // It will abort the request with HTTP 400 if any error occurs.
 // See the binding package.
 func (c *Context) MustBindWith(obj any, b binding.Binding) error {
-	if err := c.ShouldBindWith(obj, b); err != nil {
-		c.AbortWithError(http.StatusBadRequest, err).SetType(ErrorTypeBind) //nolint: errcheck
+	err := c.ShouldBindWith(obj, b)
+	if err != nil {
+		var maxBytesErr *http.MaxBytesError
+
+		// Note: When using sonic or go-json as JSON encoder, they do not propagate the http.MaxBytesError error
+		// https://github.com/goccy/go-json/issues/485
+		// https://github.com/bytedance/sonic/issues/800
+		switch {
+		case errors.As(err, &maxBytesErr):
+			c.AbortWithError(http.StatusRequestEntityTooLarge, err).SetType(ErrorTypeBind) //nolint: errcheck
+		default:
+			c.AbortWithError(http.StatusBadRequest, err).SetType(ErrorTypeBind) //nolint: errcheck
+		}
 		return err
 	}
 	return nil

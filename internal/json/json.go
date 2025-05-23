@@ -20,3 +20,6 @@ var (
 	// NewEncoder is exported by gin/json package.
 	NewEncoder = json.NewEncoder
 )
+
+// Package indicates what library is being used for JSON encoding.
+const Package = "encoding/json"
