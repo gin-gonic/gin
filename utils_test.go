@@ -94,7 +94,7 @@ func somefunction() {
 }
 
 func TestJoinPaths(t *testing.T) {
-	assert.Equal(t, "", joinPaths("", ""))
+	assert.Empty(t, joinPaths("", ""))
 	assert.Equal(t, "/", joinPaths("", "/"))
 	assert.Equal(t, "/a", joinPaths("/a", ""))
 	assert.Equal(t, "/a/", joinPaths("/a/", ""))

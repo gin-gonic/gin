@@ -18,14 +18,16 @@ func TestSliceValidationError(t *testing.T) {
 		{"has nil elements", SliceValidationError{errors.New("test error"), nil}, "[0]: test error"},
 		{"has zero elements", SliceValidationError{}, ""},
 		{"has one element", SliceValidationError{errors.New("test one error")}, "[0]: test one error"},
-		{"has two elements",
+		{
+			"has two elements",
 			SliceValidationError{
 				errors.New("first error"),
 				errors.New("second error"),
 			},
 			"[0]: first error\n[1]: second error",
 		},
-		{"has many elements",
+		{
+			"has many elements",
 			SliceValidationError{
 				errors.New("first error"),
 				errors.New("second error"),

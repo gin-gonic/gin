@@ -17,7 +17,6 @@ type OnlyFilesFS struct {
 // Open passes `Open` to the upstream implementation without `Readdir` functionality.
 func (o OnlyFilesFS) Open(name string) (http.File, error) {
 	f, err := o.FileSystem.Open(name)
-
 	if err != nil {
 		return nil, err
 	}

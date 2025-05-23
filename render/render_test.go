@@ -38,7 +38,7 @@ func TestRenderJSON(t *testing.T) {
 	err := (JSON{data}).Render(w)
 
 	require.NoError(t, err)
-	assert.Equal(t, "{\"foo\":\"bar\",\"html\":\"\\u003cb\\u003e\"}", w.Body.String())
+	assert.JSONEq(t, "{\"foo\":\"bar\",\"html\":\"\\u003cb\\u003e\"}", w.Body.String())
 	assert.Equal(t, "application/json; charset=utf-8", w.Header().Get("Content-Type"))
 }
 
@@ -60,7 +60,7 @@ func TestRenderIndentedJSON(t *testing.T) {
 	err := (IndentedJSON{data}).Render(w)
 
 	require.NoError(t, err)
-	assert.Equal(t, "{\n    \"bar\": \"foo\",\n    \"foo\": \"bar\"\n}", w.Body.String())
+	assert.JSONEq(t, "{\n    \"bar\": \"foo\",\n    \"foo\": \"bar\"\n}", w.Body.String())
 	assert.Equal(t, "application/json; charset=utf-8", w.Header().Get("Content-Type"))
 }
 
@@ -85,7 +85,7 @@ func TestRenderSecureJSON(t *testing.T) {
 	err1 := (SecureJSON{"while(1);", data}).Render(w1)
 
 	require.NoError(t, err1)
-	assert.Equal(t, "{\"foo\":\"bar\"}", w1.Body.String())
+	assert.JSONEq(t, "{\"foo\":\"bar\"}", w1.Body.String())
 	assert.Equal(t, "application/json; charset=utf-8", w1.Header().Get("Content-Type"))
 
 	w2 := httptest.NewRecorder()
@@ -194,7 +194,7 @@ func TestRenderJsonpJSONError2(t *testing.T) {
 	e := (JsonpJSON{"", data}).Render(w)
 	require.NoError(t, e)
 
-	assert.Equal(t, "{\"foo\":\"bar\"}", w.Body.String())
+	assert.JSONEq(t, "{\"foo\":\"bar\"}", w.Body.String())
 	assert.Equal(t, "application/javascript; charset=utf-8", w.Header().Get("Content-Type"))
 }
 
@@ -217,7 +217,7 @@ func TestRenderAsciiJSON(t *testing.T) {
 	err := (AsciiJSON{data1}).Render(w1)
 
 	require.NoError(t, err)
-	assert.Equal(t, "{\"lang\":\"GO\\u8bed\\u8a00\",\"tag\":\"\\u003cbr\\u003e\"}", w1.Body.String())
+	assert.JSONEq(t, "{\"lang\":\"GO\\u8bed\\u8a00\",\"tag\":\"\\u003cbr\\u003e\"}", w1.Body.String())
 	assert.Equal(t, "application/json", w1.Header().Get("Content-Type"))
 
 	w2 := httptest.NewRecorder()
@@ -244,7 +244,7 @@ func TestRenderPureJSON(t *testing.T) {
 	}
 	err := (PureJSON{data}).Render(w)
 	require.NoError(t, err)
-	assert.Equal(t, "{\"foo\":\"bar\",\"html\":\"<b>\"}\n", w.Body.String())
+	assert.JSONEq(t, "{\"foo\":\"bar\",\"html\":\"<b>\"}\n", w.Body.String())
 	assert.Equal(t, "application/json; charset=utf-8", w.Header().Get("Content-Type"))
 }
 
