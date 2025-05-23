@@ -249,5 +249,5 @@ func TestMiddlewareWrite(t *testing.T) {
 	w := PerformRequest(router, http.MethodGet, "/")
 
 	assert.Equal(t, http.StatusBadRequest, w.Code)
-	assert.Equal(t, strings.Replace("hola\n<map><foo>bar</foo></map>{\"foo\":\"bar\"}{\"foo\":\"bar\"}event:test\ndata:message\n\n", " ", "", -1), strings.Replace(w.Body.String(), " ", "", -1))
+	assert.Equal(t, strings.ReplaceAll("hola\n<map><foo>bar</foo></map>{\"foo\":\"bar\"}{\"foo\":\"bar\"}event:test\ndata:message\n\n", " ", ""), strings.ReplaceAll(w.Body.String(), " ", ""))
 }

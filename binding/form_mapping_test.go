@@ -509,9 +509,9 @@ func TestMappingCustomStructTypeWithFormTag(t *testing.T) {
 	err := mappingByPtr(&s, formSource{"data": {`file:/foo:happiness`}}, "form")
 	require.NoError(t, err)
 
-	assert.EqualValues(t, "file", s.FileData.Protocol)
-	assert.EqualValues(t, "/foo", s.FileData.Path)
-	assert.EqualValues(t, "happiness", s.FileData.Name)
+	assert.Equal(t, "file", s.FileData.Protocol)
+	assert.Equal(t, "/foo", s.FileData.Path)
+	assert.Equal(t, "happiness", s.FileData.Name)
 }
 
 func TestMappingCustomStructTypeWithURITag(t *testing.T) {
@@ -521,9 +521,9 @@ func TestMappingCustomStructTypeWithURITag(t *testing.T) {
 	err := mappingByPtr(&s, formSource{"data": {`file:/foo:happiness`}}, "uri")
 	require.NoError(t, err)
 
-	assert.EqualValues(t, "file", s.FileData.Protocol)
-	assert.EqualValues(t, "/foo", s.FileData.Path)
-	assert.EqualValues(t, "happiness", s.FileData.Name)
+	assert.Equal(t, "file", s.FileData.Protocol)
+	assert.Equal(t, "/foo", s.FileData.Path)
+	assert.Equal(t, "happiness", s.FileData.Name)
 }
 
 func TestMappingCustomPointerStructTypeWithFormTag(t *testing.T) {
@@ -533,9 +533,9 @@ func TestMappingCustomPointerStructTypeWithFormTag(t *testing.T) {
 	err := mappingByPtr(&s, formSource{"data": {`file:/foo:happiness`}}, "form")
 	require.NoError(t, err)
 
-	assert.EqualValues(t, "file", s.FileData.Protocol)
-	assert.EqualValues(t, "/foo", s.FileData.Path)
-	assert.EqualValues(t, "happiness", s.FileData.Name)
+	assert.Equal(t, "file", s.FileData.Protocol)
+	assert.Equal(t, "/foo", s.FileData.Path)
+	assert.Equal(t, "happiness", s.FileData.Name)
 }
 
 func TestMappingCustomPointerStructTypeWithURITag(t *testing.T) {
@@ -545,9 +545,9 @@ func TestMappingCustomPointerStructTypeWithURITag(t *testing.T) {
 	err := mappingByPtr(&s, formSource{"data": {`file:/foo:happiness`}}, "uri")
 	require.NoError(t, err)
 
-	assert.EqualValues(t, "file", s.FileData.Protocol)
-	assert.EqualValues(t, "/foo", s.FileData.Path)
-	assert.EqualValues(t, "happiness", s.FileData.Name)
+	assert.Equal(t, "file", s.FileData.Protocol)
+	assert.Equal(t, "/foo", s.FileData.Path)
+	assert.Equal(t, "happiness", s.FileData.Name)
 }
 
 type customPath []string
@@ -570,8 +570,8 @@ func TestMappingCustomSliceUri(t *testing.T) {
 	err := mappingByPtr(&s, formSource{"path": {`bar/foo`}}, "uri")
 	require.NoError(t, err)
 
-	assert.EqualValues(t, "bar", s.FileData[0])
-	assert.EqualValues(t, "foo", s.FileData[1])
+	assert.Equal(t, "bar", s.FileData[0])
+	assert.Equal(t, "foo", s.FileData[1])
 }
 
 func TestMappingCustomSliceForm(t *testing.T) {
@@ -581,8 +581,8 @@ func TestMappingCustomSliceForm(t *testing.T) {
 	err := mappingByPtr(&s, formSource{"path": {`bar/foo`}}, "form")
 	require.NoError(t, err)
 
-	assert.EqualValues(t, "bar", s.FileData[0])
-	assert.EqualValues(t, "foo", s.FileData[1])
+	assert.Equal(t, "bar", s.FileData[0])
+	assert.Equal(t, "foo", s.FileData[1])
 }
 
 type objectID [12]byte
@@ -621,7 +621,7 @@ func TestMappingCustomArrayUri(t *testing.T) {
 	require.NoError(t, err)
 
 	expected, _ := convertTo(val)
-	assert.EqualValues(t, expected, s.FileData)
+	assert.Equal(t, expected, s.FileData)
 }
 
 func TestMappingCustomArrayForm(t *testing.T) {
@@ -633,5 +633,5 @@ func TestMappingCustomArrayForm(t *testing.T) {
 	require.NoError(t, err)
 
 	expected, _ := convertTo(val)
-	assert.EqualValues(t, expected, s.FileData)
+	assert.Equal(t, expected, s.FileData)
 }

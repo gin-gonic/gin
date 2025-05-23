@@ -51,8 +51,6 @@ type FooBarFileStruct struct {
 type FooBarFileFailStruct struct {
 	FooBarStruct
 	File *multipart.FileHeader `invalid_name:"file" binding:"required"`
-	// for unexport test
-	data *multipart.FileHeader `form:"data" binding:"required"`
 }
 
 type FooDefaultBarStruct struct {
@@ -1063,7 +1061,7 @@ func testFormBindingInvalidName(t *testing.T, method, path, badPath, body, badBo
 	}
 	err := b.Bind(req, &obj)
 	require.NoError(t, err)
-	assert.Equal(t, "", obj.TestName)
+	assert.Empty(t, obj.TestName)
 
 	obj = InvalidNameType{}
 	req = requestWithBody(method, badPath, badBody)
@@ -1318,7 +1316,7 @@ func testBodyBindingFail(t *testing.T, b Binding, name, path, badPath, body, bad
 	req := requestWithBody(http.MethodPost, path, body)
 	err := b.Bind(req, &obj)
 	require.Error(t, err)
-	assert.Equal(t, "", obj.Foo)
+	assert.Empty(t, obj.Foo)
 
 	obj = FooStruct{}
 	req = requestWithBody(http.MethodPost, badPath, badBody)

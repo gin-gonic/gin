@@ -18,7 +18,6 @@ import (
 	"github.com/gin-gonic/gin/internal/bytesconv"
 	filesystem "github.com/gin-gonic/gin/internal/fs"
 	"github.com/gin-gonic/gin/render"
-
 	"github.com/quic-go/quic-go/http3"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
@@ -216,7 +215,7 @@ func New(opts ...OptionFunc) *Engine {
 		trustedProxies:         []string{"0.0.0.0/0", "::/0"},
 		trustedCIDRs:           defaultTrustedCIDRs,
 	}
-	engine.RouterGroup.engine = engine
+	engine.engine = engine
 	engine.pool.New = func() any {
 		return engine.allocateContext(engine.maxParams)
 	}

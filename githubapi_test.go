@@ -298,8 +298,8 @@ func TestShouldBindUri(t *testing.T) {
 	router.Handle(http.MethodGet, "/rest/:name/:id", func(c *Context) {
 		var person Person
 		require.NoError(t, c.ShouldBindUri(&person))
-		assert.NotEqual(t, "", person.Name)
-		assert.NotEqual(t, "", person.ID)
+		assert.NotEmpty(t, person.Name)
+		assert.NotEmpty(t, person.ID)
 		c.String(http.StatusOK, "ShouldBindUri test OK")
 	})
 
@@ -320,8 +320,8 @@ func TestBindUri(t *testing.T) {
 	router.Handle(http.MethodGet, "/rest/:name/:id", func(c *Context) {
 		var person Person
 		require.NoError(t, c.BindUri(&person))
-		assert.NotEqual(t, "", person.Name)
-		assert.NotEqual(t, "", person.ID)
+		assert.NotEmpty(t, person.Name)
+		assert.NotEmpty(t, person.ID)
 		c.String(http.StatusOK, "BindUri test OK")
 	})
 

@@ -484,7 +484,7 @@ func TestRouterMiddlewareAndStatic(t *testing.T) {
 	assert.Contains(t, w.Body.String(), "package gin")
 	// Content-Type='text/plain; charset=utf-8' when go version <= 1.16,
 	// else, Content-Type='text/x-go; charset=utf-8'
-	assert.NotEqual(t, "", w.Header().Get("Content-Type"))
+	assert.NotEmpty(t, w.Header().Get("Content-Type"))
 	assert.NotEqual(t, "Mon, 02 Jan 2006 15:04:05 MST", w.Header().Get("Last-Modified"))
 	assert.Equal(t, "Mon, 02 Jan 2006 15:04:05 MST", w.Header().Get("Expires"))
 	assert.Equal(t, "Gin Framework", w.Header().Get("x-GIN"))
@@ -764,7 +764,7 @@ func TestRouteContextHoldsFullPath(t *testing.T) {
 	// Test not found
 	router.Use(func(c *Context) {
 		// For not found routes full path is empty
-		assert.Equal(t, "", c.FullPath())
+		assert.Empty(t, c.FullPath())
 	})
 
 	w := PerformRequest(router, http.MethodGet, "/not-found")
