@@ -173,6 +173,9 @@ func TestSaveUploadedFileWithPermission(t *testing.T) {
 	assert.Equal(t, "permission_test", f.Filename)
 	var mode fs.FileMode = 0o755
 	require.NoError(t, c.SaveUploadedFile(f, "permission_test", mode))
+	t.Cleanup(func() {
+		assert.NoError(t, os.Remove("permission_test"))
+	})
 	info, err := os.Stat(filepath.Dir("permission_test"))
 	require.NoError(t, err)
 	assert.Equal(t, info.Mode().Perm(), mode)
