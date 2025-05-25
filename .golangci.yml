@@ -72,6 +72,11 @@ formatters:
     - gofmt
     - gofumpt
     - goimports
+  settings:
+    gofmt:
+      rewrite-rules:
+        - pattern: 'interface{}'
+          replacement: 'any'
   exclusions:
     generated: lax
     paths:

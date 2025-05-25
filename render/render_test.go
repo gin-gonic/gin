@@ -608,7 +608,7 @@ func TestRenderReaderNoContentLength(t *testing.T) {
 }
 
 func TestRenderWriteError(t *testing.T) {
-	data := []interface{}{"value1", "value2"}
+	data := []any{"value1", "value2"}
 	prefix := "my-prefix:"
 	r := SecureJSON{Data: data, Prefix: prefix}
 	ew := &errorWriter{
