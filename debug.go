@@ -25,7 +25,7 @@ func IsDebugging() bool {
 var DebugPrintRouteFunc func(httpMethod, absolutePath, handlerName string, nuHandlers int)
 
 // DebugPrintFunc indicates debug log output format.
-var DebugPrintFunc func(format string, values ...interface{})
+var DebugPrintFunc func(format string, values ...any)
 
 func debugPrintRoute(httpMethod, absolutePath string, handlers HandlersChain) {
 	if IsDebugging() {
