@@ -257,7 +257,46 @@ func TestContextSetGet(t *testing.T) {
 	assert.False(t, err)
 
 	assert.Equal(t, "bar", c.MustGet("foo"))
-	assert.Panics(t, func() { c.MustGet("no_exist") })
+	assert.Panicsf(t, func() {
+		c.MustGet("no_exist")
+	}, "key no_exist does not exist")
+}
+
+func TestContextSetGetAnyKey(t *testing.T) {
+	c, _ := CreateTestContext(httptest.NewRecorder())
+
+	type key struct{}
+
+	tests := []struct {
+		key any
+	}{
+		{1},
+		{int32(1)},
+		{int64(1)},
+		{uint(1)},
+		{float32(1)},
+		{key{}},
+		{&key{}},
+	}
+
+	for _, tt := range tests {
+		t.Run(reflect.TypeOf(tt.key).String(), func(t *testing.T) {
+			c.Set(tt.key, 1)
+			value, ok := c.Get(tt.key)
+			assert.True(t, ok)
+			assert.Equal(t, 1, value)
+		})
+	}
+}
+
+func TestContextSetGetPanicsWhenKeyNotComparable(t *testing.T) {
+	c, _ := CreateTestContext(httptest.NewRecorder())
+
+	assert.Panics(t, func() {
+		c.Set([]int{1}, 1)
+		c.Set(func() {}, 1)
+		c.Set(make(chan int), 1)
+	})
 }
 
 func TestContextSetGetValues(t *testing.T) {
