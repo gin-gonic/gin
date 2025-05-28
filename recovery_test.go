@@ -88,6 +88,24 @@ func TestPanicWithAbort(t *testing.T) {
 	assert.Equal(t, http.StatusBadRequest, w.Code)
 }
 
+func TestMaskAuthorization(t *testing.T) {
+	secret := "Bearer aaaabbbbccccddddeeeeffff"
+	headers := []string{
+		"Host: www.example.com",
+		"Authorization: " + secret,
+		"User-Agent: curl/7.51.0",
+		"Accept: */*",
+		"Content-Type: application/json",
+		"Content-Length: 1",
+	}
+	maskAuthorization(headers)
+
+	for _, h := range headers {
+		assert.NotContains(t, h, secret)
+	}
+	assert.Contains(t, headers, "Authorization: *")
+}
+
 func TestSource(t *testing.T) {
 	bs := source(nil, 0)
 	assert.Equal(t, dunno, bs)
