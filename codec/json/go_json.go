@@ -6,20 +6,37 @@
 
 package json
 
-import json "github.com/goccy/go-json"
+import (
+	"io"
 
-var (
-	// Marshal is exported by gin/json package.
-	Marshal = json.Marshal
-	// Unmarshal is exported by gin/json package.
-	Unmarshal = json.Unmarshal
-	// MarshalIndent is exported by gin/json package.
-	MarshalIndent = json.MarshalIndent
-	// NewDecoder is exported by gin/json package.
-	NewDecoder = json.NewDecoder
-	// NewEncoder is exported by gin/json package.
-	NewEncoder = json.NewEncoder
+	"github.com/goccy/go-json"
 )
 
 // Package indicates what library is being used for JSON encoding.
 const Package = "github.com/goccy/go-json"
+
+func init() {
+	API = gojsonApi{}
+}
+
+type gojsonApi struct{}
+
+func (j gojsonApi) Marshal(v any) ([]byte, error) {
+	return json.Marshal(v)
+}
+
+func (j gojsonApi) Unmarshal(data []byte, v any) error {
+	return json.Unmarshal(data, v)
+}
+
+func (j gojsonApi) MarshalIndent(v any, prefix, indent string) ([]byte, error) {
+	return json.MarshalIndent(v, prefix, indent)
+}
+
+func (j gojsonApi) NewEncoder(writer io.Writer) Encoder {
+	return json.NewEncoder(writer)
+}
+
+func (j gojsonApi) NewDecoder(reader io.Reader) Decoder {
+	return json.NewDecoder(reader)
+}
