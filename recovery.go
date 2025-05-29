@@ -73,12 +73,7 @@ func CustomRecoveryWithWriter(out io.Writer, handle RecoveryFunc) HandlerFunc {
 					stack := stack(3)
 					httpRequest, _ := httputil.DumpRequest(c.Request, false)
 					headers := strings.Split(string(httpRequest), "\r\n")
-					for idx, header := range headers {
-						key, _, _ := strings.Cut(header, ":")
-						if key == "Authorization" {
-							headers[idx] = key + ": *"
-						}
-					}
+					maskAuthorization(headers)
 					headersToStr := strings.Join(headers, "\r\n")
 					if brokenPipe {
 						logger.Printf("%s\n%s%s", err, headersToStr, reset)
@@ -132,6 +127,16 @@ func stack(skip int) []byte {
 		fmt.Fprintf(buf, "\t%s: %s\n", function(pc), source(lines, line))
 	}
 	return buf.Bytes()
+}
+
+// maskAuthorization replaces any "Authorization: <token>" header with "Authorization: *", hiding sensitive credentials.
+func maskAuthorization(headers []string) {
+	for idx, header := range headers {
+		key, _, _ := strings.Cut(header, ":")
+		if strings.EqualFold(key, "Authorization") {
+			headers[idx] = key + ": *"
+		}
+	}
 }
 
 // source returns a space-trimmed slice of the n'th line.
