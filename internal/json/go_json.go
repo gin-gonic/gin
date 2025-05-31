@@ -6,7 +6,7 @@
 
 package json
 
-import json "github.com/goccy/go-json"
+import "github.com/goccy/go-json"
 
 var (
 	// Marshal is exported by gin/json package.
@@ -19,6 +19,8 @@ var (
 	NewDecoder = json.NewDecoder
 	// NewEncoder is exported by gin/json package.
 	NewEncoder = json.NewEncoder
+	// Valid is exported by gin/json package.
+	Valid = json.Valid
 )
 
 // Package indicates what library is being used for JSON encoding.
