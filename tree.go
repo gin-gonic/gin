@@ -65,10 +65,12 @@ func (trees methodTrees) get(method string) *node {
 	return nil
 }
 
+// calculate the length of the longest common prefix of two strings
 func longestCommonPrefix(a, b string) int {
 	i := 0
-	max_ := min(len(a), len(b))
-	for i < max_ && a[i] == b[i] {
+	// commonPrefixMaxLen is the min value of a and b's length.
+	commonPrefixMaxLen := min(len(a), len(b))
+	for i < commonPrefixMaxLen && a[i] == b[i] {
 		i++
 	}
 	return i
