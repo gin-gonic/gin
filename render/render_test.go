@@ -173,7 +173,7 @@ func TestRenderJsonpJSONError(t *testing.T) {
 	err = jsonpJSON.Render(ew)
 	assert.Equal(t, `write "`+`(`+`" error`, err.Error())
 
-	data, _ := json.Marshal(jsonpJSON.Data) // error was returned while writing data
+	data, _ := json.API.Marshal(jsonpJSON.Data) // error was returned while writing data
 	ew.bufString = string(data)
 	err = jsonpJSON.Render(ew)
 	assert.Equal(t, `write "`+string(data)+`" error`, err.Error())

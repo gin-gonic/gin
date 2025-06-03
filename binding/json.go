@@ -42,7 +42,7 @@ func (jsonBinding) BindBody(body []byte, obj any) error {
 }
 
 func decodeJSON(r io.Reader, obj any) error {
-	decoder := json.NewDecoder(r)
+	decoder := json.API.NewDecoder(r)
 	if EnableDecoderUseNumber {
 		decoder.UseNumber()
 	}
