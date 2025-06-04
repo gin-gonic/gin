@@ -34,6 +34,7 @@ func (jsonBinding) Bind(req *http.Request, obj any) error {
 	if req == nil || req.Body == nil {
 		return errors.New("invalid request")
 	}
+	//这里的body是io.Reader，如果关闭了，则不能读取第二次
 	return decodeJSON(req.Body, obj)
 }
 

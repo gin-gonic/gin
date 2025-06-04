@@ -865,6 +865,7 @@ func (c *Context) ShouldBindBodyWith(obj any, bb binding.BindingBody) (err error
 		}
 	}
 	if body == nil {
+		//这里可以对比一下 io.ReadAll 和 readValue
 		body, err = io.ReadAll(c.Request.Body)
 		if err != nil {
 			return err
