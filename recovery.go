@@ -62,6 +62,8 @@ func CustomRecoveryWithWriter(out io.Writer, handle RecoveryFunc) HandlerFunc {
 				err, ok := rec.(error)
 				if ok {
 					isBrokenPipeOrConnReset = errors.Is(err, syscall.EPIPE) || errors.Is(err, syscall.ECONNRESET)
+				} else {
+					err = fmt.Errorf("%v", rec)
 				}
 				if logger != nil {
 					stack := stack(3)
@@ -75,13 +77,13 @@ func CustomRecoveryWithWriter(out io.Writer, handle RecoveryFunc) HandlerFunc {
 					}
 					headersToStr := strings.Join(headers, "\r\n")
 					if isBrokenPipeOrConnReset {
-						logger.Printf("%s\n%s%s", rec, headersToStr, reset)
+						logger.Printf("%s\n%s%s", err, headersToStr, reset)
 					} else if IsDebugging() {
 						logger.Printf("[Recovery] %s panic recovered:\n%s\n%s\n%s%s",
-							timeFormat(time.Now()), headersToStr, rec, stack, reset)
+							timeFormat(time.Now()), headersToStr, err, stack, reset)
 					} else {
 						logger.Printf("[Recovery] %s panic recovered:\n%s\n%s%s",
-							timeFormat(time.Now()), rec, stack, reset)
+							timeFormat(time.Now()), err, stack, reset)
 					}
 				}
 				if isBrokenPipeOrConnReset {
