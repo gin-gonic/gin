@@ -5,15 +5,17 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
 	"net/http"
+	"time"
 )
 
 type Body struct {
 	// json tag to de-serialize json body
 	Name string `json:"name"`
 	//For example, you can use struct tags to validate a custom product code format. The validator package offers many helpful string validator helpers.
-	ProductCode string `json:"productCode" binding:"required,startswith=PC,len=10"`
-	StartDate   string `json:"start_date" binding:"required" time_format:"2006-01-02"`
-	EndDate     string `json:"end_date" binding:"required" time_format:"2006-01-02"`
+	ProductCode string    `json:"productCode" binding:"required,startswith=PC,len=10"`
+	StartDate   string    `json:"start_date" binding:"required" time_format:"2006-01-02"`
+	EndDate     string    `json:"end_date" binding:"required" time_format:"2006-01-02"`
+	EndDate1    time.Time `form:"end_date_1" binding:"required" time_format:"2006-01-02"`
 }
 
 func UrlInit(router *gin.Engine) {
@@ -101,7 +103,7 @@ func UrlInit(router *gin.Engine) {
 		// using BindJson method to serialize body with struct
 		// BindJSON reads the body buffer to de-serialize it to a struct.
 		// BindJSON cannot be called on the same context twice because it flushes the body buffer.
-		if err := c.ShouldBindBodyWith(&body, binding.JSON); err != nil {
+		if err := c.ShouldBind(&body); err != nil {
 			c.AbortWithStatusJSON(http.StatusBadRequest,
 				gin.H{
 					"error":   "VALIDATEERR-1",
