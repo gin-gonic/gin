@@ -859,6 +859,10 @@ func (c *Context) ShouldBindWith(obj any, b binding.Binding) error {
 // ShouldBindWith for better performance if you need to call only once.
 func (c *Context) ShouldBindBodyWith(obj any, bb binding.BindingBody) (err error) {
 	var body []byte
+	// This is the cache for the context of each request.
+	//There is no overwriting situation.
+	//If there is overwriting, it is also for the same request.
+	//Only the same context of the same request will be overwritten.
 	if cb, ok := c.Get(BodyBytesKey); ok {
 		if cbb, ok := cb.([]byte); ok {
 			body = cbb

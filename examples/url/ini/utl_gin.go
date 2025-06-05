@@ -10,6 +10,10 @@ import (
 type Body struct {
 	// json tag to de-serialize json body
 	Name string `json:"name"`
+	//For example, you can use struct tags to validate a custom product code format. The validator package offers many helpful string validator helpers.
+	ProductCode string `json:"productCode" binding:"required,startswith=PC,len=10"`
+	StartDate   string `json:"start_date" binding:"required" time_format:"2006-01-02"`
+	EndDate     string `json:"end_date" binding:"required" time_format:"2006-01-02"`
 }
 
 func UrlInit(router *gin.Engine) {
@@ -98,7 +102,10 @@ func UrlInit(router *gin.Engine) {
 		// BindJSON reads the body buffer to de-serialize it to a struct.
 		// BindJSON cannot be called on the same context twice because it flushes the body buffer.
 		if err := c.ShouldBindBodyWith(&body, binding.JSON); err != nil {
-			c.AbortWithError(http.StatusBadRequest, err)
+			c.AbortWithStatusJSON(http.StatusBadRequest,
+				gin.H{
+					"error":   "VALIDATEERR-1",
+					"message": err.Error()})
 			return
 		}
 		body2 := Body{}
