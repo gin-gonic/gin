@@ -7,6 +7,7 @@ package gin
 import (
 	"errors"
 	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/gin-gonic/gin/internal/json"
@@ -137,4 +138,29 @@ func TestErrorUnwrap(t *testing.T) {
 	require.ErrorIs(t, wrappedErr, innerErr)
 	var testErrNonPointer TestErr
 	require.ErrorAs(t, wrappedErr, &testErrNonPointer)
+}
+
+func TestErrorJoinFormatting(t *testing.T) {
+	// Create a context with errorMsgs slice
+	c, _ := CreateTestContext(nil)
+
+	// Create a joined error
+	err1 := errors.New("service error")
+	err2 := errors.New("store error")
+	joined := errors.Join(err1, err2)
+
+	// Add to context errors
+	c.Error(joined)
+
+	// Call String(), which should now unwrap and format both
+	output := c.Errors.String()
+
+	// Check that both individual errors appear separately
+	if !strings.Contains(output, "Error #01: service error") || !strings.Contains(output, "Error #02: store error") {
+		t.Errorf("expected unwrapped errors in output, got:\n%s", output)
+	}
+
+	if strings.Contains(output, "service error\nstore error") {
+		t.Errorf("output contains unexpected joined formatting:\n%s", output)
+	}
 }
