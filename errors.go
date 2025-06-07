@@ -5,6 +5,7 @@
 package gin
 
 import (
+	"errors"
 	"fmt"
 	"reflect"
 	"strings"
@@ -165,11 +166,32 @@ func (a errorMsgs) String() string {
 		return ""
 	}
 	var buffer strings.Builder
-	for i, msg := range a {
-		fmt.Fprintf(&buffer, "Error #%02d: %s\n", i+1, msg.Err)
-		if msg.Meta != nil {
-			fmt.Fprintf(&buffer, "     Meta: %v\n", msg.Meta)
+	count := 1
+	for _, msg := range a {
+		for _, err := range unwrapJoinErr(msg.Err) {
+			fmt.Fprintf(&buffer, "Error #%02d: %s\n", count, err)
+			if msg.Meta != nil {
+				fmt.Fprintf(&buffer, "     Meta: %v\n", msg.Meta)
+			}
+			count++
 		}
 	}
 	return buffer.String()
+}
+
+func unwrapJoinErr(err error) []error {
+	if err == nil {
+		return nil
+	}
+	var result []error
+	if multi, ok := err.(interface{ Unwrap() []error }); ok {
+		for _, e := range multi.Unwrap() {
+			result = append(result, unwrapJoinErr(e)...)
+		}
+	} else if single := errors.Unwrap(err); single != nil {
+		result = append(result, unwrapJoinErr(single)...)
+	} else {
+		result = append(result, err)
+	}
+	return result
 }
