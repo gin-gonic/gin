@@ -5,6 +5,8 @@
 package binding
 
 import (
+	"bytes"
+	"net/http"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -18,6 +20,9 @@ func TestJSONBindingBindBody(t *testing.T) {
 	err := jsonBinding{}.BindBody([]byte(`{"foo": "FOO"}`), &s)
 	require.NoError(t, err)
 	assert.Equal(t, "FOO", s.Foo)
+
+	err = jsonBinding{}.BindBody([]byte(`{"foo": "FOO}`), &s)
+	assert.Equal(t, ErrInvalidJSON, err)
 }
 
 func TestJSONBindingBindBodyMap(t *testing.T) {
@@ -27,4 +32,21 @@ func TestJSONBindingBindBodyMap(t *testing.T) {
 	assert.Len(t, s, 2)
 	assert.Equal(t, "FOO", s["foo"])
 	assert.Equal(t, "world", s["hello"])
+
+	err = jsonBinding{}.BindBody([]byte(`{"foo": "FOO","hello":"world}`), &s)
+	assert.Equal(t, ErrInvalidJSON, err)
+}
+
+func TestTestJSONBindingBind(t *testing.T) {
+	var s struct {
+		Foo string `json:"foo"`
+	}
+	req, _ := http.NewRequest(http.MethodPost, "/", bytes.NewBufferString(`{"foo":"FOO"}`))
+	err := jsonBinding{}.Bind(req, &s)
+	require.NoError(t, err)
+	assert.Equal(t, "FOO", s.Foo)
+
+	req, _ = http.NewRequest(http.MethodPost, "/", bytes.NewBufferString(`{"foo":"FOO}`))
+	err = jsonBinding{}.Bind(req, &s)
+	assert.Equal(t, ErrInvalidJSON, err)
 }
