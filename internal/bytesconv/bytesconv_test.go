@@ -6,6 +6,7 @@ package bytesconv
 
 import (
 	"bytes"
+	cRand "crypto/rand"
 	"math/rand"
 	"strings"
 	"testing"
@@ -30,7 +31,10 @@ func rawStrToBytes(s string) []byte {
 func TestBytesToString(t *testing.T) {
 	data := make([]byte, 1024)
 	for i := 0; i < 100; i++ {
-		rand.Read(data)
+		_, err := cRand.Read(data)
+		if err != nil {
+			t.Fatal(err)
+		}
 		if rawBytesToStr(data) != BytesToString(data) {
 			t.Fatal("don't match")
 		}
@@ -44,7 +48,7 @@ const (
 	letterIdxMax  = 63 / letterIdxBits   // # of letter indices fitting in 63 bits
 )
 
-var src = rand.NewSource(time.Now().UnixNano())
+var src = rand.New(rand.NewSource(time.Now().UnixNano()))
 
 func RandStringBytesMaskImprSrcSB(n int) string {
 	sb := strings.Builder{}
