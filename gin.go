@@ -334,7 +334,7 @@ func (engine *Engine) Use(middleware ...HandlerFunc) IRoutes {
 	return engine
 }
 
-// With returns a Engine with the configuration set in the OptionFunc.
+// With returns an Engine with the configuration set in the OptionFunc.
 func (engine *Engine) With(opts ...OptionFunc) *Engine {
 	for _, opt := range opts {
 		opt(engine)
@@ -376,7 +376,7 @@ func (engine *Engine) addRoute(method, path string, handlers HandlersChain) {
 }
 
 // Routes returns a slice of registered routes, including some useful information, such as:
-// the http method, path and the handler name.
+// the http method, path, and the handler name.
 func (engine *Engine) Routes() (routes RoutesInfo) {
 	for _, tree := range engine.trees {
 		routes = iterate("", tree.method, routes, tree.root)
