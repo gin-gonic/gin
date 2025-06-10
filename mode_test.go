@@ -5,8 +5,8 @@
 package gin
 
 import (
-	"flag"
 	"os"
+	"sync/atomic"
 	"testing"
 
 	"github.com/gin-gonic/gin/binding"
@@ -18,31 +18,24 @@ func init() {
 }
 
 func TestSetMode(t *testing.T) {
-	assert.Equal(t, testCode, ginMode)
+	assert.Equal(t, int32(testCode), atomic.LoadInt32(&ginMode))
 	assert.Equal(t, TestMode, Mode())
 	os.Unsetenv(EnvGinMode)
 
 	SetMode("")
-	assert.Equal(t, testCode, ginMode)
+	assert.Equal(t, int32(testCode), atomic.LoadInt32(&ginMode))
 	assert.Equal(t, TestMode, Mode())
 
-	tmp := flag.CommandLine
-	flag.CommandLine = flag.NewFlagSet("", flag.ContinueOnError)
-	SetMode("")
-	assert.Equal(t, debugCode, ginMode)
-	assert.Equal(t, DebugMode, Mode())
-	flag.CommandLine = tmp
-
 	SetMode(DebugMode)
-	assert.Equal(t, debugCode, ginMode)
+	assert.Equal(t, int32(debugCode), atomic.LoadInt32(&ginMode))
 	assert.Equal(t, DebugMode, Mode())
 
 	SetMode(ReleaseMode)
-	assert.Equal(t, releaseCode, ginMode)
+	assert.Equal(t, int32(releaseCode), atomic.LoadInt32(&ginMode))
 	assert.Equal(t, ReleaseMode, Mode())
 
 	SetMode(TestMode)
-	assert.Equal(t, testCode, ginMode)
+	assert.Equal(t, int32(testCode), atomic.LoadInt32(&ginMode))
 	assert.Equal(t, TestMode, Mode())
 
 	assert.Panics(t, func() { SetMode("unknown") })

@@ -26,6 +26,8 @@
   - [Custom Validators](#custom-validators)
   - [Only Bind Query String](#only-bind-query-string)
   - [Bind Query String or Post Data](#bind-query-string-or-post-data)
+  - [Bind default value if none provided](#bind-default-value-if-none-provided)
+  - [Collection format for arrays](#collection-format-for-arrays)
   - [Bind Uri](#bind-uri)
   - [Bind custom unmarshaler](#bind-custom-unmarshaler)
   - [Bind Header](#bind-header)
@@ -68,7 +70,7 @@
 
 ### Build with json replacement
 
-Gin uses `encoding/json` as default json package but you can change it by build from other tags.
+Gin uses `encoding/json` as the default JSON package but you can change it by building from other tags.
 
 [jsoniter](https://github.com/json-iterator/go)
 
@@ -82,10 +84,10 @@ go build -tags=jsoniter .
 go build -tags=go_json .
 ```
 
-[sonic](https://github.com/bytedance/sonic) (you have to ensure that your cpu support avx instruction.)
+[sonic](https://github.com/bytedance/sonic)
 
 ```sh
-$ go build -tags="sonic avx" .
+$ go build -tags=sonic .
 ```
 
 ### Build without `MsgPack` rendering feature
@@ -118,7 +120,7 @@ func main() {
   router.HEAD("/someHead", head)
   router.OPTIONS("/someOptions", options)
 
-  // By default it serves on :8080 unless a
+  // By default, it serves on :8080 unless a
   // PORT environment variable was defined.
   router.Run()
   // router.Run(":3000") for a hard coded port
@@ -170,7 +172,7 @@ func main() {
   router := gin.Default()
 
   // Query string parameters are parsed using the existing underlying request object.
-  // The request responds to an url matching:  /welcome?firstname=Jane&lastname=Doe
+  // The request responds to a URL matching: /welcome?firstname=Jane&lastname=Doe
   router.GET("/welcome", func(c *gin.Context) {
     firstname := c.DefaultQuery("firstname", "Guest")
     lastname := c.Query("lastname") // shortcut for c.Request.URL.Query().Get("lastname")
@@ -298,7 +300,7 @@ curl -X POST http://localhost:8080/upload \
 
 #### Multiple files
 
-See the detail [example code](https://github.com/gin-gonic/examples/tree/master/upload-file/multiple).
+See the detailed [example code](https://github.com/gin-gonic/examples/tree/master/upload-file/multiple).
 
 ```go
 func main() {
@@ -338,16 +340,16 @@ func main() {
   router := gin.Default()
 
   // Simple group: v1
-  v1 := router.Group("/v1")
   {
+    v1 := router.Group("/v1")
     v1.POST("/login", loginEndpoint)
     v1.POST("/submit", submitEndpoint)
     v1.POST("/read", readEndpoint)
   }
 
   // Simple group: v2
-  v2 := router.Group("/v2")
   {
+    v2 := router.Group("/v2")
     v2.POST("/login", loginEndpoint)
     v2.POST("/submit", submitEndpoint)
     v2.POST("/read", readEndpoint)
@@ -514,19 +516,19 @@ Sample Output
 ```go
 func main() {
   router := gin.New()
-  
+
   // skip logging for desired paths by setting SkipPaths in LoggerConfig
   loggerConfig := gin.LoggerConfig{SkipPaths: []string{"/metrics"}}
-  
+
   // skip logging based on your logic by setting Skip func in LoggerConfig
   loggerConfig.Skip = func(c *gin.Context) bool {
       // as an example skip non server side errors
       return c.Writer.Status() < http.StatusInternalServerError
   }
-  
-  engine.Use(gin.LoggerWithConfig(loggerConfig))
+
+  router.Use(gin.LoggerWithConfig(loggerConfig))
   router.Use(gin.Recovery())
-  
+
   // skipped
   router.GET("/metrics", func(c *gin.Context) {
       c.Status(http.StatusNotImplemented)
@@ -541,7 +543,7 @@ func main() {
   router.GET("/data", func(c *gin.Context) {
     c.Status(http.StatusNotImplemented)
   })
-  
+
   router.Run(":8080")
 }
 
@@ -613,7 +615,7 @@ You can also specify that specific fields are required. If a field is decorated 
 ```go
 // Binding from JSON
 type Login struct {
-  User     string `form:"user" json:"user" xml:"user"  binding:"required"`
+  User     string `form:"user" json:"user" xml:"user" binding:"required"`
   Password string `form:"password" json:"password" xml:"password" binding:"required"`
 }
 
@@ -702,7 +704,7 @@ $ curl -v -X POST \
 {"error":"Key: 'Login.Password' Error:Field validation for 'Password' failed on the 'required' tag"}
 ```
 
-Skip validate: when running the above example using the above the `curl` command, it returns error. Because the example use `binding:"required"` for `Password`. If use `binding:"-"` for `Password`, then it will not return error when running the above example again.
+Skip-validation: Running the example above using the `curl` command returns an error. This is because the example uses `binding:"required"` for `Password`. If instead, you use `binding:"-"` for `Password`, then it will not return an error when you run the example again.
 
 ### Custom Validators
 
@@ -830,6 +832,8 @@ type Person struct {
   Birthday   time.Time `form:"birthday" time_format:"2006-01-02" time_utc:"1"`
   CreateTime time.Time `form:"createTime" time_format:"unixNano"`
   UnixTime   time.Time `form:"unixTime" time_format:"unix"`
+  UnixMilliTime   time.Time `form:"unixMilliTime" time_format:"unixmilli"`
+  UnixMicroTime   time.Time `form:"unixMicroTime" time_format:"uNiXmIcRo"` // case does not matter for "unix*" time formats
 }
 
 func main() {
@@ -849,6 +853,8 @@ func startPage(c *gin.Context) {
     log.Println(person.Birthday)
     log.Println(person.CreateTime)
     log.Println(person.UnixTime)
+    log.Println(person.UnixMilliTime)
+    log.Println(person.UnixMicroTime)
   }
 
   c.String(http.StatusOK, "Success")
@@ -858,7 +864,107 @@ func startPage(c *gin.Context) {
 Test it with:
 
 ```sh
-curl -X GET "localhost:8085/testing?name=appleboy&address=xyz&birthday=1992-03-15&createTime=1562400033000000123&unixTime=1562400033"
+curl -X GET "localhost:8085/testing?name=appleboy&address=xyz&birthday=1992-03-15&createTime=1562400033000000123&unixTime=1562400033&unixMilliTime=1562400033001&unixMicroTime=1562400033000012"
+```
+
+
+### Bind default value if none provided
+
+If the server should bind a default value to a field when the client does not provide one, specify the default value using the `default` key within the `form` tag:
+
+```
+package main
+
+import (
+	"net/http"
+
+	"github.com/gin-gonic/gin"
+)
+
+type Person struct {
+	Name      string    `form:"name,default=William"`
+	Age       int       `form:"age,default=10"`
+	Friends   []string  `form:"friends,default=Will;Bill"`
+	Addresses [2]string `form:"addresses,default=foo bar" collection_format:"ssv"`
+	LapTimes  []int     `form:"lap_times,default=1;2;3" collection_format:"csv"`
+}
+
+func main() {
+	g := gin.Default()
+	g.POST("/person", func(c *gin.Context) {
+		var req Person
+		if err := c.ShouldBindQuery(&req); err != nil {
+			c.JSON(http.StatusBadRequest, err)
+			return
+		}
+		c.JSON(http.StatusOK, req)
+	})
+	_ = g.Run("localhost:8080")
+}
+```
+
+```
+curl -X POST http://localhost:8080/person
+{"Name":"William","Age":10,"Friends":["Will","Bill"],"Colors":["red","blue"],"LapTimes":[1,2,3]}
+```
+
+NOTE: For default [collection values](#collection-format-for-arrays), the following rules apply:
+- Since commas are used to delimit tag options, they are not supported within a default value and will result in undefined behavior
+- For the collection formats "multi" and "csv", a semicolon should be used in place of a comma to delimited default values
+- Since semicolons are used to delimit default values for "multi" and "csv", they are not supported within a default value for "multi" and "csv"
+
+
+#### Collection format for arrays
+
+| Format          | Description                                               | Example                 |
+| --------------- | --------------------------------------------------------- | ----------------------- |
+| multi (default) | Multiple parameter instances rather than multiple values. | key=foo&key=bar&key=baz |
+| csv             | Comma-separated values.                                   | foo,bar,baz             |
+| ssv             | Space-separated values.                                   | foo bar baz             |
+| tsv             | Tab-separated values.                                     | "foo\tbar\tbaz"         |
+| pipes           | Pipe-separated values.                                    | foo\|bar\|baz           |
+
+```go
+package main
+
+import (
+	"log"
+	"time"
+	"github.com/gin-gonic/gin"
+)
+
+type Person struct {
+	Name       string    `form:"name"`
+	Addresses  []string  `form:"addresses" collection_format:"csv"`
+	Birthday   time.Time `form:"birthday" time_format:"2006-01-02" time_utc:"1"`
+	CreateTime time.Time `form:"createTime" time_format:"unixNano"`
+	UnixTime   time.Time `form:"unixTime" time_format:"unix"`
+}
+
+func main() {
+	route := gin.Default()
+	route.GET("/testing", startPage)
+	route.Run(":8085")
+}
+func startPage(c *gin.Context) {
+	var person Person
+	// If `GET`, only `Form` binding engine (`query`) used.
+	// If `POST`, first checks the `content-type` for `JSON` or `XML`, then uses `Form` (`form-data`).
+	// See more at https://github.com/gin-gonic/gin/blob/master/binding/binding.go#L48
+        if c.ShouldBind(&person) == nil {
+                log.Println(person.Name)
+                log.Println(person.Addresses)
+                log.Println(person.Birthday)
+                log.Println(person.CreateTime)
+                log.Println(person.UnixTime)
+        }
+	c.String(200, "Success")
+}
+```
+
+Test it with:
+```sh
+$ curl -X GET "localhost:8085/testing?name=appleboy&addresses=foo,bar&birthday=1992-03-15&createTime=1562400033000000123&unixTime=1562400033"
 ```
 
 ### Bind Uri
@@ -1081,7 +1187,7 @@ func main() {
   })
 
   r.GET("/moreJSON", func(c *gin.Context) {
-    // You also can use a struct
+    // You can also use a struct
     var msg struct {
       Name    string `json:"user"`
       Message string
@@ -1150,7 +1256,7 @@ func main() {
 
 #### JSONP
 
-Using JSONP to request data from a server  in a different domain. Add callback to response body if the query parameter callback exists.
+Using JSONP to request data from a server in a different domain. Add callback to response body if the query parameter callback exists.
 
 ```go
 func main() {
@@ -1199,7 +1305,7 @@ func main() {
 
 #### PureJSON
 
-Normally, JSON replaces special HTML characters with their unicode entities, e.g. `<` becomes  `\u003c`. If you want to encode such characters literally, you can use PureJSON instead.
+Normally, JSON replaces special HTML characters with their unicode entities, e.g. `<` becomes `\u003c`. If you want to encode such characters literally, you can use PureJSON instead.
 This feature is unavailable in Go 1.6 and lower.
 
 ```go
@@ -1234,7 +1340,7 @@ func main() {
   router.StaticFS("/more_static", http.Dir("my_file_system"))
   router.StaticFile("/favicon.ico", "./resources/favicon.ico")
   router.StaticFileFS("/more_favicon.ico", "more_favicon.ico", http.Dir("my_file_system"))
-  
+
   // Listen and serve on 0.0.0.0:8080
   router.Run(":8080")
 }
@@ -1287,13 +1393,19 @@ func main() {
 
 ### HTML rendering
 
-Using LoadHTMLGlob() or LoadHTMLFiles()
+Using LoadHTMLGlob() or LoadHTMLFiles() or LoadHTMLFS()
 
 ```go
+//go:embed templates/*
+var templates embed.FS
+
 func main() {
   router := gin.Default()
   router.LoadHTMLGlob("templates/*")
   //router.LoadHTMLFiles("templates/template1.html", "templates/template2.html")
+  //router.LoadHTMLFS(http.Dir("templates"), "template1.html", "template2.html")
+  //or
+  //router.LoadHTMLFS(http.FS(templates), "templates/template1.html", "templates/template2.html")
   router.GET("/index", func(c *gin.Context) {
     c.HTML(http.StatusOK, "index.tmpl", gin.H{
       "title": "Main website",
@@ -1384,7 +1496,7 @@ You may use custom delims
 
 #### Custom Template Funcs
 
-See the detail [example code](https://github.com/gin-gonic/examples/tree/master/template).
+See the detailed [example code](https://github.com/gin-gonic/examples/tree/master/template).
 
 main.go
 
@@ -1436,7 +1548,7 @@ Date: 2017/07/01
 
 ### Multitemplate
 
-Gin allow by default use only one html.Template. Check [a multitemplate render](https://github.com/gin-contrib/multitemplate) for using features like go 1.6 `block template`.
+Gin allows only one html.Template by default. Check [a multitemplate render](https://github.com/gin-contrib/multitemplate) for using features like go 1.6 `block template`.
 
 ### Redirects
 
@@ -1985,7 +2097,7 @@ type formB struct {
 func SomeHandler(c *gin.Context) {
   objA := formA{}
   objB := formB{}
-  // This c.ShouldBind consumes c.Request.Body and it cannot be reused.
+  // Calling c.ShouldBind consumes c.Request.Body and it cannot be reused.
   if errA := c.ShouldBind(&objA); errA == nil {
     c.String(http.StatusOK, `the body should be formA`)
   // Always an error is occurred by this because c.Request.Body is EOF now.
@@ -2192,12 +2304,64 @@ func main() {
   router := gin.Default()
 
   router.GET("/cookie", func(c *gin.Context) {
+    cookie, err := c.Cookie("gin_cookie")
 
+    if err != nil {
+      cookie = "NotSet"
+      // Using http.Cookie struct for more control
+      c.SetCookieData(&http.Cookie{
+        Name:       "gin_cookie",
+        Value:      "test",
+        Path:       "/",
+        Domain:     "localhost",
+        MaxAge:     3600,
+        Secure:     false,
+        HttpOnly:   true,
+        // Additional fields available in http.Cookie
+        Expires:    time.Now().Add(24 * time.Hour),
+        // Partitioned: true, // Available in newer Go versions
+      })
+    }
+
+    fmt.Printf("Cookie value: %s \n", cookie)
+  })
+
+  router.Run()
+}
+```
+
+You can also use the `SetCookieData` method, which accepts a `*http.Cookie` directly for more flexibility:
+
+```go
+import (
+  "fmt"
+  "net/http"
+  "time"
+
+  "github.com/gin-gonic/gin"
+)
+
+func main() {
+  router := gin.Default()
+
+  router.GET("/cookie", func(c *gin.Context) {
       cookie, err := c.Cookie("gin_cookie")
 
       if err != nil {
           cookie = "NotSet"
-          c.SetCookie("gin_cookie", "test", 3600, "/", "localhost", false, true)
+          // Using http.Cookie struct for more control
+          c.SetCookieData(&http.Cookie{
+              Name:       "gin_cookie",
+              Value:      "test",
+              Path:       "/",
+              Domain:     "localhost",
+              MaxAge:     3600,
+              Secure:     false,
+              HttpOnly:   true,
+              // Additional fields available in http.Cookie
+              Expires:    time.Now().Add(24 * time.Hour),
+              // Partitioned: true, // Available in newer Go versions
+          })
       }
 
       fmt.Printf("Cookie value: %s \n", cookie)
@@ -2218,7 +2382,7 @@ or network CIDRs from where clients which their request headers related to clien
 IP can be trusted. They can be IPv4 addresses, IPv4 CIDRs, IPv6 addresses or
 IPv6 CIDRs.
 
-**Attention:** Gin trust all proxies by default if you don't specify a trusted 
+**Attention:** Gin trusts all proxies by default if you don't specify a trusted
 proxy using the function above, **this is NOT safe**. At the same time, if you don't
 use any proxy, you can disable this feature by using `Engine.SetTrustedProxies(nil)`,
 then `Context.ClientIP()` will return the remote address directly to avoid some
@@ -2247,7 +2411,7 @@ func main() {
 ```
 
 **Notice:** If you are using a CDN service, you can set the `Engine.TrustedPlatform`
-to skip TrustedProxies check, it has a higher priority than TrustedProxies. 
+to skip TrustedProxies check, it has a higher priority than TrustedProxies.
 Look at the example below:
 
 ```go

@@ -12,8 +12,10 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-var once sync.Once
-var internalEngine *gin.Engine
+var (
+	once           sync.Once
+	internalEngine *gin.Engine
+)
 
 func engine() *gin.Engine {
 	once.Do(func() {
@@ -30,6 +32,11 @@ func LoadHTMLGlob(pattern string) {
 // LoadHTMLFiles is a wrapper for Engine.LoadHTMLFiles.
 func LoadHTMLFiles(files ...string) {
 	engine().LoadHTMLFiles(files...)
+}
+
+// LoadHTMLFS is a wrapper for Engine.LoadHTMLFS.
+func LoadHTMLFS(fs http.FileSystem, patterns ...string) {
+	engine().LoadHTMLFS(fs, patterns...)
 }
 
 // SetHTMLTemplate is a wrapper for Engine.SetHTMLTemplate.
@@ -154,7 +161,7 @@ func RunUnix(file string) (err error) {
 
 // RunFd attaches the router to a http.Server and starts listening and serving HTTP requests
 // through the specified file descriptor.
-// Note: the method will block the calling goroutine indefinitely unless on error happens.
+// Note: the method will block the calling goroutine indefinitely unless an error happens.
 func RunFd(fd int) (err error) {
 	return engine().RunFd(fd)
 }

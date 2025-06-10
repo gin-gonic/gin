@@ -9,37 +9,42 @@ import (
 	"os"
 )
 
-type onlyFilesFS struct {
-	fs http.FileSystem
+// OnlyFilesFS implements an http.FileSystem without `Readdir` functionality.
+type OnlyFilesFS struct {
+	FileSystem http.FileSystem
 }
 
-type neuteredReaddirFile struct {
-	http.File
-}
-
-// Dir returns a http.FileSystem that can be used by http.FileServer(). It is used internally
-// in router.Static().
-// if listDirectory == true, then it works the same as http.Dir() otherwise it returns
-// a filesystem that prevents http.FileServer() to list the directory files.
-func Dir(root string, listDirectory bool) http.FileSystem {
-	fs := http.Dir(root)
-	if listDirectory {
-		return fs
-	}
-	return &onlyFilesFS{fs}
-}
-
-// Open conforms to http.Filesystem.
-func (fs onlyFilesFS) Open(name string) (http.File, error) {
-	f, err := fs.fs.Open(name)
+// Open passes `Open` to the upstream implementation without `Readdir` functionality.
+func (o OnlyFilesFS) Open(name string) (http.File, error) {
+	f, err := o.FileSystem.Open(name)
 	if err != nil {
 		return nil, err
 	}
-	return neuteredReaddirFile{f}, nil
+
+	return neutralizedReaddirFile{f}, nil
 }
 
-// Readdir overrides the http.File default implementation.
-func (f neuteredReaddirFile) Readdir(_ int) ([]os.FileInfo, error) {
+// neutralizedReaddirFile wraps http.File with a specific implementation of `Readdir`.
+type neutralizedReaddirFile struct {
+	http.File
+}
+
+// Readdir overrides the http.File default implementation and always returns nil.
+func (n neutralizedReaddirFile) Readdir(_ int) ([]os.FileInfo, error) {
 	// this disables directory listing
 	return nil, nil
+}
+
+// Dir returns an http.FileSystem that can be used by http.FileServer().
+// It is used internally in router.Static().
+// if listDirectory == true, then it works the same as http.Dir(),
+// otherwise it returns a filesystem that prevents http.FileServer() to list the directory files.
+func Dir(root string, listDirectory bool) http.FileSystem {
+	fs := http.Dir(root)
+
+	if listDirectory {
+		return fs
+	}
+
+	return &OnlyFilesFS{FileSystem: fs}
 }

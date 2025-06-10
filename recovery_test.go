@@ -5,7 +5,6 @@
 package gin
 
 import (
-	"fmt"
 	"net"
 	"net/http"
 	"os"
@@ -26,14 +25,14 @@ func TestPanicClean(t *testing.T) {
 		panic("Oupps, Houston, we have a problem")
 	})
 	// RUN
-	w := PerformRequest(router, "GET", "/recovery",
+	w := PerformRequest(router, http.MethodGet, "/recovery",
 		header{
 			Key:   "Host",
 			Value: "www.google.com",
 		},
 		header{
 			Key:   "Authorization",
-			Value: fmt.Sprintf("Bearer %s", password),
+			Value: "Bearer " + password,
 		},
 		header{
 			Key:   "Content-Type",
@@ -56,7 +55,7 @@ func TestPanicInHandler(t *testing.T) {
 		panic("Oupps, Houston, we have a problem")
 	})
 	// RUN
-	w := PerformRequest(router, "GET", "/recovery")
+	w := PerformRequest(router, http.MethodGet, "/recovery")
 	// TEST
 	assert.Equal(t, http.StatusInternalServerError, w.Code)
 	assert.Contains(t, buffer.String(), "panic recovered")
@@ -67,7 +66,7 @@ func TestPanicInHandler(t *testing.T) {
 	// Debug mode prints the request
 	SetMode(DebugMode)
 	// RUN
-	w = PerformRequest(router, "GET", "/recovery")
+	w = PerformRequest(router, http.MethodGet, "/recovery")
 	// TEST
 	assert.Equal(t, http.StatusInternalServerError, w.Code)
 	assert.Contains(t, buffer.String(), "GET /recovery")
@@ -84,21 +83,39 @@ func TestPanicWithAbort(t *testing.T) {
 		panic("Oupps, Houston, we have a problem")
 	})
 	// RUN
-	w := PerformRequest(router, "GET", "/recovery")
+	w := PerformRequest(router, http.MethodGet, "/recovery")
 	// TEST
 	assert.Equal(t, http.StatusBadRequest, w.Code)
 }
 
+func TestMaskAuthorization(t *testing.T) {
+	secret := "Bearer aaaabbbbccccddddeeeeffff"
+	headers := []string{
+		"Host: www.example.com",
+		"Authorization: " + secret,
+		"User-Agent: curl/7.51.0",
+		"Accept: */*",
+		"Content-Type: application/json",
+		"Content-Length: 1",
+	}
+	maskAuthorization(headers)
+
+	for _, h := range headers {
+		assert.NotContains(t, h, secret)
+	}
+	assert.Contains(t, headers, "Authorization: *")
+}
+
 func TestSource(t *testing.T) {
 	bs := source(nil, 0)
-	assert.Equal(t, dunno, bs)
+	assert.Equal(t, dunnoBytes, bs)
 
 	in := [][]byte{
 		[]byte("Hello world."),
 		[]byte("Hi, gin.."),
 	}
 	bs = source(in, 10)
-	assert.Equal(t, dunno, bs)
+	assert.Equal(t, dunnoBytes, bs)
 
 	bs = source(in, 1)
 	assert.Equal(t, []byte("Hello world."), bs)
@@ -135,7 +152,7 @@ func TestPanicWithBrokenPipe(t *testing.T) {
 				panic(e)
 			})
 			// RUN
-			w := PerformRequest(router, "GET", "/recovery")
+			w := PerformRequest(router, http.MethodGet, "/recovery")
 			// TEST
 			assert.Equal(t, expectCode, w.Code)
 			assert.Contains(t, strings.ToLower(buf.String()), expectMsg)
@@ -156,7 +173,7 @@ func TestCustomRecoveryWithWriter(t *testing.T) {
 		panic("Oupps, Houston, we have a problem")
 	})
 	// RUN
-	w := PerformRequest(router, "GET", "/recovery")
+	w := PerformRequest(router, http.MethodGet, "/recovery")
 	// TEST
 	assert.Equal(t, http.StatusBadRequest, w.Code)
 	assert.Contains(t, buffer.String(), "panic recovered")
@@ -167,7 +184,7 @@ func TestCustomRecoveryWithWriter(t *testing.T) {
 	// Debug mode prints the request
 	SetMode(DebugMode)
 	// RUN
-	w = PerformRequest(router, "GET", "/recovery")
+	w = PerformRequest(router, http.MethodGet, "/recovery")
 	// TEST
 	assert.Equal(t, http.StatusBadRequest, w.Code)
 	assert.Contains(t, buffer.String(), "GET /recovery")
@@ -191,7 +208,7 @@ func TestCustomRecovery(t *testing.T) {
 		panic("Oupps, Houston, we have a problem")
 	})
 	// RUN
-	w := PerformRequest(router, "GET", "/recovery")
+	w := PerformRequest(router, http.MethodGet, "/recovery")
 	// TEST
 	assert.Equal(t, http.StatusBadRequest, w.Code)
 	assert.Contains(t, buffer.String(), "panic recovered")
@@ -202,7 +219,7 @@ func TestCustomRecovery(t *testing.T) {
 	// Debug mode prints the request
 	SetMode(DebugMode)
 	// RUN
-	w = PerformRequest(router, "GET", "/recovery")
+	w = PerformRequest(router, http.MethodGet, "/recovery")
 	// TEST
 	assert.Equal(t, http.StatusBadRequest, w.Code)
 	assert.Contains(t, buffer.String(), "GET /recovery")
@@ -226,7 +243,7 @@ func TestRecoveryWithWriterWithCustomRecovery(t *testing.T) {
 		panic("Oupps, Houston, we have a problem")
 	})
 	// RUN
-	w := PerformRequest(router, "GET", "/recovery")
+	w := PerformRequest(router, http.MethodGet, "/recovery")
 	// TEST
 	assert.Equal(t, http.StatusBadRequest, w.Code)
 	assert.Contains(t, buffer.String(), "panic recovered")
@@ -237,7 +254,7 @@ func TestRecoveryWithWriterWithCustomRecovery(t *testing.T) {
 	// Debug mode prints the request
 	SetMode(DebugMode)
 	// RUN
-	w = PerformRequest(router, "GET", "/recovery")
+	w = PerformRequest(router, http.MethodGet, "/recovery")
 	// TEST
 	assert.Equal(t, http.StatusBadRequest, w.Code)
 	assert.Contains(t, buffer.String(), "GET /recovery")

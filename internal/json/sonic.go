@@ -2,7 +2,7 @@
 // Use of this source code is governed by a MIT style
 // license that can be found in the LICENSE file.
 
-//go:build sonic && avx && (linux || windows || darwin) && amd64
+//go:build sonic && (linux || windows || darwin)
 
 package json
 
@@ -21,3 +21,6 @@ var (
 	// NewEncoder is exported by gin/json package.
 	NewEncoder = json.NewEncoder
 )
+
+// Package indicates what library is being used for JSON encoding.
+const Package = "github.com/bytedance/sonic"

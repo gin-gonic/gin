@@ -91,7 +91,7 @@ func (msg *Error) IsType(flags ErrorType) bool {
 }
 
 // Unwrap returns the wrapped error, to allow interoperability with errors.Is(), errors.As() and errors.Unwrap()
-func (msg *Error) Unwrap() error {
+func (msg Error) Unwrap() error {
 	return msg.Err
 }
 

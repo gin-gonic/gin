@@ -82,7 +82,7 @@ type LogFormatterParams struct {
 	// BodySize is the size of the Response Body
 	BodySize int
 	// Keys are the keys set on the request's context.
-	Keys map[string]any
+	Keys map[any]any
 }
 
 // StatusCodeColor is the ANSI color for appropriately logging http status code to a terminal.
