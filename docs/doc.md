@@ -872,7 +872,7 @@ curl -X GET "localhost:8085/testing?name=appleboy&address=xyz&birthday=1992-03-1
 
 If the server should bind a default value to a field when the client does not provide one, specify the default value using the `default` key within the `form` tag:
 
-```
+```go
 package main
 
 import (
