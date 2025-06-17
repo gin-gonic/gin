@@ -18,6 +18,12 @@ type Body struct {
 	EndDate1    time.Time `form:"end_date_1" binding:"required" time_format:"2006-01-02"`
 }
 
+type Person struct {
+	ID string `uri:"id" binding:"required"`
+	//ID   string `uri:"id" binding:"required,uuid"`
+	Name string `uri:"name" binding:"required"`
+}
+
 func UrlInit(router *gin.Engine) {
 
 	//普通url测试
@@ -119,43 +125,27 @@ func UrlInit(router *gin.Engine) {
 		c.JSON(http.StatusAccepted, &body)
 		c.JSON(http.StatusAccepted, &body2)
 	})
-}
 
-type formB struct {
-	Bar string `json:"bar" xml:"bar" binding:"required"`
-}
+	router.GET("/:name/:id", func(c *gin.Context) {
+		var person Person
+		if err := c.ShouldBindUri(&person); err != nil {
+			c.JSON(400, gin.H{"msg": err.Error()})
+			return
+		}
+		c.JSON(200, gin.H{"name": person.Name, "uuid": person.ID})
+	})
 
-type formA struct {
-	Foo string `json:"foo" xml:"foo" binding:"required"`
-}
-
-func BindHandler(c *gin.Context) {
-	objA := formA{}
-	objB := formB{}
-	// This c.ShouldBind consumes c.Request.Body and it cannot be reused.
-	if errA := c.ShouldBind(&objA); errA == nil {
-		c.String(http.StatusOK, `the body should be formA`)
-		// Always an error is occurred by this because c.Request.Body is EOF now.
-	} else if errB := c.ShouldBind(&objB); errB == nil {
-		c.String(http.StatusOK, `the body should be formB`)
-	} else {
-		c.JSON(http.StatusOK, gin.H{"error": errA.Error()})
-	}
-}
-
-func MulBindHandler(c *gin.Context) {
-	objA := formA{}
-	objB := formB{}
-	// 读取 c.Request.Body 并将结果存入上下文。
-	if errA := c.ShouldBindBodyWith(&objA, binding.JSON); errA == nil {
-		c.String(http.StatusOK, `the body should be formA`)
-		// 这时, 复用存储在上下文中的 body。
-	} else if errB := c.ShouldBindBodyWith(&objB, binding.JSON); errB == nil {
-		c.String(http.StatusOK, `the body should be formB JSON`)
-		// 可以接受其他格式
-	} else if errB2 := c.ShouldBindBodyWith(&objB, binding.XML); errB2 == nil {
-		c.String(http.StatusOK, `the body should be formB XML`)
-	} else {
-		c.JSON(http.StatusOK, gin.H{"error": errA.Error()})
-	}
+	router.GET("/cookie", func(c *gin.Context) {
+		cookie, err := c.Cookie("gin_cookie")
+		if err != nil {
+			cookie = "NotSet"
+			c.SetCookie("gin_cookie", "test", 3600, "/", "localhost", false, true)
+			//Delete cookie by set max age to -1.
+			//c.SetCookie("gin_cookie", "test", -1, "/", "localhost", false, true)
+		}
+		fmt.Printf("Cookie value: %s \n", cookie)
+		c.JSON(http.StatusOK, gin.H{
+			"cookie": cookie,
+		})
+	})
 }

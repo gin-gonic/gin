@@ -9,11 +9,12 @@ import (
 )
 
 //go:embed assets/* templates/*
-var f embed.FS
+var f embed.FS //web页面的存储的内容
 
 func main() {
 	router := gin.Default()
-	templ := template.Must(template.New("").ParseFS(f, "templates/*.tmpl", "templates/foo/*.tmpl"))
+	templ := template.Must(template.New("").
+		ParseFS(f, "templates/*.tmpl", "templates/foo/*.tmpl"))
 	router.SetHTMLTemplate(templ)
 
 	// example: /public/assets/images/example.png

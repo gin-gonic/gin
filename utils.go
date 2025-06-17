@@ -6,6 +6,8 @@ package gin
 
 import (
 	"encoding/xml"
+	"fmt"
+	"github.com/goccy/go-json"
 	"net/http"
 	"os"
 	"path"
@@ -161,4 +163,12 @@ func isASCII(s string) bool {
 		}
 	}
 	return true
+}
+
+func ToString(v interface{}) string {
+	bytes, err := json.Marshal(v)
+	if err != nil {
+		panic(fmt.Sprintf("json.Marshal err %+v", err))
+	}
+	return string(bytes)
 }
