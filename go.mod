@@ -7,6 +7,7 @@ require (
 	github.com/gin-contrib/sse v1.1.0
 	github.com/go-playground/validator/v10 v10.26.0
 	github.com/goccy/go-json v0.10.2
+	github.com/goccy/go-yaml v1.18.0
 	github.com/json-iterator/go v1.1.12
 	github.com/mattn/go-isatty v0.0.20
 	github.com/modern-go/reflect2 v1.0.2
@@ -16,7 +17,6 @@ require (
 	github.com/ugorji/go/codec v1.2.12
 	golang.org/x/net v0.41.0
 	google.golang.org/protobuf v1.36.6
-	gopkg.in/yaml.v3 v3.0.1
 )
 
 require (
@@ -43,4 +43,5 @@ require (
 	golang.org/x/sys v0.33.0 // indirect
 	golang.org/x/text v0.26.0 // indirect
 	golang.org/x/tools v0.33.0 // indirect
+	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
