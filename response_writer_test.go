@@ -82,6 +82,10 @@ func TestResponseWriterWriteHeadersNow(t *testing.T) {
 	writer.size = 10
 	w.WriteHeaderNow()
 	assert.Equal(t, 10, w.Size())
+
+	w.WriteHeader(http.StatusOK)
+	assert.Equal(t, http.StatusMultipleChoices, w.Status())
+	assert.Equal(t, http.StatusMultipleChoices, testWriter.Code)
 }
 
 func TestResponseWriterWrite(t *testing.T) {
