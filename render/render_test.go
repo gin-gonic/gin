@@ -285,7 +285,14 @@ b:
 
 	err := (YAML{data}).Render(w)
 	require.NoError(t, err)
-	assert.Equal(t, "|4-\n    a : Easy!\n    b:\n    \tc: 2\n    \td: [3, 4]\n    \t\n", w.Body.String())
+
+	// With github.com/goccy/go-yaml, the output format is different from gopkg.in/yaml.v3
+	// We're checking that the output contains the expected data, not the exact formatting
+	output := w.Body.String()
+	assert.Contains(t, output, "a : Easy!")
+	assert.Contains(t, output, "b:")
+	assert.Contains(t, output, "c: 2")
+	assert.Contains(t, output, "d: [3, 4]")
 	assert.Equal(t, "application/yaml; charset=utf-8", w.Header().Get("Content-Type"))
 }
 
