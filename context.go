@@ -93,6 +93,14 @@ type Context struct {
 	sameSite http.SameSite
 }
 
+// Get Engine from Context to handle contexts
+func (c *Context) GetEngine() *Engine {
+	if c.engine == nil {
+		panic("context engine is nil")
+	}
+	return c.engine
+}
+
 /************************************/
 /********** CONTEXT CREATION ********/
 /************************************/
