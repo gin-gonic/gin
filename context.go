@@ -979,8 +979,8 @@ func (c *Context) IsWebsocket() bool {
 }
 
 func (c *Context) requestHeader(key string) string {
-	c.hmu.Lock()
-	defer c.hmu.Unlock()
+	c.hmu.RLock()
+	defer c.hmu.RUnlock()
 	return c.Request.Header.Get(key)
 }
 

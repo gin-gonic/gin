@@ -27,12 +27,13 @@ import (
 	"time"
 
 	"github.com/gin-contrib/sse"
-	"github.com/gin-gonic/gin/binding"
-	"github.com/gin-gonic/gin/codec/json"
-	testdata "github.com/gin-gonic/gin/testdata/protoexample"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/proto"
+
+	"github.com/gin-gonic/gin/binding"
+	"github.com/gin-gonic/gin/codec/json"
+	testdata "github.com/gin-gonic/gin/testdata/protoexample"
 )
 
 var _ context.Context = (*Context)(nil)
@@ -3422,6 +3423,8 @@ func TestContextSetCookieData(t *testing.T) {
 		setCookie := c.Writer.Header().Get("Set-Cookie")
 		assert.Contains(t, setCookie, "SameSite=None")
 	})
+}
+
 func TestParallelHeaderWrite(t *testing.T) {
 	c, _ := CreateTestContext(httptest.NewRecorder())
 	wg := sync.WaitGroup{}
