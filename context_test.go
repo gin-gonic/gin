@@ -1542,6 +1542,44 @@ func TestContextNegotiationWithHTML(t *testing.T) {
 	assert.Equal(t, "text/html; charset=utf-8", w.Header().Get("Content-Type"))
 }
 
+func TestContextNegotiationWithProto(t *testing.T) {
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
+	c.Request, _ = http.NewRequest(http.MethodPost, "", nil)
+
+	c.Negotiate(http.StatusOK, Negotiate{
+		Offered: []string{binding.MIMEPROTOBUF},
+		Data:    &testdata.Test{},
+	})
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Equal(t, 0, w.Body.Len())
+	assert.Equal(t, "application/x-protobuf", w.Header().Get("Content-Type"))
+}
+
+func TestContextNegotiationWithCustom(t *testing.T) {
+
+	contentType := "application/whatever"
+
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
+	c.Request, _ = http.NewRequest(http.MethodPost, "", nil)
+
+	AddNegotiationRenderMapping(contentType, func(status int, config Negotiate, c *Context) {
+		data := config.Data.([]byte)
+		c.Data(status, contentType, data)
+	})
+
+	c.Negotiate(http.StatusOK, Negotiate{
+		Offered: []string{contentType},
+		Data:    []byte("Hello World"),
+	})
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Equal(t, "Hello World", w.Body.String())
+	assert.Equal(t, contentType, w.Header().Get("Content-Type"))
+}
+
 func TestContextNegotiationNotSupport(t *testing.T) {
 	w := httptest.NewRecorder()
 	c, _ := CreateTestContext(w)
