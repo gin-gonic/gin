@@ -32,6 +32,14 @@ func (r *multipartRequest) TrySet(value reflect.Value, field reflect.StructField
 	return setByForm(value, field, r.MultipartForm.Value, key, opt)
 }
 
+// CleanUp clean up the multipart request
+func (r *multipartRequest) CleanUp() error {
+	if r.MultipartForm != nil {
+		return r.MultipartForm.RemoveAll()
+	}
+	return nil
+}
+
 func setByMultipartFormFile(value reflect.Value, field reflect.StructField, files []*multipart.FileHeader) (isSet bool, err error) {
 	switch value.Kind() {
 	case reflect.Ptr:
