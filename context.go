@@ -1316,11 +1316,9 @@ var negotiationRenderMappings = map[string]NegotiationRenderFunc{
 func (c *Context) Negotiate(code int, config Negotiate) {
 
 	accepted := c.NegotiateFormat(config.Offered...)
-	for bind, fn := range negotiationRenderMappings {
-		if bind == accepted {
-			fn(code, config, c)
-			return
-		}
+	if fn, ok := negotiationRenderMappings[accepted]; ok {
+		fn(code, config, c)
+		return
 	}
 	c.AbortWithError(http.StatusNotAcceptable, errors.New("the accepted formats are not offered by the server")) //nolint: errcheck
 
