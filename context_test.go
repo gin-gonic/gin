@@ -3425,24 +3425,46 @@ func TestContextSetCookieData(t *testing.T) {
 	})
 }
 
-func TestParallelHeaderWrite(t *testing.T) {
-	c, _ := CreateTestContext(httptest.NewRecorder())
-	wg := sync.WaitGroup{}
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		for i := 0; i < 1000; i++ {
-			c.Header("key", "value")
-		}
-	}()
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		for i := 0; i < 1000; i++ {
-			c.Header("key", "value")
-		}
-	}()
-	wg.Wait()
+func TestParallelHeaderAccess(t *testing.T) {
+	t.Parallel()
+	const iterations = 1000
+	const goroutines = 8
+
+	testCases := []struct {
+		name        string
+		writerCount int
+		readerCount int
+	}{
+		{"parallel_write_only", goroutines, 0},
+		{"parallel_write_and_read", goroutines / 2, goroutines / 2},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			c, _ := CreateTestContext(httptest.NewRecorder())
+			c.Request, _ = http.NewRequest(http.MethodGet, "/", nil)
+			wg := sync.WaitGroup{}
+			for i := 0; i < tc.writerCount; i++ {
+				wg.Add(1)
+				go func() {
+					defer wg.Done()
+					for _ = range iterations {
+						c.Header("key", "value")
+					}
+				}()
+			}
+			for i := 0; i < tc.readerCount; i++ {
+				wg.Add(1)
+				go func() {
+					defer wg.Done()
+					for _ = range iterations {
+						_ = c.GetHeader("key")
+					}
+				}()
+			}
+			wg.Wait()
+		})
+	}
 }
 
 func TestGetMapFromFormData(t *testing.T) {
