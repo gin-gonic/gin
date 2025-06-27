@@ -27,12 +27,13 @@ import (
 	"time"
 
 	"github.com/gin-contrib/sse"
-	"github.com/gin-gonic/gin/binding"
-	"github.com/gin-gonic/gin/codec/json"
-	testdata "github.com/gin-gonic/gin/testdata/protoexample"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/proto"
+
+	"github.com/gin-gonic/gin/binding"
+	"github.com/gin-gonic/gin/codec/json"
+	testdata "github.com/gin-gonic/gin/testdata/protoexample"
 )
 
 var _ context.Context = (*Context)(nil)
@@ -3323,4 +3324,46 @@ func TestContextSetCookieData(t *testing.T) {
 		setCookie := c.Writer.Header().Get("Set-Cookie")
 		assert.Contains(t, setCookie, "SameSite=None")
 	})
+}
+
+func TestParallelHeaderAccess(t *testing.T) {
+	t.Parallel()
+	const iterations = 1000
+	const goroutines = 8
+
+	testCases := []struct {
+		name        string
+		writerCount int
+		readerCount int
+	}{
+		{"parallel_write_only", goroutines, 0},
+		{"parallel_write_and_read", goroutines / 2, goroutines / 2},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			c, _ := CreateTestContext(httptest.NewRecorder())
+			c.Request, _ = http.NewRequest(http.MethodGet, "/", nil)
+			wg := sync.WaitGroup{}
+			for i := 0; i < tc.writerCount; i++ {
+				wg.Add(1)
+				go func() {
+					defer wg.Done()
+					for _ = range iterations {
+						c.Header("key", "value")
+					}
+				}()
+			}
+			for i := 0; i < tc.readerCount; i++ {
+				wg.Add(1)
+				go func() {
+					defer wg.Done()
+					for _ = range iterations {
+						_ = c.GetHeader("key")
+					}
+				}()
+			}
+			wg.Wait()
+		})
+	}
 }
