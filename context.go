@@ -22,7 +22,6 @@ import (
 	"time"
 
 	"github.com/gin-contrib/sse"
-
 	"github.com/gin-gonic/gin/binding"
 	"github.com/gin-gonic/gin/render"
 )
