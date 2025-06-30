@@ -27,13 +27,12 @@ import (
 	"time"
 
 	"github.com/gin-contrib/sse"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-	"google.golang.org/protobuf/proto"
-
 	"github.com/gin-gonic/gin/binding"
 	"github.com/gin-gonic/gin/codec/json"
 	testdata "github.com/gin-gonic/gin/testdata/protoexample"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/proto"
 )
 
 var _ context.Context = (*Context)(nil)
@@ -3448,7 +3447,7 @@ func TestParallelHeaderAccess(t *testing.T) {
 				wg.Add(1)
 				go func() {
 					defer wg.Done()
-					for _ = range iterations {
+					for range iterations {
 						c.Header("key", "value")
 					}
 				}()
@@ -3457,7 +3456,7 @@ func TestParallelHeaderAccess(t *testing.T) {
 				wg.Add(1)
 				go func() {
 					defer wg.Done()
-					for _ = range iterations {
+					for range iterations {
 						_ = c.GetHeader("key")
 					}
 				}()
