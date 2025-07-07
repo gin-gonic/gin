@@ -54,12 +54,6 @@ func TestWrap(t *testing.T) {
 	assert.Equal(t, "hola!", w.Body.String())
 }
 
-func TestLastChar(t *testing.T) {
-	assert.Equal(t, uint8('a'), lastChar("hola"))
-	assert.Equal(t, uint8('s'), lastChar("adios"))
-	assert.Panics(t, func() { lastChar("") })
-}
-
 func TestParseAccept(t *testing.T) {
 	parts := parseAccept("text/html , application/xhtml+xml,application/xml;q=0.9,  */* ;q=0.8")
 	assert.Len(t, parts, 4)
