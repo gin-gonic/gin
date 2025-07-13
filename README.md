@@ -104,6 +104,7 @@ The documentation is also available on [gin-gonic.com](https://gin-gonic.com) in
 - [Persian](https://gin-gonic.com/fa/docs/)
 - [Português](https://gin-gonic.com/pt/docs/)
 - [Russian](https://gin-gonic.com/ru/docs/)
+- [Indonesian](https://gin-gonic.com/id/docs/)
 
 ### Articles
 
