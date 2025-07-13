@@ -216,6 +216,14 @@ func (c *Context) AbortWithStatus(code int) {
 	c.Abort()
 }
 
+// AbortWithStatusJSON calls `Abort()` and then `PureJSON` internally.
+// This method stops the chain, writes the status code and return a JSON body without escaping.
+// It also sets the Content-Type as "application/json".
+func (c *Context) AbortWithStatusPureJSON(code int, jsonObj any) {
+	c.Abort()
+	c.PureJSON(code, jsonObj)
+}
+
 // AbortWithStatusJSON calls `Abort()` and then `JSON` internally.
 // This method stops the chain, writes the status code and return a JSON body.
 // It also sets the Content-Type as "application/json".

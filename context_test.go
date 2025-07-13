@@ -1680,6 +1680,32 @@ func TestContextAbortWithStatusJSON(t *testing.T) {
 	assert.JSONEq(t, "{\"foo\":\"fooValue\",\"bar\":\"barValue\"}", jsonStringBody)
 }
 
+func TestContextAbortWithStatusPureJSON(t *testing.T) {
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
+	c.index = 4
+
+	in := new(testJSONAbortMsg)
+	in.Bar = "barValue"
+	in.Foo = "fooValue"
+
+	c.AbortWithStatusPureJSON(http.StatusUnsupportedMediaType, in)
+
+	assert.Equal(t, abortIndex, c.index)
+	assert.Equal(t, http.StatusUnsupportedMediaType, c.Writer.Status())
+	assert.Equal(t, http.StatusUnsupportedMediaType, w.Code)
+	assert.True(t, c.IsAborted())
+
+	contentType := w.Header().Get("Content-Type")
+	assert.Equal(t, "application/json; charset=utf-8", contentType)
+
+	buf := new(bytes.Buffer)
+	_, err := buf.ReadFrom(w.Body)
+	require.NoError(t, err)
+	jsonStringBody := buf.String()
+	assert.JSONEq(t, "{\"foo\":\"fooValue\",\"bar\":\"barValue\"}", jsonStringBody)
+}
+
 func TestContextError(t *testing.T) {
 	c, _ := CreateTestContext(httptest.NewRecorder())
 	assert.Empty(t, c.Errors)
