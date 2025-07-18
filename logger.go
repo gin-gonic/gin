@@ -44,7 +44,7 @@ type LoggerConfig struct {
 	// Optional. Default value is gin.DefaultWriter.
 	Output io.Writer
 
-	// SkipPaths is an url path array which logs are not written.
+	// SkipPaths is a URL path array which logs are not written.
 	// Optional.
 	SkipPaths []string
 
