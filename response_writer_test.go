@@ -174,11 +174,12 @@ func TestResponseWriterHijackAfterWrite(t *testing.T) {
 			require.NoError(t, tc.action(w), "unexpected error during pre-hijack action")
 
 			_, _, hijackErr := w.Hijack()
-			assert.ErrorIs(t, hijackErr, tc.expectError, "unexpected error from Hijack()")
+			require.ErrorIs(t, hijackErr, tc.expectError, "unexpected error from Hijack()")
 			assert.Equal(t, tc.expectHijack, hijacker.hijacked, "unexpected hijacker.hijacked state")
 			assert.Equal(t, tc.expectWritten, w.Written(), "unexpected w.Written() state")
 		})
-	}}
+	}
+}
 
 func TestResponseWriterFlush(t *testing.T) {
 	testServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
