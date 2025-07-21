@@ -81,67 +81,67 @@ func TestContextFile(t *testing.T) {
 	t.Run("serve existing file", func(t *testing.T) {
 		// Create a temporary test file
 		testFile := "../test_file.txt"
-		
+
 		w := httptest.NewRecorder()
 		c, _ := CreateTestContext(w)
 		c.Request = httptest.NewRequest(http.MethodGet, "/test", nil)
-		
+
 		c.File(testFile)
-		
+
 		assert.Equal(t, http.StatusOK, w.Code)
 		assert.Contains(t, w.Body.String(), "This is a test file")
 		assert.Equal(t, "text/plain; charset=utf-8", w.Header().Get("Content-Type"))
 	})
-	
+
 	// Test serving a non-existent file
 	t.Run("serve non-existent file", func(t *testing.T) {
 		w := httptest.NewRecorder()
 		c, _ := CreateTestContext(w)
 		c.Request = httptest.NewRequest(http.MethodGet, "/test", nil)
-		
+
 		c.File("non_existent_file.txt")
-		
+
 		assert.Equal(t, http.StatusNotFound, w.Code)
 	})
-	
+
 	// Test serving a directory (should return 200 with directory listing or 403 Forbidden)
 	t.Run("serve directory", func(t *testing.T) {
 		w := httptest.NewRecorder()
 		c, _ := CreateTestContext(w)
 		c.Request = httptest.NewRequest(http.MethodGet, "/test", nil)
-		
+
 		c.File(".")
-		
+
 		// Directory serving can return either 200 (with listing) or 403 (forbidden)
 		assert.True(t, w.Code == http.StatusOK || w.Code == http.StatusForbidden)
 	})
-	
+
 	// Test with HEAD request
 	t.Run("HEAD request", func(t *testing.T) {
 		testFile := "../test_file.txt"
-		
+
 		w := httptest.NewRecorder()
 		c, _ := CreateTestContext(w)
 		c.Request = httptest.NewRequest(http.MethodHead, "/test", nil)
-		
+
 		c.File(testFile)
-		
+
 		assert.Equal(t, http.StatusOK, w.Code)
 		assert.Empty(t, w.Body.String()) // HEAD request should not return body
 		assert.Equal(t, "text/plain; charset=utf-8", w.Header().Get("Content-Type"))
 	})
-	
+
 	// Test with Range request
 	t.Run("Range request", func(t *testing.T) {
 		testFile := "../test_file.txt"
-		
+
 		w := httptest.NewRecorder()
 		c, _ := CreateTestContext(w)
 		c.Request = httptest.NewRequest(http.MethodGet, "/test", nil)
 		c.Request.Header.Set("Range", "bytes=0-10")
-		
+
 		c.File(testFile)
-		
+
 		assert.Equal(t, http.StatusPartialContent, w.Code)
 		assert.Equal(t, "bytes", w.Header().Get("Accept-Ranges"))
 		assert.Contains(t, w.Header().Get("Content-Range"), "bytes 0-10")
