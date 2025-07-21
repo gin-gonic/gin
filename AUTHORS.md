@@ -377,6 +377,7 @@ People and companies, who have contributed, in alphabetical order.
 - vinhha96 <anhvinha1@gmail.com>
 - voidman <retmain@foxmail.com>
 - vz <vzvway@gmail.com>
+- webstradev <erik@webstra.dev>
 - wei <wei840222@gmail.com>
 - weibaohui <weibaohui@yeah.net>
 - whirosan <whirosan@users.noreply.github.com>

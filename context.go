@@ -615,7 +615,7 @@ func (c *Context) PostFormArray(key string) (values []string) {
 	return
 }
 
-func (c *Context) initFormCache() {
+func (c *Context) InitFormCache() {
 	if c.formCache == nil {
 		c.formCache = make(url.Values)
 		req := c.Request
@@ -631,7 +631,7 @@ func (c *Context) initFormCache() {
 // GetPostFormArray returns a slice of strings for a given form key, plus
 // a boolean value whether at least one value exists for the given key.
 func (c *Context) GetPostFormArray(key string) (values []string, ok bool) {
-	c.initFormCache()
+	c.InitFormCache()
 	values, ok = c.formCache[key]
 	return
 }
@@ -645,7 +645,7 @@ func (c *Context) PostFormMap(key string) (dicts map[string]string) {
 // GetPostFormMap returns a map for a given form key, plus a boolean value
 // whether at least one value exists for the given key.
 func (c *Context) GetPostFormMap(key string) (map[string]string, bool) {
-	c.initFormCache()
+	c.InitFormCache()
 	return c.get(c.formCache, key)
 }
 
