@@ -3350,3 +3350,134 @@ func TestContextSetCookieData(t *testing.T) {
 		assert.Contains(t, setCookie, "SameSite=None")
 	})
 }
+
+func TestGetMapFromFormData(t *testing.T) {
+	testCases := []struct {
+		name     string
+		data     map[string][]string
+		key      string
+		expected map[string]string
+		found    bool
+	}{
+		{
+			name: "Basic bracket notation",
+			data: map[string][]string{
+				"ids[a]": {"hi"},
+				"ids[b]": {"3.14"},
+			},
+			key: "ids",
+			expected: map[string]string{
+				"a": "hi",
+				"b": "3.14",
+			},
+			found: true,
+		},
+		{
+			name: "Mixed data with bracket notation",
+			data: map[string][]string{
+				"ids[a]":     {"hi"},
+				"ids[b]":     {"3.14"},
+				"names[a]":   {"mike"},
+				"names[b]":   {"maria"},
+				"other[key]": {"value"},
+				"simple":     {"data"},
+			},
+			key: "ids",
+			expected: map[string]string{
+				"a": "hi",
+				"b": "3.14",
+			},
+			found: true,
+		},
+		{
+			name: "Names key",
+			data: map[string][]string{
+				"ids[a]":     {"hi"},
+				"ids[b]":     {"3.14"},
+				"names[a]":   {"mike"},
+				"names[b]":   {"maria"},
+				"other[key]": {"value"},
+			},
+			key: "names",
+			expected: map[string]string{
+				"a": "mike",
+				"b": "maria",
+			},
+			found: true,
+		},
+		{
+			name: "Key not found",
+			data: map[string][]string{
+				"ids[a]":   {"hi"},
+				"names[b]": {"maria"},
+			},
+			key:      "notfound",
+			expected: map[string]string{},
+			found:    false,
+		},
+		{
+			name:     "Empty data",
+			data:     map[string][]string{},
+			key:      "ids",
+			expected: map[string]string{},
+			found:    false,
+		},
+		{
+			name: "Malformed bracket notation",
+			data: map[string][]string{
+				"ids[a": {"hi"},    // Missing closing bracket
+				"ids]b": {"3.14"},  // Missing opening bracket
+				"idsab": {"value"}, // No brackets
+			},
+			key:      "ids",
+			expected: map[string]string{},
+			found:    false,
+		},
+		{
+			name: "Nested bracket notation",
+			data: map[string][]string{
+				"ids[a][b]": {"nested"},
+				"ids[c]":    {"simple"},
+			},
+			key: "ids",
+			expected: map[string]string{
+				"a": "nested",
+				"c": "simple",
+			},
+			found: true,
+		},
+		{
+			name: "Simple key without brackets",
+			data: map[string][]string{
+				"simple": {"data"},
+				"ids[a]": {"hi"},
+			},
+			key:      "simple",
+			expected: map[string]string{},
+			found:    false,
+		},
+		{
+			name: "Mixed simple and bracket keys",
+			data: map[string][]string{
+				"simple": {"data"},
+				"ids[a]": {"hi"},
+				"ids[b]": {"3.14"},
+				"other":  {"value"},
+			},
+			key: "ids",
+			expected: map[string]string{
+				"a": "hi",
+				"b": "3.14",
+			},
+			found: true,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			result, found := getMapFromFormData(tc.data, tc.key)
+			assert.Equal(t, tc.expected, result, "result mismatch")
+			assert.Equal(t, tc.found, found, "found mismatch")
+		})
+	}
+}
