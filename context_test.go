@@ -80,7 +80,7 @@ func TestContextFile(t *testing.T) {
 	// Test serving an existing file
 	t.Run("serve existing file", func(t *testing.T) {
 		// Create a temporary test file
-		testFile := "test_file.txt"
+		testFile := "testdata/test_file.txt"
 
 		w := httptest.NewRecorder()
 		c, _ := CreateTestContext(w)
@@ -118,7 +118,7 @@ func TestContextFile(t *testing.T) {
 
 	// Test with HEAD request
 	t.Run("HEAD request", func(t *testing.T) {
-		testFile := "test_file.txt"
+		testFile := "testdata/test_file.txt"
 
 		w := httptest.NewRecorder()
 		c, _ := CreateTestContext(w)
@@ -133,7 +133,7 @@ func TestContextFile(t *testing.T) {
 
 	// Test with Range request
 	t.Run("Range request", func(t *testing.T) {
-		testFile := "test_file.txt"
+		testFile := "testdata/test_file.txt"
 
 		w := httptest.NewRecorder()
 		c, _ := CreateTestContext(w)

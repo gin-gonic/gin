@@ -11,7 +11,7 @@ import (
 // TestContextFileSimple tests the Context.File() method with a simple case
 func TestContextFileSimple(t *testing.T) {
 	// Test serving an existing file
-	testFile := "test_file.txt"
+	testFile := "testdata/test_file.txt"
 	w := httptest.NewRecorder()
 	c, _ := CreateTestContext(w)
 	c.Request = httptest.NewRequest(http.MethodGet, "/test", nil)
