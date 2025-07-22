@@ -20,6 +20,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"runtime"
 	"strconv"
 	"strings"
 	"sync"
@@ -101,6 +102,20 @@ func TestContextFormFileFailed(t *testing.T) {
 	c.Request, _ = http.NewRequest(http.MethodPost, "/", nil)
 	c.Request.Header.Set("Content-Type", mw.FormDataContentType())
 	c.engine.MaxMultipartMemory = 8 << 20
+	f, err := c.FormFile("file")
+	require.Error(t, err)
+	assert.Nil(t, f)
+}
+
+func TestContextFormFileParseMultipartFormFailed(t *testing.T) {
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	// Create a request with invalid multipart form data
+	body := strings.NewReader("invalid multipart data")
+	c.Request, _ = http.NewRequest(http.MethodPost, "/", body)
+	c.Request.Header.Set("Content-Type", "multipart/form-data; boundary=invalid")
+	c.engine.MaxMultipartMemory = 8 << 20
+
+	// This should trigger the error handling in FormFile when ParseMultipartForm fails
 	f, err := c.FormFile("file")
 	require.Error(t, err)
 	assert.Nil(t, f)
@@ -198,6 +213,43 @@ func TestSaveUploadedFileWithPermissionFailed(t *testing.T) {
 	assert.Equal(t, "permission_test", f.Filename)
 	var mode fs.FileMode = 0o644
 	require.Error(t, c.SaveUploadedFile(f, "test/permission_test", mode))
+}
+
+func TestSaveUploadedFileChmodFailed(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("chmod test not applicable on Windows")
+	}
+	
+	buf := new(bytes.Buffer)
+	mw := multipart.NewWriter(buf)
+	w, err := mw.CreateFormFile("file", "chmod_test")
+	require.NoError(t, err)
+	_, err = w.Write([]byte("chmod_test"))
+	require.NoError(t, err)
+	mw.Close()
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	c.Request, _ = http.NewRequest(http.MethodPost, "/", buf)
+	c.Request.Header.Set("Content-Type", mw.FormDataContentType())
+	f, err := c.FormFile("file")
+	require.NoError(t, err)
+	assert.Equal(t, "chmod_test", f.Filename)
+	
+	// Create a temporary directory with restricted permissions
+	tmpDir := t.TempDir()
+	restrictedDir := filepath.Join(tmpDir, "restricted")
+	require.NoError(t, os.MkdirAll(restrictedDir, 0o755))
+	// Make the directory read-only to trigger chmod failure
+	require.NoError(t, os.Chmod(restrictedDir, 0o444))
+	t.Cleanup(func() {
+		// Restore permissions for cleanup
+		os.Chmod(restrictedDir, 0o755)
+	})
+	
+	// Try to save file with different permissions - this should fail on chmod
+	var mode fs.FileMode = 0o755
+	err = c.SaveUploadedFile(f, filepath.Join(restrictedDir, "subdir", "chmod_test"), mode)
+	// This might fail on MkdirAll or Chmod depending on the system
+	assert.Error(t, err)
 }
 
 func TestContextReset(t *testing.T) {
@@ -808,6 +860,20 @@ func TestContextQueryAndPostForm(t *testing.T) {
 
 	dicts = c.QueryMap("nokey")
 	assert.Empty(t, dicts)
+}
+
+func TestContextInitFormCacheError(t *testing.T) {
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	// Create a request with invalid multipart form data
+	body := strings.NewReader("invalid multipart data")
+	c.Request, _ = http.NewRequest(http.MethodPost, "/", body)
+	c.Request.Header.Set("Content-Type", "multipart/form-data; boundary=invalid")
+	c.engine.MaxMultipartMemory = 8 << 20
+
+	// This should trigger the error handling in initFormCache
+	values, ok := c.GetPostFormArray("foo")
+	assert.False(t, ok)
+	assert.Empty(t, values)
 }
 
 func TestContextPostFormMultipart(t *testing.T) {
@@ -2291,6 +2357,31 @@ func TestContextBadAutoShouldBind(t *testing.T) {
 	assert.False(t, c.IsAborted())
 }
 
+func TestContextShouldBindBodyWithReadError(t *testing.T) {
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
+	
+	// Create a request with a body that will cause read error
+	c.Request, _ = http.NewRequest(http.MethodPost, "/", &errorReader{})
+	
+	type testStruct struct {
+		Foo string `json:"foo"`
+	}
+	obj := testStruct{}
+	
+	// This should trigger the error handling in ShouldBindBodyWith
+	err := c.ShouldBindBodyWith(&obj, binding.JSON)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "read error")
+}
+
+// errorReader is a helper struct that always returns an error when Read is called
+type errorReader struct{}
+
+func (e *errorReader) Read(p []byte) (n int, err error) {
+	return 0, errors.New("read error")
+}
+
 func TestContextShouldBindBodyWith(t *testing.T) {
 	type typeA struct {
 		Foo string `json:"foo" xml:"foo" binding:"required"`
@@ -2759,6 +2850,17 @@ func TestContextGetRawData(t *testing.T) {
 	data, err := c.GetRawData()
 	require.NoError(t, err)
 	assert.Equal(t, "Fetch binary post data", string(data))
+}
+
+func TestContextGetRawDataNilBody(t *testing.T) {
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	c.Request, _ = http.NewRequest(http.MethodPost, "/", nil)
+	c.Request.Body = nil
+
+	data, err := c.GetRawData()
+	assert.Error(t, err)
+	assert.Nil(t, data)
+	assert.Contains(t, err.Error(), "cannot read nil body")
 }
 
 func TestContextRenderDataFromReader(t *testing.T) {
@@ -3348,5 +3450,23 @@ func TestContextSetCookieData(t *testing.T) {
 		c.SetCookieData(cookie)
 		setCookie := c.Writer.Header().Get("Set-Cookie")
 		assert.Contains(t, setCookie, "SameSite=None")
+	})
+
+	// Test that SameSiteDefaultMode uses context's sameSite setting
+	t.Run("SameSite=Default uses context setting", func(t *testing.T) {
+		c, _ := CreateTestContext(httptest.NewRecorder())
+		c.SetSameSite(http.SameSiteStrictMode)
+		cookie := &http.Cookie{
+			Name:     "user",
+			Value:    "gin",
+			Path:     "/",
+			Domain:   "localhost",
+			Secure:   true,
+			HttpOnly: true,
+			SameSite: http.SameSiteDefaultMode,
+		}
+		c.SetCookieData(cookie)
+		setCookie := c.Writer.Header().Get("Set-Cookie")
+		assert.Contains(t, setCookie, "SameSite=Strict")
 	})
 }
