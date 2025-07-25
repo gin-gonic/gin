@@ -246,6 +246,107 @@ func TestRouteRedirectTrailingSlash(t *testing.T) {
 	assert.Equal(t, http.StatusNotFound, w.Code)
 }
 
+func TestRouteTrailingSlashInsensitivity(t *testing.T) {
+	router := New()
+	router.RedirectTrailingSlash = false
+	router.TrailingSlashInsensitivity = true
+	router.GET("/path", func(c *Context) { c.String(http.StatusOK, "path") })
+	router.GET("/path2/", func(c *Context) { c.String(http.StatusOK, "path2") })
+
+	// Test that trailing slash insensitivity works.
+	w := PerformRequest(router, http.MethodGet, "/path/")
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Equal(t, "path", w.Body.String())
+
+	w = PerformRequest(router, http.MethodGet, "/path")
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Equal(t, "path", w.Body.String())
+
+	w = PerformRequest(router, http.MethodGet, "/path2/")
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Equal(t, "path2", w.Body.String())
+
+	w = PerformRequest(router, http.MethodGet, "/path2")
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Equal(t, "path2", w.Body.String())
+
+	// If handlers for `/path` and `/path/` are different, the request should not be redirected.
+	router.GET("/path3", func(c *Context) { c.String(http.StatusOK, "path3") })
+	router.GET("/path3/", func(c *Context) { c.String(http.StatusOK, "path3/") })
+
+	w = PerformRequest(router, http.MethodGet, "/path3")
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Equal(t, "path3", w.Body.String())
+
+	w = PerformRequest(router, http.MethodGet, "/path3/")
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Equal(t, "path3/", w.Body.String())
+
+	// Should no longer match.
+	router.TrailingSlashInsensitivity = false
+
+	w = PerformRequest(router, http.MethodGet, "/path2")
+	assert.Equal(t, http.StatusNotFound, w.Code)
+
+	w = PerformRequest(router, http.MethodGet, "/path/")
+	assert.Equal(t, http.StatusNotFound, w.Code)
+}
+
+func BenchmarkRouteTrailingSlashInsensitivity(b *testing.B) {
+	b.Run("Insensitive", func(b *testing.B) {
+		router := New()
+		router.RedirectTrailingSlash = false
+		router.TrailingSlashInsensitivity = true
+		router.GET("/path", func(c *Context) { c.String(http.StatusOK, "path") })
+
+		b.ResetTimer()
+		b.ReportAllocs()
+
+		for i := 0; i < b.N; i++ {
+			// Cause an insensitive match. Test if the retry logic is causing
+			// slowdowns.
+			w := PerformRequest(router, http.MethodGet, "/path/")
+			if w.Code != http.StatusOK || w.Body.String() != "path" {
+				b.Fatalf("Expected status %d, got %d", http.StatusOK, w.Code)
+			}
+		}
+	})
+
+	b.Run("Exact", func(b *testing.B) {
+		router := New()
+		router.RedirectTrailingSlash = false
+		router.TrailingSlashInsensitivity = false
+		router.GET("/path", func(c *Context) { c.String(http.StatusOK, "path") })
+
+		b.ResetTimer()
+		b.ReportAllocs()
+
+		for i := 0; i < b.N; i++ {
+			w := PerformRequest(router, http.MethodGet, "/path") // Exact match.
+			if w.Code != http.StatusOK || w.Body.String() != "path" {
+				b.Fatalf("Expected status %d, got %d", http.StatusOK, w.Code)
+			}
+		}
+	})
+
+	b.Run("Redirect", func(b *testing.B) {
+		router := New()
+		router.RedirectTrailingSlash = true
+		router.TrailingSlashInsensitivity = false
+		router.GET("/path", func(c *Context) { c.String(http.StatusOK, "path") })
+
+		b.ResetTimer()
+		b.ReportAllocs()
+
+		for i := 0; i < b.N; i++ {
+			w := PerformRequest(router, http.MethodGet, "/path/") // Redirect.
+			if w.Code != http.StatusMovedPermanently {
+				b.Fatalf("Expected status %d, got %d", http.StatusMovedPermanently, w.Code)
+			}
+		}
+	})
+}
+
 func TestRouteRedirectFixedPath(t *testing.T) {
 	router := New()
 	router.RedirectFixedPath = true
