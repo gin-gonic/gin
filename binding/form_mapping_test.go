@@ -635,3 +635,65 @@ func TestMappingCustomArrayForm(t *testing.T) {
 	expected, _ := convertTo(val)
 	assert.Equal(t, expected, s.FileData)
 }
+
+func TestMappingSliceOfCustomBindUnmarshalerElementsUri(t *testing.T) {
+	var s struct {
+		Items []customUnmarshalParamType `uri:"items"`
+	}
+	err := mappingByPtr(&s, formSource{"items": {"http:path1:name1", "https:path2:name2"}}, "uri")
+	require.NoError(t, err)
+
+	assert.Len(t, s.Items, 2)
+	assert.Equal(t, "http", s.Items[0].Protocol)
+	assert.Equal(t, "path1", s.Items[0].Path)
+	assert.Equal(t, "name1", s.Items[0].Name)
+	assert.Equal(t, "https", s.Items[1].Protocol)
+	assert.Equal(t, "path2", s.Items[1].Path)
+	assert.Equal(t, "name2", s.Items[1].Name)
+}
+
+func TestMappingSliceOfCustomBindUnmarshalerElementsForm(t *testing.T) {
+	var s struct {
+		Items []customUnmarshalParamType `form:"items"`
+	}
+	err := mappingByPtr(&s, formSource{"items": {"tcp:socket1:server", "udp:socket2:client"}}, "form")
+	require.NoError(t, err)
+
+	assert.Len(t, s.Items, 2)
+	assert.Equal(t, "tcp", s.Items[0].Protocol)
+	assert.Equal(t, "socket1", s.Items[0].Path)
+	assert.Equal(t, "server", s.Items[0].Name)
+	assert.Equal(t, "udp", s.Items[1].Protocol)
+	assert.Equal(t, "socket2", s.Items[1].Path)
+	assert.Equal(t, "client", s.Items[1].Name)
+}
+
+func TestMappingArrayOfCustomBindUnmarshalerElementsUri(t *testing.T) {
+	var s struct {
+		Items [2]customUnmarshalParamType `uri:"items"`
+	}
+	err := mappingByPtr(&s, formSource{"items": {"grpc:service1:auth", "rest:service2:data"}}, "uri")
+	require.NoError(t, err)
+
+	assert.Equal(t, "grpc", s.Items[0].Protocol)
+	assert.Equal(t, "service1", s.Items[0].Path)
+	assert.Equal(t, "auth", s.Items[0].Name)
+	assert.Equal(t, "rest", s.Items[1].Protocol)
+	assert.Equal(t, "service2", s.Items[1].Path)
+	assert.Equal(t, "data", s.Items[1].Name)
+}
+
+func TestMappingArrayOfCustomBindUnmarshalerElementsForm(t *testing.T) {
+	var s struct {
+		Items [2]customUnmarshalParamType `form:"items"`
+	}
+	err := mappingByPtr(&s, formSource{"items": {"ws:chat:room1", "wss:chat:room2"}}, "form")
+	require.NoError(t, err)
+
+	assert.Equal(t, "ws", s.Items[0].Protocol)
+	assert.Equal(t, "chat", s.Items[0].Path)
+	assert.Equal(t, "room1", s.Items[0].Name)
+	assert.Equal(t, "wss", s.Items[1].Protocol)
+	assert.Equal(t, "chat", s.Items[1].Path)
+	assert.Equal(t, "room2", s.Items[1].Name)
+}
