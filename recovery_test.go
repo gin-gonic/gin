@@ -88,24 +88,6 @@ func TestPanicWithAbort(t *testing.T) {
 	assert.Equal(t, http.StatusBadRequest, w.Code)
 }
 
-func TestMaskAuthorization(t *testing.T) {
-	secret := "Bearer aaaabbbbccccddddeeeeffff"
-	headers := []string{
-		"Host: www.example.com",
-		"Authorization: " + secret,
-		"User-Agent: curl/7.51.0",
-		"Accept: */*",
-		"Content-Type: application/json",
-		"Content-Length: 1",
-	}
-	maskAuthorization(headers)
-
-	for _, h := range headers {
-		assert.NotContains(t, h, secret)
-	}
-	assert.Contains(t, headers, "Authorization: *")
-}
-
 func TestSource(t *testing.T) {
 	bs := source(nil, 0)
 	assert.Equal(t, dunnoBytes, bs)
@@ -262,4 +244,66 @@ func TestRecoveryWithWriterWithCustomRecovery(t *testing.T) {
 	assert.Equal(t, strings.Repeat("Oupps, Houston, we have a problem", 2), errBuffer.String())
 
 	SetMode(TestMode)
+}
+
+func TestSecureRequestDump(t *testing.T) {
+	tests := []struct {
+		name           string
+		req            *http.Request
+		wantContains   string
+		wantNotContain string
+	}{
+		{
+			name: "Authorization header standard case",
+			req: func() *http.Request {
+				r, _ := http.NewRequest(http.MethodGet, "http://example.com", nil)
+				r.Header.Set("Authorization", "Bearer secret-token")
+				return r
+			}(),
+			wantContains:   "Authorization: *",
+			wantNotContain: "Bearer secret-token",
+		},
+		{
+			name: "authorization header lowercase",
+			req: func() *http.Request {
+				r, _ := http.NewRequest(http.MethodGet, "http://example.com", nil)
+				r.Header.Set("authorization", "some-secret")
+				return r
+			}(),
+			wantContains:   "Authorization: *",
+			wantNotContain: "some-secret",
+		},
+		{
+			name: "Authorization header mixed case",
+			req: func() *http.Request {
+				r, _ := http.NewRequest(http.MethodGet, "http://example.com", nil)
+				r.Header.Set("AuThOrIzAtIoN", "token123")
+				return r
+			}(),
+			wantContains:   "Authorization: *",
+			wantNotContain: "token123",
+		},
+		{
+			name: "No Authorization header",
+			req: func() *http.Request {
+				r, _ := http.NewRequest(http.MethodGet, "http://example.com", nil)
+				r.Header.Set("Content-Type", "application/json")
+				return r
+			}(),
+			wantContains:   "",
+			wantNotContain: "Authorization: *",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := secureRequestDump(tt.req)
+			if tt.wantContains != "" && !strings.Contains(result, tt.wantContains) {
+				t.Errorf("maskHeaders() = %q, want contains %q", result, tt.wantContains)
+			}
+			if tt.wantNotContain != "" && strings.Contains(result, tt.wantNotContain) {
+				t.Errorf("maskHeaders() = %q, want NOT contain %q", result, tt.wantNotContain)
+			}
+		})
+	}
 }

@@ -17,6 +17,8 @@ import (
 	"runtime"
 	"strings"
 	"time"
+
+	"github.com/gin-gonic/gin/internal/bytesconv"
 )
 
 const dunno = "???"
@@ -67,19 +69,15 @@ func CustomRecoveryWithWriter(out io.Writer, handle RecoveryFunc) HandlerFunc {
 					}
 				}
 				if logger != nil {
-					stack := stack(3)
-					httpRequest, _ := httputil.DumpRequest(c.Request, false)
-					headers := strings.Split(string(httpRequest), "\r\n")
-					maskAuthorization(headers)
-					headersToStr := strings.Join(headers, "\r\n")
+					const stackSkip = 3
 					if brokenPipe {
-						logger.Printf("%s\n%s%s", err, headersToStr, reset)
+						logger.Printf("%s\n%s%s", err, secureRequestDump(c.Request), reset)
 					} else if IsDebugging() {
 						logger.Printf("[Recovery] %s panic recovered:\n%s\n%s\n%s%s",
-							timeFormat(time.Now()), headersToStr, err, stack, reset)
+							timeFormat(time.Now()), secureRequestDump(c.Request), err, stack(stackSkip), reset)
 					} else {
 						logger.Printf("[Recovery] %s panic recovered:\n%s\n%s%s",
-							timeFormat(time.Now()), err, stack, reset)
+							timeFormat(time.Now()), err, stack(stackSkip), reset)
 					}
 				}
 				if brokenPipe {
@@ -93,6 +91,21 @@ func CustomRecoveryWithWriter(out io.Writer, handle RecoveryFunc) HandlerFunc {
 		}()
 		c.Next()
 	}
+}
+
+// secureRequestDump returns a sanitized HTTP request dump where the Authorization header,
+// if present, is replaced with a masked value ("Authorization: *") to avoid leaking sensitive credentials.
+//
+// Currently, only the Authorization header is sanitized. All other headers and request data remain unchanged.
+func secureRequestDump(r *http.Request) string {
+	httpRequest, _ := httputil.DumpRequest(r, false)
+	lines := strings.Split(bytesconv.BytesToString(httpRequest), "\r\n")
+	for i, line := range lines {
+		if strings.HasPrefix(line, "Authorization:") {
+			lines[i] = "Authorization: *"
+		}
+	}
+	return strings.Join(lines, "\r\n")
 }
 
 func defaultHandleRecovery(c *Context, _ any) {
@@ -124,16 +137,6 @@ func stack(skip int) []byte {
 		fmt.Fprintf(buf, "\t%s: %s\n", function(pc), source(lines, line))
 	}
 	return buf.Bytes()
-}
-
-// maskAuthorization replaces any "Authorization: <token>" header with "Authorization: *", hiding sensitive credentials.
-func maskAuthorization(headers []string) {
-	for idx, header := range headers {
-		key, _, _ := strings.Cut(header, ":")
-		if strings.EqualFold(key, "Authorization") {
-			headers[idx] = key + ": *"
-		}
-	}
 }
 
 // source returns a space-trimmed slice of the n'th line.
