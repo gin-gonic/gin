@@ -76,6 +76,285 @@ func must(err error) {
 	}
 }
 
+// TestContextNegotiate tests the Context.Negotiate() method
+func TestContextNegotiate(t *testing.T) {
+	// Test JSON negotiation
+	t.Run("negotiate JSON", func(t *testing.T) {
+		w := httptest.NewRecorder()
+		c, _ := CreateTestContext(w)
+		c.Request = httptest.NewRequest(http.MethodGet, "/test", nil)
+		c.Request.Header.Set("Accept", "application/json")
+
+		data := map[string]string{"message": "hello"}
+		c.Negotiate(http.StatusOK, Negotiate{
+			Offered:  []string{binding.MIMEJSON, binding.MIMEHTML},
+			JSONData: data,
+			HTMLName: "test.html",
+			HTMLData: data,
+		})
+
+		assert.Equal(t, http.StatusOK, w.Code)
+		assert.Contains(t, w.Header().Get("Content-Type"), "application/json")
+		assert.Contains(t, w.Body.String(), `"message":"hello"`)
+	})
+
+	// Test HTML negotiation
+	t.Run("negotiate HTML", func(t *testing.T) {
+		w := httptest.NewRecorder()
+		c, engine := CreateTestContext(w)
+		c.Request = httptest.NewRequest(http.MethodGet, "/test", nil)
+		c.Request.Header.Set("Accept", "text/html")
+
+		// Set up a simple HTML template
+		tmpl := template.Must(template.New("test").Parse(`<h1>{{.message}}</h1>`))
+		engine.SetHTMLTemplate(tmpl)
+
+		data := map[string]string{"message": "hello"}
+		c.Negotiate(http.StatusOK, Negotiate{
+			Offered:  []string{binding.MIMEJSON, binding.MIMEHTML},
+			JSONData: data,
+			HTMLName: "test",
+			HTMLData: data,
+		})
+
+		assert.Equal(t, http.StatusOK, w.Code)
+		assert.Contains(t, w.Header().Get("Content-Type"), "text/html")
+		assert.Contains(t, w.Body.String(), "<h1>hello</h1>")
+	})
+
+	// Test XML negotiation
+	t.Run("negotiate XML", func(t *testing.T) {
+		w := httptest.NewRecorder()
+		c, _ := CreateTestContext(w)
+		c.Request = httptest.NewRequest(http.MethodGet, "/test", nil)
+		c.Request.Header.Set("Accept", "application/xml")
+
+		type TestData struct {
+			Message string `xml:"message"`
+		}
+		data := TestData{Message: "hello"}
+
+		c.Negotiate(http.StatusOK, Negotiate{
+			Offered: []string{binding.MIMEJSON, binding.MIMEXML},
+			XMLData: data,
+		})
+
+		assert.Equal(t, http.StatusOK, w.Code)
+		assert.Contains(t, w.Header().Get("Content-Type"), "application/xml")
+		assert.Contains(t, w.Body.String(), "<message>hello</message>")
+	})
+
+	// Test YAML negotiation
+	t.Run("negotiate YAML", func(t *testing.T) {
+		w := httptest.NewRecorder()
+		c, _ := CreateTestContext(w)
+		c.Request = httptest.NewRequest(http.MethodGet, "/test", nil)
+		c.Request.Header.Set("Accept", "application/x-yaml")
+
+		data := map[string]string{"message": "hello"}
+		c.Negotiate(http.StatusOK, Negotiate{
+			Offered:  []string{binding.MIMEJSON, binding.MIMEYAML},
+			YAMLData: data,
+		})
+
+		assert.Equal(t, http.StatusOK, w.Code)
+		assert.Contains(t, w.Header().Get("Content-Type"), "application/yaml")
+		assert.Contains(t, w.Body.String(), "message: hello")
+	})
+
+	// Test TOML negotiation
+	t.Run("negotiate TOML", func(t *testing.T) {
+		w := httptest.NewRecorder()
+		c, _ := CreateTestContext(w)
+		c.Request = httptest.NewRequest(http.MethodGet, "/test", nil)
+		c.Request.Header.Set("Accept", "application/toml")
+
+		data := map[string]string{"message": "hello"}
+		c.Negotiate(http.StatusOK, Negotiate{
+			Offered:  []string{binding.MIMEJSON, binding.MIMETOML},
+			TOMLData: data,
+		})
+
+		assert.Equal(t, http.StatusOK, w.Code)
+		assert.Contains(t, w.Header().Get("Content-Type"), "application/toml")
+		assert.Contains(t, w.Body.String(), `message = 'hello'`)
+	})
+
+	// Test fallback to Data field
+	t.Run("fallback to Data field", func(t *testing.T) {
+		w := httptest.NewRecorder()
+		c, _ := CreateTestContext(w)
+		c.Request = httptest.NewRequest(http.MethodGet, "/test", nil)
+		c.Request.Header.Set("Accept", "application/json")
+
+		data := map[string]string{"message": "hello"}
+		c.Negotiate(http.StatusOK, Negotiate{
+			Offered: []string{binding.MIMEJSON},
+			Data:    data, // No JSONData, should fallback to Data
+		})
+
+		assert.Equal(t, http.StatusOK, w.Code)
+		assert.Contains(t, w.Header().Get("Content-Type"), "application/json")
+		assert.Contains(t, w.Body.String(), `"message":"hello"`)
+	})
+
+	// Test specific data takes precedence over Data field
+	t.Run("specific data takes precedence", func(t *testing.T) {
+		w := httptest.NewRecorder()
+		c, _ := CreateTestContext(w)
+		c.Request = httptest.NewRequest(http.MethodGet, "/test", nil)
+		c.Request.Header.Set("Accept", "application/json")
+
+		jsonData := map[string]string{"type": "json"}
+		fallbackData := map[string]string{"type": "fallback"}
+
+		c.Negotiate(http.StatusOK, Negotiate{
+			Offered:  []string{binding.MIMEJSON},
+			JSONData: jsonData,
+			Data:     fallbackData,
+		})
+
+		assert.Equal(t, http.StatusOK, w.Code)
+		assert.Contains(t, w.Body.String(), `"type":"json"`)
+		assert.NotContains(t, w.Body.String(), `"type":"fallback"`)
+	})
+
+	// Test multiple Accept headers with quality values
+	t.Run("multiple Accept headers with quality", func(t *testing.T) {
+		w := httptest.NewRecorder()
+		c, _ := CreateTestContext(w)
+		c.Request = httptest.NewRequest(http.MethodGet, "/test", nil)
+		c.Request.Header.Set("Accept", "application/xml;q=0.9, application/json;q=1.0")
+
+		data := map[string]string{"message": "hello"}
+		c.Negotiate(http.StatusOK, Negotiate{
+			Offered:  []string{binding.MIMEXML, binding.MIMEJSON},
+			JSONData: data,
+			XMLData:  data,
+		})
+
+		// Should choose XML as it appears first in the Offered slice
+		assert.Equal(t, http.StatusOK, w.Code)
+		assert.Contains(t, w.Header().Get("Content-Type"), "application/xml")
+	})
+
+	// Test wildcard Accept header
+	t.Run("wildcard Accept header", func(t *testing.T) {
+		w := httptest.NewRecorder()
+		c, _ := CreateTestContext(w)
+		c.Request = httptest.NewRequest(http.MethodGet, "/test", nil)
+		c.Request.Header.Set("Accept", "*/*")
+
+		data := map[string]string{"message": "hello"}
+		c.Negotiate(http.StatusOK, Negotiate{
+			Offered:  []string{binding.MIMEJSON, binding.MIMEXML},
+			JSONData: data,
+		})
+
+		// Should choose the first offered format
+		assert.Equal(t, http.StatusOK, w.Code)
+		assert.Contains(t, w.Header().Get("Content-Type"), "application/json")
+	})
+
+	// Test no Accept header (should default to first offered)
+	t.Run("no Accept header", func(t *testing.T) {
+		w := httptest.NewRecorder()
+		c, _ := CreateTestContext(w)
+		c.Request = httptest.NewRequest(http.MethodGet, "/test", nil)
+		// No Accept header set
+
+		data := map[string]string{"message": "hello"}
+		c.Negotiate(http.StatusOK, Negotiate{
+			Offered:  []string{binding.MIMEXML, binding.MIMEJSON},
+			XMLData:  data,
+			JSONData: data,
+		})
+
+		// Should choose the first offered format (XML)
+		assert.Equal(t, http.StatusOK, w.Code)
+		assert.Contains(t, w.Header().Get("Content-Type"), "application/xml")
+	})
+
+	// Test unsupported Accept header
+	t.Run("unsupported Accept header", func(t *testing.T) {
+		w := httptest.NewRecorder()
+		c, _ := CreateTestContext(w)
+		c.Request = httptest.NewRequest(http.MethodGet, "/test", nil)
+		c.Request.Header.Set("Accept", "application/pdf")
+
+		data := map[string]string{"message": "hello"}
+		c.Negotiate(http.StatusOK, Negotiate{
+			Offered:  []string{binding.MIMEJSON, binding.MIMEXML},
+			JSONData: data,
+		})
+
+		// Should return 406 Not Acceptable
+		assert.Equal(t, http.StatusNotAcceptable, w.Code)
+		assert.True(t, c.IsAborted())
+	})
+
+	// Test partial match in Accept header
+	t.Run("partial match in Accept header", func(t *testing.T) {
+		w := httptest.NewRecorder()
+		c, engine := CreateTestContext(w)
+		c.Request = httptest.NewRequest(http.MethodGet, "/test", nil)
+		c.Request.Header.Set("Accept", "text/*")
+
+		// Set up a simple HTML template
+		tmpl := template.Must(template.New("test").Parse(`<h1>{{.message}}</h1>`))
+		engine.SetHTMLTemplate(tmpl)
+
+		data := map[string]string{"message": "hello"}
+		c.Negotiate(http.StatusOK, Negotiate{
+			Offered:  []string{binding.MIMEJSON, binding.MIMEHTML},
+			JSONData: data,
+			HTMLName: "test",
+			HTMLData: data,
+		})
+
+		// Should match text/html
+		assert.Equal(t, http.StatusOK, w.Code)
+		assert.Contains(t, w.Header().Get("Content-Type"), "text/html")
+	})
+
+	// Test YAML2 MIME type
+	t.Run("negotiate YAML2 MIME type", func(t *testing.T) {
+		w := httptest.NewRecorder()
+		c, _ := CreateTestContext(w)
+		c.Request = httptest.NewRequest(http.MethodGet, "/test", nil)
+		c.Request.Header.Set("Accept", "application/yaml")
+
+		data := map[string]string{"message": "hello"}
+		c.Negotiate(http.StatusOK, Negotiate{
+			Offered:  []string{binding.MIMEJSON, binding.MIMEYAML2},
+			YAMLData: data,
+		})
+
+		assert.Equal(t, http.StatusOK, w.Code)
+		assert.Contains(t, w.Header().Get("Content-Type"), "application/yaml")
+		assert.Contains(t, w.Body.String(), "message: hello")
+	})
+
+	// Test complex Accept header with multiple types and quality values
+	t.Run("complex Accept header", func(t *testing.T) {
+		w := httptest.NewRecorder()
+		c, _ := CreateTestContext(w)
+		c.Request = httptest.NewRequest(http.MethodGet, "/test", nil)
+		c.Request.Header.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8")
+
+		data := map[string]string{"message": "hello"}
+		c.Negotiate(http.StatusOK, Negotiate{
+			Offered:  []string{binding.MIMEXML, binding.MIMEJSON},
+			XMLData:  data,
+			JSONData: data,
+		})
+
+		// Should choose XML as it's explicitly mentioned in Accept header
+		assert.Equal(t, http.StatusOK, w.Code)
+		assert.Contains(t, w.Header().Get("Content-Type"), "application/xml")
+	})
+}
+
 // TestContextFile tests the Context.File() method
 func TestContextFile(t *testing.T) {
 	// Test serving an existing file
