@@ -216,7 +216,7 @@ func (c *Context) AbortWithStatus(code int) {
 	c.Abort()
 }
 
-// AbortWithStatusJSON calls `Abort()` and then `PureJSON` internally.
+// AbortWithStatusPureJSON calls `Abort()` and then `PureJSON` internally.
 // This method stops the chain, writes the status code and return a JSON body without escaping.
 // It also sets the Content-Type as "application/json".
 func (c *Context) AbortWithStatusPureJSON(code int, jsonObj any) {
@@ -573,7 +573,7 @@ func (c *Context) QueryMap(key string) (dicts map[string]string) {
 // whether at least one value exists for the given key.
 func (c *Context) GetQueryMap(key string) (map[string]string, bool) {
 	c.initQueryCache()
-	return c.get(c.queryCache, key)
+	return getMapFromFormData(c.queryCache, key)
 }
 
 // PostForm returns the specified key from a POST urlencoded form or multipart form
@@ -646,22 +646,23 @@ func (c *Context) PostFormMap(key string) (dicts map[string]string) {
 // whether at least one value exists for the given key.
 func (c *Context) GetPostFormMap(key string) (map[string]string, bool) {
 	c.initFormCache()
-	return c.get(c.formCache, key)
+	return getMapFromFormData(c.formCache, key)
 }
 
-// get is an internal method and returns a map which satisfies conditions.
-func (c *Context) get(m map[string][]string, key string) (map[string]string, bool) {
-	dicts := make(map[string]string)
-	exist := false
+// getMapFromFormData return a map which satisfies conditions.
+// It parses from data with bracket notation like "key[subkey]=value" into a map.
+func getMapFromFormData(m map[string][]string, key string) (map[string]string, bool) {
+	d := make(map[string]string)
+	found := false
 	for k, v := range m {
 		if i := strings.IndexByte(k, '['); i >= 1 && k[0:i] == key {
 			if j := strings.IndexByte(k[i+1:], ']'); j >= 1 {
-				exist = true
-				dicts[k[i+1:][:j]] = v[0]
+				found = true
+				d[k[i+1:][:j]] = v[0]
 			}
 		}
 	}
-	return dicts, exist
+	return d, found
 }
 
 // FormFile returns the first file for the provided form key.

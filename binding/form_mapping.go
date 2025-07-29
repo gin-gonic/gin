@@ -175,7 +175,7 @@ func tryToSetValue(value reflect.Value, field reflect.StructField, setter setter
 
 // BindUnmarshaler is the interface used to wrap the UnmarshalParam method.
 type BindUnmarshaler interface {
-	// UnmarshalParam decodes and assigns a value from an form or query param.
+	// UnmarshalParam decodes and assigns a value from a form or query param.
 	UnmarshalParam(param string) error
 }
 
