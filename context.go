@@ -141,6 +141,15 @@ func (c *Context) Copy() *Context {
 	cp.Params = make([]Param, len(cParams))
 	copy(cp.Params, cParams)
 
+	cErrors := c.Errors
+	cp.Errors = make(errorMsgs, len(cErrors))
+	for i, e := range cErrors {
+		cp.Errors[i] = &Error{
+			Err:  e.Err,
+			Type: e.Type,
+			Meta: e.Meta,
+		}
+	}
 	return &cp
 }
 
