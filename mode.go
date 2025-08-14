@@ -45,7 +45,7 @@ var DefaultWriter io.Writer = os.Stdout
 var DefaultErrorWriter io.Writer = os.Stderr
 
 var (
-	ginMode  int32 = debugCode
+	ginMode  atomic.Int32
 	modeName atomic.Value
 )
 
@@ -66,11 +66,11 @@ func SetMode(value string) {
 
 	switch value {
 	case DebugMode:
-		atomic.StoreInt32(&ginMode, debugCode)
+		ginMode.Store(debugCode)
 	case ReleaseMode:
-		atomic.StoreInt32(&ginMode, releaseCode)
+		ginMode.Store(releaseCode)
 	case TestMode:
-		atomic.StoreInt32(&ginMode, testCode)
+		ginMode.Store(testCode)
 	default:
 		panic("gin mode unknown: " + value + " (available mode: debug release test)")
 	}
