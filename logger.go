@@ -242,7 +242,7 @@ func LoggerWithConfig(conf LoggerConfig) HandlerFunc {
 	return func(c *Context) {
 		// Start timer
 		start := time.Now()
-		path := c.Request.URL.Path
+		path := c.Request.URL.EscapedPath()
 		raw := c.Request.URL.RawQuery
 
 		// Process request
