@@ -273,6 +273,11 @@ func setByForm(value reflect.Value, field reflect.StructField, form map[string][
 		}
 
 		return true, setArray(vs, value, field)
+	case reflect.Struct:
+		if _, ok := value.Interface().(multipart.FileHeader); ok && value.IsZero() {
+			return false, nil
+		}
+		fallthrough
 	default:
 		var val string
 		if !ok {
