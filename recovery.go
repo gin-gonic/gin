@@ -68,6 +68,12 @@ func CustomRecoveryWithWriter(out io.Writer, handle RecoveryFunc) HandlerFunc {
 						}
 					}
 				}
+				if e, ok := err.(error); ok {
+					// ErrAbortHandler should be treated as broken pipe too.
+					if errors.Is(e, http.ErrAbortHandler) {
+						brokenPipe = true
+					}
+				}
 				if logger != nil {
 					const stackSkip = 3
 					if brokenPipe {
