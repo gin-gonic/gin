@@ -142,6 +142,28 @@ func TestPanicWithBrokenPipe(t *testing.T) {
 	}
 }
 
+// TestPanicWithAbortHandler asserts that recovery handles http.ErrAbortHandler as broken pipe
+func TestPanicWithAbortHandler(t *testing.T) {
+	const expectCode = 204
+
+	var buf strings.Builder
+	router := New()
+	router.Use(RecoveryWithWriter(&buf))
+	router.GET("/recovery", func(c *Context) {
+		// Start writing response
+		c.Header("X-Test", "Value")
+		c.Status(expectCode)
+
+		// Panic with ErrAbortHandler which should be treated as broken pipe
+		panic(http.ErrAbortHandler)
+	})
+	// RUN
+	w := PerformRequest(router, http.MethodGet, "/recovery")
+	// TEST
+	assert.Equal(t, expectCode, w.Code)
+	assert.Contains(t, buf.String(), "net/http: abort Handler")
+}
+
 func TestCustomRecoveryWithWriter(t *testing.T) {
 	errBuffer := new(strings.Builder)
 	buffer := new(strings.Builder)
