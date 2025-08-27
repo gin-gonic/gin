@@ -654,14 +654,23 @@ func (c *Context) GetPostFormMap(key string) (map[string]string, bool) {
 func getMapFromFormData(m map[string][]string, key string) (map[string]string, bool) {
 	d := make(map[string]string)
 	found := false
+	keyLen := len(key)
+
 	for k, v := range m {
-		if i := strings.IndexByte(k, '['); i >= 1 && k[0:i] == key {
-			if j := strings.IndexByte(k[i+1:], ']'); j >= 1 {
-				found = true
-				d[k[i+1:][:j]] = v[0]
-			}
+		if len(k) < keyLen+3 { // key + "[" + at least one char + "]"
+			continue
+		}
+
+		if k[:keyLen] != key || k[keyLen] != '[' {
+			continue
+		}
+
+		if j := strings.IndexByte(k[keyLen+1:], ']'); j > 0 {
+			found = true
+			d[k[keyLen+1:keyLen+1+j]] = v[0]
 		}
 	}
+
 	return d, found
 }
 
