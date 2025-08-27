@@ -3554,3 +3554,88 @@ func TestGetMapFromFormData(t *testing.T) {
 		})
 	}
 }
+
+func BenchmarkGetMapFromFormData(b *testing.B) {
+	// Test case 1: Small dataset with bracket notation
+	smallData := map[string][]string{
+		"ids[a]":   {"hi"},
+		"ids[b]":   {"3.14"},
+		"names[a]": {"mike"},
+		"names[b]": {"maria"},
+	}
+
+	// Test case 2: Medium dataset with mixed data
+	mediumData := map[string][]string{
+		"ids[a]":      {"hi"},
+		"ids[b]":      {"3.14"},
+		"ids[c]":      {"test"},
+		"ids[d]":      {"value"},
+		"names[a]":    {"mike"},
+		"names[b]":    {"maria"},
+		"names[c]":    {"john"},
+		"names[d]":    {"jane"},
+		"other[key1]": {"value1"},
+		"other[key2]": {"value2"},
+		"simple":      {"data"},
+		"another":     {"info"},
+	}
+
+	// Test case 3: Large dataset with many bracket keys
+	largeData := make(map[string][]string)
+	for i := 0; i < 100; i++ {
+		key := fmt.Sprintf("ids[%d]", i)
+		largeData[key] = []string{fmt.Sprintf("value%d", i)}
+	}
+	for i := 0; i < 50; i++ {
+		key := fmt.Sprintf("names[%d]", i)
+		largeData[key] = []string{fmt.Sprintf("name%d", i)}
+	}
+	for i := 0; i < 25; i++ {
+		key := fmt.Sprintf("other[key%d]", i)
+		largeData[key] = []string{fmt.Sprintf("other%d", i)}
+	}
+
+	// Test case 4: Dataset with many non-matching keys (worst case)
+	worstCaseData := make(map[string][]string)
+	for i := 0; i < 100; i++ {
+		key := fmt.Sprintf("nonmatching%d", i)
+		worstCaseData[key] = []string{fmt.Sprintf("value%d", i)}
+	}
+	worstCaseData["ids[a]"] = []string{"hi"}
+	worstCaseData["ids[b]"] = []string{"3.14"}
+
+	// Test case 5: Dataset with short keys (best case for early exit)
+	shortKeysData := map[string][]string{
+		"a":      {"value1"},
+		"b":      {"value2"},
+		"ids[a]": {"hi"},
+		"ids[b]": {"3.14"},
+	}
+
+	benchmarks := []struct {
+		name string
+		data map[string][]string
+		key  string
+	}{
+		{"Small_Bracket", smallData, "ids"},
+		{"Small_Names", smallData, "names"},
+		{"Medium_Bracket", mediumData, "ids"},
+		{"Medium_Names", mediumData, "names"},
+		{"Medium_Other", mediumData, "other"},
+		{"Large_Bracket", largeData, "ids"},
+		{"Large_Names", largeData, "names"},
+		{"Large_Other", largeData, "other"},
+		{"WorstCase_Bracket", worstCaseData, "ids"},
+		{"ShortKeys_Bracket", shortKeysData, "ids"},
+		{"Empty_Key", smallData, "notfound"},
+	}
+
+	for _, bm := range benchmarks {
+		b.Run(bm.name, func(b *testing.B) {
+			b.ReportAllocs()
+			for i := 0; i < b.N; i++ {
+				_, _ = getMapFromFormData(bm.data, bm.key)
+			}
+		})
+	}
+}
