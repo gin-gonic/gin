@@ -5,6 +5,8 @@
 package gin
 
 import (
+	"bufio"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -122,6 +124,74 @@ func TestResponseWriterHijack(t *testing.T) {
 	})
 
 	w.Flush()
+}
+
+type mockHijacker struct {
+	*httptest.ResponseRecorder
+	hijacked bool
+}
+
+// Hijack implements the http.Hijacker interface. It just records that it was called.
+func (m *mockHijacker) Hijack() (net.Conn, *bufio.ReadWriter, error) {
+	m.hijacked = true
+	return nil, nil, nil
+}
+
+func TestResponseWriterHijackAfterWrite(t *testing.T) {
+	tests := []struct {
+		name                      string
+		action                    func(w ResponseWriter) error // Action to perform before hijacking
+		expectWrittenBeforeHijack bool
+		expectHijackSuccess       bool
+		expectWrittenAfterHijack  bool
+		expectError               error
+	}{
+		{
+			name:                      "hijack before write should succeed",
+			action:                    func(w ResponseWriter) error { return nil },
+			expectWrittenBeforeHijack: false,
+			expectHijackSuccess:       true,
+			expectWrittenAfterHijack:  true, // Hijack itself marks the writer as written
+			expectError:               nil,
+		},
+		{
+			name: "hijack after write should fail",
+			action: func(w ResponseWriter) error {
+				_, err := w.Write([]byte("test"))
+				return err
+			},
+			expectWrittenBeforeHijack: true,
+			expectHijackSuccess:       false,
+			expectWrittenAfterHijack:  true,
+			expectError:               errHijackAlreadyWritten,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			hijacker := &mockHijacker{ResponseRecorder: httptest.NewRecorder()}
+			writer := &responseWriter{}
+			writer.reset(hijacker)
+			w := ResponseWriter(writer)
+
+			// Check initial state
+			assert.False(t, w.Written(), "should not be written initially")
+
+			// Perform pre-hijack action
+			require.NoError(t, tc.action(w), "unexpected error during pre-hijack action")
+
+			// Check state before hijacking
+			assert.Equal(t, tc.expectWrittenBeforeHijack, w.Written(), "unexpected w.Written() state before hijack")
+
+			// Attempt to hijack
+			_, _, hijackErr := w.Hijack()
+
+			// Check results
+			require.ErrorIs(t, hijackErr, tc.expectError, "unexpected error from Hijack()")
+			assert.Equal(t, tc.expectHijackSuccess, hijacker.hijacked, "unexpected hijacker.hijacked state")
+			assert.Equal(t, tc.expectWrittenAfterHijack, w.Written(), "unexpected w.Written() state after hijack")
+		})
+	}
 }
 
 func TestResponseWriterFlush(t *testing.T) {

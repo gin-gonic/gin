@@ -65,7 +65,7 @@ func SetMode(value string) {
 	}
 
 	switch value {
-	case DebugMode, "":
+	case DebugMode:
 		atomic.StoreInt32(&ginMode, debugCode)
 	case ReleaseMode:
 		atomic.StoreInt32(&ginMode, releaseCode)

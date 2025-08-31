@@ -28,7 +28,7 @@ import (
 
 	"github.com/gin-contrib/sse"
 	"github.com/gin-gonic/gin/binding"
-	"github.com/gin-gonic/gin/internal/json"
+	"github.com/gin-gonic/gin/codec/json"
 	testdata "github.com/gin-gonic/gin/testdata/protoexample"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -73,6 +73,79 @@ func must(err error) {
 	if err != nil {
 		panic(err.Error())
 	}
+}
+
+// TestContextFile tests the Context.File() method
+func TestContextFile(t *testing.T) {
+	// Test serving an existing file
+	t.Run("serve existing file", func(t *testing.T) {
+		// Create a temporary test file
+		testFile := "testdata/test_file.txt"
+
+		w := httptest.NewRecorder()
+		c, _ := CreateTestContext(w)
+		c.Request = httptest.NewRequest(http.MethodGet, "/test", nil)
+
+		c.File(testFile)
+
+		assert.Equal(t, http.StatusOK, w.Code)
+		assert.Contains(t, w.Body.String(), "This is a test file")
+		assert.Equal(t, "text/plain; charset=utf-8", w.Header().Get("Content-Type"))
+	})
+
+	// Test serving a non-existent file
+	t.Run("serve non-existent file", func(t *testing.T) {
+		w := httptest.NewRecorder()
+		c, _ := CreateTestContext(w)
+		c.Request = httptest.NewRequest(http.MethodGet, "/test", nil)
+
+		c.File("non_existent_file.txt")
+
+		assert.Equal(t, http.StatusNotFound, w.Code)
+	})
+
+	// Test serving a directory (should return 200 with directory listing or 403 Forbidden)
+	t.Run("serve directory", func(t *testing.T) {
+		w := httptest.NewRecorder()
+		c, _ := CreateTestContext(w)
+		c.Request = httptest.NewRequest(http.MethodGet, "/test", nil)
+
+		c.File(".")
+
+		// Directory serving can return either 200 (with listing) or 403 (forbidden)
+		assert.True(t, w.Code == http.StatusOK || w.Code == http.StatusForbidden)
+	})
+
+	// Test with HEAD request
+	t.Run("HEAD request", func(t *testing.T) {
+		testFile := "testdata/test_file.txt"
+
+		w := httptest.NewRecorder()
+		c, _ := CreateTestContext(w)
+		c.Request = httptest.NewRequest(http.MethodHead, "/test", nil)
+
+		c.File(testFile)
+
+		assert.Equal(t, http.StatusOK, w.Code)
+		assert.Empty(t, w.Body.String()) // HEAD request should not return body
+		assert.Equal(t, "text/plain; charset=utf-8", w.Header().Get("Content-Type"))
+	})
+
+	// Test with Range request
+	t.Run("Range request", func(t *testing.T) {
+		testFile := "testdata/test_file.txt"
+
+		w := httptest.NewRecorder()
+		c, _ := CreateTestContext(w)
+		c.Request = httptest.NewRequest(http.MethodGet, "/test", nil)
+		c.Request.Header.Set("Range", "bytes=0-10")
+
+		c.File(testFile)
+
+		assert.Equal(t, http.StatusPartialContent, w.Code)
+		assert.Equal(t, "bytes", w.Header().Get("Accept-Ranges"))
+		assert.Contains(t, w.Header().Get("Content-Range"), "bytes 0-10")
+	})
 }
 
 func TestContextFormFile(t *testing.T) {
@@ -1664,6 +1737,32 @@ func TestContextAbortWithStatusJSON(t *testing.T) {
 	in.Foo = "fooValue"
 
 	c.AbortWithStatusJSON(http.StatusUnsupportedMediaType, in)
+
+	assert.Equal(t, abortIndex, c.index)
+	assert.Equal(t, http.StatusUnsupportedMediaType, c.Writer.Status())
+	assert.Equal(t, http.StatusUnsupportedMediaType, w.Code)
+	assert.True(t, c.IsAborted())
+
+	contentType := w.Header().Get("Content-Type")
+	assert.Equal(t, "application/json; charset=utf-8", contentType)
+
+	buf := new(bytes.Buffer)
+	_, err := buf.ReadFrom(w.Body)
+	require.NoError(t, err)
+	jsonStringBody := buf.String()
+	assert.JSONEq(t, "{\"foo\":\"fooValue\",\"bar\":\"barValue\"}", jsonStringBody)
+}
+
+func TestContextAbortWithStatusPureJSON(t *testing.T) {
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
+	c.index = 4
+
+	in := new(testJSONAbortMsg)
+	in.Bar = "barValue"
+	in.Foo = "fooValue"
+
+	c.AbortWithStatusPureJSON(http.StatusUnsupportedMediaType, in)
 
 	assert.Equal(t, abortIndex, c.index)
 	assert.Equal(t, http.StatusUnsupportedMediaType, c.Writer.Status())
@@ -3323,4 +3422,135 @@ func TestContextSetCookieData(t *testing.T) {
 		setCookie := c.Writer.Header().Get("Set-Cookie")
 		assert.Contains(t, setCookie, "SameSite=None")
 	})
+}
+
+func TestGetMapFromFormData(t *testing.T) {
+	testCases := []struct {
+		name     string
+		data     map[string][]string
+		key      string
+		expected map[string]string
+		found    bool
+	}{
+		{
+			name: "Basic bracket notation",
+			data: map[string][]string{
+				"ids[a]": {"hi"},
+				"ids[b]": {"3.14"},
+			},
+			key: "ids",
+			expected: map[string]string{
+				"a": "hi",
+				"b": "3.14",
+			},
+			found: true,
+		},
+		{
+			name: "Mixed data with bracket notation",
+			data: map[string][]string{
+				"ids[a]":     {"hi"},
+				"ids[b]":     {"3.14"},
+				"names[a]":   {"mike"},
+				"names[b]":   {"maria"},
+				"other[key]": {"value"},
+				"simple":     {"data"},
+			},
+			key: "ids",
+			expected: map[string]string{
+				"a": "hi",
+				"b": "3.14",
+			},
+			found: true,
+		},
+		{
+			name: "Names key",
+			data: map[string][]string{
+				"ids[a]":     {"hi"},
+				"ids[b]":     {"3.14"},
+				"names[a]":   {"mike"},
+				"names[b]":   {"maria"},
+				"other[key]": {"value"},
+			},
+			key: "names",
+			expected: map[string]string{
+				"a": "mike",
+				"b": "maria",
+			},
+			found: true,
+		},
+		{
+			name: "Key not found",
+			data: map[string][]string{
+				"ids[a]":   {"hi"},
+				"names[b]": {"maria"},
+			},
+			key:      "notfound",
+			expected: map[string]string{},
+			found:    false,
+		},
+		{
+			name:     "Empty data",
+			data:     map[string][]string{},
+			key:      "ids",
+			expected: map[string]string{},
+			found:    false,
+		},
+		{
+			name: "Malformed bracket notation",
+			data: map[string][]string{
+				"ids[a": {"hi"},    // Missing closing bracket
+				"ids]b": {"3.14"},  // Missing opening bracket
+				"idsab": {"value"}, // No brackets
+			},
+			key:      "ids",
+			expected: map[string]string{},
+			found:    false,
+		},
+		{
+			name: "Nested bracket notation",
+			data: map[string][]string{
+				"ids[a][b]": {"nested"},
+				"ids[c]":    {"simple"},
+			},
+			key: "ids",
+			expected: map[string]string{
+				"a": "nested",
+				"c": "simple",
+			},
+			found: true,
+		},
+		{
+			name: "Simple key without brackets",
+			data: map[string][]string{
+				"simple": {"data"},
+				"ids[a]": {"hi"},
+			},
+			key:      "simple",
+			expected: map[string]string{},
+			found:    false,
+		},
+		{
+			name: "Mixed simple and bracket keys",
+			data: map[string][]string{
+				"simple": {"data"},
+				"ids[a]": {"hi"},
+				"ids[b]": {"3.14"},
+				"other":  {"value"},
+			},
+			key: "ids",
+			expected: map[string]string{
+				"a": "hi",
+				"b": "3.14",
+			},
+			found: true,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			result, found := getMapFromFormData(tc.data, tc.key)
+			assert.Equal(t, tc.expected, result, "result mismatch")
+			assert.Equal(t, tc.found, found, "found mismatch")
+		})
+	}
 }
