@@ -10,6 +10,7 @@ import (
 	"io"
 	"io/fs"
 	"log"
+	"log/slog"
 	"math"
 	"mime/multipart"
 	"net"
@@ -47,6 +48,20 @@ const BodyBytesKey = "_gin-gonic/gin/bodybyteskey"
 const ContextKey = "_gin-gonic/gin/contextkey"
 
 type ContextKeyType int
+
+type CookieOption func(*http.Cookie)
+
+func WithPartitionedCookie(partitioned bool) CookieOption {
+	return func(cookie *http.Cookie) {
+		cookie.Partitioned = partitioned
+	}
+}
+
+func WithSameSiteCookie(sameSite http.SameSite) CookieOption {
+	return func(cookie *http.Cookie) {
+		cookie.SameSite = sameSite
+	}
+}
 
 const ContextRequestKey ContextKeyType = 0
 
@@ -88,9 +103,9 @@ type Context struct {
 	// or PUT body parameters.
 	formCache url.Values
 
-	// SameSite allows a server to define a cookie attribute making it impossible for
-	// the browser to send this cookie along with cross-site requests.
-	sameSite http.SameSite
+	// cookieOptions set up additional cookie parameters to be used with http.Cookie
+	// this is needed to prevent breaking existing implementations
+	cookieOptions []CookieOption
 }
 
 /************************************/
@@ -109,7 +124,7 @@ func (c *Context) reset() {
 	c.Accepted = nil
 	c.queryCache = nil
 	c.formCache = nil
-	c.sameSite = 0
+	c.cookieOptions = make([]CookieOption, 0)
 	*c.params = (*c.params)[:0]
 	*c.skippedNodes = (*c.skippedNodes)[:0]
 }
@@ -1035,26 +1050,38 @@ func (c *Context) GetRawData() ([]byte, error) {
 
 // SetSameSite with cookie
 func (c *Context) SetSameSite(samesite http.SameSite) {
-	c.sameSite = samesite
+	c.cookieOptions = append(c.cookieOptions, WithSameSiteCookie(samesite))
 }
 
 // SetCookie adds a Set-Cookie header to the ResponseWriter's headers.
 // The provided cookie must have a valid Name. Invalid cookies may be
 // silently dropped.
-func (c *Context) SetCookie(name, value string, maxAge int, path, domain string, secure, httpOnly bool) {
+func (c *Context) SetCookie(name, value string, maxAge int, path, domain string, secure, httpOnly bool, options ...CookieOption) {
 	if path == "" {
 		path = "/"
 	}
-	http.SetCookie(c.Writer, &http.Cookie{
+
+	cookie := &http.Cookie{
 		Name:     name,
 		Value:    url.QueryEscape(value),
 		MaxAge:   maxAge,
 		Path:     path,
 		Domain:   domain,
-		SameSite: c.sameSite,
 		Secure:   secure,
 		HttpOnly: httpOnly,
-	})
+	}
+
+	for _, option := range c.cookieOptions {
+		option(cookie)
+	}
+	for _, option := range options {
+		option(cookie)
+	}
+	if err := cookie.Valid(); err != nil {
+		slog.Error(fmt.Sprintf("invalid cookie: %v", err))
+	}
+
+	http.SetCookie(c.Writer, cookie)
 }
 
 // SetCookieData adds a Set-Cookie header to the ResponseWriter's headers.
