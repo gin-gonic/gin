@@ -11,8 +11,8 @@ import (
 	"net/http"
 	"unicode"
 
+	"github.com/gin-gonic/gin/codec/json"
 	"github.com/gin-gonic/gin/internal/bytesconv"
-	"github.com/gin-gonic/gin/internal/json"
 )
 
 // JSON contains the given interface object.
@@ -66,7 +66,7 @@ func (r JSON) WriteContentType(w http.ResponseWriter) {
 // WriteJSON marshals the given interface object and writes it with custom ContentType.
 func WriteJSON(w http.ResponseWriter, obj any) error {
 	writeContentType(w, jsonContentType)
-	jsonBytes, err := json.Marshal(obj)
+	jsonBytes, err := json.API.Marshal(obj)
 	if err != nil {
 		return err
 	}
@@ -77,7 +77,7 @@ func WriteJSON(w http.ResponseWriter, obj any) error {
 // Render (IndentedJSON) marshals the given interface object and writes it with custom ContentType.
 func (r IndentedJSON) Render(w http.ResponseWriter) error {
 	r.WriteContentType(w)
-	jsonBytes, err := json.MarshalIndent(r.Data, "", "    ")
+	jsonBytes, err := json.API.MarshalIndent(r.Data, "", "    ")
 	if err != nil {
 		return err
 	}
@@ -93,7 +93,7 @@ func (r IndentedJSON) WriteContentType(w http.ResponseWriter) {
 // Render (SecureJSON) marshals the given interface object and writes it with custom ContentType.
 func (r SecureJSON) Render(w http.ResponseWriter) error {
 	r.WriteContentType(w)
-	jsonBytes, err := json.Marshal(r.Data)
+	jsonBytes, err := json.API.Marshal(r.Data)
 	if err != nil {
 		return err
 	}
@@ -116,7 +116,7 @@ func (r SecureJSON) WriteContentType(w http.ResponseWriter) {
 // Render (JsonpJSON) marshals the given interface object and writes it and its callback with custom ContentType.
 func (r JsonpJSON) Render(w http.ResponseWriter) (err error) {
 	r.WriteContentType(w)
-	ret, err := json.Marshal(r.Data)
+	ret, err := json.API.Marshal(r.Data)
 	if err != nil {
 		return err
 	}
@@ -154,7 +154,7 @@ func (r JsonpJSON) WriteContentType(w http.ResponseWriter) {
 // Render (AsciiJSON) marshals the given interface object and writes it with custom ContentType.
 func (r AsciiJSON) Render(w http.ResponseWriter) error {
 	r.WriteContentType(w)
-	ret, err := json.Marshal(r.Data)
+	ret, err := json.API.Marshal(r.Data)
 	if err != nil {
 		return err
 	}
@@ -183,7 +183,7 @@ func (r AsciiJSON) WriteContentType(w http.ResponseWriter) {
 // Render (PureJSON) writes custom ContentType and encodes the given interface object.
 func (r PureJSON) Render(w http.ResponseWriter) error {
 	r.WriteContentType(w)
-	encoder := json.NewEncoder(w)
+	encoder := json.API.NewEncoder(w)
 	encoder.SetEscapeHTML(false)
 	return encoder.Encode(r.Data)
 }

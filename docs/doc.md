@@ -63,6 +63,7 @@
   - [http2 server push](#http2-server-push)
   - [Define format for the log of routes](#define-format-for-the-log-of-routes)
   - [Set and get a cookie](#set-and-get-a-cookie)
+  - [Custom json codec at runtime](#custom-json-codec-at-runtime)
 - [Don't trust all proxies](#dont-trust-all-proxies)
 - [Testing](#testing)
 
@@ -872,7 +873,7 @@ curl -X GET "localhost:8085/testing?name=appleboy&address=xyz&birthday=1992-03-1
 
 If the server should bind a default value to a field when the client does not provide one, specify the default value using the `default` key within the `form` tag:
 
-```
+```go
 package main
 
 import (
@@ -2368,6 +2369,65 @@ func main() {
   })
 
   router.Run()
+}
+```
+
+### Custom json codec at runtime
+
+Gin support custom json serialization and deserialization logic without using compile tags.
+
+1. Define a custom struct implements the `json.Core` interface.
+
+2. Before your engine starts, assign values to `json.API` using the custom struct.
+
+```go
+package main
+
+import (
+  "io"
+
+  "github.com/gin-gonic/gin"
+  "github.com/gin-gonic/gin/codec/json"
+  jsoniter "github.com/json-iterator/go"
+)
+
+var customConfig = jsoniter.Config{
+  EscapeHTML:             true,
+  SortMapKeys:            true,
+  ValidateJsonRawMessage: true,
+}.Froze()
+
+// implement api.JsonApi
+type customJsonApi struct {
+}
+
+func (j customJsonApi) Marshal(v any) ([]byte, error) {
+  return customConfig.Marshal(v)
+}
+
+func (j customJsonApi) Unmarshal(data []byte, v any) error {
+  return customConfig.Unmarshal(data, v)
+}
+
+func (j customJsonApi) MarshalIndent(v any, prefix, indent string) ([]byte, error) {
+  return customConfig.MarshalIndent(v, prefix, indent)
+}
+
+func (j customJsonApi) NewEncoder(writer io.Writer) json.Encoder {
+  return customConfig.NewEncoder(writer)
+}
+
+func (j customJsonApi) NewDecoder(reader io.Reader) json.Decoder {
+  return customConfig.NewDecoder(reader)
+}
+
+func main() {
+  //Replace the default json api
+  json.API = customJsonApi{}
+
+  //Start your gin engine
+  router := gin.Default()
+  router.Run(":8080")
 }
 ```
 

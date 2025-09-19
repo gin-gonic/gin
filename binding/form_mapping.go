@@ -13,8 +13,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/gin-gonic/gin/codec/json"
 	"github.com/gin-gonic/gin/internal/bytesconv"
-	"github.com/gin-gonic/gin/internal/json"
 )
 
 var (
@@ -175,7 +175,7 @@ func tryToSetValue(value reflect.Value, field reflect.StructField, setter setter
 
 // BindUnmarshaler is the interface used to wrap the UnmarshalParam method.
 type BindUnmarshaler interface {
-	// UnmarshalParam decodes and assigns a value from an form or query param.
+	// UnmarshalParam decodes and assigns a value from a form or query param.
 	UnmarshalParam(param string) error
 }
 
@@ -333,9 +333,9 @@ func setWithProperType(val string, value reflect.Value, field reflect.StructFiel
 		case multipart.FileHeader:
 			return nil
 		}
-		return json.Unmarshal(bytesconv.StringToBytes(val), value.Addr().Interface())
+		return json.API.Unmarshal(bytesconv.StringToBytes(val), value.Addr().Interface())
 	case reflect.Map:
-		return json.Unmarshal(bytesconv.StringToBytes(val), value.Addr().Interface())
+		return json.API.Unmarshal(bytesconv.StringToBytes(val), value.Addr().Interface())
 	case reflect.Ptr:
 		if !value.Elem().IsValid() {
 			value.Set(reflect.New(value.Type().Elem()))

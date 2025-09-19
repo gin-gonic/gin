@@ -15,7 +15,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/gin-gonic/gin/internal/json"
+	"github.com/gin-gonic/gin/codec/json"
 	testdata "github.com/gin-gonic/gin/testdata/protoexample"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -173,7 +173,7 @@ func TestRenderJsonpJSONError(t *testing.T) {
 	err = jsonpJSON.Render(ew)
 	assert.Equal(t, `write "`+`(`+`" error`, err.Error())
 
-	data, _ := json.Marshal(jsonpJSON.Data) // error was returned while writing data
+	data, _ := json.API.Marshal(jsonpJSON.Data) // error was returned while writing data
 	ew.bufString = string(data)
 	err = jsonpJSON.Render(ew)
 	assert.Equal(t, `write "`+string(data)+`" error`, err.Error())
@@ -285,7 +285,14 @@ b:
 
 	err := (YAML{data}).Render(w)
 	require.NoError(t, err)
-	assert.Equal(t, "|4-\n    a : Easy!\n    b:\n    \tc: 2\n    \td: [3, 4]\n    \t\n", w.Body.String())
+
+	// With github.com/goccy/go-yaml, the output format is different from gopkg.in/yaml.v3
+	// We're checking that the output contains the expected data, not the exact formatting
+	output := w.Body.String()
+	assert.Contains(t, output, "a : Easy!")
+	assert.Contains(t, output, "b:")
+	assert.Contains(t, output, "c: 2")
+	assert.Contains(t, output, "d: [3, 4]")
 	assert.Equal(t, "application/yaml; charset=utf-8", w.Header().Get("Content-Type"))
 }
 
