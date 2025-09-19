@@ -383,7 +383,7 @@ func (n *node) insertChild(path string, fullPath string, handlers HandlersChain)
 		}
 
 		n.addChild(child)
-		n.indices = string('/')
+		n.indices = "/"
 		n = child
 		n.priority++
 
