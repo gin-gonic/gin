@@ -1,5 +1,27 @@
 # Gin ChangeLog
 
+## Gin v1.10.1
+
+### Features
+
+* refactor: strengthen HTTPS security and improve code organization
+* feat(binding): Support custom BindUnmarshaler for binding. (#3933)
+
+### Enhancements
+
+* chore(deps): bump github.com/bytedance/sonic from 1.11.3 to 1.11.6 (#3940)
+* chore(deps): bump golangci/golangci-lint-action from 4 to 5 (#3941)
+* chore: update external dependencies to latest versions (#3950)
+* chore: update various Go dependencies to latest versions (#3901)
+* chore: refactor configuration files for better readability (#3951)
+* chore: update changelog categories and improve documentation (#3917)
+* feat: update version constant to v1.10.0 (#3952)
+
+### Build process updates
+
+* ci(release): refactor changelog regex patterns and exclusions (#3914)
+* ci(Makefile): vet command add .PHONY (#3915)
+
 ## Gin v1.10.0
 
 ### Features
@@ -26,7 +48,7 @@
 * fix(uri): query binding bug (#3236) (@illiafox)
 * fix: Add pointer support for url query params (#3659) (#3666) (@omkar-foss)
 * fix: protect Context.Keys map when call Copy method (#3873) (@kingcanfish)
- 
+
 ### Enhancements
 
 * chore(CI): update release args (#3595) (@qloog)
