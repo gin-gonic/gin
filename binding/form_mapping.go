@@ -7,6 +7,7 @@ package binding
 import (
 	"errors"
 	"fmt"
+	"maps"
 	"mime/multipart"
 	"reflect"
 	"strconv"
@@ -489,9 +490,7 @@ func setFormMap(ptr any, form map[string][]string) error {
 		if !ok {
 			return ErrConvertMapStringSlice
 		}
-		for k, v := range form {
-			ptrMap[k] = v
-		}
+		maps.Copy(ptrMap, form)
 
 		return nil
 	}
