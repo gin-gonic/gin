@@ -12,17 +12,9 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-var (
-	once           sync.Once
-	internalEngine *gin.Engine
-)
-
-func engine() *gin.Engine {
-	once.Do(func() {
-		internalEngine = gin.Default()
-	})
-	return internalEngine
-}
+var engine = sync.OnceValue(func() *gin.Engine {
+	return gin.Default()
+})
 
 // LoadHTMLGlob is a wrapper for Engine.LoadHTMLGlob.
 func LoadHTMLGlob(pattern string) {
