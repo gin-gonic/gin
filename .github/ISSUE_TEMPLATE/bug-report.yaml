@@ -1,0 +1,60 @@
+name: Bug Report
+description: Found something you weren't expecting? Report it here!
+labels: ["type/bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        NOTE: If your issue is a security concern, please send an email to appleboy.tw@gmail.com instead of opening a public issue.
+  - type: markdown
+    attributes:
+      value: |
+        1. Please speak English, this is the language all maintainers can speak and write.
+        2. Please ask questions problems on our Discussions Forum (https://github.com/gin-gonic/gin/discussions).
+        3. Make sure you are using the latest release and
+           take a moment to check that your issue hasn't been reported before.
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: |
+        Please provide a description of your issue here, with a URL if you were able to reproduce the issue (see below)
+  - type: input
+    id: gin-ver
+    attributes:
+      label: Gin Version
+      description: Gin version (or commit reference) of your instance
+    validations:
+      required: true
+  - type: dropdown
+    id: can-reproduce
+    attributes:
+      label: Can you reproduce the bug?
+      description: |
+        If so, please write the steps to reproduce the bug.
+      options:
+        - "Yes"
+        - "No"
+    validations:
+      required: true
+  - type: markdown
+    attributes:
+      value: |
+        It's really important to provide pertinent logs
+        Please read https://docs.gitea.com/administration/logging-config#collecting-logs-for-help
+        In addition, if your problem relates to git commands set `RUN_MODE=dev` at the top of app.ini
+  - type: textarea
+    id: source-code
+    attributes:
+      label: Source Code
+      description: If this issue involves source code, please provide a minimal reproducible example
+  - type: input
+    id: go-ver
+    attributes:
+      label: Go Version
+      description: The version of Go running on the server
+  - type: input
+    id: os-ver
+    attributes:
+      label: Operating System
+      description: The operating system you are using to run Gin
