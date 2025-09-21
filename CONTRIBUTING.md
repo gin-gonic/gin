@@ -35,7 +35,7 @@ Please ensure your pull request meets the following requirements:
 - Your pull request should have no more than two commits — squash them if necessary.
 - All tests pass in available continuous integration systems (e.g., GitHub Actions).
 - Add or modify tests to cover your code changes.
-- If your pull request introduces a new feature, document it in [`docs/doc.md`](docs/doc.md:1), not in the README.
+- If your pull request introduces a new feature, document it in [`docs/doc.md`](docs/doc.md), not in the README.
 - Follow the checklist in the [Pull Request Template](.github/PULL_REQUEST_TEMPLATE.md:1).
 
 Thank you for contributing!
