@@ -35,6 +35,23 @@ func mapForm(ptr any, form map[string][]string) error {
 	return mapFormByTag(ptr, form, "form")
 }
 
+func mapQuery(ptr any, form map[string][]string) error {
+	// Try binding with "query" tags first (logical behavior)
+	err := mapFormByTag(ptr, form, "query")
+	if err != nil {
+		return err
+	}
+	
+	// For backward compatibility, also try "form" tags
+	// This allows mixed usage and maintains compatibility
+	err = mapFormByTag(ptr, form, "form")
+	if err != nil {
+		return err
+	}
+	
+	return nil
+}
+
 func MapFormWithTag(ptr any, form map[string][]string, tag string) error {
 	return mapFormByTag(ptr, form, tag)
 }
