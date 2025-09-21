@@ -10,6 +10,12 @@
 [![Open Source Helpers](https://www.codetriage.com/gin-gonic/gin/badges/users.svg)](https://www.codetriage.com/gin-gonic/gin)
 [![Release](https://img.shields.io/github/release/gin-gonic/gin.svg?style=flat-square)](https://github.com/gin-gonic/gin/releases)
 
+## 📰 [Announcing Gin 1.11.0!](https://gin-gonic.com/en/blog/news/gin-1-11-0-release-announcement/)
+
+Read about the latest features and improvements in Gin 1.11.0 on our official blog.
+
+---
+
 Gin is a high-performance HTTP web framework written in [Go](https://go.dev/). It provides a Martini-like API but with significantly better performance—up to 40 times faster—thanks to [httprouter](https://github.com/julienschmidt/httprouter). Gin is designed for building REST APIs, web applications, and microservices where speed and developer productivity are essential.
 
 **Why choose Gin?**
