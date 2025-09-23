@@ -174,6 +174,7 @@ type Engine struct {
 	noMethod         HandlersChain
 	pool             sync.Pool
 	trees            methodTrees
+	treesMap         map[string]*node
 	maxParams        uint16
 	maxSections      uint16
 	trustedProxies   []string
@@ -210,6 +211,7 @@ func New(opts ...OptionFunc) *Engine {
 		UnescapePathValues:     true,
 		MaxMultipartMemory:     defaultMultipartMemory,
 		trees:                  make(methodTrees, 0, 9),
+		treesMap:               make(map[string]*node),
 		delims:                 render.Delims{Left: "{{", Right: "}}"},
 		secureJSONPrefix:       "while(1);",
 		trustedProxies:         []string{"0.0.0.0/0", "::/0"},
@@ -363,6 +365,7 @@ func (engine *Engine) addRoute(method, path string, handlers HandlersChain) {
 		root = new(node)
 		root.fullPath = "/"
 		engine.trees = append(engine.trees, methodTree{method: method, root: root})
+		engine.treesMap[method] = root
 	}
 	root.addRoute(path, handlers)
 
@@ -672,12 +675,7 @@ func (engine *Engine) handleHTTPRequest(c *Context) {
 	}
 
 	// Find root of the tree for the given HTTP method
-	t := engine.trees
-	for i, tl := 0, len(t); i < tl; i++ {
-		if t[i].method != httpMethod {
-			continue
-		}
-		root := t[i].root
+	if root, ok := engine.treesMap[httpMethod]; ok {
 		// Find route in tree
 		value := root.getValue(rPath, c.params, c.skippedNodes, unescape)
 		if value.params != nil {
@@ -699,13 +697,12 @@ func (engine *Engine) handleHTTPRequest(c *Context) {
 				return
 			}
 		}
-		break
 	}
 
-	if engine.HandleMethodNotAllowed && len(t) > 0 {
+	if engine.HandleMethodNotAllowed && len(engine.trees) > 0 {
 		// According to RFC 7231 section 6.5.5, MUST generate an Allow header field in response
 		// containing a list of the target resource's currently supported methods.
-		allowed := make([]string, 0, len(t)-1)
+		allowed := make([]string, 0, len(engine.trees)-1)
 		for _, tree := range engine.trees {
 			if tree.method == httpMethod {
 				continue

@@ -913,3 +913,489 @@ func TestMethodNotAllowedNoRoute(t *testing.T) {
 	assert.NotPanics(t, func() { g.ServeHTTP(resp, req) })
 	assert.Equal(t, http.StatusNotFound, resp.Code)
 }
+
+// TestTreesMapInitialization tests that treesMap is properly initialized
+func TestTreesMapInitialization(t *testing.T) {
+	router := New()
+
+	// Verify treesMap is initialized as an empty map
+	assert.NotNil(t, router.treesMap)
+	assert.Empty(t, router.treesMap)
+
+	// Verify trees slice is also initialized
+	assert.NotNil(t, router.trees)
+	assert.Empty(t, router.trees)
+}
+
+// TestTreesMapSynchronization tests that treesMap stays in sync with trees slice
+func TestTreesMapSynchronization(t *testing.T) {
+	router := New()
+
+	// Add a GET route
+	router.addRoute(http.MethodGet, "/", HandlersChain{func(_ *Context) {}})
+
+	// Verify both trees and treesMap are updated
+	assert.Len(t, router.trees, 1)
+	assert.Len(t, router.treesMap, 1)
+
+	// Verify treesMap contains the correct method
+	root, exists := router.treesMap[http.MethodGet]
+	assert.True(t, exists)
+	assert.NotNil(t, root)
+
+	// Verify trees slice also contains the same method
+	treeRoot := router.trees.get(http.MethodGet)
+	assert.Equal(t, root, treeRoot)
+
+	// Add a POST route
+	router.addRoute(http.MethodPost, "/post", HandlersChain{func(_ *Context) {}})
+
+	// Verify both are updated again
+	assert.Len(t, router.trees, 2)
+	assert.Len(t, router.treesMap, 2)
+
+	// Verify both methods exist in treesMap
+	_, getExists := router.treesMap[http.MethodGet]
+	_, postExists := router.treesMap[http.MethodPost]
+	assert.True(t, getExists)
+	assert.True(t, postExists)
+
+	// Verify trees slice also has both methods
+	assert.NotNil(t, router.trees.get(http.MethodGet))
+	assert.NotNil(t, router.trees.get(http.MethodPost))
+}
+
+// TestTreesMapLookupPerformance tests the O(1) lookup performance
+func TestTreesMapLookupPerformance(t *testing.T) {
+	router := New()
+
+	// Add multiple routes with different methods
+	methods := []string{http.MethodGet, http.MethodPost, http.MethodPut, http.MethodDelete, http.MethodPatch}
+	for _, method := range methods {
+		router.addRoute(method, "/"+strings.ToLower(method), HandlersChain{func(_ *Context) {}})
+	}
+
+	// Test that all methods can be found via treesMap (O(1) lookup)
+	for _, method := range methods {
+		root, exists := router.treesMap[method]
+		assert.True(t, exists, "Method %s should exist in treesMap", method)
+		assert.NotNil(t, root, "Root for method %s should not be nil", method)
+	}
+
+	// Test that non-existent method returns false
+	_, exists := router.treesMap["NONEXISTENT"]
+	assert.False(t, exists, "Non-existent method should not exist in treesMap")
+}
+
+// TestTreesMapWithMultipleRoutesPerMethod tests treesMap with multiple routes per HTTP method
+func TestTreesMapWithMultipleRoutesPerMethod(t *testing.T) {
+	router := New()
+
+	// Add multiple routes for the same method
+	router.addRoute(http.MethodGet, "/", HandlersChain{func(_ *Context) {}})
+	router.addRoute(http.MethodGet, "/users", HandlersChain{func(_ *Context) {}})
+	router.addRoute(http.MethodGet, "/users/:id", HandlersChain{func(_ *Context) {}})
+
+	// Verify treesMap still has only one entry for GET method
+	assert.Len(t, router.treesMap, 1)
+
+	// Verify the GET method exists and points to the root node
+	root, exists := router.treesMap[http.MethodGet]
+	assert.True(t, exists)
+	assert.NotNil(t, root)
+
+	// Verify trees slice also has only one entry for GET
+	assert.Len(t, router.trees, 1)
+	assert.Equal(t, root, router.trees.get(http.MethodGet))
+}
+
+// TestTreesMapConcurrentAccess tests that treesMap works correctly with sequential access
+// Note: treesMap is not designed for concurrent writes, as route registration is typically
+// done during application initialization, not at runtime
+func TestTreesMapSequentialAccess(t *testing.T) {
+	router := New()
+
+	// Add routes sequentially (which is the typical use case)
+	for i := 0; i < 10; i++ {
+		method := http.MethodGet + strconv.Itoa(i)
+		router.addRoute(method, "/route"+strconv.Itoa(i), HandlersChain{func(_ *Context) {}})
+	}
+
+	// Verify all routes were added successfully
+	assert.Len(t, router.trees, 10)
+	assert.Len(t, router.treesMap, 10)
+
+	// Verify all methods exist in treesMap
+	for i := 0; i < 10; i++ {
+		method := http.MethodGet + strconv.Itoa(i)
+		_, exists := router.treesMap[method]
+		assert.True(t, exists, "Method %s should exist in treesMap", method)
+	}
+}
+
+// TestTreesMapWithSpecialMethods tests treesMap with special HTTP methods
+func TestTreesMapWithSpecialMethods(t *testing.T) {
+	router := New()
+
+	// Test with various HTTP methods including less common ones
+	specialMethods := []string{
+		http.MethodGet, http.MethodPost, http.MethodPut, http.MethodDelete,
+		http.MethodPatch, http.MethodHead, http.MethodOptions, http.MethodConnect,
+		http.MethodTrace,
+	}
+
+	for _, method := range specialMethods {
+		router.addRoute(method, "/"+strings.ToLower(method), HandlersChain{func(_ *Context) {}})
+	}
+
+	// Verify all methods exist in treesMap
+	assert.Len(t, router.treesMap, len(specialMethods))
+	assert.Len(t, router.trees, len(specialMethods))
+
+	for _, method := range specialMethods {
+		root, exists := router.treesMap[method]
+		assert.True(t, exists, "Method %s should exist in treesMap", method)
+		assert.NotNil(t, root, "Root for method %s should not be nil", method)
+
+		// Verify consistency with trees slice
+		treeRoot := router.trees.get(method)
+		assert.Equal(t, root, treeRoot, "treesMap and trees should point to same root for method %s", method)
+	}
+}
+
+// TestTreesMapEmptyLookup tests lookup behavior with empty treesMap
+func TestTreesMapEmptyLookup(t *testing.T) {
+	router := New()
+
+	// Verify empty treesMap behavior
+	assert.Empty(t, router.treesMap)
+
+	// Test lookup of non-existent method
+	_, exists := router.treesMap[http.MethodGet]
+	assert.False(t, exists)
+
+	// Test lookup of empty string method
+	_, exists = router.treesMap[""]
+	assert.False(t, exists)
+}
+
+// TestTreesMapConsistencyWithTrees tests that treesMap and trees remain consistent
+func TestTreesMapConsistencyWithTrees(t *testing.T) {
+	router := New()
+
+	// Add routes and verify consistency at each step
+	methods := []string{http.MethodGet, http.MethodPost, http.MethodPut}
+
+	for i, method := range methods {
+		router.addRoute(method, "/"+strings.ToLower(method), HandlersChain{func(_ *Context) {}})
+
+		// After each addition, verify consistency
+		assert.Len(t, router.trees, i+1)
+		assert.Len(t, router.treesMap, i+1)
+
+		// Verify each method exists in both structures
+		for j := 0; j <= i; j++ {
+			currentMethod := methods[j]
+
+			// Check treesMap
+			mapRoot, mapExists := router.treesMap[currentMethod]
+			assert.True(t, mapExists, "Method %s should exist in treesMap after %d additions", currentMethod, i+1)
+			assert.NotNil(t, mapRoot)
+
+			// Check trees slice
+			treeRoot := router.trees.get(currentMethod)
+			assert.NotNil(t, treeRoot, "Method %s should exist in trees after %d additions", currentMethod, i+1)
+
+			// Verify they point to the same root
+			assert.Equal(t, mapRoot, treeRoot, "treesMap and trees should point to same root for method %s", currentMethod)
+		}
+	}
+}
+
+// BenchmarkTreesMapLookup benchmarks the O(1) treesMap lookup performance
+func BenchmarkTreesMapLookup(b *testing.B) {
+	router := New()
+
+	// Add multiple HTTP methods to test lookup performance
+	methods := []string{
+		http.MethodGet, http.MethodPost, http.MethodPut, http.MethodDelete,
+		http.MethodPatch, http.MethodHead, http.MethodOptions, http.MethodConnect,
+		http.MethodTrace, "CUSTOM1", "CUSTOM2", "CUSTOM3",
+	}
+
+	for _, method := range methods {
+		router.addRoute(method, "/"+strings.ToLower(method), HandlersChain{func(_ *Context) {}})
+	}
+
+	b.ResetTimer()
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			// Test O(1) lookup via treesMap
+			_, exists := router.treesMap[http.MethodGet]
+			if !exists {
+				b.Fatal("Expected method to exist")
+			}
+		}
+	})
+}
+
+// BenchmarkTreesSliceLookup benchmarks the O(n) trees slice lookup for comparison
+func BenchmarkTreesSliceLookup(b *testing.B) {
+	router := New()
+
+	// Add multiple HTTP methods to test lookup performance
+	methods := []string{
+		http.MethodGet, http.MethodPost, http.MethodPut, http.MethodDelete,
+		http.MethodPatch, http.MethodHead, http.MethodOptions, http.MethodConnect,
+		http.MethodTrace, "CUSTOM1", "CUSTOM2", "CUSTOM3",
+	}
+
+	for _, method := range methods {
+		router.addRoute(method, "/"+strings.ToLower(method), HandlersChain{func(_ *Context) {}})
+	}
+
+	b.ResetTimer()
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			// Test O(n) lookup via trees slice
+			root := router.trees.get(http.MethodGet)
+			if root == nil {
+				b.Fatal("Expected method to exist")
+			}
+		}
+	})
+}
+
+// BenchmarkTreesMapLookupWithManyMethods benchmarks treesMap lookup with many HTTP methods
+func BenchmarkTreesMapLookupWithManyMethods(b *testing.B) {
+	router := New()
+
+	// Add many HTTP methods to test scalability
+	for i := 0; i < 50; i++ {
+		method := "METHOD" + strconv.Itoa(i)
+		router.addRoute(method, "/"+strings.ToLower(method), HandlersChain{func(_ *Context) {}})
+	}
+
+	// Add the method we'll be looking up
+	router.addRoute(http.MethodGet, "/get", HandlersChain{func(_ *Context) {}})
+
+	b.ResetTimer()
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			// Test O(1) lookup via treesMap (should be constant time regardless of total methods)
+			_, exists := router.treesMap[http.MethodGet]
+			if !exists {
+				b.Fatal("Expected method to exist")
+			}
+		}
+	})
+}
+
+// BenchmarkTreesSliceLookupWithManyMethods benchmarks trees slice lookup with many HTTP methods
+func BenchmarkTreesSliceLookupWithManyMethods(b *testing.B) {
+	router := New()
+
+	// Add many HTTP methods to test scalability
+	for i := 0; i < 50; i++ {
+		method := "METHOD" + strconv.Itoa(i)
+		router.addRoute(method, "/"+strings.ToLower(method), HandlersChain{func(_ *Context) {}})
+	}
+
+	// Add the method we'll be looking up
+	router.addRoute(http.MethodGet, "/get", HandlersChain{func(_ *Context) {}})
+
+	b.ResetTimer()
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			// Test O(n) lookup via trees slice (should be slower with more methods)
+			root := router.trees.get(http.MethodGet)
+			if root == nil {
+				b.Fatal("Expected method to exist")
+			}
+		}
+	})
+}
+
+// TestTreesMapIntegrationWithHTTPRequests tests treesMap integration with actual HTTP requests
+func TestTreesMapIntegrationWithHTTPRequests(t *testing.T) {
+	router := New()
+
+	// Add routes with different methods
+	router.GET("/get", func(c *Context) {
+		c.String(200, "GET response")
+	})
+	router.POST("/post", func(c *Context) {
+		c.String(200, "POST response")
+	})
+	router.PUT("/put", func(c *Context) {
+		c.String(200, "PUT response")
+	})
+
+	// Test that HTTP requests work correctly with treesMap optimization
+	testCases := []struct {
+		method           string
+		path             string
+		expectedResponse string
+	}{
+		{http.MethodGet, "/get", "GET response"},
+		{http.MethodPost, "/post", "POST response"},
+		{http.MethodPut, "/put", "PUT response"},
+	}
+
+	for _, tc := range testCases {
+		req := httptest.NewRequest(tc.method, tc.path, nil)
+		w := httptest.NewRecorder()
+
+		router.ServeHTTP(w, req)
+
+		assert.Equal(t, 200, w.Code)
+		assert.Equal(t, tc.expectedResponse, w.Body.String())
+	}
+
+	// Verify treesMap was populated correctly
+	assert.Len(t, router.treesMap, 3)
+	assert.Contains(t, router.treesMap, http.MethodGet)
+	assert.Contains(t, router.treesMap, http.MethodPost)
+	assert.Contains(t, router.treesMap, http.MethodPut)
+}
+
+// TestTreesMapWithDuplicateMethods tests behavior when adding routes with duplicate methods
+func TestTreesMapWithDuplicateMethods(t *testing.T) {
+	router := New()
+
+	// Add first route with GET method
+	router.addRoute(http.MethodGet, "/first", HandlersChain{func(_ *Context) {}})
+
+	// Verify initial state
+	assert.Len(t, router.treesMap, 1)
+	assert.Len(t, router.trees, 1)
+
+	// Add second route with same GET method (should not create new entry)
+	router.addRoute(http.MethodGet, "/second", HandlersChain{func(_ *Context) {}})
+
+	// Verify treesMap still has only one entry for GET
+	assert.Len(t, router.treesMap, 1)
+	assert.Len(t, router.trees, 1)
+
+	// Verify the GET method still exists and points to the same root
+	root, exists := router.treesMap[http.MethodGet]
+	assert.True(t, exists)
+	assert.NotNil(t, root)
+	assert.Equal(t, root, router.trees.get(http.MethodGet))
+}
+
+// TestTreesMapWithEmptyMethod tests edge case with empty method string
+func TestTreesMapWithEmptyMethod(t *testing.T) {
+	router := New()
+
+	// This should panic due to validation in addRoute
+	assert.Panics(t, func() {
+		router.addRoute("", "/path", HandlersChain{func(_ *Context) {}})
+	})
+
+	// Verify treesMap remains empty
+	assert.Empty(t, router.treesMap)
+	assert.Empty(t, router.trees)
+}
+
+// TestTreesMapWithNilHandlers tests edge case with nil handlers
+func TestTreesMapWithNilHandlers(t *testing.T) {
+	router := New()
+
+	// This should panic due to validation in addRoute
+	assert.Panics(t, func() {
+		router.addRoute(http.MethodGet, "/path", nil)
+	})
+
+	// Verify treesMap remains empty
+	assert.Empty(t, router.treesMap)
+	assert.Empty(t, router.trees)
+}
+
+// TestTreesMapWithInvalidPath tests edge case with invalid path
+func TestTreesMapWithInvalidPath(t *testing.T) {
+	router := New()
+
+	// This should panic due to validation in addRoute
+	assert.Panics(t, func() {
+		router.addRoute(http.MethodGet, "invalid-path", HandlersChain{func(_ *Context) {}})
+	})
+
+	// Verify treesMap remains empty
+	assert.Empty(t, router.treesMap)
+	assert.Empty(t, router.trees)
+}
+
+// TestTreesMapMemoryUsage tests that treesMap doesn't cause memory leaks
+func TestTreesMapMemoryUsage(t *testing.T) {
+	router := New()
+
+	// Add and remove routes multiple times
+	for i := 0; i < 100; i++ {
+		method := "METHOD" + strconv.Itoa(i)
+		router.addRoute(method, "/path"+strconv.Itoa(i), HandlersChain{func(_ *Context) {}})
+	}
+
+	// Verify all routes were added
+	assert.Len(t, router.treesMap, 100)
+	assert.Len(t, router.trees, 100)
+
+	// Verify memory usage is reasonable (treesMap should have 100 entries)
+	assert.Equal(t, 100, len(router.treesMap))
+
+	// Test that lookups still work
+	for i := 0; i < 100; i++ {
+		method := "METHOD" + strconv.Itoa(i)
+		_, exists := router.treesMap[method]
+		assert.True(t, exists, "Method %s should exist", method)
+	}
+}
+
+// TestTreesMapWithVeryLongMethodNames tests treesMap with very long method names
+func TestTreesMapWithVeryLongMethodNames(t *testing.T) {
+	router := New()
+
+	// Create a very long method name
+	longMethod := strings.Repeat("VERY_LONG_METHOD_NAME_", 10)
+
+	router.addRoute(longMethod, "/long", HandlersChain{func(_ *Context) {}})
+
+	// Verify the long method was added correctly
+	assert.Len(t, router.treesMap, 1)
+	assert.Len(t, router.trees, 1)
+
+	// Verify lookup works with long method name
+	root, exists := router.treesMap[longMethod]
+	assert.True(t, exists)
+	assert.NotNil(t, root)
+	assert.Equal(t, root, router.trees.get(longMethod))
+}
+
+// TestTreesMapWithSpecialCharacters tests treesMap with method names containing special characters
+func TestTreesMapWithSpecialCharacters(t *testing.T) {
+	router := New()
+
+	// Test with method names containing special characters
+	specialMethods := []string{
+		"METHOD-WITH-DASH",
+		"METHOD_WITH_UNDERSCORE",
+		"METHOD.WITH.DOTS",
+		"METHOD123WITH456NUMBERS",
+		"method-with-lowercase",
+	}
+
+	for _, method := range specialMethods {
+		router.addRoute(method, "/"+strings.ToLower(method), HandlersChain{func(_ *Context) {}})
+	}
+
+	// Verify all special methods were added
+	assert.Len(t, router.treesMap, len(specialMethods))
+	assert.Len(t, router.trees, len(specialMethods))
+
+	// Verify all special methods can be looked up
+	for _, method := range specialMethods {
+		root, exists := router.treesMap[method]
+		assert.True(t, exists, "Method %s should exist in treesMap", method)
+		assert.NotNil(t, root, "Root for method %s should not be nil", method)
+	}
+}
