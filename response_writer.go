@@ -109,8 +109,8 @@ func (w *responseWriter) Written() bool {
 
 // Hijack implements the http.Hijacker interface.
 func (w *responseWriter) Hijack() (net.Conn, *bufio.ReadWriter, error) {
-	// Allow hijacking after headers are written (size == 0), but not after body data (size > 0)
-	// For compatibility with websocket libraries (e.g., github.com/coder/websocket)
+	// Allow hijacking before any data is written (size == -1) or after headers are written (size == 0),
+	// but not after body data is written (size > 0). For compatibility with websocket libraries (e.g., github.com/coder/websocket)
 	if w.size > 0 {
 		return nil, nil, errHijackAlreadyWritten
 	}
