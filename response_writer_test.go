@@ -242,9 +242,9 @@ func TestResponseWriterHijackAfterWriteHeaderNow(t *testing.T) {
 			_, _, hijackErr := w.Hijack()
 
 			if tc.expectError == nil {
-				assert.NoError(t, hijackErr, "expected hijack to succeed")
+				require.NoError(t, hijackErr, "expected hijack to succeed")
 			} else {
-				assert.ErrorIs(t, hijackErr, tc.expectError, "unexpected error from Hijack()")
+				require.ErrorIs(t, hijackErr, tc.expectError, "unexpected error from Hijack()")
 			}
 			assert.Equal(t, tc.expectHijackSuccess, hijacker.hijacked, "unexpected hijacker.hijacked state")
 			assert.Equal(t, tc.expectWrittenAfterHijack, w.Written(), "unexpected w.Written() state after hijack")
