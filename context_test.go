@@ -2989,7 +2989,7 @@ func TestHasRequestContext(t *testing.T) {
 	assert.False(t, c.hasRequestContext(), "no request, has fallback")
 	c.Request, _ = http.NewRequest(http.MethodGet, "/", nil)
 	assert.True(t, c.hasRequestContext(), "has request, has fallback")
-	c.Request, _ = http.NewRequestWithContext(nil, "", "", nil) //nolint:staticcheck
+	c.Request, _ = http.NewRequestWithContext(context.TODO(), "", "", nil) //nolint:staticcheck
 	assert.False(t, c.hasRequestContext(), "has request with nil ctx, has fallback")
 	c.engine.ContextWithFallback = false
 	assert.False(t, c.hasRequestContext(), "has request, no fallback")
