@@ -1,6 +1,7 @@
 vendor/*
 !vendor/vendor.json
 coverage.out
+coverage.html
 count.out
 test
 profile.out
