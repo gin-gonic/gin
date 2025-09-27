@@ -635,3 +635,248 @@ func TestMappingCustomArrayForm(t *testing.T) {
 	expected, _ := convertTo(val)
 	assert.Equal(t, expected, s.FileData)
 }
+
+func TestMappingSliceOfCustomBindUnmarshalerElementsUri(t *testing.T) {
+	tests := []struct {
+		name        string
+		input       []string
+		expectError bool
+		expectLen   int
+		validate    func(t *testing.T, items []customUnmarshalParamType)
+	}{
+		{
+			name:      "multiple valid elements",
+			input:     []string{"http:path1:name1", "https:path2:name2"},
+			expectLen: 2,
+			validate: func(t *testing.T, items []customUnmarshalParamType) {
+				assert.Equal(t, "http", items[0].Protocol)
+				assert.Equal(t, "path1", items[0].Path)
+				assert.Equal(t, "name1", items[0].Name)
+				assert.Equal(t, "https", items[1].Protocol)
+				assert.Equal(t, "path2", items[1].Path)
+				assert.Equal(t, "name2", items[1].Name)
+			},
+		},
+		{
+			name:      "single element",
+			input:     []string{"tcp:socket:server"},
+			expectLen: 1,
+			validate: func(t *testing.T, items []customUnmarshalParamType) {
+				assert.Equal(t, "tcp", items[0].Protocol)
+				assert.Equal(t, "socket", items[0].Path)
+				assert.Equal(t, "server", items[0].Name)
+			},
+		},
+		{
+			name:        "invalid format - too few parts",
+			input:       []string{"http:path"},
+			expectError: true,
+		},
+		{
+			name:        "invalid format - too many parts",
+			input:       []string{"http:path:name:extra"},
+			expectError: true,
+		},
+		{
+			name:        "mixed valid and invalid",
+			input:       []string{"tcp:valid:data", "invalid"},
+			expectError: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var s struct {
+				Items []customUnmarshalParamType `uri:"items"`
+			}
+			err := mappingByPtr(&s, formSource{"items": tt.input}, "uri")
+
+			if tt.expectError {
+				assert.Error(t, err)
+			} else {
+				require.NoError(t, err)
+				assert.Len(t, s.Items, tt.expectLen)
+				if tt.validate != nil {
+					tt.validate(t, s.Items)
+				}
+			}
+		})
+	}
+}
+
+func TestMappingSliceOfCustomBindUnmarshalerElementsForm(t *testing.T) {
+	tests := []struct {
+		name        string
+		input       []string
+		expectError bool
+		expectLen   int
+		validate    func(t *testing.T, items []customUnmarshalParamType)
+	}{
+		{
+			name:      "multiple valid elements",
+			input:     []string{"tcp:socket1:server", "udp:socket2:client"},
+			expectLen: 2,
+			validate: func(t *testing.T, items []customUnmarshalParamType) {
+				assert.Equal(t, "tcp", items[0].Protocol)
+				assert.Equal(t, "socket1", items[0].Path)
+				assert.Equal(t, "server", items[0].Name)
+				assert.Equal(t, "udp", items[1].Protocol)
+				assert.Equal(t, "socket2", items[1].Path)
+				assert.Equal(t, "client", items[1].Name)
+			},
+		},
+		{
+			name:      "single element",
+			input:     []string{"grpc:api:service"},
+			expectLen: 1,
+			validate: func(t *testing.T, items []customUnmarshalParamType) {
+				assert.Equal(t, "grpc", items[0].Protocol)
+				assert.Equal(t, "api", items[0].Path)
+				assert.Equal(t, "service", items[0].Name)
+			},
+		},
+		{
+			name:        "invalid format - empty string",
+			input:       []string{""},
+			expectError: true,
+		},
+		{
+			name:        "invalid format - insufficient parts",
+			input:       []string{"tcp:socket"},
+			expectError: true,
+		},
+		{
+			name:      "large slice",
+			input:     []string{"tcp:s1:n1", "udp:s2:n2", "http:s3:n3", "grpc:s4:n4", "ws:s5:n5"},
+			expectLen: 5,
+			validate: func(t *testing.T, items []customUnmarshalParamType) {
+				assert.Equal(t, "tcp", items[0].Protocol)
+				assert.Equal(t, "ws", items[4].Protocol)
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var s struct {
+				Items []customUnmarshalParamType `form:"items"`
+			}
+			err := mappingByPtr(&s, formSource{"items": tt.input}, "form")
+
+			if tt.expectError {
+				assert.Error(t, err)
+			} else {
+				require.NoError(t, err)
+				assert.Len(t, s.Items, tt.expectLen)
+				if tt.validate != nil {
+					tt.validate(t, s.Items)
+				}
+			}
+		})
+	}
+}
+
+func TestMappingArrayOfCustomBindUnmarshalerElementsUri(t *testing.T) {
+	tests := []struct {
+		name        string
+		input       []string
+		expectError bool
+		validate    func(t *testing.T, items [2]customUnmarshalParamType)
+	}{
+		{
+			name:  "exact array size",
+			input: []string{"grpc:service1:auth", "rest:service2:data"},
+			validate: func(t *testing.T, items [2]customUnmarshalParamType) {
+				assert.Equal(t, "grpc", items[0].Protocol)
+				assert.Equal(t, "service1", items[0].Path)
+				assert.Equal(t, "auth", items[0].Name)
+				assert.Equal(t, "rest", items[1].Protocol)
+				assert.Equal(t, "service2", items[1].Path)
+				assert.Equal(t, "data", items[1].Name)
+			},
+		},
+		{
+			name:        "insufficient elements for array",
+			input:       []string{"tcp:socket:server"},
+			expectError: true,
+		},
+		{
+			name:        "invalid format in first element",
+			input:       []string{"invalid", "tcp:valid:data"},
+			expectError: true,
+		},
+		{
+			name:        "invalid format in second element",
+			input:       []string{"tcp:valid:data", "invalid"},
+			expectError: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var s struct {
+				Items [2]customUnmarshalParamType `uri:"items"`
+			}
+			err := mappingByPtr(&s, formSource{"items": tt.input}, "uri")
+
+			if tt.expectError {
+				assert.Error(t, err)
+			} else {
+				require.NoError(t, err)
+				if tt.validate != nil {
+					tt.validate(t, s.Items)
+				}
+			}
+		})
+	}
+}
+
+func TestMappingArrayOfCustomBindUnmarshalerElementsForm(t *testing.T) {
+	tests := []struct {
+		name        string
+		input       []string
+		expectError bool
+		validate    func(t *testing.T, items [2]customUnmarshalParamType)
+	}{
+		{
+			name:  "exact array size",
+			input: []string{"ws:chat:room1", "wss:chat:room2"},
+			validate: func(t *testing.T, items [2]customUnmarshalParamType) {
+				assert.Equal(t, "ws", items[0].Protocol)
+				assert.Equal(t, "chat", items[0].Path)
+				assert.Equal(t, "room1", items[0].Name)
+				assert.Equal(t, "wss", items[1].Protocol)
+				assert.Equal(t, "chat", items[1].Path)
+				assert.Equal(t, "room2", items[1].Name)
+			},
+		},
+		{
+			name:        "insufficient elements for array",
+			input:       []string{"http:api:v1"},
+			expectError: true,
+		},
+		{
+			name:        "invalid format stops processing",
+			input:       []string{"tcp:valid:data", "invalid:format"},
+			expectError: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var s struct {
+				Items [2]customUnmarshalParamType `form:"items"`
+			}
+			err := mappingByPtr(&s, formSource{"items": tt.input}, "form")
+
+			if tt.expectError {
+				assert.Error(t, err)
+			} else {
+				require.NoError(t, err)
+				if tt.validate != nil {
+					tt.validate(t, s.Items)
+				}
+			}
+		})
+	}
+}
