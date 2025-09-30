@@ -76,12 +76,22 @@ func (form formSource) TrySet(value reflect.Value, field reflect.StructField, ta
 }
 
 func mappingByPtr(ptr any, setter setter, tag string) error {
-	_, err := mapping(reflect.ValueOf(ptr), emptyField, setter, tag)
+	_, err := mappingWithDepth(reflect.ValueOf(ptr), emptyField, setter, tag, 0)
 	return err
 }
 
 func mapping(value reflect.Value, field reflect.StructField, setter setter, tag string) (bool, error) {
+	return mappingWithDepth(value, field, setter, tag, 0)
+}
+
+const maxMappingDepth = 10
+
+func mappingWithDepth(value reflect.Value, field reflect.StructField, setter setter, tag string, depth int) (bool, error) {
 	if field.Tag.Get(tag) == "-" { // just ignoring this field
+		return false, nil
+	}
+
+	if depth > maxMappingDepth {
 		return false, nil
 	}
 
@@ -94,7 +104,8 @@ func mapping(value reflect.Value, field reflect.StructField, setter setter, tag 
 			isNew = true
 			vPtr = reflect.New(value.Type().Elem())
 		}
-		isSet, err := mapping(vPtr.Elem(), field, setter, tag)
+
+		isSet, err := mappingWithDepth(vPtr.Elem(), field, setter, tag, depth+1)
 		if err != nil {
 			return false, err
 		}
@@ -123,7 +134,7 @@ func mapping(value reflect.Value, field reflect.StructField, setter setter, tag 
 			if sf.PkgPath != "" && !sf.Anonymous { // unexported
 				continue
 			}
-			ok, err := mapping(value.Field(i), sf, setter, tag)
+			ok, err := mappingWithDepth(value.Field(i), sf, setter, tag, depth+1)
 			if err != nil {
 				return false, err
 			}
