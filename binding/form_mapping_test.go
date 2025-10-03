@@ -635,3 +635,83 @@ func TestMappingCustomArrayForm(t *testing.T) {
 	expected, _ := convertTo(val)
 	assert.Equal(t, expected, s.FileData)
 }
+
+func TestMappingEmptyValues(t *testing.T) {
+	t.Run("slice with default", func(t *testing.T) {
+		var s struct {
+			Slice []int `form:"slice,default=5"`
+		}
+
+		// field not present
+		err := mappingByPtr(&s, formSource{}, "form")
+		require.NoError(t, err)
+		assert.Equal(t, []int{5}, s.Slice)
+
+		// field present but empty
+		err = mappingByPtr(&s, formSource{"slice": {}}, "form")
+		require.NoError(t, err)
+		assert.Equal(t, []int{5}, s.Slice)
+
+		// field present with values
+		err = mappingByPtr(&s, formSource{"slice": {"1", "2", "3"}}, "form")
+		require.NoError(t, err)
+		assert.Equal(t, []int{1, 2, 3}, s.Slice)
+	})
+
+	t.Run("array with default", func(t *testing.T) {
+		var s struct {
+			Array [1]int `form:"array,default=5"`
+		}
+
+		// field not present
+		err := mappingByPtr(&s, formSource{}, "form")
+		require.NoError(t, err)
+		assert.Equal(t, [1]int{5}, s.Array)
+
+		// field present but empty
+		err = mappingByPtr(&s, formSource{"array": {}}, "form")
+		require.NoError(t, err)
+		assert.Equal(t, [1]int{5}, s.Array)
+	})
+
+	t.Run("slice without default", func(t *testing.T) {
+		var s struct {
+			Slice []int `form:"slice"`
+		}
+
+		// field present but empty
+		err := mappingByPtr(&s, formSource{"slice": {}}, "form")
+		require.NoError(t, err)
+		assert.Equal(t, []int(nil), s.Slice)
+	})
+
+	t.Run("array without default", func(t *testing.T) {
+		var s struct {
+			Array [1]int `form:"array"`
+		}
+
+		// field present but empty
+		err := mappingByPtr(&s, formSource{"array": {}}, "form")
+		require.NoError(t, err)
+		assert.Equal(t, [1]int{0}, s.Array)
+	})
+
+	t.Run("slice with collection format", func(t *testing.T) {
+		var s struct {
+			SliceMulti []int `form:"slice_multi,default=1;2;3" collection_format:"multi"`
+			SliceCsv   []int `form:"slice_csv,default=1;2;3" collection_format:"csv"`
+		}
+
+		// field not present
+		err := mappingByPtr(&s, formSource{}, "form")
+		require.NoError(t, err)
+		assert.Equal(t, []int{1, 2, 3}, s.SliceMulti)
+		assert.Equal(t, []int{1, 2, 3}, s.SliceCsv)
+
+		// field present but empty
+		err = mappingByPtr(&s, formSource{"slice_multi": {}, "slice_csv": {}}, "form")
+		require.NoError(t, err)
+		assert.Equal(t, []int{1, 2, 3}, s.SliceMulti)
+		assert.Equal(t, []int{1, 2, 3}, s.SliceCsv)
+	})
+}
