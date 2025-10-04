@@ -21,7 +21,7 @@ var bsonContentType = []string{"application/bson"}
 func (r BSON) Render(w http.ResponseWriter) error {
 	r.WriteContentType(w)
 
-	bytes, err := bson.Marshal(&r.Data)
+	bytes, err := bson.Marshal(r.Data)
 	if err != nil {
 		return err
 	}
