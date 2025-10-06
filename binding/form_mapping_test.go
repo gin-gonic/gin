@@ -635,3 +635,62 @@ func TestMappingCustomArrayForm(t *testing.T) {
 	expected, _ := convertTo(val)
 	assert.Equal(t, expected, s.FileData)
 }
+
+// Test case for infinite recursion bug fix
+func TestInfiniteRecursionBug(t *testing.T) {
+	type Req struct {
+		Parent *Req `form:"parent"`
+	}
+
+	var s Req
+	err := MapFormWithTag(&s, map[string][]string{}, "form")
+
+	assert.NoError(t, err)
+	assert.Nil(t, s.Parent)
+}
+
+// Test case for the user's specific example from GitHub issue
+func TestInfiniteRecursionUserExample(t *testing.T) {
+	type Req struct {
+		Foo  string `form:"foo"`
+		Bar  string `form:"bar"`
+		Foo1 string `form:"Foo"`
+		Bar1 string `form:"Bar"`
+		Foo2 *Req   `form:"foo2"`
+	}
+
+	var s Req
+
+	formData := map[string][]string{
+		"foo": {"test_foo"},
+		"bar": {"test_bar"},
+	}
+
+	err := MapFormWithTag(&s, formData, "form")
+
+	assert.NoError(t, err)
+	assert.Equal(t, "test_foo", s.Foo)
+	assert.Equal(t, "test_bar", s.Bar)
+}
+
+// Test case for nested self-reference that should work when data is provided
+func TestValidNestedSelfReference(t *testing.T) {
+	type Req struct {
+		Name   string `form:"name"`
+		Parent *Req   `form:"parent"`
+	}
+
+	var s Req
+
+	formData := map[string][]string{
+		"name":   {"child"},
+		"parent": {`{"name": "parent_name"}`},
+	}
+
+	err := MapFormWithTag(&s, formData, "form")
+
+	assert.NoError(t, err)
+	assert.Equal(t, "child", s.Name)
+	assert.NotNil(t, s.Parent)
+	assert.Equal(t, "parent_name", s.Parent.Name)
+}
