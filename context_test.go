@@ -3320,7 +3320,7 @@ func TestContextSetCookieData(t *testing.T) {
 	assert.Contains(t, setCookie, "Max-Age=1")
 	assert.Contains(t, setCookie, "HttpOnly")
 	assert.Contains(t, setCookie, "Secure")
-	// SameSite=Lax might be omitted in Go 1.23+ as it's the default
+	// SameSite=Lax might be omitted in Go 1.24+ as it's the default
 	// assert.Contains(t, setCookie, "SameSite=Lax")
 
 	// Test that when Path is empty, "/" is automatically set
@@ -3341,7 +3341,7 @@ func TestContextSetCookieData(t *testing.T) {
 	assert.Contains(t, setCookie, "Max-Age=1")
 	assert.Contains(t, setCookie, "HttpOnly")
 	assert.Contains(t, setCookie, "Secure")
-	// SameSite=Lax might be omitted in Go 1.23+ as it's the default
+	// SameSite=Lax might be omitted in Go 1.24+ as it's the default
 	// assert.Contains(t, setCookie, "SameSite=Lax")
 
 	// Test additional cookie attributes (Expires)
@@ -3364,7 +3364,7 @@ func TestContextSetCookieData(t *testing.T) {
 	assert.Contains(t, setCookie, "Domain=localhost")
 	assert.Contains(t, setCookie, "HttpOnly")
 	assert.Contains(t, setCookie, "Secure")
-	// SameSite=Lax might be omitted in Go 1.23+ as it's the default
+	// SameSite=Lax might be omitted in Go 1.24+ as it's the default
 	// assert.Contains(t, setCookie, "SameSite=Lax")
 
 	// Test for Partitioned attribute (Go 1.18+)
@@ -3384,7 +3384,7 @@ func TestContextSetCookieData(t *testing.T) {
 	assert.Contains(t, setCookie, "Domain=localhost")
 	assert.Contains(t, setCookie, "HttpOnly")
 	assert.Contains(t, setCookie, "Secure")
-	// SameSite=Lax might be omitted in Go 1.23+ as it's the default
+	// SameSite=Lax might be omitted in Go 1.24+ as it's the default
 	// assert.Contains(t, setCookie, "SameSite=Lax")
 	// Not testing for Partitioned attribute as it may not be supported in all Go versions
 
