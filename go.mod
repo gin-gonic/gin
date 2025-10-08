@@ -15,7 +15,7 @@ require (
 	github.com/quic-go/quic-go v0.54.1
 	github.com/stretchr/testify v1.11.1
 	github.com/ugorji/go/codec v1.3.0
-	golang.org/x/net v0.43.0
+	golang.org/x/net v0.45.0
 	google.golang.org/protobuf v1.36.10
 )
 
