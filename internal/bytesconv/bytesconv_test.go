@@ -81,25 +81,25 @@ func TestStringToBytes(t *testing.T) {
 // go test -v -run=none -bench=^BenchmarkBytesConv -benchmem=true
 
 func BenchmarkBytesConvBytesToStrRaw(b *testing.B) {
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		rawBytesToStr(testBytes)
 	}
 }
 
 func BenchmarkBytesConvBytesToStr(b *testing.B) {
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		BytesToString(testBytes)
 	}
 }
 
 func BenchmarkBytesConvStrToBytesRaw(b *testing.B) {
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		rawStrToBytes(testString)
 	}
 }
 
 func BenchmarkBytesConvStrToBytes(b *testing.B) {
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		StringToBytes(testString)
 	}
 }
