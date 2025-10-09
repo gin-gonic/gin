@@ -43,7 +43,7 @@ Gin combines the simplicity of Express.js-style routing with Go's performance ch
 
 ### Prerequisites
 
-- **Go version**: Gin requires [Go](https://go.dev/) version [1.23](https://go.dev/doc/devel/release#go1.23.0) or above
+- **Go version**: Gin requires [Go](https://go.dev/) version [1.24](https://go.dev/doc/devel/release#go1.24.0) or above
 - **Basic Go knowledge**: Familiarity with Go syntax and package management is helpful
 
 ### Installation
