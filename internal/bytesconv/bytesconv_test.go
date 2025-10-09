@@ -30,7 +30,7 @@ func rawStrToBytes(s string) []byte {
 
 func TestBytesToString(t *testing.T) {
 	data := make([]byte, 1024)
-	for i := 0; i < 100; i++ {
+	for range 100 {
 		_, err := cRand.Read(data)
 		if err != nil {
 			t.Fatal(err)
@@ -70,7 +70,7 @@ func RandStringBytesMaskImprSrcSB(n int) string {
 }
 
 func TestStringToBytes(t *testing.T) {
-	for i := 0; i < 100; i++ {
+	for range 100 {
 		s := RandStringBytesMaskImprSrcSB(64)
 		if !bytes.Equal(rawStrToBytes(s), StringToBytes(s)) {
 			t.Fatal("don't match")
@@ -81,25 +81,25 @@ func TestStringToBytes(t *testing.T) {
 // go test -v -run=none -bench=^BenchmarkBytesConv -benchmem=true
 
 func BenchmarkBytesConvBytesToStrRaw(b *testing.B) {
-	for i := 0; i < b.N; i++ {
+	for range b.N {
 		rawBytesToStr(testBytes)
 	}
 }
 
 func BenchmarkBytesConvBytesToStr(b *testing.B) {
-	for i := 0; i < b.N; i++ {
+	for range b.N {
 		BytesToString(testBytes)
 	}
 }
 
 func BenchmarkBytesConvStrToBytesRaw(b *testing.B) {
-	for i := 0; i < b.N; i++ {
+	for range b.N {
 		rawStrToBytes(testString)
 	}
 }
 
 func BenchmarkBytesConvStrToBytes(b *testing.B) {
-	for i := 0; i < b.N; i++ {
+	for range b.N {
 		StringToBytes(testString)
 	}
 }
