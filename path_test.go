@@ -94,7 +94,7 @@ func TestPathCleanMallocs(t *testing.T) {
 func BenchmarkPathClean(b *testing.B) {
 	b.ReportAllocs()
 
-	for range b.N {
+	for {
 		for _, test := range cleanTests {
 			cleanPath(test.path)
 		}
@@ -137,7 +137,7 @@ func BenchmarkPathCleanLong(b *testing.B) {
 	b.ResetTimer()
 	b.ReportAllocs()
 
-	for range b.N {
+	for b.Loop() {
 		for _, test := range cleanTests {
 			cleanPath(test.path)
 		}

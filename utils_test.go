@@ -19,7 +19,7 @@ func init() {
 }
 
 func BenchmarkParseAccept(b *testing.B) {
-	for range b.N {
+	for b.Loop() {
 		parseAccept("text/html , application/xhtml+xml,application/xml;q=0.9,  */* ;q=0.8")
 	}
 }

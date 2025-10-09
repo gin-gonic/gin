@@ -154,7 +154,7 @@ func runRequest(B *testing.B, r *Engine, method, path string) {
 	w := newMockWriter()
 	B.ReportAllocs()
 	B.ResetTimer()
-	for range B.N {
+	for B.Loop() {
 		r.ServeHTTP(w, req)
 	}
 }

@@ -3632,7 +3632,7 @@ func BenchmarkGetMapFromFormData(b *testing.B) {
 	for _, bm := range benchmarks {
 		b.Run(bm.name, func(b *testing.B) {
 			b.ReportAllocs()
-			for range b.N {
+			for b.Loop() {
 				_, _ = getMapFromFormData(bm.data, bm.key)
 			}
 		})
