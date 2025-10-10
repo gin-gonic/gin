@@ -12,12 +12,12 @@ import (
 	"fmt"
 	"io"
 	"log"
-	"net"
 	"net/http"
 	"net/http/httputil"
 	"os"
 	"runtime"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/gin-gonic/gin/internal/bytesconv"
@@ -61,18 +61,11 @@ func CustomRecoveryWithWriter(out io.Writer, handle RecoveryFunc) HandlerFunc {
 				// Check for a broken connection, as it is not really a
 				// condition that warrants a panic stack trace.
 				var isBrokenPipe bool
-				if ne, ok := rec.(*net.OpError); ok {
-					var se *os.SyscallError
-					if errors.As(ne, &se) {
-						seStr := strings.ToLower(se.Error())
-						if strings.Contains(seStr, "broken pipe") ||
-							strings.Contains(seStr, "connection reset by peer") {
-							isBrokenPipe = true
-						}
-					}
-				}
-				if e, ok := rec.(error); ok && errors.Is(e, http.ErrAbortHandler) {
-					isBrokenPipe = true
+				err, ok := rec.(error)
+				if ok {
+					isBrokenPipe = errors.Is(err, syscall.EPIPE) ||
+						errors.Is(err, syscall.ECONNRESET) ||
+						errors.Is(err, http.ErrAbortHandler)
 				}
 				if logger != nil {
 					if isBrokenPipe {
@@ -87,7 +80,7 @@ func CustomRecoveryWithWriter(out io.Writer, handle RecoveryFunc) HandlerFunc {
 				}
 				if isBrokenPipe {
 					// If the connection is dead, we can't write a status to it.
-					c.Error(rec.(error)) //nolint: errcheck
+					c.Error(err) //nolint: errcheck
 					c.Abort()
 				} else {
 					handle(c, rec)
