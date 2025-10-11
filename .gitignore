@@ -9,3 +9,6 @@ tmp.out
 # Develop tools
 .idea/
 .vscode/
+
+# Ignore generated test certificates
+testdata/certificate/*.pem
