@@ -751,6 +751,8 @@ func TestTreeFindCaseInsensitivePath(t *testing.T) {
 		"/w/𠜎",  // 4 byte
 		"/w/𠜏/", // 4 byte
 		longPath,
+		"/param/same/:id",
+		"/param/same/1",
 	}
 
 	for _, route := range routes {
@@ -844,6 +846,7 @@ func TestTreeFindCaseInsensitivePath(t *testing.T) {
 		{"/w/𠜎/", "/w/𠜎", true, true},
 		{"/w/𠜏", "/w/𠜏/", true, true},
 		{lOngPath, longPath, true, true},
+		{"/param/same/prefix/noexist", "", false, false},
 	}
 	// With fixTrailingSlash = true
 	for _, test := range tests {
