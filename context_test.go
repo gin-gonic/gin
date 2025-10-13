@@ -3581,22 +3581,22 @@ func BenchmarkGetMapFromFormData(b *testing.B) {
 
 	// Test case 3: Large dataset with many bracket keys
 	largeData := make(map[string][]string)
-	for i := 0; i < 100; i++ {
+	for i := range 100 {
 		key := fmt.Sprintf("ids[%d]", i)
 		largeData[key] = []string{fmt.Sprintf("value%d", i)}
 	}
-	for i := 0; i < 50; i++ {
+	for i := range 50 {
 		key := fmt.Sprintf("names[%d]", i)
 		largeData[key] = []string{fmt.Sprintf("name%d", i)}
 	}
-	for i := 0; i < 25; i++ {
+	for i := range 25 {
 		key := fmt.Sprintf("other[key%d]", i)
 		largeData[key] = []string{fmt.Sprintf("other%d", i)}
 	}
 
 	// Test case 4: Dataset with many non-matching keys (worst case)
 	worstCaseData := make(map[string][]string)
-	for i := 0; i < 100; i++ {
+	for i := range 100 {
 		key := fmt.Sprintf("nonmatching%d", i)
 		worstCaseData[key] = []string{fmt.Sprintf("value%d", i)}
 	}
@@ -3632,7 +3632,7 @@ func BenchmarkGetMapFromFormData(b *testing.B) {
 	for _, bm := range benchmarks {
 		b.Run(bm.name, func(b *testing.B) {
 			b.ReportAllocs()
-			for i := 0; i < b.N; i++ {
+			for b.Loop() {
 				_, _ = getMapFromFormData(bm.data, bm.key)
 			}
 		})

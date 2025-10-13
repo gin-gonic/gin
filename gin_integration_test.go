@@ -393,7 +393,7 @@ func TestConcurrentHandleContext(t *testing.T) {
 	var wg sync.WaitGroup
 	iterations := 200
 	wg.Add(iterations)
-	for i := 0; i < iterations; i++ {
+	for range iterations {
 		go func() {
 			req, err := http.NewRequest(http.MethodGet, "/", nil)
 			assert.NoError(t, err)

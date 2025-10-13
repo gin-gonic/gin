@@ -118,7 +118,7 @@ func mapping(value reflect.Value, field reflect.StructField, setter setter, tag 
 		tValue := value.Type()
 
 		var isSet bool
-		for i := 0; i < value.NumField(); i++ {
+		for i := range value.NumField() {
 			sf := tValue.Field(i)
 			if sf.PkgPath != "" && !sf.Anonymous { // unexported
 				continue
