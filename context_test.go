@@ -404,6 +404,19 @@ func TestContextSetGetBool(t *testing.T) {
 	assert.True(t, c.GetBool("bool"))
 }
 
+func TestSetGetDelete(t *testing.T) {
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	key := "example-key"
+	value := "example-value"
+	c.Set(key, value)
+	val, exists := c.Get(key)
+	assert.True(t, exists)
+	assert.Equal(t, val, value)
+	c.Delete(key)
+	_, exists = c.Get(key)
+	assert.False(t, exists)
+}
+
 func TestContextGetInt(t *testing.T) {
 	c, _ := CreateTestContext(httptest.NewRecorder())
 	c.Set("int", 1)

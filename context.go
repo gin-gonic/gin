@@ -465,6 +465,16 @@ func (c *Context) GetStringMapStringSlice(key any) (smss map[string][]string) {
 	return getTyped[map[string][]string](c, key)
 }
 
+// Delete deletes the key from the Context's Key map, if it exists.
+// This operation is safe to be used by concurrent go-routines
+func (c *Context) Delete(key any) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if c.Keys != nil {
+		delete(c.Keys, key)
+	}
+}
+
 /************************************/
 /************ INPUT DATA ************/
 /************************************/
