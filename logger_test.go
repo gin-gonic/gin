@@ -39,7 +39,7 @@ func TestLogger(t *testing.T) {
 
 	// I wrote these first (extending the above) but then realized they are more
 	// like integration tests because they test the whole logging process rather
-	// than individual functions.  Im not sure where these should go.
+	// than individual functions. I'm not sure where these should go.
 	buffer.Reset()
 	PerformRequest(router, http.MethodPost, "/example")
 	assert.Contains(t, buffer.String(), "200")
@@ -103,7 +103,7 @@ func TestLoggerWithConfig(t *testing.T) {
 
 	// I wrote these first (extending the above) but then realized they are more
 	// like integration tests because they test the whole logging process rather
-	// than individual functions.  Im not sure where these should go.
+	// than individual functions. I'm not sure where these should go.
 	buffer.Reset()
 	PerformRequest(router, http.MethodPost, "/example")
 	assert.Contains(t, buffer.String(), "200")

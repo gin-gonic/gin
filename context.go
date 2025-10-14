@@ -270,7 +270,7 @@ func (c *Context) Error(err error) *Error {
 /************************************/
 
 // Set is used to store a new key/value pair exclusively for this context.
-// It also lazy initializes  c.Keys if it was not used previously.
+// It also lazy initializes c.Keys if it was not used previously.
 func (c *Context) Set(key any, value any) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
