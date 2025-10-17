@@ -833,7 +833,7 @@ walk: // Outer loop for walking the tree
 			return nil
 		}
 
-		n = n.children[0]
+		n = n.children[len(n.children)-1]
 		switch n.nType {
 		case param:
 			// Find param end (either '/' or path end)
