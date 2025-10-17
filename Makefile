@@ -1,3 +1,10 @@
+.PHONY: certs
+certs:
+	@if [ ! -f "testdata/certificate/key.pem" ] || [ ! -f "testdata/certificate/cert.pem" ]; then \
+		echo "Generating test certificates..."; \
+		go run scripts/certs/main.go; \
+	fi
+
 GO ?= go
 GOFMT ?= gofmt "-s"
 GO_VERSION=$(shell $(GO) version | cut -c 14- | cut -d' ' -f1 | cut -d'.' -f2)
@@ -9,7 +16,7 @@ TESTTAGS ?= ""
 
 .PHONY: test
 # Run tests to verify code functionality.
-test:
+test: certs
 	echo "mode: count" > coverage.out
 	for d in $(TESTFOLDER); do \
 		$(GO) test $(TESTTAGS) -v -covermode=count -coverprofile=profile.out $$d > tmp.out; \
