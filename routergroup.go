@@ -7,21 +7,21 @@ package gin
 import (
 	"net/http"
 	"path"
-	"regexp"
 	"strings"
 )
 
-var (
-	// regEnLetter matches english letters for http method name
-	regEnLetter = regexp.MustCompile("^[A-Z]+$")
-
-	// anyMethods for RouterGroup Any method
-	anyMethods = []string{
-		http.MethodGet, http.MethodPost, http.MethodPut, http.MethodPatch,
-		http.MethodHead, http.MethodOptions, http.MethodDelete, http.MethodConnect,
-		http.MethodTrace,
-	}
-)
+// anyMethods for RouterGroup Any method
+var anyMethods = []string{
+	http.MethodGet,
+	http.MethodPost,
+	http.MethodPut,
+	http.MethodPatch,
+	http.MethodHead,
+	http.MethodOptions,
+	http.MethodDelete,
+	http.MethodConnect,
+	http.MethodTrace,
+}
 
 // IRouter defines all router handle interface includes single and group router.
 type IRouter interface {
@@ -101,10 +101,20 @@ func (group *RouterGroup) handle(httpMethod, relativePath string, handlers Handl
 // frequently used, non-standardized or custom methods (e.g. for internal
 // communication with a proxy).
 func (group *RouterGroup) Handle(httpMethod, relativePath string, handlers ...HandlerFunc) IRoutes {
-	if matched := regEnLetter.MatchString(httpMethod); !matched {
+	if !isHTTPMethod(httpMethod) {
 		panic("http method " + httpMethod + " is not valid")
 	}
 	return group.handle(httpMethod, relativePath, handlers)
+}
+
+// isHTTPMethod checks if the method is a valid HTTP method.
+func isHTTPMethod(method string) bool {
+	for _, m := range anyMethods {
+		if m == method {
+			return true
+		}
+	}
+	return false
 }
 
 // POST is a shortcut for router.Handle("POST", path, handlers).
