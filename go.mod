@@ -14,7 +14,7 @@ require (
 	github.com/pelletier/go-toml/v2 v2.2.4
 	github.com/quic-go/quic-go v0.55.0
 	github.com/stretchr/testify v1.11.1
-	github.com/ugorji/go/codec v1.3.0
+	github.com/ugorji/go/codec v1.3.1
 	golang.org/x/net v0.46.0
 	google.golang.org/protobuf v1.36.10
 )
