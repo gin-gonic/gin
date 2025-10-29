@@ -347,10 +347,31 @@ func setWithProperType(val string, value reflect.Value, field reflect.StructFiel
 	return nil
 }
 
+func containsAF(s string) bool {
+	for _, char := range s {
+		if char >= 'a' && char <= 'f' {
+			return true
+		}
+	}
+	return false
+}
+
 func setIntField(val string, bitSize int, field reflect.Value) error {
 	if val == "" {
 		val = "0"
 	}
+
+	//TODO 校验数据是否是16进制雪花id如果是则将期转为int64 start
+	if bitSize == 64 && (len(val) < 17 || containsAF(val)) {
+		//hack for hex,must 16位
+		intVal, err := strconv.ParseInt(val, 16, 64)
+		if err != nil {
+			field.SetInt(intVal)
+		}
+		return err
+	}
+	//TODO end
+
 	intVal, err := strconv.ParseInt(val, 10, bitSize)
 	if err == nil {
 		field.SetInt(intVal)
