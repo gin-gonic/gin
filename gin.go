@@ -11,9 +11,9 @@ import (
 	"net/http"
 	"os"
 	"path"
-	"regexp"
 	"strings"
 	"sync"
+	"unicode"
 
 	"github.com/gin-gonic/gin/internal/bytesconv"
 	filesystem "github.com/gin-gonic/gin/internal/fs"
@@ -47,11 +47,6 @@ var defaultTrustedCIDRs = []*net.IPNet{
 		Mask: net.IPMask{0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0},
 	},
 }
-
-var (
-	regSafePrefix         = regexp.MustCompile("[^a-zA-Z0-9/-]+")
-	regRemoveRepeatedChar = regexp.MustCompile("/{2,}")
-)
 
 // HandlerFunc defines the handler used by gin middleware as return value.
 type HandlerFunc func(*Context)
@@ -776,8 +771,8 @@ func redirectTrailingSlash(c *Context) {
 	req := c.Request
 	p := req.URL.Path
 	if prefix := path.Clean(c.Request.Header.Get("X-Forwarded-Prefix")); prefix != "." {
-		prefix = regSafePrefix.ReplaceAllString(prefix, "")
-		prefix = regRemoveRepeatedChar.ReplaceAllString(prefix, "/")
+		prefix = sanitizePathChars(prefix)
+		prefix = removeRepeatedSlash(prefix)
 
 		p = prefix + "/" + req.URL.Path
 	}
@@ -786,6 +781,39 @@ func redirectTrailingSlash(c *Context) {
 		req.URL.Path = p[:length-1]
 	}
 	redirectRequest(c)
+}
+
+// sanitizePathChars removes unsafe characters from path strings,
+// keeping only letters, numbers, forward slashes, and hyphens.
+func sanitizePathChars(s string) string {
+	return strings.Map(func(r rune) rune {
+		if unicode.IsLetter(r) || unicode.IsDigit(r) || r == '/' || r == '-' {
+			return r
+		}
+		return -1
+	}, s)
+}
+
+// removeRepeatedSlash removes consecutive forward slashes from a string,
+// replacing sequences of multiple slashes with a single slash.
+func removeRepeatedSlash(s string) string {
+	if !strings.Contains(s, "//") {
+		return s
+	}
+
+	var sb strings.Builder
+	sb.Grow(len(s) - 1)
+	prevChar := rune(0)
+
+	for _, r := range s {
+		if r == '/' && prevChar == '/' {
+			continue
+		}
+		sb.WriteRune(r)
+		prevChar = r
+	}
+
+	return sb.String()
 }
 
 func redirectFixedPath(c *Context, root *node, trailingSlash bool) bool {
