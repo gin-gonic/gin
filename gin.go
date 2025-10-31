@@ -13,7 +13,6 @@ import (
 	"path"
 	"strings"
 	"sync"
-	"unicode"
 
 	"github.com/gin-gonic/gin/internal/bytesconv"
 	filesystem "github.com/gin-gonic/gin/internal/fs"
@@ -772,7 +771,7 @@ func redirectTrailingSlash(c *Context) {
 	p := req.URL.Path
 	if prefix := path.Clean(c.Request.Header.Get("X-Forwarded-Prefix")); prefix != "." {
 		prefix = sanitizePathChars(prefix)
-		prefix = removeRepeatedSlash(prefix)
+		prefix = removeRepeatedChar(prefix, '/')
 
 		p = prefix + "/" + req.URL.Path
 	}
@@ -784,36 +783,14 @@ func redirectTrailingSlash(c *Context) {
 }
 
 // sanitizePathChars removes unsafe characters from path strings,
-// keeping only letters, numbers, forward slashes, and hyphens.
+// keeping only ASCII letters, ASCII numbers, forward slashes, and hyphens.
 func sanitizePathChars(s string) string {
 	return strings.Map(func(r rune) rune {
-		if unicode.IsLetter(r) || unicode.IsDigit(r) || r == '/' || r == '-' {
+		if (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9') || r == '/' || r == '-' {
 			return r
 		}
 		return -1
 	}, s)
-}
-
-// removeRepeatedSlash removes consecutive forward slashes from a string,
-// replacing sequences of multiple slashes with a single slash.
-func removeRepeatedSlash(s string) string {
-	if !strings.Contains(s, "//") {
-		return s
-	}
-
-	var sb strings.Builder
-	sb.Grow(len(s) - 1)
-	prevChar := rune(0)
-
-	for _, r := range s {
-		if r == '/' && prevChar == '/' {
-			continue
-		}
-		sb.WriteRune(r)
-		prevChar = r
-	}
-
-	return sb.String()
 }
 
 func redirectFixedPath(c *Context, root *node, trailingSlash bool) bool {

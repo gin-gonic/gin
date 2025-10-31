@@ -1012,34 +1012,3 @@ func TestUpdateRouteTreesCalledOnce(t *testing.T) {
 		assert.Equal(t, "ok", w.Body.String())
 	}
 }
-
-func TestRemoveRepeatedSlash(t *testing.T) {
-	testCases := []struct {
-		name string
-		str  string
-		want string
-	}{
-		{
-			name: "noSlash",
-			str:  "abc",
-			want: "abc",
-		},
-		{
-			name: "withSlash",
-			str:  "/a/b/c/",
-			want: "/a/b/c/",
-		},
-		{
-			name: "withRepeatedSlash",
-			str:  "/a//b///c////",
-			want: "/a/b/c/",
-		},
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			res := removeRepeatedSlash(tc.str)
-			assert.Equal(t, tc.want, res)
-		})
-	}
-}
