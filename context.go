@@ -1290,32 +1290,64 @@ type Negotiate struct {
 	TOMLData any
 }
 
-// Negotiate calls different Render according to acceptable Accept format.
-func (c *Context) Negotiate(code int, config Negotiate) {
-	switch c.NegotiateFormat(config.Offered...) {
-	case binding.MIMEJSON:
+func NewNegotiate(offered []string) Negotiate {
+	return Negotiate{Offered: offered}
+}
+func (receiver Negotiate) WithData(data any) Negotiate {
+	receiver.Data = data
+	return receiver
+}
+
+// NegotiationRenderFunc is responsible for rendering data in a specific format.
+type NegotiationRenderFunc func(status int, config Negotiate, c *Context)
+
+func AddNegotiationRenderMapping(mimeType string, binding NegotiationRenderFunc) {
+	negotiationRenderMappings[mimeType] = binding
+}
+
+// All predefined negotiationRenderMappings - associate a content type
+// with a NegotiationRenderFunc, which is responsible for rendering
+// data in a specific format.
+var negotiationRenderMappings = map[string]NegotiationRenderFunc{
+	binding.MIMEJSON: func(code int, config Negotiate, c *Context) {
 		data := chooseData(config.JSONData, config.Data)
 		c.JSON(code, data)
-
-	case binding.MIMEHTML:
+	},
+	binding.MIMEHTML: func(code int, config Negotiate, c *Context) {
 		data := chooseData(config.HTMLData, config.Data)
 		c.HTML(code, config.HTMLName, data)
-
-	case binding.MIMEXML:
+	},
+	binding.MIMEXML: func(code int, config Negotiate, c *Context) {
 		data := chooseData(config.XMLData, config.Data)
 		c.XML(code, data)
-
-	case binding.MIMEYAML, binding.MIMEYAML2:
+	},
+	binding.MIMEYAML: func(code int, config Negotiate, c *Context) {
 		data := chooseData(config.YAMLData, config.Data)
 		c.YAML(code, data)
-
-	case binding.MIMETOML:
+	},
+	binding.MIMEYAML2: func(code int, config Negotiate, c *Context) {
+		data := chooseData(config.YAMLData, config.Data)
+		c.YAML(code, data)
+	},
+	binding.MIMETOML: func(code int, config Negotiate, c *Context) {
 		data := chooseData(config.TOMLData, config.Data)
 		c.TOML(code, data)
+	},
+	binding.MIMEPROTOBUF: func(code int, config Negotiate, c *Context) {
+		c.ProtoBuf(code, config.Data)
+	},
+}
 
-	default:
-		c.AbortWithError(http.StatusNotAcceptable, errors.New("the accepted formats are not offered by the server")) //nolint: errcheck
+// Negotiate calls different Render according to acceptable Accept format.
+func (c *Context) Negotiate(code int, config Negotiate) {
+
+	accepted := c.NegotiateFormat(config.Offered...)
+	if fn, ok := negotiationRenderMappings[accepted]; ok {
+		fn(code, config, c)
+		return
 	}
+	c.AbortWithError(http.StatusNotAcceptable, errors.New("the accepted formats are not offered by the server")) //nolint: errcheck
+
 }
 
 // NegotiateFormat returns an acceptable Accept format.
