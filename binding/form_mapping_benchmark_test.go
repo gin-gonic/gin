@@ -31,7 +31,7 @@ type structFull struct {
 
 func BenchmarkMapFormFull(b *testing.B) {
 	var s structFull
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		err := mapForm(&s, form)
 		if err != nil {
 			b.Fatalf("Error on a form mapping")
@@ -54,7 +54,7 @@ type structName struct {
 
 func BenchmarkMapFormName(b *testing.B) {
 	var s structName
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		err := mapForm(&s, form)
 		if err != nil {
 			b.Fatalf("Error on a form mapping")
