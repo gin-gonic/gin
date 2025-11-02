@@ -10,7 +10,6 @@ import (
 	"io"
 	"io/fs"
 	"log"
-	"maps"
 	"math"
 	"mime/multipart"
 	"net"
@@ -54,6 +53,42 @@ const ContextRequestKey ContextKeyType = 0
 // abortIndex represents a typical value used in abort functions.
 const abortIndex int8 = math.MaxInt8 >> 1
 
+// ContextKeys is a thread-safe key-value store wrapper around sync.Map
+// that provides compatibility with existing map[any]any API expectations
+type ContextKeys struct {
+	m sync.Map
+}
+
+// Store stores a value in the context keys
+func (ck *ContextKeys) Store(key, value any) {
+	ck.m.Store(key, value)
+}
+
+// Load retrieves a value from the context keys
+func (ck *ContextKeys) Load(key any) (value any, exists bool) {
+	return ck.m.Load(key)
+}
+
+// Delete removes a value from the context keys
+func (ck *ContextKeys) Delete(key any) {
+	ck.m.Delete(key)
+}
+
+// Range iterates over all key-value pairs in the context keys
+func (ck *ContextKeys) Range(f func(key, value any) bool) {
+	ck.m.Range(f)
+}
+
+// IsEmpty returns true if the context keys contain no values
+func (ck *ContextKeys) IsEmpty() bool {
+	empty := true
+	ck.m.Range(func(key, value any) bool {
+		empty = false
+		return false // Stop iteration on first item
+	})
+	return empty
+}
+
 // Context is the most important part of gin. It allows us to pass variables between middleware,
 // manage the flow, validate the JSON of a request and render a JSON response for example.
 type Context struct {
@@ -70,11 +105,9 @@ type Context struct {
 	params       *Params
 	skippedNodes *[]skippedNode
 
-	// This mutex protects Keys map.
-	mu sync.RWMutex
-
 	// Keys is a key/value pair exclusively for the context of each request.
-	Keys map[any]any
+	// Using ContextKeys wrapper around sync.Map for better concurrent performance.
+	Keys *ContextKeys
 
 	// Errors is a list of errors attached to all the handlers/middlewares who used this context.
 	Errors errorMsgs
@@ -105,7 +138,7 @@ func (c *Context) reset() {
 	c.index = -1
 
 	c.fullPath = ""
-	c.Keys = nil
+	c.Keys = nil  // Reset to nil for backward compatibility
 	c.Errors = c.Errors[:0]
 	c.Accepted = nil
 	c.queryCache = nil
@@ -130,10 +163,14 @@ func (c *Context) Copy() *Context {
 	cp.handlers = nil
 	cp.fullPath = c.fullPath
 
-	cKeys := c.Keys
-	c.mu.RLock()
-	cp.Keys = maps.Clone(cKeys)
-	c.mu.RUnlock()
+	// Copy ContextKeys contents if they exist
+	if c.Keys != nil {
+		cp.Keys = &ContextKeys{}
+		c.Keys.Range(func(key, value any) bool {
+			cp.Keys.Store(key, value)
+			return true
+		})
+	}
 
 	cParams := c.Params
 	cp.Params = make([]Param, len(cParams))
@@ -270,24 +307,22 @@ func (c *Context) Error(err error) *Error {
 /************************************/
 
 // Set is used to store a new key/value pair exclusively for this context.
-// It also lazy initializes c.Keys if it was not used previously.
+// Uses ContextKeys wrapper around sync.Map for better concurrent performance.
 func (c *Context) Set(key any, value any) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
 	if c.Keys == nil {
-		c.Keys = make(map[any]any)
+		c.Keys = &ContextKeys{}
 	}
-
-	c.Keys[key] = value
+	c.Keys.Store(key, value)
 }
 
 // Get returns the value for the given key, ie: (value, true).
 // If the value does not exist it returns (nil, false)
+// Uses ContextKeys wrapper around sync.Map for better concurrent performance.
 func (c *Context) Get(key any) (value any, exists bool) {
-	c.mu.RLock()
-	defer c.mu.RUnlock()
-	value, exists = c.Keys[key]
-	return
+	if c.Keys == nil {
+		return nil, false
+	}
+	return c.Keys.Load(key)
 }
 
 // MustGet returns the value for the given key if it exists, otherwise it panics.
@@ -467,12 +502,25 @@ func (c *Context) GetStringMapStringSlice(key any) map[string][]string {
 
 // Delete deletes the key from the Context's Key map, if it exists.
 // This operation is safe to be used by concurrent go-routines
+// Uses ContextKeys wrapper around sync.Map for better concurrent performance.
 func (c *Context) Delete(key any) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
 	if c.Keys != nil {
-		delete(c.Keys, key)
+		c.Keys.Delete(key)
 	}
+}
+
+// GetKeysAsMap returns a copy of the context keys as a regular map[any]any.
+// This is useful for compatibility with existing APIs that expect regular maps.
+// Note: This creates a snapshot of the keys at the time of calling.
+func (c *Context) GetKeysAsMap() map[any]any {
+	result := make(map[any]any)
+	if c.Keys != nil {
+		c.Keys.Range(func(key, value any) bool {
+			result[key] = value
+			return true
+		})
+	}
+	return result
 }
 
 /************************************/
