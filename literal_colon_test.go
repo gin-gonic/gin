@@ -19,7 +19,8 @@ func TestLiteralColonWithRun(t *testing.T) {
 	router.updateRouteTrees()
 
 	w := httptest.NewRecorder()
-	req, _ := http.NewRequest("GET", "/test:action", nil)
+
+	req, _ := http.NewRequest(http.MethodGet, "/test:action", nil)
 	router.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusOK, w.Code)
@@ -35,7 +36,7 @@ func TestLiteralColonWithDirectServeHTTP(t *testing.T) {
 	})
 
 	w := httptest.NewRecorder()
-	req, _ := http.NewRequest("GET", "/test:action", nil)
+	req, _ := http.NewRequest(http.MethodGet, "/test:action", nil)
 	router.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusOK, w.Code)
@@ -54,7 +55,7 @@ func TestLiteralColonWithHandler(t *testing.T) {
 	handler := router.Handler()
 
 	w := httptest.NewRecorder()
-	req, _ := http.NewRequest("GET", "/test:action", nil)
+	req, _ := http.NewRequest(http.MethodGet, "/test:action", nil)
 	handler.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusOK, w.Code)
@@ -74,14 +75,14 @@ func TestLiteralColonWithHTTPServer(t *testing.T) {
 	})
 
 	w := httptest.NewRecorder()
-	req, _ := http.NewRequest("GET", "/test:action", nil)
+	req, _ := http.NewRequest(http.MethodGet, "/test:action", nil)
 	router.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusOK, w.Code)
 	assert.Contains(t, w.Body.String(), "literal_colon")
 
 	w2 := httptest.NewRecorder()
-	req2, _ := http.NewRequest("GET", "/test/foo", nil)
+	req2, _ := http.NewRequest(http.MethodGet, "/test/foo", nil)
 	router.ServeHTTP(w2, req2)
 
 	assert.Equal(t, http.StatusOK, w2.Code)
@@ -102,7 +103,7 @@ func TestUpdateRouteTreesCalledOnce(t *testing.T) {
 
 	for i := 0; i < 5; i++ {
 		w := httptest.NewRecorder()
-		req, _ := http.NewRequest("GET", "/test:action", nil)
+		req, _ := http.NewRequest(http.MethodGet, "/test:action", nil)
 		router.ServeHTTP(w, req)
 		assert.Equal(t, http.StatusOK, w.Code)
 	}
