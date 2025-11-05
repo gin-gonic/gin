@@ -720,6 +720,55 @@ func TestEngineHandleContextPreventsMiddlewareReEntry(t *testing.T) {
 	assert.Equal(t, int64(1), handlerCounterV2)
 }
 
+func TestEngineHandleContextUseEscapedPathPercentEncoded(t *testing.T) {
+	r := New()
+	r.UseEscapedPath = true
+	r.UnescapePathValues = false
+
+	r.GET("/v1/:path", func(c *Context) {
+		// Path is Escaped, the %25 is not interpreted as %
+		assert.Equal(t, "foo%252Fbar", c.Param("path"))
+		c.Status(http.StatusOK)
+	})
+
+	req := httptest.NewRequest(http.MethodGet, "/v1/foo%252Fbar", nil)
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+}
+
+func TestEngineHandleContextUseRawPathPercentEncoded(t *testing.T) {
+	r := New()
+	r.UseRawPath = true
+	r.UnescapePathValues = false
+
+	r.GET("/v1/:path", func(c *Context) {
+		// Path is used, the %25 is interpreted as %
+		assert.Equal(t, "foo%2Fbar", c.Param("path"))
+		c.Status(http.StatusOK)
+	})
+
+	req := httptest.NewRequest(http.MethodGet, "/v1/foo%252Fbar", nil)
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+}
+
+func TestEngineHandleContextUseEscapedPathOverride(t *testing.T) {
+	r := New()
+	r.UseEscapedPath = true
+	r.UseRawPath = true
+	r.UnescapePathValues = false
+
+	r.GET("/v1/:path", func(c *Context) {
+		assert.Equal(t, "foo%25bar", c.Param("path"))
+		c.Status(http.StatusOK)
+	})
+
+	assert.NotPanics(t, func() {
+		w := PerformRequest(r, http.MethodGet, "/v1/foo%25bar")
+		assert.Equal(t, 200, w.Code)
+	})
+}
+
 func TestPrepareTrustedCIRDsWith(t *testing.T) {
 	r := New()
 
