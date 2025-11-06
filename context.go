@@ -39,6 +39,7 @@ const (
 	MIMEYAML              = binding.MIMEYAML
 	MIMEYAML2             = binding.MIMEYAML2
 	MIMETOML              = binding.MIMETOML
+	MIMEPROTOBUF          = binding.MIMEPROTOBUF
 )
 
 // BodyBytesKey indicates a default body bytes key.
@@ -1280,14 +1281,15 @@ func (c *Context) Stream(step func(w io.Writer) bool) bool {
 
 // Negotiate contains all negotiations data.
 type Negotiate struct {
-	Offered  []string
-	HTMLName string
-	HTMLData any
-	JSONData any
-	XMLData  any
-	YAMLData any
-	Data     any
-	TOMLData any
+	Offered      []string
+	HTMLName     string
+	HTMLData     any
+	JSONData     any
+	XMLData      any
+	YAMLData     any
+	Data         any
+	TOMLData     any
+	PROTOBUFData any
 }
 
 // Negotiate calls different Render according to acceptable Accept format.
@@ -1312,6 +1314,10 @@ func (c *Context) Negotiate(code int, config Negotiate) {
 	case binding.MIMETOML:
 		data := chooseData(config.TOMLData, config.Data)
 		c.TOML(code, data)
+
+	case binding.MIMEPROTOBUF:
+		data := chooseData(config.PROTOBUFData, config.Data)
+		c.ProtoBuf(code, data)
 
 	default:
 		c.AbortWithError(http.StatusNotAcceptable, errors.New("the accepted formats are not offered by the server")) //nolint: errcheck
