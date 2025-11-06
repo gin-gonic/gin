@@ -44,7 +44,6 @@ func TestLiteralColonWithDirectServeHTTP(t *testing.T) {
 }
 
 func TestLiteralColonWithHandler(t *testing.T) {
-
 	SetMode(TestMode)
 	router := New()
 
