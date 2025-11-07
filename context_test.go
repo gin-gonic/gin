@@ -1628,6 +1628,32 @@ func TestContextNegotiationWithHTML(t *testing.T) {
 	assert.Equal(t, "text/html; charset=utf-8", w.Header().Get("Content-Type"))
 }
 
+func TestContextNegotiationWithPROTOBUF(t *testing.T) {
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
+	c.Request = httptest.NewRequest(http.MethodPost, "/", nil)
+
+	reps := []int64{int64(1), int64(2)}
+	label := "test"
+	data := &testdata.Test{
+		Label: &label,
+		Reps:  reps,
+	}
+
+	c.Negotiate(http.StatusCreated, Negotiate{
+		Offered: []string{MIMEPROTOBUF, MIMEJSON, MIMEXML},
+		Data:    data,
+	})
+
+	// Marshal original data for comparison
+	protoData, err := proto.Marshal(data)
+	require.NoError(t, err)
+
+	assert.Equal(t, http.StatusCreated, w.Code)
+	assert.Equal(t, string(protoData), w.Body.String())
+	assert.Equal(t, "application/x-protobuf", w.Header().Get("Content-Type"))
+}
+
 func TestContextNegotiationNotSupport(t *testing.T) {
 	w := httptest.NewRecorder()
 	c, _ := CreateTestContext(w)
