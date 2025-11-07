@@ -663,8 +663,8 @@ func (engine *Engine) handleHTTPRequest(c *Context) {
 	httpMethod := c.Request.Method
 	rPath := c.Request.URL.Path
 	unescape := false
-	if engine.UseRawPath && len(c.Request.URL.RawPath) > 0 {
-		rPath = c.Request.URL.RawPath
+	if engine.UseRawPath {
+		rPath = c.Request.URL.EscapedPath()
 		unescape = engine.UnescapePathValues
 	}
 
