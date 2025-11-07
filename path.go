@@ -19,17 +19,28 @@ package gin
 //
 // If the result of this process is an empty string, "/" is returned.
 func cleanPath(p string) string {
-	const stackBufSize = 128
 	// Turn empty string into "/"
 	if p == "" {
 		return "/"
 	}
 
+	n := len(p)
+
+	// If the path length is 1, handle special cases separately:
+	// - If it is "/" or ".", return "/".
+	// - Otherwise, prepend "/" to the path and return it.
+	if n == 1 {
+		if p[0] == '/' || p[0] == '.' {
+			return "/"
+		}
+		return "/" + p
+	}
+
+	const stackBufSize = 128
+
 	// Reasonably sized buffer on stack to avoid allocations in the common case.
 	// If a larger buffer is required, it gets allocated dynamically.
 	buf := make([]byte, 0, stackBufSize)
-
-	n := len(p)
 
 	// Invariants:
 	//      reading from path; r is index of next byte to process.
@@ -50,7 +61,7 @@ func cleanPath(p string) string {
 		buf[0] = '/'
 	}
 
-	trailing := n > 1 && p[n-1] == '/'
+	var trailing bool
 
 	// A bit more clunky without a 'lazybuf' like the path package, but the loop
 	// gets completely inlined (bufApp calls).
@@ -58,38 +69,44 @@ func cleanPath(p string) string {
 	// calls (except make, if needed).
 
 	for r < n {
-		switch {
-		case p[r] == '/':
+		switch p[r] {
+		case '/':
 			// empty path element, trailing slash is added after the end
 			r++
 
-		case p[r] == '.' && r+1 == n:
-			trailing = true
-			r++
+		case '.':
+			if r+1 == n {
+				trailing = true
+				r++
+				// Reduce one comparison between r and n
+				goto endOfLoop
+			}
+			switch p[r+1] {
+			case '/':
+				// . element
+				r += 2
 
-		case p[r] == '.' && p[r+1] == '/':
-			// . element
-			r += 2
+			case '.':
+				if r+2 == n || p[r+2] == '/' {
+					// .. element: remove to last /
+					r += 3
 
-		case p[r] == '.' && p[r+1] == '.' && (r+2 == n || p[r+2] == '/'):
-			// .. element: remove to last /
-			r += 3
-
-			if w > 1 {
-				// can backtrack
-				w--
-
-				if len(buf) == 0 {
-					for w > 1 && p[w] != '/' {
+					if w > 1 {
+						// can backtrack
 						w--
-					}
-				} else {
-					for w > 1 && buf[w] != '/' {
-						w--
+
+						if len(buf) == 0 {
+							for w > 1 && p[w] != '/' {
+								w--
+							}
+						} else {
+							for w > 1 && buf[w] != '/' {
+								w--
+							}
+						}
 					}
 				}
 			}
-
 		default:
 			// Real path element.
 			// Add slash if needed
@@ -107,8 +124,9 @@ func cleanPath(p string) string {
 		}
 	}
 
+endOfLoop:
 	// Re-append trailing slash
-	if trailing && w > 1 {
+	if (trailing || p[n-1] == '/') && w > 1 {
 		bufApp(&buf, p, w, '/')
 		w++
 	}
