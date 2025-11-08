@@ -1,0 +1,44 @@
+# https://docs.github.com/en/communities/using-templates-to-encourage-useful-issues-and-pull-requests/configuring-issue-templates-for-your-repository#creating-issue-forms
+# https://docs.github.com/en/communities/using-templates-to-encourage-useful-issues-and-pull-requests/syntax-for-githubs-form-schema
+name: Features
+description: Suggest an idea for this project
+title: "issue title"
+labels:
+  - feature
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for helping us improve! 🙏 Please answer these questions and provide as much information as possible about your problem.
+
+  - type: dropdown
+    id: is-problem
+    attributes:
+      label: Is your feature request related to a problem?
+      options:
+        - Option Yes
+        - Option No
+    validations:
+      required: true
+
+  - type: textarea
+    id: description-solution
+    attributes:
+      label: "Describe the solution you'd like"
+    validations:
+      required: true
+
+  - type: textarea
+    id: description-considered
+    attributes:
+      label: "Describe alternatives you've considered"
+    validations:
+      required: true
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: "Additional"
+    validations:
+      required: false
