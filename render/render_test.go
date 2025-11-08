@@ -183,19 +183,28 @@ func TestRenderJsonpJSONError(t *testing.T) {
 	assert.Equal(t, `write "`+`);`+`" error`, err.Error())
 }
 
-func TestRenderJsonpJSONError2(t *testing.T) {
+func TestRenderJsonpJSONWithEmptyCallback(t *testing.T) {
 	w := httptest.NewRecorder()
 	data := map[string]any{
 		"foo": "bar",
+		"num": 42,
+		"nested": map[string]any{
+			"key": "value",
+		},
 	}
-	(JsonpJSON{"", data}).WriteContentType(w)
-	assert.Equal(t, "application/javascript; charset=utf-8", w.Header().Get("Content-Type"))
 
-	e := (JsonpJSON{"", data}).Render(w)
-	require.NoError(t, e)
+	err := (JsonpJSON{Callback: "", Data: data}).Render(w)
 
-	assert.JSONEq(t, "{\"foo\":\"bar\"}", w.Body.String())
-	assert.Equal(t, "application/javascript; charset=utf-8", w.Header().Get("Content-Type"))
+	require.NoError(t, err)
+
+	// Verify Content-Type is set to jsonContentType when callback is empty
+	assert.Equal(t, "application/json; charset=utf-8", w.Header().Get("Content-Type"))
+
+	renderData, err := json.API.Marshal(data)
+	require.NoError(t, err)
+
+	// Verify body contains correct JSON data
+	assert.JSONEq(t, string(renderData), w.Body.String())
 }
 
 func TestRenderJsonpJSONFail(t *testing.T) {
