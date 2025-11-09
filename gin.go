@@ -99,8 +99,7 @@ type Engine struct {
 	RouterGroup
 
 	// routeTreesUpdated ensures that the initialization or update of the route trees
-	// (used for routing HTTP requests) happens only once, even if called multiple times
-	// concurrently. It helps prevent race conditions and redundant setup operations.
+	// (used for routing HTTP requests) happens only once, even if called multiple times concurrently.
 	routeTreesUpdated sync.Once
 
 	// RedirectTrailingSlash enables automatic redirection if the current route can't be matched but a
