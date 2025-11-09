@@ -93,19 +93,15 @@ func TestUpdateRouteTreesCalledOnce(t *testing.T) {
 	SetMode(TestMode)
 	router := New()
 
-	callCount := 0
-	originalUpdate := router.updateRouteTrees
-
 	router.GET(`/test\:action`, func(c *Context) {
-		c.JSON(http.StatusOK, H{"call": callCount})
+		c.String(http.StatusOK, "ok")
 	})
 
-	for i := 0; i < 5; i++ {
+	for range 5 {
 		w := httptest.NewRecorder()
 		req, _ := http.NewRequest(http.MethodGet, "/test:action", nil)
 		router.ServeHTTP(w, req)
 		assert.Equal(t, http.StatusOK, w.Code)
+		assert.Equal(t, "ok", w.Body.String())
 	}
-
-	_ = originalUpdate
 }
