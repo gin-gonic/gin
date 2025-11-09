@@ -23,10 +23,12 @@ import (
 	"golang.org/x/net/http2/h2c"
 )
 
-const defaultMultipartMemory = 32 << 20 // 32 MB
-const escapedColon = "\\:"
-const colon = ":"
-const backslash = "\\"
+const (
+	defaultMultipartMemory = 32 << 20 // 32 MB
+	escapedColon           = "\\:"
+	colon                  = ":"
+	backslash              = "\\"
+)
 
 var (
 	default404Body = []byte("404 page not found")
@@ -46,8 +48,10 @@ var defaultTrustedCIDRs = []*net.IPNet{
 	},
 }
 
-var regSafePrefix = regexp.MustCompile("[^a-zA-Z0-9/-]+")
-var regRemoveRepeatedChar = regexp.MustCompile("/{2,}")
+var (
+	regSafePrefix         = regexp.MustCompile("[^a-zA-Z0-9/-]+")
+	regRemoveRepeatedChar = regexp.MustCompile("/{2,}")
+)
 
 // HandlerFunc defines the handler used by gin middleware as return value.
 type HandlerFunc func(*Context)
