@@ -18,15 +18,8 @@ linters:
     - wastedassign
   settings:
     gosec:
-      includes:
-        - G102
-        - G106
-        - G108
-        - G109
-        - G111
-        - G112
-        - G201
-        - G203
+      excludes:
+        - G115
     perfsprint:
       int-conversion: true
       err-error: true
