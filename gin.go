@@ -23,10 +23,12 @@ import (
 	"golang.org/x/net/http2/h2c"
 )
 
-const defaultMultipartMemory = 32 << 20 // 32 MB
-const escapedColon = "\\:"
-const colon = ":"
-const backslash = "\\"
+const (
+	defaultMultipartMemory = 32 << 20 // 32 MB
+	escapedColon           = "\\:"
+	colon                  = ":"
+	backslash              = "\\"
+)
 
 var (
 	default404Body = []byte("404 page not found")
@@ -46,8 +48,10 @@ var defaultTrustedCIDRs = []*net.IPNet{
 	},
 }
 
-var regSafePrefix = regexp.MustCompile("[^a-zA-Z0-9/-]+")
-var regRemoveRepeatedChar = regexp.MustCompile("/{2,}")
+var (
+	regSafePrefix         = regexp.MustCompile("[^a-zA-Z0-9/-]+")
+	regRemoveRepeatedChar = regexp.MustCompile("/{2,}")
+)
 
 // HandlerFunc defines the handler used by gin middleware as return value.
 type HandlerFunc func(*Context)
@@ -537,7 +541,11 @@ func (engine *Engine) Run(addr ...string) (err error) {
 	engine.updateRouteTrees()
 	address := resolveAddress(addr)
 	debugPrint("Listening and serving HTTP on %s\n", address)
-	err = http.ListenAndServe(address, engine.Handler())
+	server := &http.Server{ // #nosec G112
+		Addr:    address,
+		Handler: engine.Handler(),
+	}
+	err = server.ListenAndServe()
 	return
 }
 
@@ -553,7 +561,11 @@ func (engine *Engine) RunTLS(addr, certFile, keyFile string) (err error) {
 			"Please check https://github.com/gin-gonic/gin/blob/master/docs/doc.md#dont-trust-all-proxies for details.")
 	}
 
-	err = http.ListenAndServeTLS(addr, certFile, keyFile, engine.Handler())
+	server := &http.Server{ // #nosec G112
+		Addr:    addr,
+		Handler: engine.Handler(),
+	}
+	err = server.ListenAndServeTLS(certFile, keyFile)
 	return
 }
 
@@ -576,7 +588,10 @@ func (engine *Engine) RunUnix(file string) (err error) {
 	defer listener.Close()
 	defer os.Remove(file)
 
-	err = http.Serve(listener, engine.Handler())
+	server := &http.Server{ // #nosec G112
+		Handler: engine.Handler(),
+	}
+	err = server.Serve(listener)
 	return
 }
 
@@ -630,7 +645,10 @@ func (engine *Engine) RunListener(listener net.Listener) (err error) {
 			"Please check https://github.com/gin-gonic/gin/blob/master/docs/doc.md#dont-trust-all-proxies for details.")
 	}
 
-	err = http.Serve(listener, engine.Handler())
+	server := &http.Server{ // #nosec G112
+		Handler: engine.Handler(),
+	}
+	err = server.Serve(listener)
 	return
 }
 

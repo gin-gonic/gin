@@ -55,6 +55,14 @@ const ContextRequestKey ContextKeyType = 0
 // abortIndex represents a typical value used in abort functions.
 const abortIndex int8 = math.MaxInt8 >> 1
 
+// safeInt8 converts int to int8 safely, capping at math.MaxInt8
+func safeInt8(n int) int8 {
+	if n > math.MaxInt8 {
+		return math.MaxInt8
+	}
+	return int8(n)
+}
+
 // Context is the most important part of gin. It allows us to pass variables between middleware,
 // manage the flow, validate the JSON of a request and render a JSON response for example.
 type Context struct {
@@ -186,7 +194,7 @@ func (c *Context) FullPath() string {
 // See example in GitHub.
 func (c *Context) Next() {
 	c.index++
-	for c.index < int8(len(c.handlers)) {
+	for c.index < safeInt8(len(c.handlers)) {
 		if c.handlers[c.index] != nil {
 			c.handlers[c.index](c)
 		}
