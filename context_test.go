@@ -292,7 +292,7 @@ func TestContextReset(t *testing.T) {
 	assert.Empty(t, c.Errors.Errors())
 	assert.Empty(t, c.Errors.ByType(ErrorTypeAny))
 	assert.Empty(t, c.Params)
-	assert.EqualValues(t, c.index, -1)
+	assert.EqualValues(t, -1, c.index)
 	assert.Equal(t, c.Writer.(*responseWriter), &c.writermem)
 }
 
@@ -384,7 +384,7 @@ func TestContextSetGetValues(t *testing.T) {
 	c.Set("intInterface", a)
 
 	assert.Exactly(t, "this is a string", c.MustGet("string").(string))
-	assert.Exactly(t, c.MustGet("int32").(int32), int32(-42))
+	assert.Exactly(t, int32(-42), c.MustGet("int32").(int32))
 	assert.Exactly(t, int64(42424242424242), c.MustGet("int64").(int64))
 	assert.Exactly(t, uint64(42), c.MustGet("uint64").(uint64))
 	assert.InDelta(t, float32(4.2), c.MustGet("float32").(float32), 0.01)
