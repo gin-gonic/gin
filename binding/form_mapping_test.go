@@ -715,3 +715,22 @@ func TestMappingEmptyValues(t *testing.T) {
 		assert.Equal(t, []int{1, 2, 3}, s.SliceCsv)
 	})
 }
+
+type testCustom struct {
+	Value string
+}
+
+func (t *testCustom) UnmarshalParam(param string) error {
+	t.Value = "prefix_" + param
+	return nil
+}
+
+func TestTrySetCustomIntegration(t *testing.T) {
+	var s struct {
+		F testCustom `form:"f"`
+	}
+
+	err := mappingByPtr(&s, formSource{"f": {"hello"}}, "form")
+	require.NoError(t, err)
+	assert.Equal(t, "prefix_hello", s.F.Value)
+}
