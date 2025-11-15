@@ -1,0 +1,109 @@
+version: "2"
+linters:
+  default: none
+  enable:
+    - asciicheck
+    - copyloopvar
+    - depguard
+    - exhaustive
+    - govet
+    - ineffassign
+    - misspell
+    - nolintlint
+    - prealloc
+    - staticcheck
+    - unconvert
+    - unparam
+    - unused
+    - usetesting
+  settings:
+    depguard:
+      rules:
+        random:
+          deny:
+            - pkg: "math/rand$"
+              desc: use math/rand/v2
+            - pkg: "golang.org/x/exp/rand"
+              desc: use math/rand/v2
+        quicvarint:
+          list-mode: strict
+          files:
+            - '**/github.com/quic-go/quic-go/quicvarint/*'
+            - '!$test'
+          allow:
+            - $gostd
+        rsa:
+          list-mode: original
+          deny:
+            - pkg: crypto/rsa
+              desc: "use crypto/ed25519 instead"
+        ginkgo:
+          list-mode: original
+          deny:
+            - pkg: github.com/onsi/ginkgo
+              desc: "use standard Go tests"
+            - pkg: github.com/onsi/ginkgo/v2
+              desc: "use standard Go tests"
+            - pkg: github.com/onsi/gomega
+              desc: "use standard Go tests"
+        http3-internal:
+          list-mode: lax
+          files:
+            - '**/http3/**'
+          deny:
+            - pkg: 'github.com/quic-go/quic-go/internal'
+              desc: 'no dependency on quic-go/internal'
+          allow:
+            - 'github.com/quic-go/quic-go/internal/synctest'
+    misspell:
+      ignore-rules:
+        - ect
+    # see https://github.com/ldez/usetesting/issues/10
+    usetesting:
+      context-background: false
+      context-todo: false
+  exclusions:
+    generated: lax
+    presets:
+      - comments
+      - common-false-positives
+      - legacy
+      - std-error-handling
+    rules:
+      - linters:
+          - depguard
+        path: internal/qtls
+      - linters:
+          - exhaustive
+          - prealloc
+          - unparam
+        path: _test\.go
+      - linters:
+          - staticcheck
+        path: _test\.go
+        text: 'SA1029:' # inappropriate key in call to context.WithValue
+      # WebTransport still relies on the ConnectionTracingID and ConnectionTracingKey.
+      # See https://github.com/quic-go/quic-go/issues/4405 for more details.
+      - linters:
+          - staticcheck
+        paths:
+          - http3/
+          - integrationtests/self/http_test.go
+        text: 'SA1019:.+quic\.ConnectionTracing(ID|Key)'
+    paths:
+      - internal/handshake/cipher_suite.go
+      - third_party$
+      - builtin$
+      - examples$
+formatters:
+  enable:
+    - gofmt
+    - gofumpt
+    - goimports
+  exclusions:
+    generated: lax
+    paths:
+      - internal/handshake/cipher_suite.go
+      - third_party$
+      - builtin$
+      - examples$

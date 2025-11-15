@@ -1362,7 +1362,55 @@ func TestContextRenderSSE(t *testing.T) {
 		"bar": "foo",
 	})
 
-	assert.Equal(t, strings.ReplaceAll(w.Body.String(), " ", ""), strings.ReplaceAll("event:float\ndata:1.5\n\nid:123\ndata:text\n\nevent:chat\ndata:{\"bar\":\"foo\",\"foo\":\"bar\"}\n\n", " ", ""))
+	assert.Equal(t, "event: float\ndata: 1.5\n\nid: 123\ndata: text\n\nevent: chat\ndata: {\"bar\":\"foo\",\"foo\":\"bar\"}\n\n", w.Body.String())
+}
+
+// TestContextRenderSSEWithAllFields tests SSE rendering with all fields (id, event, retry, data)
+// and validates that spaces are present after colons per SSE specification
+func TestContextRenderSSEWithAllFields(t *testing.T) {
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
+
+	// Test with all fields including retry
+	c.Render(-1, sse.Event{
+		Id:    "msg-1",
+		Event: "update",
+		Retry: 5000,
+		Data:  "hello",
+	})
+
+	expected := "id: msg-1\nevent: update\nretry: 5000\ndata: hello\n\n"
+	assert.Equal(t, expected, w.Body.String())
+
+	// Verify spaces are present after each colon
+	assert.Contains(t, w.Body.String(), "id: ")
+	assert.Contains(t, w.Body.String(), "event: ")
+	assert.Contains(t, w.Body.String(), "retry: ")
+	assert.Contains(t, w.Body.String(), "data: ")
+}
+
+// TestContextRenderSSEMultiline tests SSE rendering with multiline data
+func TestContextRenderSSEMultiline(t *testing.T) {
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
+
+	c.Render(-1, sse.Event{
+		Event: "message",
+		Data:  "line1\nline2\nline3",
+	})
+
+	expected := "event: message\ndata: line1\ndata: line2\ndata: line3\n\n"
+	assert.Equal(t, expected, w.Body.String())
+
+	// Verify each line has "data: " prefix with space
+	lines := strings.Split(w.Body.String(), "\n")
+	dataLines := 0
+	for _, line := range lines {
+		if strings.HasPrefix(line, "data: ") {
+			dataLines++
+		}
+	}
+	assert.Equal(t, 3, dataLines, "Should have 3 data lines with space after colon")
 }
 
 func TestContextRenderFile(t *testing.T) {

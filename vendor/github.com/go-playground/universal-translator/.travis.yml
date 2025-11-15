@@ -1,0 +1,27 @@
+language: go
+go:
+  - 1.13.4
+  - tip
+matrix:
+  allow_failures:
+    - go: tip
+
+notifications:
+  email:
+    recipients: dean.karn@gmail.com
+    on_success: change
+    on_failure: always
+
+before_install:
+  - go install github.com/mattn/goveralls
+
+# Only clone the most recent commit.
+git:
+  depth: 1
+
+script:
+  - go test -v -race -covermode=atomic -coverprofile=coverage.coverprofile ./...
+
+after_success: |
+  [ $TRAVIS_GO_VERSION = 1.13.4 ] &&
+  goveralls -coverprofile=coverage.coverprofile -service travis-ci -repotoken $COVERALLS_TOKEN

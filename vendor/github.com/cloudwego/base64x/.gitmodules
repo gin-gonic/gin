@@ -1,0 +1,3 @@
+[submodule "tools/asm2asm"]
+	path = tools/asm2asm
+	url = https://github.com/cloudwego/asm2asm

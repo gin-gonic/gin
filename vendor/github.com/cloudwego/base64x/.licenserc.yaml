@@ -1,0 +1,14 @@
+header:
+  license:
+    spdx-id: Apache-2.0
+    copyright-owner: CloudWeGo Authors
+
+  paths:
+    - '**/*.go'
+    - '**/*.s'
+
+  paths-ignore:
+    - 'internal/native/avx2/*.go'
+    - 'internal/native/sse/*.go'
+
+  comment: on-failure

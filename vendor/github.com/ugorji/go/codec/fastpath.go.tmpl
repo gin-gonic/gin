@@ -1,0 +1,134 @@
+//go:build !notfastpath && !codec.notfastpath
+
+// Copyright (c) 2012-2020 Ugorji Nwoke. All rights reserved.
+// Use of this source code is governed by a MIT license found in the LICENSE file.
+
+// Code generated from fastpath.go.tmpl - DO NOT EDIT.
+
+package codec
+
+// Fast path functions try to create a fast path encode or decode implementation
+// for common maps and slices.
+//
+// We define the functions and register them in this single file
+// so as not to pollute the encode.go and decode.go, and create a dependency in there.
+// This file can be omitted without causing a build failure.
+//
+// The advantage of fast paths is:
+//	  - Many calls bypass reflection altogether
+// 
+// Currently support
+//	  - slice of all builtin types (numeric, bool, string, []byte)
+//    - maps of builtin types to builtin or interface{} type, EXCEPT FOR
+//      keys of type uintptr, int8/16/32, uint16/32, float32/64, bool, interface{}
+//      AND values of type type int8/16/32, uint16/32
+// This should provide adequate "typical" implementations.
+// 
+// Note that fast track decode functions must handle values for which an address cannot be obtained.
+// For example: 
+//	 m2 := map[string]int{}
+//	 p2 := []interface{}{m2}
+//	 // decoding into p2 will bomb if fast track functions do not treat like unaddressable.
+// 
+
+{{/*
+// ----------------
+fastpathEncMap<KV>R func (mapped to type id), routes to:
+- ft.EncMap<KV>V
+
+fastpathEncSlice<E>R func (mapped to type id), delegates to one of:
+- ft.EncSlice<E>V
+- ft.EncAsMapSlice<E>V (when mapbyslice ie f.ti.mbs=true)
+
+// ----------------
+fastpathDecSlice<E>R func (mapped to type id), delegates to:
+- ft.DecSliceIntfY  (when slice CAN be updated)
+- ft.DecSliceIntfN  (when slice CANNOT be updated e.g. from array or non-addressable slice)
+
+fastpathDecMap<KV>R func (mapped to type id), routes to
+- ft.DecMap<KV>L  (handles ptr which is changeable, and non-pointer which cannot be made if nil)
+
+// ----------------
+NOTE:
+- fastpath typeswitch directly calls the secondary methods for builtin maps/slices with appropriate nil handling:
+  - except EncAsMapSlice<E>V which only applies to wrapper types not those in the switch
+- fastpathEncXXX functions mapped to type ID MUST do nil-checks during encode
+  - they are only called by decodeValue/encodeValue or other code (same way kMap et al are called)
+*/ -}}
+
+import (
+	"reflect"
+	"sort"
+	"slices"
+)
+
+const fastpathEnabled = true
+
+{{/*
+const fastpathMapBySliceErrMsg = "mapBySlice requires even slice length, but got %v"
+*/ -}}
+
+type fastpathARtid [{{ .FastpathLen }}]uintptr
+
+type fastpathRtRtid struct {
+	rtid  uintptr
+	rt    reflect.Type
+}
+type fastpathARtRtid [{{ .FastpathLen }}]fastpathRtRtid
+
+var (
+	fastpathAvRtidArr fastpathARtid
+	fastpathAvRtRtidArr fastpathARtRtid
+	fastpathAvRtid = fastpathAvRtidArr[:]
+	fastpathAvRtRtid = fastpathAvRtRtidArr[:]
+)
+
+func fastpathAvIndex(rtid uintptr) (i uint, ok bool) {
+	return searchRtids(fastpathAvRtid, rtid)
+}
+
+func init() {
+	var i uint = 0
+	fn := func(v interface{}) {
+		xrt := reflect.TypeOf(v)
+		xrtid := rt2id(xrt)
+		xptrtid := rt2id(reflect.PointerTo(xrt))
+		{{- /* only the base slice/map rtid is put in fastpathAvIndex, since we only handle slices/map/array */}}
+        fastpathAvRtid[i] = xrtid
+		fastpathAvRtRtid[i] = fastpathRtRtid{ rtid: xrtid, rt: xrt }
+		{{- /* fastpath type switches however handle slices/map/array, and pointers to them */}}
+		encBuiltinRtids = append(encBuiltinRtids, xrtid, xptrtid)
+		decBuiltinRtids = append(decBuiltinRtids, xrtid, xptrtid)
+		i++
+	}
+	{{/* do not register []byte in fastpath */}}
+	{{range .Values}}{{if not .Primitive}}{{if not .MapKey -}}
+	fn([]{{ .Elem }}(nil))
+	{{end}}{{end}}{{end}}
+	
+	{{range .Values}}{{if not .Primitive}}{{if .MapKey -}}
+	fn(map[{{ .MapKey }}]{{ .Elem }}(nil))
+	{{end}}{{end}}{{end}}
+
+	sort.Slice(fastpathAvRtid, func(i, j int) bool { return fastpathAvRtid[i] < fastpathAvRtid[j] })
+	sort.Slice(fastpathAvRtRtid, func(i, j int) bool { return fastpathAvRtRtid[i].rtid < fastpathAvRtRtid[j].rtid })
+	slices.Sort(encBuiltinRtids)
+	slices.Sort(decBuiltinRtids)
+}
+	
+func fastpathDecodeSetZeroTypeSwitch(iv interface{}) bool {
+	switch v := iv.(type) {
+{{range .Values}}{{if not .Primitive}}{{if not .MapKey -}}
+	case *[]{{ .Elem }}: 
+		*v = nil
+{{end}}{{end}}{{end}}
+{{range .Values}}{{if not .Primitive}}{{if .MapKey -}}
+	case *map[{{ .MapKey }}]{{ .Elem }}: 
+		*v = nil 
+{{end}}{{end}}{{end}}
+	default:
+		_ = v // workaround https://github.com/golang/go/issues/12927 seen in go1.4
+		return false
+	}
+	return true
+}

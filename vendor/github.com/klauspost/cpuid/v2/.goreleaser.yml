@@ -1,0 +1,57 @@
+version: 2
+
+builds:
+  -
+    id: "cpuid"
+    binary: cpuid
+    main: ./cmd/cpuid/main.go
+    env:
+      - CGO_ENABLED=0
+    flags:
+      - -ldflags=-s -w
+    goos:
+      - aix
+      - linux
+      - freebsd
+      - netbsd
+      - windows
+      - darwin
+    goarch:
+      - 386
+      - amd64
+      - arm64
+    goarm:
+      - 7
+
+archives:
+  -
+    id: cpuid
+    name_template: "cpuid-{{ .Os }}_{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}"
+    format_overrides:
+      - goos: windows
+        format: zip
+    files:
+      - LICENSE
+checksum:
+  name_template: 'checksums.txt'
+changelog:
+  sort: asc
+  filters:
+    exclude:
+    - '^doc:'
+    - '^docs:'
+    - '^test:'
+    - '^tests:'
+    - '^Update\sREADME.md'
+
+nfpms:
+  -
+    file_name_template: "cpuid_package_{{ .Os }}_{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}"
+    vendor: Klaus Post
+    homepage: https://github.com/klauspost/cpuid
+    maintainer: Klaus Post <klauspost@gmail.com>
+    description: CPUID Tool
+    license: BSD 3-Clause
+    formats:
+      - deb
+      - rpm

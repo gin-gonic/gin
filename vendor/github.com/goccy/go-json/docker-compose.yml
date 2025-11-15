@@ -1,0 +1,13 @@
+version: '2'
+services:
+  go-json:
+    image: golang:1.18
+    volumes:
+      - '.:/go/src/go-json'
+    deploy:
+      resources:
+        limits:
+          memory: 620M
+    working_dir: /go/src/go-json
+    command: |
+      sh -c "go test -c . && ls go-json.test"

@@ -1,0 +1,13 @@
+*.exe
+*.dll
+*.so
+*.dylib
+
+*.test
+
+*.out
+*.txt
+
+vendor/
+/removecomments
+/snake2camel

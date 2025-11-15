@@ -1,0 +1,9 @@
+[submodule "cloudwego"]
+	path = tools/asm2asm
+	url = https://github.com/cloudwego/asm2asm.git
+[submodule "tools/simde"]
+	path = tools/simde
+	url = https://github.com/simd-everywhere/simde.git
+[submodule "fuzz/go-fuzz-corpus"]
+	path = fuzz/go-fuzz-corpus
+	url = https://github.com/dvyukov/go-fuzz-corpus.git

@@ -1,0 +1,37 @@
+# Options for analysis running.
+run:
+  # include `vendor` `third_party` `testdata` `examples` `Godeps` `builtin`
+  skip-dirs-use-default: true
+  skip-dirs:
+    - kitex_gen
+  skip-files:
+    - ".*\\.mock\\.go$"
+# output configuration options
+output:
+  # Format: colored-line-number|line-number|json|tab|checkstyle|code-climate|junit-xml|github-actions
+  format: colored-line-number
+# All available settings of specific linters.
+# Refer to https://golangci-lint.run/usage/linters
+linters-settings:
+  gofumpt:
+    # Choose whether to use the extra rules.
+    # Default: false
+    extra-rules: true
+  govet:
+    # Disable analyzers by name.
+    # Run `go tool vet help` to see all analyzers.
+    disable:
+      - stdmethods
+linters:
+  enable:
+    - gofumpt
+    - goimports
+    - gofmt
+  disable:
+    - errcheck
+    - typecheck
+    - deadcode
+    - varcheck
+    - staticcheck
+issues:
+  exclude-use-default: true

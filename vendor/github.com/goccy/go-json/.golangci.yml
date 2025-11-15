@@ -1,0 +1,83 @@
+run:
+  skip-files:
+    - encode_optype.go
+    - ".*_test\\.go$"
+
+linters-settings:
+  govet:
+    enable-all: true
+    disable:
+      - shadow
+
+linters:
+  enable-all: true
+  disable:
+    - dogsled
+    - dupl
+    - exhaustive
+    - exhaustivestruct
+    - errorlint
+    - forbidigo
+    - funlen
+    - gci
+    - gochecknoglobals
+    - gochecknoinits
+    - gocognit
+    - gocritic
+    - gocyclo
+    - godot
+    - godox
+    - goerr113
+    - gofumpt
+    - gomnd
+    - gosec
+    - ifshort
+    - lll
+    - makezero
+    - nakedret
+    - nestif
+    - nlreturn
+    - paralleltest
+    - testpackage
+    - thelper
+    - wrapcheck
+    - interfacer
+    - lll
+    - nakedret
+    - nestif
+    - nlreturn
+    - testpackage
+    - wsl
+    - varnamelen
+    - nilnil
+    - ireturn
+    - govet
+    - forcetypeassert
+    - cyclop
+    - containedctx
+    - revive
+
+issues:
+  exclude-rules:
+    # not needed
+    - path: /*.go
+      text: "ST1003: should not use underscores in package names"
+      linters:
+        - stylecheck
+    - path: /*.go
+      text: "don't use an underscore in package name"
+      linters:
+        - golint
+    - path: rtype.go
+      linters:
+        - golint
+        - stylecheck
+    - path: error.go
+      linters:
+        - staticcheck
+
+  # Maximum issues count per one linter. Set to 0 to disable. Default is 50.
+  max-issues-per-linter: 0
+
+  # Maximum count of issues with the same text. Set to 0 to disable. Default is 3.
+  max-same-issues: 0

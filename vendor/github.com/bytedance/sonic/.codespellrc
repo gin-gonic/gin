@@ -1,0 +1,5 @@
+[codespell]
+# ignore test files, go project names, binary files via `skip` and special var/regex via `ignore-words`
+skip = fuzz,*_test.tmpl,testdata,*_test.go,go.mod,go.sum,*.gz
+ignore-words = .github/workflows/.ignore_words
+check-filenames = true
