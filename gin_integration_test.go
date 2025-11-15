@@ -16,6 +16,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -261,10 +262,11 @@ func TestUnixSocket(t *testing.T) {
 
 	fmt.Fprint(c, "GET /example HTTP/1.0\r\n\r\n")
 	scanner := bufio.NewScanner(c)
-	var response string
+	var responseBuilder strings.Builder
 	for scanner.Scan() {
-		response += scanner.Text()
+		responseBuilder.WriteString(scanner.Text())
 	}
+	response := responseBuilder.String()
 	assert.Contains(t, response, "HTTP/1.0 200", "should get a 200")
 	assert.Contains(t, response, "it worked", "resp body should match")
 }
@@ -322,10 +324,11 @@ func TestFileDescriptor(t *testing.T) {
 
 	fmt.Fprintf(c, "GET /example HTTP/1.0\r\n\r\n")
 	scanner := bufio.NewScanner(c)
-	var response string
+	var responseBuilder strings.Builder
 	for scanner.Scan() {
-		response += scanner.Text()
+		responseBuilder.WriteString(scanner.Text())
 	}
+	response := responseBuilder.String()
 	assert.Contains(t, response, "HTTP/1.0 200", "should get a 200")
 	assert.Contains(t, response, "it worked", "resp body should match")
 }
@@ -354,10 +357,11 @@ func TestListener(t *testing.T) {
 
 	fmt.Fprintf(c, "GET /example HTTP/1.0\r\n\r\n")
 	scanner := bufio.NewScanner(c)
-	var response string
+	var responseBuilder strings.Builder
 	for scanner.Scan() {
-		response += scanner.Text()
+		responseBuilder.WriteString(scanner.Text())
 	}
+	response := responseBuilder.String()
 	assert.Contains(t, response, "HTTP/1.0 200", "should get a 200")
 	assert.Contains(t, response, "it worked", "resp body should match")
 }

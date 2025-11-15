@@ -68,7 +68,6 @@ linters:
       - examples$
 formatters:
   enable:
-    - gci
     - gofmt
     - gofumpt
     - goimports
@@ -80,7 +79,4 @@ formatters:
   exclusions:
     generated: lax
     paths:
-      - third_party$
-      - builtin$
-      - examples$
       - gin.go
