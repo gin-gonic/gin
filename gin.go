@@ -98,6 +98,10 @@ const (
 type Engine struct {
 	RouterGroup
 
+	// routeTreesUpdated ensures that the initialization or update of the route trees
+	// (used for routing HTTP requests) happens only once, even if called multiple times concurrently.
+	routeTreesUpdated sync.Once
+
 	// RedirectTrailingSlash enables automatic redirection if the current route can't be matched but a
 	// handler for the path with (without) the trailing slash exists.
 	// For example if /foo/ is requested but a route only exists for /foo, the
@@ -654,6 +658,10 @@ func (engine *Engine) RunListener(listener net.Listener) (err error) {
 
 // ServeHTTP conforms to the http.Handler interface.
 func (engine *Engine) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	engine.routeTreesUpdated.Do(func() {
+		engine.updateRouteTrees()
+	})
+
 	c := engine.pool.Get().(*Context)
 	c.writermem.reset(w)
 	c.Request = req
