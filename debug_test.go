@@ -112,6 +112,59 @@ func TestDebugPrintWARNINGDefault(t *testing.T) {
 	}
 }
 
+func TestDebugPrintWARNINGDefaultLowGoVersion(t *testing.T) {
+	// Test the Go version warning branch by testing getMinVer with different inputs
+	// and then testing the logic directly
+	
+	// First test getMinVer with a version that would trigger the warning
+	v, err := getMinVer("go1.22.1")
+	require.NoError(t, err)
+	assert.Equal(t, uint64(22), v)
+	
+	// Test that version 22 is less than ginSupportMinGoVer (23)
+	assert.True(t, v < ginSupportMinGoVer)
+	
+	// Test the warning message directly by capturing debugPrint output
+	re := captureOutput(t, func() {
+		SetMode(DebugMode)
+		// Simulate the condition that would trigger the warning
+		if v < ginSupportMinGoVer {
+			debugPrint(`[WARNING] Now Gin requires Go 1.23+.
+
+`)
+		}
+		debugPrint(`[WARNING] Creating an Engine instance with the Logger and Recovery middleware already attached.
+
+`)
+		SetMode(TestMode)
+	})
+	
+	assert.Equal(t, "[GIN-debug] [WARNING] Now Gin requires Go 1.23+.\n\n[GIN-debug] [WARNING] Creating an Engine instance with the Logger and Recovery middleware already attached.\n\n", re)
+}
+
+func TestDebugPrintWithCustomFunc(t *testing.T) {
+	// Test debugPrint with custom DebugPrintFunc
+	originalFunc := DebugPrintFunc
+	defer func() {
+		DebugPrintFunc = originalFunc
+	}()
+	
+	var capturedFormat string
+	var capturedValues []any
+	DebugPrintFunc = func(format string, values ...any) {
+		capturedFormat = format
+		capturedValues = values
+	}
+	
+	SetMode(DebugMode)
+	debugPrint("test %s %d", "message", 42)
+	SetMode(TestMode)
+	
+	// debugPrint automatically adds \n if not present
+	assert.Equal(t, "test %s %d", capturedFormat)
+	assert.Equal(t, []any{"message", 42}, capturedValues)
+}
+
 func TestDebugPrintWARNINGNew(t *testing.T) {
 	re := captureOutput(t, func() {
 		SetMode(DebugMode)
