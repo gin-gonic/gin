@@ -280,7 +280,7 @@ func (c *Context) Error(err error) *Error {
 
 // Set is used to store a new key/value pair exclusively for this context.
 // It also lazy initializes c.Keys if it was not used previously.
-func (c *Context) Set(key any, value any) {
+func (c *Context) Set(key any, value any) *Context {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	if c.Keys == nil {
@@ -288,6 +288,7 @@ func (c *Context) Set(key any, value any) {
 	}
 
 	c.Keys[key] = value
+	return c
 }
 
 // Get returns the value for the given key, ie: (value, true).
@@ -506,8 +507,9 @@ func (c *Context) Param(key string) string {
 // Example Route: "/user/:id"
 // AddParam("id", 1)
 // Result: "/user/1"
-func (c *Context) AddParam(key, value string) {
+func (c *Context) AddParam(key, value string) *Context {
 	c.Params = append(c.Params, Param{Key: key, Value: value})
+	return c
 }
 
 // Query returns the keyed url query value if it exists,
@@ -1052,19 +1054,21 @@ func bodyAllowedForStatus(status int) bool {
 }
 
 // Status sets the HTTP response code.
-func (c *Context) Status(code int) {
+func (c *Context) Status(code int) *Context {
 	c.Writer.WriteHeader(code)
+	return c
 }
 
 // Header is an intelligent shortcut for c.Writer.Header().Set(key, value).
 // It writes a header in the response.
 // If value == "", this method removes the header `c.Writer.Header().Del(key)`
-func (c *Context) Header(key, value string) {
+func (c *Context) Header(key, value string) *Context {
 	if value == "" {
 		c.Writer.Header().Del(key)
-		return
+		return c
 	}
 	c.Writer.Header().Set(key, value)
+	return c
 }
 
 // GetHeader returns value from request headers.
@@ -1081,14 +1085,15 @@ func (c *Context) GetRawData() ([]byte, error) {
 }
 
 // SetSameSite with cookie
-func (c *Context) SetSameSite(samesite http.SameSite) {
+func (c *Context) SetSameSite(samesite http.SameSite) *Context {
 	c.sameSite = samesite
+	return c
 }
 
 // SetCookie adds a Set-Cookie header to the ResponseWriter's headers.
 // The provided cookie must have a valid Name. Invalid cookies may be
 // silently dropped.
-func (c *Context) SetCookie(name, value string, maxAge int, path, domain string, secure, httpOnly bool) {
+func (c *Context) SetCookie(name, value string, maxAge int, path, domain string, secure, httpOnly bool) *Context {
 	if path == "" {
 		path = "/"
 	}
@@ -1102,12 +1107,13 @@ func (c *Context) SetCookie(name, value string, maxAge int, path, domain string,
 		Secure:   secure,
 		HttpOnly: httpOnly,
 	})
+	return c
 }
 
 // SetCookieData adds a Set-Cookie header to the ResponseWriter's headers.
 // It accepts a pointer to http.Cookie structure for more flexibility in setting cookie attributes.
 // The provided cookie must have a valid Name. Invalid cookies may be silently dropped.
-func (c *Context) SetCookieData(cookie *http.Cookie) {
+func (c *Context) SetCookieData(cookie *http.Cookie) *Context {
 	if cookie.Path == "" {
 		cookie.Path = "/"
 	}
@@ -1115,6 +1121,7 @@ func (c *Context) SetCookieData(cookie *http.Cookie) {
 		cookie.SameSite = c.sameSite
 	}
 	http.SetCookie(c.Writer, cookie)
+	return c
 }
 
 // Cookie returns the named cookie provided in the request or
@@ -1394,8 +1401,9 @@ func (c *Context) NegotiateFormat(offered ...string) string {
 }
 
 // SetAccepted sets Accept header data.
-func (c *Context) SetAccepted(formats ...string) {
+func (c *Context) SetAccepted(formats ...string) *Context {
 	c.Accepted = formats
+	return c
 }
 
 /************************************/
