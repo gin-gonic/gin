@@ -81,7 +81,7 @@ func (msg *Error) MarshalJSON() ([]byte, error) {
 }
 
 // Error implements the error interface.
-func (msg Error) Error() string {
+func (msg *Error) Error() string {
 	return msg.Err.Error()
 }
 
