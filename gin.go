@@ -589,7 +589,6 @@ func (engine *Engine) RunUnix(file string) (err error) {
 	if err != nil {
 		return
 	}
-	defer listener.Close()
 	defer os.Remove(file)
 
 	server := &http.Server{ // #nosec G112
@@ -617,7 +616,6 @@ func (engine *Engine) RunFd(fd int) (err error) {
 	if err != nil {
 		return
 	}
-	defer listener.Close()
 	err = engine.RunListener(listener)
 	return
 }
