@@ -5,13 +5,19 @@
 package gin
 
 import (
-	"math"
+	"bytes"
 	"net/url"
 	"strings"
 	"unicode"
 	"unicode/utf8"
 
 	"github.com/gin-gonic/gin/internal/bytesconv"
+)
+
+var (
+	strColon = []byte(":")
+	strStar  = []byte("*")
+	strSlash = []byte("/")
 )
 
 // Param is a single URL parameter, consisting of a key and a value.
@@ -78,22 +84,17 @@ func (n *node) addChild(child *node) {
 	}
 }
 
-// safeUint16 converts int to uint16 safely, capping at math.MaxUint16
-func safeUint16(n int) uint16 {
-	if n > math.MaxUint16 {
-		return math.MaxUint16
-	}
-	return uint16(n)
-}
-
 func countParams(path string) uint16 {
-	colons := strings.Count(path, ":")
-	stars := strings.Count(path, "*")
-	return safeUint16(colons + stars)
+	var n uint16
+	s := bytesconv.StringToBytes(path)
+	n += uint16(bytes.Count(s, strColon))
+	n += uint16(bytes.Count(s, strStar))
+	return n
 }
 
 func countSections(path string) uint16 {
-	return safeUint16(strings.Count(path, "/"))
+	s := bytesconv.StringToBytes(path)
+	return uint16(bytes.Count(s, strSlash))
 }
 
 type nodeType uint8
@@ -520,8 +521,12 @@ walk: // Outer loop for walking the tree
 						*value.params = (*value.params)[:i+1]
 						val := path[:end]
 						if unescape {
-							if v, err := url.QueryUnescape(val); err == nil {
-								val = v
+							// Only unescape if the value contains percent-encoded characters or plus signs
+							// This prevents double unescaping and potential path traversal
+							if strings.ContainsAny(val, "%+") {
+								if v, err := url.QueryUnescape(val); err == nil {
+									val = v
+								}
 							}
 						}
 						(*value.params)[i] = Param{
@@ -573,8 +578,12 @@ walk: // Outer loop for walking the tree
 						*value.params = (*value.params)[:i+1]
 						val := path
 						if unescape {
-							if v, err := url.QueryUnescape(path); err == nil {
-								val = v
+							// Only unescape if the value contains percent-encoded characters or plus signs
+							// This prevents double unescaping and potential path traversal
+							if strings.ContainsAny(path, "%+") {
+								if v, err := url.QueryUnescape(path); err == nil {
+									val = v
+								}
 							}
 						}
 						(*value.params)[i] = Param{
