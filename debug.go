@@ -13,7 +13,7 @@ import (
 	"sync/atomic"
 )
 
-const ginSupportMinGoVer = 23
+const ginSupportMinGoVer = 24
 
 // IsDebugging returns true if the framework is running in debug mode.
 // Use SetMode(gin.ReleaseMode) to disable debug mode.
