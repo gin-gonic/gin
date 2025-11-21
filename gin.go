@@ -12,6 +12,7 @@ import (
 	"os"
 	"path"
 	"regexp"
+	"slices"
 	"strings"
 	"sync"
 
@@ -72,10 +73,11 @@ func (c HandlersChain) Last() HandlerFunc {
 
 // RouteInfo represents a request route's specification which contains method and path and its handler.
 type RouteInfo struct {
-	Method      string
-	Path        string
-	Handler     string
-	HandlerFunc HandlerFunc
+	Method        string
+	Path          string
+	Handler       string
+	HandlerFunc   HandlerFunc
+	HandlersChain HandlersChain
 }
 
 // RoutesInfo defines a RouteInfo slice.
@@ -397,10 +399,11 @@ func iterate(path, method string, routes RoutesInfo, root *node) RoutesInfo {
 	if len(root.handlers) > 0 {
 		handlerFunc := root.handlers.Last()
 		routes = append(routes, RouteInfo{
-			Method:      method,
-			Path:        path,
-			Handler:     nameOfFunction(handlerFunc),
-			HandlerFunc: handlerFunc,
+			Method:        method,
+			Path:          path,
+			Handler:       nameOfFunction(handlerFunc),
+			HandlerFunc:   handlerFunc,
+			HandlersChain: slices.Clone(root.handlers),
 		})
 	}
 	for _, child := range root.children {
