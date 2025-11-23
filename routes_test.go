@@ -669,6 +669,22 @@ func TestRouteStaticFSCleansPath(t *testing.T) {
 	assert.Contains(t, w.Body.String(), "This is another simple embedded page.")
 }
 
+func TestRouteStaticFSNestedJsFile(t *testing.T) {
+	router := New()
+	subFS, err := fs.Sub(embeddedFolder, embeddedPath)
+	require.NoError(t, err)
+	fs := &OnlyFilesFS{
+		FileSystem: http.FS(subFS),
+	}
+	router.StaticFS("/", fs)
+	router.NoRoute(func(c *Context) {
+		c.String(http.StatusNotFound, "non existent")
+	})
+
+	w := PerformRequest(router, http.MethodGet, "/tutorials/making-gin/main.js")
+	assert.Contains(t, w.Body.String(), "console.log(\"This is a simple embedded JavaScript file.\");")
+}
+
 func TestRouterStaticFSFileNotFound(t *testing.T) {
 	router := New()
 
