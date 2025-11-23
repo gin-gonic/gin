@@ -16,6 +16,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -28,7 +29,6 @@ import (
 // params[1]=response status (custom compare status) default:"200 OK"
 // params[2]=response body (custom compare content)  default:"it worked"
 func testRequest(t *testing.T, params ...string) {
-
 	if len(params) == 0 {
 		t.Fatal("url cannot be empty")
 	}
@@ -47,12 +47,12 @@ func testRequest(t *testing.T, params ...string) {
 	body, ioerr := io.ReadAll(resp.Body)
 	require.NoError(t, ioerr)
 
-	var responseStatus = "200 OK"
+	responseStatus := "200 OK"
 	if len(params) > 1 && params[1] != "" {
 		responseStatus = params[1]
 	}
 
-	var responseBody = "it worked"
+	responseBody := "it worked"
 	if len(params) > 2 && params[2] != "" {
 		responseBody = params[2]
 	}
@@ -170,7 +170,7 @@ func TestRunTLS(t *testing.T) {
 }
 
 func TestPusher(t *testing.T) {
-	var html = template.Must(template.New("https").Parse(`
+	html := template.Must(template.New("https").Parse(`
 <html>
 <head>
   <title>Https Test</title>
@@ -262,10 +262,11 @@ func TestUnixSocket(t *testing.T) {
 
 	fmt.Fprint(c, "GET /example HTTP/1.0\r\n\r\n")
 	scanner := bufio.NewScanner(c)
-	var response string
+	var responseBuilder strings.Builder
 	for scanner.Scan() {
-		response += scanner.Text()
+		responseBuilder.WriteString(scanner.Text())
 	}
+	response := responseBuilder.String()
 	assert.Contains(t, response, "HTTP/1.0 200", "should get a 200")
 	assert.Contains(t, response, "it worked", "resp body should match")
 }
@@ -323,10 +324,11 @@ func TestFileDescriptor(t *testing.T) {
 
 	fmt.Fprintf(c, "GET /example HTTP/1.0\r\n\r\n")
 	scanner := bufio.NewScanner(c)
-	var response string
+	var responseBuilder strings.Builder
 	for scanner.Scan() {
-		response += scanner.Text()
+		responseBuilder.WriteString(scanner.Text())
 	}
+	response := responseBuilder.String()
 	assert.Contains(t, response, "HTTP/1.0 200", "should get a 200")
 	assert.Contains(t, response, "it worked", "resp body should match")
 }
@@ -355,10 +357,11 @@ func TestListener(t *testing.T) {
 
 	fmt.Fprintf(c, "GET /example HTTP/1.0\r\n\r\n")
 	scanner := bufio.NewScanner(c)
-	var response string
+	var responseBuilder strings.Builder
 	for scanner.Scan() {
-		response += scanner.Text()
+		responseBuilder.WriteString(scanner.Text())
 	}
+	response := responseBuilder.String()
 	assert.Contains(t, response, "HTTP/1.0 200", "should get a 200")
 	assert.Contains(t, response, "it worked", "resp body should match")
 }

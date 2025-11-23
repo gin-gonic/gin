@@ -116,7 +116,7 @@ func createRequestMultipartFiles(t *testing.T, files ...testFile) *http.Request 
 	err := mw.Close()
 	require.NoError(t, err)
 
-	req, err := http.NewRequest("POST", "/", &body)
+	req, err := http.NewRequest(http.MethodPost, "/", &body)
 	require.NoError(t, err)
 
 	req.Header.Set("Content-Type", MIMEMultipartPOSTForm+"; boundary="+mw.Boundary())

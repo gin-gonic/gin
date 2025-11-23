@@ -481,7 +481,7 @@ func TestTreeDuplicatePath(t *testing.T) {
 		}
 	}
 
-	//printChildren(tree, "")
+	// printChildren(tree, "")
 
 	checkRequests(t, tree, testRequests{
 		{"/", false, "/", nil},
@@ -532,7 +532,7 @@ func TestTreeCatchAllConflictRoot(t *testing.T) {
 
 func TestTreeCatchMaxParams(t *testing.T) {
 	tree := &node{}
-	var route = "/cmd/*filepath"
+	route := "/cmd/*filepath"
 	tree.addRoute(route, fakeHandler(route))
 }
 
@@ -692,7 +692,7 @@ func TestTreeRootTrailingSlashRedirect(t *testing.T) {
 }
 
 func TestRedirectTrailingSlash(t *testing.T) {
-	var data = []struct {
+	data := []struct {
 		path string
 	}{
 		{"/hello/:name"},
@@ -990,6 +990,31 @@ func TestTreeInvalidEscape(t *testing.T) {
 		})
 		if recv == nil != valid {
 			t.Fatalf("%s should be %t but got %v", route, valid, recv)
+		}
+	}
+}
+
+func TestWildcardInvalidSlash(t *testing.T) {
+	const panicMsgPrefix = "no / before catch-all in path"
+
+	routes := map[string]bool{
+		"/foo/bar":  true,
+		"/foo/x*zy": false,
+		"/foo/b*r":  false,
+	}
+
+	for route, valid := range routes {
+		tree := &node{}
+		recv := catchPanic(func() {
+			tree.addRoute(route, nil)
+		})
+
+		if recv == nil != valid {
+			t.Fatalf("%s should be %t but got %v", route, valid, recv)
+		}
+
+		if rs, ok := recv.(string); recv != nil && (!ok || !strings.HasPrefix(rs, panicMsgPrefix)) {
+			t.Fatalf(`"Expected panic "%s" for route '%s', got "%v"`, panicMsgPrefix, route, recv)
 		}
 	}
 }

@@ -16,17 +16,19 @@ import (
 	"sync"
 
 	"github.com/gin-gonic/gin/internal/bytesconv"
+	filesystem "github.com/gin-gonic/gin/internal/fs"
 	"github.com/gin-gonic/gin/render"
-
 	"github.com/quic-go/quic-go/http3"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
 )
 
-const defaultMultipartMemory = 32 << 20 // 32 MB
-const escapedColon = "\\:"
-const colon = ":"
-const backslash = "\\"
+const (
+	defaultMultipartMemory = 32 << 20 // 32 MB
+	escapedColon           = "\\:"
+	colon                  = ":"
+	backslash              = "\\"
+)
 
 var (
 	default404Body = []byte("404 page not found")
@@ -46,8 +48,10 @@ var defaultTrustedCIDRs = []*net.IPNet{
 	},
 }
 
-var regSafePrefix = regexp.MustCompile("[^a-zA-Z0-9/-]+")
-var regRemoveRepeatedChar = regexp.MustCompile("/{2,}")
+var (
+	regSafePrefix         = regexp.MustCompile("[^a-zA-Z0-9/-]+")
+	regRemoveRepeatedChar = regexp.MustCompile("/{2,}")
+)
 
 // HandlerFunc defines the handler used by gin middleware as return value.
 type HandlerFunc func(*Context)
@@ -93,6 +97,10 @@ const (
 // Create an instance of Engine, by using New() or Default()
 type Engine struct {
 	RouterGroup
+
+	// routeTreesUpdated ensures that the initialization or update of the route trees
+	// (used for routing HTTP requests) happens only once, even if called multiple times concurrently.
+	routeTreesUpdated sync.Once
 
 	// RedirectTrailingSlash enables automatic redirection if the current route can't be matched but a
 	// handler for the path with (without) the trailing slash exists.
@@ -215,7 +223,7 @@ func New(opts ...OptionFunc) *Engine {
 		trustedProxies:         []string{"0.0.0.0/0", "::/0"},
 		trustedCIDRs:           defaultTrustedCIDRs,
 	}
-	engine.RouterGroup.engine = engine
+	engine.engine = engine
 	engine.pool.New = func() any {
 		return engine.allocateContext(engine.maxParams)
 	}
@@ -285,6 +293,19 @@ func (engine *Engine) LoadHTMLFiles(files ...string) {
 	engine.SetHTMLTemplate(templ)
 }
 
+// LoadHTMLFS loads an http.FileSystem and a slice of patterns
+// and associates the result with HTML renderer.
+func (engine *Engine) LoadHTMLFS(fs http.FileSystem, patterns ...string) {
+	if IsDebugging() {
+		engine.HTMLRender = render.HTMLDebug{FileSystem: fs, Patterns: patterns, FuncMap: engine.FuncMap, Delims: engine.delims}
+		return
+	}
+
+	templ := template.Must(template.New("").Delims(engine.delims.Left, engine.delims.Right).Funcs(engine.FuncMap).ParseFS(
+		filesystem.FileSystem{FileSystem: fs}, patterns...))
+	engine.SetHTMLTemplate(templ)
+}
+
 // SetHTMLTemplate associate a template with HTML renderer.
 func (engine *Engine) SetHTMLTemplate(templ *template.Template) {
 	if len(engine.trees) > 0 {
@@ -321,7 +342,7 @@ func (engine *Engine) Use(middleware ...HandlerFunc) IRoutes {
 	return engine
 }
 
-// With returns a Engine with the configuration set in the OptionFunc.
+// With returns an Engine with the configuration set in the OptionFunc.
 func (engine *Engine) With(opts ...OptionFunc) *Engine {
 	for _, opt := range opts {
 		opt(engine)
@@ -363,7 +384,7 @@ func (engine *Engine) addRoute(method, path string, handlers HandlersChain) {
 }
 
 // Routes returns a slice of registered routes, including some useful information, such as:
-// the http method, path and the handler name.
+// the http method, path, and the handler name.
 func (engine *Engine) Routes() (routes RoutesInfo) {
 	for _, tree := range engine.trees {
 		routes = iterate("", tree.method, routes, tree.root)
@@ -524,7 +545,11 @@ func (engine *Engine) Run(addr ...string) (err error) {
 	engine.updateRouteTrees()
 	address := resolveAddress(addr)
 	debugPrint("Listening and serving HTTP on %s\n", address)
-	err = http.ListenAndServe(address, engine.Handler())
+	server := &http.Server{ // #nosec G112
+		Addr:    address,
+		Handler: engine.Handler(),
+	}
+	err = server.ListenAndServe()
 	return
 }
 
@@ -540,7 +565,11 @@ func (engine *Engine) RunTLS(addr, certFile, keyFile string) (err error) {
 			"Please check https://github.com/gin-gonic/gin/blob/master/docs/doc.md#dont-trust-all-proxies for details.")
 	}
 
-	err = http.ListenAndServeTLS(addr, certFile, keyFile, engine.Handler())
+	server := &http.Server{ // #nosec G112
+		Addr:    addr,
+		Handler: engine.Handler(),
+	}
+	err = server.ListenAndServeTLS(certFile, keyFile)
 	return
 }
 
@@ -563,7 +592,10 @@ func (engine *Engine) RunUnix(file string) (err error) {
 	defer listener.Close()
 	defer os.Remove(file)
 
-	err = http.Serve(listener, engine.Handler())
+	server := &http.Server{ // #nosec G112
+		Handler: engine.Handler(),
+	}
+	err = server.Serve(listener)
 	return
 }
 
@@ -580,6 +612,7 @@ func (engine *Engine) RunFd(fd int) (err error) {
 	}
 
 	f := os.NewFile(uintptr(fd), fmt.Sprintf("fd@%d", fd))
+	defer f.Close()
 	listener, err := net.FileListener(f)
 	if err != nil {
 		return
@@ -598,7 +631,7 @@ func (engine *Engine) RunQUIC(addr, certFile, keyFile string) (err error) {
 
 	if engine.isUnsafeTrustedProxies() {
 		debugPrint("[WARNING] You trusted all proxies, this is NOT safe. We recommend you to set a value.\n" +
-			"Please check https://pkg.go.dev/github.com/gin-gonic/gin#readme-don-t-trust-all-proxies for details.")
+			"Please check https://github.com/gin-gonic/gin/blob/master/docs/doc.md#dont-trust-all-proxies for details.")
 	}
 
 	err = http3.ListenAndServeQUIC(addr, certFile, keyFile, engine.Handler())
@@ -616,12 +649,19 @@ func (engine *Engine) RunListener(listener net.Listener) (err error) {
 			"Please check https://github.com/gin-gonic/gin/blob/master/docs/doc.md#dont-trust-all-proxies for details.")
 	}
 
-	err = http.Serve(listener, engine.Handler())
+	server := &http.Server{ // #nosec G112
+		Handler: engine.Handler(),
+	}
+	err = server.Serve(listener)
 	return
 }
 
 // ServeHTTP conforms to the http.Handler interface.
 func (engine *Engine) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	engine.routeTreesUpdated.Do(func() {
+		engine.updateRouteTrees()
+	})
+
 	c := engine.pool.Get().(*Context)
 	c.writermem.reset(w)
 	c.Request = req
@@ -637,10 +677,12 @@ func (engine *Engine) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 // Disclaimer: You can loop yourself to deal with this, use wisely.
 func (engine *Engine) HandleContext(c *Context) {
 	oldIndexValue := c.index
+	oldHandlers := c.handlers
 	c.reset()
 	engine.handleHTTPRequest(c)
 
 	c.index = oldIndexValue
+	c.handlers = oldHandlers
 }
 
 func (engine *Engine) handleHTTPRequest(c *Context) {

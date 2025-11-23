@@ -17,14 +17,13 @@ import (
 	"runtime"
 	"strings"
 	"time"
+
+	"github.com/gin-gonic/gin/internal/bytesconv"
 )
 
-var (
-	dunno     = []byte("???")
-	centerDot = []byte("·")
-	dot       = []byte(".")
-	slash     = []byte("/")
-)
+const dunno = "???"
+
+var dunnoBytes = []byte(dunno)
 
 // RecoveryFunc defines the function passable to CustomRecovery.
 type RecoveryFunc func(c *Context, err any)
@@ -70,24 +69,15 @@ func CustomRecoveryWithWriter(out io.Writer, handle RecoveryFunc) HandlerFunc {
 					}
 				}
 				if logger != nil {
-					stack := stack(3)
-					httpRequest, _ := httputil.DumpRequest(c.Request, false)
-					headers := strings.Split(string(httpRequest), "\r\n")
-					for idx, header := range headers {
-						current := strings.Split(header, ":")
-						if current[0] == "Authorization" {
-							headers[idx] = current[0] + ": *"
-						}
-					}
-					headersToStr := strings.Join(headers, "\r\n")
+					const stackSkip = 3
 					if brokenPipe {
-						logger.Printf("%s\n%s%s", err, headersToStr, reset)
+						logger.Printf("%s\n%s%s", err, secureRequestDump(c.Request), reset)
 					} else if IsDebugging() {
 						logger.Printf("[Recovery] %s panic recovered:\n%s\n%s\n%s%s",
-							timeFormat(time.Now()), headersToStr, err, stack, reset)
+							timeFormat(time.Now()), secureRequestDump(c.Request), err, stack(stackSkip), reset)
 					} else {
 						logger.Printf("[Recovery] %s panic recovered:\n%s\n%s%s",
-							timeFormat(time.Now()), err, stack, reset)
+							timeFormat(time.Now()), err, stack(stackSkip), reset)
 					}
 				}
 				if brokenPipe {
@@ -101,6 +91,21 @@ func CustomRecoveryWithWriter(out io.Writer, handle RecoveryFunc) HandlerFunc {
 		}()
 		c.Next()
 	}
+}
+
+// secureRequestDump returns a sanitized HTTP request dump where the Authorization header,
+// if present, is replaced with a masked value ("Authorization: *") to avoid leaking sensitive credentials.
+//
+// Currently, only the Authorization header is sanitized. All other headers and request data remain unchanged.
+func secureRequestDump(r *http.Request) string {
+	httpRequest, _ := httputil.DumpRequest(r, false)
+	lines := strings.Split(bytesconv.BytesToString(httpRequest), "\r\n")
+	for i, line := range lines {
+		if strings.HasPrefix(line, "Authorization:") {
+			lines[i] = "Authorization: *"
+		}
+	}
+	return strings.Join(lines, "\r\n")
 }
 
 func defaultHandleRecovery(c *Context, _ any) {
@@ -138,18 +143,18 @@ func stack(skip int) []byte {
 func source(lines [][]byte, n int) []byte {
 	n-- // in stack trace, lines are 1-indexed but our array is 0-indexed
 	if n < 0 || n >= len(lines) {
-		return dunno
+		return dunnoBytes
 	}
 	return bytes.TrimSpace(lines[n])
 }
 
 // function returns, if possible, the name of the function containing the PC.
-func function(pc uintptr) []byte {
+func function(pc uintptr) string {
 	fn := runtime.FuncForPC(pc)
 	if fn == nil {
 		return dunno
 	}
-	name := []byte(fn.Name())
+	name := fn.Name()
 	// The name includes the path name to the package, which is unnecessary
 	// since the file name is already included.  Plus, it has center dots.
 	// That is, we see
@@ -158,13 +163,13 @@ func function(pc uintptr) []byte {
 	//	*T.ptrmethod
 	// Also the package path might contain dot (e.g. code.google.com/...),
 	// so first eliminate the path prefix
-	if lastSlash := bytes.LastIndex(name, slash); lastSlash >= 0 {
+	if lastSlash := strings.LastIndexByte(name, '/'); lastSlash >= 0 {
 		name = name[lastSlash+1:]
 	}
-	if period := bytes.Index(name, dot); period >= 0 {
+	if period := strings.IndexByte(name, '.'); period >= 0 {
 		name = name[period+1:]
 	}
-	name = bytes.ReplaceAll(name, centerDot, dot)
+	name = strings.ReplaceAll(name, "·", ".")
 	return name
 }
 

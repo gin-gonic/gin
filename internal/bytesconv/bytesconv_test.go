@@ -6,14 +6,17 @@ package bytesconv
 
 import (
 	"bytes"
+	cRand "crypto/rand"
 	"math/rand"
 	"strings"
 	"testing"
 	"time"
 )
 
-var testString = "Albert Einstein: Logic will get you from A to B. Imagination will take you everywhere."
-var testBytes = []byte(testString)
+var (
+	testString = "Albert Einstein: Logic will get you from A to B. Imagination will take you everywhere."
+	testBytes  = []byte(testString)
+)
 
 func rawBytesToStr(b []byte) string {
 	return string(b)
@@ -28,7 +31,10 @@ func rawStrToBytes(s string) []byte {
 func TestBytesToString(t *testing.T) {
 	data := make([]byte, 1024)
 	for i := 0; i < 100; i++ {
-		rand.Read(data)
+		_, err := cRand.Read(data)
+		if err != nil {
+			t.Fatal(err)
+		}
 		if rawBytesToStr(data) != BytesToString(data) {
 			t.Fatal("don't match")
 		}
@@ -42,7 +48,7 @@ const (
 	letterIdxMax  = 63 / letterIdxBits   // # of letter indices fitting in 63 bits
 )
 
-var src = rand.NewSource(time.Now().UnixNano())
+var src = rand.New(rand.NewSource(time.Now().UnixNano()))
 
 func RandStringBytesMaskImprSrcSB(n int) string {
 	sb := strings.Builder{}
@@ -75,25 +81,25 @@ func TestStringToBytes(t *testing.T) {
 // go test -v -run=none -bench=^BenchmarkBytesConv -benchmem=true
 
 func BenchmarkBytesConvBytesToStrRaw(b *testing.B) {
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		rawBytesToStr(testBytes)
 	}
 }
 
 func BenchmarkBytesConvBytesToStr(b *testing.B) {
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		BytesToString(testBytes)
 	}
 }
 
 func BenchmarkBytesConvStrToBytesRaw(b *testing.B) {
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		rawStrToBytes(testString)
 	}
 }
 
 func BenchmarkBytesConvStrToBytes(b *testing.B) {
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		StringToBytes(testString)
 	}
 }

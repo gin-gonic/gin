@@ -6,6 +6,7 @@ package gin
 
 import (
 	"bufio"
+	"errors"
 	"io"
 	"net"
 	"net/http"
@@ -15,6 +16,8 @@ const (
 	noWritten     = -1
 	defaultStatus = http.StatusOK
 )
+
+var errHijackAlreadyWritten = errors.New("gin: response body already written")
 
 // ResponseWriter ...
 type ResponseWriter interface {
@@ -106,6 +109,11 @@ func (w *responseWriter) Written() bool {
 
 // Hijack implements the http.Hijacker interface.
 func (w *responseWriter) Hijack() (net.Conn, *bufio.ReadWriter, error) {
+	// Allow hijacking before any data is written (size == -1) or after headers are written (size == 0),
+	// but not after body data is written (size > 0). For compatibility with websocket libraries (e.g., github.com/coder/websocket)
+	if w.size > 0 {
+		return nil, nil, errHijackAlreadyWritten
+	}
 	if w.size < 0 {
 		w.size = 0
 	}

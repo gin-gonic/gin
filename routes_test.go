@@ -484,7 +484,7 @@ func TestRouterMiddlewareAndStatic(t *testing.T) {
 	assert.Contains(t, w.Body.String(), "package gin")
 	// Content-Type='text/plain; charset=utf-8' when go version <= 1.16,
 	// else, Content-Type='text/x-go; charset=utf-8'
-	assert.NotEqual(t, "", w.Header().Get("Content-Type"))
+	assert.NotEmpty(t, w.Header().Get("Content-Type"))
 	assert.NotEqual(t, "Mon, 02 Jan 2006 15:04:05 MST", w.Header().Get("Last-Modified"))
 	assert.Equal(t, "Mon, 02 Jan 2006 15:04:05 MST", w.Header().Get("Expires"))
 	assert.Equal(t, "Gin Framework", w.Header().Get("x-GIN"))
@@ -523,8 +523,8 @@ func TestRouteNotAllowedEnabled3(t *testing.T) {
 	w := PerformRequest(router, http.MethodPut, "/path")
 	assert.Equal(t, http.StatusMethodNotAllowed, w.Code)
 	allowed := w.Header().Get("Allow")
-	assert.Contains(t, allowed, "GET")
-	assert.Contains(t, allowed, "POST")
+	assert.Contains(t, allowed, http.MethodGet)
+	assert.Contains(t, allowed, http.MethodPost)
 }
 
 func TestRouteNotAllowedDisabled(t *testing.T) {
@@ -557,10 +557,10 @@ func TestRouterNotFoundWithRemoveExtraSlash(t *testing.T) {
 		{"/nope", http.StatusNotFound, ""}, // NotFound
 	}
 	for _, tr := range testRoutes {
-		w := PerformRequest(router, "GET", tr.route)
+		w := PerformRequest(router, http.MethodGet, tr.route)
 		assert.Equal(t, tr.code, w.Code)
 		if w.Code != http.StatusNotFound {
-			assert.Equal(t, tr.location, fmt.Sprint(w.Header().Get("Location")))
+			assert.Equal(t, tr.location, w.Header().Get("Location"))
 		}
 	}
 }
@@ -590,7 +590,7 @@ func TestRouterNotFound(t *testing.T) {
 		w := PerformRequest(router, http.MethodGet, tr.route)
 		assert.Equal(t, tr.code, w.Code)
 		if w.Code != http.StatusNotFound {
-			assert.Equal(t, tr.location, fmt.Sprint(w.Header().Get("Location")))
+			assert.Equal(t, tr.location, w.Header().Get("Location"))
 		}
 	}
 
@@ -764,7 +764,7 @@ func TestRouteContextHoldsFullPath(t *testing.T) {
 	// Test not found
 	router.Use(func(c *Context) {
 		// For not found routes full path is empty
-		assert.Equal(t, "", c.FullPath())
+		assert.Empty(t, c.FullPath())
 	})
 
 	w := PerformRequest(router, http.MethodGet, "/not-found")
@@ -786,6 +786,6 @@ func TestEngineHandleMethodNotAllowedCornerCase(t *testing.T) {
 	v1.GET("/orgs/:id", handlerTest1)
 	v1.DELETE("/orgs/:id", handlerTest1)
 
-	w := PerformRequest(r, "GET", "/base/v1/user/groups")
+	w := PerformRequest(r, http.MethodGet, "/base/v1/user/groups")
 	assert.Equal(t, http.StatusNotFound, w.Code)
 }

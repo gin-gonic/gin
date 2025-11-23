@@ -5,7 +5,6 @@
 package gin
 
 import (
-	"fmt"
 	"net"
 	"net/http"
 	"os"
@@ -26,14 +25,14 @@ func TestPanicClean(t *testing.T) {
 		panic("Oupps, Houston, we have a problem")
 	})
 	// RUN
-	w := PerformRequest(router, "GET", "/recovery",
+	w := PerformRequest(router, http.MethodGet, "/recovery",
 		header{
 			Key:   "Host",
 			Value: "www.google.com",
 		},
 		header{
 			Key:   "Authorization",
-			Value: fmt.Sprintf("Bearer %s", password),
+			Value: "Bearer " + password,
 		},
 		header{
 			Key:   "Content-Type",
@@ -56,7 +55,7 @@ func TestPanicInHandler(t *testing.T) {
 		panic("Oupps, Houston, we have a problem")
 	})
 	// RUN
-	w := PerformRequest(router, "GET", "/recovery")
+	w := PerformRequest(router, http.MethodGet, "/recovery")
 	// TEST
 	assert.Equal(t, http.StatusInternalServerError, w.Code)
 	assert.Contains(t, buffer.String(), "panic recovered")
@@ -67,7 +66,7 @@ func TestPanicInHandler(t *testing.T) {
 	// Debug mode prints the request
 	SetMode(DebugMode)
 	// RUN
-	w = PerformRequest(router, "GET", "/recovery")
+	w = PerformRequest(router, http.MethodGet, "/recovery")
 	// TEST
 	assert.Equal(t, http.StatusInternalServerError, w.Code)
 	assert.Contains(t, buffer.String(), "GET /recovery")
@@ -84,21 +83,21 @@ func TestPanicWithAbort(t *testing.T) {
 		panic("Oupps, Houston, we have a problem")
 	})
 	// RUN
-	w := PerformRequest(router, "GET", "/recovery")
+	w := PerformRequest(router, http.MethodGet, "/recovery")
 	// TEST
 	assert.Equal(t, http.StatusBadRequest, w.Code)
 }
 
 func TestSource(t *testing.T) {
 	bs := source(nil, 0)
-	assert.Equal(t, dunno, bs)
+	assert.Equal(t, dunnoBytes, bs)
 
 	in := [][]byte{
 		[]byte("Hello world."),
 		[]byte("Hi, gin.."),
 	}
 	bs = source(in, 10)
-	assert.Equal(t, dunno, bs)
+	assert.Equal(t, dunnoBytes, bs)
 
 	bs = source(in, 1)
 	assert.Equal(t, []byte("Hello world."), bs)
@@ -135,7 +134,7 @@ func TestPanicWithBrokenPipe(t *testing.T) {
 				panic(e)
 			})
 			// RUN
-			w := PerformRequest(router, "GET", "/recovery")
+			w := PerformRequest(router, http.MethodGet, "/recovery")
 			// TEST
 			assert.Equal(t, expectCode, w.Code)
 			assert.Contains(t, strings.ToLower(buf.String()), expectMsg)
@@ -156,7 +155,7 @@ func TestCustomRecoveryWithWriter(t *testing.T) {
 		panic("Oupps, Houston, we have a problem")
 	})
 	// RUN
-	w := PerformRequest(router, "GET", "/recovery")
+	w := PerformRequest(router, http.MethodGet, "/recovery")
 	// TEST
 	assert.Equal(t, http.StatusBadRequest, w.Code)
 	assert.Contains(t, buffer.String(), "panic recovered")
@@ -167,7 +166,7 @@ func TestCustomRecoveryWithWriter(t *testing.T) {
 	// Debug mode prints the request
 	SetMode(DebugMode)
 	// RUN
-	w = PerformRequest(router, "GET", "/recovery")
+	w = PerformRequest(router, http.MethodGet, "/recovery")
 	// TEST
 	assert.Equal(t, http.StatusBadRequest, w.Code)
 	assert.Contains(t, buffer.String(), "GET /recovery")
@@ -191,7 +190,7 @@ func TestCustomRecovery(t *testing.T) {
 		panic("Oupps, Houston, we have a problem")
 	})
 	// RUN
-	w := PerformRequest(router, "GET", "/recovery")
+	w := PerformRequest(router, http.MethodGet, "/recovery")
 	// TEST
 	assert.Equal(t, http.StatusBadRequest, w.Code)
 	assert.Contains(t, buffer.String(), "panic recovered")
@@ -202,7 +201,7 @@ func TestCustomRecovery(t *testing.T) {
 	// Debug mode prints the request
 	SetMode(DebugMode)
 	// RUN
-	w = PerformRequest(router, "GET", "/recovery")
+	w = PerformRequest(router, http.MethodGet, "/recovery")
 	// TEST
 	assert.Equal(t, http.StatusBadRequest, w.Code)
 	assert.Contains(t, buffer.String(), "GET /recovery")
@@ -226,7 +225,7 @@ func TestRecoveryWithWriterWithCustomRecovery(t *testing.T) {
 		panic("Oupps, Houston, we have a problem")
 	})
 	// RUN
-	w := PerformRequest(router, "GET", "/recovery")
+	w := PerformRequest(router, http.MethodGet, "/recovery")
 	// TEST
 	assert.Equal(t, http.StatusBadRequest, w.Code)
 	assert.Contains(t, buffer.String(), "panic recovered")
@@ -237,7 +236,7 @@ func TestRecoveryWithWriterWithCustomRecovery(t *testing.T) {
 	// Debug mode prints the request
 	SetMode(DebugMode)
 	// RUN
-	w = PerformRequest(router, "GET", "/recovery")
+	w = PerformRequest(router, http.MethodGet, "/recovery")
 	// TEST
 	assert.Equal(t, http.StatusBadRequest, w.Code)
 	assert.Contains(t, buffer.String(), "GET /recovery")
@@ -245,4 +244,66 @@ func TestRecoveryWithWriterWithCustomRecovery(t *testing.T) {
 	assert.Equal(t, strings.Repeat("Oupps, Houston, we have a problem", 2), errBuffer.String())
 
 	SetMode(TestMode)
+}
+
+func TestSecureRequestDump(t *testing.T) {
+	tests := []struct {
+		name           string
+		req            *http.Request
+		wantContains   string
+		wantNotContain string
+	}{
+		{
+			name: "Authorization header standard case",
+			req: func() *http.Request {
+				r, _ := http.NewRequest(http.MethodGet, "http://example.com", nil)
+				r.Header.Set("Authorization", "Bearer secret-token")
+				return r
+			}(),
+			wantContains:   "Authorization: *",
+			wantNotContain: "Bearer secret-token",
+		},
+		{
+			name: "authorization header lowercase",
+			req: func() *http.Request {
+				r, _ := http.NewRequest(http.MethodGet, "http://example.com", nil)
+				r.Header.Set("authorization", "some-secret")
+				return r
+			}(),
+			wantContains:   "Authorization: *",
+			wantNotContain: "some-secret",
+		},
+		{
+			name: "Authorization header mixed case",
+			req: func() *http.Request {
+				r, _ := http.NewRequest(http.MethodGet, "http://example.com", nil)
+				r.Header.Set("AuThOrIzAtIoN", "token123")
+				return r
+			}(),
+			wantContains:   "Authorization: *",
+			wantNotContain: "token123",
+		},
+		{
+			name: "No Authorization header",
+			req: func() *http.Request {
+				r, _ := http.NewRequest(http.MethodGet, "http://example.com", nil)
+				r.Header.Set("Content-Type", "application/json")
+				return r
+			}(),
+			wantContains:   "",
+			wantNotContain: "Authorization: *",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := secureRequestDump(tt.req)
+			if tt.wantContains != "" && !strings.Contains(result, tt.wantContains) {
+				t.Errorf("maskHeaders() = %q, want contains %q", result, tt.wantContains)
+			}
+			if tt.wantNotContain != "" && strings.Contains(result, tt.wantNotContain) {
+				t.Errorf("maskHeaders() = %q, want NOT contain %q", result, tt.wantNotContain)
+			}
+		})
+	}
 }

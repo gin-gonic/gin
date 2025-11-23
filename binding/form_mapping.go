@@ -7,14 +7,15 @@ package binding
 import (
 	"errors"
 	"fmt"
+	"maps"
 	"mime/multipart"
 	"reflect"
 	"strconv"
 	"strings"
 	"time"
 
+	"github.com/gin-gonic/gin/codec/json"
 	"github.com/gin-gonic/gin/internal/bytesconv"
-	"github.com/gin-gonic/gin/internal/json"
 )
 
 var (
@@ -159,6 +160,14 @@ func tryToSetValue(value reflect.Value, field reflect.StructField, setter setter
 		if k, v := head(opt, "="); k == "default" {
 			setOpt.isDefaultExists = true
 			setOpt.defaultValue = v
+
+			// convert semicolon-separated default values to csv-separated values for processing in setByForm
+			if field.Type.Kind() == reflect.Slice || field.Type.Kind() == reflect.Array {
+				cfTag := field.Tag.Get("collection_format")
+				if cfTag == "" || cfTag == "multi" || cfTag == "csv" {
+					setOpt.defaultValue = strings.ReplaceAll(v, ";", ",")
+				}
+			}
 		}
 	}
 
@@ -167,7 +176,7 @@ func tryToSetValue(value reflect.Value, field reflect.StructField, setter setter
 
 // BindUnmarshaler is the interface used to wrap the UnmarshalParam method.
 type BindUnmarshaler interface {
-	// UnmarshalParam decodes and assigns a value from an form or query param.
+	// UnmarshalParam decodes and assigns a value from a form or query param.
 	UnmarshalParam(param string) error
 }
 
@@ -182,6 +191,38 @@ func trySetCustom(val string, value reflect.Value) (isSet bool, err error) {
 	return false, nil
 }
 
+func trySplit(vs []string, field reflect.StructField) (newVs []string, err error) {
+	cfTag := field.Tag.Get("collection_format")
+	if cfTag == "" || cfTag == "multi" {
+		return vs, nil
+	}
+
+	var sep string
+	switch cfTag {
+	case "csv":
+		sep = ","
+	case "ssv":
+		sep = " "
+	case "tsv":
+		sep = "\t"
+	case "pipes":
+		sep = "|"
+	default:
+		return vs, fmt.Errorf("%s is not supported in the collection_format. (csv, ssv, pipes)", cfTag)
+	}
+
+	totalLength := 0
+	for _, v := range vs {
+		totalLength += strings.Count(v, sep) + 1
+	}
+	newVs = make([]string, 0, totalLength)
+	for _, v := range vs {
+		newVs = append(newVs, strings.Split(v, sep)...)
+	}
+
+	return newVs, nil
+}
+
 func setByForm(value reflect.Value, field reflect.StructField, form map[string][]string, tagValue string, opt setOptions) (isSet bool, err error) {
 	vs, ok := form[tagValue]
 	if !ok && !opt.isDefaultExists {
@@ -190,22 +231,48 @@ func setByForm(value reflect.Value, field reflect.StructField, form map[string][
 
 	switch value.Kind() {
 	case reflect.Slice:
-		if !ok {
+		if len(vs) == 0 {
+			if !opt.isDefaultExists {
+				return false, nil
+			}
+
 			vs = []string{opt.defaultValue}
+			// pre-process the default value for multi if present
+			cfTag := field.Tag.Get("collection_format")
+			if cfTag == "" || cfTag == "multi" {
+				vs = strings.Split(opt.defaultValue, ",")
+			}
 		}
 
 		if ok, err = trySetCustom(vs[0], value); ok {
 			return ok, err
+		}
+
+		if vs, err = trySplit(vs, field); err != nil {
+			return false, err
 		}
 
 		return true, setSlice(vs, value, field)
 	case reflect.Array:
-		if !ok {
+		if len(vs) == 0 {
+			if !opt.isDefaultExists {
+				return false, nil
+			}
+
 			vs = []string{opt.defaultValue}
+			// pre-process the default value for multi if present
+			cfTag := field.Tag.Get("collection_format")
+			if cfTag == "" || cfTag == "multi" {
+				vs = strings.Split(opt.defaultValue, ",")
+			}
 		}
 
 		if ok, err = trySetCustom(vs[0], value); ok {
 			return ok, err
+		}
+
+		if vs, err = trySplit(vs, field); err != nil {
+			return false, err
 		}
 
 		if len(vs) != value.Len() {
@@ -221,6 +288,9 @@ func setByForm(value reflect.Value, field reflect.StructField, form map[string][
 
 		if len(vs) > 0 {
 			val = vs[0]
+			if val == "" {
+				val = opt.defaultValue
+			}
 		}
 		if ok, err := trySetCustom(val, value); ok {
 			return ok, err
@@ -270,9 +340,9 @@ func setWithProperType(val string, value reflect.Value, field reflect.StructFiel
 		case multipart.FileHeader:
 			return nil
 		}
-		return json.Unmarshal(bytesconv.StringToBytes(val), value.Addr().Interface())
+		return json.API.Unmarshal(bytesconv.StringToBytes(val), value.Addr().Interface())
 	case reflect.Map:
-		return json.Unmarshal(bytesconv.StringToBytes(val), value.Addr().Interface())
+		return json.API.Unmarshal(bytesconv.StringToBytes(val), value.Addr().Interface())
 	case reflect.Ptr:
 		if !value.Elem().IsValid() {
 			value.Set(reflect.New(value.Type().Elem()))
@@ -335,18 +405,24 @@ func setTimeField(val string, structField reflect.StructField, value reflect.Val
 	}
 
 	switch tf := strings.ToLower(timeFormat); tf {
-	case "unix", "unixnano":
+	case "unix", "unixmilli", "unixmicro", "unixnano":
 		tv, err := strconv.ParseInt(val, 10, 64)
 		if err != nil {
 			return err
 		}
 
-		d := time.Duration(1)
-		if tf == "unixnano" {
-			d = time.Second
+		var t time.Time
+		switch tf {
+		case "unix":
+			t = time.Unix(tv, 0)
+		case "unixmilli":
+			t = time.UnixMilli(tv)
+		case "unixmicro":
+			t = time.UnixMicro(tv)
+		default:
+			t = time.Unix(0, tv)
 		}
 
-		t := time.Unix(tv/int64(d), tv%int64(d))
 		value.Set(reflect.ValueOf(t))
 		return nil
 	}
@@ -420,9 +496,7 @@ func setFormMap(ptr any, form map[string][]string) error {
 		if !ok {
 			return ErrConvertMapStringSlice
 		}
-		for k, v := range form {
-			ptrMap[k] = v
-		}
+		maps.Copy(ptrMap, form)
 
 		return nil
 	}
