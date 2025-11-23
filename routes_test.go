@@ -5,7 +5,9 @@
 package gin
 
 import (
+	"embed"
 	"fmt"
+	"io/fs"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -644,6 +646,27 @@ func TestRouterStaticFSNotFound(t *testing.T) {
 
 	w = PerformRequest(router, http.MethodHead, "/nonexistent")
 	assert.Equal(t, "non existent", w.Body.String())
+}
+
+//go:embed testdata/embed
+var embeddedFolder embed.FS
+
+const embeddedPath = "testdata/embed"
+
+func TestRouteStaticFSCleansPath(t *testing.T) {
+	router := New()
+	subFS, err := fs.Sub(embeddedFolder, embeddedPath)
+	require.NoError(t, err)
+	fs := &OnlyFilesFS{
+		FileSystem: http.FS(subFS),
+	}
+	router.StaticFS("/", fs)
+	router.NoRoute(func(c *Context) {
+		c.String(http.StatusNotFound, "non existent")
+	})
+
+	w := PerformRequest(router, http.MethodGet, "/tutorials/making-gin/")
+	assert.Contains(t, w.Body.String(), "This is another simple embedded page.")
 }
 
 func TestRouterStaticFSFileNotFound(t *testing.T) {
