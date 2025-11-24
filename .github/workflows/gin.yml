@@ -54,16 +54,16 @@ jobs:
       TESTTAGS: ${{ matrix.test-tags }}
       GOPROXY: https://proxy.golang.org
     steps:
+      - name: Checkout Code
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ github.ref }}
+
       - name: Set up Go ${{ matrix.go }}
         uses: actions/setup-go@v6
         with:
           go-version: ${{ matrix.go }}
           cache: false
-
-      - name: Checkout Code
-        uses: actions/checkout@v5
-        with:
-          ref: ${{ github.ref }}
 
       - uses: actions/cache@v4
         with:
