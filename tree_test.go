@@ -94,6 +94,26 @@ func TestCountParams(t *testing.T) {
 	if countParams(strings.Repeat("/:param", 256)) != 256 {
 		t.Fail()
 	}
+	// Test overflow protection - should cap at max uint16 (0xFFFF = 65535)
+	// Create a path with more than 65535 params (colons + stars)
+	// Need 65536+ colons to trigger the overflow check
+	overflowPath := strings.Repeat(":", 70000) // 70000 colons
+	if countParams(overflowPath) != 0xFFFF {
+		t.Errorf("countParams overflow protection failed: expected 0xFFFF, got %d", countParams(overflowPath))
+	}
+}
+
+func TestCountSections(t *testing.T) {
+	if countSections("/path/to/resource") != 3 {
+		t.Fail()
+	}
+	// Test overflow protection - should cap at max uint16 (0xFFFF = 65535)
+	// Create a path with more than 65535 slashes
+	// Need 65536+ slashes to trigger the overflow check
+	overflowPath := strings.Repeat("/", 70000) // 70000 slashes
+	if countSections(overflowPath) != 0xFFFF {
+		t.Errorf("countSections overflow protection failed: expected 0xFFFF, got %d", countSections(overflowPath))
+	}
 }
 
 func TestTreeAddAndGet(t *testing.T) {
@@ -496,4 +516,52 @@ func TestTreeChildConflict(t *testing.T) {
 		{"/cmd/:tool/:othersub", true},
 	}
 	testRoutes(t, routes)
+}
+
+func TestWildcardConflictWithStringsCut(t *testing.T) {
+	// Test the strings.Cut usage in wildcard conflict detection (line 258 in tree.go)
+	tree := &node{}
+	
+	// Add a route with a wildcard parameter
+	tree.addRoute("/user/:name", fakeHandler("/user/:name"))
+	
+	// Try to add a conflicting route that will trigger the strings.Cut path
+	// This should panic with a wildcard conflict
+	recv := catchPanic(func() {
+		tree.addRoute("/user/:id/profile", fakeHandler("/user/:id/profile"))
+	})
+	
+	if recv == nil {
+		t.Error("Expected panic for wildcard conflict, but got none")
+	}
+}
+
+func TestCatchAllConflictWithStringsCut(t *testing.T) {
+	// Test the strings.Cut usage in catch-all conflict detection (line 382 in tree.go)
+	tree := &node{}
+	
+	// Add a route with a path segment
+	tree.addRoute("/files/list", fakeHandler("/files/list"))
+	
+	// Try to add a catch-all route that conflicts
+	// This should panic with a catch-all conflict
+	recv := catchPanic(func() {
+		tree.addRoute("/files/*filepath", fakeHandler("/files/*filepath"))
+	})
+	
+	if recv == nil {
+		t.Error("Expected panic for catch-all conflict, but got none")
+	}
+	
+	// Also test with an empty children case to cover line 382 when len(n.children) == 0
+	tree2 := &node{}
+	tree2.addRoute("/docs/", fakeHandler("/docs/"))
+	
+	recv2 := catchPanic(func() {
+		tree2.addRoute("/docs/*page", fakeHandler("/docs/*page"))
+	})
+	
+	if recv2 == nil {
+		t.Error("Expected panic for catch-all conflict with empty children, but got none")
+	}
 }
