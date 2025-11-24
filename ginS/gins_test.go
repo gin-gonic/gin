@@ -23,7 +23,7 @@ func TestGET(t *testing.T) {
 		c.String(http.StatusOK, "test")
 	})
 
-	req := httptest.NewRequest("GET", "/test", nil)
+	req := httptest.NewRequest(http.MethodGet, "/test", nil)
 	w := httptest.NewRecorder()
 	engine().ServeHTTP(w, req)
 
@@ -36,7 +36,7 @@ func TestPOST(t *testing.T) {
 		c.String(http.StatusCreated, "created")
 	})
 
-	req := httptest.NewRequest("POST", "/post", nil)
+	req := httptest.NewRequest(http.MethodPost, "/post", nil)
 	w := httptest.NewRecorder()
 	engine().ServeHTTP(w, req)
 
@@ -49,7 +49,7 @@ func TestPUT(t *testing.T) {
 		c.String(http.StatusOK, "updated")
 	})
 
-	req := httptest.NewRequest("PUT", "/put", nil)
+	req := httptest.NewRequest(http.MethodPut, "/put", nil)
 	w := httptest.NewRecorder()
 	engine().ServeHTTP(w, req)
 
@@ -62,7 +62,7 @@ func TestDELETE(t *testing.T) {
 		c.String(http.StatusOK, "deleted")
 	})
 
-	req := httptest.NewRequest("DELETE", "/delete", nil)
+	req := httptest.NewRequest(http.MethodDelete, "/delete", nil)
 	w := httptest.NewRecorder()
 	engine().ServeHTTP(w, req)
 
@@ -75,7 +75,7 @@ func TestPATCH(t *testing.T) {
 		c.String(http.StatusOK, "patched")
 	})
 
-	req := httptest.NewRequest("PATCH", "/patch", nil)
+	req := httptest.NewRequest(http.MethodPatch, "/patch", nil)
 	w := httptest.NewRecorder()
 	engine().ServeHTTP(w, req)
 
@@ -88,7 +88,7 @@ func TestOPTIONS(t *testing.T) {
 		c.String(http.StatusOK, "options")
 	})
 
-	req := httptest.NewRequest("OPTIONS", "/options", nil)
+	req := httptest.NewRequest(http.MethodOptions, "/options", nil)
 	w := httptest.NewRecorder()
 	engine().ServeHTTP(w, req)
 
@@ -101,7 +101,7 @@ func TestHEAD(t *testing.T) {
 		c.String(http.StatusOK, "head")
 	})
 
-	req := httptest.NewRequest("HEAD", "/head", nil)
+	req := httptest.NewRequest(http.MethodHead, "/head", nil)
 	w := httptest.NewRecorder()
 	engine().ServeHTTP(w, req)
 
@@ -113,7 +113,7 @@ func TestAny(t *testing.T) {
 		c.String(http.StatusOK, "any")
 	})
 
-	req := httptest.NewRequest("GET", "/any", nil)
+	req := httptest.NewRequest(http.MethodGet, "/any", nil)
 	w := httptest.NewRecorder()
 	engine().ServeHTTP(w, req)
 
@@ -122,11 +122,11 @@ func TestAny(t *testing.T) {
 }
 
 func TestHandle(t *testing.T) {
-	Handle("GET", "/handle", func(c *gin.Context) {
+	Handle(http.MethodGet, "/handle", func(c *gin.Context) {
 		c.String(http.StatusOK, "handle")
 	})
 
-	req := httptest.NewRequest("GET", "/handle", nil)
+	req := httptest.NewRequest(http.MethodGet, "/handle", nil)
 	w := httptest.NewRecorder()
 	engine().ServeHTTP(w, req)
 
@@ -140,7 +140,7 @@ func TestGroup(t *testing.T) {
 		c.String(http.StatusOK, "group test")
 	})
 
-	req := httptest.NewRequest("GET", "/group/test", nil)
+	req := httptest.NewRequest(http.MethodGet, "/group/test", nil)
 	w := httptest.NewRecorder()
 	engine().ServeHTTP(w, req)
 
@@ -159,7 +159,7 @@ func TestUse(t *testing.T) {
 		c.String(http.StatusOK, "ok")
 	})
 
-	req := httptest.NewRequest("GET", "/middleware-test", nil)
+	req := httptest.NewRequest(http.MethodGet, "/middleware-test", nil)
 	w := httptest.NewRecorder()
 	engine().ServeHTTP(w, req)
 
@@ -172,7 +172,7 @@ func TestNoRoute(t *testing.T) {
 		c.String(http.StatusNotFound, "custom 404")
 	})
 
-	req := httptest.NewRequest("GET", "/nonexistent", nil)
+	req := httptest.NewRequest(http.MethodGet, "/nonexistent", nil)
 	w := httptest.NewRecorder()
 	engine().ServeHTTP(w, req)
 
@@ -198,7 +198,7 @@ func TestRoutes(t *testing.T) {
 
 	found := false
 	for _, route := range routes {
-		if route.Path == "/routes-test" && route.Method == "GET" {
+		if route.Path == "/routes-test" && route.Method == http.MethodGet {
 			found = true
 			break
 		}
@@ -217,7 +217,7 @@ func TestSetHTMLTemplate(t *testing.T) {
 func TestStaticFile(t *testing.T) {
 	StaticFile("/static-file", "../testdata/test_file.txt")
 
-	req := httptest.NewRequest("GET", "/static-file", nil)
+	req := httptest.NewRequest(http.MethodGet, "/static-file", nil)
 	w := httptest.NewRecorder()
 	engine().ServeHTTP(w, req)
 
@@ -227,7 +227,7 @@ func TestStaticFile(t *testing.T) {
 func TestStatic(t *testing.T) {
 	Static("/static-dir", "../testdata")
 
-	req := httptest.NewRequest("GET", "/static-dir/test_file.txt", nil)
+	req := httptest.NewRequest(http.MethodGet, "/static-dir/test_file.txt", nil)
 	w := httptest.NewRecorder()
 	engine().ServeHTTP(w, req)
 
@@ -238,7 +238,7 @@ func TestStaticFS(t *testing.T) {
 	fs := http.Dir("../testdata")
 	StaticFS("/static-fs", fs)
 
-	req := httptest.NewRequest("GET", "/static-fs/test_file.txt", nil)
+	req := httptest.NewRequest(http.MethodGet, "/static-fs/test_file.txt", nil)
 	w := httptest.NewRecorder()
 	engine().ServeHTTP(w, req)
 
