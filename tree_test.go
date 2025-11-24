@@ -377,16 +377,16 @@ func TestSecureParameterHandling(t *testing.T) {
 	checkRequests(t, tree, testRequests{
 		// Normal case - single encoding works as expected
 		{"/info/user%2Fprofile", false, "/info/:user", Params{Param{Key: "user", Value: "user/profile"}}},
-		
+
 		// Double encoding - should only decode once
 		{"/info/user%252Fprofile", false, "/info/:user", Params{Param{Key: "user", Value: "user%2Fprofile"}}},
-		
+
 		// Triple encoding - should only decode once
 		{"/info/user%25252Fprofile", false, "/info/:user", Params{Param{Key: "user", Value: "user%252Fprofile"}}},
-		
+
 		// Mixed encoding - should only decode once
 		{"/info/%2Fuser%252Fprofile", false, "/info/:user", Params{Param{Key: "user", Value: "/user%2Fprofile"}}},
-		
+
 		// No encoding - should pass through unchanged
 		{"/info/user", false, "/info/:user", Params{Param{Key: "user", Value: "user"}}},
 	}, unescape)
@@ -396,16 +396,16 @@ func TestSecureParameterHandling(t *testing.T) {
 	checkRequests(t, tree, testRequests{
 		// Normal case - single encoding works as expected
 		{"/files/path%2Fto%2Ffile.txt", false, "/files/*filepath", Params{Param{Key: "filepath", Value: "/path/to/file.txt"}}},
-		
+
 		// Double encoding - should only decode once
 		{"/files/path%252Fto%252Ffile.txt", false, "/files/*filepath", Params{Param{Key: "filepath", Value: "/path%2Fto%2Ffile.txt"}}},
-		
+
 		// Triple encoding - should only decode once
 		{"/files/path%25252Fto%25252Ffile.txt", false, "/files/*filepath", Params{Param{Key: "filepath", Value: "/path%252Fto%252Ffile.txt"}}},
-		
+
 		// Mixed encoding - should only decode once
 		{"/files/%2Fpath%252Fto%2Ffile.txt", false, "/files/*filepath", Params{Param{Key: "filepath", Value: "//path%2Fto/file.txt"}}},
-		
+
 		// No encoding - should pass through unchanged
 		{"/files/normal/file.txt", false, "/files/*filepath", Params{Param{Key: "filepath", Value: "/normal/file.txt"}}},
 	}, unescape)

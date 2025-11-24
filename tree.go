@@ -85,16 +85,37 @@ func (n *node) addChild(child *node) {
 }
 
 func countParams(path string) uint16 {
-	var n uint16
 	s := bytesconv.StringToBytes(path)
-	n += uint16(bytes.Count(s, strColon))
-	n += uint16(bytes.Count(s, strStar))
-	return n
+	colons := bytes.Count(s, strColon)
+	stars := bytes.Count(s, strStar)
+	total := colons + stars
+	// Cap at max uint16 to prevent overflow
+	if total > 0xFFFF {
+		return 0xFFFF
+	}
+	return uint16(total)
 }
 
 func countSections(path string) uint16 {
 	s := bytesconv.StringToBytes(path)
-	return uint16(bytes.Count(s, strSlash))
+	count := bytes.Count(s, strSlash)
+	// Cap at max uint16 to prevent overflow
+	if count > 0xFFFF {
+		return 0xFFFF
+	}
+	return uint16(count)
+}
+
+// unescapePathValue unescapes a path parameter value if unescape is enabled.
+// Only unescapes if the value contains percent-encoded characters or plus signs.
+// This prevents double unescaping and potential path traversal vulnerabilities.
+func unescapePathValue(val string, unescape bool) string {
+	if unescape && strings.ContainsAny(val, "%+") {
+		if v, err := url.QueryUnescape(val); err == nil {
+			return v
+		}
+	}
+	return val
 }
 
 type nodeType uint8
@@ -519,16 +540,7 @@ walk: // Outer loop for walking the tree
 						// Expand slice within preallocated capacity
 						i := len(*value.params)
 						*value.params = (*value.params)[:i+1]
-						val := path[:end]
-						if unescape {
-							// Only unescape if the value contains percent-encoded characters or plus signs
-							// This prevents double unescaping and potential path traversal
-							if strings.ContainsAny(val, "%+") {
-								if v, err := url.QueryUnescape(val); err == nil {
-									val = v
-								}
-							}
-						}
+						val := unescapePathValue(path[:end], unescape)
 						(*value.params)[i] = Param{
 							Key:   n.path[1:],
 							Value: val,
@@ -576,16 +588,7 @@ walk: // Outer loop for walking the tree
 						// Expand slice within preallocated capacity
 						i := len(*value.params)
 						*value.params = (*value.params)[:i+1]
-						val := path
-						if unescape {
-							// Only unescape if the value contains percent-encoded characters or plus signs
-							// This prevents double unescaping and potential path traversal
-							if strings.ContainsAny(path, "%+") {
-								if v, err := url.QueryUnescape(path); err == nil {
-									val = v
-								}
-							}
-						}
+						val := unescapePathValue(path, unescape)
 						(*value.params)[i] = Param{
 							Key:   n.path[2:],
 							Value: val,
