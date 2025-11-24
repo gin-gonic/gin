@@ -497,4 +497,3 @@ func TestTreeChildConflict(t *testing.T) {
 	}
 	testRoutes(t, routes)
 }
-
