@@ -2872,6 +2872,105 @@ func TestContextGetRawData(t *testing.T) {
 	assert.Equal(t, "Fetch binary post data", string(data))
 }
 
+func TestContextGetRequestBody(t *testing.T) {
+	// Test basic functionality
+	t.Run("basic functionality", func(t *testing.T) {
+		c, _ := CreateTestContext(httptest.NewRecorder())
+		bodyContent := "test request body data"
+		body := strings.NewReader(bodyContent)
+		c.Request, _ = http.NewRequest(http.MethodPost, "/", body)
+
+		data, err := c.GetRequestBody()
+		require.NoError(t, err)
+		assert.Equal(t, bodyContent, string(data))
+	})
+
+	// Test multiple calls return cached data
+	t.Run("multiple calls return cached data", func(t *testing.T) {
+		c, _ := CreateTestContext(httptest.NewRecorder())
+		bodyContent := "reusable request body"
+		body := strings.NewReader(bodyContent)
+		c.Request, _ = http.NewRequest(http.MethodPost, "/", body)
+
+		// First call
+		data1, err1 := c.GetRequestBody()
+		require.NoError(t, err1)
+		assert.Equal(t, bodyContent, string(data1))
+
+		// Second call should return cached data
+		data2, err2 := c.GetRequestBody()
+		require.NoError(t, err2)
+		assert.Equal(t, bodyContent, string(data2))
+
+		// Third call should also return cached data
+		data3, err3 := c.GetRequestBody()
+		require.NoError(t, err3)
+		assert.Equal(t, bodyContent, string(data3))
+
+		// All calls should return the same data
+		assert.Equal(t, data1, data2)
+		assert.Equal(t, data2, data3)
+	})
+
+	// Test nil body error
+	t.Run("nil body error", func(t *testing.T) {
+		c, _ := CreateTestContext(httptest.NewRecorder())
+		c.Request, _ = http.NewRequest(http.MethodPost, "/", nil)
+		c.Request.Body = nil
+
+		data, err := c.GetRequestBody()
+		assert.Error(t, err)
+		assert.Nil(t, data)
+		assert.Contains(t, err.Error(), "cannot read nil body")
+	})
+
+	// Test empty body
+	t.Run("empty body", func(t *testing.T) {
+		c, _ := CreateTestContext(httptest.NewRecorder())
+		body := strings.NewReader("")
+		c.Request, _ = http.NewRequest(http.MethodPost, "/", body)
+
+		data, err := c.GetRequestBody()
+		require.NoError(t, err)
+		assert.Equal(t, "", string(data))
+		assert.Equal(t, 0, len(data))
+	})
+
+	// Test large body
+	t.Run("large body", func(t *testing.T) {
+		c, _ := CreateTestContext(httptest.NewRecorder())
+		largeContent := strings.Repeat("large body content ", 1000)
+		body := strings.NewReader(largeContent)
+		c.Request, _ = http.NewRequest(http.MethodPost, "/", body)
+
+		data, err := c.GetRequestBody()
+		require.NoError(t, err)
+		assert.Equal(t, largeContent, string(data))
+		assert.Equal(t, len(largeContent), len(data))
+	})
+
+	// Test integration with ShouldBindBodyWith
+	t.Run("integration with ShouldBindBodyWith", func(t *testing.T) {
+		c, _ := CreateTestContext(httptest.NewRecorder())
+		jsonBody := `{"name":"test","value":123}`
+		body := strings.NewReader(jsonBody)
+		c.Request, _ = http.NewRequest(http.MethodPost, "/", body)
+		c.Request.Header.Set("Content-Type", "application/json")
+
+		// Get body first
+		bodyData, err := c.GetRequestBody()
+		require.NoError(t, err)
+		assert.Equal(t, jsonBody, string(bodyData))
+
+		// ShouldBindBodyWith should still work and reuse cached body
+		var jsonData map[string]interface{}
+		err = c.ShouldBindBodyWithJSON(&jsonData)
+		require.NoError(t, err)
+		assert.Equal(t, "test", jsonData["name"])
+		assert.Equal(t, float64(123), jsonData["value"])
+	})
+}
+
 func TestContextRenderDataFromReader(t *testing.T) {
 	w := httptest.NewRecorder()
 	c, _ := CreateTestContext(w)

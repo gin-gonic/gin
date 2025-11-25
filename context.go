@@ -1080,6 +1080,33 @@ func (c *Context) GetRawData() ([]byte, error) {
 	return io.ReadAll(c.Request.Body)
 }
 
+// GetRequestBody returns the request body as bytes, caching it for reuse.
+// This allows the body to be read multiple times without being consumed.
+// Returns an error if the body cannot be read or if it's nil.
+func (c *Context) GetRequestBody() ([]byte, error) {
+	if c.Request.Body == nil {
+		return nil, errors.New("cannot read nil body")
+	}
+
+	// Check if body is already cached
+	if cb, ok := c.Get(BodyBytesKey); ok {
+		if cbb, ok := cb.([]byte); ok {
+			return cbb, nil
+		}
+	}
+
+	// Read and cache the body
+	body, err := io.ReadAll(c.Request.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	// Cache the body for future use
+	c.Set(BodyBytesKey, body)
+
+	return body, nil
+}
+
 // SetSameSite with cookie
 func (c *Context) SetSameSite(samesite http.SameSite) {
 	c.sameSite = samesite
