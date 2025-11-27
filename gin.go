@@ -135,10 +135,16 @@ type Engine struct {
 	AppEngine bool
 
 	// UseRawPath if enabled, the url.RawPath will be used to find parameters.
+	// The RawPath is only a hint, EscapedPath() should be use instead. (https://pkg.go.dev/net/url@master#URL)
+	// Only use RawPath if you know what you are doing.
 	UseRawPath bool
 
+	// UseEscapedPath if enable, the url.EscapedPath() will be used to find parameters
+	// It overrides UseRawPath
+	UseEscapedPath bool
+
 	// UnescapePathValues if true, the path value will be unescaped.
-	// If UseRawPath is false (by default), the UnescapePathValues effectively is true,
+	// If UseRawPath and UseEscapedPath are false (by default), the UnescapePathValues effectively is true,
 	// as url.Path gonna be used, which is already unescaped.
 	UnescapePathValues bool
 
@@ -191,6 +197,7 @@ var _ IRouter = (*Engine)(nil)
 // - HandleMethodNotAllowed: false
 // - ForwardedByClientIP:    true
 // - UseRawPath:             false
+// - UseEscapedPath: 		 false
 // - UnescapePathValues:     true
 func New(opts ...OptionFunc) *Engine {
 	debugPrintWARNINGNew()
@@ -208,6 +215,7 @@ func New(opts ...OptionFunc) *Engine {
 		RemoteIPHeaders:        []string{"X-Forwarded-For", "X-Real-IP"},
 		TrustedPlatform:        defaultPlatform,
 		UseRawPath:             false,
+		UseEscapedPath:         false,
 		RemoveExtraSlash:       false,
 		UnescapePathValues:     true,
 		MaxMultipartMemory:     defaultMultipartMemory,
@@ -683,7 +691,11 @@ func (engine *Engine) handleHTTPRequest(c *Context) {
 	httpMethod := c.Request.Method
 	rPath := c.Request.URL.Path
 	unescape := false
-	if engine.UseRawPath && len(c.Request.URL.RawPath) > 0 {
+
+	if engine.UseEscapedPath {
+		rPath = c.Request.URL.EscapedPath()
+		unescape = engine.UnescapePathValues
+	} else if engine.UseRawPath && len(c.Request.URL.RawPath) > 0 {
 		rPath = c.Request.URL.RawPath
 		unescape = engine.UnescapePathValues
 	}
