@@ -114,6 +114,15 @@ type Engine struct {
 	// RedirectTrailingSlash is independent of this option.
 	RedirectFixedPath bool
 
+	// TrailingSlashInsensitivity makes the router insensitive to trailing
+	// slashes. It works like RedirectTrailingSlash, but instead of generating a
+	// redirection response to the path with or without the trailing slash, it
+	// will just go to the corresponding handler.
+	//
+	// Enabling this option will make RedirectTrailingSlash ineffective since
+	// no redirection will be performed.
+	TrailingSlashInsensitivity bool
+
 	// HandleMethodNotAllowed if enabled, the router checks if another method is allowed for the
 	// current route, if the current request can not be routed.
 	// If this is the case, the request is answered with 'Method Not Allowed'
@@ -186,12 +195,13 @@ var _ IRouter = (*Engine)(nil)
 
 // New returns a new blank Engine instance without any middleware attached.
 // By default, the configuration is:
-// - RedirectTrailingSlash:  true
-// - RedirectFixedPath:      false
-// - HandleMethodNotAllowed: false
-// - ForwardedByClientIP:    true
-// - UseRawPath:             false
-// - UnescapePathValues:     true
+//   - RedirectTrailingSlash:      true
+//   - RedirectFixedPath:          false
+//   - TrailingSlashInsensitivity: false
+//   - HandleMethodNotAllowed:     false
+//   - ForwardedByClientIP:        true
+//   - UseRawPath:                 false
+//   - UnescapePathValues:         true
 func New(opts ...OptionFunc) *Engine {
 	debugPrintWARNINGNew()
 	engine := &Engine{
@@ -200,22 +210,23 @@ func New(opts ...OptionFunc) *Engine {
 			basePath: "/",
 			root:     true,
 		},
-		FuncMap:                template.FuncMap{},
-		RedirectTrailingSlash:  true,
-		RedirectFixedPath:      false,
-		HandleMethodNotAllowed: false,
-		ForwardedByClientIP:    true,
-		RemoteIPHeaders:        []string{"X-Forwarded-For", "X-Real-IP"},
-		TrustedPlatform:        defaultPlatform,
-		UseRawPath:             false,
-		RemoveExtraSlash:       false,
-		UnescapePathValues:     true,
-		MaxMultipartMemory:     defaultMultipartMemory,
-		trees:                  make(methodTrees, 0, 9),
-		delims:                 render.Delims{Left: "{{", Right: "}}"},
-		secureJSONPrefix:       "while(1);",
-		trustedProxies:         []string{"0.0.0.0/0", "::/0"},
-		trustedCIDRs:           defaultTrustedCIDRs,
+		FuncMap:                    template.FuncMap{},
+		RedirectTrailingSlash:      true,
+		RedirectFixedPath:          false,
+		TrailingSlashInsensitivity: false,
+		HandleMethodNotAllowed:     false,
+		ForwardedByClientIP:        true,
+		RemoteIPHeaders:            []string{"X-Forwarded-For", "X-Real-IP"},
+		TrustedPlatform:            defaultPlatform,
+		UseRawPath:                 false,
+		RemoveExtraSlash:           false,
+		UnescapePathValues:         true,
+		MaxMultipartMemory:         defaultMultipartMemory,
+		trees:                      make(methodTrees, 0, 9),
+		delims:                     render.Delims{Left: "{{", Right: "}}"},
+		secureJSONPrefix:           "while(1);",
+		trustedProxies:             []string{"0.0.0.0/0", "::/0"},
+		trustedCIDRs:               defaultTrustedCIDRs,
 	}
 	engine.engine = engine
 	engine.pool.New = func() any {
@@ -712,6 +723,19 @@ func (engine *Engine) handleHTTPRequest(c *Context) {
 			return
 		}
 		if httpMethod != http.MethodConnect && rPath != "/" {
+			// TrailingSlashInsensitivity has precedence over RedirectTrailingSlash.
+			if value.tsr && engine.TrailingSlashInsensitivity {
+				// Retry with the path with or without the trailing slash.
+				// It should succeed because tsr is true.
+				value = root.getValue(addOrRemoveTrailingSlash(rPath), c.params, c.skippedNodes, unescape)
+				if value.handlers != nil {
+					c.handlers = value.handlers
+					c.fullPath = value.fullPath
+					c.Next()
+					c.writermem.WriteHeaderNow()
+					return
+				}
+			}
 			if value.tsr && engine.RedirectTrailingSlash {
 				redirectTrailingSlash(c)
 				return
@@ -766,6 +790,13 @@ func serveError(c *Context, code int, defaultMessage []byte) {
 	c.writermem.WriteHeaderNow()
 }
 
+func addOrRemoveTrailingSlash(p string) string {
+	if length := len(p); length > 1 && p[length-1] == '/' {
+		return p[:length-1]
+	}
+	return p + "/"
+}
+
 func redirectTrailingSlash(c *Context) {
 	req := c.Request
 	p := req.URL.Path
@@ -775,10 +806,7 @@ func redirectTrailingSlash(c *Context) {
 
 		p = prefix + "/" + req.URL.Path
 	}
-	req.URL.Path = p + "/"
-	if length := len(p); length > 1 && p[length-1] == '/' {
-		req.URL.Path = p[:length-1]
-	}
+	req.URL.Path = addOrRemoveTrailingSlash(p)
 	redirectRequest(c)
 }
 
