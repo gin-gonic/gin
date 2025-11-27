@@ -143,3 +143,50 @@ func BenchmarkPathCleanLong(b *testing.B) {
 		}
 	}
 }
+
+func TestRemoveRepeatedChar(t *testing.T) {
+	testCases := []struct {
+		name string
+		str  string
+		char byte
+		want string
+	}{
+		{
+			name: "empty",
+			str:  "",
+			char: 'a',
+			want: "",
+		},
+		{
+			name: "noSlash",
+			str:  "abc",
+			char: ',',
+			want: "abc",
+		},
+		{
+			name: "withSlash",
+			str:  "/a/b/c/",
+			char: '/',
+			want: "/a/b/c/",
+		},
+		{
+			name: "withRepeatedSlashes",
+			str:  "/a//b///c////",
+			char: '/',
+			want: "/a/b/c/",
+		},
+		{
+			name: "threeSlashes",
+			str:  "///",
+			char: '/',
+			want: "/",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			res := removeRepeatedChar(tc.str, tc.char)
+			assert.Equal(t, tc.want, res)
+		})
+	}
+}
