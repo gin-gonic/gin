@@ -29,7 +29,6 @@
   - [Bind default value if none provided](#bind-default-value-if-none-provided)
   - [Collection format for arrays](#collection-format-for-arrays)
   - [Bind Uri](#bind-uri)
-  - [Get Request Body](#get-request-body)
   - [Bind custom unmarshaler](#bind-custom-unmarshaler)
   - [Bind Header](#bind-header)
   - [Bind HTML checkboxes](#bind-html-checkboxes)
@@ -1007,69 +1006,6 @@ Test it with:
 curl -v localhost:8088/thinkerou/987fbc97-4bed-5078-9f07-9141ba07c9f3
 curl -v localhost:8088/thinkerou/not-uuid
 ```
-
-### Get Request Body
-
-`GetRequestBody` returns the request body as bytes, caching it for reuse. This allows the body to be read multiple times without being consumed, which is useful when middleware and handlers both need access to the same request body.
-
-```go
-package main
-
-import (
-	"fmt"
-	"net/http"
-
-	"github.com/gin-gonic/gin"
-)
-
-func main() {
-	router := gin.Default()
-
-	// Middleware that logs request body size
-	router.Use(func(c *gin.Context) {
-		body, err := c.GetRequestBody()
-		if err != nil {
-			fmt.Printf("Error reading body: %v\n", err)
-			return
-		}
-		fmt.Printf("Request body size: %d bytes\n", len(body))
-		c.Next()
-	})
-
-	router.POST("/echo", func(c *gin.Context) {
-		// Get the body again - this uses the cached version
-		body, err := c.GetRequestBody()
-		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-			return
-		}
-
-		// You can also use it with binding methods
-		var jsonData map[string]interface{}
-		if err := c.ShouldBindBodyWithJSON(&jsonData); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-			return
-		}
-
-		c.JSON(http.StatusOK, gin.H{
-			"body": string(body),
-			"parsed": jsonData,
-		})
-	})
-
-	router.Run(":8080")
-}
-```
-
-Test it with:
-
-```sh
-curl -X POST -H "Content-Type: application/json" \
-  -d '{"message":"hello","count":42}' \
-  http://localhost:8080/echo
-```
-
-This will output both the raw body and the parsed JSON, demonstrating that the body can be accessed multiple times.
 
 ### Bind custom unmarshaler
 
