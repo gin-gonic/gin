@@ -5,6 +5,7 @@
 package gin
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"io"
@@ -914,6 +915,24 @@ func (c *Context) ShouldBindUri(obj any) error {
 // ShouldBindWith binds the passed struct pointer using the specified binding engine.
 // See the binding package.
 func (c *Context) ShouldBindWith(obj any, b binding.Binding) error {
+	if b.Name() == "form-urlencoded" || b.Name() == "form" {
+		var body []byte
+		if cb, ok := c.Get(BodyBytesKey); ok {
+			if cbb, ok := cb.([]byte); ok {
+				body = cbb
+			}
+		}
+
+		if body == nil {
+			var err error
+			body, err = io.ReadAll(c.Request.Body)
+			if err != nil {
+				return err
+			}
+			c.Set(BodyBytesKey, body)
+		}
+		c.Request.Body = io.NopCloser(bytes.NewBuffer(body))
+	}
 	return b.Bind(c.Request, obj)
 }
 
@@ -1077,6 +1096,13 @@ func (c *Context) GetRawData() ([]byte, error) {
 	if c.Request.Body == nil {
 		return nil, errors.New("cannot read nil body")
 	}
+
+	if cb, ok := c.Get(BodyBytesKey); ok {
+		if cbb, ok := cb.([]byte); ok {
+			return cbb, nil
+		}
+	}
+
 	return io.ReadAll(c.Request.Body)
 }
 

@@ -2349,6 +2349,28 @@ func TestContextShouldBindWithQuery(t *testing.T) {
 	assert.Equal(t, 0, w.Body.Len())
 }
 
+func TestContextGetRawDataAfterShouldBind(t *testing.T) {
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
+
+	c.Request, _ = http.NewRequest(http.MethodPost, "/", strings.NewReader("p1=1&p2=2&p3=4"))
+	c.Request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+	var s struct {
+		P1 string `form:"p1"`
+		P2 string `form:"p2"`
+		P3 string `form:"p3"`
+	}
+	require.NoError(t, c.ShouldBind(&s))
+	assert.Equal(t, "1", s.P1)
+	assert.Equal(t, "2", s.P2)
+	assert.Equal(t, "4", s.P3)
+
+	rawData, err := c.GetRawData()
+	require.NoError(t, err)
+	assert.Equal(t, "p1=1&p2=2&p3=4", string(rawData))
+}
+
 func TestContextShouldBindWithYAML(t *testing.T) {
 	w := httptest.NewRecorder()
 	c, _ := CreateTestContext(w)
