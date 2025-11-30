@@ -70,9 +70,10 @@ func TestRunEmpty(t *testing.T) {
 		router.GET("/example", func(c *Context) { c.String(http.StatusOK, "it worked") })
 		assert.NoError(t, router.Run())
 	}()
-	// have to wait for the goroutine to start and run the server
-	// otherwise the main thread will complete
-	time.Sleep(5 * time.Millisecond)
+
+	// Wait for server to be ready with exponential backoff
+	err := waitForServerReady("http://localhost:8080/example", 10)
+	require.NoError(t, err, "server should start successfully")
 
 	require.Error(t, router.Run(":8080"))
 	testRequest(t, "http://localhost:8080/example")
@@ -213,9 +214,10 @@ func TestRunEmptyWithEnv(t *testing.T) {
 		router.GET("/example", func(c *Context) { c.String(http.StatusOK, "it worked") })
 		assert.NoError(t, router.Run())
 	}()
-	// have to wait for the goroutine to start and run the server
-	// otherwise the main thread will complete
-	time.Sleep(5 * time.Millisecond)
+
+	// Wait for server to be ready with exponential backoff
+	err := waitForServerReady("http://localhost:3123/example", 10)
+	require.NoError(t, err, "server should start successfully")
 
 	require.Error(t, router.Run(":3123"))
 	testRequest(t, "http://localhost:3123/example")
@@ -234,9 +236,10 @@ func TestRunWithPort(t *testing.T) {
 		router.GET("/example", func(c *Context) { c.String(http.StatusOK, "it worked") })
 		assert.NoError(t, router.Run(":5150"))
 	}()
-	// have to wait for the goroutine to start and run the server
-	// otherwise the main thread will complete
-	time.Sleep(5 * time.Millisecond)
+
+	// Wait for server to be ready with exponential backoff
+	err := waitForServerReady("http://localhost:5150/example", 10)
+	require.NoError(t, err, "server should start successfully")
 
 	require.Error(t, router.Run(":5150"))
 	testRequest(t, "http://localhost:5150/example")
