@@ -545,6 +545,29 @@ func TestNoMethodWithoutGlobalHandlers(t *testing.T) {
 }
 
 func TestRebuild404Handlers(t *testing.T) {
+	var middleware0 HandlerFunc = func(c *Context) {}
+	var middleware1 HandlerFunc = func(c *Context) {}
+
+	router := New()
+
+	// Initially, allNoRoute should be nil
+	assert.Nil(t, router.allNoRoute)
+
+	// Set NoRoute handlers
+	router.NoRoute(middleware0)
+	assert.Len(t, router.allNoRoute, 1)
+	assert.Len(t, router.noRoute, 1)
+	compareFunc(t, router.allNoRoute[0], middleware0)
+
+	// Add Use middleware should trigger rebuild404Handlers
+	router.Use(middleware1)
+	assert.Len(t, router.allNoRoute, 2)
+	assert.Len(t, router.Handlers, 1)
+	assert.Len(t, router.noRoute, 1)
+
+	// Global middleware should come first
+	compareFunc(t, router.allNoRoute[0], middleware1)
+	compareFunc(t, router.allNoRoute[1], middleware0)
 }
 
 func TestNoMethodWithGlobalHandlers(t *testing.T) {
