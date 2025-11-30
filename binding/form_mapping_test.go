@@ -760,3 +760,35 @@ func TestTrySetCustomNotApplicable(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, 42, s.N)
 }
+
+func TestTrySetCustomIntegrationSuccess(t *testing.T) {
+	var s struct {
+		F testCustom `form:"f"`
+	}
+
+	err := mappingByPtr(&s, formSource{"f": {"hello"}}, "form")
+	require.NoError(t, err)
+	assert.Equal(t, "prefix_hello", s.F.Value)
+}
+
+func TestTrySetCustomSlice(t *testing.T) {
+	var s struct {
+		F []testCustom `form:"f"`
+	}
+
+	err := mappingByPtr(&s, formSource{"f": {"one", "two"}}, "form")
+	require.NoError(t, err)
+	assert.Equal(t, "prefix_one", s.F[0].Value)
+	assert.Equal(t, "prefix_two", s.F[1].Value)
+}
+
+func TestTrySetCustomArray(t *testing.T) {
+	var s struct {
+		F [2]testCustom `form:"f"`
+	}
+
+	err := mappingByPtr(&s, formSource{"f": {"hello", "world"}}, "form")
+	require.NoError(t, err)
+	assert.Equal(t, "prefix_hello", s.F[0].Value)
+	assert.Equal(t, "prefix_world", s.F[1].Value)
+}
