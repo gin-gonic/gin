@@ -792,3 +792,23 @@ func TestTrySetCustomArray(t *testing.T) {
 	assert.Equal(t, "prefix_hello", s.F[0].Value)
 	assert.Equal(t, "prefix_world", s.F[1].Value)
 }
+
+func TestTrySetCustomSliceError(t *testing.T) {
+	var s struct {
+		F []badCustom `form:"f"`
+	}
+
+	err := mappingByPtr(&s, formSource{"f": {"oops1", "oops2"}}, "form")
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "invalid value")
+}
+
+func TestTrySetCustomArrayError(t *testing.T) {
+	var s struct {
+		F [2]badCustom `form:"f"`
+	}
+
+	err := mappingByPtr(&s, formSource{"f": {"fail1", "fail2"}}, "form")
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "invalid value")
+}
