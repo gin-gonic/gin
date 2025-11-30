@@ -16,6 +16,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strconv"
 	"strings"
 	"sync"
 	"testing"
@@ -64,7 +65,16 @@ func testRequest(t *testing.T, params ...string) {
 }
 
 func TestRunEmpty(t *testing.T) {
-	os.Setenv("PORT", "")
+	addr, err := net.ResolveTCPAddr("tcp", "localhost:0")
+	require.NoError(t, err)
+	l, err := net.ListenTCP("tcp", addr)
+	require.NoError(t, err)
+	port := strconv.Itoa(l.Addr().(*net.TCPAddr).Port)
+	l.Close()
+
+	os.Setenv("PORT", port)
+	defer os.Unsetenv("PORT")
+
 	router := New()
 	go func() {
 		router.GET("/example", func(c *Context) { c.String(http.StatusOK, "it worked") })
@@ -75,8 +85,8 @@ func TestRunEmpty(t *testing.T) {
 	err := waitForServerReady("http://localhost:8080/example", 10)
 	require.NoError(t, err, "server should start successfully")
 
-	require.Error(t, router.Run(":8080"))
-	testRequest(t, "http://localhost:8080/example")
+	require.Error(t, router.Run(":"+port))
+	testRequest(t, "http://localhost:"+port+"/example")
 }
 
 func TestBadTrustedCIDRs(t *testing.T) {
