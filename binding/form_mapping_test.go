@@ -227,8 +227,8 @@ func TestMappingTime(t *testing.T) {
 }
 
 type bindTestData struct {
-	need interface{}
-	got  interface{}
+	need any
+	got  any
 	in   map[string][]string
 }
 
@@ -245,7 +245,7 @@ func TestMappingTimeUnixNano(t *testing.T) {
 
 	for _, v := range tests {
 		err := mapForm(v.got, v.in)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Equal(t, v.need, v.got)
 	}
 }
@@ -272,7 +272,7 @@ func TestMappingTimeDuration(t *testing.T) {
 
 	for _, v := range tests {
 		err := mapForm(v.got, v.in)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Equal(t, v.need, v.got)
 	}
 	// error
