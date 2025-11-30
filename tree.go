@@ -5,6 +5,7 @@
 package gin
 
 import (
+	"math"
 	"net/url"
 	"strings"
 	"unicode"
@@ -77,14 +78,22 @@ func (n *node) addChild(child *node) {
 	}
 }
 
+// safeUint16 converts int to uint16 safely, capping at math.MaxUint16
+func safeUint16(n int) uint16 {
+	if n > math.MaxUint16 {
+		return math.MaxUint16
+	}
+	return uint16(n)
+}
+
 func countParams(path string) uint16 {
 	colons := strings.Count(path, ":")
 	stars := strings.Count(path, "*")
-	return uint16(colons + stars)
+	return safeUint16(colons + stars)
 }
 
 func countSections(path string) uint16 {
-	return uint16(strings.Count(path, "/"))
+	return safeUint16(strings.Count(path, "/"))
 }
 
 type nodeType uint8

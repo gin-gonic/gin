@@ -55,6 +55,14 @@ const ContextRequestKey ContextKeyType = 0
 // abortIndex represents a typical value used in abort functions.
 const abortIndex int8 = math.MaxInt8 >> 1
 
+// safeInt8 converts int to int8 safely, capping at math.MaxInt8
+func safeInt8(n int) int8 {
+	if n > math.MaxInt8 {
+		return math.MaxInt8
+	}
+	return int8(n)
+}
+
 // Context is the most important part of gin. It allows us to pass variables between middleware,
 // manage the flow, validate the JSON of a request and render a JSON response for example.
 type Context struct {
@@ -186,7 +194,7 @@ func (c *Context) FullPath() string {
 // See example in GitHub.
 func (c *Context) Next() {
 	c.index++
-	for c.index < int8(len(c.handlers)) {
+	for c.index < safeInt8(len(c.handlers)) {
 		if c.handlers[c.index] != nil {
 			c.handlers[c.index](c)
 		}
@@ -830,41 +838,71 @@ func (c *Context) ShouldBind(obj any) error {
 }
 
 // ShouldBindJSON is a shortcut for c.ShouldBindWith(obj, binding.JSON).
+//
+// Example:
+//
+//	POST /user
+//	Content-Type: application/json
+//
+//	Request Body:
+//	{
+//		"name": "Manu",
+//		"age": 20
+//	}
+//
+//	type User struct {
+//		Name string `json:"name"`
+//		Age  int    `json:"age"`
+//	}
+//
+//	var user User
+//	if err := c.ShouldBindJSON(&user); err != nil {
+//		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+//		return
+//	}
+//	c.JSON(http.StatusOK, user)
 func (c *Context) ShouldBindJSON(obj any) error {
 	return c.ShouldBindWith(obj, binding.JSON)
 }
 
 // ShouldBindXML is a shortcut for c.ShouldBindWith(obj, binding.XML).
+// It works like ShouldBindJSON but binds the request body as XML data.
 func (c *Context) ShouldBindXML(obj any) error {
 	return c.ShouldBindWith(obj, binding.XML)
 }
 
 // ShouldBindQuery is a shortcut for c.ShouldBindWith(obj, binding.Query).
+// It works like ShouldBindJSON but binds query parameters from the URL.
 func (c *Context) ShouldBindQuery(obj any) error {
 	return c.ShouldBindWith(obj, binding.Query)
 }
 
 // ShouldBindYAML is a shortcut for c.ShouldBindWith(obj, binding.YAML).
+// It works like ShouldBindJSON but binds the request body as YAML data.
 func (c *Context) ShouldBindYAML(obj any) error {
 	return c.ShouldBindWith(obj, binding.YAML)
 }
 
 // ShouldBindTOML is a shortcut for c.ShouldBindWith(obj, binding.TOML).
+// It works like ShouldBindJSON but binds the request body as TOML data.
 func (c *Context) ShouldBindTOML(obj any) error {
 	return c.ShouldBindWith(obj, binding.TOML)
 }
 
 // ShouldBindPlain is a shortcut for c.ShouldBindWith(obj, binding.Plain).
+// It works like ShouldBindJSON but binds plain text data from the request body.
 func (c *Context) ShouldBindPlain(obj any) error {
 	return c.ShouldBindWith(obj, binding.Plain)
 }
 
 // ShouldBindHeader is a shortcut for c.ShouldBindWith(obj, binding.Header).
+// It works like ShouldBindJSON but binds values from HTTP headers.
 func (c *Context) ShouldBindHeader(obj any) error {
 	return c.ShouldBindWith(obj, binding.Header)
 }
 
 // ShouldBindUri binds the passed struct pointer using the specified binding engine.
+// It works like ShouldBindJSON but binds parameters from the URI.
 func (c *Context) ShouldBindUri(obj any) error {
 	m := make(map[string][]string, len(c.Params))
 	for _, v := range c.Params {

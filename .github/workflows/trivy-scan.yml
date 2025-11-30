@@ -8,9 +8,8 @@ on:
     branches:
       - master
   schedule:
-    # Run every 3 months (quarterly) on the 1st day at 00:00 UTC
-    # Months: January (1), April (4), July (7), October (10)
-    - cron: '0 0 1 1,4,7,10 *'
+    # Run daily at 00:00 UTC
+    - cron: '0 0 * * *'
   workflow_dispatch: # Allow manual trigger
 
 permissions:
@@ -23,7 +22,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
 

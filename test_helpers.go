@@ -4,7 +4,11 @@
 
 package gin
 
-import "net/http"
+import (
+	"fmt"
+	"net/http"
+	"time"
+)
 
 // CreateTestContext returns a fresh Engine and a Context associated with it.
 // This is useful for tests that need to set up a new Gin engine instance
@@ -28,4 +32,29 @@ func CreateTestContextOnly(w http.ResponseWriter, r *Engine) (c *Context) {
 	c.reset()
 	c.writermem.reset(w)
 	return
+}
+
+// waitForServerReady waits for a server to be ready by making HTTP requests
+// with exponential backoff. This is more reliable than time.Sleep() for testing.
+func waitForServerReady(url string, maxAttempts int) error {
+	client := &http.Client{
+		Timeout: 100 * time.Millisecond,
+	}
+
+	for i := 0; i < maxAttempts; i++ {
+		resp, err := client.Get(url)
+		if err == nil {
+			resp.Body.Close()
+			return nil
+		}
+
+		// Exponential backoff: 10ms, 20ms, 40ms, 80ms, 160ms...
+		backoff := time.Duration(10*(1<<uint(i))) * time.Millisecond
+		if backoff > 500*time.Millisecond {
+			backoff = 500 * time.Millisecond
+		}
+		time.Sleep(backoff)
+	}
+
+	return fmt.Errorf("server at %s did not become ready after %d attempts", url, maxAttempts)
 }
