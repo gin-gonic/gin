@@ -7,6 +7,7 @@ package binding
 import (
 	"encoding/hex"
 	"errors"
+	"fmt"
 	"mime/multipart"
 	"reflect"
 	"strconv"
@@ -733,4 +734,30 @@ func TestTrySetCustomIntegration(t *testing.T) {
 	err := mappingByPtr(&s, formSource{"f": {"hello"}}, "form")
 	require.NoError(t, err)
 	assert.Equal(t, "prefix_hello", s.F.Value)
+}
+
+type badCustom struct{}
+
+func (b *badCustom) UnmarshalParam(s string) error {
+	return fmt.Errorf("boom")
+}
+
+func TestTrySetCustomError(t *testing.T) {
+	var s struct {
+		F badCustom `form:"f"`
+	}
+
+	err := mappingByPtr(&s, formSource{"f": {"hello"}}, "form")
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "invalid value")
+}
+
+func TestTrySetCustomNotApplicable(t *testing.T) {
+	var s struct {
+		N int `form:"n"`
+	}
+
+	err := mappingByPtr(&s, formSource{"n": {"42"}}, "form")
+	require.NoError(t, err)
+	assert.Equal(t, 42, s.N)
 }
