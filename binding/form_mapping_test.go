@@ -7,7 +7,6 @@ package binding
 import (
 	"encoding/hex"
 	"errors"
-	"fmt"
 	"mime/multipart"
 	"reflect"
 	"strconv"
@@ -739,7 +738,7 @@ func TestTrySetCustomIntegration(t *testing.T) {
 type badCustom struct{}
 
 func (b *badCustom) UnmarshalParam(s string) error {
-	return fmt.Errorf("boom")
+	return errors.New("boom")
 }
 
 func TestTrySetCustomError(t *testing.T) {
