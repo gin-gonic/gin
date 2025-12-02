@@ -182,6 +182,7 @@ type Engine struct {
 	noMethod         HandlersChain
 	pool             sync.Pool
 	trees            methodTrees
+	treesMu          sync.RWMutex
 	maxParams        uint16
 	maxSections      uint16
 	trustedProxies   []string
@@ -362,6 +363,8 @@ func (engine *Engine) rebuild405Handlers() {
 }
 
 func (engine *Engine) addRoute(method, path string, handlers HandlersChain) {
+	engine.treesMu.Lock()
+	defer engine.treesMu.Unlock()
 	assert1(path[0] == '/', "path must begin with '/'")
 	assert1(method != "", "HTTP method can not be empty")
 	assert1(len(handlers) > 0, "there must be at least one handler")
@@ -388,6 +391,8 @@ func (engine *Engine) addRoute(method, path string, handlers HandlersChain) {
 // Routes returns a slice of registered routes, including some useful information, such as:
 // the http method, path, and the handler name.
 func (engine *Engine) Routes() (routes RoutesInfo) {
+	engine.treesMu.RLock()
+	defer engine.treesMu.RUnlock()
 	for _, tree := range engine.trees {
 		routes = iterate("", tree.method, routes, tree.root)
 	}
