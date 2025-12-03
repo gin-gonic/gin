@@ -292,7 +292,7 @@ func TestContextReset(t *testing.T) {
 	assert.Empty(t, c.Errors.Errors())
 	assert.Empty(t, c.Errors.ByType(ErrorTypeAny))
 	assert.Empty(t, c.Params)
-	assert.EqualValues(t, c.index, -1)
+	assert.EqualValues(t, -1, c.index)
 	assert.Equal(t, c.Writer.(*responseWriter), &c.writermem)
 }
 
@@ -384,7 +384,7 @@ func TestContextSetGetValues(t *testing.T) {
 	c.Set("intInterface", a)
 
 	assert.Exactly(t, "this is a string", c.MustGet("string").(string))
-	assert.Exactly(t, c.MustGet("int32").(int32), int32(-42))
+	assert.Exactly(t, int32(-42), c.MustGet("int32").(int32))
 	assert.Exactly(t, int64(42424242424242), c.MustGet("int64").(int64))
 	assert.Exactly(t, uint64(42), c.MustGet("uint64").(uint64))
 	assert.InDelta(t, float32(4.2), c.MustGet("float32").(float32), 0.01)
@@ -1626,6 +1626,32 @@ func TestContextNegotiationWithHTML(t *testing.T) {
 	assert.Equal(t, http.StatusOK, w.Code)
 	assert.Equal(t, "Hello gin", w.Body.String())
 	assert.Equal(t, "text/html; charset=utf-8", w.Header().Get("Content-Type"))
+}
+
+func TestContextNegotiationWithPROTOBUF(t *testing.T) {
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
+	c.Request = httptest.NewRequest(http.MethodPost, "/", nil)
+
+	reps := []int64{int64(1), int64(2)}
+	label := "test"
+	data := &testdata.Test{
+		Label: &label,
+		Reps:  reps,
+	}
+
+	c.Negotiate(http.StatusCreated, Negotiate{
+		Offered: []string{MIMEPROTOBUF, MIMEJSON, MIMEXML},
+		Data:    data,
+	})
+
+	// Marshal original data for comparison
+	protoData, err := proto.Marshal(data)
+	require.NoError(t, err)
+
+	assert.Equal(t, http.StatusCreated, w.Code)
+	assert.Equal(t, string(protoData), w.Body.String())
+	assert.Equal(t, "application/x-protobuf", w.Header().Get("Content-Type"))
 }
 
 func TestContextNegotiationNotSupport(t *testing.T) {

@@ -5,19 +5,13 @@
 package gin
 
 import (
-	"bytes"
+	"math"
 	"net/url"
 	"strings"
 	"unicode"
 	"unicode/utf8"
 
 	"github.com/gin-gonic/gin/internal/bytesconv"
-)
-
-var (
-	strColon = []byte(":")
-	strStar  = []byte("*")
-	strSlash = []byte("/")
 )
 
 // Param is a single URL parameter, consisting of a key and a value.
@@ -84,17 +78,22 @@ func (n *node) addChild(child *node) {
 	}
 }
 
+// safeUint16 converts int to uint16 safely, capping at math.MaxUint16
+func safeUint16(n int) uint16 {
+	if n > math.MaxUint16 {
+		return math.MaxUint16
+	}
+	return uint16(n)
+}
+
 func countParams(path string) uint16 {
-	var n uint16
-	s := bytesconv.StringToBytes(path)
-	n += uint16(bytes.Count(s, strColon))
-	n += uint16(bytes.Count(s, strStar))
-	return n
+	colons := strings.Count(path, ":")
+	stars := strings.Count(path, "*")
+	return safeUint16(colons + stars)
 }
 
 func countSections(path string) uint16 {
-	s := bytesconv.StringToBytes(path)
-	return uint16(bytes.Count(s, strSlash))
+	return safeUint16(strings.Count(path, "/"))
 }
 
 type nodeType uint8

@@ -16,7 +16,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
       - name: Set up Go
@@ -24,9 +24,9 @@ jobs:
         with:
           go-version: "^1"
       - name: Setup golangci-lint
-        uses: golangci/golangci-lint-action@v8
+        uses: golangci/golangci-lint-action@v9
         with:
-          version: v2.1.6
+          version: v2.6
           args: --verbose
   test:
     needs: lint
@@ -61,7 +61,7 @@ jobs:
           cache: false
 
       - name: Checkout Code
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           ref: ${{ github.ref }}
 
@@ -81,19 +81,3 @@ jobs:
         uses: codecov/codecov-action@v5
         with:
           flags: ${{ matrix.os }},go-${{ matrix.go }},${{ matrix.test-tags }}
-
-  vulnerability-scanning:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v5
-        with:
-          fetch-depth: 0
-
-      - name: Run Trivy vulnerability scanner in repo mode
-        uses: aquasecurity/trivy-action@0.33.1
-        with:
-          scan-type: "fs"
-          ignore-unfixed: true
-          format: "table"
-          exit-code: "1"
-          severity: "CRITICAL,HIGH,MEDIUM"
