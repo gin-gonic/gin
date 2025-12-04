@@ -589,6 +589,54 @@ func TestMappingCustomPointerStructTypeWithURITag(t *testing.T) {
 	assert.Equal(t, "happiness", s.FileData.Name)
 }
 
+func TestMappingCustomStructTypeSliceWithFormTag(t *testing.T) {
+	var s struct {
+		FileData []customUnmarshalParamType `form:"data"`
+	}
+	err := mappingByPtr(&s, formSource{"data": {`file:/foo:happiness`, `http:/bar:sadness`}}, "form")
+	require.NoError(t, err)
+
+	assert.Equal(t, "file", s.FileData[0].Protocol)
+	assert.Equal(t, "/foo", s.FileData[0].Path)
+	assert.Equal(t, "happiness", s.FileData[0].Name)
+
+	assert.Equal(t, "http", s.FileData[1].Protocol)
+	assert.Equal(t, "/bar", s.FileData[1].Path)
+	assert.Equal(t, "sadness", s.FileData[1].Name)
+}
+
+func TestMappingCustomStructTypeSliceWithURITag(t *testing.T) {
+	var s struct {
+		FileData []customUnmarshalParamType `uri:"data"`
+	}
+	err := mappingByPtr(&s, formSource{"data": {`file:/foo:happiness`, `http:/bar:sadness`}}, "uri")
+	require.NoError(t, err)
+
+	assert.Equal(t, "file", s.FileData[0].Protocol)
+	assert.Equal(t, "/foo", s.FileData[0].Path)
+	assert.Equal(t, "happiness", s.FileData[0].Name)
+
+	assert.Equal(t, "http", s.FileData[1].Protocol)
+	assert.Equal(t, "/bar", s.FileData[1].Path)
+	assert.Equal(t, "sadness", s.FileData[1].Name)
+}
+
+func TestMappingCustomPointerStructTypeSliceWithFormTag(t *testing.T) {
+	var s struct {
+		FileData []*customUnmarshalParamType `form:"data"`
+	}
+	err := mappingByPtr(&s, formSource{"data": {`file:/foo:happiness`, `http:/bar:sadness`}}, "form")
+	require.NoError(t, err)
+
+	assert.Equal(t, "file", s.FileData[0].Protocol)
+	assert.Equal(t, "/foo", s.FileData[0].Path)
+	assert.Equal(t, "happiness", s.FileData[0].Name)
+
+	assert.Equal(t, "http", s.FileData[1].Protocol)
+	assert.Equal(t, "/bar", s.FileData[1].Path)
+	assert.Equal(t, "sadness", s.FileData[1].Name)
+}
+
 type customPath []string
 
 func (p *customPath) UnmarshalParam(param string) error {
