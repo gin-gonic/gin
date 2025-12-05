@@ -87,7 +87,7 @@ func BenchmarkOneRouteString(B *testing.B) {
 	runRequest(B, router, http.MethodGet, "/text")
 }
 
-func BenchmarkManyRoutesFist(B *testing.B) {
+func BenchmarkManyRoutesFirst(B *testing.B) {
 	router := New()
 	router.Any("/ping", func(c *Context) {})
 	runRequest(B, router, http.MethodGet, "/ping")

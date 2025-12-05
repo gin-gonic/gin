@@ -41,6 +41,15 @@ func TestBytesToString(t *testing.T) {
 	}
 }
 
+func TestBytesToStringEmpty(t *testing.T) {
+	if got := BytesToString([]byte{}); got != "" {
+		t.Fatalf("BytesToString([]byte{}) = %q; want empty string", got)
+	}
+	if got := BytesToString(nil); got != "" {
+		t.Fatalf("BytesToString(nil) = %q; want empty string", got)
+	}
+}
+
 const letterBytes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 const (
 	letterIdxBits = 6                    // 6 bits to represent a letter index
@@ -78,28 +87,38 @@ func TestStringToBytes(t *testing.T) {
 	}
 }
 
+func TestStringToBytesEmpty(t *testing.T) {
+	b := StringToBytes("")
+	if len(b) != 0 {
+		t.Fatalf(`StringToBytes("") length = %d; want 0`, len(b))
+	}
+	if !bytes.Equal(b, []byte("")) {
+		t.Fatalf(`StringToBytes("") = %v; want []byte("")`, b)
+	}
+}
+
 // go test -v -run=none -bench=^BenchmarkBytesConv -benchmem=true
 
 func BenchmarkBytesConvBytesToStrRaw(b *testing.B) {
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		rawBytesToStr(testBytes)
 	}
 }
 
 func BenchmarkBytesConvBytesToStr(b *testing.B) {
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		BytesToString(testBytes)
 	}
 }
 
 func BenchmarkBytesConvStrToBytesRaw(b *testing.B) {
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		rawStrToBytes(testString)
 	}
 }
 
 func BenchmarkBytesConvStrToBytes(b *testing.B) {
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		StringToBytes(testString)
 	}
 }

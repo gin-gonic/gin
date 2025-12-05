@@ -292,7 +292,7 @@ func TestContextReset(t *testing.T) {
 	assert.Empty(t, c.Errors.Errors())
 	assert.Empty(t, c.Errors.ByType(ErrorTypeAny))
 	assert.Empty(t, c.Params)
-	assert.EqualValues(t, c.index, -1)
+	assert.EqualValues(t, -1, c.index)
 	assert.Equal(t, c.Writer.(*responseWriter), &c.writermem)
 }
 
@@ -384,7 +384,7 @@ func TestContextSetGetValues(t *testing.T) {
 	c.Set("intInterface", a)
 
 	assert.Exactly(t, "this is a string", c.MustGet("string").(string))
-	assert.Exactly(t, c.MustGet("int32").(int32), int32(-42))
+	assert.Exactly(t, int32(-42), c.MustGet("int32").(int32))
 	assert.Exactly(t, int64(42424242424242), c.MustGet("int64").(int64))
 	assert.Exactly(t, uint64(42), c.MustGet("uint64").(uint64))
 	assert.InDelta(t, float32(4.2), c.MustGet("float32").(float32), 0.01)
@@ -402,6 +402,19 @@ func TestContextSetGetBool(t *testing.T) {
 	c, _ := CreateTestContext(httptest.NewRecorder())
 	c.Set("bool", true)
 	assert.True(t, c.GetBool("bool"))
+}
+
+func TestSetGetDelete(t *testing.T) {
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	key := "example-key"
+	value := "example-value"
+	c.Set(key, value)
+	val, exists := c.Get(key)
+	assert.True(t, exists)
+	assert.Equal(t, val, value)
+	c.Delete(key)
+	_, exists = c.Get(key)
+	assert.False(t, exists)
 }
 
 func TestContextGetInt(t *testing.T) {
@@ -1233,7 +1246,7 @@ func TestContextRenderNoContentHTML(t *testing.T) {
 	assert.Equal(t, "text/html; charset=utf-8", w.Header().Get("Content-Type"))
 }
 
-// TestContextXML tests that the response is serialized as XML
+// TestContextRenderXML tests that the response is serialized as XML
 // and Content-Type is set to application/xml
 func TestContextRenderXML(t *testing.T) {
 	w := httptest.NewRecorder()
@@ -1615,6 +1628,32 @@ func TestContextNegotiationWithHTML(t *testing.T) {
 	assert.Equal(t, "text/html; charset=utf-8", w.Header().Get("Content-Type"))
 }
 
+func TestContextNegotiationWithPROTOBUF(t *testing.T) {
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
+	c.Request = httptest.NewRequest(http.MethodPost, "/", nil)
+
+	reps := []int64{int64(1), int64(2)}
+	label := "test"
+	data := &testdata.Test{
+		Label: &label,
+		Reps:  reps,
+	}
+
+	c.Negotiate(http.StatusCreated, Negotiate{
+		Offered: []string{MIMEPROTOBUF, MIMEJSON, MIMEXML},
+		Data:    data,
+	})
+
+	// Marshal original data for comparison
+	protoData, err := proto.Marshal(data)
+	require.NoError(t, err)
+
+	assert.Equal(t, http.StatusCreated, w.Code)
+	assert.Equal(t, string(protoData), w.Body.String())
+	assert.Equal(t, "application/x-protobuf", w.Header().Get("Content-Type"))
+}
+
 func TestContextNegotiationNotSupport(t *testing.T) {
 	w := httptest.NewRecorder()
 	c, _ := CreateTestContext(w)
@@ -1991,13 +2030,12 @@ func TestContextContentType(t *testing.T) {
 }
 
 func TestContextBindRequestTooLarge(t *testing.T) {
-	// When using sonic or go-json as JSON encoder, they do not propagate the http.MaxBytesError error
+	// When using go-json as JSON encoder, they do not propagate the http.MaxBytesError error
 	// The response will fail with a generic 400 instead of 413
 	// https://github.com/goccy/go-json/issues/485
-	// https://github.com/bytedance/sonic/issues/800
 	var expectedCode int
 	switch json.Package {
-	case "github.com/goccy/go-json", "github.com/bytedance/sonic":
+	case "github.com/goccy/go-json":
 		expectedCode = http.StatusBadRequest
 	default:
 		expectedCode = http.StatusRequestEntityTooLarge
@@ -3321,7 +3359,7 @@ func TestContextSetCookieData(t *testing.T) {
 	assert.Contains(t, setCookie, "Max-Age=1")
 	assert.Contains(t, setCookie, "HttpOnly")
 	assert.Contains(t, setCookie, "Secure")
-	// SameSite=Lax might be omitted in Go 1.23+ as it's the default
+	// SameSite=Lax might be omitted in Go 1.24+ as it's the default
 	// assert.Contains(t, setCookie, "SameSite=Lax")
 
 	// Test that when Path is empty, "/" is automatically set
@@ -3342,7 +3380,7 @@ func TestContextSetCookieData(t *testing.T) {
 	assert.Contains(t, setCookie, "Max-Age=1")
 	assert.Contains(t, setCookie, "HttpOnly")
 	assert.Contains(t, setCookie, "Secure")
-	// SameSite=Lax might be omitted in Go 1.23+ as it's the default
+	// SameSite=Lax might be omitted in Go 1.24+ as it's the default
 	// assert.Contains(t, setCookie, "SameSite=Lax")
 
 	// Test additional cookie attributes (Expires)
@@ -3365,7 +3403,7 @@ func TestContextSetCookieData(t *testing.T) {
 	assert.Contains(t, setCookie, "Domain=localhost")
 	assert.Contains(t, setCookie, "HttpOnly")
 	assert.Contains(t, setCookie, "Secure")
-	// SameSite=Lax might be omitted in Go 1.23+ as it's the default
+	// SameSite=Lax might be omitted in Go 1.24+ as it's the default
 	// assert.Contains(t, setCookie, "SameSite=Lax")
 
 	// Test for Partitioned attribute (Go 1.18+)
@@ -3385,7 +3423,7 @@ func TestContextSetCookieData(t *testing.T) {
 	assert.Contains(t, setCookie, "Domain=localhost")
 	assert.Contains(t, setCookie, "HttpOnly")
 	assert.Contains(t, setCookie, "Secure")
-	// SameSite=Lax might be omitted in Go 1.23+ as it's the default
+	// SameSite=Lax might be omitted in Go 1.24+ as it's the default
 	// assert.Contains(t, setCookie, "SameSite=Lax")
 	// Not testing for Partitioned attribute as it may not be supported in all Go versions
 
@@ -3593,6 +3631,91 @@ func TestGetMapFromFormData(t *testing.T) {
 			result, found := getMapFromFormData(tc.data, tc.key)
 			assert.Equal(t, tc.expected, result, "result mismatch")
 			assert.Equal(t, tc.found, found, "found mismatch")
+		})
+	}
+}
+
+func BenchmarkGetMapFromFormData(b *testing.B) {
+	// Test case 1: Small dataset with bracket notation
+	smallData := map[string][]string{
+		"ids[a]":   {"hi"},
+		"ids[b]":   {"3.14"},
+		"names[a]": {"mike"},
+		"names[b]": {"maria"},
+	}
+
+	// Test case 2: Medium dataset with mixed data
+	mediumData := map[string][]string{
+		"ids[a]":      {"hi"},
+		"ids[b]":      {"3.14"},
+		"ids[c]":      {"test"},
+		"ids[d]":      {"value"},
+		"names[a]":    {"mike"},
+		"names[b]":    {"maria"},
+		"names[c]":    {"john"},
+		"names[d]":    {"jane"},
+		"other[key1]": {"value1"},
+		"other[key2]": {"value2"},
+		"simple":      {"data"},
+		"another":     {"info"},
+	}
+
+	// Test case 3: Large dataset with many bracket keys
+	largeData := make(map[string][]string)
+	for i := 0; i < 100; i++ {
+		key := fmt.Sprintf("ids[%d]", i)
+		largeData[key] = []string{fmt.Sprintf("value%d", i)}
+	}
+	for i := 0; i < 50; i++ {
+		key := fmt.Sprintf("names[%d]", i)
+		largeData[key] = []string{fmt.Sprintf("name%d", i)}
+	}
+	for i := 0; i < 25; i++ {
+		key := fmt.Sprintf("other[key%d]", i)
+		largeData[key] = []string{fmt.Sprintf("other%d", i)}
+	}
+
+	// Test case 4: Dataset with many non-matching keys (worst case)
+	worstCaseData := make(map[string][]string)
+	for i := 0; i < 100; i++ {
+		key := fmt.Sprintf("nonmatching%d", i)
+		worstCaseData[key] = []string{fmt.Sprintf("value%d", i)}
+	}
+	worstCaseData["ids[a]"] = []string{"hi"}
+	worstCaseData["ids[b]"] = []string{"3.14"}
+
+	// Test case 5: Dataset with short keys (best case for early exit)
+	shortKeysData := map[string][]string{
+		"a":      {"value1"},
+		"b":      {"value2"},
+		"ids[a]": {"hi"},
+		"ids[b]": {"3.14"},
+	}
+
+	benchmarks := []struct {
+		name string
+		data map[string][]string
+		key  string
+	}{
+		{"Small_Bracket", smallData, "ids"},
+		{"Small_Names", smallData, "names"},
+		{"Medium_Bracket", mediumData, "ids"},
+		{"Medium_Names", mediumData, "names"},
+		{"Medium_Other", mediumData, "other"},
+		{"Large_Bracket", largeData, "ids"},
+		{"Large_Names", largeData, "names"},
+		{"Large_Other", largeData, "other"},
+		{"WorstCase_Bracket", worstCaseData, "ids"},
+		{"ShortKeys_Bracket", shortKeysData, "ids"},
+		{"Empty_Key", smallData, "notfound"},
+	}
+
+	for _, bm := range benchmarks {
+		b.Run(bm.name, func(b *testing.B) {
+			b.ReportAllocs()
+			for i := 0; i < b.N; i++ {
+				_, _ = getMapFromFormData(bm.data, bm.key)
+			}
 		})
 	}
 }

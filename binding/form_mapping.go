@@ -7,6 +7,7 @@ package binding
 import (
 	"errors"
 	"fmt"
+	"maps"
 	"mime/multipart"
 	"reflect"
 	"strconv"
@@ -230,9 +231,12 @@ func setByForm(value reflect.Value, field reflect.StructField, form map[string][
 
 	switch value.Kind() {
 	case reflect.Slice:
-		if !ok {
-			vs = []string{opt.defaultValue}
+		if len(vs) == 0 {
+			if !opt.isDefaultExists {
+				return false, nil
+			}
 
+			vs = []string{opt.defaultValue}
 			// pre-process the default value for multi if present
 			cfTag := field.Tag.Get("collection_format")
 			if cfTag == "" || cfTag == "multi" {
@@ -250,9 +254,12 @@ func setByForm(value reflect.Value, field reflect.StructField, form map[string][
 
 		return true, setSlice(vs, value, field)
 	case reflect.Array:
-		if !ok {
-			vs = []string{opt.defaultValue}
+		if len(vs) == 0 {
+			if !opt.isDefaultExists {
+				return false, nil
+			}
 
+			vs = []string{opt.defaultValue}
 			// pre-process the default value for multi if present
 			cfTag := field.Tag.Get("collection_format")
 			if cfTag == "" || cfTag == "multi" {
@@ -293,6 +300,11 @@ func setByForm(value reflect.Value, field reflect.StructField, form map[string][
 }
 
 func setWithProperType(val string, value reflect.Value, field reflect.StructField) error {
+	// If it is a string type, no spaces are removed, and the user data is not modified here
+	if value.Kind() != reflect.String {
+		val = strings.TrimSpace(val)
+	}
+
 	switch value.Kind() {
 	case reflect.Int:
 		return setIntField(val, 0, value)
@@ -397,6 +409,11 @@ func setTimeField(val string, structField reflect.StructField, value reflect.Val
 		timeFormat = time.RFC3339
 	}
 
+	if val == "" {
+		value.Set(reflect.ValueOf(time.Time{}))
+		return nil
+	}
+
 	switch tf := strings.ToLower(timeFormat); tf {
 	case "unix", "unixmilli", "unixmicro", "unixnano":
 		tv, err := strconv.ParseInt(val, 10, 64)
@@ -417,11 +434,6 @@ func setTimeField(val string, structField reflect.StructField, value reflect.Val
 		}
 
 		value.Set(reflect.ValueOf(t))
-		return nil
-	}
-
-	if val == "" {
-		value.Set(reflect.ValueOf(time.Time{}))
 		return nil
 	}
 
@@ -468,6 +480,10 @@ func setSlice(vals []string, value reflect.Value, field reflect.StructField) err
 }
 
 func setTimeDuration(val string, value reflect.Value) error {
+	if val == "" {
+		val = "0"
+	}
+
 	d, err := time.ParseDuration(val)
 	if err != nil {
 		return err
@@ -489,9 +505,7 @@ func setFormMap(ptr any, form map[string][]string) error {
 		if !ok {
 			return ErrConvertMapStringSlice
 		}
-		for k, v := range form {
-			ptrMap[k] = v
-		}
+		maps.Copy(ptrMap, form)
 
 		return nil
 	}

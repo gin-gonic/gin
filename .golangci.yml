@@ -18,15 +18,8 @@ linters:
     - wastedassign
   settings:
     gosec:
-      includes:
-        - G102
-        - G106
-        - G108
-        - G109
-        - G111
-        - G112
-        - G201
-        - G203
+      excludes:
+        - G115
     perfsprint:
       int-conversion: true
       err-error: true
@@ -68,7 +61,6 @@ linters:
       - examples$
 formatters:
   enable:
-    - gci
     - gofmt
     - gofumpt
     - goimports
@@ -80,7 +72,4 @@ formatters:
   exclusions:
     generated: lax
     paths:
-      - third_party$
-      - builtin$
-      - examples$
       - gin.go

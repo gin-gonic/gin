@@ -226,7 +226,35 @@ func TestMappingTime(t *testing.T) {
 	require.Error(t, err)
 }
 
+type bindTestData struct {
+	need any
+	got  any
+	in   map[string][]string
+}
+
+func TestMappingTimeUnixNano(t *testing.T) {
+	type needFixUnixNanoEmpty struct {
+		CreateTime time.Time `form:"createTime" time_format:"unixNano"`
+	}
+
+	// ok
+	tests := []bindTestData{
+		{need: &needFixUnixNanoEmpty{}, got: &needFixUnixNanoEmpty{}, in: formSource{"createTime": []string{"   "}}},
+		{need: &needFixUnixNanoEmpty{}, got: &needFixUnixNanoEmpty{}, in: formSource{"createTime": []string{}}},
+	}
+
+	for _, v := range tests {
+		err := mapForm(v.got, v.in)
+		require.NoError(t, err)
+		assert.Equal(t, v.need, v.got)
+	}
+}
+
 func TestMappingTimeDuration(t *testing.T) {
+	type needFixDurationEmpty struct {
+		Duration time.Duration `form:"duration"`
+	}
+
 	var s struct {
 		D time.Duration
 	}
@@ -236,6 +264,17 @@ func TestMappingTimeDuration(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, 5*time.Second, s.D)
 
+	// ok
+	tests := []bindTestData{
+		{need: &needFixDurationEmpty{}, got: &needFixDurationEmpty{}, in: formSource{"duration": []string{"   "}}},
+		{need: &needFixDurationEmpty{}, got: &needFixDurationEmpty{}, in: formSource{"duration": []string{}}},
+	}
+
+	for _, v := range tests {
+		err := mapForm(v.got, v.in)
+		require.NoError(t, err)
+		assert.Equal(t, v.need, v.got)
+	}
 	// error
 	err = mappingByPtr(&s, formSource{"D": {"wrong"}}, "form")
 	require.Error(t, err)
@@ -634,4 +673,84 @@ func TestMappingCustomArrayForm(t *testing.T) {
 
 	expected, _ := convertTo(val)
 	assert.Equal(t, expected, s.FileData)
+}
+
+func TestMappingEmptyValues(t *testing.T) {
+	t.Run("slice with default", func(t *testing.T) {
+		var s struct {
+			Slice []int `form:"slice,default=5"`
+		}
+
+		// field not present
+		err := mappingByPtr(&s, formSource{}, "form")
+		require.NoError(t, err)
+		assert.Equal(t, []int{5}, s.Slice)
+
+		// field present but empty
+		err = mappingByPtr(&s, formSource{"slice": {}}, "form")
+		require.NoError(t, err)
+		assert.Equal(t, []int{5}, s.Slice)
+
+		// field present with values
+		err = mappingByPtr(&s, formSource{"slice": {"1", "2", "3"}}, "form")
+		require.NoError(t, err)
+		assert.Equal(t, []int{1, 2, 3}, s.Slice)
+	})
+
+	t.Run("array with default", func(t *testing.T) {
+		var s struct {
+			Array [1]int `form:"array,default=5"`
+		}
+
+		// field not present
+		err := mappingByPtr(&s, formSource{}, "form")
+		require.NoError(t, err)
+		assert.Equal(t, [1]int{5}, s.Array)
+
+		// field present but empty
+		err = mappingByPtr(&s, formSource{"array": {}}, "form")
+		require.NoError(t, err)
+		assert.Equal(t, [1]int{5}, s.Array)
+	})
+
+	t.Run("slice without default", func(t *testing.T) {
+		var s struct {
+			Slice []int `form:"slice"`
+		}
+
+		// field present but empty
+		err := mappingByPtr(&s, formSource{"slice": {}}, "form")
+		require.NoError(t, err)
+		assert.Equal(t, []int(nil), s.Slice)
+	})
+
+	t.Run("array without default", func(t *testing.T) {
+		var s struct {
+			Array [1]int `form:"array"`
+		}
+
+		// field present but empty
+		err := mappingByPtr(&s, formSource{"array": {}}, "form")
+		require.NoError(t, err)
+		assert.Equal(t, [1]int{0}, s.Array)
+	})
+
+	t.Run("slice with collection format", func(t *testing.T) {
+		var s struct {
+			SliceMulti []int `form:"slice_multi,default=1;2;3" collection_format:"multi"`
+			SliceCsv   []int `form:"slice_csv,default=1;2;3" collection_format:"csv"`
+		}
+
+		// field not present
+		err := mappingByPtr(&s, formSource{}, "form")
+		require.NoError(t, err)
+		assert.Equal(t, []int{1, 2, 3}, s.SliceMulti)
+		assert.Equal(t, []int{1, 2, 3}, s.SliceCsv)
+
+		// field present but empty
+		err = mappingByPtr(&s, formSource{"slice_multi": {}, "slice_csv": {}}, "form")
+		require.NoError(t, err)
+		assert.Equal(t, []int{1, 2, 3}, s.SliceMulti)
+		assert.Equal(t, []int{1, 2, 3}, s.SliceCsv)
+	})
 }

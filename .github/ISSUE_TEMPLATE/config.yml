@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Go.dev API Documentation
+    url: https://pkg.go.dev/github.com/gin-gonic/gin
+    about: Comprehensive API documentation for Gin.
+  - name: Gin User Guides
+    url: https://gin-gonic.com/
+    about: In-depth user guides and tutorials for using Gin.
+  - name: Discussions Forum
+    url: https://github.com/gin-gonic/gin/discussions
+    about: Questions and configuration or deployment problems can also be discussed.
