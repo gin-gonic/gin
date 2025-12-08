@@ -59,6 +59,8 @@ func (trees methodTrees) get(method string) *node {
 	return nil
 }
 
+// longestCommonPrefix returns the length in bytes of the longest common prefix
+// of the two input strings `a` and `b`.
 func longestCommonPrefix(a, b string) int {
 	i := 0
 	max_ := min(len(a), len(b))
@@ -419,6 +421,19 @@ type skippedNode struct {
 	paramsCount int16
 }
 
+// ensureParamsCapacity ensures that the params slice has capacity for at least needed elements.
+// It preserves existing length and content.
+func ensureParamsCapacity(params *Params, needed int) {
+	if params == nil {
+		return
+	}
+	if cap(*params) < needed {
+		newParams := make(Params, len(*params), needed)
+		copy(newParams, *params)
+		*params = newParams
+	}
+}
+
 // Returns the handle registered with the given path (key). The values of
 // wildcards are saved to a map.
 // If no handle can be found, a TSR (trailing slash redirect) recommendation is
@@ -506,11 +521,7 @@ walk: // Outer loop for walking the tree
 					// Save param value
 					if params != nil {
 						// Preallocate capacity if necessary
-						if cap(*params) < int(globalParamsCount) {
-							newParams := make(Params, len(*params), globalParamsCount)
-							copy(newParams, *params)
-							*params = newParams
-						}
+						ensureParamsCapacity(params, int(globalParamsCount))
 
 						if value.params == nil {
 							value.params = params
@@ -559,11 +570,7 @@ walk: // Outer loop for walking the tree
 					// Save param value
 					if params != nil {
 						// Preallocate capacity if necessary
-						if cap(*params) < int(globalParamsCount) {
-							newParams := make(Params, len(*params), globalParamsCount)
-							copy(newParams, *params)
-							*params = newParams
-						}
+						ensureParamsCapacity(params, int(globalParamsCount))
 
 						if value.params == nil {
 							value.params = params
