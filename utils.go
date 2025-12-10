@@ -6,6 +6,7 @@ package gin
 
 import (
 	"encoding/xml"
+	"math"
 	"net/http"
 	"os"
 	"path"
@@ -161,4 +162,20 @@ func isASCII(s string) bool {
 		}
 	}
 	return true
+}
+
+// safeInt8 converts int to int8 safely, capping at math.MaxInt8
+func safeInt8(n int) int8 {
+	if n > math.MaxInt8 {
+		return math.MaxInt8
+	}
+	return int8(n)
+}
+
+// safeUint16 converts int to uint16 safely, capping at math.MaxUint16
+func safeUint16(n int) uint16 {
+	if n > math.MaxUint16 {
+		return math.MaxUint16
+	}
+	return uint16(n)
 }
