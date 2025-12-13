@@ -9,6 +9,7 @@ import (
 	"html/template"
 	"net"
 	"net/http"
+	"net/textproto"
 	"os"
 	"path"
 	"strings"
@@ -485,7 +486,7 @@ func (engine *Engine) validateHeader(header string) (clientIP string, valid bool
 	}
 	items := strings.Split(header, ",")
 	for i := len(items) - 1; i >= 0; i-- {
-		ipStr := strings.TrimSpace(items[i])
+		ipStr := textproto.TrimString(items[i])
 		ip := net.ParseIP(ipStr)
 		if ip == nil {
 			break

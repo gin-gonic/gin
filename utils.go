@@ -8,6 +8,7 @@ import (
 	"encoding/xml"
 	"math"
 	"net/http"
+	"net/textproto"
 	"os"
 	"path"
 	"reflect"
@@ -108,7 +109,7 @@ func parseAccept(acceptHeader string) []string {
 		if i := strings.IndexByte(part, ';'); i > 0 {
 			part = part[:i]
 		}
-		if part = strings.TrimSpace(part); part != "" {
+		if part = textproto.TrimString(part); part != "" {
 			out = append(out, part)
 		}
 	}
