@@ -115,13 +115,6 @@ func parseAccept(acceptHeader string) []string {
 	return out
 }
 
-func lastChar(str string) uint8 {
-	if str == "" {
-		panic("The length of the string can't be 0")
-	}
-	return str[len(str)-1]
-}
-
 func nameOfFunction(f any) string {
 	return runtime.FuncForPC(reflect.ValueOf(f).Pointer()).Name()
 }
@@ -132,7 +125,7 @@ func joinPaths(absolutePath, relativePath string) string {
 	}
 
 	finalPath := path.Join(absolutePath, relativePath)
-	if lastChar(relativePath) == '/' && lastChar(finalPath) != '/' {
+	if strings.HasSuffix(relativePath, "/") && !strings.HasSuffix(finalPath, "/") {
 		return finalPath + "/"
 	}
 	return finalPath
@@ -156,12 +149,9 @@ func resolveAddress(addr []string) string {
 
 // https://stackoverflow.com/questions/53069040/checking-a-string-contains-only-ascii-characters
 func isASCII(s string) bool {
-	for i := 0; i < len(s); i++ {
-		if s[i] > unicode.MaxASCII {
-			return false
-		}
-	}
-	return true
+	return !strings.ContainsFunc(s, func(r rune) bool {
+		return r > unicode.MaxASCII
+	})
 }
 
 // safeInt8 converts int to int8 safely, capping at math.MaxInt8
