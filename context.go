@@ -989,7 +989,8 @@ func (c *Context) ClientIP() string {
 
 	if trusted && c.engine.ForwardedByClientIP && c.engine.RemoteIPHeaders != nil {
 		for _, headerName := range c.engine.RemoteIPHeaders {
-			ip, valid := c.engine.validateHeader(c.requestHeader(headerName))
+			headerValue := strings.Join(c.Request.Header.Values(headerName), ",")
+			ip, valid := c.engine.validateHeader(headerValue)
 			if valid {
 				return ip
 			}
