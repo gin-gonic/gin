@@ -16,6 +16,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -69,9 +70,10 @@ func TestRunEmpty(t *testing.T) {
 		router.GET("/example", func(c *Context) { c.String(http.StatusOK, "it worked") })
 		assert.NoError(t, router.Run())
 	}()
-	// have to wait for the goroutine to start and run the server
-	// otherwise the main thread will complete
-	time.Sleep(5 * time.Millisecond)
+
+	// Wait for server to be ready with exponential backoff
+	err := waitForServerReady("http://localhost:8080/example", 10)
+	require.NoError(t, err, "server should start successfully")
 
 	require.Error(t, router.Run(":8080"))
 	testRequest(t, "http://localhost:8080/example")
@@ -212,9 +214,10 @@ func TestRunEmptyWithEnv(t *testing.T) {
 		router.GET("/example", func(c *Context) { c.String(http.StatusOK, "it worked") })
 		assert.NoError(t, router.Run())
 	}()
-	// have to wait for the goroutine to start and run the server
-	// otherwise the main thread will complete
-	time.Sleep(5 * time.Millisecond)
+
+	// Wait for server to be ready with exponential backoff
+	err := waitForServerReady("http://localhost:3123/example", 10)
+	require.NoError(t, err, "server should start successfully")
 
 	require.Error(t, router.Run(":3123"))
 	testRequest(t, "http://localhost:3123/example")
@@ -233,9 +236,10 @@ func TestRunWithPort(t *testing.T) {
 		router.GET("/example", func(c *Context) { c.String(http.StatusOK, "it worked") })
 		assert.NoError(t, router.Run(":5150"))
 	}()
-	// have to wait for the goroutine to start and run the server
-	// otherwise the main thread will complete
-	time.Sleep(5 * time.Millisecond)
+
+	// Wait for server to be ready with exponential backoff
+	err := waitForServerReady("http://localhost:5150/example", 10)
+	require.NoError(t, err, "server should start successfully")
 
 	require.Error(t, router.Run(":5150"))
 	testRequest(t, "http://localhost:5150/example")
@@ -261,10 +265,11 @@ func TestUnixSocket(t *testing.T) {
 
 	fmt.Fprint(c, "GET /example HTTP/1.0\r\n\r\n")
 	scanner := bufio.NewScanner(c)
-	var response string
+	var responseBuilder strings.Builder
 	for scanner.Scan() {
-		response += scanner.Text()
+		responseBuilder.WriteString(scanner.Text())
 	}
+	response := responseBuilder.String()
 	assert.Contains(t, response, "HTTP/1.0 200", "should get a 200")
 	assert.Contains(t, response, "it worked", "resp body should match")
 }
@@ -322,10 +327,11 @@ func TestFileDescriptor(t *testing.T) {
 
 	fmt.Fprintf(c, "GET /example HTTP/1.0\r\n\r\n")
 	scanner := bufio.NewScanner(c)
-	var response string
+	var responseBuilder strings.Builder
 	for scanner.Scan() {
-		response += scanner.Text()
+		responseBuilder.WriteString(scanner.Text())
 	}
+	response := responseBuilder.String()
 	assert.Contains(t, response, "HTTP/1.0 200", "should get a 200")
 	assert.Contains(t, response, "it worked", "resp body should match")
 }
@@ -354,10 +360,11 @@ func TestListener(t *testing.T) {
 
 	fmt.Fprintf(c, "GET /example HTTP/1.0\r\n\r\n")
 	scanner := bufio.NewScanner(c)
-	var response string
+	var responseBuilder strings.Builder
 	for scanner.Scan() {
-		response += scanner.Text()
+		responseBuilder.WriteString(scanner.Text())
 	}
+	response := responseBuilder.String()
 	assert.Contains(t, response, "HTTP/1.0 200", "should get a 200")
 	assert.Contains(t, response, "it worked", "resp body should match")
 }

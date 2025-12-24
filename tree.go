@@ -80,11 +80,11 @@ func (n *node) addChild(child *node) {
 func countParams(path string) uint16 {
 	colons := strings.Count(path, ":")
 	stars := strings.Count(path, "*")
-	return uint16(colons + stars)
+	return safeUint16(colons + stars)
 }
 
 func countSections(path string) uint16 {
-	return uint16(strings.Count(path, "/"))
+	return safeUint16(strings.Count(path, "/"))
 }
 
 type nodeType uint8
