@@ -1910,7 +1910,7 @@ func TestContextClientIP(t *testing.T) {
 	resetContextForClientIPTests(c)
 
 	// IPv6 support
-	c.Request.RemoteAddr = "[::1]:12345"
+	c.Request.RemoteAddr = fmt.Sprintf("[%s]:12345", localhostIPv6)
 	assert.Equal(t, "20.20.20.20", c.ClientIP())
 
 	resetContextForClientIPTests(c)
@@ -3212,7 +3212,7 @@ func TestContextCopyShouldNotCancel(t *testing.T) {
 	}()
 
 	addr := strings.Split(l.Addr().String(), ":")
-	res, err := http.Get(fmt.Sprintf("http://127.0.0.1:%s/", addr[len(addr)-1]))
+	res, err := http.Get(fmt.Sprintf("http://%s:%s/", localhostIP, addr[len(addr)-1]))
 	if err != nil {
 		t.Error(fmt.Errorf("request error: %w", err))
 		return
