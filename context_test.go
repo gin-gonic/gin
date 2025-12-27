@@ -1143,6 +1143,62 @@ func TestContextRenderNoContentIndentedJSON(t *testing.T) {
 	assert.Equal(t, "application/json; charset=utf-8", w.Header().Get("Content-Type"))
 }
 
+func TestContextClientIPWithMultipleHeaders(t *testing.T) {
+	// Create a new Gin engine
+	engine := New()
+
+	// Set trusted proxies
+	engine.SetTrustedProxies([]string{"127.0.0.1"})
+	engine.ForwardedByClientIP = true
+	engine.RemoteIPHeaders = []string{"X-Forwarded-For"}
+
+	// Create a test request with multiple X-Forwarded-For headers
+	req := httptest.NewRequest("GET", "/test", nil)
+	req.Header.Add("X-Forwarded-For", "1.2.3.4, 127.0.0.1")
+	req.Header.Add("X-Forwarded-For", "5.6.7.8")
+	req.RemoteAddr = "127.0.0.1:1234"
+
+	// Create response recorder
+	w := httptest.NewRecorder()
+
+	// Create context
+	c, _ := CreateTestContext(w)
+	c.Request = req
+	c.engine = engine
+
+	// Test ClientIP
+	clientIP := c.ClientIP()
+
+	// Should return 5.6.7.8 (the last non-trusted IP)
+	expected := "5.6.7.8"
+	if clientIP != expected {
+		t.Errorf("Expected ClientIP to be %s, got %s", expected, clientIP)
+	}
+}
+
+func TestContextClientIPWithSingleHeader(t *testing.T) {
+	engine := New()
+	engine.SetTrustedProxies([]string{"127.0.0.1"})
+	engine.ForwardedByClientIP = true
+	engine.RemoteIPHeaders = []string{"X-Forwarded-For"}
+
+	req := httptest.NewRequest("GET", "/test", nil)
+	req.Header.Set("X-Forwarded-For", "1.2.3.4, 127.0.0.1")
+	req.RemoteAddr = "127.0.0.1:1234"
+
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
+	c.Request = req
+	c.engine = engine
+
+	clientIP := c.ClientIP()
+
+	// Should return 1.2.3.4
+	expected := "1.2.3.4"
+	if clientIP != expected {
+		t.Errorf("Expected ClientIP to be %s, got %s", expected, clientIP)
+	}
+}
 // Tests that the response is serialized as Secure JSON
 // and Content-Type is set to application/json
 func TestContextRenderSecureJSON(t *testing.T) {
