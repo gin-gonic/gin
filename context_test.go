@@ -1148,12 +1148,15 @@ func TestContextClientIPWithMultipleHeaders(t *testing.T) {
 	engine := New()
 
 	// Set trusted proxies
-	engine.SetTrustedProxies([]string{"127.0.0.1"})
+	err := engine.SetTrustedProxies([]string{"127.0.0.1"})
+	if err != nil {
+		t.Fatalf("Failed to set trusted proxies: %v", err)
+	}
 	engine.ForwardedByClientIP = true
 	engine.RemoteIPHeaders = []string{"X-Forwarded-For"}
 
 	// Create a test request with multiple X-Forwarded-For headers
-	req := httptest.NewRequest("GET", "/test", nil)
+	req := httptest.NewRequest(http.MethodGet, "/test", nil)
 	req.Header.Add("X-Forwarded-For", "1.2.3.4, 127.0.0.1")
 	req.Header.Add("X-Forwarded-For", "5.6.7.8")
 	req.RemoteAddr = "127.0.0.1:1234"
@@ -1182,7 +1185,7 @@ func TestContextClientIPWithSingleHeader(t *testing.T) {
 	engine.ForwardedByClientIP = true
 	engine.RemoteIPHeaders = []string{"X-Forwarded-For"}
 
-	req := httptest.NewRequest("GET", "/test", nil)
+	req := httptest.NewRequest(http.MethodGet, "/test", nil)
 	req.Header.Set("X-Forwarded-For", "1.2.3.4, 127.0.0.1")
 	req.RemoteAddr = "127.0.0.1:1234"
 
@@ -1199,6 +1202,7 @@ func TestContextClientIPWithSingleHeader(t *testing.T) {
 		t.Errorf("Expected ClientIP to be %s, got %s", expected, clientIP)
 	}
 }
+
 // Tests that the response is serialized as Secure JSON
 // and Content-Type is set to application/json
 func TestContextRenderSecureJSON(t *testing.T) {
