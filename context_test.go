@@ -1181,7 +1181,11 @@ func TestContextClientIPWithMultipleHeaders(t *testing.T) {
 
 func TestContextClientIPWithSingleHeader(t *testing.T) {
 	engine := New()
-	engine.SetTrustedProxies([]string{"127.0.0.1"})
+
+	if err := engine.SetTrustedProxies([]string{"127.0.0.1"}); err != nil {
+		t.Fatalf("SetTrustedProxies failed: %v", err)
+	}
+
 	engine.ForwardedByClientIP = true
 	engine.RemoteIPHeaders = []string{"X-Forwarded-For"}
 
@@ -1195,7 +1199,6 @@ func TestContextClientIPWithSingleHeader(t *testing.T) {
 	c.engine = engine
 
 	clientIP := c.ClientIP()
-
 	// Should return 1.2.3.4
 	expected := "1.2.3.4"
 	if clientIP != expected {
