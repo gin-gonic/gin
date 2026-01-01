@@ -1144,66 +1144,34 @@ func TestContextRenderNoContentIndentedJSON(t *testing.T) {
 }
 
 func TestContextClientIPWithMultipleHeaders(t *testing.T) {
-	// Create a new Gin engine
-	engine := New()
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	c.Request, _ = http.NewRequest(http.MethodGet, "/test", nil)
 
-	// Set trusted proxies
-	err := engine.SetTrustedProxies([]string{"127.0.0.1"})
-	if err != nil {
-		t.Fatalf("Failed to set trusted proxies: %v", err)
-	}
-	engine.ForwardedByClientIP = true
-	engine.RemoteIPHeaders = []string{"X-Forwarded-For"}
+	// Multiple X-Forwarded-For headers
+	c.Request.Header.Add("X-Forwarded-For", "1.2.3.4, "+localhostIP)
+	c.Request.Header.Add("X-Forwarded-For", "5.6.7.8")
+	c.Request.RemoteAddr = localhostIP + ":1234"
 
-	// Create a test request with multiple X-Forwarded-For headers
-	req := httptest.NewRequest(http.MethodGet, "/test", nil)
-	req.Header.Add("X-Forwarded-For", "1.2.3.4, 127.0.0.1")
-	req.Header.Add("X-Forwarded-For", "5.6.7.8")
-	req.RemoteAddr = "127.0.0.1:1234"
+	c.engine.ForwardedByClientIP = true
+	c.engine.RemoteIPHeaders = []string{"X-Forwarded-For"}
+	_ = c.engine.SetTrustedProxies([]string{localhostIP})
 
-	// Create response recorder
-	w := httptest.NewRecorder()
-
-	// Create context
-	c, _ := CreateTestContext(w)
-	c.Request = req
-	c.engine = engine
-
-	// Test ClientIP
-	clientIP := c.ClientIP()
-
-	// Should return 5.6.7.8 (the last non-trusted IP)
-	expected := "5.6.7.8"
-	if clientIP != expected {
-		t.Errorf("Expected ClientIP to be %s, got %s", expected, clientIP)
-	}
+	// Should return 5.6.7.8 (last non-trusted IP)
+	assert.Equal(t, "5.6.7.8", c.ClientIP())
 }
 
 func TestContextClientIPWithSingleHeader(t *testing.T) {
-	engine := New()
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	c.Request, _ = http.NewRequest(http.MethodGet, "/test", nil)
+	c.Request.Header.Set("X-Forwarded-For", "1.2.3.4, "+localhostIP)
+	c.Request.RemoteAddr = localhostIP + ":1234"
 
-	if err := engine.SetTrustedProxies([]string{"127.0.0.1"}); err != nil {
-		t.Fatalf("SetTrustedProxies failed: %v", err)
-	}
+	c.engine.ForwardedByClientIP = true
+	c.engine.RemoteIPHeaders = []string{"X-Forwarded-For"}
+	_ = c.engine.SetTrustedProxies([]string{localhostIP})
 
-	engine.ForwardedByClientIP = true
-	engine.RemoteIPHeaders = []string{"X-Forwarded-For"}
-
-	req := httptest.NewRequest(http.MethodGet, "/test", nil)
-	req.Header.Set("X-Forwarded-For", "1.2.3.4, 127.0.0.1")
-	req.RemoteAddr = "127.0.0.1:1234"
-
-	w := httptest.NewRecorder()
-	c, _ := CreateTestContext(w)
-	c.Request = req
-	c.engine = engine
-
-	clientIP := c.ClientIP()
 	// Should return 1.2.3.4
-	expected := "1.2.3.4"
-	if clientIP != expected {
-		t.Errorf("Expected ClientIP to be %s, got %s", expected, clientIP)
-	}
+	assert.Equal(t, "1.2.3.4", c.ClientIP())
 }
 
 // Tests that the response is serialized as Secure JSON
