@@ -1143,6 +1143,37 @@ func TestContextRenderNoContentIndentedJSON(t *testing.T) {
 	assert.Equal(t, "application/json; charset=utf-8", w.Header().Get("Content-Type"))
 }
 
+func TestContextClientIPWithMultipleHeaders(t *testing.T) {
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	c.Request, _ = http.NewRequest(http.MethodGet, "/test", nil)
+
+	// Multiple X-Forwarded-For headers
+	c.Request.Header.Add("X-Forwarded-For", "1.2.3.4, "+localhostIP)
+	c.Request.Header.Add("X-Forwarded-For", "5.6.7.8")
+	c.Request.RemoteAddr = localhostIP + ":1234"
+
+	c.engine.ForwardedByClientIP = true
+	c.engine.RemoteIPHeaders = []string{"X-Forwarded-For"}
+	_ = c.engine.SetTrustedProxies([]string{localhostIP})
+
+	// Should return 5.6.7.8 (last non-trusted IP)
+	assert.Equal(t, "5.6.7.8", c.ClientIP())
+}
+
+func TestContextClientIPWithSingleHeader(t *testing.T) {
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	c.Request, _ = http.NewRequest(http.MethodGet, "/test", nil)
+	c.Request.Header.Set("X-Forwarded-For", "1.2.3.4, "+localhostIP)
+	c.Request.RemoteAddr = localhostIP + ":1234"
+
+	c.engine.ForwardedByClientIP = true
+	c.engine.RemoteIPHeaders = []string{"X-Forwarded-For"}
+	_ = c.engine.SetTrustedProxies([]string{localhostIP})
+
+	// Should return 1.2.3.4
+	assert.Equal(t, "1.2.3.4", c.ClientIP())
+}
+
 // Tests that the response is serialized as Secure JSON
 // and Content-Type is set to application/json
 func TestContextRenderSecureJSON(t *testing.T) {
