@@ -11,7 +11,6 @@ import (
 	"net/http"
 	"os"
 	"path"
-	"regexp"
 	"strings"
 	"sync"
 
@@ -47,11 +46,6 @@ var defaultTrustedCIDRs = []*net.IPNet{
 		Mask: net.IPMask{0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0},
 	},
 }
-
-var (
-	regSafePrefix         = regexp.MustCompile("[^a-zA-Z0-9/-]+")
-	regRemoveRepeatedChar = regexp.MustCompile("/{2,}")
-)
 
 // HandlerFunc defines the handler used by gin middleware as return value.
 type HandlerFunc func(*Context)
@@ -141,10 +135,16 @@ type Engine struct {
 	AppEngine bool
 
 	// UseRawPath if enabled, the url.RawPath will be used to find parameters.
+	// The RawPath is only a hint, EscapedPath() should be use instead. (https://pkg.go.dev/net/url@master#URL)
+	// Only use RawPath if you know what you are doing.
 	UseRawPath bool
 
+	// UseEscapedPath if enable, the url.EscapedPath() will be used to find parameters
+	// It overrides UseRawPath
+	UseEscapedPath bool
+
 	// UnescapePathValues if true, the path value will be unescaped.
-	// If UseRawPath is false (by default), the UnescapePathValues effectively is true,
+	// If UseRawPath and UseEscapedPath are false (by default), the UnescapePathValues effectively is true,
 	// as url.Path gonna be used, which is already unescaped.
 	UnescapePathValues bool
 
@@ -197,6 +197,7 @@ var _ IRouter = (*Engine)(nil)
 // - HandleMethodNotAllowed: false
 // - ForwardedByClientIP:    true
 // - UseRawPath:             false
+// - UseEscapedPath: 		 false
 // - UnescapePathValues:     true
 func New(opts ...OptionFunc) *Engine {
 	debugPrintWARNINGNew()
@@ -214,6 +215,7 @@ func New(opts ...OptionFunc) *Engine {
 		RemoteIPHeaders:        []string{"X-Forwarded-For", "X-Real-IP"},
 		TrustedPlatform:        defaultPlatform,
 		UseRawPath:             false,
+		UseEscapedPath:         false,
 		RemoveExtraSlash:       false,
 		UnescapePathValues:     true,
 		MaxMultipartMemory:     defaultMultipartMemory,
@@ -689,7 +691,11 @@ func (engine *Engine) handleHTTPRequest(c *Context) {
 	httpMethod := c.Request.Method
 	rPath := c.Request.URL.Path
 	unescape := false
-	if engine.UseRawPath && len(c.Request.URL.RawPath) > 0 {
+
+	if engine.UseEscapedPath {
+		rPath = c.Request.URL.EscapedPath()
+		unescape = engine.UnescapePathValues
+	} else if engine.UseRawPath && len(c.Request.URL.RawPath) > 0 {
 		rPath = c.Request.URL.RawPath
 		unescape = engine.UnescapePathValues
 	}
@@ -776,8 +782,8 @@ func redirectTrailingSlash(c *Context) {
 	req := c.Request
 	p := req.URL.Path
 	if prefix := path.Clean(c.Request.Header.Get("X-Forwarded-Prefix")); prefix != "." {
-		prefix = regSafePrefix.ReplaceAllString(prefix, "")
-		prefix = regRemoveRepeatedChar.ReplaceAllString(prefix, "/")
+		prefix = sanitizePathChars(prefix)
+		prefix = removeRepeatedChar(prefix, '/')
 
 		p = prefix + "/" + req.URL.Path
 	}
@@ -786,6 +792,17 @@ func redirectTrailingSlash(c *Context) {
 		req.URL.Path = p[:length-1]
 	}
 	redirectRequest(c)
+}
+
+// sanitizePathChars removes unsafe characters from path strings,
+// keeping only ASCII letters, ASCII numbers, forward slashes, and hyphens.
+func sanitizePathChars(s string) string {
+	return strings.Map(func(r rune) rune {
+		if (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9') || r == '/' || r == '-' {
+			return r
+		}
+		return -1
+	}, s)
 }
 
 func redirectFixedPath(c *Context, root *node, trailingSlash bool) bool {

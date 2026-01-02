@@ -5,7 +5,9 @@
 package gin
 
 import (
+	"bufio"
 	"bytes"
+	"cmp"
 	"errors"
 	"fmt"
 	"io"
@@ -21,9 +23,10 @@ import (
 	"github.com/gin-gonic/gin/internal/bytesconv"
 )
 
-const dunno = "???"
-
-var dunnoBytes = []byte(dunno)
+const (
+	dunno     = "???"
+	stackSkip = 3
+)
 
 // RecoveryFunc defines the function passable to CustomRecovery.
 type RecoveryFunc func(c *Context, err any)
@@ -68,8 +71,10 @@ func CustomRecoveryWithWriter(out io.Writer, handle RecoveryFunc) HandlerFunc {
 						}
 					}
 				}
+				if e, ok := err.(error); ok && errors.Is(e, http.ErrAbortHandler) {
+					brokenPipe = true
+				}
 				if logger != nil {
-					const stackSkip = 3
 					if brokenPipe {
 						logger.Printf("%s\n%s%s", err, secureRequestDump(c.Request), reset)
 					} else if IsDebugging() {
@@ -117,8 +122,11 @@ func stack(skip int) []byte {
 	buf := new(bytes.Buffer) // the returned data
 	// As we loop, we open files and read them. These variables record the currently
 	// loaded file.
-	var lines [][]byte
-	var lastFile string
+	var (
+		nLine    string
+		lastFile string
+		err      error
+	)
 	for i := skip; ; i++ { // Skip the expected number of frames
 		pc, file, line, ok := runtime.Caller(i)
 		if !ok {
@@ -127,25 +135,44 @@ func stack(skip int) []byte {
 		// Print this much at least.  If we can't find the source, it won't show.
 		fmt.Fprintf(buf, "%s:%d (0x%x)\n", file, line, pc)
 		if file != lastFile {
-			data, err := os.ReadFile(file)
+			nLine, err = readNthLine(file, line-1)
 			if err != nil {
 				continue
 			}
-			lines = bytes.Split(data, []byte{'\n'})
 			lastFile = file
 		}
-		fmt.Fprintf(buf, "\t%s: %s\n", function(pc), source(lines, line))
+		fmt.Fprintf(buf, "\t%s: %s\n", function(pc), cmp.Or(nLine, dunno))
 	}
 	return buf.Bytes()
 }
 
-// source returns a space-trimmed slice of the n'th line.
-func source(lines [][]byte, n int) []byte {
-	n-- // in stack trace, lines are 1-indexed but our array is 0-indexed
-	if n < 0 || n >= len(lines) {
-		return dunnoBytes
+// readNthLine reads the nth line from the file.
+// It returns the trimmed content of the line if found,
+// or an empty string if the line doesn't exist.
+// If there's an error opening the file, it returns the error.
+func readNthLine(file string, n int) (string, error) {
+	if n < 0 {
+		return "", nil
 	}
-	return bytes.TrimSpace(lines[n])
+
+	f, err := os.Open(file)
+	if err != nil {
+		return "", err
+	}
+	defer f.Close()
+
+	scanner := bufio.NewScanner(f)
+	for i := 0; i < n; i++ {
+		if !scanner.Scan() {
+			return "", nil
+		}
+	}
+
+	if scanner.Scan() {
+		return strings.TrimSpace(scanner.Text()), nil
+	}
+
+	return "", nil
 }
 
 // function returns, if possible, the name of the function containing the PC.
