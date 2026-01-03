@@ -2948,10 +2948,6 @@ func (r *TestResponseRecorder) CloseNotify() <-chan bool {
 	return r.closeChannel
 }
 
-func (r *TestResponseRecorder) closeClient() {
-	r.closeChannel <- true
-}
-
 func CreateTestResponseRecorder() *TestResponseRecorder {
 	return &TestResponseRecorder{
 		httptest.NewRecorder(),
@@ -2962,6 +2958,7 @@ func CreateTestResponseRecorder() *TestResponseRecorder {
 func TestContextStream(t *testing.T) {
 	w := CreateTestResponseRecorder()
 	c, _ := CreateTestContext(w)
+	c.Request, _ = http.NewRequest(http.MethodGet, "", nil)
 
 	stopStream := true
 	c.Stream(func(w io.Writer) bool {
@@ -2981,10 +2978,12 @@ func TestContextStream(t *testing.T) {
 func TestContextStreamWithClientGone(t *testing.T) {
 	w := CreateTestResponseRecorder()
 	c, _ := CreateTestContext(w)
+	done, cancel := context.WithCancel(context.Background())
+	c.Request, _ = http.NewRequestWithContext(done, http.MethodGet, "", nil)
 
 	c.Stream(func(writer io.Writer) bool {
 		defer func() {
-			w.closeClient()
+			cancel()
 		}()
 
 		_, err := writer.Write([]byte("test"))
