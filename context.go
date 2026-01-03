@@ -1034,6 +1034,7 @@ func (c *Context) requestHeader(key string) string {
 // bodyAllowedForStatus is a copy of http.bodyAllowedForStatus non-exported function.
 func bodyAllowedForStatus(status int) bool {
 	switch {
+	// body isn't allowed for 1xx informational responses
 	case status >= http.StatusContinue && status <= 199:
 		return false
 	case status == http.StatusNoContent:
