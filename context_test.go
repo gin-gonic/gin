@@ -1915,6 +1915,16 @@ func TestContextClientIP(t *testing.T) {
 	c.engine.trustedCIDRs, _ = c.engine.prepareTrustedCIDRs()
 	resetContextForClientIPTests(c)
 
+	// unix address
+	addr := &net.UnixAddr{Net: "unix", Name: "@"}
+	c.Request = c.Request.WithContext(context.WithValue(c.Request.Context(), http.LocalAddrContextKey, addr))
+	c.Request.RemoteAddr = addr.String()
+	assert.Equal(t, "20.20.20.20", c.ClientIP())
+
+	// reset
+	c.Request = c.Request.WithContext(context.Background())
+	resetContextForClientIPTests(c)
+
 	// Legacy tests (validating that the defaults don't break the
 	// (insecure!) old behaviour)
 	assert.Equal(t, "20.20.20.20", c.ClientIP())
