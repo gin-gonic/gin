@@ -911,7 +911,7 @@ curl -X POST http://localhost:8080/person
 
 NOTE: For default [collection values](#collection-format-for-arrays), the following rules apply:
 - Since commas are used to delimit tag options, they are not supported within a default value and will result in undefined behavior
-- For the collection formats "multi" and "csv", a semicolon should be used in place of a comma to delimited default values
+- For the collection formats "multi" and "csv", a semicolon should be used in place of a comma to delimit default values
 - Since semicolons are used to delimit default values for "multi" and "csv", they are not supported within a default value for "multi" and "csv"
 
 
@@ -1009,12 +1009,68 @@ curl -v localhost:8088/thinkerou/not-uuid
 
 ### Bind custom unmarshaler
 
+To override gin's default binding logic, define a function on your type that satisfies the `encoding.TextUnmarshaler` interface from the Golang standard library. Then specify `parser=encoding.TextUnmarshaler` in the `uri`/`form` tag of the field being bound.
+
 ```go
 package main
 
 import (
-  "github.com/gin-gonic/gin"
+  "encoding"
   "strings"
+
+  "github.com/gin-gonic/gin"
+)
+
+type Birthday string
+
+func (b *Birthday) UnmarshalText(text []byte) error {
+  *b = Birthday(strings.Replace(string(text), "-", "/", -1))
+  return nil
+}
+
+var _ encoding.TextUnmarshaler = (*Birthday)(nil) //assert Birthday implements encoding.TextUnmarshaler
+
+func main() {
+  route := gin.Default()
+  var request struct {
+    Birthday         Birthday   `form:"birthday,parser=encoding.TextUnmarshaler"`
+    Birthdays        []Birthday `form:"birthdays,parser=encoding.TextUnmarshaler" collection_format:"csv"`
+    BirthdaysDefault []Birthday `form:"birthdaysDef,default=2020-09-01;2020-09-02,parser=encoding.TextUnmarshaler" collection_format:"csv"`
+  }
+  route.GET("/test", func(ctx *gin.Context) {
+    _ = ctx.BindQuery(&request)
+    ctx.JSON(200, request)
+  })
+  _ = route.Run(":8088")
+}
+```
+
+Test it with:
+
+```sh
+curl 'localhost:8088/test?birthday=2000-01-01&birthdays=2000-01-01,2000-01-02'
+```
+Result
+```sh
+{"Birthday":"2000/01/01","Birthdays":["2000/01/01","2000/01/02"],"BirthdaysDefault":["2020/09/01","2020/09/02"]}
+```
+
+Note:
+- If `parser=encoding.TextUnmarshaler` is specified for a type that does **not** implement `encoding.TextUnmarshaler`, gin will ignore it and proceed with its default binding logic.
+- If `parser=encoding.TextUnmarshaler` is specified for a type and that type's implementation of `encoding.TextUnmarshaler` returns an error, gin will stop binding and return the error to the client.
+
+---
+
+If a type already implements `encoding.TextUnmarshaler` but you want to customize how gin binds the type differently (eg to change what error message is returned), you can implement the dedicated `BindUnmarshaler` interface provided by gin instead.
+
+```go
+package main
+
+import (
+  "strings"
+
+  "github.com/gin-gonic/gin"
+  "github.com/gin-gonic/gin/binding"
 )
 
 type Birthday string
@@ -1024,28 +1080,36 @@ func (b *Birthday) UnmarshalParam(param string) error {
   return nil
 }
 
+var _ binding.BindUnmarshaler = (*Birthday)(nil) //assert Birthday implements binding.BindUnmarshaler
+
 func main() {
   route := gin.Default()
   var request struct {
-    Birthday Birthday `form:"birthday"`
+    Birthday         Birthday   `form:"birthday"`
+    Birthdays        []Birthday `form:"birthdays" collection_format:"csv"`
+    BirthdaysDefault []Birthday `form:"birthdaysDef,default=2020-09-01;2020-09-02" collection_format:"csv"`
   }
   route.GET("/test", func(ctx *gin.Context) {
     _ = ctx.BindQuery(&request)
-    ctx.JSON(200, request.Birthday)
+    ctx.JSON(200, request)
   })
-  route.Run(":8088")
+  _ = route.Run(":8088")
 }
 ```
 
 Test it with:
 
 ```sh
-curl 'localhost:8088/test?birthday=2000-01-01'
+curl 'localhost:8088/test?birthday=2000-01-01&birthdays=2000-01-01,2000-01-02'
 ```
 Result
 ```sh
-"2000/01/01"
+{"Birthday":"2000/01/01","Birthdays":["2000/01/01","2000/01/02"],"BirthdaysDefault":["2020/09/01","2020/09/02"]}
 ```
+
+Note:
+- If a type implements both `encoding.TextUnmarshaler` and `BindUnmarshaler`, gin will use `BindUnmarshaler` by default unless you specify `parser=encoding.TextUnmarshaler` in the binding tag.
+- If a type returns an error from its implementation of `BindUnmarshaler`, gin will stop binding and return the error to the client.
 
 ### Bind Header
 
