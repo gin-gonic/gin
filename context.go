@@ -1199,6 +1199,12 @@ func (c *Context) XML(code int, obj any) {
 	c.Render(code, render.XML{Data: obj})
 }
 
+// PDF writes the given PDF binary data into the response body.
+// It also sets the Content-Type as "application/pdf".
+func (c *Context) PDF(code int, data []byte) {
+	c.Render(code, render.PDF{Data: data})
+}
+
 // YAML serializes the given struct as YAML into the response body.
 func (c *Context) YAML(code int, obj any) {
 	c.Render(code, render.YAML{Data: obj})

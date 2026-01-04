@@ -375,6 +375,22 @@ func TestRenderXML(t *testing.T) {
 	assert.Equal(t, "application/xml; charset=utf-8", w.Header().Get("Content-Type"))
 }
 
+func TestRenderPDF(t *testing.T) {
+	w := httptest.NewRecorder()
+	data := []byte("%Test pdf content")
+
+	pdf := PDF{data}
+
+	pdf.WriteContentType(w)
+	assert.Equal(t, "application/pdf", w.Header().Get("Content-Type"))
+
+	err := pdf.Render(w)
+	require.NoError(t, err)
+
+	assert.Equal(t, data, w.Body.Bytes())
+	assert.Equal(t, "application/pdf", w.Header().Get("Content-Type"))
+}
+
 func TestRenderRedirect(t *testing.T) {
 	req, err := http.NewRequest(http.MethodGet, "/test-redirect", nil)
 	require.NoError(t, err)
