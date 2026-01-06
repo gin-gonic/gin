@@ -2859,6 +2859,10 @@ func TestContextGolangContext(t *testing.T) {
 	c.Set("foo", "bar")
 	assert.Equal(t, "bar", c.Value("foo"))
 	assert.Nil(t, c.Value(1))
+
+	type contextKey struct{}
+	c.Set(contextKey{}, "value")
+	assert.Equal(t, "value", c.Value(contextKey{}))
 }
 
 func TestWebsocketsRequired(t *testing.T) {
