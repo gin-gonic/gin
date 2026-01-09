@@ -1025,6 +1025,7 @@ func TestTreeEscapedColon(t *testing.T) {
 		"/api/:resource\\:method": true,
 		"/escape/\\:static":       true,
 		"/invalid/\\x":            false,
+		"/invalid/:id\\a":         false,
 	}
 
 	for route, valid := range routes {
