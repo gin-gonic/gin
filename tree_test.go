@@ -1018,3 +1018,29 @@ func TestWildcardInvalidSlash(t *testing.T) {
 		}
 	}
 }
+
+func TestTreeEscapedColon(t *testing.T) {
+	routes := map[string]bool{
+		"/files/:id\\:undelete":   true,
+		"/api/:resource\\:method": true,
+		"/escape/\\:static":       true,
+		"/invalid/\\x":            false,
+	}
+
+	for route, valid := range routes {
+		tree := &node{}
+		recv := catchPanic(func() {
+			tree.addRoute(route, fakeHandler(route))
+		})
+
+		if recv == nil != valid {
+			t.Fatalf("%s should be %t but got %v", route, valid, recv)
+		}
+
+		if recv != nil {
+			if rs, ok := recv.(string); !ok || !strings.Contains(rs, "invalid escape") {
+				t.Fatalf(`Expected panic with "invalid escape" for route '%s', got "%v"`, route, recv)
+			}
+		}
+	}
+}

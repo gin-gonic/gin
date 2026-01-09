@@ -272,7 +272,19 @@ func findWildcard(path string) (wildcard string, i int, valid bool) {
 
 		// Find end and check for invalid characters
 		valid = true
+		escapeNextColon := false
 		for end, c := range []byte(path[start+1:]) {
+			if escapeNextColon {
+				escapeNextColon = false
+				if c == ':' {
+					continue
+				}
+				panic("invalid escape string in path '" + path + "'")
+			}
+			if c == '\\' {
+				escapeNextColon = true
+				continue
+			}
 			switch c {
 			case '/':
 				return path[start : start+1+end], start, valid
