@@ -754,3 +754,104 @@ func TestMappingEmptyValues(t *testing.T) {
 		assert.Equal(t, []int{1, 2, 3}, s.SliceCsv)
 	})
 }
+
+type testCustom struct {
+	Value string
+}
+
+func (t *testCustom) UnmarshalParam(param string) error {
+	t.Value = "prefix_" + param
+	return nil
+}
+
+func TestTrySetCustomIntegration(t *testing.T) {
+	var s struct {
+		F testCustom `form:"f"`
+	}
+
+	err := mappingByPtr(&s, formSource{"f": {"hello"}}, "form")
+	require.NoError(t, err)
+	assert.Equal(t, "prefix_hello", s.F.Value)
+}
+
+type badCustom struct{}
+
+func (b *badCustom) UnmarshalParam(s string) error {
+	return errors.New("boom")
+}
+
+func TestTrySetCustom_SingleValues(t *testing.T) {
+	t.Run("Error case", func(t *testing.T) {
+		var s struct {
+			F badCustom `form:"f"`
+		}
+
+		err := mappingByPtr(&s, formSource{"f": {"hello"}}, "form")
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "invalid value")
+	})
+
+	t.Run("Integration success", func(t *testing.T) {
+		var s struct {
+			F testCustom `form:"f"`
+		}
+
+		err := mappingByPtr(&s, formSource{"f": {"hello"}}, "form")
+		require.NoError(t, err)
+		assert.Equal(t, "prefix_hello", s.F.Value)
+	})
+
+	t.Run("Not applicable type", func(t *testing.T) {
+		var s struct {
+			N int `form:"n"`
+		}
+
+		err := mappingByPtr(&s, formSource{"n": {"42"}}, "form")
+		require.NoError(t, err)
+		assert.Equal(t, 42, s.N)
+	})
+}
+
+func TestTrySetCustom_Collections(t *testing.T) {
+	t.Run("Slice success", func(t *testing.T) {
+		var s struct {
+			F []testCustom `form:"f"`
+		}
+
+		err := mappingByPtr(&s, formSource{"f": {"one", "two"}}, "form")
+		require.NoError(t, err)
+		assert.Equal(t, "prefix_one", s.F[0].Value)
+		assert.Equal(t, "prefix_two", s.F[1].Value)
+	})
+
+	t.Run("Array success", func(t *testing.T) {
+		var s struct {
+			F [2]testCustom `form:"f"`
+		}
+
+		err := mappingByPtr(&s, formSource{"f": {"hello", "world"}}, "form")
+		require.NoError(t, err)
+		assert.Equal(t, "prefix_hello", s.F[0].Value)
+		assert.Equal(t, "prefix_world", s.F[1].Value)
+	})
+
+	t.Run("Slice error", func(t *testing.T) {
+		var s struct {
+			F []badCustom `form:"f"`
+		}
+
+		err := mappingByPtr(&s, formSource{"f": {"oops1", "oops2"}}, "form")
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "invalid value")
+	})
+
+	t.Run("Array error", func(t *testing.T) {
+		var s struct {
+			F [2]badCustom `form:"f"`
+		}
+
+		err := mappingByPtr(&s, formSource{"f": {"fail1", "fail2"}}, "form")
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "invalid value")
+	})
+}
