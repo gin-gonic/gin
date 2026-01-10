@@ -51,9 +51,10 @@ func decodeJSON(r io.Reader, obj any) error {
 		decoder.DisallowUnknownFields()
 	}
 	if err := decoder.Decode(obj); err != nil {
-		if err == io.EOF {
+		if errors.Is(err, io.EOF) {
 			return fmt.Errorf("empty request body: %w", err)
 		}
+
 		return err
 	}
 

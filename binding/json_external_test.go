@@ -9,6 +9,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestJSONBindingEmptyBodyReturnsHelpfulError(t *testing.T) {
@@ -20,7 +21,7 @@ func TestJSONBindingEmptyBodyReturnsHelpfulError(t *testing.T) {
 	c, _ := gin.CreateTestContext(w)
 
 	req, err := http.NewRequest(http.MethodPost, "/", bytes.NewBuffer(nil))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	req.Header.Set("Content-Type", "application/json")
 
 	c.Request = req
@@ -28,11 +29,11 @@ func TestJSONBindingEmptyBodyReturnsHelpfulError(t *testing.T) {
 	var r Req
 	err = c.ShouldBindJSON(&r)
 
-	assert.Error(t, err)
+	require.Error(t, err)
 
-	// Current behavior returns plain "EOF", which is not helpful.
-	assert.NotEqual(t, "EOF", err.Error(), "error message should not be plain EOF")
+	// Error message should be more descriptive than plain EOF,
+	// while still preserving io.EOF via wrapping.
+	assert.NotEqual(t, "EOF", err.Error())
 	assert.Contains(t, err.Error(), "empty request body")
 	assert.ErrorIs(t, err, io.EOF)
-
 }
