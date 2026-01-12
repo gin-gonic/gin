@@ -1079,7 +1079,7 @@ func TestMappingEmptyValues(t *testing.T) {
 		// field present but empty
 		err = mappingByPtr(&s, formSource{"slice": {}}, "form")
 		require.NoError(t, err)
-		assert.Equal(t, []int{5}, s.Slice)
+		assert.Equal(t, []int{}, s.Slice)
 
 		// field present with values
 		err = mappingByPtr(&s, formSource{"slice": {"1", "2", "3"}}, "form")
@@ -1108,10 +1108,15 @@ func TestMappingEmptyValues(t *testing.T) {
 			Slice []int `form:"slice"`
 		}
 
-		// field present but empty
-		err := mappingByPtr(&s, formSource{"slice": {}}, "form")
+		// field not present
+		err := mappingByPtr(&s, formSource{}, "form")
 		require.NoError(t, err)
 		assert.Equal(t, []int(nil), s.Slice)
+
+		// field present but empty
+		err = mappingByPtr(&s, formSource{"slice": {}}, "form")
+		require.NoError(t, err)
+		assert.Equal(t, []int{}, s.Slice)
 	})
 
 	t.Run("array without default", func(t *testing.T) {
@@ -1140,7 +1145,7 @@ func TestMappingEmptyValues(t *testing.T) {
 		// field present but empty
 		err = mappingByPtr(&s, formSource{"slice_multi": {}, "slice_csv": {}}, "form")
 		require.NoError(t, err)
-		assert.Equal(t, []int{1, 2, 3}, s.SliceMulti)
-		assert.Equal(t, []int{1, 2, 3}, s.SliceCsv)
+		assert.Equal(t, []int{}, s.SliceMulti)
+		assert.Equal(t, []int{}, s.SliceCsv)
 	})
 }
