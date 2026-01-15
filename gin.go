@@ -712,21 +712,39 @@ func (engine *Engine) handleHTTPRequest(c *Context) {
 		}
 		root := t[i].root
 		// Find route in tree
-		value := root.getValue(rPath, c.params, c.skippedNodes, unescape)
-		if value.params != nil {
-			c.Params = *value.params
+		isRouteFound := func(value nodeValue) bool {
+			if value.params != nil {
+				c.Params = *value.params
+			}
+			if value.handlers != nil {
+				c.handlers = value.handlers
+				c.fullPath = value.fullPath
+				c.Next()
+				c.writermem.WriteHeaderNow()
+				return true
+			}
+			return false
 		}
-		if value.handlers != nil {
-			c.handlers = value.handlers
-			c.fullPath = value.fullPath
-			c.Next()
-			c.writermem.WriteHeaderNow()
+
+		value := root.getValue(rPath, c.params, c.skippedNodes, unescape)
+		if isRouteFound(value) {
 			return
 		}
+
 		if httpMethod != http.MethodConnect && rPath != "/" {
-			if value.tsr && engine.RedirectTrailingSlash {
-				redirectTrailingSlash(c)
-				return
+			if value.tsr {
+				if engine.engine.RedirectTrailingSlash {
+					redirectTrailingSlash(c)
+					return
+				}
+				newRPath := rPath + "/"
+				if rPath[len(rPath)-1] == '/' {
+					newRPath = rPath[:len(rPath)-1]
+				}
+				value = root.getValue(newRPath, c.params, c.skippedNodes, unescape)
+				if isRouteFound(value) {
+					return
+				}
 			}
 			if engine.RedirectFixedPath && redirectFixedPath(c, root, engine.RedirectFixedPath) {
 				return
