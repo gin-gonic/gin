@@ -101,6 +101,8 @@ type Engine struct {
 	// For example if /foo/ is requested but a route only exists for /foo, the
 	// client is redirected to /foo with http status code 301 for GET requests
 	// and 307 for all other request methods.
+	// If this field is false then /foo and /foo/ are assumed the same and no redirection will happen, 
+	// both endpoints will use the same handlers.
 	RedirectTrailingSlash bool
 
 	// RedirectFixedPath if enabled, the router tries to fix the current request path, if no
