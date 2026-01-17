@@ -11,6 +11,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"net/http/httptest"
 	"os"
 	"strings"
 	"sync"
@@ -177,4 +178,20 @@ func TestGetMinVer(t *testing.T) {
 	assert.Equal(t, uint64(1), m)
 	_, e = getMinVer("go1.1.1.1")
 	require.Error(t, e)
+}
+
+func TestRenderWarnsOnMultipleWrites(t *testing.T) {
+	re := captureOutput(t, func() {
+		SetMode(DebugMode)
+		w := httptest.NewRecorder()
+		c, _ := CreateTestContext(w)
+
+		// First write
+		c.JSON(http.StatusOK, H{"first": "response"})
+		// Second write should trigger warning
+		c.JSON(http.StatusOK, H{"second": "response"})
+
+		SetMode(TestMode)
+	})
+	assert.Contains(t, re, "[WARNING] Response body already written")
 }

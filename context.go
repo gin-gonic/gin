@@ -1133,6 +1133,10 @@ func (c *Context) Render(code int, r render.Render) {
 		return
 	}
 
+	if c.Writer.Written() {
+		debugPrint("[WARNING] Response body already written. Attempting to write again with status code %d", code)
+	}
+
 	if err := r.Render(c.Writer); err != nil {
 		// Pushing error to c.Errors
 		_ = c.Error(err)
