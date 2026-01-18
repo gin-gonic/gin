@@ -5,23 +5,20 @@
 package gin
 
 import (
-	"bytes"
 	"errors"
 	"fmt"
 	"html/template"
 	"io"
 	"log"
+	"net/http"
 	"os"
-	"runtime"
+	"strings"
 	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
-
-// TODO
-// func debugRoute(httpMethod, absolutePath string, handlers HandlersChain) {
-// func debugPrint(format string, values ...interface{}) {
 
 func TestIsDebugging(t *testing.T) {
 	SetMode(DebugMode)
@@ -46,6 +43,18 @@ func TestDebugPrint(t *testing.T) {
 	assert.Equal(t, "[GIN-debug] these are 2 error messages\n", re)
 }
 
+func TestDebugPrintFunc(t *testing.T) {
+	DebugPrintFunc = func(format string, values ...any) {
+		fmt.Fprintf(DefaultWriter, "[GIN-debug] "+format, values...)
+	}
+	re := captureOutput(t, func() {
+		SetMode(DebugMode)
+		debugPrint("debug print func test: %d", 123)
+		SetMode(TestMode)
+	})
+	assert.Regexp(t, `^\[GIN-debug\] debug print func test: 123`, re)
+}
+
 func TestDebugPrintError(t *testing.T) {
 	re := captureOutput(t, func() {
 		SetMode(DebugMode)
@@ -59,7 +68,7 @@ func TestDebugPrintError(t *testing.T) {
 func TestDebugPrintRoutes(t *testing.T) {
 	re := captureOutput(t, func() {
 		SetMode(DebugMode)
-		debugPrintRoute("GET", "/path/to/route/:param", HandlersChain{func(c *Context) {}, handlerNameTest})
+		debugPrintRoute(http.MethodGet, "/path/to/route/:param", HandlersChain{func(c *Context) {}, handlerNameTest})
 		SetMode(TestMode)
 	})
 	assert.Regexp(t, `^\[GIN-debug\] GET    /path/to/route/:param     --> (.*/vendor/)?github.com/gin-gonic/gin.handlerNameTest \(2 handlers\)\n$`, re)
@@ -71,7 +80,7 @@ func TestDebugPrintRouteFunc(t *testing.T) {
 	}
 	re := captureOutput(t, func() {
 		SetMode(DebugMode)
-		debugPrintRoute("GET", "/path/to/route/:param1/:param2", HandlersChain{func(c *Context) {}, handlerNameTest})
+		debugPrintRoute(http.MethodGet, "/path/to/route/:param1/:param2", HandlersChain{func(c *Context) {}, handlerNameTest})
 		SetMode(TestMode)
 	})
 	assert.Regexp(t, `^\[GIN-debug\] GET    /path/to/route/:param1/:param2           --> (.*/vendor/)?github.com/gin-gonic/gin.handlerNameTest \(2 handlers\)\n$`, re)
@@ -102,12 +111,17 @@ func TestDebugPrintWARNINGDefault(t *testing.T) {
 		debugPrintWARNINGDefault()
 		SetMode(TestMode)
 	})
-	m, e := getMinVer(runtime.Version())
-	if e == nil && m < ginSupportMinGoVer {
-		assert.Equal(t, "[GIN-debug] [WARNING] Now Gin requires Go 1.15+.\n\n[GIN-debug] [WARNING] Creating an Engine instance with the Logger and Recovery middleware already attached.\n\n", re)
-	} else {
-		assert.Equal(t, "[GIN-debug] [WARNING] Creating an Engine instance with the Logger and Recovery middleware already attached.\n\n", re)
-	}
+	assert.Equal(t, "[GIN-debug] [WARNING] Creating an Engine instance with the Logger and Recovery middleware already attached.\n\n", re)
+}
+
+func TestDebugPrintWARNINGDefaultWithUnsupportedVersion(t *testing.T) {
+	runtimeVersion = "go1.23.12"
+	re := captureOutput(t, func() {
+		SetMode(DebugMode)
+		debugPrintWARNINGDefault()
+		SetMode(TestMode)
+	})
+	assert.Equal(t, "[GIN-debug] [WARNING] Now Gin requires Go 1.24+.\n\n[GIN-debug] [WARNING] Creating an Engine instance with the Logger and Recovery middleware already attached.\n\n", re)
 }
 
 func TestDebugPrintWARNINGNew(t *testing.T) {
@@ -138,7 +152,7 @@ func captureOutput(t *testing.T, f func()) string {
 	wg := new(sync.WaitGroup)
 	wg.Add(1)
 	go func() {
-		var buf bytes.Buffer
+		var buf strings.Builder
 		wg.Done()
 		_, err := io.Copy(&buf, reader)
 		assert.NoError(t, err)
@@ -154,13 +168,13 @@ func TestGetMinVer(t *testing.T) {
 	var m uint64
 	var e error
 	_, e = getMinVer("go1")
-	assert.NotNil(t, e)
+	require.Error(t, e)
 	m, e = getMinVer("go1.1")
 	assert.Equal(t, uint64(1), m)
-	assert.Nil(t, e)
+	require.NoError(t, e)
 	m, e = getMinVer("go1.1.1")
-	assert.Nil(t, e)
+	require.NoError(t, e)
 	assert.Equal(t, uint64(1), m)
 	_, e = getMinVer("go1.1.1.1")
-	assert.NotNil(t, e)
+	require.Error(t, e)
 }

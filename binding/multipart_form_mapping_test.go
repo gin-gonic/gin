@@ -6,12 +6,13 @@ package binding
 
 import (
 	"bytes"
-	"io/ioutil"
+	"io"
 	"mime/multipart"
 	"net/http"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestFormMultipartBindingBindOneFile(t *testing.T) {
@@ -27,7 +28,7 @@ func TestFormMultipartBindingBindOneFile(t *testing.T) {
 
 	req := createRequestMultipartFiles(t, file)
 	err := FormMultipart.Bind(req, &s)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	assertMultipartFileHeader(t, &s.FileValue, file)
 	assertMultipartFileHeader(t, s.FilePtr, file)
@@ -53,7 +54,7 @@ func TestFormMultipartBindingBindTwoFiles(t *testing.T) {
 
 	req := createRequestMultipartFiles(t, files...)
 	err := FormMultipart.Bind(req, &s)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	assert.Len(t, s.SliceValues, len(files))
 	assert.Len(t, s.SlicePtrs, len(files))
@@ -90,7 +91,7 @@ func TestFormMultipartBindingBindError(t *testing.T) {
 	} {
 		req := createRequestMultipartFiles(t, files...)
 		err := FormMultipart.Bind(req, tt.s)
-		assert.Error(t, err)
+		require.Error(t, err)
 	}
 }
 
@@ -106,17 +107,17 @@ func createRequestMultipartFiles(t *testing.T, files ...testFile) *http.Request 
 	mw := multipart.NewWriter(&body)
 	for _, file := range files {
 		fw, err := mw.CreateFormFile(file.Fieldname, file.Filename)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 
 		n, err := fw.Write(file.Content)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		assert.Equal(t, len(file.Content), n)
 	}
 	err := mw.Close()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
-	req, err := http.NewRequest("POST", "/", &body)
-	assert.NoError(t, err)
+	req, err := http.NewRequest(http.MethodPost, "/", &body)
+	require.NoError(t, err)
 
 	req.Header.Set("Content-Type", MIMEMultipartPOSTForm+"; boundary="+mw.Boundary())
 	return req
@@ -127,12 +128,12 @@ func assertMultipartFileHeader(t *testing.T, fh *multipart.FileHeader, file test
 	assert.Equal(t, int64(len(file.Content)), fh.Size)
 
 	fl, err := fh.Open()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
-	body, err := ioutil.ReadAll(fl)
-	assert.NoError(t, err)
+	body, err := io.ReadAll(fl)
+	require.NoError(t, err)
 	assert.Equal(t, string(file.Content), string(body))
 
 	err = fl.Close()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 }

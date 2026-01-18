@@ -10,12 +10,12 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/gin-gonic/gin/internal/json"
+	"github.com/gin-gonic/gin/codec/json"
 )
 
 // EnableDecoderUseNumber is used to call the UseNumber method on the JSON
 // Decoder instance. UseNumber causes the Decoder to unmarshal a number into an
-// interface{} as a Number instead of as a float64.
+// any as a Number instead of as a float64.
 var EnableDecoderUseNumber = false
 
 // EnableDecoderDisallowUnknownFields is used to call the DisallowUnknownFields method
@@ -42,7 +42,7 @@ func (jsonBinding) BindBody(body []byte, obj any) error {
 }
 
 func decodeJSON(r io.Reader, obj any) error {
-	decoder := json.NewDecoder(r)
+	decoder := json.API.NewDecoder(r)
 	if EnableDecoderUseNumber {
 		decoder.UseNumber()
 	}

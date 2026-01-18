@@ -192,6 +192,7 @@ func TestTreeWildcard(t *testing.T) {
 		"/get/abc/123abg/:param",
 		"/get/abc/123abf/:param",
 		"/get/abc/123abfff/:param",
+		"/get/abc/escaped_colon/test\\:param",
 	}
 	for _, route := range routes {
 		tree.addRoute(route, fakeHandler(route))
@@ -315,6 +316,7 @@ func TestTreeWildcard(t *testing.T) {
 		{"/get/abc/123abg/test", false, "/get/abc/123abg/:param", Params{Param{Key: "param", Value: "test"}}},
 		{"/get/abc/123abf/testss", false, "/get/abc/123abf/:param", Params{Param{Key: "param", Value: "testss"}}},
 		{"/get/abc/123abfff/te", false, "/get/abc/123abfff/:param", Params{Param{Key: "param", Value: "te"}}},
+		{"/get/abc/escaped_colon/test\\:param", false, "/get/abc/escaped_colon/test\\:param", nil},
 	})
 
 	checkPriorities(t, tree)
@@ -417,6 +419,11 @@ func TestTreeWildcardConflict(t *testing.T) {
 		{"/user_:name", false},
 		{"/id:id", false},
 		{"/id/:id", false},
+		{"/static/*file", false},
+		{"/static/", true},
+		{"/escape/test\\:d1", false},
+		{"/escape/test\\:d2", false},
+		{"/escape/test:param", false},
 	}
 	testRoutes(t, routes)
 }
@@ -474,7 +481,7 @@ func TestTreeDuplicatePath(t *testing.T) {
 		}
 	}
 
-	//printChildren(tree, "")
+	// printChildren(tree, "")
 
 	checkRequests(t, tree, testRequests{
 		{"/", false, "/", nil},
@@ -525,7 +532,7 @@ func TestTreeCatchAllConflictRoot(t *testing.T) {
 
 func TestTreeCatchMaxParams(t *testing.T) {
 	tree := &node{}
-	var route = "/cmd/*filepath"
+	route := "/cmd/*filepath"
 	tree.addRoute(route, fakeHandler(route))
 }
 
@@ -681,6 +688,26 @@ func TestTreeRootTrailingSlashRedirect(t *testing.T) {
 		t.Fatalf("non-nil handler")
 	} else if value.tsr {
 		t.Errorf("expected no TSR recommendation")
+	}
+}
+
+func TestRedirectTrailingSlash(t *testing.T) {
+	data := []struct {
+		path string
+	}{
+		{"/hello/:name"},
+		{"/hello/:name/123"},
+		{"/hello/:name/234"},
+	}
+
+	node := &node{}
+	for _, item := range data {
+		node.addRoute(item.path, fakeHandler("test"))
+	}
+
+	value := node.getValue("/hello/abx/", nil, getSkippedNodes(), false)
+	if value.tsr != true {
+		t.Fatalf("want true, is false")
 	}
 }
 
@@ -873,15 +900,43 @@ func TestTreeInvalidNodeType(t *testing.T) {
 
 func TestTreeInvalidParamsType(t *testing.T) {
 	tree := &node{}
-	tree.wildChild = true
-	tree.children = append(tree.children, &node{})
-	tree.children[0].nType = 2
+	// add a child with wildcard
+	route := "/:path"
+	tree.addRoute(route, fakeHandler(route))
 
 	// set invalid Params type
 	params := make(Params, 0)
 
 	// try to trigger slice bounds out of range with capacity 0
 	tree.getValue("/test", &params, getSkippedNodes(), false)
+}
+
+func TestTreeExpandParamsCapacity(t *testing.T) {
+	data := []struct {
+		path string
+	}{
+		{"/:path"},
+		{"/*path"},
+	}
+
+	for _, item := range data {
+		tree := &node{}
+		tree.addRoute(item.path, fakeHandler(item.path))
+		params := make(Params, 0)
+
+		value := tree.getValue("/test", &params, getSkippedNodes(), false)
+
+		if value.params == nil {
+			t.Errorf("Expected %s params to be set, but they weren't", item.path)
+			continue
+		}
+
+		if len(*value.params) != 1 {
+			t.Errorf("Wrong number of %s params: got %d, want %d",
+				item.path, len(*value.params), 1)
+			continue
+		}
+	}
 }
 
 func TestTreeWildcardConflictEx(t *testing.T) {
@@ -918,6 +973,48 @@ func TestTreeWildcardConflictEx(t *testing.T) {
 
 		if !regexp.MustCompile(fmt.Sprintf("'%s' in new path .* conflicts with existing wildcard '%s' in existing prefix '%s'", conflict.segPath, conflict.existSegPath, conflict.existPath)).MatchString(fmt.Sprint(recv)) {
 			t.Fatalf("invalid wildcard conflict error (%v)", recv)
+		}
+	}
+}
+
+func TestTreeInvalidEscape(t *testing.T) {
+	routes := map[string]bool{
+		"/r1/r":    true,
+		"/r2/:r":   true,
+		"/r3/\\:r": true,
+	}
+	tree := &node{}
+	for route, valid := range routes {
+		recv := catchPanic(func() {
+			tree.addRoute(route, fakeHandler(route))
+		})
+		if recv == nil != valid {
+			t.Fatalf("%s should be %t but got %v", route, valid, recv)
+		}
+	}
+}
+
+func TestWildcardInvalidSlash(t *testing.T) {
+	const panicMsgPrefix = "no / before catch-all in path"
+
+	routes := map[string]bool{
+		"/foo/bar":  true,
+		"/foo/x*zy": false,
+		"/foo/b*r":  false,
+	}
+
+	for route, valid := range routes {
+		tree := &node{}
+		recv := catchPanic(func() {
+			tree.addRoute(route, nil)
+		})
+
+		if recv == nil != valid {
+			t.Fatalf("%s should be %t but got %v", route, valid, recv)
+		}
+
+		if rs, ok := recv.(string); recv != nil && (!ok || !strings.HasPrefix(rs, panicMsgPrefix)) {
+			t.Fatalf(`"Expected panic "%s" for route '%s', got "%v"`, panicMsgPrefix, route, recv)
 		}
 	}
 }

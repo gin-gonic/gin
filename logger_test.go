@@ -5,10 +5,10 @@
 package gin
 
 import (
-	"bytes"
 	"errors"
 	"fmt"
 	"net/http"
+	"strings"
 	"testing"
 	"time"
 
@@ -20,7 +20,7 @@ func init() {
 }
 
 func TestLogger(t *testing.T) {
-	buffer := new(bytes.Buffer)
+	buffer := new(strings.Builder)
 	router := New()
 	router.Use(LoggerWithWriter(buffer))
 	router.GET("/example", func(c *Context) {})
@@ -31,31 +31,31 @@ func TestLogger(t *testing.T) {
 	router.HEAD("/example", func(c *Context) {})
 	router.OPTIONS("/example", func(c *Context) {})
 
-	PerformRequest(router, "GET", "/example?a=100")
+	PerformRequest(router, http.MethodGet, "/example?a=100")
 	assert.Contains(t, buffer.String(), "200")
-	assert.Contains(t, buffer.String(), "GET")
+	assert.Contains(t, buffer.String(), http.MethodGet)
 	assert.Contains(t, buffer.String(), "/example")
 	assert.Contains(t, buffer.String(), "a=100")
 
 	// I wrote these first (extending the above) but then realized they are more
 	// like integration tests because they test the whole logging process rather
-	// than individual functions.  Im not sure where these should go.
+	// than individual functions. I'm not sure where these should go.
 	buffer.Reset()
-	PerformRequest(router, "POST", "/example")
+	PerformRequest(router, http.MethodPost, "/example")
 	assert.Contains(t, buffer.String(), "200")
-	assert.Contains(t, buffer.String(), "POST")
+	assert.Contains(t, buffer.String(), http.MethodPost)
 	assert.Contains(t, buffer.String(), "/example")
 
 	buffer.Reset()
-	PerformRequest(router, "PUT", "/example")
+	PerformRequest(router, http.MethodPut, "/example")
 	assert.Contains(t, buffer.String(), "200")
-	assert.Contains(t, buffer.String(), "PUT")
+	assert.Contains(t, buffer.String(), http.MethodPut)
 	assert.Contains(t, buffer.String(), "/example")
 
 	buffer.Reset()
-	PerformRequest(router, "DELETE", "/example")
+	PerformRequest(router, http.MethodDelete, "/example")
 	assert.Contains(t, buffer.String(), "200")
-	assert.Contains(t, buffer.String(), "DELETE")
+	assert.Contains(t, buffer.String(), http.MethodDelete)
 	assert.Contains(t, buffer.String(), "/example")
 
 	buffer.Reset()
@@ -77,14 +77,14 @@ func TestLogger(t *testing.T) {
 	assert.Contains(t, buffer.String(), "/example")
 
 	buffer.Reset()
-	PerformRequest(router, "GET", "/notfound")
+	PerformRequest(router, http.MethodGet, "/notfound")
 	assert.Contains(t, buffer.String(), "404")
-	assert.Contains(t, buffer.String(), "GET")
+	assert.Contains(t, buffer.String(), http.MethodGet)
 	assert.Contains(t, buffer.String(), "/notfound")
 }
 
 func TestLoggerWithConfig(t *testing.T) {
-	buffer := new(bytes.Buffer)
+	buffer := new(strings.Builder)
 	router := New()
 	router.Use(LoggerWithConfig(LoggerConfig{Output: buffer}))
 	router.GET("/example", func(c *Context) {})
@@ -95,31 +95,31 @@ func TestLoggerWithConfig(t *testing.T) {
 	router.HEAD("/example", func(c *Context) {})
 	router.OPTIONS("/example", func(c *Context) {})
 
-	PerformRequest(router, "GET", "/example?a=100")
+	PerformRequest(router, http.MethodGet, "/example?a=100")
 	assert.Contains(t, buffer.String(), "200")
-	assert.Contains(t, buffer.String(), "GET")
+	assert.Contains(t, buffer.String(), http.MethodGet)
 	assert.Contains(t, buffer.String(), "/example")
 	assert.Contains(t, buffer.String(), "a=100")
 
 	// I wrote these first (extending the above) but then realized they are more
 	// like integration tests because they test the whole logging process rather
-	// than individual functions.  Im not sure where these should go.
+	// than individual functions. I'm not sure where these should go.
 	buffer.Reset()
-	PerformRequest(router, "POST", "/example")
+	PerformRequest(router, http.MethodPost, "/example")
 	assert.Contains(t, buffer.String(), "200")
-	assert.Contains(t, buffer.String(), "POST")
+	assert.Contains(t, buffer.String(), http.MethodPost)
 	assert.Contains(t, buffer.String(), "/example")
 
 	buffer.Reset()
-	PerformRequest(router, "PUT", "/example")
+	PerformRequest(router, http.MethodPut, "/example")
 	assert.Contains(t, buffer.String(), "200")
-	assert.Contains(t, buffer.String(), "PUT")
+	assert.Contains(t, buffer.String(), http.MethodPut)
 	assert.Contains(t, buffer.String(), "/example")
 
 	buffer.Reset()
-	PerformRequest(router, "DELETE", "/example")
+	PerformRequest(router, http.MethodDelete, "/example")
 	assert.Contains(t, buffer.String(), "200")
-	assert.Contains(t, buffer.String(), "DELETE")
+	assert.Contains(t, buffer.String(), http.MethodDelete)
 	assert.Contains(t, buffer.String(), "/example")
 
 	buffer.Reset()
@@ -141,14 +141,14 @@ func TestLoggerWithConfig(t *testing.T) {
 	assert.Contains(t, buffer.String(), "/example")
 
 	buffer.Reset()
-	PerformRequest(router, "GET", "/notfound")
+	PerformRequest(router, http.MethodGet, "/notfound")
 	assert.Contains(t, buffer.String(), "404")
-	assert.Contains(t, buffer.String(), "GET")
+	assert.Contains(t, buffer.String(), http.MethodGet)
 	assert.Contains(t, buffer.String(), "/notfound")
 }
 
 func TestLoggerWithFormatter(t *testing.T) {
-	buffer := new(bytes.Buffer)
+	buffer := new(strings.Builder)
 
 	d := DefaultWriter
 	DefaultWriter = buffer
@@ -169,20 +169,20 @@ func TestLoggerWithFormatter(t *testing.T) {
 		)
 	}))
 	router.GET("/example", func(c *Context) {})
-	PerformRequest(router, "GET", "/example?a=100")
+	PerformRequest(router, http.MethodGet, "/example?a=100")
 
 	// output test
 	assert.Contains(t, buffer.String(), "[FORMATTER TEST]")
 	assert.Contains(t, buffer.String(), "200")
-	assert.Contains(t, buffer.String(), "GET")
+	assert.Contains(t, buffer.String(), http.MethodGet)
 	assert.Contains(t, buffer.String(), "/example")
 	assert.Contains(t, buffer.String(), "a=100")
 }
 
 func TestLoggerWithConfigFormatting(t *testing.T) {
 	var gotParam LogFormatterParams
-	var gotKeys map[string]any
-	buffer := new(bytes.Buffer)
+	var gotKeys map[any]any
+	buffer := new(strings.Builder)
 
 	router := New()
 	router.engine.trustedCIDRs, _ = router.engine.prepareTrustedCIDRs()
@@ -210,12 +210,12 @@ func TestLoggerWithConfigFormatting(t *testing.T) {
 		gotKeys = c.Keys
 		time.Sleep(time.Millisecond)
 	})
-	PerformRequest(router, "GET", "/example?a=100")
+	PerformRequest(router, http.MethodGet, "/example?a=100")
 
 	// output test
 	assert.Contains(t, buffer.String(), "[FORMATTER TEST]")
 	assert.Contains(t, buffer.String(), "200")
-	assert.Contains(t, buffer.String(), "GET")
+	assert.Contains(t, buffer.String(), http.MethodGet)
 	assert.Contains(t, buffer.String(), "/example")
 	assert.Contains(t, buffer.String(), "a=100")
 
@@ -225,7 +225,7 @@ func TestLoggerWithConfigFormatting(t *testing.T) {
 	assert.Equal(t, 200, gotParam.StatusCode)
 	assert.NotEmpty(t, gotParam.Latency)
 	assert.Equal(t, "20.20.20.20", gotParam.ClientIP)
-	assert.Equal(t, "GET", gotParam.Method)
+	assert.Equal(t, http.MethodGet, gotParam.Method)
 	assert.Equal(t, "/example?a=100", gotParam.Path)
 	assert.Empty(t, gotParam.ErrorMessage)
 	assert.Equal(t, gotKeys, gotParam.Keys)
@@ -239,7 +239,7 @@ func TestDefaultLogFormatter(t *testing.T) {
 		StatusCode:   200,
 		Latency:      time.Second * 5,
 		ClientIP:     "20.20.20.20",
-		Method:       "GET",
+		Method:       http.MethodGet,
 		Path:         "/",
 		ErrorMessage: "",
 		isTerm:       false,
@@ -250,7 +250,7 @@ func TestDefaultLogFormatter(t *testing.T) {
 		StatusCode:   200,
 		Latency:      time.Second * 5,
 		ClientIP:     "20.20.20.20",
-		Method:       "GET",
+		Method:       http.MethodGet,
 		Path:         "/",
 		ErrorMessage: "",
 		isTerm:       true,
@@ -260,7 +260,7 @@ func TestDefaultLogFormatter(t *testing.T) {
 		StatusCode:   200,
 		Latency:      time.Millisecond * 9876543210,
 		ClientIP:     "20.20.20.20",
-		Method:       "GET",
+		Method:       http.MethodGet,
 		Path:         "/",
 		ErrorMessage: "",
 		isTerm:       true,
@@ -271,17 +271,17 @@ func TestDefaultLogFormatter(t *testing.T) {
 		StatusCode:   200,
 		Latency:      time.Millisecond * 9876543210,
 		ClientIP:     "20.20.20.20",
-		Method:       "GET",
+		Method:       http.MethodGet,
 		Path:         "/",
 		ErrorMessage: "",
 		isTerm:       false,
 	}
 
-	assert.Equal(t, "[GIN] 2018/12/07 - 09:11:42 | 200 |            5s |     20.20.20.20 | GET      \"/\"\n", defaultLogFormatter(termFalseParam))
-	assert.Equal(t, "[GIN] 2018/12/07 - 09:11:42 | 200 |    2743h29m3s |     20.20.20.20 | GET      \"/\"\n", defaultLogFormatter(termFalseLongDurationParam))
+	assert.Equal(t, "[GIN] 2018/12/07 - 09:11:42 | 200 |       5s |     20.20.20.20 | GET      \"/\"\n", defaultLogFormatter(termFalseParam))
+	assert.Equal(t, "[GIN] 2018/12/07 - 09:11:42 | 200 | 2743h29m0s |     20.20.20.20 | GET      \"/\"\n", defaultLogFormatter(termFalseLongDurationParam))
 
-	assert.Equal(t, "[GIN] 2018/12/07 - 09:11:42 |\x1b[97;42m 200 \x1b[0m|            5s |     20.20.20.20 |\x1b[97;44m GET     \x1b[0m \"/\"\n", defaultLogFormatter(termTrueParam))
-	assert.Equal(t, "[GIN] 2018/12/07 - 09:11:42 |\x1b[97;42m 200 \x1b[0m|    2743h29m3s |     20.20.20.20 |\x1b[97;44m GET     \x1b[0m \"/\"\n", defaultLogFormatter(termTrueLongDurationParam))
+	assert.Equal(t, "[GIN] 2018/12/07 - 09:11:42 |\x1b[97;42m 200 \x1b[0m|\x1b[97;41m       5s \x1b[0m|     20.20.20.20 |\x1b[97;44m GET     \x1b[0m \"/\"\n", defaultLogFormatter(termTrueParam))
+	assert.Equal(t, "[GIN] 2018/12/07 - 09:11:42 |\x1b[97;42m 200 \x1b[0m|\x1b[97;41m 2743h29m0s \x1b[0m|     20.20.20.20 |\x1b[97;44m GET     \x1b[0m \"/\"\n", defaultLogFormatter(termTrueLongDurationParam))
 }
 
 func TestColorForMethod(t *testing.T) {
@@ -292,10 +292,10 @@ func TestColorForMethod(t *testing.T) {
 		return p.MethodColor()
 	}
 
-	assert.Equal(t, blue, colorForMethod("GET"), "get should be blue")
-	assert.Equal(t, cyan, colorForMethod("POST"), "post should be cyan")
-	assert.Equal(t, yellow, colorForMethod("PUT"), "put should be yellow")
-	assert.Equal(t, red, colorForMethod("DELETE"), "delete should be red")
+	assert.Equal(t, blue, colorForMethod(http.MethodGet), "get should be blue")
+	assert.Equal(t, cyan, colorForMethod(http.MethodPost), "post should be cyan")
+	assert.Equal(t, yellow, colorForMethod(http.MethodPut), "put should be yellow")
+	assert.Equal(t, red, colorForMethod(http.MethodDelete), "delete should be red")
 	assert.Equal(t, green, colorForMethod("PATCH"), "patch should be green")
 	assert.Equal(t, magenta, colorForMethod("HEAD"), "head should be magenta")
 	assert.Equal(t, white, colorForMethod("OPTIONS"), "options should be white")
@@ -310,10 +310,28 @@ func TestColorForStatus(t *testing.T) {
 		return p.StatusCodeColor()
 	}
 
+	assert.Equal(t, white, colorForStatus(http.StatusContinue), "1xx should be white")
 	assert.Equal(t, green, colorForStatus(http.StatusOK), "2xx should be green")
 	assert.Equal(t, white, colorForStatus(http.StatusMovedPermanently), "3xx should be white")
 	assert.Equal(t, yellow, colorForStatus(http.StatusNotFound), "4xx should be yellow")
 	assert.Equal(t, red, colorForStatus(2), "other things should be red")
+}
+
+func TestColorForLatency(t *testing.T) {
+	colorForLantency := func(latency time.Duration) string {
+		p := LogFormatterParams{
+			Latency: latency,
+		}
+		return p.LatencyColor()
+	}
+
+	assert.Equal(t, white, colorForLantency(time.Duration(0)), "0 should be white")
+	assert.Equal(t, white, colorForLantency(time.Millisecond*20), "20ms should be white")
+	assert.Equal(t, green, colorForLantency(time.Millisecond*150), "150ms should be green")
+	assert.Equal(t, cyan, colorForLantency(time.Millisecond*250), "250ms should be cyan")
+	assert.Equal(t, yellow, colorForLantency(time.Millisecond*600), "600ms should be yellow")
+	assert.Equal(t, magenta, colorForLantency(time.Millisecond*1500), "1.5s should be magenta")
+	assert.Equal(t, red, colorForLantency(time.Second*3), "other things should be red")
 }
 
 func TestResetColor(t *testing.T) {
@@ -328,13 +346,13 @@ func TestIsOutputColor(t *testing.T) {
 	}
 
 	consoleColorMode = autoColor
-	assert.Equal(t, true, p.IsOutputColor())
+	assert.True(t, p.IsOutputColor())
 
 	ForceConsoleColor()
-	assert.Equal(t, true, p.IsOutputColor())
+	assert.True(t, p.IsOutputColor())
 
 	DisableConsoleColor()
-	assert.Equal(t, false, p.IsOutputColor())
+	assert.False(t, p.IsOutputColor())
 
 	// test with isTerm flag false.
 	p = LogFormatterParams{
@@ -342,13 +360,13 @@ func TestIsOutputColor(t *testing.T) {
 	}
 
 	consoleColorMode = autoColor
-	assert.Equal(t, false, p.IsOutputColor())
+	assert.False(t, p.IsOutputColor())
 
 	ForceConsoleColor()
-	assert.Equal(t, true, p.IsOutputColor())
+	assert.True(t, p.IsOutputColor())
 
 	DisableConsoleColor()
-	assert.Equal(t, false, p.IsOutputColor())
+	assert.False(t, p.IsOutputColor())
 
 	// reset console color mode.
 	consoleColorMode = autoColor
@@ -368,36 +386,36 @@ func TestErrorLogger(t *testing.T) {
 		c.String(http.StatusInternalServerError, "hola!")
 	})
 
-	w := PerformRequest(router, "GET", "/error")
+	w := PerformRequest(router, http.MethodGet, "/error")
 	assert.Equal(t, http.StatusOK, w.Code)
-	assert.Equal(t, "{\"error\":\"this is an error\"}", w.Body.String())
+	assert.JSONEq(t, "{\"error\":\"this is an error\"}", w.Body.String())
 
-	w = PerformRequest(router, "GET", "/abort")
+	w = PerformRequest(router, http.MethodGet, "/abort")
 	assert.Equal(t, http.StatusUnauthorized, w.Code)
-	assert.Equal(t, "{\"error\":\"no authorized\"}", w.Body.String())
+	assert.JSONEq(t, "{\"error\":\"no authorized\"}", w.Body.String())
 
-	w = PerformRequest(router, "GET", "/print")
+	w = PerformRequest(router, http.MethodGet, "/print")
 	assert.Equal(t, http.StatusInternalServerError, w.Code)
 	assert.Equal(t, "hola!{\"error\":\"this is an error\"}", w.Body.String())
 }
 
 func TestLoggerWithWriterSkippingPaths(t *testing.T) {
-	buffer := new(bytes.Buffer)
+	buffer := new(strings.Builder)
 	router := New()
 	router.Use(LoggerWithWriter(buffer, "/skipped"))
 	router.GET("/logged", func(c *Context) {})
 	router.GET("/skipped", func(c *Context) {})
 
-	PerformRequest(router, "GET", "/logged")
+	PerformRequest(router, http.MethodGet, "/logged")
 	assert.Contains(t, buffer.String(), "200")
 
 	buffer.Reset()
-	PerformRequest(router, "GET", "/skipped")
+	PerformRequest(router, http.MethodGet, "/skipped")
 	assert.Contains(t, buffer.String(), "")
 }
 
 func TestLoggerWithConfigSkippingPaths(t *testing.T) {
-	buffer := new(bytes.Buffer)
+	buffer := new(strings.Builder)
 	router := New()
 	router.Use(LoggerWithConfig(LoggerConfig{
 		Output:    buffer,
@@ -406,11 +424,31 @@ func TestLoggerWithConfigSkippingPaths(t *testing.T) {
 	router.GET("/logged", func(c *Context) {})
 	router.GET("/skipped", func(c *Context) {})
 
-	PerformRequest(router, "GET", "/logged")
+	PerformRequest(router, http.MethodGet, "/logged")
 	assert.Contains(t, buffer.String(), "200")
 
 	buffer.Reset()
-	PerformRequest(router, "GET", "/skipped")
+	PerformRequest(router, http.MethodGet, "/skipped")
+	assert.Contains(t, buffer.String(), "")
+}
+
+func TestLoggerWithConfigSkipper(t *testing.T) {
+	buffer := new(strings.Builder)
+	router := New()
+	router.Use(LoggerWithConfig(LoggerConfig{
+		Output: buffer,
+		Skip: func(c *Context) bool {
+			return c.Writer.Status() == http.StatusNoContent
+		},
+	}))
+	router.GET("/logged", func(c *Context) { c.Status(http.StatusOK) })
+	router.GET("/skipped", func(c *Context) { c.Status(http.StatusNoContent) })
+
+	PerformRequest(router, http.MethodGet, "/logged")
+	assert.Contains(t, buffer.String(), "200")
+
+	buffer.Reset()
+	PerformRequest(router, http.MethodGet, "/skipped")
 	assert.Contains(t, buffer.String(), "")
 }
 

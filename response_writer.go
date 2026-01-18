@@ -6,6 +6,7 @@ package gin
 
 import (
 	"bufio"
+	"errors"
 	"io"
 	"net"
 	"net/http"
@@ -15,6 +16,8 @@ const (
 	noWritten     = -1
 	defaultStatus = http.StatusOK
 )
+
+var errHijackAlreadyWritten = errors.New("gin: response body already written")
 
 // ResponseWriter ...
 type ResponseWriter interface {
@@ -49,7 +52,11 @@ type responseWriter struct {
 	status int
 }
 
-var _ ResponseWriter = &responseWriter{}
+var _ ResponseWriter = (*responseWriter)(nil)
+
+func (w *responseWriter) Unwrap() http.ResponseWriter {
+	return w.ResponseWriter
+}
 
 func (w *responseWriter) reset(writer http.ResponseWriter) {
 	w.ResponseWriter = writer
@@ -61,6 +68,7 @@ func (w *responseWriter) WriteHeader(code int) {
 	if code > 0 && w.status != code {
 		if w.Written() {
 			debugPrint("[WARNING] Headers were already written. Wanted to override status code %d with %d", w.status, code)
+			return
 		}
 		w.status = code
 	}
@@ -101,6 +109,11 @@ func (w *responseWriter) Written() bool {
 
 // Hijack implements the http.Hijacker interface.
 func (w *responseWriter) Hijack() (net.Conn, *bufio.ReadWriter, error) {
+	// Allow hijacking before any data is written (size == -1) or after headers are written (size == 0),
+	// but not after body data is written (size > 0). For compatibility with websocket libraries (e.g., github.com/coder/websocket)
+	if w.size > 0 {
+		return nil, nil, errHijackAlreadyWritten
+	}
 	if w.size < 0 {
 		w.size = 0
 	}
@@ -115,7 +128,9 @@ func (w *responseWriter) CloseNotify() <-chan bool {
 // Flush implements the http.Flusher interface.
 func (w *responseWriter) Flush() {
 	w.WriteHeaderNow()
-	w.ResponseWriter.(http.Flusher).Flush()
+	if f, ok := w.ResponseWriter.(http.Flusher); ok {
+		f.Flush()
+	}
 }
 
 func (w *responseWriter) Pusher() (pusher http.Pusher) {

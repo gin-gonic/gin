@@ -6,7 +6,7 @@ package binding
 
 import (
 	"errors"
-	"io/ioutil"
+	"io"
 	"net/http"
 
 	"google.golang.org/protobuf/proto"
@@ -19,7 +19,7 @@ func (protobufBinding) Name() string {
 }
 
 func (b protobufBinding) Bind(req *http.Request, obj any) error {
-	buf, err := ioutil.ReadAll(req.Body)
+	buf, err := io.ReadAll(req.Body)
 	if err != nil {
 		return err
 	}
@@ -34,7 +34,7 @@ func (protobufBinding) BindBody(body []byte, obj any) error {
 	if err := proto.Unmarshal(body, msg); err != nil {
 		return err
 	}
-	// Here it's same to return validate(obj), but util now we can't add
+	// Here it's same to return validate(obj), but until now we can't add
 	// `binding:""` to the struct which automatically generate by gen-proto
 	return nil
 	// return validate(obj)

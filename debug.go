@@ -10,18 +10,24 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
+	"sync/atomic"
 )
 
-const ginSupportMinGoVer = 15
+const ginSupportMinGoVer = 24
+
+var runtimeVersion = runtime.Version()
 
 // IsDebugging returns true if the framework is running in debug mode.
 // Use SetMode(gin.ReleaseMode) to disable debug mode.
 func IsDebugging() bool {
-	return ginMode == debugCode
+	return atomic.LoadInt32(&ginMode) == debugCode
 }
 
 // DebugPrintRouteFunc indicates debug log output format.
 var DebugPrintRouteFunc func(httpMethod, absolutePath, handlerName string, nuHandlers int)
+
+// DebugPrintFunc indicates debug log output format.
+var DebugPrintFunc func(format string, values ...any)
 
 func debugPrintRoute(httpMethod, absolutePath string, handlers HandlersChain) {
 	if IsDebugging() {
@@ -48,12 +54,19 @@ func debugPrintLoadTemplate(tmpl *template.Template) {
 }
 
 func debugPrint(format string, values ...any) {
-	if IsDebugging() {
-		if !strings.HasSuffix(format, "\n") {
-			format += "\n"
-		}
-		fmt.Fprintf(DefaultWriter, "[GIN-debug] "+format, values...)
+	if !IsDebugging() {
+		return
 	}
+
+	if DebugPrintFunc != nil {
+		DebugPrintFunc(format, values...)
+		return
+	}
+
+	if !strings.HasSuffix(format, "\n") {
+		format += "\n"
+	}
+	fmt.Fprintf(DefaultWriter, "[GIN-debug] "+format, values...)
 }
 
 func getMinVer(v string) (uint64, error) {
@@ -66,8 +79,8 @@ func getMinVer(v string) (uint64, error) {
 }
 
 func debugPrintWARNINGDefault() {
-	if v, e := getMinVer(runtime.Version()); e == nil && v < ginSupportMinGoVer {
-		debugPrint(`[WARNING] Now Gin requires Go 1.15+.
+	if v, e := getMinVer(runtimeVersion); e == nil && v < ginSupportMinGoVer {
+		debugPrint(`[WARNING] Now Gin requires Go 1.24+.
 
 `)
 	}

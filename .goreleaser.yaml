@@ -1,8 +1,7 @@
 project_name: gin
 
 builds:
-  -
-    # If true, skip the build.
+  - # If true, skip the build.
     # Useful for library projects.
     # Default is false
     skip: true
@@ -10,7 +9,7 @@ builds:
 changelog:
   # Set it to true if you wish to skip the changelog generation.
   # This may result in an empty release notes on GitHub/GitLab/Gitea.
-  skip: false
+  disable: false
 
   # Changelog generation implementation to use.
   #
@@ -21,7 +20,7 @@ changelog:
   # - `github-native`: uses the GitHub release notes generation API, disables the groups feature.
   #
   # Defaults to `git`.
-  use: git
+  use: github
 
   # Sorts the changelog by the commit's messages.
   # Could either be asc, desc or empty
@@ -38,20 +37,20 @@ changelog:
     - title: Features
       regexp: "^.*feat[(\\w)]*:+.*$"
       order: 0
-    - title: 'Bug fixes'
+    - title: "Bug fixes"
       regexp: "^.*fix[(\\w)]*:+.*$"
       order: 1
-    - title: 'Enhancements'
+    - title: "Enhancements"
       regexp: "^.*chore[(\\w)]*:+.*$"
       order: 2
+    - title: "Refactor"
+      regexp: "^.*refactor[(\\w)]*:+.*$"
+      order: 3
+    - title: "Build process updates"
+      regexp: ^.*?(build|ci)(\(.+\))??!?:.+$
+      order: 4
+    - title: "Documentation updates"
+      regexp: ^.*?docs?(\(.+\))??!?:.+$
+      order: 4
     - title: Others
       order: 999
-
-  filters:
-    # Commit messages matching the regexp listed here will be removed from
-    # the changelog
-    # Default is empty
-    exclude:
-      - '^docs'
-      - 'CICD'
-      - typo

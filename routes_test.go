@@ -6,7 +6,6 @@ package gin
 
 import (
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -14,6 +13,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 type header struct {
@@ -181,10 +181,58 @@ func TestRouteRedirectTrailingSlash(t *testing.T) {
 
 	w = PerformRequest(router, http.MethodGet, "/path2", header{Key: "X-Forwarded-Prefix", Value: "/api"})
 	assert.Equal(t, "/api/path2/", w.Header().Get("Location"))
-	assert.Equal(t, 301, w.Code)
+	assert.Equal(t, http.StatusMovedPermanently, w.Code)
 
 	w = PerformRequest(router, http.MethodGet, "/path2/", header{Key: "X-Forwarded-Prefix", Value: "/api/"})
-	assert.Equal(t, 200, w.Code)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	w = PerformRequest(router, http.MethodGet, "/path/", header{Key: "X-Forwarded-Prefix", Value: "../../api#?"})
+	assert.Equal(t, "/api/path", w.Header().Get("Location"))
+	assert.Equal(t, http.StatusMovedPermanently, w.Code)
+
+	w = PerformRequest(router, http.MethodGet, "/path/", header{Key: "X-Forwarded-Prefix", Value: "../../api"})
+	assert.Equal(t, "/api/path", w.Header().Get("Location"))
+	assert.Equal(t, http.StatusMovedPermanently, w.Code)
+
+	w = PerformRequest(router, http.MethodGet, "/path2", header{Key: "X-Forwarded-Prefix", Value: "../../api"})
+	assert.Equal(t, "/api/path2/", w.Header().Get("Location"))
+	assert.Equal(t, http.StatusMovedPermanently, w.Code)
+
+	w = PerformRequest(router, http.MethodGet, "/path2", header{Key: "X-Forwarded-Prefix", Value: "/../../api"})
+	assert.Equal(t, "/api/path2/", w.Header().Get("Location"))
+	assert.Equal(t, http.StatusMovedPermanently, w.Code)
+
+	w = PerformRequest(router, http.MethodGet, "/path/", header{Key: "X-Forwarded-Prefix", Value: "api/../../"})
+	assert.Equal(t, "//path", w.Header().Get("Location"))
+	assert.Equal(t, http.StatusMovedPermanently, w.Code)
+
+	w = PerformRequest(router, http.MethodGet, "/path/", header{Key: "X-Forwarded-Prefix", Value: "api/../../../"})
+	assert.Equal(t, "/path", w.Header().Get("Location"))
+	assert.Equal(t, http.StatusMovedPermanently, w.Code)
+
+	w = PerformRequest(router, http.MethodGet, "/path2", header{Key: "X-Forwarded-Prefix", Value: "../../gin-gonic.com"})
+	assert.Equal(t, "/gin-goniccom/path2/", w.Header().Get("Location"))
+	assert.Equal(t, http.StatusMovedPermanently, w.Code)
+
+	w = PerformRequest(router, http.MethodGet, "/path2", header{Key: "X-Forwarded-Prefix", Value: "/../../gin-gonic.com"})
+	assert.Equal(t, "/gin-goniccom/path2/", w.Header().Get("Location"))
+	assert.Equal(t, http.StatusMovedPermanently, w.Code)
+
+	w = PerformRequest(router, http.MethodGet, "/path/", header{Key: "X-Forwarded-Prefix", Value: "https://gin-gonic.com/#"})
+	assert.Equal(t, "https/gin-goniccom/https/gin-goniccom/path", w.Header().Get("Location"))
+	assert.Equal(t, http.StatusMovedPermanently, w.Code)
+
+	w = PerformRequest(router, http.MethodGet, "/path/", header{Key: "X-Forwarded-Prefix", Value: "#api"})
+	assert.Equal(t, "api/api/path", w.Header().Get("Location"))
+	assert.Equal(t, http.StatusMovedPermanently, w.Code)
+
+	w = PerformRequest(router, http.MethodGet, "/path/", header{Key: "X-Forwarded-Prefix", Value: "/nor-mal/#?a=1"})
+	assert.Equal(t, "/nor-mal/a1/path", w.Header().Get("Location"))
+	assert.Equal(t, http.StatusMovedPermanently, w.Code)
+
+	w = PerformRequest(router, http.MethodGet, "/path/", header{Key: "X-Forwarded-Prefix", Value: "/nor-mal/%2e%2e/"})
+	assert.Equal(t, "/nor-mal/2e2e/path", w.Header().Get("Location"))
+	assert.Equal(t, http.StatusMovedPermanently, w.Code)
 
 	router.RedirectTrailingSlash = false
 
@@ -290,17 +338,56 @@ func TestRouteParamsByNameWithExtraSlash(t *testing.T) {
 	assert.Equal(t, "/is/super/great", wild)
 }
 
+// TestRouteParamsNotEmpty tests that context parameters will be set
+// even if a route with params/wildcards is registered after the context
+// initialisation (which happened in a previous requests).
+func TestRouteParamsNotEmpty(t *testing.T) {
+	name := ""
+	lastName := ""
+	wild := ""
+	router := New()
+
+	w := PerformRequest(router, http.MethodGet, "/test/john/smith/is/super/great")
+
+	assert.Equal(t, http.StatusNotFound, w.Code)
+
+	router.GET("/test/:name/:last_name/*wild", func(c *Context) {
+		name = c.Params.ByName("name")
+		lastName = c.Params.ByName("last_name")
+		var ok bool
+		wild, ok = c.Params.Get("wild")
+
+		assert.True(t, ok)
+		assert.Equal(t, name, c.Param("name"))
+		assert.Equal(t, lastName, c.Param("last_name"))
+
+		assert.Empty(t, c.Param("wtf"))
+		assert.Empty(t, c.Params.ByName("wtf"))
+
+		wtf, ok := c.Params.Get("wtf")
+		assert.Empty(t, wtf)
+		assert.False(t, ok)
+	})
+
+	w = PerformRequest(router, http.MethodGet, "/test/john/smith/is/super/great")
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Equal(t, "john", name)
+	assert.Equal(t, "smith", lastName)
+	assert.Equal(t, "/is/super/great", wild)
+}
+
 // TestHandleStaticFile - ensure the static file handles properly
 func TestRouteStaticFile(t *testing.T) {
 	// SETUP file
 	testRoot, _ := os.Getwd()
-	f, err := ioutil.TempFile(testRoot, "")
+	f, err := os.CreateTemp(testRoot, "")
 	if err != nil {
 		t.Error(err)
 	}
 	defer os.Remove(f.Name())
 	_, err = f.WriteString("Gin Web Framework")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	f.Close()
 
 	dir, filename := filepath.Split(f.Name())
@@ -329,13 +416,13 @@ func TestRouteStaticFile(t *testing.T) {
 func TestRouteStaticFileFS(t *testing.T) {
 	// SETUP file
 	testRoot, _ := os.Getwd()
-	f, err := ioutil.TempFile(testRoot, "")
+	f, err := os.CreateTemp(testRoot, "")
 	if err != nil {
 		t.Error(err)
 	}
 	defer os.Remove(f.Name())
 	_, err = f.WriteString("Gin Web Framework")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	f.Close()
 
 	dir, filename := filepath.Split(f.Name())
@@ -397,8 +484,8 @@ func TestRouterMiddlewareAndStatic(t *testing.T) {
 	assert.Contains(t, w.Body.String(), "package gin")
 	// Content-Type='text/plain; charset=utf-8' when go version <= 1.16,
 	// else, Content-Type='text/x-go; charset=utf-8'
-	assert.NotEqual(t, "", w.Header().Get("Content-Type"))
-	assert.NotEqual(t, w.Header().Get("Last-Modified"), "Mon, 02 Jan 2006 15:04:05 MST")
+	assert.NotEmpty(t, w.Header().Get("Content-Type"))
+	assert.NotEqual(t, "Mon, 02 Jan 2006 15:04:05 MST", w.Header().Get("Last-Modified"))
 	assert.Equal(t, "Mon, 02 Jan 2006 15:04:05 MST", w.Header().Get("Expires"))
 	assert.Equal(t, "Gin Framework", w.Header().Get("x-GIN"))
 }
@@ -426,6 +513,18 @@ func TestRouteNotAllowedEnabled2(t *testing.T) {
 	router.GET("/path2", func(c *Context) {})
 	w := PerformRequest(router, http.MethodPost, "/path2")
 	assert.Equal(t, http.StatusMethodNotAllowed, w.Code)
+}
+
+func TestRouteNotAllowedEnabled3(t *testing.T) {
+	router := New()
+	router.HandleMethodNotAllowed = true
+	router.GET("/path", func(c *Context) {})
+	router.POST("/path", func(c *Context) {})
+	w := PerformRequest(router, http.MethodPut, "/path")
+	assert.Equal(t, http.StatusMethodNotAllowed, w.Code)
+	allowed := w.Header().Get("Allow")
+	assert.Contains(t, allowed, http.MethodGet)
+	assert.Contains(t, allowed, http.MethodPost)
 }
 
 func TestRouteNotAllowedDisabled(t *testing.T) {
@@ -458,10 +557,10 @@ func TestRouterNotFoundWithRemoveExtraSlash(t *testing.T) {
 		{"/nope", http.StatusNotFound, ""}, // NotFound
 	}
 	for _, tr := range testRoutes {
-		w := PerformRequest(router, "GET", tr.route)
+		w := PerformRequest(router, http.MethodGet, tr.route)
 		assert.Equal(t, tr.code, w.Code)
 		if w.Code != http.StatusNotFound {
-			assert.Equal(t, tr.location, fmt.Sprint(w.Header().Get("Location")))
+			assert.Equal(t, tr.location, w.Header().Get("Location"))
 		}
 	}
 }
@@ -491,7 +590,7 @@ func TestRouterNotFound(t *testing.T) {
 		w := PerformRequest(router, http.MethodGet, tr.route)
 		assert.Equal(t, tr.code, w.Code)
 		if w.Code != http.StatusNotFound {
-			assert.Equal(t, tr.location, fmt.Sprint(w.Header().Get("Location")))
+			assert.Equal(t, tr.location, w.Header().Get("Location"))
 		}
 	}
 
@@ -521,11 +620,11 @@ func TestRouterNotFound(t *testing.T) {
 	router = New()
 	router.NoRoute(func(c *Context) {
 		if c.Request.RequestURI == "/login" {
-			c.String(200, "login")
+			c.String(http.StatusOK, "login")
 		}
 	})
 	router.GET("/logout", func(c *Context) {
-		c.String(200, "logout")
+		c.String(http.StatusOK, "logout")
 	})
 	w = PerformRequest(router, http.MethodGet, "/login")
 	assert.Equal(t, "login", w.Body.String())
@@ -537,7 +636,7 @@ func TestRouterStaticFSNotFound(t *testing.T) {
 	router := New()
 	router.StaticFS("/", http.FileSystem(http.Dir("/thisreallydoesntexist/")))
 	router.NoRoute(func(c *Context) {
-		c.String(404, "non existent")
+		c.String(http.StatusNotFound, "non existent")
 	})
 
 	w := PerformRequest(router, http.MethodGet, "/nonexistent")
@@ -620,12 +719,12 @@ func TestRouteRawPathNoUnescape(t *testing.T) {
 func TestRouteServeErrorWithWriteHeader(t *testing.T) {
 	route := New()
 	route.Use(func(c *Context) {
-		c.Status(421)
+		c.Status(http.StatusMisdirectedRequest)
 		c.Next()
 	})
 
 	w := PerformRequest(route, http.MethodGet, "/NotFound")
-	assert.Equal(t, 421, w.Code)
+	assert.Equal(t, http.StatusMisdirectedRequest, w.Code)
 	assert.Equal(t, 0, w.Body.Len())
 }
 
@@ -665,9 +764,28 @@ func TestRouteContextHoldsFullPath(t *testing.T) {
 	// Test not found
 	router.Use(func(c *Context) {
 		// For not found routes full path is empty
-		assert.Equal(t, "", c.FullPath())
+		assert.Empty(t, c.FullPath())
 	})
 
 	w := PerformRequest(router, http.MethodGet, "/not-found")
+	assert.Equal(t, http.StatusNotFound, w.Code)
+}
+
+func TestEngineHandleMethodNotAllowedCornerCase(t *testing.T) {
+	r := New()
+	r.HandleMethodNotAllowed = true
+
+	base := r.Group("base")
+	base.GET("/metrics", handlerTest1)
+
+	v1 := base.Group("v1")
+
+	v1.GET("/:id/devices", handlerTest1)
+	v1.GET("/user/:id/groups", handlerTest1)
+
+	v1.GET("/orgs/:id", handlerTest1)
+	v1.DELETE("/orgs/:id", handlerTest1)
+
+	w := PerformRequest(r, http.MethodGet, "/base/v1/user/groups")
 	assert.Equal(t, http.StatusNotFound, w.Code)
 }

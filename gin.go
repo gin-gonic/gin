@@ -15,12 +15,19 @@ import (
 	"sync"
 
 	"github.com/gin-gonic/gin/internal/bytesconv"
+	filesystem "github.com/gin-gonic/gin/internal/fs"
 	"github.com/gin-gonic/gin/render"
+	"github.com/quic-go/quic-go/http3"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
 )
 
-const defaultMultipartMemory = 32 << 20 // 32 MB
+const (
+	defaultMultipartMemory = 32 << 20 // 32 MB
+	escapedColon           = "\\:"
+	colon                  = ":"
+	backslash              = "\\"
+)
 
 var (
 	default404Body = []byte("404 page not found")
@@ -42,6 +49,9 @@ var defaultTrustedCIDRs = []*net.IPNet{
 
 // HandlerFunc defines the handler used by gin middleware as return value.
 type HandlerFunc func(*Context)
+
+// OptionFunc defines the function to change the default configuration
+type OptionFunc func(*Engine)
 
 // HandlersChain defines a HandlerFunc slice.
 type HandlersChain []HandlerFunc
@@ -73,12 +83,18 @@ const (
 	// PlatformCloudflare when using Cloudflare's CDN. Trust CF-Connecting-IP for determining
 	// the client's IP
 	PlatformCloudflare = "CF-Connecting-IP"
+	// PlatformFlyIO when running on Fly.io. Trust Fly-Client-IP for determining the client's IP
+	PlatformFlyIO = "Fly-Client-IP"
 )
 
 // Engine is the framework's instance, it contains the muxer, middleware and configuration settings.
 // Create an instance of Engine, by using New() or Default()
 type Engine struct {
 	RouterGroup
+
+	// routeTreesUpdated ensures that the initialization or update of the route trees
+	// (used for routing HTTP requests) happens only once, even if called multiple times concurrently.
+	routeTreesUpdated sync.Once
 
 	// RedirectTrailingSlash enables automatic redirection if the current route can't be matched but a
 	// handler for the path with (without) the trailing slash exists.
@@ -119,10 +135,16 @@ type Engine struct {
 	AppEngine bool
 
 	// UseRawPath if enabled, the url.RawPath will be used to find parameters.
+	// The RawPath is only a hint, EscapedPath() should be use instead. (https://pkg.go.dev/net/url@master#URL)
+	// Only use RawPath if you know what you are doing.
 	UseRawPath bool
 
+	// UseEscapedPath if enable, the url.EscapedPath() will be used to find parameters
+	// It overrides UseRawPath
+	UseEscapedPath bool
+
 	// UnescapePathValues if true, the path value will be unescaped.
-	// If UseRawPath is false (by default), the UnescapePathValues effectively is true,
+	// If UseRawPath and UseEscapedPath are false (by default), the UnescapePathValues effectively is true,
 	// as url.Path gonna be used, which is already unescaped.
 	UnescapePathValues bool
 
@@ -166,7 +188,7 @@ type Engine struct {
 	trustedCIDRs     []*net.IPNet
 }
 
-var _ IRouter = &Engine{}
+var _ IRouter = (*Engine)(nil)
 
 // New returns a new blank Engine instance without any middleware attached.
 // By default, the configuration is:
@@ -175,8 +197,9 @@ var _ IRouter = &Engine{}
 // - HandleMethodNotAllowed: false
 // - ForwardedByClientIP:    true
 // - UseRawPath:             false
+// - UseEscapedPath: 		 false
 // - UnescapePathValues:     true
-func New() *Engine {
+func New(opts ...OptionFunc) *Engine {
 	debugPrintWARNINGNew()
 	engine := &Engine{
 		RouterGroup: RouterGroup{
@@ -192,6 +215,7 @@ func New() *Engine {
 		RemoteIPHeaders:        []string{"X-Forwarded-For", "X-Real-IP"},
 		TrustedPlatform:        defaultPlatform,
 		UseRawPath:             false,
+		UseEscapedPath:         false,
 		RemoveExtraSlash:       false,
 		UnescapePathValues:     true,
 		MaxMultipartMemory:     defaultMultipartMemory,
@@ -201,19 +225,19 @@ func New() *Engine {
 		trustedProxies:         []string{"0.0.0.0/0", "::/0"},
 		trustedCIDRs:           defaultTrustedCIDRs,
 	}
-	engine.RouterGroup.engine = engine
+	engine.engine = engine
 	engine.pool.New = func() any {
-		return engine.allocateContext()
+		return engine.allocateContext(engine.maxParams)
 	}
-	return engine
+	return engine.With(opts...)
 }
 
 // Default returns an Engine instance with the Logger and Recovery middleware already attached.
-func Default() *Engine {
+func Default(opts ...OptionFunc) *Engine {
 	debugPrintWARNINGDefault()
 	engine := New()
 	engine.Use(Logger(), Recovery())
-	return engine
+	return engine.With(opts...)
 }
 
 func (engine *Engine) Handler() http.Handler {
@@ -225,8 +249,8 @@ func (engine *Engine) Handler() http.Handler {
 	return h2c.NewHandler(engine, h2s)
 }
 
-func (engine *Engine) allocateContext() *Context {
-	v := make(Params, 0, engine.maxParams)
+func (engine *Engine) allocateContext(maxParams uint16) *Context {
+	v := make(Params, 0, maxParams)
 	skippedNodes := make([]skippedNode, 0, engine.maxSections)
 	return &Context{engine: engine, params: &v, skippedNodes: &skippedNodes}
 }
@@ -271,6 +295,19 @@ func (engine *Engine) LoadHTMLFiles(files ...string) {
 	engine.SetHTMLTemplate(templ)
 }
 
+// LoadHTMLFS loads an http.FileSystem and a slice of patterns
+// and associates the result with HTML renderer.
+func (engine *Engine) LoadHTMLFS(fs http.FileSystem, patterns ...string) {
+	if IsDebugging() {
+		engine.HTMLRender = render.HTMLDebug{FileSystem: fs, Patterns: patterns, FuncMap: engine.FuncMap, Delims: engine.delims}
+		return
+	}
+
+	templ := template.Must(template.New("").Delims(engine.delims.Left, engine.delims.Right).Funcs(engine.FuncMap).ParseFS(
+		filesystem.FileSystem{FileSystem: fs}, patterns...))
+	engine.SetHTMLTemplate(templ)
+}
+
 // SetHTMLTemplate associate a template with HTML renderer.
 func (engine *Engine) SetHTMLTemplate(templ *template.Template) {
 	if len(engine.trees) > 0 {
@@ -307,6 +344,15 @@ func (engine *Engine) Use(middleware ...HandlerFunc) IRoutes {
 	return engine
 }
 
+// With returns an Engine with the configuration set in the OptionFunc.
+func (engine *Engine) With(opts ...OptionFunc) *Engine {
+	for _, opt := range opts {
+		opt(engine)
+	}
+
+	return engine
+}
+
 func (engine *Engine) rebuild404Handlers() {
 	engine.allNoRoute = engine.combineHandlers(engine.noRoute)
 }
@@ -330,7 +376,6 @@ func (engine *Engine) addRoute(method, path string, handlers HandlersChain) {
 	}
 	root.addRoute(path, handlers)
 
-	// Update maxParams
 	if paramsCount := countParams(path); paramsCount > engine.maxParams {
 		engine.maxParams = paramsCount
 	}
@@ -341,7 +386,7 @@ func (engine *Engine) addRoute(method, path string, handlers HandlersChain) {
 }
 
 // Routes returns a slice of registered routes, including some useful information, such as:
-// the http method, path and the handler name.
+// the http method, path, and the handler name.
 func (engine *Engine) Routes() (routes RoutesInfo) {
 	for _, tree := range engine.trees {
 		routes = iterate("", tree.method, routes, tree.root)
@@ -364,23 +409,6 @@ func iterate(path, method string, routes RoutesInfo, root *node) RoutesInfo {
 		routes = iterate(path, method, routes, child)
 	}
 	return routes
-}
-
-// Run attaches the router to a http.Server and starts listening and serving HTTP requests.
-// It is a shortcut for http.ListenAndServe(addr, router)
-// Note: this method will block the calling goroutine indefinitely unless an error happens.
-func (engine *Engine) Run(addr ...string) (err error) {
-	defer func() { debugPrintError(err) }()
-
-	if engine.isUnsafeTrustedProxies() {
-		debugPrint("[WARNING] You trusted all proxies, this is NOT safe. We recommend you to set a value.\n" +
-			"Please check https://pkg.go.dev/github.com/gin-gonic/gin#readme-don-t-trust-all-proxies for details.")
-	}
-
-	address := resolveAddress(addr)
-	debugPrint("Listening and serving HTTP on %s\n", address)
-	err = http.ListenAndServe(address, engine.Handler())
-	return
 }
 
 func (engine *Engine) prepareTrustedCIDRs() ([]*net.IPNet, error) {
@@ -472,6 +500,26 @@ func (engine *Engine) validateHeader(header string) (clientIP string, valid bool
 	return "", false
 }
 
+// updateRouteTree do update to the route tree recursively
+func updateRouteTree(n *node) {
+	n.path = strings.ReplaceAll(n.path, escapedColon, colon)
+	n.fullPath = strings.ReplaceAll(n.fullPath, escapedColon, colon)
+	n.indices = strings.ReplaceAll(n.indices, backslash, colon)
+	if n.children == nil {
+		return
+	}
+	for _, child := range n.children {
+		updateRouteTree(child)
+	}
+}
+
+// updateRouteTrees do update to the route trees
+func (engine *Engine) updateRouteTrees() {
+	for _, tree := range engine.trees {
+		updateRouteTree(tree.root)
+	}
+}
+
 // parseIP parse a string representation of an IP and returns a net.IP with the
 // minimum byte representation or nil if input is invalid.
 func parseIP(ip string) net.IP {
@@ -486,6 +534,27 @@ func parseIP(ip string) net.IP {
 	return parsedIP
 }
 
+// Run attaches the router to a http.Server and starts listening and serving HTTP requests.
+// It is a shortcut for http.ListenAndServe(addr, router)
+// Note: this method will block the calling goroutine indefinitely unless an error happens.
+func (engine *Engine) Run(addr ...string) (err error) {
+	defer func() { debugPrintError(err) }()
+
+	if engine.isUnsafeTrustedProxies() {
+		debugPrint("[WARNING] You trusted all proxies, this is NOT safe. We recommend you to set a value.\n" +
+			"Please check https://github.com/gin-gonic/gin/blob/master/docs/doc.md#dont-trust-all-proxies for details.")
+	}
+	engine.updateRouteTrees()
+	address := resolveAddress(addr)
+	debugPrint("Listening and serving HTTP on %s\n", address)
+	server := &http.Server{ // #nosec G112
+		Addr:    address,
+		Handler: engine.Handler(),
+	}
+	err = server.ListenAndServe()
+	return
+}
+
 // RunTLS attaches the router to a http.Server and starts listening and serving HTTPS (secure) requests.
 // It is a shortcut for http.ListenAndServeTLS(addr, certFile, keyFile, router)
 // Note: this method will block the calling goroutine indefinitely unless an error happens.
@@ -495,10 +564,14 @@ func (engine *Engine) RunTLS(addr, certFile, keyFile string) (err error) {
 
 	if engine.isUnsafeTrustedProxies() {
 		debugPrint("[WARNING] You trusted all proxies, this is NOT safe. We recommend you to set a value.\n" +
-			"Please check https://pkg.go.dev/github.com/gin-gonic/gin#readme-don-t-trust-all-proxies for details.")
+			"Please check https://github.com/gin-gonic/gin/blob/master/docs/doc.md#dont-trust-all-proxies for details.")
 	}
 
-	err = http.ListenAndServeTLS(addr, certFile, keyFile, engine.Handler())
+	server := &http.Server{ // #nosec G112
+		Addr:    addr,
+		Handler: engine.Handler(),
+	}
+	err = server.ListenAndServeTLS(certFile, keyFile)
 	return
 }
 
@@ -511,7 +584,7 @@ func (engine *Engine) RunUnix(file string) (err error) {
 
 	if engine.isUnsafeTrustedProxies() {
 		debugPrint("[WARNING] You trusted all proxies, this is NOT safe. We recommend you to set a value.\n" +
-			"Please check https://pkg.go.dev/github.com/gin-gonic/gin#readme-don-t-trust-all-proxies for details.")
+			"Please check https://github.com/gin-gonic/gin/blob/master/docs/doc.md#dont-trust-all-proxies for details.")
 	}
 
 	listener, err := net.Listen("unix", file)
@@ -521,7 +594,10 @@ func (engine *Engine) RunUnix(file string) (err error) {
 	defer listener.Close()
 	defer os.Remove(file)
 
-	err = http.Serve(listener, engine.Handler())
+	server := &http.Server{ // #nosec G112
+		Handler: engine.Handler(),
+	}
+	err = server.Serve(listener)
 	return
 }
 
@@ -534,16 +610,33 @@ func (engine *Engine) RunFd(fd int) (err error) {
 
 	if engine.isUnsafeTrustedProxies() {
 		debugPrint("[WARNING] You trusted all proxies, this is NOT safe. We recommend you to set a value.\n" +
-			"Please check https://pkg.go.dev/github.com/gin-gonic/gin#readme-don-t-trust-all-proxies for details.")
+			"Please check https://github.com/gin-gonic/gin/blob/master/docs/doc.md#dont-trust-all-proxies for details.")
 	}
 
 	f := os.NewFile(uintptr(fd), fmt.Sprintf("fd@%d", fd))
+	defer f.Close()
 	listener, err := net.FileListener(f)
 	if err != nil {
 		return
 	}
 	defer listener.Close()
 	err = engine.RunListener(listener)
+	return
+}
+
+// RunQUIC attaches the router to a http.Server and starts listening and serving QUIC requests.
+// It is a shortcut for http3.ListenAndServeQUIC(addr, certFile, keyFile, router)
+// Note: this method will block the calling goroutine indefinitely unless an error happens.
+func (engine *Engine) RunQUIC(addr, certFile, keyFile string) (err error) {
+	debugPrint("Listening and serving QUIC on %s\n", addr)
+	defer func() { debugPrintError(err) }()
+
+	if engine.isUnsafeTrustedProxies() {
+		debugPrint("[WARNING] You trusted all proxies, this is NOT safe. We recommend you to set a value.\n" +
+			"Please check https://github.com/gin-gonic/gin/blob/master/docs/doc.md#dont-trust-all-proxies for details.")
+	}
+
+	err = http3.ListenAndServeQUIC(addr, certFile, keyFile, engine.Handler())
 	return
 }
 
@@ -555,15 +648,22 @@ func (engine *Engine) RunListener(listener net.Listener) (err error) {
 
 	if engine.isUnsafeTrustedProxies() {
 		debugPrint("[WARNING] You trusted all proxies, this is NOT safe. We recommend you to set a value.\n" +
-			"Please check https://pkg.go.dev/github.com/gin-gonic/gin#readme-don-t-trust-all-proxies for details.")
+			"Please check https://github.com/gin-gonic/gin/blob/master/docs/doc.md#dont-trust-all-proxies for details.")
 	}
 
-	err = http.Serve(listener, engine.Handler())
+	server := &http.Server{ // #nosec G112
+		Handler: engine.Handler(),
+	}
+	err = server.Serve(listener)
 	return
 }
 
 // ServeHTTP conforms to the http.Handler interface.
 func (engine *Engine) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	engine.routeTreesUpdated.Do(func() {
+		engine.updateRouteTrees()
+	})
+
 	c := engine.pool.Get().(*Context)
 	c.writermem.reset(w)
 	c.Request = req
@@ -579,17 +679,23 @@ func (engine *Engine) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 // Disclaimer: You can loop yourself to deal with this, use wisely.
 func (engine *Engine) HandleContext(c *Context) {
 	oldIndexValue := c.index
+	oldHandlers := c.handlers
 	c.reset()
 	engine.handleHTTPRequest(c)
 
 	c.index = oldIndexValue
+	c.handlers = oldHandlers
 }
 
 func (engine *Engine) handleHTTPRequest(c *Context) {
 	httpMethod := c.Request.Method
 	rPath := c.Request.URL.Path
 	unescape := false
-	if engine.UseRawPath && len(c.Request.URL.RawPath) > 0 {
+
+	if engine.UseEscapedPath {
+		rPath = c.Request.URL.EscapedPath()
+		unescape = engine.UnescapePathValues
+	} else if engine.UseRawPath && len(c.Request.URL.RawPath) > 0 {
 		rPath = c.Request.URL.RawPath
 		unescape = engine.UnescapePathValues
 	}
@@ -629,18 +735,26 @@ func (engine *Engine) handleHTTPRequest(c *Context) {
 		break
 	}
 
-	if engine.HandleMethodNotAllowed {
+	if engine.HandleMethodNotAllowed && len(t) > 0 {
+		// According to RFC 7231 section 6.5.5, MUST generate an Allow header field in response
+		// containing a list of the target resource's currently supported methods.
+		allowed := make([]string, 0, len(t)-1)
 		for _, tree := range engine.trees {
 			if tree.method == httpMethod {
 				continue
 			}
 			if value := tree.root.getValue(rPath, nil, c.skippedNodes, unescape); value.handlers != nil {
-				c.handlers = engine.allNoMethod
-				serveError(c, http.StatusMethodNotAllowed, default405Body)
-				return
+				allowed = append(allowed, tree.method)
 			}
 		}
+		if len(allowed) > 0 {
+			c.handlers = engine.allNoMethod
+			c.writermem.Header().Set("Allow", strings.Join(allowed, ", "))
+			serveError(c, http.StatusMethodNotAllowed, default405Body)
+			return
+		}
 	}
+
 	c.handlers = engine.allNoRoute
 	serveError(c, http.StatusNotFound, default404Body)
 }
@@ -668,6 +782,9 @@ func redirectTrailingSlash(c *Context) {
 	req := c.Request
 	p := req.URL.Path
 	if prefix := path.Clean(c.Request.Header.Get("X-Forwarded-Prefix")); prefix != "." {
+		prefix = sanitizePathChars(prefix)
+		prefix = removeRepeatedChar(prefix, '/')
+
 		p = prefix + "/" + req.URL.Path
 	}
 	req.URL.Path = p + "/"
@@ -675,6 +792,17 @@ func redirectTrailingSlash(c *Context) {
 		req.URL.Path = p[:length-1]
 	}
 	redirectRequest(c)
+}
+
+// sanitizePathChars removes unsafe characters from path strings,
+// keeping only ASCII letters, ASCII numbers, forward slashes, and hyphens.
+func sanitizePathChars(s string) string {
+	return strings.Map(func(r rune) rune {
+		if (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9') || r == '/' || r == '-' {
+			return r
+		}
+		return -1
+	}, s)
 }
 
 func redirectFixedPath(c *Context, root *node, trailingSlash bool) bool {

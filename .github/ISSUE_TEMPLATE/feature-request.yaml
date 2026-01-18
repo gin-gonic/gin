@@ -1,0 +1,18 @@
+name: Feature Request
+description: Got an idea for a feature that Gin doesn't have currently?  Submit your idea here!
+labels: ["type/proposal"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        1. Please speak English, this is the language all maintainers can speak and write.
+        2. Please ask questions problems on our Discussions Forum (https://github.com/gin-gonic/gin/discussions).
+        3. Please take a moment to check that your feature hasn't already been suggested.
+  - type: textarea
+    id: description
+    attributes:
+      label: Feature Description
+      placeholder: |
+        I think it would be great if Gin had...
+    validations:
+      required: true

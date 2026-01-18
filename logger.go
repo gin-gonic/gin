@@ -44,10 +44,17 @@ type LoggerConfig struct {
 	// Optional. Default value is gin.DefaultWriter.
 	Output io.Writer
 
-	// SkipPaths is an url path array which logs are not written.
+	// SkipPaths is a URL path array which logs are not written.
 	// Optional.
 	SkipPaths []string
+
+	// Skip is a Skipper that indicates which logs should not be written.
+	// Optional.
+	Skip Skipper
 }
+
+// Skipper is a function to skip logs based on provided Context
+type Skipper func(c *Context) bool
 
 // LogFormatter gives the signature of the formatter function passed to LoggerWithFormatter
 type LogFormatter func(params LogFormatterParams) string
@@ -75,7 +82,7 @@ type LogFormatterParams struct {
 	// BodySize is the size of the Response Body
 	BodySize int
 	// Keys are the keys set on the request's context.
-	Keys map[string]any
+	Keys map[any]any
 }
 
 // StatusCodeColor is the ANSI color for appropriately logging http status code to a terminal.
@@ -83,12 +90,35 @@ func (p *LogFormatterParams) StatusCodeColor() string {
 	code := p.StatusCode
 
 	switch {
+	case code >= http.StatusContinue && code < http.StatusOK:
+		return white
 	case code >= http.StatusOK && code < http.StatusMultipleChoices:
 		return green
 	case code >= http.StatusMultipleChoices && code < http.StatusBadRequest:
 		return white
 	case code >= http.StatusBadRequest && code < http.StatusInternalServerError:
 		return yellow
+	default:
+		return red
+	}
+}
+
+// LatencyColor is the ANSI color for latency
+func (p *LogFormatterParams) LatencyColor() string {
+	latency := p.Latency
+	switch {
+	case latency < time.Millisecond*100:
+		return white
+	case latency < time.Millisecond*200:
+		return green
+	case latency < time.Millisecond*300:
+		return cyan
+	case latency < time.Millisecond*500:
+		return blue
+	case latency < time.Second:
+		return yellow
+	case latency < time.Second*2:
+		return magenta
 	default:
 		return red
 	}
@@ -130,20 +160,27 @@ func (p *LogFormatterParams) IsOutputColor() bool {
 
 // defaultLogFormatter is the default log format function Logger middleware uses.
 var defaultLogFormatter = func(param LogFormatterParams) string {
-	var statusColor, methodColor, resetColor string
+	var statusColor, methodColor, resetColor, latencyColor string
 	if param.IsOutputColor() {
 		statusColor = param.StatusCodeColor()
 		methodColor = param.MethodColor()
 		resetColor = param.ResetColor()
+		latencyColor = param.LatencyColor()
 	}
 
-	if param.Latency > time.Minute {
-		param.Latency = param.Latency.Truncate(time.Second)
+	switch {
+	case param.Latency > time.Minute:
+		param.Latency = param.Latency.Truncate(time.Second * 10)
+	case param.Latency > time.Second:
+		param.Latency = param.Latency.Truncate(time.Millisecond * 10)
+	case param.Latency > time.Millisecond:
+		param.Latency = param.Latency.Truncate(time.Microsecond * 10)
 	}
-	return fmt.Sprintf("[GIN] %v |%s %3d %s| %13v | %15s |%s %-7s %s %#v\n%s",
+
+	return fmt.Sprintf("[GIN] %v |%s %3d %s|%s %8v %s| %15s |%s %-7s %s %#v\n%s",
 		param.TimeStamp.Format("2006/01/02 - 15:04:05"),
 		statusColor, param.StatusCode, resetColor,
-		param.Latency,
+		latencyColor, param.Latency, resetColor,
 		param.ClientIP,
 		methodColor, param.Method, resetColor,
 		param.Path,
@@ -239,32 +276,34 @@ func LoggerWithConfig(conf LoggerConfig) HandlerFunc {
 		// Process request
 		c.Next()
 
-		// Log only when path is not being skipped
-		if _, ok := skip[path]; !ok {
-			param := LogFormatterParams{
-				Request: c.Request,
-				isTerm:  isTerm,
-				Keys:    c.Keys,
-			}
-
-			// Stop timer
-			param.TimeStamp = time.Now()
-			param.Latency = param.TimeStamp.Sub(start)
-
-			param.ClientIP = c.ClientIP()
-			param.Method = c.Request.Method
-			param.StatusCode = c.Writer.Status()
-			param.ErrorMessage = c.Errors.ByType(ErrorTypePrivate).String()
-
-			param.BodySize = c.Writer.Size()
-
-			if raw != "" {
-				path = path + "?" + raw
-			}
-
-			param.Path = path
-
-			fmt.Fprint(out, formatter(param))
+		// Log only when it is not being skipped
+		if _, ok := skip[path]; ok || (conf.Skip != nil && conf.Skip(c)) {
+			return
 		}
+
+		param := LogFormatterParams{
+			Request: c.Request,
+			isTerm:  isTerm,
+			Keys:    c.Keys,
+		}
+
+		// Stop timer
+		param.TimeStamp = time.Now()
+		param.Latency = param.TimeStamp.Sub(start)
+
+		param.ClientIP = c.ClientIP()
+		param.Method = c.Request.Method
+		param.StatusCode = c.Writer.Status()
+		param.ErrorMessage = c.Errors.ByType(ErrorTypePrivate).String()
+
+		param.BodySize = c.Writer.Size()
+
+		if raw != "" {
+			path = path + "?" + raw
+		}
+
+		param.Path = path
+
+		fmt.Fprint(out, formatter(param))
 	}
 }
