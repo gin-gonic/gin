@@ -231,17 +231,22 @@ func setByForm(value reflect.Value, field reflect.StructField, form map[string][
 
 	switch value.Kind() {
 	case reflect.Slice:
-		if len(vs) == 0 {
+		if vs == nil {
 			if !opt.isDefaultExists {
 				return false, nil
 			}
 
-			vs = []string{opt.defaultValue}
 			// pre-process the default value for multi if present
 			cfTag := field.Tag.Get("collection_format")
 			if cfTag == "" || cfTag == "multi" {
 				vs = strings.Split(opt.defaultValue, ",")
+			} else {
+				vs = []string{opt.defaultValue}
 			}
+		}
+
+		if len(vs) == 0 {
+			return true, setSlice(vs, value, field)
 		}
 
 		if ok, err = trySetCustom(vs[0], value); ok {
@@ -259,11 +264,12 @@ func setByForm(value reflect.Value, field reflect.StructField, form map[string][
 				return false, nil
 			}
 
-			vs = []string{opt.defaultValue}
 			// pre-process the default value for multi if present
 			cfTag := field.Tag.Get("collection_format")
 			if cfTag == "" || cfTag == "multi" {
 				vs = strings.Split(opt.defaultValue, ",")
+			} else {
+				vs = []string{opt.defaultValue}
 			}
 		}
 
