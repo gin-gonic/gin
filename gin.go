@@ -5,6 +5,7 @@
 package gin
 
 import (
+	"context"
 	"fmt"
 	"html/template"
 	"net"
@@ -186,6 +187,11 @@ type Engine struct {
 	maxSections      uint16
 	trustedProxies   []string
 	trustedCIDRs     []*net.IPNet
+
+	// server holds a reference to the HTTP server for graceful shutdown.
+	// This is set when one of the Run* methods is called.
+	server     *http.Server
+	serverLock sync.Mutex
 }
 
 var _ IRouter = (*Engine)(nil)
@@ -534,6 +540,30 @@ func parseIP(ip string) net.IP {
 	return parsedIP
 }
 
+// Shutdown gracefully shuts down the server without interrupting any active connections.
+// Shutdown works by first closing all open listeners, then closing all idle connections,
+// and then waiting indefinitely for connections to return to idle and then shut down.
+// If the provided context expires before the shutdown is complete, Shutdown returns the
+// context's error, otherwise it returns any error returned from closing the Server's
+// underlying Listener(s).
+//
+// When Shutdown is called, Serve, ListenAndServe, and ListenAndServeTLS immediately
+// return ErrServerClosed. Make sure the program doesn't exit and waits instead for
+// Shutdown to return.
+//
+// This method returns nil if the server has not been started.
+func (engine *Engine) Shutdown(ctx context.Context) error {
+	engine.serverLock.Lock()
+	srv := engine.server
+	engine.serverLock.Unlock()
+
+	if srv == nil {
+		return nil
+	}
+
+	return srv.Shutdown(ctx)
+}
+
 // Run attaches the router to a http.Server and starts listening and serving HTTP requests.
 // It is a shortcut for http.ListenAndServe(addr, router)
 // Note: this method will block the calling goroutine indefinitely unless an error happens.
@@ -551,6 +581,11 @@ func (engine *Engine) Run(addr ...string) (err error) {
 		Addr:    address,
 		Handler: engine.Handler(),
 	}
+
+	engine.serverLock.Lock()
+	engine.server = server
+	engine.serverLock.Unlock()
+
 	err = server.ListenAndServe()
 	return
 }
@@ -571,6 +606,11 @@ func (engine *Engine) RunTLS(addr, certFile, keyFile string) (err error) {
 		Addr:    addr,
 		Handler: engine.Handler(),
 	}
+
+	engine.serverLock.Lock()
+	engine.server = server
+	engine.serverLock.Unlock()
+
 	err = server.ListenAndServeTLS(certFile, keyFile)
 	return
 }
@@ -597,6 +637,11 @@ func (engine *Engine) RunUnix(file string) (err error) {
 	server := &http.Server{ // #nosec G112
 		Handler: engine.Handler(),
 	}
+
+	engine.serverLock.Lock()
+	engine.server = server
+	engine.serverLock.Unlock()
+
 	err = server.Serve(listener)
 	return
 }
@@ -654,6 +699,11 @@ func (engine *Engine) RunListener(listener net.Listener) (err error) {
 	server := &http.Server{ // #nosec G112
 		Handler: engine.Handler(),
 	}
+
+	engine.serverLock.Lock()
+	engine.server = server
+	engine.serverLock.Unlock()
+
 	err = server.Serve(listener)
 	return
 }
