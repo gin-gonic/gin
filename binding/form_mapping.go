@@ -186,7 +186,10 @@ type BindUnmarshaler interface {
 func trySetCustom(val string, value reflect.Value) (isSet bool, err error) {
 	switch v := value.Addr().Interface().(type) {
 	case BindUnmarshaler:
-		return true, v.UnmarshalParam(val)
+		if err := v.UnmarshalParam(val); err != nil {
+			return true, fmt.Errorf("invalid value %q: %w", val, err)
+		}
+		return true, nil
 	}
 	return false, nil
 }
@@ -245,7 +248,10 @@ func setByForm(value reflect.Value, field reflect.StructField, form map[string][
 		}
 
 		if ok, err = trySetCustom(vs[0], value); ok {
-			return ok, err
+			if err != nil {
+				return true, fmt.Errorf("field %q: %w", field.Name, err)
+			}
+			return true, nil
 		}
 
 		if vs, err = trySplit(vs, field); err != nil {
@@ -268,7 +274,10 @@ func setByForm(value reflect.Value, field reflect.StructField, form map[string][
 		}
 
 		if ok, err = trySetCustom(vs[0], value); ok {
-			return ok, err
+			if err != nil {
+				return true, fmt.Errorf("field %q: %w", field.Name, err)
+			}
+			return true, nil
 		}
 
 		if vs, err = trySplit(vs, field); err != nil {
@@ -293,7 +302,10 @@ func setByForm(value reflect.Value, field reflect.StructField, form map[string][
 			}
 		}
 		if ok, err := trySetCustom(val, value); ok {
-			return ok, err
+			if err != nil {
+				return true, fmt.Errorf("field %q: %w", field.Name, err)
+			}
+			return true, nil
 		}
 		return true, setWithProperType(val, value, field)
 	}
@@ -461,6 +473,12 @@ func setTimeField(val string, structField reflect.StructField, value reflect.Val
 
 func setArray(vals []string, value reflect.Value, field reflect.StructField) error {
 	for i, s := range vals {
+		if ok, err := trySetCustom(s, value.Index(i)); ok {
+			if err != nil {
+				return fmt.Errorf("field %q: %w", field.Name, err)
+			}
+			continue
+		}
 		err := setWithProperType(s, value.Index(i), field)
 		if err != nil {
 			return err
