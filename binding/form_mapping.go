@@ -184,8 +184,15 @@ type BindUnmarshaler interface {
 // If the value implements the BindUnmarshaler interface, it will be used to set the value, we will return `true`
 // to skip the default value setting.
 func trySetCustom(val string, value reflect.Value) (isSet bool, err error) {
-	switch v := value.Addr().Interface().(type) {
+	if value.Kind() != reflect.Ptr {
+		value = value.Addr()
+	}
+	switch value.Interface().(type) {
 	case BindUnmarshaler:
+		if !value.Elem().IsValid() {
+			value.Set(reflect.New(value.Type().Elem()))
+		}
+		v := value.Interface().(BindUnmarshaler)
 		return true, v.UnmarshalParam(val)
 	}
 	return false, nil
@@ -461,6 +468,13 @@ func setTimeField(val string, structField reflect.StructField, value reflect.Val
 
 func setArray(vals []string, value reflect.Value, field reflect.StructField) error {
 	for i, s := range vals {
+		if ok, err := trySetCustom(s, value.Index(i)); ok {
+			if err != nil {
+				return err
+			} else {
+				continue
+			}
+		}
 		err := setWithProperType(s, value.Index(i), field)
 		if err != nil {
 			return err
