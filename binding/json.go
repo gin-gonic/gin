@@ -7,6 +7,7 @@ package binding
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 
@@ -50,7 +51,12 @@ func decodeJSON(r io.Reader, obj any) error {
 		decoder.DisallowUnknownFields()
 	}
 	if err := decoder.Decode(obj); err != nil {
+		if errors.Is(err, io.EOF) {
+			return fmt.Errorf("empty request body: %w", err)
+		}
+
 		return err
 	}
+
 	return validate(obj)
 }
