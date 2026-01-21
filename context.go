@@ -386,6 +386,11 @@ func (c *Context) GetDuration(key any) time.Duration {
 	return getTyped[time.Duration](c, key)
 }
 
+// GetError returns the value associated with the key as an error.
+func (c *Context) GetError(key any) error {
+	return getTyped[error](c, key)
+}
+
 // GetIntSlice returns the value associated with the key as a slice of integers.
 func (c *Context) GetIntSlice(key any) []int {
 	return getTyped[[]int](c, key)
@@ -449,6 +454,11 @@ func (c *Context) GetFloat64Slice(key any) []float64 {
 // GetStringSlice returns the value associated with the key as a slice of strings.
 func (c *Context) GetStringSlice(key any) []string {
 	return getTyped[[]string](c, key)
+}
+
+// GetErrorSlice returns the value associated with the key as a slice of errors.
+func (c *Context) GetErrorSlice(key any) []error {
+	return getTyped[[]error](c, key)
 }
 
 // GetStringMap returns the value associated with the key as a map of interfaces.
