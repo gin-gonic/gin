@@ -35,7 +35,7 @@ func TestJsonIterator(t *testing.T) {
 	r.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusOK, w.Code)
-	
+
 	// Verify JSON response
 	var response map[string]string
 	err := json.Unmarshal(w.Body.Bytes(), &response)

@@ -814,7 +814,11 @@ func TestUriBinding(t *testing.T) {
 	}
 	var not NotSupportStruct
 	require.Error(t, b.BindUri(m, &not))
-	assert.Equal(t, map[string]any(nil), not.Name)
+	require.Error(t, b.BindUri(m, &not))
+	// Check that if the map is not nil, it is empty (json-iterator may allocate map before error)
+	if not.Name != nil {
+		assert.Empty(t, not.Name)
+	}
 }
 
 func TestUriInnerBinding(t *testing.T) {
