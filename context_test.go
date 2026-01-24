@@ -516,6 +516,14 @@ func TestContextGetDuration(t *testing.T) {
 	assert.Equal(t, time.Second, c.GetDuration("duration"))
 }
 
+func TestContextGetError(t *testing.T) {
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	key := "error"
+	value := errors.New("test error")
+	c.Set(key, value)
+	assert.Equal(t, value, c.GetError(key))
+}
+
 func TestContextGetIntSlice(t *testing.T) {
 	c, _ := CreateTestContext(httptest.NewRecorder())
 	key := "int-slice"
@@ -616,6 +624,14 @@ func TestContextGetStringSlice(t *testing.T) {
 	c, _ := CreateTestContext(httptest.NewRecorder())
 	c.Set("slice", []string{"foo"})
 	assert.Equal(t, []string{"foo"}, c.GetStringSlice("slice"))
+}
+
+func TestContextGetErrorSlice(t *testing.T) {
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	key := "error-slice"
+	value := []error{errors.New("error1"), errors.New("error2")}
+	c.Set(key, value)
+	assert.Equal(t, value, c.GetErrorSlice(key))
 }
 
 func TestContextGetStringMap(t *testing.T) {
