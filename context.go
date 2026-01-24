@@ -978,14 +978,27 @@ func (c *Context) ClientIP() string {
 		}
 	}
 
-	// It also checks if the remoteIP is a trusted proxy or not.
-	// In order to perform this validation, it will see if the IP is contained within at least one of the CIDR blocks
-	// defined by Engine.SetTrustedProxies()
-	remoteIP := net.ParseIP(c.RemoteIP())
-	if remoteIP == nil {
-		return ""
+	var (
+		trusted  bool
+		remoteIP net.IP
+	)
+	// If gin is listening a unix socket, always trust it.
+	localAddr, ok := c.Request.Context().Value(http.LocalAddrContextKey).(net.Addr)
+	if ok && strings.HasPrefix(localAddr.Network(), "unix") {
+		trusted = true
 	}
-	trusted := c.engine.isTrustedProxy(remoteIP)
+
+	// Fallback
+	if !trusted {
+		// It also checks if the remoteIP is a trusted proxy or not.
+		// In order to perform this validation, it will see if the IP is contained within at least one of the CIDR blocks
+		// defined by Engine.SetTrustedProxies()
+		remoteIP = net.ParseIP(c.RemoteIP())
+		if remoteIP == nil {
+			return ""
+		}
+		trusted = c.engine.isTrustedProxy(remoteIP)
+	}
 
 	if trusted && c.engine.ForwardedByClientIP && c.engine.RemoteIPHeaders != nil {
 		for _, headerName := range c.engine.RemoteIPHeaders {
