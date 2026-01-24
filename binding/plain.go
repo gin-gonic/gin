@@ -15,7 +15,7 @@ func (plainBinding) Name() string {
 	return "plain"
 }
 
-func (plainBinding) Bind(req *http.Request, obj interface{}) error {
+func (plainBinding) Bind(req *http.Request, obj any) error {
 	all, err := io.ReadAll(req.Body)
 	if err != nil {
 		return err

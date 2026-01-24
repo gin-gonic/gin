@@ -46,7 +46,7 @@ func setupHTMLFiles(t *testing.T, mode string, tls bool, loadMethod func(*Engine
 		})
 		router.GET("/raw", func(c *Context) {
 			c.HTML(http.StatusOK, "raw.tmpl", map[string]any{
-				"now": time.Date(2017, 07, 01, 0, 0, 0, 0, time.UTC),
+				"now": time.Date(2017, 07, 01, 0, 0, 0, 0, time.UTC), //nolint:gofumpt
 			})
 		})
 	})
@@ -83,7 +83,7 @@ func TestLoadHTMLGlobDebugMode(t *testing.T) {
 }
 
 func TestH2c(t *testing.T) {
-	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	ln, err := net.Listen("tcp", localhostIP+":0")
 	if err != nil {
 		t.Error(err)
 	}
@@ -325,6 +325,115 @@ func TestLoadHTMLFilesFuncMap(t *testing.T) {
 	assert.Equal(t, "Date: 2017/07/01", string(resp))
 }
 
+var tmplFS = http.Dir("testdata/template")
+
+func TestLoadHTMLFSTestMode(t *testing.T) {
+	ts := setupHTMLFiles(
+		t,
+		TestMode,
+		false,
+		func(router *Engine) {
+			router.LoadHTMLFS(tmplFS, "hello.tmpl", "raw.tmpl")
+		},
+	)
+	defer ts.Close()
+
+	res, err := http.Get(ts.URL + "/test")
+	if err != nil {
+		t.Error(err)
+	}
+
+	resp, _ := io.ReadAll(res.Body)
+	assert.Equal(t, "<h1>Hello world</h1>", string(resp))
+}
+
+func TestLoadHTMLFSDebugMode(t *testing.T) {
+	ts := setupHTMLFiles(
+		t,
+		DebugMode,
+		false,
+		func(router *Engine) {
+			router.LoadHTMLFS(tmplFS, "hello.tmpl", "raw.tmpl")
+		},
+	)
+	defer ts.Close()
+
+	res, err := http.Get(ts.URL + "/test")
+	if err != nil {
+		t.Error(err)
+	}
+
+	resp, _ := io.ReadAll(res.Body)
+	assert.Equal(t, "<h1>Hello world</h1>", string(resp))
+}
+
+func TestLoadHTMLFSReleaseMode(t *testing.T) {
+	ts := setupHTMLFiles(
+		t,
+		ReleaseMode,
+		false,
+		func(router *Engine) {
+			router.LoadHTMLFS(tmplFS, "hello.tmpl", "raw.tmpl")
+		},
+	)
+	defer ts.Close()
+
+	res, err := http.Get(ts.URL + "/test")
+	if err != nil {
+		t.Error(err)
+	}
+
+	resp, _ := io.ReadAll(res.Body)
+	assert.Equal(t, "<h1>Hello world</h1>", string(resp))
+}
+
+func TestLoadHTMLFSUsingTLS(t *testing.T) {
+	ts := setupHTMLFiles(
+		t,
+		TestMode,
+		true,
+		func(router *Engine) {
+			router.LoadHTMLFS(tmplFS, "hello.tmpl", "raw.tmpl")
+		},
+	)
+	defer ts.Close()
+
+	// Use InsecureSkipVerify for avoiding `x509: certificate signed by unknown authority` error
+	tr := &http.Transport{
+		TLSClientConfig: &tls.Config{
+			InsecureSkipVerify: true,
+		},
+	}
+	client := &http.Client{Transport: tr}
+	res, err := client.Get(ts.URL + "/test")
+	if err != nil {
+		t.Error(err)
+	}
+
+	resp, _ := io.ReadAll(res.Body)
+	assert.Equal(t, "<h1>Hello world</h1>", string(resp))
+}
+
+func TestLoadHTMLFSFuncMap(t *testing.T) {
+	ts := setupHTMLFiles(
+		t,
+		TestMode,
+		false,
+		func(router *Engine) {
+			router.LoadHTMLFS(tmplFS, "hello.tmpl", "raw.tmpl")
+		},
+	)
+	defer ts.Close()
+
+	res, err := http.Get(ts.URL + "/raw")
+	if err != nil {
+		t.Error(err)
+	}
+
+	resp, _ := io.ReadAll(res.Body)
+	assert.Equal(t, "Date: 2017/07/01", string(resp))
+}
+
 func TestAddRoute(t *testing.T) {
 	router := New()
 	router.addRoute(http.MethodGet, "/", HandlersChain{func(_ *Context) {}})
@@ -436,6 +545,29 @@ func TestNoMethodWithoutGlobalHandlers(t *testing.T) {
 }
 
 func TestRebuild404Handlers(t *testing.T) {
+	var middleware0 HandlerFunc = func(c *Context) {}
+	var middleware1 HandlerFunc = func(c *Context) {}
+
+	router := New()
+
+	// Initially, allNoRoute should be nil
+	assert.Nil(t, router.allNoRoute)
+
+	// Set NoRoute handlers
+	router.NoRoute(middleware0)
+	assert.Len(t, router.allNoRoute, 1)
+	assert.Len(t, router.noRoute, 1)
+	compareFunc(t, router.allNoRoute[0], middleware0)
+
+	// Add Use middleware should trigger rebuild404Handlers
+	router.Use(middleware1)
+	assert.Len(t, router.allNoRoute, 2)
+	assert.Len(t, router.Handlers, 1)
+	assert.Len(t, router.noRoute, 1)
+
+	// Global middleware should come first
+	compareFunc(t, router.allNoRoute[0], middleware1)
+	compareFunc(t, router.allNoRoute[1], middleware0)
 }
 
 func TestNoMethodWithGlobalHandlers(t *testing.T) {
@@ -611,6 +743,55 @@ func TestEngineHandleContextPreventsMiddlewareReEntry(t *testing.T) {
 	assert.Equal(t, int64(1), handlerCounterV2)
 }
 
+func TestEngineHandleContextUseEscapedPathPercentEncoded(t *testing.T) {
+	r := New()
+	r.UseEscapedPath = true
+	r.UnescapePathValues = false
+
+	r.GET("/v1/:path", func(c *Context) {
+		// Path is Escaped, the %25 is not interpreted as %
+		assert.Equal(t, "foo%252Fbar", c.Param("path"))
+		c.Status(http.StatusOK)
+	})
+
+	req := httptest.NewRequest(http.MethodGet, "/v1/foo%252Fbar", nil)
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+}
+
+func TestEngineHandleContextUseRawPathPercentEncoded(t *testing.T) {
+	r := New()
+	r.UseRawPath = true
+	r.UnescapePathValues = false
+
+	r.GET("/v1/:path", func(c *Context) {
+		// Path is used, the %25 is interpreted as %
+		assert.Equal(t, "foo%2Fbar", c.Param("path"))
+		c.Status(http.StatusOK)
+	})
+
+	req := httptest.NewRequest(http.MethodGet, "/v1/foo%252Fbar", nil)
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+}
+
+func TestEngineHandleContextUseEscapedPathOverride(t *testing.T) {
+	r := New()
+	r.UseEscapedPath = true
+	r.UseRawPath = true
+	r.UnescapePathValues = false
+
+	r.GET("/v1/:path", func(c *Context) {
+		assert.Equal(t, "foo%25bar", c.Param("path"))
+		c.Status(http.StatusOK)
+	})
+
+	assert.NotPanics(t, func() {
+		w := PerformRequest(r, http.MethodGet, "/v1/foo%25bar")
+		assert.Equal(t, 200, w.Code)
+	})
+}
+
 func TestPrepareTrustedCIRDsWith(t *testing.T) {
 	r := New()
 
@@ -738,7 +919,7 @@ func handlerTest1(c *Context) {}
 func handlerTest2(c *Context) {}
 
 func TestNewOptionFunc(t *testing.T) {
-	var fc = func(e *Engine) {
+	fc := func(e *Engine) {
 		e.GET("/test1", handlerTest1)
 		e.GET("/test2", handlerTest2)
 
@@ -774,7 +955,7 @@ func TestWithOptionFunc(t *testing.T) {
 type Birthday string
 
 func (b *Birthday) UnmarshalParam(param string) error {
-	*b = Birthday(strings.Replace(param, "-", "/", -1))
+	*b = Birthday(strings.ReplaceAll(param, "-", "/"))
 	return nil
 }
 
@@ -803,4 +984,103 @@ func TestMethodNotAllowedNoRoute(t *testing.T) {
 	resp := httptest.NewRecorder()
 	assert.NotPanics(t, func() { g.ServeHTTP(resp, req) })
 	assert.Equal(t, http.StatusNotFound, resp.Code)
+}
+
+// Test the fix for https://github.com/gin-gonic/gin/pull/4415
+func TestLiteralColonWithRun(t *testing.T) {
+	SetMode(TestMode)
+	router := New()
+
+	router.GET(`/test\:action`, func(c *Context) {
+		c.JSON(http.StatusOK, H{"path": "literal_colon"})
+	})
+
+	router.updateRouteTrees()
+
+	w := httptest.NewRecorder()
+
+	req, _ := http.NewRequest(http.MethodGet, "/test:action", nil)
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Contains(t, w.Body.String(), "literal_colon")
+}
+
+func TestLiteralColonWithDirectServeHTTP(t *testing.T) {
+	SetMode(TestMode)
+	router := New()
+
+	router.GET(`/test\:action`, func(c *Context) {
+		c.JSON(http.StatusOK, H{"path": "literal_colon"})
+	})
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest(http.MethodGet, "/test:action", nil)
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Contains(t, w.Body.String(), "literal_colon")
+}
+
+func TestLiteralColonWithHandler(t *testing.T) {
+	SetMode(TestMode)
+	router := New()
+
+	router.GET(`/test\:action`, func(c *Context) {
+		c.JSON(http.StatusOK, H{"path": "literal_colon"})
+	})
+
+	handler := router.Handler()
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest(http.MethodGet, "/test:action", nil)
+	handler.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Contains(t, w.Body.String(), "literal_colon")
+}
+
+func TestLiteralColonWithHTTPServer(t *testing.T) {
+	SetMode(TestMode)
+	router := New()
+
+	router.GET(`/test\:action`, func(c *Context) {
+		c.JSON(http.StatusOK, H{"path": "literal_colon"})
+	})
+
+	router.GET("/test/:param", func(c *Context) {
+		c.JSON(http.StatusOK, H{"param": c.Param("param")})
+	})
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest(http.MethodGet, "/test:action", nil)
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Contains(t, w.Body.String(), "literal_colon")
+
+	w2 := httptest.NewRecorder()
+	req2, _ := http.NewRequest(http.MethodGet, "/test/foo", nil)
+	router.ServeHTTP(w2, req2)
+
+	assert.Equal(t, http.StatusOK, w2.Code)
+	assert.Contains(t, w2.Body.String(), "foo")
+}
+
+// Test that updateRouteTrees is called only once
+func TestUpdateRouteTreesCalledOnce(t *testing.T) {
+	SetMode(TestMode)
+	router := New()
+
+	router.GET(`/test\:action`, func(c *Context) {
+		c.String(http.StatusOK, "ok")
+	})
+
+	for range 5 {
+		w := httptest.NewRecorder()
+		req, _ := http.NewRequest(http.MethodGet, "/test:action", nil)
+		router.ServeHTTP(w, req)
+		assert.Equal(t, http.StatusOK, w.Code)
+		assert.Equal(t, "ok", w.Body.String())
+	}
 }

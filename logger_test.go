@@ -39,7 +39,7 @@ func TestLogger(t *testing.T) {
 
 	// I wrote these first (extending the above) but then realized they are more
 	// like integration tests because they test the whole logging process rather
-	// than individual functions.  Im not sure where these should go.
+	// than individual functions. I'm not sure where these should go.
 	buffer.Reset()
 	PerformRequest(router, http.MethodPost, "/example")
 	assert.Contains(t, buffer.String(), "200")
@@ -103,7 +103,7 @@ func TestLoggerWithConfig(t *testing.T) {
 
 	// I wrote these first (extending the above) but then realized they are more
 	// like integration tests because they test the whole logging process rather
-	// than individual functions.  Im not sure where these should go.
+	// than individual functions. I'm not sure where these should go.
 	buffer.Reset()
 	PerformRequest(router, http.MethodPost, "/example")
 	assert.Contains(t, buffer.String(), "200")
@@ -181,7 +181,7 @@ func TestLoggerWithFormatter(t *testing.T) {
 
 func TestLoggerWithConfigFormatting(t *testing.T) {
 	var gotParam LogFormatterParams
-	var gotKeys map[string]any
+	var gotKeys map[any]any
 	buffer := new(strings.Builder)
 
 	router := New()
@@ -277,11 +277,11 @@ func TestDefaultLogFormatter(t *testing.T) {
 		isTerm:       false,
 	}
 
-	assert.Equal(t, "[GIN] 2018/12/07 - 09:11:42 | 200 |            5s |     20.20.20.20 | GET      \"/\"\n", defaultLogFormatter(termFalseParam))
-	assert.Equal(t, "[GIN] 2018/12/07 - 09:11:42 | 200 |    2743h29m3s |     20.20.20.20 | GET      \"/\"\n", defaultLogFormatter(termFalseLongDurationParam))
+	assert.Equal(t, "[GIN] 2018/12/07 - 09:11:42 | 200 |       5s |     20.20.20.20 | GET      \"/\"\n", defaultLogFormatter(termFalseParam))
+	assert.Equal(t, "[GIN] 2018/12/07 - 09:11:42 | 200 | 2743h29m0s |     20.20.20.20 | GET      \"/\"\n", defaultLogFormatter(termFalseLongDurationParam))
 
-	assert.Equal(t, "[GIN] 2018/12/07 - 09:11:42 |\x1b[97;42m 200 \x1b[0m|            5s |     20.20.20.20 |\x1b[97;44m GET     \x1b[0m \"/\"\n", defaultLogFormatter(termTrueParam))
-	assert.Equal(t, "[GIN] 2018/12/07 - 09:11:42 |\x1b[97;42m 200 \x1b[0m|    2743h29m3s |     20.20.20.20 |\x1b[97;44m GET     \x1b[0m \"/\"\n", defaultLogFormatter(termTrueLongDurationParam))
+	assert.Equal(t, "[GIN] 2018/12/07 - 09:11:42 |\x1b[97;42m 200 \x1b[0m|\x1b[97;41m       5s \x1b[0m|     20.20.20.20 |\x1b[97;44m GET     \x1b[0m \"/\"\n", defaultLogFormatter(termTrueParam))
+	assert.Equal(t, "[GIN] 2018/12/07 - 09:11:42 |\x1b[97;42m 200 \x1b[0m|\x1b[97;41m 2743h29m0s \x1b[0m|     20.20.20.20 |\x1b[97;44m GET     \x1b[0m \"/\"\n", defaultLogFormatter(termTrueLongDurationParam))
 }
 
 func TestColorForMethod(t *testing.T) {
@@ -315,6 +315,23 @@ func TestColorForStatus(t *testing.T) {
 	assert.Equal(t, white, colorForStatus(http.StatusMovedPermanently), "3xx should be white")
 	assert.Equal(t, yellow, colorForStatus(http.StatusNotFound), "4xx should be yellow")
 	assert.Equal(t, red, colorForStatus(2), "other things should be red")
+}
+
+func TestColorForLatency(t *testing.T) {
+	colorForLantency := func(latency time.Duration) string {
+		p := LogFormatterParams{
+			Latency: latency,
+		}
+		return p.LatencyColor()
+	}
+
+	assert.Equal(t, white, colorForLantency(time.Duration(0)), "0 should be white")
+	assert.Equal(t, white, colorForLantency(time.Millisecond*20), "20ms should be white")
+	assert.Equal(t, green, colorForLantency(time.Millisecond*150), "150ms should be green")
+	assert.Equal(t, cyan, colorForLantency(time.Millisecond*250), "250ms should be cyan")
+	assert.Equal(t, yellow, colorForLantency(time.Millisecond*600), "600ms should be yellow")
+	assert.Equal(t, magenta, colorForLantency(time.Millisecond*1500), "1.5s should be magenta")
+	assert.Equal(t, red, colorForLantency(time.Second*3), "other things should be red")
 }
 
 func TestResetColor(t *testing.T) {
@@ -371,11 +388,11 @@ func TestErrorLogger(t *testing.T) {
 
 	w := PerformRequest(router, http.MethodGet, "/error")
 	assert.Equal(t, http.StatusOK, w.Code)
-	assert.Equal(t, "{\"error\":\"this is an error\"}", w.Body.String())
+	assert.JSONEq(t, "{\"error\":\"this is an error\"}", w.Body.String())
 
 	w = PerformRequest(router, http.MethodGet, "/abort")
 	assert.Equal(t, http.StatusUnauthorized, w.Code)
-	assert.Equal(t, "{\"error\":\"no authorized\"}", w.Body.String())
+	assert.JSONEq(t, "{\"error\":\"no authorized\"}", w.Body.String())
 
 	w = PerformRequest(router, http.MethodGet, "/print")
 	assert.Equal(t, http.StatusInternalServerError, w.Code)
