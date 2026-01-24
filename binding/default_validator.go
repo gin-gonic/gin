@@ -27,7 +27,7 @@ func (err SliceValidationError) Error() string {
 	}
 
 	var b strings.Builder
-	for i := 0; i < len(err); i++ {
+	for i := range len(err) {
 		if err[i] != nil {
 			if b.Len() > 0 {
 				b.WriteString("\n")
@@ -58,7 +58,7 @@ func (v *defaultValidator) ValidateStruct(obj any) error {
 	case reflect.Slice, reflect.Array:
 		count := value.Len()
 		validateRet := make(SliceValidationError, 0)
-		for i := 0; i < count; i++ {
+		for i := range count {
 			if err := v.ValidateStruct(value.Index(i).Interface()); err != nil {
 				validateRet = append(validateRet, err)
 			}
