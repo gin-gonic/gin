@@ -451,7 +451,7 @@ func TestRenderDataContentLength(t *testing.T) {
 			defer resp.Body.Close()
 
 			assert.Equal(t, "application/octet-stream", resp.Header.Get("Content-Type"))
-			assert.EqualValues(t, strconv.Itoa(size), resp.Header.Get("Content-Length"))
+			assert.Equal(t, strconv.Itoa(size), resp.Header.Get("Content-Length"))
 
 			actual, err := io.Copy(io.Discard, resp.Body)
 			require.NoError(t, err)
