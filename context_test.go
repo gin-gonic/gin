@@ -292,7 +292,7 @@ func TestContextReset(t *testing.T) {
 	assert.Empty(t, c.Errors.Errors())
 	assert.Empty(t, c.Errors.ByType(ErrorTypeAny))
 	assert.Empty(t, c.Params)
-	assert.EqualValues(t, c.index, -1)
+	assert.EqualValues(t, -1, c.index)
 	assert.Equal(t, c.Writer.(*responseWriter), &c.writermem)
 }
 
@@ -384,7 +384,7 @@ func TestContextSetGetValues(t *testing.T) {
 	c.Set("intInterface", a)
 
 	assert.Exactly(t, "this is a string", c.MustGet("string").(string))
-	assert.Exactly(t, c.MustGet("int32").(int32), int32(-42))
+	assert.Exactly(t, int32(-42), c.MustGet("int32").(int32))
 	assert.Exactly(t, int64(42424242424242), c.MustGet("int64").(int64))
 	assert.Exactly(t, uint64(42), c.MustGet("uint64").(uint64))
 	assert.InDelta(t, float32(4.2), c.MustGet("float32").(float32), 0.01)
@@ -402,6 +402,19 @@ func TestContextSetGetBool(t *testing.T) {
 	c, _ := CreateTestContext(httptest.NewRecorder())
 	c.Set("bool", true)
 	assert.True(t, c.GetBool("bool"))
+}
+
+func TestSetGetDelete(t *testing.T) {
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	key := "example-key"
+	value := "example-value"
+	c.Set(key, value)
+	val, exists := c.Get(key)
+	assert.True(t, exists)
+	assert.Equal(t, val, value)
+	c.Delete(key)
+	_, exists = c.Get(key)
+	assert.False(t, exists)
 }
 
 func TestContextGetInt(t *testing.T) {
@@ -501,6 +514,14 @@ func TestContextGetDuration(t *testing.T) {
 	c, _ := CreateTestContext(httptest.NewRecorder())
 	c.Set("duration", time.Second)
 	assert.Equal(t, time.Second, c.GetDuration("duration"))
+}
+
+func TestContextGetError(t *testing.T) {
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	key := "error"
+	value := errors.New("test error")
+	c.Set(key, value)
+	assert.Equal(t, value, c.GetError(key))
 }
 
 func TestContextGetIntSlice(t *testing.T) {
@@ -603,6 +624,14 @@ func TestContextGetStringSlice(t *testing.T) {
 	c, _ := CreateTestContext(httptest.NewRecorder())
 	c.Set("slice", []string{"foo"})
 	assert.Equal(t, []string{"foo"}, c.GetStringSlice("slice"))
+}
+
+func TestContextGetErrorSlice(t *testing.T) {
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	key := "error-slice"
+	value := []error{errors.New("error1"), errors.New("error2")}
+	c.Set(key, value)
+	assert.Equal(t, value, c.GetErrorSlice(key))
 }
 
 func TestContextGetStringMap(t *testing.T) {
@@ -1130,6 +1159,37 @@ func TestContextRenderNoContentIndentedJSON(t *testing.T) {
 	assert.Equal(t, "application/json; charset=utf-8", w.Header().Get("Content-Type"))
 }
 
+func TestContextClientIPWithMultipleHeaders(t *testing.T) {
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	c.Request, _ = http.NewRequest(http.MethodGet, "/test", nil)
+
+	// Multiple X-Forwarded-For headers
+	c.Request.Header.Add("X-Forwarded-For", "1.2.3.4, "+localhostIP)
+	c.Request.Header.Add("X-Forwarded-For", "5.6.7.8")
+	c.Request.RemoteAddr = localhostIP + ":1234"
+
+	c.engine.ForwardedByClientIP = true
+	c.engine.RemoteIPHeaders = []string{"X-Forwarded-For"}
+	_ = c.engine.SetTrustedProxies([]string{localhostIP})
+
+	// Should return 5.6.7.8 (last non-trusted IP)
+	assert.Equal(t, "5.6.7.8", c.ClientIP())
+}
+
+func TestContextClientIPWithSingleHeader(t *testing.T) {
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	c.Request, _ = http.NewRequest(http.MethodGet, "/test", nil)
+	c.Request.Header.Set("X-Forwarded-For", "1.2.3.4, "+localhostIP)
+	c.Request.RemoteAddr = localhostIP + ":1234"
+
+	c.engine.ForwardedByClientIP = true
+	c.engine.RemoteIPHeaders = []string{"X-Forwarded-For"}
+	_ = c.engine.SetTrustedProxies([]string{localhostIP})
+
+	// Should return 1.2.3.4
+	assert.Equal(t, "1.2.3.4", c.ClientIP())
+}
+
 // Tests that the response is serialized as Secure JSON
 // and Content-Type is set to application/json
 func TestContextRenderSecureJSON(t *testing.T) {
@@ -1615,6 +1675,32 @@ func TestContextNegotiationWithHTML(t *testing.T) {
 	assert.Equal(t, "text/html; charset=utf-8", w.Header().Get("Content-Type"))
 }
 
+func TestContextNegotiationWithPROTOBUF(t *testing.T) {
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
+	c.Request = httptest.NewRequest(http.MethodPost, "/", nil)
+
+	reps := []int64{int64(1), int64(2)}
+	label := "test"
+	data := &testdata.Test{
+		Label: &label,
+		Reps:  reps,
+	}
+
+	c.Negotiate(http.StatusCreated, Negotiate{
+		Offered: []string{MIMEPROTOBUF, MIMEJSON, MIMEXML},
+		Data:    data,
+	})
+
+	// Marshal original data for comparison
+	protoData, err := proto.Marshal(data)
+	require.NoError(t, err)
+
+	assert.Equal(t, http.StatusCreated, w.Code)
+	assert.Equal(t, string(protoData), w.Body.String())
+	assert.Equal(t, "application/x-protobuf", w.Header().Get("Content-Type"))
+}
+
 func TestContextNegotiationNotSupport(t *testing.T) {
 	w := httptest.NewRecorder()
 	c, _ := CreateTestContext(w)
@@ -1845,6 +1931,16 @@ func TestContextClientIP(t *testing.T) {
 	c.engine.trustedCIDRs, _ = c.engine.prepareTrustedCIDRs()
 	resetContextForClientIPTests(c)
 
+	// unix address
+	addr := &net.UnixAddr{Net: "unix", Name: "@"}
+	c.Request = c.Request.WithContext(context.WithValue(c.Request.Context(), http.LocalAddrContextKey, addr))
+	c.Request.RemoteAddr = addr.String()
+	assert.Equal(t, "20.20.20.20", c.ClientIP())
+
+	// reset
+	c.Request = c.Request.WithContext(context.Background())
+	resetContextForClientIPTests(c)
+
 	// Legacy tests (validating that the defaults don't break the
 	// (insecure!) old behaviour)
 	assert.Equal(t, "20.20.20.20", c.ClientIP())
@@ -1871,7 +1967,7 @@ func TestContextClientIP(t *testing.T) {
 	resetContextForClientIPTests(c)
 
 	// IPv6 support
-	c.Request.RemoteAddr = "[::1]:12345"
+	c.Request.RemoteAddr = fmt.Sprintf("[%s]:12345", localhostIPv6)
 	assert.Equal(t, "20.20.20.20", c.ClientIP())
 
 	resetContextForClientIPTests(c)
@@ -3173,7 +3269,7 @@ func TestContextCopyShouldNotCancel(t *testing.T) {
 	}()
 
 	addr := strings.Split(l.Addr().String(), ":")
-	res, err := http.Get(fmt.Sprintf("http://127.0.0.1:%s/", addr[len(addr)-1]))
+	res, err := http.Get(fmt.Sprintf("http://%s:%s/", localhostIP, addr[len(addr)-1]))
 	if err != nil {
 		t.Error(fmt.Errorf("request error: %w", err))
 		return

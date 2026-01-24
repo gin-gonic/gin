@@ -5,19 +5,12 @@
 package gin
 
 import (
-	"bytes"
 	"net/url"
 	"strings"
 	"unicode"
 	"unicode/utf8"
 
 	"github.com/gin-gonic/gin/internal/bytesconv"
-)
-
-var (
-	strColon = []byte(":")
-	strStar  = []byte("*")
-	strSlash = []byte("/")
 )
 
 // Param is a single URL parameter, consisting of a key and a value.
@@ -85,16 +78,13 @@ func (n *node) addChild(child *node) {
 }
 
 func countParams(path string) uint16 {
-	var n uint16
-	s := bytesconv.StringToBytes(path)
-	n += uint16(bytes.Count(s, strColon))
-	n += uint16(bytes.Count(s, strStar))
-	return n
+	colons := strings.Count(path, ":")
+	stars := strings.Count(path, "*")
+	return safeUint16(colons + stars)
 }
 
 func countSections(path string) uint16 {
-	s := bytesconv.StringToBytes(path)
-	return uint16(bytes.Count(s, strSlash))
+	return safeUint16(strings.Count(path, "/"))
 }
 
 type nodeType uint8
@@ -681,12 +671,7 @@ walk: // Outer loop for walking the tree
 func (n *node) findCaseInsensitivePath(path string, fixTrailingSlash bool) ([]byte, bool) {
 	const stackBufSize = 128
 
-	// Use a static sized buffer on the stack in the common case.
-	// If the path is too long, allocate a buffer on the heap instead.
-	buf := make([]byte, 0, stackBufSize)
-	if length := len(path) + 1; length > stackBufSize {
-		buf = make([]byte, 0, length)
-	}
+	buf := make([]byte, 0, max(stackBufSize, len(path)+1))
 
 	ciPath := n.findCaseInsensitivePathRec(
 		path,

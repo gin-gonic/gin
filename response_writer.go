@@ -128,7 +128,9 @@ func (w *responseWriter) CloseNotify() <-chan bool {
 // Flush implements the http.Flusher interface.
 func (w *responseWriter) Flush() {
 	w.WriteHeaderNow()
-	w.ResponseWriter.(http.Flusher).Flush()
+	if f, ok := w.ResponseWriter.(http.Flusher); ok {
+		f.Flush()
+	}
 }
 
 func (w *responseWriter) Pusher() (pusher http.Pusher) {

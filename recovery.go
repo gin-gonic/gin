@@ -5,25 +5,28 @@
 package gin
 
 import (
+	"bufio"
 	"bytes"
+	"cmp"
 	"errors"
 	"fmt"
 	"io"
 	"log"
-	"net"
 	"net/http"
 	"net/http/httputil"
 	"os"
 	"runtime"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/gin-gonic/gin/internal/bytesconv"
 )
 
-const dunno = "???"
-
-var dunnoBytes = []byte(dunno)
+const (
+	dunno     = "???"
+	stackSkip = 3
+)
 
 // RecoveryFunc defines the function passable to CustomRecovery.
 type RecoveryFunc func(c *Context, err any)
@@ -54,38 +57,33 @@ func CustomRecoveryWithWriter(out io.Writer, handle RecoveryFunc) HandlerFunc {
 	}
 	return func(c *Context) {
 		defer func() {
-			if err := recover(); err != nil {
+			if rec := recover(); rec != nil {
 				// Check for a broken connection, as it is not really a
 				// condition that warrants a panic stack trace.
-				var brokenPipe bool
-				if ne, ok := err.(*net.OpError); ok {
-					var se *os.SyscallError
-					if errors.As(ne, &se) {
-						seStr := strings.ToLower(se.Error())
-						if strings.Contains(seStr, "broken pipe") ||
-							strings.Contains(seStr, "connection reset by peer") {
-							brokenPipe = true
-						}
-					}
+				var isBrokenPipe bool
+				err, ok := rec.(error)
+				if ok {
+					isBrokenPipe = errors.Is(err, syscall.EPIPE) ||
+						errors.Is(err, syscall.ECONNRESET) ||
+						errors.Is(err, http.ErrAbortHandler)
 				}
 				if logger != nil {
-					const stackSkip = 3
-					if brokenPipe {
-						logger.Printf("%s\n%s%s", err, secureRequestDump(c.Request), reset)
+					if isBrokenPipe {
+						logger.Printf("%s\n%s%s", rec, secureRequestDump(c.Request), reset)
 					} else if IsDebugging() {
 						logger.Printf("[Recovery] %s panic recovered:\n%s\n%s\n%s%s",
-							timeFormat(time.Now()), secureRequestDump(c.Request), err, stack(stackSkip), reset)
+							timeFormat(time.Now()), secureRequestDump(c.Request), rec, stack(stackSkip), reset)
 					} else {
 						logger.Printf("[Recovery] %s panic recovered:\n%s\n%s%s",
-							timeFormat(time.Now()), err, stack(stackSkip), reset)
+							timeFormat(time.Now()), rec, stack(stackSkip), reset)
 					}
 				}
-				if brokenPipe {
+				if isBrokenPipe {
 					// If the connection is dead, we can't write a status to it.
-					c.Error(err.(error)) //nolint: errcheck
+					c.Error(err) //nolint: errcheck
 					c.Abort()
 				} else {
-					handle(c, err)
+					handle(c, rec)
 				}
 			}
 		}()
@@ -117,8 +115,11 @@ func stack(skip int) []byte {
 	buf := new(bytes.Buffer) // the returned data
 	// As we loop, we open files and read them. These variables record the currently
 	// loaded file.
-	var lines [][]byte
-	var lastFile string
+	var (
+		nLine    string
+		lastFile string
+		err      error
+	)
 	for i := skip; ; i++ { // Skip the expected number of frames
 		pc, file, line, ok := runtime.Caller(i)
 		if !ok {
@@ -127,25 +128,44 @@ func stack(skip int) []byte {
 		// Print this much at least.  If we can't find the source, it won't show.
 		fmt.Fprintf(buf, "%s:%d (0x%x)\n", file, line, pc)
 		if file != lastFile {
-			data, err := os.ReadFile(file)
+			nLine, err = readNthLine(file, line-1)
 			if err != nil {
 				continue
 			}
-			lines = bytes.Split(data, []byte{'\n'})
 			lastFile = file
 		}
-		fmt.Fprintf(buf, "\t%s: %s\n", function(pc), source(lines, line))
+		fmt.Fprintf(buf, "\t%s: %s\n", function(pc), cmp.Or(nLine, dunno))
 	}
 	return buf.Bytes()
 }
 
-// source returns a space-trimmed slice of the n'th line.
-func source(lines [][]byte, n int) []byte {
-	n-- // in stack trace, lines are 1-indexed but our array is 0-indexed
-	if n < 0 || n >= len(lines) {
-		return dunnoBytes
+// readNthLine reads the nth line from the file.
+// It returns the trimmed content of the line if found,
+// or an empty string if the line doesn't exist.
+// If there's an error opening the file, it returns the error.
+func readNthLine(file string, n int) (string, error) {
+	if n < 0 {
+		return "", nil
 	}
-	return bytes.TrimSpace(lines[n])
+
+	f, err := os.Open(file)
+	if err != nil {
+		return "", err
+	}
+	defer f.Close()
+
+	scanner := bufio.NewScanner(f)
+	for i := 0; i < n; i++ {
+		if !scanner.Scan() {
+			return "", nil
+		}
+	}
+
+	if scanner.Scan() {
+		return strings.TrimSpace(scanner.Text()), nil
+	}
+
+	return "", nil
 }
 
 // function returns, if possible, the name of the function containing the PC.

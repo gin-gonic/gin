@@ -83,7 +83,7 @@ func TestLoadHTMLGlobDebugMode(t *testing.T) {
 }
 
 func TestH2c(t *testing.T) {
-	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	ln, err := net.Listen("tcp", localhostIP+":0")
 	if err != nil {
 		t.Error(err)
 	}
@@ -545,6 +545,29 @@ func TestNoMethodWithoutGlobalHandlers(t *testing.T) {
 }
 
 func TestRebuild404Handlers(t *testing.T) {
+	var middleware0 HandlerFunc = func(c *Context) {}
+	var middleware1 HandlerFunc = func(c *Context) {}
+
+	router := New()
+
+	// Initially, allNoRoute should be nil
+	assert.Nil(t, router.allNoRoute)
+
+	// Set NoRoute handlers
+	router.NoRoute(middleware0)
+	assert.Len(t, router.allNoRoute, 1)
+	assert.Len(t, router.noRoute, 1)
+	compareFunc(t, router.allNoRoute[0], middleware0)
+
+	// Add Use middleware should trigger rebuild404Handlers
+	router.Use(middleware1)
+	assert.Len(t, router.allNoRoute, 2)
+	assert.Len(t, router.Handlers, 1)
+	assert.Len(t, router.noRoute, 1)
+
+	// Global middleware should come first
+	compareFunc(t, router.allNoRoute[0], middleware1)
+	compareFunc(t, router.allNoRoute[1], middleware0)
 }
 
 func TestNoMethodWithGlobalHandlers(t *testing.T) {
@@ -718,6 +741,55 @@ func TestEngineHandleContextPreventsMiddlewareReEntry(t *testing.T) {
 	assert.Equal(t, int64(2), handlerCounterV1)
 	assert.Equal(t, int64(2), middlewareCounterV1)
 	assert.Equal(t, int64(1), handlerCounterV2)
+}
+
+func TestEngineHandleContextUseEscapedPathPercentEncoded(t *testing.T) {
+	r := New()
+	r.UseEscapedPath = true
+	r.UnescapePathValues = false
+
+	r.GET("/v1/:path", func(c *Context) {
+		// Path is Escaped, the %25 is not interpreted as %
+		assert.Equal(t, "foo%252Fbar", c.Param("path"))
+		c.Status(http.StatusOK)
+	})
+
+	req := httptest.NewRequest(http.MethodGet, "/v1/foo%252Fbar", nil)
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+}
+
+func TestEngineHandleContextUseRawPathPercentEncoded(t *testing.T) {
+	r := New()
+	r.UseRawPath = true
+	r.UnescapePathValues = false
+
+	r.GET("/v1/:path", func(c *Context) {
+		// Path is used, the %25 is interpreted as %
+		assert.Equal(t, "foo%2Fbar", c.Param("path"))
+		c.Status(http.StatusOK)
+	})
+
+	req := httptest.NewRequest(http.MethodGet, "/v1/foo%252Fbar", nil)
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+}
+
+func TestEngineHandleContextUseEscapedPathOverride(t *testing.T) {
+	r := New()
+	r.UseEscapedPath = true
+	r.UseRawPath = true
+	r.UnescapePathValues = false
+
+	r.GET("/v1/:path", func(c *Context) {
+		assert.Equal(t, "foo%25bar", c.Param("path"))
+		c.Status(http.StatusOK)
+	})
+
+	assert.NotPanics(t, func() {
+		w := PerformRequest(r, http.MethodGet, "/v1/foo%25bar")
+		assert.Equal(t, 200, w.Code)
+	})
 }
 
 func TestPrepareTrustedCIRDsWith(t *testing.T) {
@@ -912,4 +984,103 @@ func TestMethodNotAllowedNoRoute(t *testing.T) {
 	resp := httptest.NewRecorder()
 	assert.NotPanics(t, func() { g.ServeHTTP(resp, req) })
 	assert.Equal(t, http.StatusNotFound, resp.Code)
+}
+
+// Test the fix for https://github.com/gin-gonic/gin/pull/4415
+func TestLiteralColonWithRun(t *testing.T) {
+	SetMode(TestMode)
+	router := New()
+
+	router.GET(`/test\:action`, func(c *Context) {
+		c.JSON(http.StatusOK, H{"path": "literal_colon"})
+	})
+
+	router.updateRouteTrees()
+
+	w := httptest.NewRecorder()
+
+	req, _ := http.NewRequest(http.MethodGet, "/test:action", nil)
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Contains(t, w.Body.String(), "literal_colon")
+}
+
+func TestLiteralColonWithDirectServeHTTP(t *testing.T) {
+	SetMode(TestMode)
+	router := New()
+
+	router.GET(`/test\:action`, func(c *Context) {
+		c.JSON(http.StatusOK, H{"path": "literal_colon"})
+	})
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest(http.MethodGet, "/test:action", nil)
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Contains(t, w.Body.String(), "literal_colon")
+}
+
+func TestLiteralColonWithHandler(t *testing.T) {
+	SetMode(TestMode)
+	router := New()
+
+	router.GET(`/test\:action`, func(c *Context) {
+		c.JSON(http.StatusOK, H{"path": "literal_colon"})
+	})
+
+	handler := router.Handler()
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest(http.MethodGet, "/test:action", nil)
+	handler.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Contains(t, w.Body.String(), "literal_colon")
+}
+
+func TestLiteralColonWithHTTPServer(t *testing.T) {
+	SetMode(TestMode)
+	router := New()
+
+	router.GET(`/test\:action`, func(c *Context) {
+		c.JSON(http.StatusOK, H{"path": "literal_colon"})
+	})
+
+	router.GET("/test/:param", func(c *Context) {
+		c.JSON(http.StatusOK, H{"param": c.Param("param")})
+	})
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest(http.MethodGet, "/test:action", nil)
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Contains(t, w.Body.String(), "literal_colon")
+
+	w2 := httptest.NewRecorder()
+	req2, _ := http.NewRequest(http.MethodGet, "/test/foo", nil)
+	router.ServeHTTP(w2, req2)
+
+	assert.Equal(t, http.StatusOK, w2.Code)
+	assert.Contains(t, w2.Body.String(), "foo")
+}
+
+// Test that updateRouteTrees is called only once
+func TestUpdateRouteTreesCalledOnce(t *testing.T) {
+	SetMode(TestMode)
+	router := New()
+
+	router.GET(`/test\:action`, func(c *Context) {
+		c.String(http.StatusOK, "ok")
+	})
+
+	for range 5 {
+		w := httptest.NewRecorder()
+		req, _ := http.NewRequest(http.MethodGet, "/test:action", nil)
+		router.ServeHTTP(w, req)
+		assert.Equal(t, http.StatusOK, w.Code)
+		assert.Equal(t, "ok", w.Body.String())
+	}
 }

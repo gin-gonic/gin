@@ -11,7 +11,6 @@ import (
 	"net/http"
 	"os"
 	"path"
-	"regexp"
 	"strings"
 	"sync"
 
@@ -23,10 +22,12 @@ import (
 	"golang.org/x/net/http2/h2c"
 )
 
-const defaultMultipartMemory = 32 << 20 // 32 MB
-const escapedColon = "\\:"
-const colon = ":"
-const backslash = "\\"
+const (
+	defaultMultipartMemory = 32 << 20 // 32 MB
+	escapedColon           = "\\:"
+	colon                  = ":"
+	backslash              = "\\"
+)
 
 var (
 	default404Body = []byte("404 page not found")
@@ -45,9 +46,6 @@ var defaultTrustedCIDRs = []*net.IPNet{
 		Mask: net.IPMask{0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0},
 	},
 }
-
-var regSafePrefix = regexp.MustCompile("[^a-zA-Z0-9/-]+")
-var regRemoveRepeatedChar = regexp.MustCompile("/{2,}")
 
 // HandlerFunc defines the handler used by gin middleware as return value.
 type HandlerFunc func(*Context)
@@ -94,6 +92,10 @@ const (
 type Engine struct {
 	RouterGroup
 
+	// routeTreesUpdated ensures that the initialization or update of the route trees
+	// (used for routing HTTP requests) happens only once, even if called multiple times concurrently.
+	routeTreesUpdated sync.Once
+
 	// RedirectTrailingSlash enables automatic redirection if the current route can't be matched but a
 	// handler for the path with (without) the trailing slash exists.
 	// For example if /foo/ is requested but a route only exists for /foo, the
@@ -133,10 +135,16 @@ type Engine struct {
 	AppEngine bool
 
 	// UseRawPath if enabled, the url.RawPath will be used to find parameters.
+	// The RawPath is only a hint, EscapedPath() should be use instead. (https://pkg.go.dev/net/url@master#URL)
+	// Only use RawPath if you know what you are doing.
 	UseRawPath bool
 
+	// UseEscapedPath if enable, the url.EscapedPath() will be used to find parameters
+	// It overrides UseRawPath
+	UseEscapedPath bool
+
 	// UnescapePathValues if true, the path value will be unescaped.
-	// If UseRawPath is false (by default), the UnescapePathValues effectively is true,
+	// If UseRawPath and UseEscapedPath are false (by default), the UnescapePathValues effectively is true,
 	// as url.Path gonna be used, which is already unescaped.
 	UnescapePathValues bool
 
@@ -189,6 +197,7 @@ var _ IRouter = (*Engine)(nil)
 // - HandleMethodNotAllowed: false
 // - ForwardedByClientIP:    true
 // - UseRawPath:             false
+// - UseEscapedPath: 		 false
 // - UnescapePathValues:     true
 func New(opts ...OptionFunc) *Engine {
 	debugPrintWARNINGNew()
@@ -206,6 +215,7 @@ func New(opts ...OptionFunc) *Engine {
 		RemoteIPHeaders:        []string{"X-Forwarded-For", "X-Real-IP"},
 		TrustedPlatform:        defaultPlatform,
 		UseRawPath:             false,
+		UseEscapedPath:         false,
 		RemoveExtraSlash:       false,
 		UnescapePathValues:     true,
 		MaxMultipartMemory:     defaultMultipartMemory,
@@ -537,7 +547,11 @@ func (engine *Engine) Run(addr ...string) (err error) {
 	engine.updateRouteTrees()
 	address := resolveAddress(addr)
 	debugPrint("Listening and serving HTTP on %s\n", address)
-	err = http.ListenAndServe(address, engine.Handler())
+	server := &http.Server{ // #nosec G112
+		Addr:    address,
+		Handler: engine.Handler(),
+	}
+	err = server.ListenAndServe()
 	return
 }
 
@@ -553,7 +567,11 @@ func (engine *Engine) RunTLS(addr, certFile, keyFile string) (err error) {
 			"Please check https://github.com/gin-gonic/gin/blob/master/docs/doc.md#dont-trust-all-proxies for details.")
 	}
 
-	err = http.ListenAndServeTLS(addr, certFile, keyFile, engine.Handler())
+	server := &http.Server{ // #nosec G112
+		Addr:    addr,
+		Handler: engine.Handler(),
+	}
+	err = server.ListenAndServeTLS(certFile, keyFile)
 	return
 }
 
@@ -576,7 +594,10 @@ func (engine *Engine) RunUnix(file string) (err error) {
 	defer listener.Close()
 	defer os.Remove(file)
 
-	err = http.Serve(listener, engine.Handler())
+	server := &http.Server{ // #nosec G112
+		Handler: engine.Handler(),
+	}
+	err = server.Serve(listener)
 	return
 }
 
@@ -593,6 +614,7 @@ func (engine *Engine) RunFd(fd int) (err error) {
 	}
 
 	f := os.NewFile(uintptr(fd), fmt.Sprintf("fd@%d", fd))
+	defer f.Close()
 	listener, err := net.FileListener(f)
 	if err != nil {
 		return
@@ -629,12 +651,19 @@ func (engine *Engine) RunListener(listener net.Listener) (err error) {
 			"Please check https://github.com/gin-gonic/gin/blob/master/docs/doc.md#dont-trust-all-proxies for details.")
 	}
 
-	err = http.Serve(listener, engine.Handler())
+	server := &http.Server{ // #nosec G112
+		Handler: engine.Handler(),
+	}
+	err = server.Serve(listener)
 	return
 }
 
 // ServeHTTP conforms to the http.Handler interface.
 func (engine *Engine) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	engine.routeTreesUpdated.Do(func() {
+		engine.updateRouteTrees()
+	})
+
 	c := engine.pool.Get().(*Context)
 	c.writermem.reset(w)
 	c.Request = req
@@ -662,7 +691,11 @@ func (engine *Engine) handleHTTPRequest(c *Context) {
 	httpMethod := c.Request.Method
 	rPath := c.Request.URL.Path
 	unescape := false
-	if engine.UseRawPath && len(c.Request.URL.RawPath) > 0 {
+
+	if engine.UseEscapedPath {
+		rPath = c.Request.URL.EscapedPath()
+		unescape = engine.UnescapePathValues
+	} else if engine.UseRawPath && len(c.Request.URL.RawPath) > 0 {
 		rPath = c.Request.URL.RawPath
 		unescape = engine.UnescapePathValues
 	}
@@ -749,8 +782,8 @@ func redirectTrailingSlash(c *Context) {
 	req := c.Request
 	p := req.URL.Path
 	if prefix := path.Clean(c.Request.Header.Get("X-Forwarded-Prefix")); prefix != "." {
-		prefix = regSafePrefix.ReplaceAllString(prefix, "")
-		prefix = regRemoveRepeatedChar.ReplaceAllString(prefix, "/")
+		prefix = sanitizePathChars(prefix)
+		prefix = removeRepeatedChar(prefix, '/')
 
 		p = prefix + "/" + req.URL.Path
 	}
@@ -759,6 +792,17 @@ func redirectTrailingSlash(c *Context) {
 		req.URL.Path = p[:length-1]
 	}
 	redirectRequest(c)
+}
+
+// sanitizePathChars removes unsafe characters from path strings,
+// keeping only ASCII letters, ASCII numbers, forward slashes, and hyphens.
+func sanitizePathChars(s string) string {
+	return strings.Map(func(r rune) rune {
+		if (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9') || r == '/' || r == '-' {
+			return r
+		}
+		return -1
+	}, s)
 }
 
 func redirectFixedPath(c *Context, root *node, trailingSlash bool) bool {

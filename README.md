@@ -3,6 +3,7 @@
 <img align="right" width="159px" src="https://raw.githubusercontent.com/gin-gonic/logo/master/color.png">
 
 [![Build Status](https://github.com/gin-gonic/gin/actions/workflows/gin.yml/badge.svg?branch=master)](https://github.com/gin-gonic/gin/actions/workflows/gin.yml)
+[![Trivy Security Scan](https://github.com/gin-gonic/gin/actions/workflows/trivy-scan.yml/badge.svg)](https://github.com/gin-gonic/gin/actions/workflows/trivy-scan.yml)
 [![codecov](https://codecov.io/gh/gin-gonic/gin/branch/master/graph/badge.svg)](https://codecov.io/gh/gin-gonic/gin)
 [![Go Report Card](https://goreportcard.com/badge/github.com/gin-gonic/gin)](https://goreportcard.com/report/github.com/gin-gonic/gin)
 [![Go Reference](https://pkg.go.dev/badge/github.com/gin-gonic/gin?status.svg)](https://pkg.go.dev/github.com/gin-gonic/gin?tab=doc)
@@ -62,6 +63,7 @@ Here's a complete example that demonstrates Gin's simplicity:
 package main
 
 import (
+  "log"
   "net/http"
 
   "github.com/gin-gonic/gin"
@@ -70,7 +72,7 @@ import (
 func main() {
   // Create a Gin router with default middleware (logger and recovery)
   r := gin.Default()
-  
+
   // Define a simple GET endpoint
   r.GET("/ping", func(c *gin.Context) {
     // Return JSON response
@@ -78,10 +80,12 @@ func main() {
       "message": "pong",
     })
   })
-  
+
   // Start server on port 8080 (default)
   // Server will listen on 0.0.0.0:8080 (localhost:8080 on Windows)
-  r.Run()
+  if err := r.Run(); err != nil {
+    log.Fatalf("failed to run server: %v", err)
+  }
 }
 ```
 
@@ -190,7 +194,6 @@ Gin has a rich ecosystem of middleware for common web development needs. Explore
   - CORS, Rate limiting, Compression
   - Logging, Metrics, Tracing
   - Static file serving, Template engines
-  
 - **[gin-gonic/contrib](https://github.com/gin-gonic/contrib)** - Additional community middleware
 
 ## 🏢 Production Usage

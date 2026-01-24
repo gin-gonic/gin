@@ -12,7 +12,6 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"runtime"
 	"strings"
 	"sync"
 	"testing"
@@ -20,10 +19,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
-
-// TODO
-// func debugRoute(httpMethod, absolutePath string, handlers HandlersChain) {
-// func debugPrint(format string, values ...any) {
 
 func TestIsDebugging(t *testing.T) {
 	SetMode(DebugMode)
@@ -46,6 +41,18 @@ func TestDebugPrint(t *testing.T) {
 		SetMode(TestMode)
 	})
 	assert.Equal(t, "[GIN-debug] these are 2 error messages\n", re)
+}
+
+func TestDebugPrintFunc(t *testing.T) {
+	DebugPrintFunc = func(format string, values ...any) {
+		fmt.Fprintf(DefaultWriter, "[GIN-debug] "+format, values...)
+	}
+	re := captureOutput(t, func() {
+		SetMode(DebugMode)
+		debugPrint("debug print func test: %d", 123)
+		SetMode(TestMode)
+	})
+	assert.Regexp(t, `^\[GIN-debug\] debug print func test: 123`, re)
 }
 
 func TestDebugPrintError(t *testing.T) {
@@ -104,12 +111,17 @@ func TestDebugPrintWARNINGDefault(t *testing.T) {
 		debugPrintWARNINGDefault()
 		SetMode(TestMode)
 	})
-	m, e := getMinVer(runtime.Version())
-	if e == nil && m < ginSupportMinGoVer {
-		assert.Equal(t, "[GIN-debug] [WARNING] Now Gin requires Go 1.24+.\n\n[GIN-debug] [WARNING] Creating an Engine instance with the Logger and Recovery middleware already attached.\n\n", re)
-	} else {
-		assert.Equal(t, "[GIN-debug] [WARNING] Creating an Engine instance with the Logger and Recovery middleware already attached.\n\n", re)
-	}
+	assert.Equal(t, "[GIN-debug] [WARNING] Creating an Engine instance with the Logger and Recovery middleware already attached.\n\n", re)
+}
+
+func TestDebugPrintWARNINGDefaultWithUnsupportedVersion(t *testing.T) {
+	runtimeVersion = "go1.23.12"
+	re := captureOutput(t, func() {
+		SetMode(DebugMode)
+		debugPrintWARNINGDefault()
+		SetMode(TestMode)
+	})
+	assert.Equal(t, "[GIN-debug] [WARNING] Now Gin requires Go 1.24+.\n\n[GIN-debug] [WARNING] Creating an Engine instance with the Logger and Recovery middleware already attached.\n\n", re)
 }
 
 func TestDebugPrintWARNINGNew(t *testing.T) {

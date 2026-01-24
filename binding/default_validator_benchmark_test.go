@@ -18,7 +18,6 @@ func BenchmarkSliceValidationError(b *testing.B) {
 	}
 
 	b.ReportAllocs()
-	b.ResetTimer()
 
 	for b.Loop() {
 		if len(e.Error()) == 0 {
