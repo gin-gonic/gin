@@ -1,9 +1,9 @@
 # Feature: JSON-Iterator Integration Example & Test Fixes
 
-## 🚀 Description
+## Description
 This PR addresses issue #2810 by providing a complete, working example of how to integrate `json-iterator/go` with Gin. Additionally, it includes critical fixes for existing tests that were failing or behaving inconsistently when the `-tags=jsoniter` build tag was active.
 
-## 📋 Changes
+## Changes
 
 ### 1. New Example
 - **Location**: `examples/json-iterator`
@@ -25,7 +25,7 @@ Running `go test -tags=jsoniter ./...` previously caused failures. The following
     - **Issue**: `TestContextBindRequestTooLarge` expected a `413 Request Entity Too Large` status code. However, the underlying `json-iterator` library returns a `400 Bad Request` when the body size limit is exceeded.
     - **Fix**: Updated the test to explicitly accept `400 Bad Request` when the `jsoniter` build tag is active, matching the library's actual behavior.
 
-## 🛠️ How to Verify
+## How to Verify
 
 ### Run the Example
 ```bash
@@ -45,7 +45,7 @@ go test -v ./...
 # Expected Output: All tests pass (ok)
 ```
 
-## ✅ Checklist
+## Checklist
 - [x] Open pull request against the `master` branch.
 - [x] All tests pass locally with `-tags=jsoniter`.
 - [x] Standard tests pass (no regressions).
