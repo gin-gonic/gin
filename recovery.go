@@ -12,12 +12,12 @@ import (
 	"fmt"
 	"io"
 	"log"
-	"net"
 	"net/http"
 	"net/http/httputil"
 	"os"
 	"runtime"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/gin-gonic/gin/internal/bytesconv"
@@ -57,40 +57,33 @@ func CustomRecoveryWithWriter(out io.Writer, handle RecoveryFunc) HandlerFunc {
 	}
 	return func(c *Context) {
 		defer func() {
-			if err := recover(); err != nil {
+			if rec := recover(); rec != nil {
 				// Check for a broken connection, as it is not really a
 				// condition that warrants a panic stack trace.
-				var brokenPipe bool
-				if ne, ok := err.(*net.OpError); ok {
-					var se *os.SyscallError
-					if errors.As(ne, &se) {
-						seStr := strings.ToLower(se.Error())
-						if strings.Contains(seStr, "broken pipe") ||
-							strings.Contains(seStr, "connection reset by peer") {
-							brokenPipe = true
-						}
-					}
-				}
-				if e, ok := err.(error); ok && errors.Is(e, http.ErrAbortHandler) {
-					brokenPipe = true
+				var isBrokenPipe bool
+				err, ok := rec.(error)
+				if ok {
+					isBrokenPipe = errors.Is(err, syscall.EPIPE) ||
+						errors.Is(err, syscall.ECONNRESET) ||
+						errors.Is(err, http.ErrAbortHandler)
 				}
 				if logger != nil {
-					if brokenPipe {
-						logger.Printf("%s\n%s%s", err, secureRequestDump(c.Request), reset)
+					if isBrokenPipe {
+						logger.Printf("%s\n%s%s", rec, secureRequestDump(c.Request), reset)
 					} else if IsDebugging() {
 						logger.Printf("[Recovery] %s panic recovered:\n%s\n%s\n%s%s",
-							timeFormat(time.Now()), secureRequestDump(c.Request), err, stack(stackSkip), reset)
+							timeFormat(time.Now()), secureRequestDump(c.Request), rec, stack(stackSkip), reset)
 					} else {
 						logger.Printf("[Recovery] %s panic recovered:\n%s\n%s%s",
-							timeFormat(time.Now()), err, stack(stackSkip), reset)
+							timeFormat(time.Now()), rec, stack(stackSkip), reset)
 					}
 				}
-				if brokenPipe {
+				if isBrokenPipe {
 					// If the connection is dead, we can't write a status to it.
-					c.Error(err.(error)) //nolint: errcheck
+					c.Error(err) //nolint: errcheck
 					c.Abort()
 				} else {
-					handle(c, err)
+					handle(c, rec)
 				}
 			}
 		}()

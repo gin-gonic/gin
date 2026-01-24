@@ -98,13 +98,13 @@ func TestFunction(t *testing.T) {
 func TestPanicWithBrokenPipe(t *testing.T) {
 	const expectCode = 204
 
-	expectMsgs := map[syscall.Errno]string{
-		syscall.EPIPE:      "broken pipe",
-		syscall.ECONNRESET: "connection reset by peer",
+	expectErrnos := []syscall.Errno{
+		syscall.EPIPE,
+		syscall.ECONNRESET,
 	}
 
-	for errno, expectMsg := range expectMsgs {
-		t.Run(expectMsg, func(t *testing.T) {
+	for _, errno := range expectErrnos {
+		t.Run("Recovery from "+errno.Error(), func(t *testing.T) {
 			var buf strings.Builder
 
 			router := New()
@@ -122,7 +122,8 @@ func TestPanicWithBrokenPipe(t *testing.T) {
 			w := PerformRequest(router, http.MethodGet, "/recovery")
 			// TEST
 			assert.Equal(t, expectCode, w.Code)
-			assert.Contains(t, strings.ToLower(buf.String()), expectMsg)
+			assert.Contains(t, strings.ToLower(buf.String()), errno.Error())
+			assert.NotContains(t, strings.ToLower(buf.String()), "[Recovery]")
 		})
 	}
 }
