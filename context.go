@@ -1470,10 +1470,8 @@ func (c *Context) Value(key any) any {
 	if key == ContextKey {
 		return c
 	}
-	if keyAsString, ok := key.(string); ok {
-		if val, exists := c.Get(keyAsString); exists {
-			return val
-		}
+	if val, exists := c.Get(key); exists {
+		return val
 	}
 	if !c.hasRequestContext() {
 		return nil
