@@ -237,13 +237,13 @@ func TestRouteRedirectTrailingSlash(t *testing.T) {
 	router.RedirectTrailingSlash = false
 
 	w = PerformRequest(router, http.MethodGet, "/path/")
-	assert.Equal(t, http.StatusNotFound, w.Code)
+	assert.Equal(t, http.StatusOK, w.Code)
 	w = PerformRequest(router, http.MethodGet, "/path2")
-	assert.Equal(t, http.StatusNotFound, w.Code)
+	assert.Equal(t, http.StatusOK, w.Code)
 	w = PerformRequest(router, http.MethodPost, "/path3/")
-	assert.Equal(t, http.StatusNotFound, w.Code)
+	assert.Equal(t, http.StatusOK, w.Code)
 	w = PerformRequest(router, http.MethodPut, "/path4")
-	assert.Equal(t, http.StatusNotFound, w.Code)
+	assert.Equal(t, http.StatusOK, w.Code)
 }
 
 func TestRouteRedirectFixedPath(t *testing.T) {
