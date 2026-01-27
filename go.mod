@@ -2,11 +2,13 @@ module github.com/gin-gonic/gin
 
 go 1.24.0
 
+toolchain go1.24.7
+
 require (
 	github.com/bytedance/sonic v1.14.2
 	github.com/gin-contrib/sse v1.1.0
 	github.com/go-playground/validator/v10 v10.28.0
-	github.com/goccy/go-json v0.10.2
+	github.com/goccy/go-json v0.10.5
 	github.com/goccy/go-yaml v1.19.1
 	github.com/json-iterator/go v1.1.12
 	github.com/mattn/go-isatty v0.0.20
@@ -15,9 +17,12 @@ require (
 	github.com/quic-go/quic-go v0.57.1
 	github.com/stretchr/testify v1.11.1
 	github.com/ugorji/go/codec v1.3.1
+	go.mongodb.org/mongo-driver v1.17.7
 	golang.org/x/net v0.47.0
 	google.golang.org/protobuf v1.36.10
 )
+
+require gopkg.in/yaml.v3 v3.0.1 // indirect
 
 require (
 	github.com/bytedance/gopkg v0.1.3 // indirect
@@ -30,13 +35,13 @@ require (
 	github.com/klauspost/cpuid/v2 v2.3.0 // indirect
 	github.com/kr/text v0.2.0 // indirect
 	github.com/leodido/go-urn v1.4.0 // indirect
-	github.com/modern-go/concurrent v0.0.0-20180228061459-e0a39a4cb421 // indirect
+	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/quic-go/qpack v0.6.0 // indirect
 	github.com/twitchyliquid64/golang-asm v0.15.1 // indirect
-	golang.org/x/arch v0.20.0 // indirect
+	go.uber.org/mock v0.6.0 // indirect
+	golang.org/x/arch v0.22.0 // indirect
 	golang.org/x/crypto v0.45.0 // indirect
 	golang.org/x/sys v0.38.0 // indirect
 	golang.org/x/text v0.31.0 // indirect
-	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
