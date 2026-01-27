@@ -2110,7 +2110,7 @@ func TestContextBindRequestTooLarge(t *testing.T) {
 	// https://github.com/goccy/go-json/issues/485
 	var expectedCode int
 	switch json.Package {
-	case "github.com/goccy/go-json":
+	case "github.com/goccy/go-json", "github.com/json-iterator/go":
 		expectedCode = http.StatusBadRequest
 	default:
 		expectedCode = http.StatusRequestEntityTooLarge
