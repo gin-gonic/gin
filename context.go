@@ -1249,7 +1249,14 @@ func (c *Context) String(code int, format string, values ...any) {
 }
 
 // Redirect returns an HTTP redirect to the specific location.
+// When the 'location' parameter is empty, it poses a potential security risk.
+// Avoid bringing potential security risks into the production environment.
 func (c *Context) Redirect(code int, location string) {
+	if location == "" {
+		debugPrint(`[WARNING] When the 'location' parameter is empty, it poses a potential security risk. Please input a secure redirection URL to ensure safe operation.`)
+	}
+
+
 	c.Render(-1, render.Redirect{
 		Code:     code,
 		Location: location,
