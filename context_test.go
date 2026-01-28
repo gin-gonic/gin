@@ -3752,3 +3752,46 @@ func BenchmarkGetMapFromFormData(b *testing.B) {
 		})
 	}
 }
+
+func TestContextChaining(t *testing.T) {
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	// Basic cookie settings
+	cookie := &http.Cookie{
+		Name:     "name",
+		Value:    "gin",
+		MaxAge:   1,
+		Path:     "/",
+		Domain:   "localhost",
+		Secure:   true,
+		HttpOnly: true,
+	}
+
+	c.Set("foo", "bar").
+		AddParam("id", "1").
+		SetSameSite(http.SameSiteLaxMode).
+		SetCookie("user", "gin", 1, "/", "localhost", true, true).
+		SetCookieData(cookie).
+		Header("Content-Type", "text/plain").
+		Header("X-Custom", "value").
+		SetAccepted(MIMEJSON, MIMEXML).
+		Status(200)
+
+	value, err := c.Get("foo")
+	assert.Equal(t, "bar", value)
+	assert.True(t, err)
+
+	v, ok := c.Params.Get("id")
+	assert.True(t, ok)
+	assert.Equal(t, "1", v)
+
+	assert.Equal(t, []string{"user=gin; Path=/; Domain=localhost; Max-Age=1; HttpOnly; Secure; SameSite=Lax", "name=gin; Path=/; Domain=localhost; Max-Age=1; HttpOnly; Secure"}, c.Writer.Header().Values("Set-Cookie"))
+
+	assert.Equal(t, "text/plain", c.Writer.Header().Get("Content-Type"))
+	assert.Equal(t, "value", c.Writer.Header().Get("X-Custom"))
+
+	assert.Equal(t, MIMEJSON, c.NegotiateFormat(MIMEJSON, MIMEXML)) //nolint:testifylint
+	assert.Equal(t, MIMEXML, c.NegotiateFormat(MIMEXML, MIMEHTML))
+	assert.Equal(t, MIMEJSON, c.NegotiateFormat(MIMEJSON)) //nolint:testifylint
+
+	assert.Equal(t, 200, c.Writer.Status())
+}
