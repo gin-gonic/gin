@@ -731,7 +731,12 @@ func (c *Context) SaveUploadedFile(file *multipart.FileHeader, dst string, perm 
 	if err = os.MkdirAll(dir, mode); err != nil {
 		return err
 	}
-	if err = os.Chmod(dir, mode); err != nil {
+	// Only run Chmod if mode is not as configured
+	info, err := os.Stat(dir)
+	if err == nil && info.Mode().Perm() != mode {
+		err = os.Chmod(dir, mode)
+	}
+	if err != nil {
 		return err
 	}
 
