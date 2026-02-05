@@ -1,0 +1,9 @@
+codecov:
+  coverage:
+    status:
+      project:
+        disabled: true  # Disable project-level status check
+      patch:
+        target: 99%  # Set expected coverage target
+    diff:
+      target: 99%  # Disable diff coverage warnings

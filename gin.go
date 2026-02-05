@@ -96,6 +96,10 @@ type Engine struct {
 	// (used for routing HTTP requests) happens only once, even if called multiple times concurrently.
 	routeTreesUpdated sync.Once
 
+
+	// mu protects concurrent access to trees
+	mu sync.RWMutex
+
 	// RedirectTrailingSlash enables automatic redirection if the current route can't be matched but a
 	// handler for the path with (without) the trailing slash exists.
 	// For example if /foo/ is requested but a route only exists for /foo, the
@@ -368,6 +372,9 @@ func (engine *Engine) addRoute(method, path string, handlers HandlersChain) {
 
 	debugPrintRoute(method, path, handlers)
 
+	engine.mu.Lock()
+	defer engine.mu.Unlock()
+
 	root := engine.trees.get(method)
 	if root == nil {
 		root = new(node)
@@ -388,6 +395,8 @@ func (engine *Engine) addRoute(method, path string, handlers HandlersChain) {
 // Routes returns a slice of registered routes, including some useful information, such as:
 // the http method, path, and the handler name.
 func (engine *Engine) Routes() (routes RoutesInfo) {
+	engine.mu.RLock()
+	defer engine.mu.RUnlock()
 	for _, tree := range engine.trees {
 		routes = iterate("", tree.method, routes, tree.root)
 	}
