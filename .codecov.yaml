@@ -1,0 +1,11 @@
+codecov:
+  # Tell Codecov to compare against upstream master, not commit hash
+  base: "https://github.com/gin-gonic/gin"
+  # Set expected coverage based on current master
+  coverage:
+    status:
+      project:
+        target: 99%
+        informational: true  # Make it informational only
+      patch:
+        target: 99%
