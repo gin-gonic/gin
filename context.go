@@ -1076,7 +1076,7 @@ func (c *Context) Status(code int) {
 // Header is an intelligent shortcut for c.Writer.Header().Set(key, value).
 // It writes a header in the response.
 // If value == "", this method removes the header `c.Writer.Header().Del(key)`
-func (c *Context) Header(key, value string) {
+func (c *Context) SetHeader(key, value string) {
 	if value == "" {
 		c.Writer.Header().Del(key)
 		return
