@@ -249,6 +249,15 @@ func TestRenderPureJSON(t *testing.T) {
 	assert.Equal(t, "application/json; charset=utf-8", w.Header().Get("Content-Type"))
 }
 
+func TestRenderPureJSONFail(t *testing.T) {
+	w := httptest.NewRecorder()
+	data := make(chan int)
+
+	// json: unsupported type: chan int
+	err := (PureJSON{data}).Render(w)
+	require.Error(t, err)
+}
+
 type xmlmap map[string]any
 
 // Allows type H to be used with xml.Marshal
@@ -399,6 +408,15 @@ func TestRenderXML(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, "<map><foo>bar</foo></map>", w.Body.String())
 	assert.Equal(t, "application/xml; charset=utf-8", w.Header().Get("Content-Type"))
+}
+
+func TestRenderXMLFail(t *testing.T) {
+	w := httptest.NewRecorder()
+	data := make(chan int)
+
+	// xml: unsupported type: chan int
+	err := (XML{data}).Render(w)
+	require.Error(t, err)
 }
 
 func TestRenderRedirect(t *testing.T) {
