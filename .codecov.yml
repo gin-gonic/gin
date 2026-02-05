@@ -1,0 +1,10 @@
+codecov:
+  # Disable coverage comparison
+  coverage:
+    status:
+      project:
+        target: 99%  # Set target instead of comparing against base
+        base: auto  # Let Codecov auto-detect base
+        if_no_uploads: error
+      patch:
+        target: 95%  # Set reasonable patch target
