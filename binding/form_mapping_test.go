@@ -915,7 +915,7 @@ func TestMappingCustomSliceOfSliceUnmarshalTextDefault(t *testing.T) {
 	var s struct {
 		FileData []customPathUnmarshalText `form:"path,default=bar/foo;bar/foo/spam,parser=encoding.TextUnmarshaler" collection_format:"csv"`
 	}
-	err := mappingByPtr(&s, formSource{"path": {}}, "form")
+	err := mappingByPtr(&s, formSource{"path": nil}, "form")
 	require.NoError(t, err)
 	assert.Equal(t, []customPathUnmarshalText{{"bar", "foo"}, {"bar", "foo", "spam"}}, s.FileData)
 }
@@ -994,7 +994,7 @@ func TestMappingCustomArrayOfArrayUnmarshalTextDefault(t *testing.T) {
 	var s struct {
 		FileData []objectIDUnmarshalText `form:"ids,default=664a062ac74a8ad104e0e80e;664a062ac74a8ad104e0e80f,parser=encoding.TextUnmarshaler" collection_format:"csv"`
 	}
-	err := mappingByPtr(&s, formSource{"ids": {}}, "form")
+	err := mappingByPtr(&s, formSource{"ids": nil}, "form")
 	require.NoError(t, err)
 	assert.Equal(t, []objectIDUnmarshalText{id1, id2}, s.FileData)
 }
