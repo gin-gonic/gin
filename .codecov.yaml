@@ -1,0 +1,20 @@
+codecov:
+  coverage:
+    status:
+      project:
+        # Compare against current base branch, not commit hash
+        target: auto
+        # Only fail if coverage drops significantly (more than 1%)
+        threshold: 1%
+        # Make it informational so it doesn't block merging
+        informational: true
+      patch:
+        target: 99%
+        threshold: 1%
+    # Set expected coverage
+  comment:
+    layout: "reach, diff, flags, files"
+    behavior: default
+  ignore:
+    - "**/*_test.go"
+    - "**/test_*.go"
