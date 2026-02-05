@@ -1135,6 +1135,7 @@ func main() {
 
     if err := c.ShouldBindHeader(&h); err != nil {
       c.JSON(http.StatusOK, err)
+      return
     }
 
     fmt.Printf("%#v\n", h)
