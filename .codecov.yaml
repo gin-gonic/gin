@@ -1,0 +1,7 @@
+codecov:
+  coverage:
+    status:
+      project:
+        enabled: false
+      patch:
+        target: 99%
