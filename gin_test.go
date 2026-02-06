@@ -1067,6 +1067,39 @@ func TestLiteralColonWithHTTPServer(t *testing.T) {
 	assert.Contains(t, w2.Body.String(), "foo")
 }
 
+func TestConcurrentAddRouteAndRoutes(t *testing.T) {
+	router := New()
+
+	done := make(chan bool)
+
+	for i := 0; i < 10; i++ {
+		go func(n int) {
+			router.GET(fmt.Sprintf("/route%d", n), func(c *Context) {
+				c.String(http.StatusOK, fmt.Sprintf("route%d", n))
+			})
+			router.POST(fmt.Sprintf("/route%d", n), func(c *Context) {
+				c.String(http.StatusOK, fmt.Sprintf("route%d", n))
+			})
+			done <- true
+		}(i)
+	}
+
+	for i := 0; i < 10; i++ {
+		go func() {
+			routes := router.Routes()
+			assert.GreaterOrEqual(t, len(routes), 0)
+			done <- true
+		}()
+	}
+
+	for i := 0; i < 20; i++ {
+		<-done
+	}
+
+	routes := router.Routes()
+	assert.Len(t, routes, 20)
+}
+
 // Test that updateRouteTrees is called only once
 func TestUpdateRouteTreesCalledOnce(t *testing.T) {
 	SetMode(TestMode)
