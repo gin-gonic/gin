@@ -1086,8 +1086,7 @@ func TestConcurrentAddRouteAndRoutes(t *testing.T) {
 
 	for i := 0; i < 10; i++ {
 		go func() {
-			routes := router.Routes()
-			assert.GreaterOrEqual(t, len(routes), 0)
+			_ = router.Routes()
 			done <- true
 		}()
 	}
