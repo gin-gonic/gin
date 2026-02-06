@@ -1033,6 +1033,7 @@ func TestContextGetCookie(t *testing.T) {
 func TestContextBodyAllowedForStatus(t *testing.T) {
 	assert.False(t, bodyAllowedForStatus(http.StatusProcessing))
 	assert.False(t, bodyAllowedForStatus(http.StatusNoContent))
+	assert.False(t, bodyAllowedForStatus(http.StatusContinue))
 	assert.False(t, bodyAllowedForStatus(http.StatusNotModified))
 	assert.True(t, bodyAllowedForStatus(http.StatusInternalServerError))
 }
