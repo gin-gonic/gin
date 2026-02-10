@@ -2284,6 +2284,47 @@ func TestContextBindWithTOML(t *testing.T) {
 	assert.Equal(t, 0, w.Body.Len())
 }
 
+func TestContextBindAll(t *testing.T) {
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
+
+	c.Request, _ = http.NewRequest(http.MethodPost, "/1234?foo=true", strings.NewReader(`{"bar":"spam"}`))
+	c.Params = []Param{{Key: "id", Value: "1234"}}
+	c.Request.Header.Add("Content-Type", MIMEJSON) // set fake content-type
+	c.Request.Header.Add("Limit", "100")
+
+	var obj struct {
+		Limit int    `header:"limit" binding:"required"`
+		ID    string `uri:"id" binding:"required,numeric"`
+		Foo   bool   `form:"foo" binding:"required"`
+		Bar   string `form:"bar" xml:"bar" binding:"required"`
+	}
+	require.NoError(t, c.BindAll(&obj))
+	assert.Equal(t, 100, obj.Limit)
+	assert.Equal(t, "1234", obj.ID)
+	assert.Equal(t, "true", c.Request.FormValue("foo"))
+	assert.Equal(t, "spam", obj.Bar)
+	assert.Empty(t, c.Errors)
+}
+
+func TestContextBindAll_400OnError(t *testing.T) {
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
+
+	c.Request, _ = http.NewRequest(http.MethodPost, "/1234?foo=true", strings.NewReader(`{"bar":"spam"}`))
+	c.Request.Header.Add("Content-Type", MIMEJSON) // set fake content-type
+	c.Request.Header.Add("Limit", "100")
+
+	var obj struct {
+		Limit int    `header:"limit" binding:"required"`
+		ID    string `uri:"id" binding:"required,numeric"`
+		Foo   bool   `form:"foo" binding:"required"`
+		Bar   string `form:"bar" xml:"bar" binding:"required"`
+	}
+	err := c.BindAll(&obj)
+	require.ErrorContains(t, err, "Field validation for 'ID' failed")
+}
+
 func TestContextBadAutoBind(t *testing.T) {
 	w := httptest.NewRecorder()
 	c, _ := CreateTestContext(w)
@@ -2456,6 +2497,29 @@ func TestContextShouldBindWithTOML(t *testing.T) {
 	assert.Equal(t, "foo", obj.Bar)
 	assert.Equal(t, "bar", obj.Foo)
 	assert.Equal(t, 0, w.Body.Len())
+}
+
+func TestContextShouldBindAll(t *testing.T) {
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
+
+	c.Request, _ = http.NewRequest(http.MethodPost, "/1234?foo=true", strings.NewReader(`{"bar":"spam"}`))
+	c.Params = []Param{{Key: "id", Value: "1234"}}
+	c.Request.Header.Add("Content-Type", MIMEJSON) // set fake content-type
+	c.Request.Header.Add("Limit", "100")
+
+	var obj struct {
+		Limit int    `header:"limit" binding:"required"`
+		ID    string `uri:"id" binding:"required,numeric"`
+		Foo   bool   `form:"foo" binding:"required"`
+		Bar   string `form:"bar" xml:"bar" binding:"required"`
+	}
+	require.NoError(t, c.ShouldBindAll(&obj))
+	assert.Equal(t, 100, obj.Limit)
+	assert.Equal(t, "1234", obj.ID)
+	assert.Equal(t, "true", c.Request.FormValue("foo"))
+	assert.Equal(t, "spam", obj.Bar)
+	assert.Empty(t, c.Errors)
 }
 
 func TestContextBadAutoShouldBind(t *testing.T) {
