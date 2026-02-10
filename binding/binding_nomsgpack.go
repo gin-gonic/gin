@@ -46,6 +46,15 @@ type BindingUri interface {
 	BindUri(map[string][]string, any) error
 }
 
+// BindingMany adds BindMany method to Binding. BindingMany is similar to Binding,
+// but it has full access to all request aspects to bind multiple parts simultaneously.
+//
+// NOTE: External projects should NOT depend on this interface as it is for Gin's internal binding logic
+type BindingMany interface {
+	Name() string
+	BindMany(req *http.Request, uriParams map[string][]string, obj any) error
+}
+
 // StructValidator is the minimal interface which needs to be implemented in
 // order for it to be used as the validator engine for ensuring the correctness
 // of the request. Gin provides a default implementation for this using
@@ -71,18 +80,19 @@ var Validator StructValidator = &defaultValidator{}
 // These implement the Binding interface and can be used to bind the data
 // present in the request to struct instances.
 var (
-	JSON          = jsonBinding{}
-	XML           = xmlBinding{}
-	Form          = formBinding{}
-	Query         = queryBinding{}
-	FormPost      = formPostBinding{}
-	FormMultipart = formMultipartBinding{}
-	ProtoBuf      = protobufBinding{}
-	YAML          = yamlBinding{}
-	Uri           = uriBinding{}
-	Header        = headerBinding{}
-	TOML          = tomlBinding{}
-	Plain         = plainBinding{}
+	All           BindingMany = allBinding{} // NOTE: This combines other bindings and doesn't have its own Content-Type
+	JSON                      = jsonBinding{}
+	XML                       = xmlBinding{}
+	Form                      = formBinding{}
+	Query                     = queryBinding{}
+	FormPost                  = formPostBinding{}
+	FormMultipart             = formMultipartBinding{}
+	ProtoBuf                  = protobufBinding{}
+	YAML                      = yamlBinding{}
+	Uri                       = uriBinding{}
+	Header                    = headerBinding{}
+	TOML                      = tomlBinding{}
+	Plain                     = plainBinding{}
 	BSON          BindingBody = bsonBinding{}
 )
 
