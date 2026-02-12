@@ -1090,7 +1090,7 @@ func TestServeErrorWritten(t *testing.T) {
 	router := New()
 	router.Use(func(c *Context) {
 		c.Writer.WriteHeader(http.StatusNotFound)
-		c.Writer.Write([]byte("custom error"))
+		_, _ = c.Writer.Write([]byte("custom error"))
 		c.Next()
 	})
 	router.NoRoute(func(c *Context) {

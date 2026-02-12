@@ -1057,7 +1057,6 @@ func (c *Context) requestHeader(key string) string {
 
 // bodyAllowedForStatus is a copy of http.bodyAllowedForStatus non-exported function.
 // Uses http.StatusContinue constant for better code clarity.
-// Upper bound 199 covers all 1xx informational status codes.
 func bodyAllowedForStatus(status int) bool {
 	switch {
 	case status >= http.StatusContinue && status < http.StatusOK:
