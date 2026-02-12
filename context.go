@@ -1032,6 +1032,15 @@ func (c *Context) RemoteIP() string {
 	return ip
 }
 
+// FromTrustProxy check if the request is from a trusted proxy server
+func (c *Context) FromTrustProxy() bool {
+	remoteIP := net.ParseIP(c.RemoteIP())
+	if remoteIP == nil {
+		return false
+	}
+	return c.engine.isTrustedProxy(remoteIP)
+}
+
 // ContentType returns the Content-Type header of the request.
 func (c *Context) ContentType() string {
 	return filterFlags(c.requestHeader("Content-Type"))
