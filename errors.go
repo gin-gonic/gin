@@ -26,8 +26,6 @@ const (
 	ErrorTypePublic ErrorType = 1 << 1
 	// ErrorTypeAny indicates any other error.
 	ErrorTypeAny ErrorType = 1<<64 - 1
-	// ErrorTypeNu indicates any other error.
-	ErrorTypeNu = 2
 )
 
 // Error represents a error's specification.
