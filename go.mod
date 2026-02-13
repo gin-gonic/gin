@@ -17,7 +17,7 @@ require (
 	github.com/quic-go/quic-go v0.57.1
 	github.com/stretchr/testify v1.11.1
 	github.com/ugorji/go/codec v1.3.1
-	go.mongodb.org/mongo-driver v1.17.7
+	go.mongodb.org/mongo-driver v1.17.9
 	golang.org/x/net v0.49.0
 	google.golang.org/protobuf v1.36.10
 )
