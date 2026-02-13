@@ -1138,3 +1138,16 @@ func TestServeErrorStatusMismatch(t *testing.T) {
 	router.ServeHTTP(w, req)
 	assert.Equal(t, http.StatusForbidden, w.Code)
 }
+
+func TestServeErrorMessageWrite(t *testing.T) {
+	router := New()
+	router.NoRoute(func(c *Context) {
+		c.Next()
+	})
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest(http.MethodGet, "/notfound", nil)
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusNotFound, w.Code)
+	assert.Equal(t, "text/plain", w.Header().Get("Content-Type"))
+}
