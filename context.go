@@ -751,8 +751,8 @@ func (c *Context) SaveUploadedFile(file *multipart.FileHeader, dst string, perm 
 //	"application/json" --> JSON binding
 //	"application/xml"  --> XML binding
 //
-// It parses the request's body as JSON if Content-Type == "application/json" using JSON or XML as a JSON input.
-// It decodes the json payload into the struct specified as a pointer.
+// It parses the request's body based on the Content-Type (e.g., JSON or XML).
+// It decodes the payload into the struct specified as a pointer.
 // It writes a 400 error and sets Content-Type header "text/plain" in the response if input is not valid.
 func (c *Context) Bind(obj any) error {
 	b := binding.Default(c.Request.Method, c.ContentType())
@@ -832,8 +832,8 @@ func (c *Context) MustBindWith(obj any, b binding.Binding) error {
 //	"application/json" --> JSON binding
 //	"application/xml"  --> XML binding
 //
-// It parses the request's body as JSON if Content-Type == "application/json" using JSON or XML as a JSON input.
-// It decodes the json payload into the struct specified as a pointer.
+// It parses the request's body based on the Content-Type (e.g., JSON or XML).
+// It decodes the payload into the struct specified as a pointer.
 // Like c.Bind() but this method does not set the response status code to 400 or abort if input is not valid.
 func (c *Context) ShouldBind(obj any) error {
 	b := binding.Default(c.Request.Method, c.ContentType())
