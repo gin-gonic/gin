@@ -1018,3 +1018,102 @@ func TestWildcardInvalidSlash(t *testing.T) {
 		}
 	}
 }
+
+func TestTreeFindCaseInsensitivePathWithMultipleChildrenAndWildcard(t *testing.T) {
+	tree := &node{}
+
+	// Setup routes that create a node with both static children and a wildcard child.
+	// This configuration previously caused a panic ("invalid node type") in
+	// findCaseInsensitivePathRec because it accessed children[0] instead of the
+	// wildcard child (which is always at the end of the children array).
+	// See: https://github.com/gin-gonic/gin/issues/2959
+	routes := [...]string{
+		"/aa/aa",
+		"/:bb/aa",
+	}
+
+	for _, route := range routes {
+		recv := catchPanic(func() {
+			tree.addRoute(route, fakeHandler(route))
+		})
+		if recv != nil {
+			t.Fatalf("panic inserting route '%s': %v", route, recv)
+		}
+	}
+
+	// These lookups previously panicked with "invalid node type" because
+	// findCaseInsensitivePathRec picked children[0] (a static node) instead
+	// of the wildcard child at the end of the array.
+	recv := catchPanic(func() {
+		tree.findCaseInsensitivePath("/aa", true)
+	})
+	if recv != nil {
+		t.Fatalf("unexpected panic looking up '/aa': %v", recv)
+	}
+
+	recv = catchPanic(func() {
+		tree.findCaseInsensitivePath("/aa/aa/aa/aa", true)
+	})
+	if recv != nil {
+		t.Fatalf("unexpected panic looking up '/aa/aa/aa/aa': %v", recv)
+	}
+
+	// Also test case-insensitive lookup (this was crashing too)
+	recv = catchPanic(func() {
+		tree.findCaseInsensitivePath("/AA/AA", true)
+	})
+	if recv != nil {
+		t.Fatalf("unexpected panic looking up '/AA/AA': %v", recv)
+	}
+}
+
+func TestTreeFindCaseInsensitivePathWildcardParamAndStaticChild(t *testing.T) {
+	tree := &node{}
+
+	// Another variant: param route + static route under same prefix
+	routes := [...]string{
+		"/prefix/:id",
+		"/prefix/xxx",
+	}
+
+	for _, route := range routes {
+		recv := catchPanic(func() {
+			tree.addRoute(route, fakeHandler(route))
+		})
+		if recv != nil {
+			t.Fatalf("panic inserting route '%s': %v", route, recv)
+		}
+	}
+
+	// Should NOT panic even for paths that don't match any route
+	recv := catchPanic(func() {
+		tree.findCaseInsensitivePath("/prefix/a/b/c", true)
+	})
+	if recv != nil {
+		t.Fatalf("unexpected panic looking up '/prefix/a/b/c': %v", recv)
+	}
+
+	// Exact match should still work
+	out, found := tree.findCaseInsensitivePath("/prefix/xxx", true)
+	if !found {
+		t.Error("Route '/prefix/xxx' not found")
+	} else if string(out) != "/prefix/xxx" {
+		t.Errorf("Wrong result for '/prefix/xxx': %s", string(out))
+	}
+
+	// Case-insensitive match should work
+	out, found = tree.findCaseInsensitivePath("/PREFIX/XXX", true)
+	if !found {
+		t.Error("Route '/PREFIX/XXX' not found via case-insensitive lookup")
+	} else if string(out) != "/prefix/XXX" {
+		t.Errorf("Wrong result for '/PREFIX/XXX': %s", string(out))
+	}
+
+	// Param route should still match
+	out, found = tree.findCaseInsensitivePath("/prefix/something", true)
+	if !found {
+		t.Error("Route '/prefix/something' not found via param match")
+	} else if string(out) != "/prefix/something" {
+		t.Errorf("Wrong result for '/prefix/something': %s", string(out))
+	}
+}

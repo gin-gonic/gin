@@ -818,7 +818,8 @@ walk: // Outer loop for walking the tree
 			return nil
 		}
 
-		n = n.children[0]
+		// Handle wildcard child, which is always at the end of the array
+		n = n.children[len(n.children)-1]
 		switch n.nType {
 		case param:
 			// Find param end (either '/' or path end)
