@@ -31,6 +31,7 @@ var (
 	_ Render     = (*AsciiJSON)(nil)
 	_ Render     = (*ProtoBuf)(nil)
 	_ Render     = (*TOML)(nil)
+	_ Render     = (*PDF)(nil)
 )
 
 func writeContentType(w http.ResponseWriter, value []string) {

@@ -1319,6 +1319,33 @@ func TestContextRenderNoContentXML(t *testing.T) {
 	assert.Equal(t, "application/xml; charset=utf-8", w.Header().Get("Content-Type"))
 }
 
+// TestContextRenderPDF tests that the response is serialized as PDF
+// and Content-Type is set to application/pdf
+func TestContextRenderPDF(t *testing.T) {
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
+
+	data := []byte("%Test pdf content")
+	c.PDF(http.StatusCreated, data)
+
+	assert.Equal(t, http.StatusCreated, w.Code)
+	assert.Equal(t, data, w.Body.Bytes())
+	assert.Equal(t, "application/pdf", w.Header().Get("Content-Type"))
+}
+
+// Tests that no PDF is rendered if code is 204
+func TestContextRenderNoContentPDF(t *testing.T) {
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
+
+	data := []byte("%Test pdf content")
+	c.PDF(http.StatusNoContent, data)
+
+	assert.Equal(t, http.StatusNoContent, w.Code)
+	assert.Empty(t, w.Body.Bytes())
+	assert.Equal(t, "application/pdf", w.Header().Get("Content-Type"))
+}
+
 // TestContextRenderString tests that the response is returned
 // with Content-Type set to text/plain
 func TestContextRenderString(t *testing.T) {
