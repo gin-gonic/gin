@@ -1044,26 +1044,22 @@ func TestTreeFindCaseInsensitivePathWithMultipleChildrenAndWildcard(t *testing.T
 	// These lookups previously panicked with "invalid node type" because
 	// findCaseInsensitivePathRec picked children[0] (a static node) instead
 	// of the wildcard child at the end of the array.
-	recv := catchPanic(func() {
-		tree.findCaseInsensitivePath("/aa", true)
-	})
-	if recv != nil {
-		t.Fatalf("unexpected panic looking up '/aa': %v", recv)
+	out, found := tree.findCaseInsensitivePath("/aa", true)
+	if found {
+		t.Errorf("Expected no match for '/aa', but got: %s", string(out))
 	}
 
-	recv = catchPanic(func() {
-		tree.findCaseInsensitivePath("/aa/aa/aa/aa", true)
-	})
-	if recv != nil {
-		t.Fatalf("unexpected panic looking up '/aa/aa/aa/aa': %v", recv)
+	out, found = tree.findCaseInsensitivePath("/aa/aa/aa/aa", true)
+	if found {
+		t.Errorf("Expected no match for '/aa/aa/aa/aa', but got: %s", string(out))
 	}
 
-	// Also test case-insensitive lookup (this was crashing too)
-	recv = catchPanic(func() {
-		tree.findCaseInsensitivePath("/AA/AA", true)
-	})
-	if recv != nil {
-		t.Fatalf("unexpected panic looking up '/AA/AA': %v", recv)
+	// Case-insensitive lookup should match the static route /aa/aa
+	out, found = tree.findCaseInsensitivePath("/AA/AA", true)
+	if !found {
+		t.Error("Route '/AA/AA' not found via case-insensitive lookup")
+	} else if string(out) != "/aa/aa" {
+		t.Errorf("Wrong result for '/AA/AA': expected '/aa/aa', got: %s", string(out))
 	}
 }
 
@@ -1086,15 +1082,13 @@ func TestTreeFindCaseInsensitivePathWildcardParamAndStaticChild(t *testing.T) {
 	}
 
 	// Should NOT panic even for paths that don't match any route
-	recv := catchPanic(func() {
-		tree.findCaseInsensitivePath("/prefix/a/b/c", true)
-	})
-	if recv != nil {
-		t.Fatalf("unexpected panic looking up '/prefix/a/b/c': %v", recv)
+	out, found := tree.findCaseInsensitivePath("/prefix/a/b/c", true)
+	if found {
+		t.Errorf("Expected no match for '/prefix/a/b/c', but got: %s", string(out))
 	}
 
 	// Exact match should still work
-	out, found := tree.findCaseInsensitivePath("/prefix/xxx", true)
+	out, found = tree.findCaseInsensitivePath("/prefix/xxx", true)
 	if !found {
 		t.Error("Route '/prefix/xxx' not found")
 	} else if string(out) != "/prefix/xxx" {
@@ -1105,8 +1099,8 @@ func TestTreeFindCaseInsensitivePathWildcardParamAndStaticChild(t *testing.T) {
 	out, found = tree.findCaseInsensitivePath("/PREFIX/XXX", true)
 	if !found {
 		t.Error("Route '/PREFIX/XXX' not found via case-insensitive lookup")
-	} else if string(out) != "/prefix/XXX" {
-		t.Errorf("Wrong result for '/PREFIX/XXX': %s", string(out))
+	} else if string(out) != "/prefix/xxx" {
+		t.Errorf("Wrong result for '/PREFIX/XXX': expected '/prefix/xxx', got: %s", string(out))
 	}
 
 	// Param route should still match
