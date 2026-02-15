@@ -15,6 +15,7 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -1083,4 +1084,70 @@ func TestUpdateRouteTreesCalledOnce(t *testing.T) {
 		assert.Equal(t, http.StatusOK, w.Code)
 		assert.Equal(t, "ok", w.Body.String())
 	}
+}
+
+func TestConcurrentAddRouteAndRoutes(t *testing.T) {
+	router := New()
+	var wg sync.WaitGroup
+	for i := 0; i < 100; i++ {
+		wg.Add(2)
+		go func(i int) {
+			defer wg.Done()
+			router.GET(fmt.Sprintf("/route%d", i), func(c *Context) {
+				c.String(http.StatusOK, "ok")
+			})
+		}(i)
+		go func(i int) {
+			defer wg.Done()
+			_ = router.Routes()
+		}(i)
+	}
+	wg.Wait()
+	assert.Len(t, router.Routes(), 100)
+}
+
+func TestServeErrorWritten(t *testing.T) {
+	router := New()
+	router.GET("/", func(c *Context) {
+		c.Status(http.StatusInternalServerError)
+		_, _ = c.Writer.Write([]byte("custom error"))
+	})
+	router.NoRoute(func(c *Context) {
+		c.Status(http.StatusNotFound)
+	})
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest(http.MethodGet, "/notfound", nil)
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusNotFound, w.Code)
+}
+
+func TestServeErrorStatusMismatch(t *testing.T) {
+	router := New()
+	router.HandleMethodNotAllowed = true
+	router.NoMethod(func(c *Context) {
+		c.Status(http.StatusForbidden)
+	})
+
+	router.GET("/exists", func(c *Context) {
+		c.String(http.StatusOK, "ok")
+	})
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest(http.MethodPost, "/exists", nil)
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusForbidden, w.Code)
+}
+
+func TestServeErrorMessageWrite(t *testing.T) {
+	router := New()
+	router.NoRoute(func(c *Context) {
+		c.Next()
+	})
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest(http.MethodGet, "/notfound", nil)
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusNotFound, w.Code)
+	assert.Equal(t, "text/plain", w.Header().Get("Content-Type"))
 }
