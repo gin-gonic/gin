@@ -13,6 +13,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func init() {
@@ -143,6 +144,15 @@ func TestMarshalXMLforH(t *testing.T) {
 	var x xml.StartElement
 	e := h.MarshalXML(enc, x)
 	assert.Error(t, e)
+}
+
+func TestMarshalXMLforHSuccess(t *testing.T) {
+	h := H{
+		"key": "value",
+	}
+	data, err := xml.Marshal(h)
+	require.NoError(t, err)
+	assert.Contains(t, string(data), "<key>value</key>")
 }
 
 func TestIsASCII(t *testing.T) {

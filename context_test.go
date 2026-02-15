@@ -40,6 +40,12 @@ var _ context.Context = (*Context)(nil)
 
 var errTestRender = errors.New("TestRender")
 
+type errReader int
+
+func (errReader) Read(p []byte) (n int, err error) {
+	return 0, errors.New("test error")
+}
+
 // Unit tests TODO
 // func (c *Context) File(filepath string) {
 // func (c *Context) Negotiate(code int, config Negotiate) {
@@ -1033,6 +1039,7 @@ func TestContextGetCookie(t *testing.T) {
 func TestContextBodyAllowedForStatus(t *testing.T) {
 	assert.False(t, bodyAllowedForStatus(http.StatusProcessing))
 	assert.False(t, bodyAllowedForStatus(http.StatusNoContent))
+	assert.False(t, bodyAllowedForStatus(http.StatusContinue))
 	assert.False(t, bodyAllowedForStatus(http.StatusNotModified))
 	assert.True(t, bodyAllowedForStatus(http.StatusInternalServerError))
 }
@@ -2947,6 +2954,17 @@ func TestContextGetRawData(t *testing.T) {
 	assert.Equal(t, "Fetch binary post data", string(data))
 }
 
+func TestContextGetRawDataNilBody(t *testing.T) {
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	c.Request, _ = http.NewRequest(http.MethodPost, "/", nil)
+	c.Request.Body = nil
+
+	data, err := c.GetRawData()
+	require.Error(t, err)
+	assert.Nil(t, data)
+	assert.Equal(t, "cannot read nil body", err.Error())
+}
+
 func TestContextRenderDataFromReader(t *testing.T) {
 	w := httptest.NewRecorder()
 	c, _ := CreateTestContext(w)
@@ -3535,6 +3553,24 @@ func TestContextSetCookieData(t *testing.T) {
 		setCookie := c.Writer.Header().Get("Set-Cookie")
 		assert.Contains(t, setCookie, "SameSite=None")
 	})
+
+	// Test that SameSiteDefaultMode is replaced with context's SameSite
+	t.Run("SameSiteDefaultMode is replaced with context SameSite", func(t *testing.T) {
+		c, _ := CreateTestContext(httptest.NewRecorder())
+		c.SetSameSite(http.SameSiteLaxMode)
+		cookie := &http.Cookie{
+			Name:     "user",
+			Value:    "gin",
+			Path:     "/",
+			Domain:   "localhost",
+			Secure:   true,
+			HttpOnly: true,
+			SameSite: http.SameSiteDefaultMode,
+		}
+		c.SetCookieData(cookie)
+		setCookie := c.Writer.Header().Get("Set-Cookie")
+		assert.Contains(t, setCookie, "user=gin")
+	})
 }
 
 func TestGetMapFromFormData(t *testing.T) {
@@ -3751,4 +3787,44 @@ func BenchmarkGetMapFromFormData(b *testing.B) {
 			}
 		})
 	}
+}
+
+func TestInitFormCacheParseMultipartFormError(t *testing.T) {
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	c.Request, _ = http.NewRequest(http.MethodPost, "/", strings.NewReader("test"))
+	c.Request.Header.Set("Content-Type", "multipart/form-data; boundary=invalid")
+	c.engine.MaxMultipartMemory = -1
+	c.initFormCache()
+	assert.NotNil(t, c.formCache)
+}
+
+func TestFormFileParseMultipartFormError(t *testing.T) {
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	c.Request, _ = http.NewRequest(http.MethodPost, "/", strings.NewReader("test"))
+	c.Request.Header.Set("Content-Type", "multipart/form-data; boundary=invalid")
+	c.engine.MaxMultipartMemory = -1
+	_, err := c.FormFile("file")
+	require.Error(t, err)
+}
+
+func TestShouldBindBodyWithTypeAssertionFailure(t *testing.T) {
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
+	c.Request, _ = http.NewRequest(http.MethodPost, "http://example.com", strings.NewReader(`{"foo":"FOO"}`))
+	c.Set(BodyBytesKey, "not a byte slice")
+	var obj struct {
+		Foo string `json:"foo"`
+	}
+	require.NoError(t, c.ShouldBindBodyWith(&obj, binding.JSON))
+	assert.Equal(t, "FOO", obj.Foo)
+}
+
+func TestShouldBindBodyWithReadError(t *testing.T) {
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
+	c.Request, _ = http.NewRequest(http.MethodPost, "http://example.com", errReader(0))
+	var obj struct {
+		Foo string `json:"foo"`
+	}
+	require.Error(t, c.ShouldBindBodyWith(&obj, binding.JSON))
 }
