@@ -302,7 +302,10 @@ func (c *Context) MustGet(key any) any {
 
 func getTyped[T any](c *Context, key any) (res T) {
 	if val, ok := c.Get(key); ok && val != nil {
-		res, _ = val.(T)
+		res, ok = val.(T)
+		if !ok {
+			debugPrint("[WARNING] failed to convert key %v with value %v to type %T", key, val, res)
+		}
 	}
 	return
 }
