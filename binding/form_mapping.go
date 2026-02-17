@@ -185,13 +185,23 @@ type BindUnmarshaler interface {
 	UnmarshalParam(param string) error
 }
 
-// trySetCustom tries to set a custom type value
-// If the value implements the BindUnmarshaler interface, it will be used to set the value, we will return `true`
-// to skip the default value setting.
+// trySetCustom tries to set a custom type value.
+// It checks for BindUnmarshaler first, then falls back to encoding.TextUnmarshaler.
+// This allows types like uuid.UUID (which implement TextUnmarshaler) to be bound
+// automatically without requiring an explicit parser tag.
+//
+// Note: time.Time is excluded from automatic TextUnmarshaler handling because gin
+// provides dedicated time parsing via time_format, time_utc, and time_location tags.
 func trySetCustom(val string, value reflect.Value) (isSet bool, err error) {
 	switch v := value.Addr().Interface().(type) {
 	case BindUnmarshaler:
 		return true, v.UnmarshalParam(val)
+	case encoding.TextUnmarshaler:
+		// Skip time.Time — it has dedicated handling in setWithProperType via setTimeField,
+		// which supports time_format, time_utc, and time_location struct tags.
+		if _, isTime := value.Interface().(time.Time); !isTime {
+			return true, v.UnmarshalText([]byte(val))
+		}
 	}
 	return false, nil
 }
