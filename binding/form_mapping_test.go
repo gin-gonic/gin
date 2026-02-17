@@ -1016,9 +1016,8 @@ func TestMappingUsingBindUnmarshalerAndTextUnmarshalerWhenOnlyBindUnmarshalerDef
 	assert.EqualValues(t, 0xf5, s.HexByUnmarshalText) // reverts to BindUnmarshaler binding
 }
 
-// If someone does not specify parser=TextUnmarshaler even when it's defined for the type, gin should ignore the
-// UnmarshalText logic and continue using its default binding logic. (This ensures gin does not break backwards
-// compatibility)
+// When a type implements encoding.TextUnmarshaler, it is used automatically even without
+// the parser tag. Both fields should produce the same result.
 func TestMappingUsingBindUnmarshalerAndTextUnmarshalerWhenOnlyTextUnmarshalerDefined(t *testing.T) {
 	var s struct {
 		Hex                customUnmarshalTextHex `form:"hex"`
@@ -1030,8 +1029,8 @@ func TestMappingUsingBindUnmarshalerAndTextUnmarshalerWhenOnlyTextUnmarshalerDef
 	}, "form")
 	require.NoError(t, err)
 
-	assert.EqualValues(t, 11, s.Hex)                  // this is using default int binding, not our custom hex binding. 0x11 should be 17 in decimal
-	assert.EqualValues(t, 0x11, s.HexByUnmarshalText) // correct expected value for normal hex binding
+	assert.EqualValues(t, 0x11, s.Hex)                // TextUnmarshaler is now used automatically
+	assert.EqualValues(t, 0x11, s.HexByUnmarshalText) // explicit parser tag also uses TextUnmarshaler
 }
 
 type customHexUnmarshalParamAndUnmarshalText int
@@ -1143,4 +1142,127 @@ func TestMappingEmptyValues(t *testing.T) {
 		assert.Equal(t, []int{1, 2, 3}, s.SliceMulti)
 		assert.Equal(t, []int{1, 2, 3}, s.SliceCsv)
 	})
+}
+
+// ==== Automatic TextUnmarshaler binding tests (no parser tag required) ====
+
+// testUUID mimics uuid.UUID — a [16]byte array implementing encoding.TextUnmarshaler
+type testUUID [16]byte
+
+func (u *testUUID) UnmarshalText(text []byte) error {
+	s := string(text)
+	// simple hex-dash parser for 8-4-4-4-12 format
+	s = strings.ReplaceAll(s, "-", "")
+	if len(s) != 32 {
+		return errors.New("invalid UUID length: " + strconv.Itoa(len(s)))
+	}
+	for i := 0; i < 16; i++ {
+		b, err := strconv.ParseUint(s[i*2:i*2+2], 16, 8)
+		if err != nil {
+			return errors.New("invalid UUID hex at position " + strconv.Itoa(i*2))
+		}
+		u[i] = byte(b)
+	}
+	return nil
+}
+
+var _ encoding.TextUnmarshaler = (*testUUID)(nil)
+
+func mustParseTestUUID(s string) testUUID {
+	var u testUUID
+	if err := u.UnmarshalText([]byte(s)); err != nil {
+		panic(err)
+	}
+	return u
+}
+
+func TestMappingTextUnmarshalerAutoBindForm(t *testing.T) {
+	var s struct {
+		ID testUUID `form:"id"`
+	}
+	err := mappingByPtr(&s, formSource{"id": {"45e1f85e-bca5-458d-bd9c-c56edd8f847b"}}, "form")
+	require.NoError(t, err)
+	assert.Equal(t, mustParseTestUUID("45e1f85e-bca5-458d-bd9c-c56edd8f847b"), s.ID)
+}
+
+func TestMappingTextUnmarshalerAutoBindURI(t *testing.T) {
+	var s struct {
+		ID testUUID `uri:"id"`
+	}
+	err := mappingByPtr(&s, formSource{"id": {"45e1f85e-bca5-458d-bd9c-c56edd8f847b"}}, "uri")
+	require.NoError(t, err)
+	assert.Equal(t, mustParseTestUUID("45e1f85e-bca5-458d-bd9c-c56edd8f847b"), s.ID)
+}
+
+func TestMappingTextUnmarshalerAutoBindSlice(t *testing.T) {
+	var s struct {
+		IDs []testUUID `form:"ids" collection_format:"csv"`
+	}
+	err := mappingByPtr(&s, formSource{"ids": {"45e1f85e-bca5-458d-bd9c-c56edd8f847b,68dc3815-6ab5-4883-81a1-96eff25b659f"}}, "form")
+	require.NoError(t, err)
+	expected := []testUUID{
+		mustParseTestUUID("45e1f85e-bca5-458d-bd9c-c56edd8f847b"),
+		mustParseTestUUID("68dc3815-6ab5-4883-81a1-96eff25b659f"),
+	}
+	assert.Equal(t, expected, s.IDs)
+}
+
+func TestMappingTextUnmarshalerAutoBindMultipleValues(t *testing.T) {
+	var s struct {
+		IDs []testUUID `form:"ids"`
+	}
+	err := mappingByPtr(&s, formSource{"ids": {
+		"45e1f85e-bca5-458d-bd9c-c56edd8f847b",
+		"68dc3815-6ab5-4883-81a1-96eff25b659f",
+	}}, "form")
+	require.NoError(t, err)
+	expected := []testUUID{
+		mustParseTestUUID("45e1f85e-bca5-458d-bd9c-c56edd8f847b"),
+		mustParseTestUUID("68dc3815-6ab5-4883-81a1-96eff25b659f"),
+	}
+	assert.Equal(t, expected, s.IDs)
+}
+
+func TestMappingTextUnmarshalerAutoBindDefault(t *testing.T) {
+	var s struct {
+		ID testUUID `form:"id,default=45e1f85e-bca5-458d-bd9c-c56edd8f847b"`
+	}
+	err := mappingByPtr(&s, formSource{}, "form")
+	require.NoError(t, err)
+	assert.Equal(t, mustParseTestUUID("45e1f85e-bca5-458d-bd9c-c56edd8f847b"), s.ID)
+}
+
+func TestMappingTextUnmarshalerAutoBindInvalidValue(t *testing.T) {
+	var s struct {
+		ID testUUID `form:"id"`
+	}
+	err := mappingByPtr(&s, formSource{"id": {"not-a-uuid"}}, "form")
+	require.Error(t, err)
+}
+
+// BindUnmarshaler should take precedence over TextUnmarshaler
+type testDualUnmarshaler struct {
+	Value string
+}
+
+func (d *testDualUnmarshaler) UnmarshalParam(param string) error {
+	d.Value = "param:" + param
+	return nil
+}
+
+func (d *testDualUnmarshaler) UnmarshalText(text []byte) error {
+	d.Value = "text:" + string(text)
+	return nil
+}
+
+var _ BindUnmarshaler = (*testDualUnmarshaler)(nil)
+var _ encoding.TextUnmarshaler = (*testDualUnmarshaler)(nil)
+
+func TestMappingBindUnmarshalerTakesPrecedenceOverTextUnmarshaler(t *testing.T) {
+	var s struct {
+		Field testDualUnmarshaler `form:"field"`
+	}
+	err := mappingByPtr(&s, formSource{"field": {"hello"}}, "form")
+	require.NoError(t, err)
+	assert.Equal(t, "param:hello", s.Field.Value) // BindUnmarshaler wins
 }
