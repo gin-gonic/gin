@@ -7,7 +7,6 @@
 package render
 
 import (
-	"bytes"
 	"errors"
 	"net/http/httptest"
 	"testing"
@@ -30,14 +29,12 @@ func TestRenderMsgPack(t *testing.T) {
 
 	require.NoError(t, err)
 
-	h := new(codec.MsgpackHandle)
-	assert.NotNil(t, h)
-	buf := bytes.NewBuffer([]byte{})
-	assert.NotNil(t, buf)
-	err = codec.NewEncoder(buf, h).Encode(data)
-
+	var decoded map[string]any
+	var mh codec.MsgpackHandle
+	mh.RawToString = true
+	err = codec.NewDecoderBytes(w.Body.Bytes(), &mh).Decode(&decoded)
 	require.NoError(t, err)
-	assert.Equal(t, w.Body.String(), buf.String())
+	assert.Equal(t, data, decoded)
 	assert.Equal(t, "application/msgpack; charset=utf-8", w.Header().Get("Content-Type"))
 }
 
@@ -53,13 +50,14 @@ func TestWriteMsgPack(t *testing.T) {
 
 	assert.Equal(t, "application/msgpack; charset=utf-8", w.Header().Get("Content-Type"))
 
-	// Verify the encoded data is correct
-	h := new(codec.MsgpackHandle)
-	buf := bytes.NewBuffer([]byte{})
-	err = codec.NewEncoder(buf, h).Encode(data)
+	var decoded map[string]any
+	var mh codec.MsgpackHandle
+	mh.RawToString = true
+	err = codec.NewDecoderBytes(w.Body.Bytes(), &mh).Decode(&decoded)
 	require.NoError(t, err)
-
-	assert.Equal(t, buf.String(), w.Body.String())
+	assert.Len(t, decoded, 2)
+	assert.Equal(t, "bar", decoded["foo"])
+	assert.EqualValues(t, 42, decoded["num"])
 }
 
 type failWriter struct {
