@@ -1147,6 +1147,16 @@ func (c *Context) Cookie(name string) (string, error) {
 	return val, nil
 }
 
+// Cookies parses and returns the HTTP cookies sent with the request.
+func (c *Context) Cookies() map[string]string {
+	cookies := make(map[string]string)
+	for _, cookie := range c.Request.Cookies() {
+		val, _ := url.QueryUnescape(cookie.Value)
+		cookies[cookie.Name] = val
+	}
+	return cookies
+}
+
 // Render writes the response headers and calls render.Render to render data.
 func (c *Context) Render(code int, r render.Render) {
 	c.Status(code)
