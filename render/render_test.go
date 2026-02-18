@@ -23,9 +23,6 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-// TODO unit tests
-// test errors
-
 func TestRenderJSON(t *testing.T) {
 	w := httptest.NewRecorder()
 	data := map[string]any{
@@ -385,6 +382,31 @@ func TestRenderBSON(t *testing.T) {
 	assert.Equal(t, "application/bson", w.Header().Get("Content-Type"))
 }
 
+func TestRenderBSONError(t *testing.T) {
+	w := httptest.NewRecorder()
+	data := make(chan int)
+
+	err := (BSON{data}).Render(w)
+	require.Error(t, err)
+}
+
+func TestRenderBSONWriteError(t *testing.T) {
+	type testStruct struct {
+		Value string
+	}
+	data := &testStruct{Value: "test"}
+	bsonData, err := bson.Marshal(data)
+	require.NoError(t, err)
+
+	ew := &errorWriter{
+		bufString:        string(bsonData),
+		ResponseRecorder: httptest.NewRecorder(),
+	}
+
+	err = (BSON{data}).Render(ew)
+	require.Error(t, err)
+}
+
 func TestRenderXML(t *testing.T) {
 	w := httptest.NewRecorder()
 	data := xmlmap{
@@ -399,6 +421,15 @@ func TestRenderXML(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, "<map><foo>bar</foo></map>", w.Body.String())
 	assert.Equal(t, "application/xml; charset=utf-8", w.Header().Get("Content-Type"))
+}
+
+func TestRenderXMLError(t *testing.T) {
+	w := httptest.NewRecorder()
+	data := make(chan int)
+
+	err := (XML{data}).Render(w)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "xml: unsupported type: chan int")
 }
 
 func TestRenderRedirect(t *testing.T) {
@@ -453,6 +484,22 @@ func TestRenderData(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, "#!PNG some raw data", w.Body.String())
 	assert.Equal(t, "image/png", w.Header().Get("Content-Type"))
+}
+
+func TestRenderDataError(t *testing.T) {
+	ew := &errorWriter{
+		bufString:        "#!PNG some raw data",
+		ResponseRecorder: httptest.NewRecorder(),
+	}
+	data := []byte("#!PNG some raw data")
+
+	err := (Data{
+		ContentType: "image/png",
+		Data:        data,
+	}).Render(ew)
+
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "write \"#!PNG some raw data\" error")
 }
 
 func TestRenderString(t *testing.T) {
@@ -592,6 +639,32 @@ func TestRenderHTMLDebugPanics(t *testing.T) {
 		FuncMap:    nil,
 	}
 	assert.Panics(t, func() { htmlRender.Instance("", nil) })
+}
+
+func TestRenderHTMLTemplateError(t *testing.T) {
+	w := httptest.NewRecorder()
+	templ := template.Must(template.New("t").Parse(`Hello {{if .name}}{{.name.DoesNotExist}}{{end}}`))
+
+	htmlRender := HTMLProduction{Template: templ}
+	instance := htmlRender.Instance("t", map[string]any{
+		"name": "alexandernyquist",
+	})
+
+	err := instance.Render(w)
+	require.Error(t, err)
+}
+
+func TestRenderHTMLTemplateExecuteError(t *testing.T) {
+	w := httptest.NewRecorder()
+	templ := template.Must(template.New("t").Parse(`Hello {{.name.invalid}}`))
+
+	htmlRender := HTMLProduction{Template: templ}
+	instance := htmlRender.Instance("t", map[string]any{
+		"name": "alexandernyquist",
+	})
+
+	err := instance.Render(w)
+	require.Error(t, err)
 }
 
 func TestRenderReader(t *testing.T) {
