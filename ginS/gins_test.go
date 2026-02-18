@@ -244,3 +244,30 @@ func TestStaticFS(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, w.Code)
 }
+
+func TestLoadHTMLGlob(t *testing.T) {
+	LoadHTMLGlob("../testdata/template/*.tmpl")
+}
+
+func TestLoadHTMLFiles(t *testing.T) {
+	LoadHTMLFiles("../testdata/template/hello.tmpl")
+}
+
+func TestLoadHTMLFS(t *testing.T) {
+	LoadHTMLFS(http.Dir("../testdata/template"), "hello.tmpl")
+}
+
+func TestRunInvalidAddress(t *testing.T) {
+	err := Run("invalid:address:format")
+	assert.Error(t, err)
+}
+
+func TestRunTLSInvalid(t *testing.T) {
+	err := RunTLS("invalid:address:format", "nonexistent.crt", "nonexistent.key")
+	assert.Error(t, err)
+}
+
+func TestRunUnixInvalid(t *testing.T) {
+	err := RunUnix("/nonexistent/path/socket.sock")
+	assert.Error(t, err)
+}
