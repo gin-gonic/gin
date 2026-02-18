@@ -1403,6 +1403,26 @@ func TestPlainBinding(t *testing.T) {
 	require.NoError(t, p.Bind(req, ptr))
 }
 
+func TestPlainBindingBindBody(t *testing.T) {
+	p := Plain
+
+	var s string
+	require.NoError(t, p.BindBody([]byte("test string"), &s))
+	assert.Equal(t, "test string", s)
+
+	var bs []byte
+	require.NoError(t, p.BindBody([]byte("test []byte"), &bs))
+	assert.Equal(t, []byte("test []byte"), bs)
+
+	var i int
+	require.Error(t, p.BindBody([]byte("test fail"), &i))
+
+	require.NoError(t, p.BindBody([]byte(""), nil))
+
+	var ptr *string
+	require.NoError(t, p.BindBody([]byte(""), ptr))
+}
+
 func testProtoBodyBindingFail(t *testing.T, b Binding, name, path, badPath, body, badBody string) {
 	assert.Equal(t, name, b.Name())
 

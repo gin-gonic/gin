@@ -1084,3 +1084,39 @@ func TestUpdateRouteTreesCalledOnce(t *testing.T) {
 		assert.Equal(t, "ok", w.Body.String())
 	}
 }
+
+func TestServeErrorWritten(t *testing.T) {
+	SetMode(TestMode)
+	router := New()
+	router.Use(func(c *Context) {
+		c.Writer.WriteHeader(http.StatusNotFound)
+		_, _ = c.Writer.Write([]byte("custom error"))
+		c.Next()
+	})
+	router.NoRoute(func(c *Context) {
+		c.Next()
+	})
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest(http.MethodGet, "/notfound", nil)
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusNotFound, w.Code)
+	assert.Equal(t, "custom error", w.Body.String())
+}
+
+func TestServeErrorStatusMismatch(t *testing.T) {
+	SetMode(TestMode)
+	router := New()
+	router.Use(func(c *Context) {
+		c.Writer.WriteHeader(http.StatusInternalServerError)
+		c.Next()
+	})
+	router.NoRoute(func(c *Context) {
+		c.Next()
+	})
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest(http.MethodGet, "/notfound", nil)
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusInternalServerError, w.Code)
+}
