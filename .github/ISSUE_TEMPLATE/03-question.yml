@@ -1,0 +1,22 @@
+# https://docs.github.com/en/communities/using-templates-to-encourage-useful-issues-and-pull-requests/configuring-issue-templates-for-your-repository#creating-issue-forms
+# https://docs.github.com/en/communities/using-templates-to-encourage-useful-issues-and-pull-requests/syntax-for-githubs-form-schema
+name: Questions
+description: I want to ask a question
+title: "issue title"
+labels:
+  - question
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use the search tool before opening a new issue.
+        Please read the document carefully.
+
+  - type: textarea
+    id: ask
+    attributes:
+      label: "What do you want to ask?"
+      description: "Please describe the details of your questions."
+    validations:
+      required: true
