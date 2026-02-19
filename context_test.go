@@ -393,6 +393,22 @@ func TestContextSetGetValues(t *testing.T) {
 	assert.Exactly(t, 1, c.MustGet("intInterface").(int))
 }
 
+func TestContextIterate(t *testing.T) {
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	c.Set("string", "this is a string")
+	c.Set("int32", int32(-42))
+	c.Set("int64", int64(42424242424242))
+	c.Set("uint64", uint64(42))
+	c.Set("float32", float32(4.2))
+	c.Set("float64", 4.2)
+	var a interface{} = 1
+	c.Set("intInterface", a)
+
+	c.Iterate(func(key string, value interface{}) {
+		assert.Exactly(t, c.MustGet(key), value)
+	})
+}
+
 func TestContextGetString(t *testing.T) {
 	c, _ := CreateTestContext(httptest.NewRecorder())
 	c.Set("string", "this is a string")
