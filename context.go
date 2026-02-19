@@ -583,6 +583,13 @@ func (c *Context) GetQueryArray(key string) (values []string, ok bool) {
 	return
 }
 
+// GetAllQueryParams check cache and return query cache
+// If not found cache, parses RawQuery and returns the corresponding values.
+func (c *Context) GetAllQueryParams() (params map[string][]string) {
+	c.initQueryCache()
+	return c.queryCache
+}
+
 // QueryMap returns a map for a given query key.
 func (c *Context) QueryMap(key string) (dicts map[string]string) {
 	dicts, _ = c.GetQueryMap(key)
