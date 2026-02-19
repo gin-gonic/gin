@@ -86,6 +86,18 @@ func TestDebugPrintRouteFunc(t *testing.T) {
 	assert.Regexp(t, `^\[GIN-debug\] GET    /path/to/route/:param1/:param2           --> (.*/vendor/)?github.com/gin-gonic/gin.handlerNameTest \(2 handlers\)\n$`, re)
 }
 
+func TestDebugPrintRouteRawFunc(t *testing.T) {
+	DebugPrintRouteRawFunc = func(httpMethod, absolutePath string, handlers HandlersChain) {
+		fmt.Fprintf(DefaultWriter, "[GIN-debug] %-6s %-40s --> %s (%d handlers)\n", httpMethod, absolutePath, nameOfFunction(handlers.Last()), len(handlers)+1)
+	}
+	re := captureOutput(t, func() {
+		SetMode(DebugMode)
+		debugPrintRoute("GET", "/path/to/route/:param1/:param2", HandlersChain{func(c *Context) {}, handlerNameTest})
+		SetMode(TestMode)
+	})
+	assert.Regexp(t, `^\[GIN-debug\] GET    /path/to/route/:param1/:param2           --> (.*/vendor/)?github.com/gin-gonic/gin.handlerNameTest \(3 handlers\)\n$`, re)
+}
+
 func TestDebugPrintLoadTemplate(t *testing.T) {
 	re := captureOutput(t, func() {
 		SetMode(DebugMode)
