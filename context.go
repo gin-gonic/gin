@@ -1069,8 +1069,12 @@ func bodyAllowedForStatus(status int) bool {
 }
 
 // Status sets the HTTP response code.
-func (c *Context) Status(code int) {
-	c.Writer.WriteHeader(code)
+func (c *Context) Status(code int) error {
+	if code > 0 {
+		c.Writer.WriteHeader(code)
+		return nil
+	}
+	return errors.New("invalid status code")
 }
 
 // Header is an intelligent shortcut for c.Writer.Header().Set(key, value).
