@@ -1429,16 +1429,19 @@ func (c *Context) SetAccepted(formats ...string) {
 /***** GOLANG.ORG/X/NET/CONTEXT *****/
 /************************************/
 
-// hasRequestContext returns whether c.Request has Context and fallback.
+// hasFallback returns whether c.engine has ContextWithFallback.
+func (c *Context) hasFallback() bool {
+	return c.engine != nil && c.engine.ContextWithFallback
+}
+
+// hasRequestContext returns whether c.Request has Context
 func (c *Context) hasRequestContext() bool {
-	hasFallback := c.engine != nil && c.engine.ContextWithFallback
-	hasRequestContext := c.Request != nil && c.Request.Context() != nil
-	return hasFallback && hasRequestContext
+	return c.Request != nil && c.Request.Context() != nil
 }
 
 // Deadline returns that there is no deadline (ok==false) when c.Request has no Context.
 func (c *Context) Deadline() (deadline time.Time, ok bool) {
-	if !c.hasRequestContext() {
+	if !c.hasFallback() || !c.hasRequestContext() {
 		return
 	}
 	return c.Request.Context().Deadline()
@@ -1446,7 +1449,7 @@ func (c *Context) Deadline() (deadline time.Time, ok bool) {
 
 // Done returns nil (chan which will wait forever) when c.Request has no Context.
 func (c *Context) Done() <-chan struct{} {
-	if !c.hasRequestContext() {
+	if !c.hasFallback() || !c.hasRequestContext() {
 		return nil
 	}
 	return c.Request.Context().Done()
@@ -1454,7 +1457,7 @@ func (c *Context) Done() <-chan struct{} {
 
 // Err returns nil when c.Request has no Context.
 func (c *Context) Err() error {
-	if !c.hasRequestContext() {
+	if !c.hasFallback() || !c.hasRequestContext() {
 		return nil
 	}
 	return c.Request.Context().Err()
@@ -1475,7 +1478,7 @@ func (c *Context) Value(key any) any {
 			return val
 		}
 	}
-	if !c.hasRequestContext() {
+	if !c.hasFallback() || !c.hasRequestContext() {
 		return nil
 	}
 	return c.Request.Context().Value(key)

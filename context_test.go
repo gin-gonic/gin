@@ -3098,20 +3098,38 @@ func TestRemoteIPFail(t *testing.T) {
 
 func TestHasRequestContext(t *testing.T) {
 	c, _ := CreateTestContext(httptest.NewRecorder())
-	assert.False(t, c.hasRequestContext(), "no request, no fallback")
+	assert.False(t, c.hasRequestContext())
 	c.engine.ContextWithFallback = true
-	assert.False(t, c.hasRequestContext(), "no request, has fallback")
+	assert.False(t, c.hasRequestContext())
 	c.Request, _ = http.NewRequest(http.MethodGet, "/", nil)
-	assert.True(t, c.hasRequestContext(), "has request, has fallback")
+	assert.True(t, c.hasRequestContext())
 	c.Request, _ = http.NewRequestWithContext(nil, "", "", nil) //nolint:staticcheck
-	assert.False(t, c.hasRequestContext(), "has request with nil ctx, has fallback")
+	assert.False(t, c.hasRequestContext())
 	c.engine.ContextWithFallback = false
-	assert.False(t, c.hasRequestContext(), "has request, no fallback")
+	assert.False(t, c.hasRequestContext())
 
 	c = &Context{}
-	assert.False(t, c.hasRequestContext(), "no request, no engine")
+	assert.False(t, c.hasRequestContext())
 	c.Request, _ = http.NewRequest(http.MethodGet, "/", nil)
-	assert.False(t, c.hasRequestContext(), "has request, no engine")
+	assert.True(t, c.hasRequestContext())
+}
+
+func TestHasFallback(t *testing.T) {
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	assert.False(t, c.hasFallback())
+	c.engine.ContextWithFallback = true
+	assert.True(t, c.hasFallback())
+	c.Request, _ = http.NewRequest(http.MethodGet, "/", nil)
+	assert.True(t, c.hasFallback())
+	c.Request, _ = http.NewRequestWithContext(nil, "", "", nil) //nolint:staticcheck
+	assert.True(t, c.hasFallback())
+	c.engine.ContextWithFallback = false
+	assert.False(t, c.hasFallback())
+
+	c = &Context{}
+	assert.False(t, c.hasFallback())
+	c.Request, _ = http.NewRequest(http.MethodGet, "/", nil)
+	assert.False(t, c.hasFallback())
 }
 
 func TestContextWithFallbackDeadlineFromRequestContext(t *testing.T) {
