@@ -575,6 +575,12 @@ func (c *Context) initQueryCache() {
 	}
 }
 
+// SetQuery Modify or add to the cached Query data
+func (c *Context) SetQuery(key,values string)  {
+	c.initQueryCache()
+	c.queryCache.Set(key,values)
+}
+
 // GetQueryArray returns a slice of strings for a given query key, plus
 // a boolean value whether at least one value exists for the given key.
 func (c *Context) GetQueryArray(key string) (values []string, ok bool) {
@@ -646,6 +652,12 @@ func (c *Context) initFormCache() {
 		}
 		c.formCache = req.PostForm
 	}
+}
+
+// SetForm Modify or add to the cached Form data
+func (c *Context) SetForm(key,values string)  {
+	c.initFormCache()
+	c.formCache.Set(key,values)
 }
 
 // GetPostFormArray returns a slice of strings for a given form key, plus
