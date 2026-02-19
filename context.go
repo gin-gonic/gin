@@ -5,6 +5,7 @@
 package gin
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"io"
@@ -917,6 +918,24 @@ func (c *Context) ShouldBindUri(obj any) error {
 // ShouldBindWith binds the passed struct pointer using the specified binding engine.
 // See the binding package.
 func (c *Context) ShouldBindWith(obj any, b binding.Binding) error {
+	if b.Name() == "form-urlencoded" || b.Name() == "form" {
+		var body []byte
+		if cb, ok := c.Get(BodyBytesKey); ok {
+			if cbb, ok := cb.([]byte); ok {
+				body = cbb
+			}
+		}
+
+		if body == nil {
+			var err error
+			body, err = io.ReadAll(c.Request.Body)
+			if err != nil {
+				return err
+			}
+			c.Set(BodyBytesKey, body)
+		}
+		c.Request.Body = io.NopCloser(bytes.NewBuffer(body))
+	}
 	return b.Bind(c.Request, obj)
 }
 
@@ -1094,7 +1113,41 @@ func (c *Context) GetRawData() ([]byte, error) {
 	if c.Request.Body == nil {
 		return nil, errors.New("cannot read nil body")
 	}
+
+	if cb, ok := c.Get(BodyBytesKey); ok {
+		if cbb, ok := cb.([]byte); ok {
+			return cbb, nil
+		}
+	}
+
 	return io.ReadAll(c.Request.Body)
+}
+
+// GetRequestBody returns the request body as bytes, caching it for reuse.
+// This allows the body to be read multiple times without being consumed.
+// Returns an error if the body cannot be read or if it's nil.
+func (c *Context) GetRequestBody() ([]byte, error) {
+	if c.Request.Body == nil {
+		return nil, errors.New("cannot read nil body")
+	}
+
+	// Check if body is already cached
+	if cb, ok := c.Get(BodyBytesKey); ok {
+		if cbb, ok := cb.([]byte); ok {
+			return cbb, nil
+		}
+	}
+
+	// Read and cache the body
+	body, err := io.ReadAll(c.Request.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	// Cache the body for future use
+	c.Set(BodyBytesKey, body)
+
+	return body, nil
 }
 
 // SetSameSite with cookie
