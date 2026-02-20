@@ -1255,8 +1255,10 @@ func (d *testDualUnmarshaler) UnmarshalText(text []byte) error {
 	return nil
 }
 
-var _ BindUnmarshaler = (*testDualUnmarshaler)(nil)
-var _ encoding.TextUnmarshaler = (*testDualUnmarshaler)(nil)
+var (
+	_ BindUnmarshaler          = (*testDualUnmarshaler)(nil)
+	_ encoding.TextUnmarshaler = (*testDualUnmarshaler)(nil)
+)
 
 func TestMappingBindUnmarshalerTakesPrecedenceOverTextUnmarshaler(t *testing.T) {
 	var s struct {
