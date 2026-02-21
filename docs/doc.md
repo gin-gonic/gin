@@ -1240,6 +1240,52 @@ Test it with:
 curl -X POST -v --form name=user --form "avatar=@./avatar.png" http://localhost:8080/profile
 ```
 
+
+### Bind All
+
+BindAll will bind header, uri, query parameters, and body in one call. Validation is applied after request parts are bound.
+
+```go
+package main
+
+import (
+  "net/http"
+
+  "github.com/gin-gonic/gin"
+)
+
+type Person struct {
+  Age       int       `header:"x-age" binding:"required"`
+  ID        string    `uri:"id" binding:"required,uuid"`
+  Name      string    `form:"name" binding:"required"`
+  Addresses [2]string `json:"addresses" binding:"required"`
+}
+
+func main() {
+  route := gin.Default()
+  route.POST("/:id", func(c *gin.Context) {
+    var person Person
+    if err := c.ShouldBindAll(&person); err != nil {
+      c.JSON(http.StatusBadRequest, gin.H{"msg": err.Error()})
+      return
+    }
+    c.JSON(http.StatusOK, person)
+  })
+  route.Run(":8080")
+}
+```
+
+Test it with:
+
+```sh
+curl -X POST -H "x-age:25" -H "Content-Type: application/json" -d '{"addresses":["foo","bar"]}' 'http://localhost:8080/987fbc97-4bed-5078-9f07-9141ba07c9f3?name=Bob'
+# {"Age":25,"ID":"987fbc97-4bed-5078-9f07-9141ba07c9f3","Name":"Bob","addresses":["foo","bar"]}
+
+curl -X POST -H "x-age:25" -H "Content-Type: application/json" -d '{"addresses":["foo","bar"]}' 'http://localhost:8080/not-uuid'
+# {"msg":"Key: 'Person.ID' Error:Field validation for 'ID' failed on the 'uuid' tag\nKey: 'Person.Name' Error:Field validation for 'Name' failed on the 'required' tag"}
+```
+
+
 ### XML, JSON, YAML, TOML and ProtoBuf rendering
 
 ```go
