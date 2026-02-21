@@ -13,6 +13,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func init() {
@@ -151,7 +152,7 @@ func TestMarshalXMLforHSuccess(t *testing.T) {
 		"key2": 123,
 	}
 	data, err := xml.Marshal(h)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Contains(t, string(data), "<key1>value1</key1>")
 	assert.Contains(t, string(data), "<key2>123</key2>")
 }

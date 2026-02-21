@@ -2954,7 +2954,7 @@ func TestContextGetRawDataNilBody(t *testing.T) {
 
 	data, err := c.GetRawData()
 	assert.Nil(t, data)
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Equal(t, "cannot read nil body", err.Error())
 }
 
