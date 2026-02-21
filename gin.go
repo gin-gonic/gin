@@ -178,8 +178,10 @@ type Engine struct {
 	FuncMap          template.FuncMap
 	allNoRoute       HandlersChain
 	allNoMethod      HandlersChain
+	allAutoRedirect  HandlersChain
 	noRoute          HandlersChain
 	noMethod         HandlersChain
+	autoRedirect     HandlersChain
 	pool             sync.Pool
 	trees            methodTrees
 	maxParams        uint16
@@ -334,6 +336,13 @@ func (engine *Engine) NoMethod(handlers ...HandlerFunc) {
 	engine.rebuild405Handlers()
 }
 
+// AutoRedirect sets the handlers called when auto redirected
+// (RedirectTrailingSlash and RedirectFixedPath)
+func (engine *Engine) AutoRedirect(handlers ...HandlerFunc) {
+	engine.autoRedirect = handlers
+	engine.rebuildAutoRedirectHandlers()
+}
+
 // Use attaches a global middleware to the router. i.e. the middleware attached through Use() will be
 // included in the handlers chain for every single request. Even 404, 405, static files...
 // For example, this is the right place for a logger or error management middleware.
@@ -341,6 +350,7 @@ func (engine *Engine) Use(middleware ...HandlerFunc) IRoutes {
 	engine.RouterGroup.Use(middleware...)
 	engine.rebuild404Handlers()
 	engine.rebuild405Handlers()
+	engine.rebuildAutoRedirectHandlers()
 	return engine
 }
 
@@ -359,6 +369,10 @@ func (engine *Engine) rebuild404Handlers() {
 
 func (engine *Engine) rebuild405Handlers() {
 	engine.allNoMethod = engine.combineHandlers(engine.noMethod)
+}
+
+func (engine *Engine) rebuildAutoRedirectHandlers() {
+	engine.allAutoRedirect = engine.combineHandlers(engine.autoRedirect)
 }
 
 func (engine *Engine) addRoute(method, path string, handlers HandlersChain) {
@@ -724,6 +738,7 @@ func (engine *Engine) handleHTTPRequest(c *Context) {
 			return
 		}
 		if httpMethod != http.MethodConnect && rPath != "/" {
+			c.handlers = engine.allAutoRedirect
 			if value.tsr && engine.RedirectTrailingSlash {
 				redirectTrailingSlash(c)
 				return
@@ -819,13 +834,14 @@ func redirectFixedPath(c *Context, root *node, trailingSlash bool) bool {
 
 func redirectRequest(c *Context) {
 	req := c.Request
-	rPath := req.URL.Path
-	rURL := req.URL.String()
-
 	code := http.StatusMovedPermanently // Permanent redirect, request with GET method
 	if req.Method != http.MethodGet {
 		code = http.StatusTemporaryRedirect
 	}
+	c.Next()
+
+	rPath := req.URL.Path
+	rURL := req.URL.String()
 	debugPrint("redirecting request %d: %s --> %s", code, rPath, rURL)
 	http.Redirect(c.Writer, req, rURL, code)
 	c.writermem.WriteHeaderNow()

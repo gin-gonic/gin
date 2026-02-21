@@ -601,6 +601,59 @@ func TestNoMethodWithGlobalHandlers(t *testing.T) {
 	compareFunc(t, router.allNoMethod[2], middleware0)
 }
 
+func TestAutoRedirectWithoutGlobalHandlers(t *testing.T) {
+	var middleware0 HandlerFunc = func(c *Context) {}
+	var middleware1 HandlerFunc = func(c *Context) {}
+
+	router := New()
+
+	router.AutoRedirect(middleware0)
+	assert.Nil(t, router.Handlers)
+	assert.Len(t, router.autoRedirect, 1)
+	assert.Len(t, router.allAutoRedirect, 1)
+	compareFunc(t, router.autoRedirect[0], middleware0)
+	compareFunc(t, router.allAutoRedirect[0], middleware0)
+
+	router.AutoRedirect(middleware1, middleware0)
+	assert.Len(t, router.autoRedirect, 2)
+	assert.Len(t, router.allAutoRedirect, 2)
+	compareFunc(t, router.autoRedirect[0], middleware1)
+	compareFunc(t, router.allAutoRedirect[0], middleware1)
+	compareFunc(t, router.autoRedirect[1], middleware0)
+	compareFunc(t, router.allAutoRedirect[1], middleware0)
+}
+
+func TestAutoRedirectWithGlobalHandlers(t *testing.T) {
+	var middleware0 HandlerFunc = func(c *Context) {}
+	var middleware1 HandlerFunc = func(c *Context) {}
+	var middleware2 HandlerFunc = func(c *Context) {}
+
+	router := New()
+	router.Use(middleware2)
+
+	router.AutoRedirect(middleware0)
+	assert.Len(t, router.allAutoRedirect, 2)
+	assert.Len(t, router.Handlers, 1)
+	assert.Len(t, router.autoRedirect, 1)
+
+	compareFunc(t, router.Handlers[0], middleware2)
+	compareFunc(t, router.autoRedirect[0], middleware0)
+	compareFunc(t, router.allAutoRedirect[0], middleware2)
+	compareFunc(t, router.allAutoRedirect[1], middleware0)
+
+	router.Use(middleware1)
+	assert.Len(t, router.allAutoRedirect, 3)
+	assert.Len(t, router.Handlers, 2)
+	assert.Len(t, router.autoRedirect, 1)
+
+	compareFunc(t, router.Handlers[0], middleware2)
+	compareFunc(t, router.Handlers[1], middleware1)
+	compareFunc(t, router.autoRedirect[0], middleware0)
+	compareFunc(t, router.allAutoRedirect[0], middleware2)
+	compareFunc(t, router.allAutoRedirect[1], middleware1)
+	compareFunc(t, router.allAutoRedirect[2], middleware0)
+}
+
 func compareFunc(t *testing.T, a, b any) {
 	sf1 := reflect.ValueOf(a)
 	sf2 := reflect.ValueOf(b)
