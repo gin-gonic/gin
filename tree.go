@@ -9,6 +9,7 @@ import (
 	"strings"
 	"unicode"
 	"unicode/utf8"
+	"unsafe"
 
 	"github.com/gin-gonic/gin/internal/bytesconv"
 )
@@ -59,11 +60,30 @@ func (trees methodTrees) get(method string) *node {
 }
 
 func longestCommonPrefix(a, b string) int {
+	// Use unsafe operations for better performance in this hot path
+	aBytes := ([]byte)(a)
+	bBytes := ([]byte)(b)
+
+	minLen := min(len(aBytes), len(bBytes))
+
+	// Use word-sized comparison for better performance on 64-bit systems
+	// Compare 8 bytes at a time when possible
+	wordSize := 8
 	i := 0
-	max_ := min(len(a), len(b))
-	for i < max_ && a[i] == b[i] {
+
+	// Word-by-word comparison for better performance
+	for i+wordSize <= minLen {
+		if *(*uint64)(unsafe.Pointer(&aBytes[i])) != *(*uint64)(unsafe.Pointer(&bBytes[i])) {
+			break
+		}
+		i += wordSize
+	}
+
+	// Byte-by-byte comparison for the remainder
+	for i < minLen && aBytes[i] == bBytes[i] {
 		i++
 	}
+
 	return i
 }
 
@@ -421,13 +441,18 @@ func (n *node) getValue(path string, params *Params, skippedNodes *[]skippedNode
 walk: // Outer loop for walking the tree
 	for {
 		prefix := n.path
-		if len(path) > len(prefix) {
-			if path[:len(prefix)] == prefix {
-				path = path[len(prefix):]
+		prefixLen := len(prefix)
+		if len(path) > prefixLen {
+			// Use bytes comparison for better performance
+			pathBytes := ([]byte)(path)
+			if string(pathBytes[:prefixLen]) == prefix {
+				path = path[prefixLen:]
 
 				// Try all the non-wildcard children first by matching the indices
-				idxc := path[0]
-				for i, c := range []byte(n.indices) {
+				pathBytes = ([]byte)(path)  // Update pathBytes after path change
+				idxc := pathBytes[0]
+				indicesBytes := ([]byte)(n.indices)
+				for i, c := range indicesBytes {
 					if c == idxc {
 						//  strings.HasPrefix(n.children[len(n.children)-1].path, ":") == n.wildChild
 						if n.wildChild {
@@ -460,7 +485,11 @@ walk: // Outer loop for walking the tree
 						for length := len(*skippedNodes); length > 0; length-- {
 							skippedNode := (*skippedNodes)[length-1]
 							*skippedNodes = (*skippedNodes)[:length-1]
-							if strings.HasSuffix(skippedNode.path, path) {
+							// Use more efficient suffix check
+							skippedPathBytes := ([]byte)(skippedNode.path)
+							pathBytes := ([]byte)(path)
+							if len(skippedPathBytes) >= len(pathBytes) &&
+							   string(skippedPathBytes[len(skippedPathBytes)-len(pathBytes):]) == path {
 								path = skippedNode.path
 								n = skippedNode.node
 								if value.params != nil {
@@ -489,8 +518,10 @@ walk: // Outer loop for walking the tree
 					// tree_test.go  line: 204
 
 					// Find param end (either '/' or path end)
+					// Use bytes operations for better performance
+					pathBytes := ([]byte)(path)
 					end := 0
-					for end < len(path) && path[end] != '/' {
+					for end < len(pathBytes) && pathBytes[end] != '/' {
 						end++
 					}
 
@@ -509,14 +540,17 @@ walk: // Outer loop for walking the tree
 						// Expand slice within preallocated capacity
 						i := len(*value.params)
 						*value.params = (*value.params)[:i+1]
+
+						// Use bytes slicing to avoid string allocation
 						val := path[:end]
-						if unescape {
+						if unescape && end > 0 {
+							// Only unescape if there are actually characters to unescape
 							if v, err := url.QueryUnescape(val); err == nil {
 								val = v
 							}
 						}
 						(*value.params)[i] = Param{
-							Key:   n.path[1:],
+							Key:   n.path[1:],  // Skip the ':' character
 							Value: val,
 						}
 					}
@@ -562,14 +596,16 @@ walk: // Outer loop for walking the tree
 						// Expand slice within preallocated capacity
 						i := len(*value.params)
 						*value.params = (*value.params)[:i+1]
+
 						val := path
-						if unescape {
+						if unescape && len(path) > 0 {
+							// Only attempt unescape if path is not empty
 							if v, err := url.QueryUnescape(path); err == nil {
 								val = v
 							}
 						}
 						(*value.params)[i] = Param{
-							Key:   n.path[2:],
+							Key:   n.path[2:],  // Skip the '*'
 							Value: val,
 						}
 					}
@@ -591,7 +627,11 @@ walk: // Outer loop for walking the tree
 				for length := len(*skippedNodes); length > 0; length-- {
 					skippedNode := (*skippedNodes)[length-1]
 					*skippedNodes = (*skippedNodes)[:length-1]
-					if strings.HasSuffix(skippedNode.path, path) {
+					// Use more efficient suffix check
+					skippedPathBytes := ([]byte)(skippedNode.path)
+					pathBytes := ([]byte)(path)
+					if len(skippedPathBytes) >= len(pathBytes) &&
+					   string(skippedPathBytes[len(skippedPathBytes)-len(pathBytes):]) == path {
 						path = skippedNode.path
 						n = skippedNode.node
 						if value.params != nil {
@@ -648,7 +688,11 @@ walk: // Outer loop for walking the tree
 			for length := len(*skippedNodes); length > 0; length-- {
 				skippedNode := (*skippedNodes)[length-1]
 				*skippedNodes = (*skippedNodes)[:length-1]
-				if strings.HasSuffix(skippedNode.path, path) {
+				// Use more efficient suffix check
+				skippedPathBytes := ([]byte)(skippedNode.path)
+				pathBytes := ([]byte)(path)
+				if len(skippedPathBytes) >= len(pathBytes) &&
+				   string(skippedPathBytes[len(skippedPathBytes)-len(pathBytes):]) == path {
 					path = skippedNode.path
 					n = skippedNode.node
 					if value.params != nil {
