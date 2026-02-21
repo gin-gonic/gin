@@ -1157,6 +1157,15 @@ func (c *Context) Render(code int, r render.Render) {
 		return
 	}
 
+	if c.Writer.Written() && IsDebugging() {
+		// Skip warning for SSE and streaming responses (status code -1)
+		if code != -1 {
+			if _, ok := r.(sse.Event); !ok {
+				debugPrint("[WARNING] Response body already written. Attempting to write again with status code %d", code)
+			}
+		}
+	}
+
 	if err := r.Render(c.Writer); err != nil {
 		// Pushing error to c.Errors
 		_ = c.Error(err)

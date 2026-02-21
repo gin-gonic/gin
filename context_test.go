@@ -1396,6 +1396,43 @@ func TestContextRenderNoContentData(t *testing.T) {
 	assert.Equal(t, "text/csv", w.Header().Get("Content-Type"))
 }
 
+// Test multiple JSON writes in debug mode
+func TestContextRenderMultipleJSON(t *testing.T) {
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
+
+	oldMode := os.Getenv("GIN_MODE")
+	defer os.Setenv("GIN_MODE", oldMode)
+	SetMode(DebugMode)
+
+	output := captureOutput(t, func() {
+		c.JSON(http.StatusOK, H{"foo": "bar"})
+		c.JSON(http.StatusOK, H{"baz": "qux"})
+	})
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Contains(t, output, "[WARNING] Response body already written")
+	assert.Contains(t, output, "status code 200")
+}
+
+// Test multiple SSE writes in debug mode
+func TestContextRenderMultipleSSE(t *testing.T) {
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
+
+	oldMode := os.Getenv("GIN_MODE")
+	defer os.Setenv("GIN_MODE", oldMode)
+	SetMode(DebugMode)
+
+	output := captureOutput(t, func() {
+		c.SSEvent("message", "test1")
+		c.SSEvent("message", "test2")
+	})
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.NotContains(t, output, "[WARNING] Response body already written")
+}
+
 func TestContextRenderSSE(t *testing.T) {
 	w := httptest.NewRecorder()
 	c, _ := CreateTestContext(w)
