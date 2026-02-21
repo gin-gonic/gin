@@ -329,6 +329,7 @@ func TestColorForLatency(t *testing.T) {
 	assert.Equal(t, white, colorForLatency(time.Millisecond*20), "20ms should be white")
 	assert.Equal(t, green, colorForLatency(time.Millisecond*150), "150ms should be green")
 	assert.Equal(t, cyan, colorForLatency(time.Millisecond*250), "250ms should be cyan")
+	assert.Equal(t, blue, colorForLatency(time.Millisecond*400), "400ms should be blue")
 	assert.Equal(t, yellow, colorForLatency(time.Millisecond*600), "600ms should be yellow")
 	assert.Equal(t, magenta, colorForLatency(time.Millisecond*1500), "1.5s should be magenta")
 	assert.Equal(t, red, colorForLatency(time.Second*3), "other things should be red")

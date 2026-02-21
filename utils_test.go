@@ -145,6 +145,17 @@ func TestMarshalXMLforH(t *testing.T) {
 	assert.Error(t, e)
 }
 
+func TestMarshalXMLforHSuccess(t *testing.T) {
+	h := H{
+		"key1": "value1",
+		"key2": 123,
+	}
+	data, err := xml.Marshal(h)
+	assert.NoError(t, err)
+	assert.Contains(t, string(data), "<key1>value1</key1>")
+	assert.Contains(t, string(data), "<key2>123</key2>")
+}
+
 func TestIsASCII(t *testing.T) {
 	assert.True(t, isASCII("test"))
 	assert.False(t, isASCII("🧡💛💚💙💜"))

@@ -2948,6 +2948,16 @@ func TestContextGetRawData(t *testing.T) {
 	assert.Equal(t, "Fetch binary post data", string(data))
 }
 
+func TestContextGetRawDataNilBody(t *testing.T) {
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	c.Request, _ = http.NewRequest(http.MethodPost, "/", nil)
+
+	data, err := c.GetRawData()
+	assert.Nil(t, data)
+	assert.Error(t, err)
+	assert.Equal(t, "cannot read nil body", err.Error())
+}
+
 func TestContextRenderDataFromReader(t *testing.T) {
 	w := httptest.NewRecorder()
 	c, _ := CreateTestContext(w)
@@ -3535,6 +3545,24 @@ func TestContextSetCookieData(t *testing.T) {
 		c.SetCookieData(cookie)
 		setCookie := c.Writer.Header().Get("Set-Cookie")
 		assert.Contains(t, setCookie, "SameSite=None")
+	})
+
+	// Test that SameSiteDefaultMode inherits from context's sameSite
+	t.Run("SameSiteDefaultMode inherits context sameSite", func(t *testing.T) {
+		c, _ := CreateTestContext(httptest.NewRecorder())
+		c.SetSameSite(http.SameSiteStrictMode)
+		cookie := &http.Cookie{
+			Name:     "user",
+			Value:    "gin",
+			Path:     "/",
+			Domain:   "localhost",
+			Secure:   true,
+			HttpOnly: true,
+			SameSite: http.SameSiteDefaultMode,
+		}
+		c.SetCookieData(cookie)
+		setCookie := c.Writer.Header().Get("Set-Cookie")
+		assert.Contains(t, setCookie, "SameSite=Strict")
 	})
 }
 
