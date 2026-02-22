@@ -15,16 +15,12 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/gin-gonic/gin/codec/json"
 	testdata "github.com/gin-gonic/gin/testdata/protoexample"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
 	"google.golang.org/protobuf/proto"
 )
-
-// TODO unit tests
-// test errors
 
 func TestRenderJSON(t *testing.T) {
 	w := httptest.NewRecorder()
@@ -140,17 +136,42 @@ func TestRenderJsonpJSON(t *testing.T) {
 }
 
 type errorWriter struct {
-	bufString string
+	bufString    string
+	ErrThreshold int // 1-based threshold. If 1, errors on the 1st Write call.
+	writeCount   int
 	*httptest.ResponseRecorder
 }
 
 var _ http.ResponseWriter = (*errorWriter)(nil)
 
+func (w *errorWriter) Header() http.Header {
+	if w.ResponseRecorder == nil {
+		w.ResponseRecorder = httptest.NewRecorder()
+	}
+	return w.ResponseRecorder.Header()
+}
+
+func (w *errorWriter) WriteHeader(statusCode int) {
+	if w.ResponseRecorder == nil {
+		w.ResponseRecorder = httptest.NewRecorder()
+	}
+	w.ResponseRecorder.WriteHeader(statusCode)
+}
+
 func (w *errorWriter) Write(buf []byte) (int, error) {
-	if string(buf) == w.bufString {
-		return 0, errors.New(`write "` + w.bufString + `" error`)
+	w.writeCount++
+	if (w.bufString != "" && string(buf) == w.bufString) || (w.ErrThreshold > 0 && w.writeCount >= w.ErrThreshold) {
+		return 0, errors.New(`write error`)
+	}
+	if w.ResponseRecorder == nil {
+		w.ResponseRecorder = httptest.NewRecorder()
 	}
 	return w.ResponseRecorder.Write(buf)
+}
+
+func (w *errorWriter) reset() {
+	w.writeCount = 0
+	w.ResponseRecorder = httptest.NewRecorder()
 }
 
 func TestRenderJsonpJSONError(t *testing.T) {
@@ -165,23 +186,33 @@ func TestRenderJsonpJSONError(t *testing.T) {
 		},
 	}
 
-	cb := template.JSEscapeString(jsonpJSON.Callback)
-	ew.bufString = cb
-	err := jsonpJSON.Render(ew) // error was returned while writing callback
-	assert.Equal(t, `write "`+cb+`" error`, err.Error())
+	// error was returned while writing callback
+	ew.reset()
+	ew.ErrThreshold = 1
+	err := jsonpJSON.Render(ew)
+	require.Error(t, err)
+	assert.Equal(t, "write error", err.Error())
 
-	ew.bufString = `(`
+	// error was returned while writing "("
+	ew.reset()
+	ew.ErrThreshold = 2
 	err = jsonpJSON.Render(ew)
-	assert.Equal(t, `write "`+`(`+`" error`, err.Error())
+	require.Error(t, err)
+	assert.Equal(t, "write error", err.Error())
 
-	data, _ := json.API.Marshal(jsonpJSON.Data) // error was returned while writing data
-	ew.bufString = string(data)
+	// error was returned while writing data
+	ew.reset()
+	ew.ErrThreshold = 3
 	err = jsonpJSON.Render(ew)
-	assert.Equal(t, `write "`+string(data)+`" error`, err.Error())
+	require.Error(t, err)
+	assert.Equal(t, "write error", err.Error())
 
-	ew.bufString = `);`
+	// error was returned while writing ");"
+	ew.reset()
+	ew.ErrThreshold = 4
 	err = jsonpJSON.Render(ew)
-	assert.Equal(t, `write "`+`);`+`" error`, err.Error())
+	require.Error(t, err)
+	assert.Equal(t, "write error", err.Error())
 }
 
 func TestRenderJsonpJSONError2(t *testing.T) {
@@ -385,6 +416,30 @@ func TestRenderBSON(t *testing.T) {
 	assert.Equal(t, "application/bson", w.Header().Get("Content-Type"))
 }
 
+func TestRenderBSONError(t *testing.T) {
+	w := httptest.NewRecorder()
+	data := make(chan int)
+
+	err := (BSON{data}).Render(w)
+	require.Error(t, err)
+}
+
+func TestRenderBSONWriteError(t *testing.T) {
+	type testStruct struct {
+		Value string
+	}
+	data := &testStruct{Value: "test"}
+
+	ew := &errorWriter{
+		ErrThreshold:     1,
+		ResponseRecorder: httptest.NewRecorder(),
+	}
+
+	err := (BSON{data}).Render(ew)
+	require.Error(t, err)
+	assert.Equal(t, "write error", err.Error())
+}
+
 func TestRenderXML(t *testing.T) {
 	w := httptest.NewRecorder()
 	data := xmlmap{
@@ -399,6 +454,15 @@ func TestRenderXML(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, "<map><foo>bar</foo></map>", w.Body.String())
 	assert.Equal(t, "application/xml; charset=utf-8", w.Header().Get("Content-Type"))
+}
+
+func TestRenderXMLError(t *testing.T) {
+	w := httptest.NewRecorder()
+	data := make(chan int)
+
+	err := (XML{data}).Render(w)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "xml: unsupported type: chan int")
 }
 
 func TestRenderRedirect(t *testing.T) {
@@ -453,6 +517,22 @@ func TestRenderData(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, "#!PNG some raw data", w.Body.String())
 	assert.Equal(t, "image/png", w.Header().Get("Content-Type"))
+}
+
+func TestRenderDataError(t *testing.T) {
+	ew := &errorWriter{
+		ErrThreshold:     1,
+		ResponseRecorder: httptest.NewRecorder(),
+	}
+	data := []byte("#!PNG some raw data")
+
+	err := (Data{
+		ContentType: "image/png",
+		Data:        data,
+	}).Render(ew)
+
+	require.Error(t, err)
+	assert.Equal(t, "write error", err.Error())
 }
 
 func TestRenderString(t *testing.T) {
@@ -594,6 +674,32 @@ func TestRenderHTMLDebugPanics(t *testing.T) {
 	assert.Panics(t, func() { htmlRender.Instance("", nil) })
 }
 
+func TestRenderHTMLTemplateError(t *testing.T) {
+	w := httptest.NewRecorder()
+	templ := template.Must(template.New("t").Parse(`Hello {{if .name}}{{.name.DoesNotExist}}{{end}}`))
+
+	htmlRender := HTMLProduction{Template: templ}
+	instance := htmlRender.Instance("t", map[string]any{
+		"name": "alexandernyquist",
+	})
+
+	err := instance.Render(w)
+	require.Error(t, err)
+}
+
+func TestRenderHTMLTemplateExecuteError(t *testing.T) {
+	w := httptest.NewRecorder()
+	templ := template.Must(template.New("t").Parse(`Hello {{.name.invalid}}`))
+
+	htmlRender := HTMLProduction{Template: templ}
+	instance := htmlRender.Instance("t", map[string]any{
+		"name": "alexandernyquist",
+	})
+
+	err := instance.Render(w)
+	require.Error(t, err)
+}
+
 func TestRenderReader(t *testing.T) {
 	w := httptest.NewRecorder()
 
@@ -645,10 +751,10 @@ func TestRenderWriteError(t *testing.T) {
 	prefix := "my-prefix:"
 	r := SecureJSON{Data: data, Prefix: prefix}
 	ew := &errorWriter{
-		bufString:        prefix,
+		ErrThreshold:     1,
 		ResponseRecorder: httptest.NewRecorder(),
 	}
 	err := r.Render(ew)
 	require.Error(t, err)
-	assert.Equal(t, `write "my-prefix:" error`, err.Error())
+	assert.Equal(t, "write error", err.Error())
 }
