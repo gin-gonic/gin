@@ -40,6 +40,7 @@ const (
 	MIMEYAML2             = binding.MIMEYAML2
 	MIMETOML              = binding.MIMETOML
 	MIMEPROTOBUF          = binding.MIMEPROTOBUF
+	MIMEBSON              = binding.MIMEBSON
 )
 
 // BodyBytesKey indicates a default body bytes key.
@@ -750,8 +751,8 @@ func (c *Context) SaveUploadedFile(file *multipart.FileHeader, dst string, perm 
 //	"application/json" --> JSON binding
 //	"application/xml"  --> XML binding
 //
-// It parses the request's body as JSON if Content-Type == "application/json" using JSON or XML as a JSON input.
-// It decodes the json payload into the struct specified as a pointer.
+// It parses the request's body based on the Content-Type (e.g., JSON or XML).
+// It decodes the payload into the struct specified as a pointer.
 // It writes a 400 error and sets Content-Type header "text/plain" in the response if input is not valid.
 func (c *Context) Bind(obj any) error {
 	b := binding.Default(c.Request.Method, c.ContentType())
@@ -831,8 +832,8 @@ func (c *Context) MustBindWith(obj any, b binding.Binding) error {
 //	"application/json" --> JSON binding
 //	"application/xml"  --> XML binding
 //
-// It parses the request's body as JSON if Content-Type == "application/json" using JSON or XML as a JSON input.
-// It decodes the json payload into the struct specified as a pointer.
+// It parses the request's body based on the Content-Type (e.g., JSON or XML).
+// It decodes the payload into the struct specified as a pointer.
 // Like c.Bind() but this method does not set the response status code to 400 or abort if input is not valid.
 func (c *Context) ShouldBind(obj any) error {
 	b := binding.Default(c.Request.Method, c.ContentType())
@@ -1057,7 +1058,7 @@ func (c *Context) requestHeader(key string) string {
 // bodyAllowedForStatus is a copy of http.bodyAllowedForStatus non-exported function.
 func bodyAllowedForStatus(status int) bool {
 	switch {
-	case status >= 100 && status <= 199:
+	case status >= http.StatusContinue && status < http.StatusOK:
 		return false
 	case status == http.StatusNoContent:
 		return false
@@ -1237,6 +1238,11 @@ func (c *Context) ProtoBuf(code int, obj any) {
 	c.Render(code, render.ProtoBuf{Data: obj})
 }
 
+// BSON serializes the given struct as BSON into the response body.
+func (c *Context) BSON(code int, obj any) {
+	c.Render(code, render.BSON{Data: obj})
+}
+
 // String writes the given string into the response body.
 func (c *Context) String(code int, format string, values ...any) {
 	c.Render(code, render.String{Format: format, Data: values})
@@ -1344,6 +1350,7 @@ type Negotiate struct {
 	Data         any
 	TOMLData     any
 	PROTOBUFData any
+	BSONData     any
 }
 
 // Negotiate calls different Render according to acceptable Accept format.
@@ -1372,6 +1379,10 @@ func (c *Context) Negotiate(code int, config Negotiate) {
 	case binding.MIMEPROTOBUF:
 		data := chooseData(config.PROTOBUFData, config.Data)
 		c.ProtoBuf(code, data)
+
+	case binding.MIMEBSON:
+		data := chooseData(config.BSONData, config.Data)
+		c.BSON(code, data)
 
 	default:
 		c.AbortWithError(http.StatusNotAcceptable, errors.New("the accepted formats are not offered by the server")) //nolint: errcheck
