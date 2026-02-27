@@ -27,7 +27,7 @@ func (r Reader) Render(w http.ResponseWriter) (err error) {
 		}
 		r.Headers["Content-Length"] = strconv.FormatInt(r.ContentLength, 10)
 	}
-	r.writeHeaders(w, r.Headers)
+	r.writeHeaders(w)
 	_, err = io.Copy(w, r.Reader)
 	return
 }
@@ -37,10 +37,10 @@ func (r Reader) WriteContentType(w http.ResponseWriter) {
 	writeContentType(w, []string{r.ContentType})
 }
 
-// writeHeaders writes custom Header.
-func (r Reader) writeHeaders(w http.ResponseWriter, headers map[string]string) {
+// writeHeaders writes headers from r.Headers into response.
+func (r Reader) writeHeaders(w http.ResponseWriter) {
 	header := w.Header()
-	for k, v := range headers {
+	for k, v := range r.Headers {
 		if header.Get(k) == "" {
 			header.Set(k, v)
 		}

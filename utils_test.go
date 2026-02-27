@@ -8,6 +8,7 @@ import (
 	"bytes"
 	"encoding/xml"
 	"fmt"
+	"math"
 	"net/http"
 	"testing"
 
@@ -19,7 +20,7 @@ func init() {
 }
 
 func BenchmarkParseAccept(b *testing.B) {
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		parseAccept("text/html , application/xhtml+xml,application/xml;q=0.9,  */* ;q=0.8")
 	}
 }
@@ -94,7 +95,7 @@ func somefunction() {
 }
 
 func TestJoinPaths(t *testing.T) {
-	assert.Equal(t, "", joinPaths("", ""))
+	assert.Empty(t, joinPaths("", ""))
 	assert.Equal(t, "/", joinPaths("", "/"))
 	assert.Equal(t, "/a", joinPaths("/a", ""))
 	assert.Equal(t, "/a/", joinPaths("/a/", ""))
@@ -147,4 +148,14 @@ func TestMarshalXMLforH(t *testing.T) {
 func TestIsASCII(t *testing.T) {
 	assert.True(t, isASCII("test"))
 	assert.False(t, isASCII("🧡💛💚💙💜"))
+}
+
+func TestSafeInt8(t *testing.T) {
+	assert.Equal(t, int8(100), safeInt8(100))
+	assert.Equal(t, int8(math.MaxInt8), safeInt8(int(math.MaxInt8)+123))
+}
+
+func TestSafeUint16(t *testing.T) {
+	assert.Equal(t, uint16(100), safeUint16(100))
+	assert.Equal(t, uint16(math.MaxUint16), safeUint16(int(math.MaxUint16)+123))
 }

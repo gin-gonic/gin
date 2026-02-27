@@ -12,15 +12,9 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-var once sync.Once
-var internalEngine *gin.Engine
-
-func engine() *gin.Engine {
-	once.Do(func() {
-		internalEngine = gin.Default()
-	})
-	return internalEngine
-}
+var engine = sync.OnceValue(func() *gin.Engine {
+	return gin.Default()
+})
 
 // LoadHTMLGlob is a wrapper for Engine.LoadHTMLGlob.
 func LoadHTMLGlob(pattern string) {
@@ -30,6 +24,11 @@ func LoadHTMLGlob(pattern string) {
 // LoadHTMLFiles is a wrapper for Engine.LoadHTMLFiles.
 func LoadHTMLFiles(files ...string) {
 	engine().LoadHTMLFiles(files...)
+}
+
+// LoadHTMLFS is a wrapper for Engine.LoadHTMLFS.
+func LoadHTMLFS(fs http.FileSystem, patterns ...string) {
+	engine().LoadHTMLFS(fs, patterns...)
 }
 
 // SetHTMLTemplate is a wrapper for Engine.SetHTMLTemplate.

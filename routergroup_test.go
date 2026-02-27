@@ -11,6 +11,8 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+var MaxHandlers = 32
+
 func init() {
 	SetMode(TestMode)
 }
@@ -192,4 +194,26 @@ func testRoutesInterface(t *testing.T, r IRoutes) {
 	assert.Equal(t, r, r.StaticFileFS("/static2", ".", Dir(".", false)))
 	assert.Equal(t, r, r.Static("/static", "."))
 	assert.Equal(t, r, r.StaticFS("/static2", Dir(".", false)))
+}
+
+func TestRouterGroupCombineHandlersTooManyHandlers(t *testing.T) {
+	group := &RouterGroup{
+		Handlers: make(HandlersChain, MaxHandlers), // Assume group already has MaxHandlers middleware
+	}
+	tooManyHandlers := make(HandlersChain, MaxHandlers) // Add MaxHandlers more, total 2 * MaxHandlers
+
+	// This should trigger panic
+	assert.Panics(t, func() {
+		group.combineHandlers(tooManyHandlers)
+	}, "should panic due to too many handlers")
+}
+
+func TestRouterGroupCombineHandlersEmptySliceNotNil(t *testing.T) {
+	group := &RouterGroup{
+		Handlers: HandlersChain{},
+	}
+
+	result := group.combineHandlers(HandlersChain{})
+	assert.NotNil(t, result, "result should not be nil even with empty handlers")
+	assert.Empty(t, result, "empty handlers should return empty chain")
 }

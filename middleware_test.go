@@ -203,7 +203,7 @@ func TestMiddlewareAbortHandlersChainAndNext(t *testing.T) {
 	assert.Equal(t, "ACB", signature)
 }
 
-// TestFailHandlersChain - ensure that Fail interrupt used middleware in fifo order as
+// TestMiddlewareFailHandlersChain - ensure that Fail interrupt used middleware in fifo order as
 // as well as Abort
 func TestMiddlewareFailHandlersChain(t *testing.T) {
 	// SETUP
@@ -249,5 +249,5 @@ func TestMiddlewareWrite(t *testing.T) {
 	w := PerformRequest(router, http.MethodGet, "/")
 
 	assert.Equal(t, http.StatusBadRequest, w.Code)
-	assert.Equal(t, strings.Replace("hola\n<map><foo>bar</foo></map>{\"foo\":\"bar\"}{\"foo\":\"bar\"}event:test\ndata:message\n\n", " ", "", -1), strings.Replace(w.Body.String(), " ", "", -1))
+	assert.Equal(t, strings.ReplaceAll("hola\n<map><foo>bar</foo></map>{\"foo\":\"bar\"}{\"foo\":\"bar\"}event:test\ndata:message\n\n", " ", ""), strings.ReplaceAll(w.Body.String(), " ", ""))
 }

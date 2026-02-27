@@ -5,25 +5,27 @@
 package gin
 
 import (
+	"bufio"
 	"bytes"
+	"cmp"
 	"errors"
 	"fmt"
 	"io"
 	"log"
-	"net"
 	"net/http"
 	"net/http/httputil"
 	"os"
 	"runtime"
 	"strings"
+	"syscall"
 	"time"
+
+	"github.com/gin-gonic/gin/internal/bytesconv"
 )
 
-var (
-	dunno     = []byte("???")
-	centerDot = []byte("·")
-	dot       = []byte(".")
-	slash     = []byte("/")
+const (
+	dunno     = "???"
+	stackSkip = 3
 )
 
 // RecoveryFunc defines the function passable to CustomRecovery.
@@ -55,52 +57,53 @@ func CustomRecoveryWithWriter(out io.Writer, handle RecoveryFunc) HandlerFunc {
 	}
 	return func(c *Context) {
 		defer func() {
-			if err := recover(); err != nil {
+			if rec := recover(); rec != nil {
 				// Check for a broken connection, as it is not really a
 				// condition that warrants a panic stack trace.
-				var brokenPipe bool
-				if ne, ok := err.(*net.OpError); ok {
-					var se *os.SyscallError
-					if errors.As(ne, &se) {
-						seStr := strings.ToLower(se.Error())
-						if strings.Contains(seStr, "broken pipe") ||
-							strings.Contains(seStr, "connection reset by peer") {
-							brokenPipe = true
-						}
-					}
+				var isBrokenPipe bool
+				err, ok := rec.(error)
+				if ok {
+					isBrokenPipe = errors.Is(err, syscall.EPIPE) ||
+						errors.Is(err, syscall.ECONNRESET) ||
+						errors.Is(err, http.ErrAbortHandler)
 				}
 				if logger != nil {
-					stack := stack(3)
-					httpRequest, _ := httputil.DumpRequest(c.Request, false)
-					headers := strings.Split(string(httpRequest), "\r\n")
-					for idx, header := range headers {
-						current := strings.Split(header, ":")
-						if current[0] == "Authorization" {
-							headers[idx] = current[0] + ": *"
-						}
-					}
-					headersToStr := strings.Join(headers, "\r\n")
-					if brokenPipe {
-						logger.Printf("%s\n%s%s", err, headersToStr, reset)
+					if isBrokenPipe {
+						logger.Printf("%s\n%s%s", rec, secureRequestDump(c.Request), reset)
 					} else if IsDebugging() {
 						logger.Printf("[Recovery] %s panic recovered:\n%s\n%s\n%s%s",
-							timeFormat(time.Now()), headersToStr, err, stack, reset)
+							timeFormat(time.Now()), secureRequestDump(c.Request), rec, stack(stackSkip), reset)
 					} else {
 						logger.Printf("[Recovery] %s panic recovered:\n%s\n%s%s",
-							timeFormat(time.Now()), err, stack, reset)
+							timeFormat(time.Now()), rec, stack(stackSkip), reset)
 					}
 				}
-				if brokenPipe {
+				if isBrokenPipe {
 					// If the connection is dead, we can't write a status to it.
-					c.Error(err.(error)) //nolint: errcheck
+					c.Error(err) //nolint: errcheck
 					c.Abort()
 				} else {
-					handle(c, err)
+					handle(c, rec)
 				}
 			}
 		}()
 		c.Next()
 	}
+}
+
+// secureRequestDump returns a sanitized HTTP request dump where the Authorization header,
+// if present, is replaced with a masked value ("Authorization: *") to avoid leaking sensitive credentials.
+//
+// Currently, only the Authorization header is sanitized. All other headers and request data remain unchanged.
+func secureRequestDump(r *http.Request) string {
+	httpRequest, _ := httputil.DumpRequest(r, false)
+	lines := strings.Split(bytesconv.BytesToString(httpRequest), "\r\n")
+	for i, line := range lines {
+		if strings.HasPrefix(line, "Authorization:") {
+			lines[i] = "Authorization: *"
+		}
+	}
+	return strings.Join(lines, "\r\n")
 }
 
 func defaultHandleRecovery(c *Context, _ any) {
@@ -112,8 +115,11 @@ func stack(skip int) []byte {
 	buf := new(bytes.Buffer) // the returned data
 	// As we loop, we open files and read them. These variables record the currently
 	// loaded file.
-	var lines [][]byte
-	var lastFile string
+	var (
+		nLine    string
+		lastFile string
+		err      error
+	)
 	for i := skip; ; i++ { // Skip the expected number of frames
 		pc, file, line, ok := runtime.Caller(i)
 		if !ok {
@@ -122,34 +128,53 @@ func stack(skip int) []byte {
 		// Print this much at least.  If we can't find the source, it won't show.
 		fmt.Fprintf(buf, "%s:%d (0x%x)\n", file, line, pc)
 		if file != lastFile {
-			data, err := os.ReadFile(file)
+			nLine, err = readNthLine(file, line-1)
 			if err != nil {
 				continue
 			}
-			lines = bytes.Split(data, []byte{'\n'})
 			lastFile = file
 		}
-		fmt.Fprintf(buf, "\t%s: %s\n", function(pc), source(lines, line))
+		fmt.Fprintf(buf, "\t%s: %s\n", function(pc), cmp.Or(nLine, dunno))
 	}
 	return buf.Bytes()
 }
 
-// source returns a space-trimmed slice of the n'th line.
-func source(lines [][]byte, n int) []byte {
-	n-- // in stack trace, lines are 1-indexed but our array is 0-indexed
-	if n < 0 || n >= len(lines) {
-		return dunno
+// readNthLine reads the nth line from the file.
+// It returns the trimmed content of the line if found,
+// or an empty string if the line doesn't exist.
+// If there's an error opening the file, it returns the error.
+func readNthLine(file string, n int) (string, error) {
+	if n < 0 {
+		return "", nil
 	}
-	return bytes.TrimSpace(lines[n])
+
+	f, err := os.Open(file)
+	if err != nil {
+		return "", err
+	}
+	defer f.Close()
+
+	scanner := bufio.NewScanner(f)
+	for i := 0; i < n; i++ {
+		if !scanner.Scan() {
+			return "", nil
+		}
+	}
+
+	if scanner.Scan() {
+		return strings.TrimSpace(scanner.Text()), nil
+	}
+
+	return "", nil
 }
 
 // function returns, if possible, the name of the function containing the PC.
-func function(pc uintptr) []byte {
+func function(pc uintptr) string {
 	fn := runtime.FuncForPC(pc)
 	if fn == nil {
 		return dunno
 	}
-	name := []byte(fn.Name())
+	name := fn.Name()
 	// The name includes the path name to the package, which is unnecessary
 	// since the file name is already included.  Plus, it has center dots.
 	// That is, we see
@@ -158,13 +183,13 @@ func function(pc uintptr) []byte {
 	//	*T.ptrmethod
 	// Also the package path might contain dot (e.g. code.google.com/...),
 	// so first eliminate the path prefix
-	if lastSlash := bytes.LastIndex(name, slash); lastSlash >= 0 {
+	if lastSlash := strings.LastIndexByte(name, '/'); lastSlash >= 0 {
 		name = name[lastSlash+1:]
 	}
-	if period := bytes.Index(name, dot); period >= 0 {
+	if period := strings.IndexByte(name, '.'); period >= 0 {
 		name = name[period+1:]
 	}
-	name = bytes.ReplaceAll(name, centerDot, dot)
+	name = strings.ReplaceAll(name, "·", ".")
 	return name
 }
 

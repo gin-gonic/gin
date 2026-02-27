@@ -22,6 +22,7 @@
   - [How to write log file](#how-to-write-log-file)
   - [Custom Log Format](#custom-log-format)
   - [Controlling Log output coloring](#controlling-log-output-coloring)
+  - [Avoid logging query strings](#avoid-loging-query-strings)
   - [Model binding and validation](#model-binding-and-validation)
   - [Custom Validators](#custom-validators)
   - [Only Bind Query String](#only-bind-query-string)
@@ -63,6 +64,7 @@
   - [http2 server push](#http2-server-push)
   - [Define format for the log of routes](#define-format-for-the-log-of-routes)
   - [Set and get a cookie](#set-and-get-a-cookie)
+  - [Custom json codec at runtime](#custom-json-codec-at-runtime)
 - [Don't trust all proxies](#dont-trust-all-proxies)
 - [Testing](#testing)
 
@@ -84,10 +86,10 @@ go build -tags=jsoniter .
 go build -tags=go_json .
 ```
 
-[sonic](https://github.com/bytedance/sonic) (you have to ensure that your cpu supports avx instruction.)
+[sonic](https://github.com/bytedance/sonic)
 
 ```sh
-$ go build -tags="sonic avx" .
+$ go build -tags=sonic .
 ```
 
 ### Build without `MsgPack` rendering feature
@@ -591,6 +593,20 @@ func main() {
 }
 ```
 
+### Avoid logging query strings
+
+```go
+func main() {
+  router := gin.New()
+  
+  // SkipQueryString indicates that the logger should not log the query string.
+  // For example, /path?q=1 will be logged as /path
+  loggerConfig := gin.LoggerConfig{SkipQueryString: true}
+  
+  router.Use(gin.LoggerWithConfig(loggerConfig))
+}
+```
+
 ### Model binding and validation
 
 To bind a request body into a type, use model binding. We currently support binding of JSON, XML, YAML, TOML and standard form values (foo=bar&boo=baz).
@@ -872,7 +888,7 @@ curl -X GET "localhost:8085/testing?name=appleboy&address=xyz&birthday=1992-03-1
 
 If the server should bind a default value to a field when the client does not provide one, specify the default value using the `default` key within the `form` tag:
 
-```
+```go
 package main
 
 import (
@@ -910,7 +926,7 @@ curl -X POST http://localhost:8080/person
 
 NOTE: For default [collection values](#collection-format-for-arrays), the following rules apply:
 - Since commas are used to delimit tag options, they are not supported within a default value and will result in undefined behavior
-- For the collection formats "multi" and "csv", a semicolon should be used in place of a comma to delimited default values
+- For the collection formats "multi" and "csv", a semicolon should be used in place of a comma to delimit default values
 - Since semicolons are used to delimit default values for "multi" and "csv", they are not supported within a default value for "multi" and "csv"
 
 
@@ -1008,12 +1024,68 @@ curl -v localhost:8088/thinkerou/not-uuid
 
 ### Bind custom unmarshaler
 
+To override gin's default binding logic, define a function on your type that satisfies the `encoding.TextUnmarshaler` interface from the Golang standard library. Then specify `parser=encoding.TextUnmarshaler` in the `uri`/`form` tag of the field being bound.
+
 ```go
 package main
 
 import (
-  "github.com/gin-gonic/gin"
+  "encoding"
   "strings"
+
+  "github.com/gin-gonic/gin"
+)
+
+type Birthday string
+
+func (b *Birthday) UnmarshalText(text []byte) error {
+  *b = Birthday(strings.Replace(string(text), "-", "/", -1))
+  return nil
+}
+
+var _ encoding.TextUnmarshaler = (*Birthday)(nil) //assert Birthday implements encoding.TextUnmarshaler
+
+func main() {
+  route := gin.Default()
+  var request struct {
+    Birthday         Birthday   `form:"birthday,parser=encoding.TextUnmarshaler"`
+    Birthdays        []Birthday `form:"birthdays,parser=encoding.TextUnmarshaler" collection_format:"csv"`
+    BirthdaysDefault []Birthday `form:"birthdaysDef,default=2020-09-01;2020-09-02,parser=encoding.TextUnmarshaler" collection_format:"csv"`
+  }
+  route.GET("/test", func(ctx *gin.Context) {
+    _ = ctx.BindQuery(&request)
+    ctx.JSON(200, request)
+  })
+  _ = route.Run(":8088")
+}
+```
+
+Test it with:
+
+```sh
+curl 'localhost:8088/test?birthday=2000-01-01&birthdays=2000-01-01,2000-01-02'
+```
+Result
+```sh
+{"Birthday":"2000/01/01","Birthdays":["2000/01/01","2000/01/02"],"BirthdaysDefault":["2020/09/01","2020/09/02"]}
+```
+
+Note:
+- If `parser=encoding.TextUnmarshaler` is specified for a type that does **not** implement `encoding.TextUnmarshaler`, gin will ignore it and proceed with its default binding logic.
+- If `parser=encoding.TextUnmarshaler` is specified for a type and that type's implementation of `encoding.TextUnmarshaler` returns an error, gin will stop binding and return the error to the client.
+
+---
+
+If a type already implements `encoding.TextUnmarshaler` but you want to customize how gin binds the type differently (eg to change what error message is returned), you can implement the dedicated `BindUnmarshaler` interface provided by gin instead.
+
+```go
+package main
+
+import (
+  "strings"
+
+  "github.com/gin-gonic/gin"
+  "github.com/gin-gonic/gin/binding"
 )
 
 type Birthday string
@@ -1023,28 +1095,36 @@ func (b *Birthday) UnmarshalParam(param string) error {
   return nil
 }
 
+var _ binding.BindUnmarshaler = (*Birthday)(nil) //assert Birthday implements binding.BindUnmarshaler
+
 func main() {
   route := gin.Default()
   var request struct {
-    Birthday Birthday `form:"birthday"`
+    Birthday         Birthday   `form:"birthday"`
+    Birthdays        []Birthday `form:"birthdays" collection_format:"csv"`
+    BirthdaysDefault []Birthday `form:"birthdaysDef,default=2020-09-01;2020-09-02" collection_format:"csv"`
   }
   route.GET("/test", func(ctx *gin.Context) {
     _ = ctx.BindQuery(&request)
-    ctx.JSON(200, request.Birthday)
+    ctx.JSON(200, request)
   })
-  route.Run(":8088")
+  _ = route.Run(":8088")
 }
 ```
 
 Test it with:
 
 ```sh
-curl 'localhost:8088/test?birthday=2000-01-01'
+curl 'localhost:8088/test?birthday=2000-01-01&birthdays=2000-01-01,2000-01-02'
 ```
 Result
 ```sh
-"2000/01/01"
+{"Birthday":"2000/01/01","Birthdays":["2000/01/01","2000/01/02"],"BirthdaysDefault":["2020/09/01","2020/09/02"]}
 ```
+
+Note:
+- If a type implements both `encoding.TextUnmarshaler` and `BindUnmarshaler`, gin will use `BindUnmarshaler` by default unless you specify `parser=encoding.TextUnmarshaler` in the binding tag.
+- If a type returns an error from its implementation of `BindUnmarshaler`, gin will stop binding and return the error to the client.
 
 ### Bind Header
 
@@ -1393,13 +1473,19 @@ func main() {
 
 ### HTML rendering
 
-Using LoadHTMLGlob() or LoadHTMLFiles()
+Using LoadHTMLGlob() or LoadHTMLFiles() or LoadHTMLFS()
 
 ```go
+//go:embed templates/*
+var templates embed.FS
+
 func main() {
   router := gin.Default()
   router.LoadHTMLGlob("templates/*")
   //router.LoadHTMLFiles("templates/template1.html", "templates/template2.html")
+  //router.LoadHTMLFS(http.Dir("templates"), "template1.html", "template2.html")
+  //or
+  //router.LoadHTMLFS(http.FS(templates), "templates/template1.html", "templates/template2.html")
   router.GET("/index", func(c *gin.Context) {
     c.HTML(http.StatusOK, "index.tmpl", gin.H{
       "title": "Main website",
@@ -2298,18 +2384,129 @@ func main() {
   router := gin.Default()
 
   router.GET("/cookie", func(c *gin.Context) {
+    cookie, err := c.Cookie("gin_cookie")
 
+    if err != nil {
+      cookie = "NotSet"
+      // Using http.Cookie struct for more control
+      c.SetCookieData(&http.Cookie{
+        Name:       "gin_cookie",
+        Value:      "test",
+        Path:       "/",
+        Domain:     "localhost",
+        MaxAge:     3600,
+        Secure:     false,
+        HttpOnly:   true,
+        // Additional fields available in http.Cookie
+        Expires:    time.Now().Add(24 * time.Hour),
+        // Partitioned: true, // Available in newer Go versions
+      })
+    }
+
+    fmt.Printf("Cookie value: %s \n", cookie)
+  })
+
+  router.Run()
+}
+```
+
+You can also use the `SetCookieData` method, which accepts a `*http.Cookie` directly for more flexibility:
+
+```go
+import (
+  "fmt"
+  "net/http"
+  "time"
+
+  "github.com/gin-gonic/gin"
+)
+
+func main() {
+  router := gin.Default()
+
+  router.GET("/cookie", func(c *gin.Context) {
       cookie, err := c.Cookie("gin_cookie")
 
       if err != nil {
           cookie = "NotSet"
-          c.SetCookie("gin_cookie", "test", 3600, "/", "localhost", false, true)
+          // Using http.Cookie struct for more control
+          c.SetCookieData(&http.Cookie{
+              Name:       "gin_cookie",
+              Value:      "test",
+              Path:       "/",
+              Domain:     "localhost",
+              MaxAge:     3600,
+              Secure:     false,
+              HttpOnly:   true,
+              // Additional fields available in http.Cookie
+              Expires:    time.Now().Add(24 * time.Hour),
+              // Partitioned: true, // Available in newer Go versions
+          })
       }
 
       fmt.Printf("Cookie value: %s \n", cookie)
   })
 
   router.Run()
+}
+```
+
+### Custom json codec at runtime
+
+Gin support custom json serialization and deserialization logic without using compile tags.
+
+1. Define a custom struct implements the `json.Core` interface.
+
+2. Before your engine starts, assign values to `json.API` using the custom struct.
+
+```go
+package main
+
+import (
+  "io"
+
+  "github.com/gin-gonic/gin"
+  "github.com/gin-gonic/gin/codec/json"
+  jsoniter "github.com/json-iterator/go"
+)
+
+var customConfig = jsoniter.Config{
+  EscapeHTML:             true,
+  SortMapKeys:            true,
+  ValidateJsonRawMessage: true,
+}.Froze()
+
+// implement api.JsonApi
+type customJsonApi struct {
+}
+
+func (j customJsonApi) Marshal(v any) ([]byte, error) {
+  return customConfig.Marshal(v)
+}
+
+func (j customJsonApi) Unmarshal(data []byte, v any) error {
+  return customConfig.Unmarshal(data, v)
+}
+
+func (j customJsonApi) MarshalIndent(v any, prefix, indent string) ([]byte, error) {
+  return customConfig.MarshalIndent(v, prefix, indent)
+}
+
+func (j customJsonApi) NewEncoder(writer io.Writer) json.Encoder {
+  return customConfig.NewEncoder(writer)
+}
+
+func (j customJsonApi) NewDecoder(reader io.Reader) json.Decoder {
+  return customConfig.NewDecoder(reader)
+}
+
+func main() {
+  //Replace the default json api
+  json.API = customJsonApi{}
+
+  //Start your gin engine
+  router := gin.Default()
+  router.Run(":8080")
 }
 ```
 

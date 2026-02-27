@@ -9,7 +9,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/gin-gonic/gin/internal/json"
+	"github.com/gin-gonic/gin/codec/json"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -33,8 +33,8 @@ func TestError(t *testing.T) {
 		"meta":  "some data",
 	}, err.JSON())
 
-	jsonBytes, _ := json.Marshal(err)
-	assert.Equal(t, "{\"error\":\"test error\",\"meta\":\"some data\"}", string(jsonBytes))
+	jsonBytes, _ := json.API.Marshal(err)
+	assert.JSONEq(t, "{\"error\":\"test error\",\"meta\":\"some data\"}", string(jsonBytes))
 
 	err.SetMeta(H{ //nolint: errcheck
 		"status": "200",
@@ -92,14 +92,14 @@ Error #03: third
 		H{"error": "second", "meta": "some data"},
 		H{"error": "third", "status": "400"},
 	}, errs.JSON())
-	jsonBytes, _ := json.Marshal(errs)
-	assert.Equal(t, "[{\"error\":\"first\"},{\"error\":\"second\",\"meta\":\"some data\"},{\"error\":\"third\",\"status\":\"400\"}]", string(jsonBytes))
+	jsonBytes, _ := json.API.Marshal(errs)
+	assert.JSONEq(t, "[{\"error\":\"first\"},{\"error\":\"second\",\"meta\":\"some data\"},{\"error\":\"third\",\"status\":\"400\"}]", string(jsonBytes))
 	errs = errorMsgs{
 		{Err: errors.New("first"), Type: ErrorTypePrivate},
 	}
 	assert.Equal(t, H{"error": "first"}, errs.JSON())
-	jsonBytes, _ = json.Marshal(errs)
-	assert.Equal(t, "{\"error\":\"first\"}", string(jsonBytes))
+	jsonBytes, _ = json.API.Marshal(errs)
+	assert.JSONEq(t, "{\"error\":\"first\"}", string(jsonBytes))
 
 	errs = errorMsgs{}
 	assert.Nil(t, errs.Last())
@@ -126,4 +126,15 @@ func TestErrorUnwrap(t *testing.T) {
 	require.ErrorIs(t, err, innerErr)
 	var testErr TestErr
 	require.ErrorAs(t, err, &testErr)
+
+	// Test non-pointer usage of gin.Error
+	errNonPointer := Error{
+		Err:  innerErr,
+		Type: ErrorTypeAny,
+	}
+	wrappedErr := fmt.Errorf("wrapped: %w", errNonPointer)
+	// Check that 'errors.Is()' and 'errors.As()' behave as expected for non-pointer usage
+	require.ErrorIs(t, wrappedErr, innerErr)
+	var testErrNonPointer TestErr
+	require.ErrorAs(t, wrappedErr, &testErrNonPointer)
 }

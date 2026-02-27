@@ -44,9 +44,14 @@ type LoggerConfig struct {
 	// Optional. Default value is gin.DefaultWriter.
 	Output io.Writer
 
-	// SkipPaths is an url path array which logs are not written.
+	// SkipPaths is a URL path array which logs are not written.
 	// Optional.
 	SkipPaths []string
+
+	// SkipQueryString indicates that query strings should not be written
+	// for cases such as when API keys are passed via query strings.
+	// Optional. Default value is false.
+	SkipQueryString bool
 
 	// Skip is a Skipper that indicates which logs should not be written.
 	// Optional.
@@ -82,7 +87,7 @@ type LogFormatterParams struct {
 	// BodySize is the size of the Response Body
 	BodySize int
 	// Keys are the keys set on the request's context.
-	Keys map[string]any
+	Keys map[any]any
 }
 
 // StatusCodeColor is the ANSI color for appropriately logging http status code to a terminal.
@@ -98,6 +103,27 @@ func (p *LogFormatterParams) StatusCodeColor() string {
 		return white
 	case code >= http.StatusBadRequest && code < http.StatusInternalServerError:
 		return yellow
+	default:
+		return red
+	}
+}
+
+// LatencyColor is the ANSI color for latency
+func (p *LogFormatterParams) LatencyColor() string {
+	latency := p.Latency
+	switch {
+	case latency < time.Millisecond*100:
+		return white
+	case latency < time.Millisecond*200:
+		return green
+	case latency < time.Millisecond*300:
+		return cyan
+	case latency < time.Millisecond*500:
+		return blue
+	case latency < time.Second:
+		return yellow
+	case latency < time.Second*2:
+		return magenta
 	default:
 		return red
 	}
@@ -139,20 +165,27 @@ func (p *LogFormatterParams) IsOutputColor() bool {
 
 // defaultLogFormatter is the default log format function Logger middleware uses.
 var defaultLogFormatter = func(param LogFormatterParams) string {
-	var statusColor, methodColor, resetColor string
+	var statusColor, methodColor, resetColor, latencyColor string
 	if param.IsOutputColor() {
 		statusColor = param.StatusCodeColor()
 		methodColor = param.MethodColor()
 		resetColor = param.ResetColor()
+		latencyColor = param.LatencyColor()
 	}
 
-	if param.Latency > time.Minute {
-		param.Latency = param.Latency.Truncate(time.Second)
+	switch {
+	case param.Latency > time.Minute:
+		param.Latency = param.Latency.Truncate(time.Second * 10)
+	case param.Latency > time.Second:
+		param.Latency = param.Latency.Truncate(time.Millisecond * 10)
+	case param.Latency > time.Millisecond:
+		param.Latency = param.Latency.Truncate(time.Microsecond * 10)
 	}
-	return fmt.Sprintf("[GIN] %v |%s %3d %s| %13v | %15s |%s %-7s %s %#v\n%s",
+
+	return fmt.Sprintf("[GIN] %v |%s %3d %s|%s %8v %s| %15s |%s %-7s %s %#v\n%s",
 		param.TimeStamp.Format("2006/01/02 - 15:04:05"),
 		statusColor, param.StatusCode, resetColor,
-		param.Latency,
+		latencyColor, param.Latency, resetColor,
 		param.ClientIP,
 		methodColor, param.Method, resetColor,
 		param.Path,
@@ -270,7 +303,7 @@ func LoggerWithConfig(conf LoggerConfig) HandlerFunc {
 
 		param.BodySize = c.Writer.Size()
 
-		if raw != "" {
+		if raw != "" && !conf.SkipQueryString {
 			path = path + "?" + raw
 		}
 

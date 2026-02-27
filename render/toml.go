@@ -15,7 +15,7 @@ type TOML struct {
 	Data any
 }
 
-var TOMLContentType = []string{"application/toml; charset=utf-8"}
+var tomlContentType = []string{"application/toml; charset=utf-8"}
 
 // Render (TOML) marshals the given interface object and writes data with custom ContentType.
 func (r TOML) Render(w http.ResponseWriter) error {
@@ -32,5 +32,5 @@ func (r TOML) Render(w http.ResponseWriter) error {
 
 // WriteContentType (TOML) writes TOML ContentType for response.
 func (r TOML) WriteContentType(w http.ResponseWriter) {
-	writeContentType(w, TOMLContentType)
+	writeContentType(w, tomlContentType)
 }
