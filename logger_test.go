@@ -471,3 +471,17 @@ func TestForceConsoleColor(t *testing.T) {
 	// reset console color mode.
 	consoleColorMode = autoColor
 }
+
+func TestLoggerWithConfigSkipQueryString(t *testing.T) {
+	buffer := new(strings.Builder)
+	router := New()
+	router.Use(LoggerWithConfig(LoggerConfig{
+		Output:          buffer,
+		SkipQueryString: true,
+	}))
+	router.GET("/logged", func(c *Context) { c.Status(http.StatusOK) })
+
+	PerformRequest(router, "GET", "/logged?a=21")
+	assert.Contains(t, buffer.String(), "200")
+	assert.NotContains(t, buffer.String(), "a=21")
+}
