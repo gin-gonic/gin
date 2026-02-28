@@ -40,6 +40,7 @@ const (
 	MIMEYAML2             = binding.MIMEYAML2
 	MIMETOML              = binding.MIMETOML
 	MIMEPROTOBUF          = binding.MIMEPROTOBUF
+	MIMEBSON              = binding.MIMEBSON
 )
 
 // BodyBytesKey indicates a default body bytes key.
@@ -386,6 +387,11 @@ func (c *Context) GetDuration(key any) time.Duration {
 	return getTyped[time.Duration](c, key)
 }
 
+// GetError returns the value associated with the key as an error.
+func (c *Context) GetError(key any) error {
+	return getTyped[error](c, key)
+}
+
 // GetIntSlice returns the value associated with the key as a slice of integers.
 func (c *Context) GetIntSlice(key any) []int {
 	return getTyped[[]int](c, key)
@@ -449,6 +455,11 @@ func (c *Context) GetFloat64Slice(key any) []float64 {
 // GetStringSlice returns the value associated with the key as a slice of strings.
 func (c *Context) GetStringSlice(key any) []string {
 	return getTyped[[]string](c, key)
+}
+
+// GetErrorSlice returns the value associated with the key as a slice of errors.
+func (c *Context) GetErrorSlice(key any) []error {
+	return getTyped[[]error](c, key)
 }
 
 // GetStringMap returns the value associated with the key as a map of interfaces.
@@ -740,8 +751,8 @@ func (c *Context) SaveUploadedFile(file *multipart.FileHeader, dst string, perm 
 //	"application/json" --> JSON binding
 //	"application/xml"  --> XML binding
 //
-// It parses the request's body as JSON if Content-Type == "application/json" using JSON or XML as a JSON input.
-// It decodes the json payload into the struct specified as a pointer.
+// It parses the request's body based on the Content-Type (e.g., JSON or XML).
+// It decodes the payload into the struct specified as a pointer.
 // It writes a 400 error and sets Content-Type header "text/plain" in the response if input is not valid.
 func (c *Context) Bind(obj any) error {
 	b := binding.Default(c.Request.Method, c.ContentType())
@@ -821,8 +832,8 @@ func (c *Context) MustBindWith(obj any, b binding.Binding) error {
 //	"application/json" --> JSON binding
 //	"application/xml"  --> XML binding
 //
-// It parses the request's body as JSON if Content-Type == "application/json" using JSON or XML as a JSON input.
-// It decodes the json payload into the struct specified as a pointer.
+// It parses the request's body based on the Content-Type (e.g., JSON or XML).
+// It decodes the payload into the struct specified as a pointer.
 // Like c.Bind() but this method does not set the response status code to 400 or abort if input is not valid.
 func (c *Context) ShouldBind(obj any) error {
 	b := binding.Default(c.Request.Method, c.ContentType())
@@ -978,14 +989,27 @@ func (c *Context) ClientIP() string {
 		}
 	}
 
-	// It also checks if the remoteIP is a trusted proxy or not.
-	// In order to perform this validation, it will see if the IP is contained within at least one of the CIDR blocks
-	// defined by Engine.SetTrustedProxies()
-	remoteIP := net.ParseIP(c.RemoteIP())
-	if remoteIP == nil {
-		return ""
+	var (
+		trusted  bool
+		remoteIP net.IP
+	)
+	// If gin is listening a unix socket, always trust it.
+	localAddr, ok := c.Request.Context().Value(http.LocalAddrContextKey).(net.Addr)
+	if ok && strings.HasPrefix(localAddr.Network(), "unix") {
+		trusted = true
 	}
-	trusted := c.engine.isTrustedProxy(remoteIP)
+
+	// Fallback
+	if !trusted {
+		// It also checks if the remoteIP is a trusted proxy or not.
+		// In order to perform this validation, it will see if the IP is contained within at least one of the CIDR blocks
+		// defined by Engine.SetTrustedProxies()
+		remoteIP = net.ParseIP(c.RemoteIP())
+		if remoteIP == nil {
+			return ""
+		}
+		trusted = c.engine.isTrustedProxy(remoteIP)
+	}
 
 	if trusted && c.engine.ForwardedByClientIP && c.engine.RemoteIPHeaders != nil {
 		for _, headerName := range c.engine.RemoteIPHeaders {
@@ -1032,9 +1056,10 @@ func (c *Context) requestHeader(key string) string {
 /************************************/
 
 // bodyAllowedForStatus is a copy of http.bodyAllowedForStatus non-exported function.
+// Uses http.StatusContinue constant for better code clarity.
 func bodyAllowedForStatus(status int) bool {
 	switch {
-	case status >= 100 && status <= 199:
+	case status >= http.StatusContinue && status < http.StatusOK:
 		return false
 	case status == http.StatusNoContent:
 		return false
@@ -1199,6 +1224,12 @@ func (c *Context) XML(code int, obj any) {
 	c.Render(code, render.XML{Data: obj})
 }
 
+// PDF writes the given PDF binary data into the response body.
+// It also sets the Content-Type as "application/pdf".
+func (c *Context) PDF(code int, data []byte) {
+	c.Render(code, render.PDF{Data: data})
+}
+
 // YAML serializes the given struct as YAML into the response body.
 func (c *Context) YAML(code int, obj any) {
 	c.Render(code, render.YAML{Data: obj})
@@ -1212,6 +1243,11 @@ func (c *Context) TOML(code int, obj any) {
 // ProtoBuf serializes the given struct as ProtoBuf into the response body.
 func (c *Context) ProtoBuf(code int, obj any) {
 	c.Render(code, render.ProtoBuf{Data: obj})
+}
+
+// BSON serializes the given struct as BSON into the response body.
+func (c *Context) BSON(code int, obj any) {
+	c.Render(code, render.BSON{Data: obj})
 }
 
 // String writes the given string into the response body.
@@ -1321,6 +1357,7 @@ type Negotiate struct {
 	Data         any
 	TOMLData     any
 	PROTOBUFData any
+	BSONData     any
 }
 
 // Negotiate calls different Render according to acceptable Accept format.
@@ -1349,6 +1386,10 @@ func (c *Context) Negotiate(code int, config Negotiate) {
 	case binding.MIMEPROTOBUF:
 		data := chooseData(config.PROTOBUFData, config.Data)
 		c.ProtoBuf(code, data)
+
+	case binding.MIMEBSON:
+		data := chooseData(config.BSONData, config.Data)
+		c.BSON(code, data)
 
 	default:
 		c.AbortWithError(http.StatusNotAcceptable, errors.New("the accepted formats are not offered by the server")) //nolint: errcheck

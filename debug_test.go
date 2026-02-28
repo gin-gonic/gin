@@ -121,7 +121,7 @@ func TestDebugPrintWARNINGDefaultWithUnsupportedVersion(t *testing.T) {
 		debugPrintWARNINGDefault()
 		SetMode(TestMode)
 	})
-	assert.Equal(t, "[GIN-debug] [WARNING] Now Gin requires Go 1.24+.\n\n[GIN-debug] [WARNING] Creating an Engine instance with the Logger and Recovery middleware already attached.\n\n", re)
+	assert.Equal(t, "[GIN-debug] [WARNING] Now Gin requires Go 1.25+.\n\n[GIN-debug] [WARNING] Creating an Engine instance with the Logger and Recovery middleware already attached.\n\n", re)
 }
 
 func TestDebugPrintWARNINGNew(t *testing.T) {

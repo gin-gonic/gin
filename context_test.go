@@ -32,6 +32,7 @@ import (
 	testdata "github.com/gin-gonic/gin/testdata/protoexample"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.mongodb.org/mongo-driver/v2/bson"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -516,6 +517,14 @@ func TestContextGetDuration(t *testing.T) {
 	assert.Equal(t, time.Second, c.GetDuration("duration"))
 }
 
+func TestContextGetError(t *testing.T) {
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	key := "error"
+	value := errors.New("test error")
+	c.Set(key, value)
+	assert.Equal(t, value, c.GetError(key))
+}
+
 func TestContextGetIntSlice(t *testing.T) {
 	c, _ := CreateTestContext(httptest.NewRecorder())
 	key := "int-slice"
@@ -616,6 +625,14 @@ func TestContextGetStringSlice(t *testing.T) {
 	c, _ := CreateTestContext(httptest.NewRecorder())
 	c.Set("slice", []string{"foo"})
 	assert.Equal(t, []string{"foo"}, c.GetStringSlice("slice"))
+}
+
+func TestContextGetErrorSlice(t *testing.T) {
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	key := "error-slice"
+	value := []error{errors.New("error1"), errors.New("error2")}
+	c.Set(key, value)
+	assert.Equal(t, value, c.GetErrorSlice(key))
 }
 
 func TestContextGetStringMap(t *testing.T) {
@@ -1014,6 +1031,7 @@ func TestContextGetCookie(t *testing.T) {
 }
 
 func TestContextBodyAllowedForStatus(t *testing.T) {
+	assert.False(t, bodyAllowedForStatus(http.StatusContinue))
 	assert.False(t, bodyAllowedForStatus(http.StatusProcessing))
 	assert.False(t, bodyAllowedForStatus(http.StatusNoContent))
 	assert.False(t, bodyAllowedForStatus(http.StatusNotModified))
@@ -1300,6 +1318,33 @@ func TestContextRenderNoContentXML(t *testing.T) {
 	assert.Equal(t, http.StatusNoContent, w.Code)
 	assert.Empty(t, w.Body.String())
 	assert.Equal(t, "application/xml; charset=utf-8", w.Header().Get("Content-Type"))
+}
+
+// TestContextRenderPDF tests that the response is serialized as PDF
+// and Content-Type is set to application/pdf
+func TestContextRenderPDF(t *testing.T) {
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
+
+	data := []byte("%Test pdf content")
+	c.PDF(http.StatusCreated, data)
+
+	assert.Equal(t, http.StatusCreated, w.Code)
+	assert.Equal(t, data, w.Body.Bytes())
+	assert.Equal(t, "application/pdf", w.Header().Get("Content-Type"))
+}
+
+// Tests that no PDF is rendered if code is 204
+func TestContextRenderNoContentPDF(t *testing.T) {
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
+
+	data := []byte("%Test pdf content")
+	c.PDF(http.StatusNoContent, data)
+
+	assert.Equal(t, http.StatusNoContent, w.Code)
+	assert.Empty(t, w.Body.Bytes())
+	assert.Equal(t, "application/pdf", w.Header().Get("Content-Type"))
 }
 
 // TestContextRenderString tests that the response is returned
@@ -1685,6 +1730,23 @@ func TestContextNegotiationWithPROTOBUF(t *testing.T) {
 	assert.Equal(t, "application/x-protobuf", w.Header().Get("Content-Type"))
 }
 
+func TestContextNegotiationWithBSON(t *testing.T) {
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
+	c.Request, _ = http.NewRequest(http.MethodPost, "", nil)
+
+	c.Negotiate(http.StatusOK, Negotiate{
+		Offered: []string{MIMEBSON, MIMEXML, MIMEJSON, MIMEYAML, MIMEYAML2},
+		Data:    H{"foo": "bar"},
+	})
+
+	bData, _ := bson.Marshal(H{"foo": "bar"})
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Equal(t, string(bData), w.Body.String())
+	assert.Equal(t, "application/bson", w.Header().Get("Content-Type"))
+}
+
 func TestContextNegotiationNotSupport(t *testing.T) {
 	w := httptest.NewRecorder()
 	c, _ := CreateTestContext(w)
@@ -1913,6 +1975,16 @@ func TestContextClientIP(t *testing.T) {
 	c, _ := CreateTestContext(httptest.NewRecorder())
 	c.Request, _ = http.NewRequest(http.MethodPost, "/", nil)
 	c.engine.trustedCIDRs, _ = c.engine.prepareTrustedCIDRs()
+	resetContextForClientIPTests(c)
+
+	// unix address
+	addr := &net.UnixAddr{Net: "unix", Name: "@"}
+	c.Request = c.Request.WithContext(context.WithValue(c.Request.Context(), http.LocalAddrContextKey, addr))
+	c.Request.RemoteAddr = addr.String()
+	assert.Equal(t, "20.20.20.20", c.ClientIP())
+
+	// reset
+	c.Request = c.Request.WithContext(context.Background())
 	resetContextForClientIPTests(c)
 
 	// Legacy tests (validating that the defaults don't break the
@@ -2903,6 +2975,16 @@ func TestContextGetRawData(t *testing.T) {
 	assert.Equal(t, "Fetch binary post data", string(data))
 }
 
+func TestContextGetRawDataNilBody(t *testing.T) {
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	c.Request, _ = http.NewRequest(http.MethodPost, "/", nil)
+
+	data, err := c.GetRawData()
+	assert.Nil(t, data)
+	require.Error(t, err)
+	assert.Equal(t, "cannot read nil body", err.Error())
+}
+
 func TestContextRenderDataFromReader(t *testing.T) {
 	w := httptest.NewRecorder()
 	c, _ := CreateTestContext(w)
@@ -3491,6 +3573,24 @@ func TestContextSetCookieData(t *testing.T) {
 		setCookie := c.Writer.Header().Get("Set-Cookie")
 		assert.Contains(t, setCookie, "SameSite=None")
 	})
+
+	// Test that SameSiteDefaultMode inherits from context's sameSite
+	t.Run("SameSiteDefaultMode inherits context sameSite", func(t *testing.T) {
+		c, _ := CreateTestContext(httptest.NewRecorder())
+		c.SetSameSite(http.SameSiteStrictMode)
+		cookie := &http.Cookie{
+			Name:     "user",
+			Value:    "gin",
+			Path:     "/",
+			Domain:   "localhost",
+			Secure:   true,
+			HttpOnly: true,
+			SameSite: http.SameSiteDefaultMode,
+		}
+		c.SetCookieData(cookie)
+		setCookie := c.Writer.Header().Get("Set-Cookie")
+		assert.Contains(t, setCookie, "SameSite=Strict")
+	})
 }
 
 func TestGetMapFromFormData(t *testing.T) {
@@ -3651,22 +3751,22 @@ func BenchmarkGetMapFromFormData(b *testing.B) {
 
 	// Test case 3: Large dataset with many bracket keys
 	largeData := make(map[string][]string)
-	for i := 0; i < 100; i++ {
+	for i := range 100 {
 		key := fmt.Sprintf("ids[%d]", i)
 		largeData[key] = []string{fmt.Sprintf("value%d", i)}
 	}
-	for i := 0; i < 50; i++ {
+	for i := range 50 {
 		key := fmt.Sprintf("names[%d]", i)
 		largeData[key] = []string{fmt.Sprintf("name%d", i)}
 	}
-	for i := 0; i < 25; i++ {
+	for i := range 25 {
 		key := fmt.Sprintf("other[key%d]", i)
 		largeData[key] = []string{fmt.Sprintf("other%d", i)}
 	}
 
 	// Test case 4: Dataset with many non-matching keys (worst case)
 	worstCaseData := make(map[string][]string)
-	for i := 0; i < 100; i++ {
+	for i := range 100 {
 		key := fmt.Sprintf("nonmatching%d", i)
 		worstCaseData[key] = []string{fmt.Sprintf("value%d", i)}
 	}
@@ -3702,7 +3802,7 @@ func BenchmarkGetMapFromFormData(b *testing.B) {
 	for _, bm := range benchmarks {
 		b.Run(bm.name, func(b *testing.B) {
 			b.ReportAllocs()
-			for i := 0; i < b.N; i++ {
+			for b.Loop() {
 				_, _ = getMapFromFormData(bm.data, bm.key)
 			}
 		})
