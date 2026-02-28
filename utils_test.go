@@ -8,10 +8,12 @@ import (
 	"bytes"
 	"encoding/xml"
 	"fmt"
+	"math"
 	"net/http"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func init() {
@@ -144,7 +146,28 @@ func TestMarshalXMLforH(t *testing.T) {
 	assert.Error(t, e)
 }
 
+func TestMarshalXMLforHSuccess(t *testing.T) {
+	h := H{
+		"key1": "value1",
+		"key2": 123,
+	}
+	data, err := xml.Marshal(h)
+	require.NoError(t, err)
+	assert.Contains(t, string(data), "<key1>value1</key1>")
+	assert.Contains(t, string(data), "<key2>123</key2>")
+}
+
 func TestIsASCII(t *testing.T) {
 	assert.True(t, isASCII("test"))
 	assert.False(t, isASCII("🧡💛💚💙💜"))
+}
+
+func TestSafeInt8(t *testing.T) {
+	assert.Equal(t, int8(100), safeInt8(100))
+	assert.Equal(t, int8(math.MaxInt8), safeInt8(int(math.MaxInt8)+123))
+}
+
+func TestSafeUint16(t *testing.T) {
+	assert.Equal(t, uint16(100), safeUint16(100))
+	assert.Equal(t, uint16(math.MaxUint16), safeUint16(int(math.MaxUint16)+123))
 }

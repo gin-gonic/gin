@@ -6,6 +6,7 @@ package gin
 
 import (
 	"encoding/xml"
+	"math"
 	"net/http"
 	"os"
 	"path"
@@ -17,6 +18,12 @@ import (
 
 // BindKey indicates a default bind key.
 const BindKey = "_gin-gonic/gin/bindkey"
+
+// localhostIP indicates the default localhost IP address.
+const localhostIP = "127.0.0.1"
+
+// localhostIPv6 indicates the default localhost IPv6 address.
+const localhostIPv6 = "::1"
 
 // Bind is a helper function for given interface object and returns a Gin middleware.
 func Bind(val any) HandlerFunc {
@@ -155,10 +162,26 @@ func resolveAddress(addr []string) string {
 
 // https://stackoverflow.com/questions/53069040/checking-a-string-contains-only-ascii-characters
 func isASCII(s string) bool {
-	for i := 0; i < len(s); i++ {
+	for i := range len(s) {
 		if s[i] > unicode.MaxASCII {
 			return false
 		}
 	}
 	return true
+}
+
+// safeInt8 converts int to int8 safely, capping at math.MaxInt8
+func safeInt8(n int) int8 {
+	if n > math.MaxInt8 {
+		return math.MaxInt8
+	}
+	return int8(n)
+}
+
+// safeUint16 converts int to uint16 safely, capping at math.MaxUint16
+func safeUint16(n int) uint16 {
+	if n > math.MaxUint16 {
+		return math.MaxUint16
+	}
+	return uint16(n)
 }

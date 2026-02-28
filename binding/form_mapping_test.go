@@ -5,6 +5,7 @@
 package binding
 
 import (
+	"encoding"
 	"encoding/hex"
 	"errors"
 	"mime/multipart"
@@ -524,6 +525,16 @@ func TestMappingCustomUnmarshalParamHexWithURITag(t *testing.T) {
 	assert.EqualValues(t, 245, s.Foo)
 }
 
+func TestMappingCustomUnmarshalParamHexDefault(t *testing.T) {
+	var s struct {
+		Foo customUnmarshalParamHex `form:"foo,default=f5"`
+	}
+	err := mappingByPtr(&s, formSource{"foo": {}}, "form")
+	require.NoError(t, err)
+
+	assert.EqualValues(t, 0xf5, s.Foo)
+}
+
 type customUnmarshalParamType struct {
 	Protocol string
 	Path     string
@@ -624,6 +635,33 @@ func TestMappingCustomSliceForm(t *testing.T) {
 	assert.Equal(t, "foo", s.FileData[1])
 }
 
+func TestMappingCustomSliceStopsWhenError(t *testing.T) {
+	var s struct {
+		FileData customPath `form:"path"`
+	}
+	err := mappingByPtr(&s, formSource{"path": {"invalid"}}, "form")
+	require.ErrorContains(t, err, "invalid format")
+	require.Empty(t, s.FileData)
+}
+
+func TestMappingCustomSliceOfSliceUri(t *testing.T) {
+	var s struct {
+		FileData []customPath `uri:"path" collection_format:"csv"`
+	}
+	err := mappingByPtr(&s, formSource{"path": {"bar/foo,bar/foo/spam"}}, "uri")
+	require.NoError(t, err)
+	assert.Equal(t, []customPath{{"bar", "foo"}, {"bar", "foo", "spam"}}, s.FileData)
+}
+
+func TestMappingCustomSliceOfSliceForm(t *testing.T) {
+	var s struct {
+		FileData []customPath `form:"path" collection_format:"csv"`
+	}
+	err := mappingByPtr(&s, formSource{"path": {"bar/foo,bar/foo/spam"}}, "form")
+	require.NoError(t, err)
+	assert.Equal(t, []customPath{{"bar", "foo"}, {"bar", "foo", "spam"}}, s.FileData)
+}
+
 type objectID [12]byte
 
 func (o *objectID) UnmarshalParam(param string) error {
@@ -674,6 +712,358 @@ func TestMappingCustomArrayForm(t *testing.T) {
 	expected, _ := convertTo(val)
 	assert.Equal(t, expected, s.FileData)
 }
+
+func TestMappingCustomArrayOfArrayUri(t *testing.T) {
+	id1, _ := convertTo(`664a062ac74a8ad104e0e80e`)
+	id2, _ := convertTo(`664a062ac74a8ad104e0e80f`)
+
+	var s struct {
+		FileData []objectID `uri:"ids" collection_format:"csv"`
+	}
+	err := mappingByPtr(&s, formSource{"ids": {`664a062ac74a8ad104e0e80e,664a062ac74a8ad104e0e80f`}}, "uri")
+	require.NoError(t, err)
+	assert.Equal(t, []objectID{id1, id2}, s.FileData)
+}
+
+func TestMappingCustomArrayOfArrayForm(t *testing.T) {
+	id1, _ := convertTo(`664a062ac74a8ad104e0e80e`)
+	id2, _ := convertTo(`664a062ac74a8ad104e0e80f`)
+
+	var s struct {
+		FileData []objectID `form:"ids" collection_format:"csv"`
+	}
+	err := mappingByPtr(&s, formSource{"ids": {`664a062ac74a8ad104e0e80e,664a062ac74a8ad104e0e80f`}}, "form")
+	require.NoError(t, err)
+	assert.Equal(t, []objectID{id1, id2}, s.FileData)
+}
+
+// ====  TextUnmarshaler tests START ====
+
+type customUnmarshalTextHex int
+
+func (f *customUnmarshalTextHex) UnmarshalText(text []byte) error {
+	v, err := strconv.ParseInt(string(text), 16, 64)
+	if err != nil {
+		return err
+	}
+	*f = customUnmarshalTextHex(v)
+	return nil
+}
+
+// verify type implements TextUnmarshaler
+var _ encoding.TextUnmarshaler = (*customUnmarshalTextHex)(nil)
+
+func TestMappingCustomUnmarshalTextHexUri(t *testing.T) {
+	var s struct {
+		Field customUnmarshalTextHex `uri:"field,parser=encoding.TextUnmarshaler"`
+	}
+	err := mappingByPtr(&s, formSource{"field": {`f5`}}, "uri")
+	require.NoError(t, err)
+	assert.EqualValues(t, 245, s.Field)
+}
+
+func TestMappingCustomUnmarshalTextHexForm(t *testing.T) {
+	var s struct {
+		Field customUnmarshalTextHex `form:"field,parser=encoding.TextUnmarshaler"`
+	}
+	err := mappingByPtr(&s, formSource{"field": {`f5`}}, "form")
+	require.NoError(t, err)
+	assert.EqualValues(t, 245, s.Field)
+}
+
+func TestMappingCustomUnmarshalTextHexDefault(t *testing.T) {
+	var s struct {
+		Field customUnmarshalTextHex `form:"field,default=f5,parser=encoding.TextUnmarshaler"`
+	}
+	err := mappingByPtr(&s, formSource{"field1": {}}, "form")
+	require.NoError(t, err)
+	assert.EqualValues(t, 0xf5, s.Field)
+}
+
+type customUnmarshalTextType struct {
+	Protocol string
+	Path     string
+	Name     string
+}
+
+func (f *customUnmarshalTextType) UnmarshalText(text []byte) error {
+	parts := strings.Split(string(text), ":")
+	if len(parts) != 3 {
+		return errors.New("invalid format")
+	}
+	f.Protocol = parts[0]
+	f.Path = parts[1]
+	f.Name = parts[2]
+	return nil
+}
+
+var _ encoding.TextUnmarshaler = (*customUnmarshalTextType)(nil)
+
+func TestMappingCustomStructTypeUnmarshalTextForm(t *testing.T) {
+	var s struct {
+		FileData customUnmarshalTextType `form:"data,parser=encoding.TextUnmarshaler"`
+	}
+	err := mappingByPtr(&s, formSource{"data": {`file:/foo:happiness`}}, "form")
+	require.NoError(t, err)
+
+	assert.Equal(t, "file", s.FileData.Protocol)
+	assert.Equal(t, "/foo", s.FileData.Path)
+	assert.Equal(t, "happiness", s.FileData.Name)
+}
+
+func TestMappingCustomStructTypeUnmarshalTextUri(t *testing.T) {
+	var s struct {
+		FileData customUnmarshalTextType `uri:"data,parser=encoding.TextUnmarshaler"`
+	}
+	err := mappingByPtr(&s, formSource{"data": {`file:/foo:happiness`}}, "uri")
+	require.NoError(t, err)
+
+	assert.Equal(t, "file", s.FileData.Protocol)
+	assert.Equal(t, "/foo", s.FileData.Path)
+	assert.Equal(t, "happiness", s.FileData.Name)
+}
+
+func TestMappingCustomPointerStructTypeUnmarshalTextForm(t *testing.T) {
+	var s struct {
+		FileData *customUnmarshalTextType `form:"data,parser=encoding.TextUnmarshaler"`
+	}
+	err := mappingByPtr(&s, formSource{"data": {`file:/foo:happiness`}}, "form")
+	require.NoError(t, err)
+
+	assert.Equal(t, "file", s.FileData.Protocol)
+	assert.Equal(t, "/foo", s.FileData.Path)
+	assert.Equal(t, "happiness", s.FileData.Name)
+}
+
+func TestMappingCustomPointerStructTypeUnmarshalTextUri(t *testing.T) {
+	var s struct {
+		FileData *customUnmarshalTextType `uri:"data,parser=encoding.TextUnmarshaler"`
+	}
+	err := mappingByPtr(&s, formSource{"data": {`file:/foo:happiness`}}, "uri")
+	require.NoError(t, err)
+
+	assert.Equal(t, "file", s.FileData.Protocol)
+	assert.Equal(t, "/foo", s.FileData.Path)
+	assert.Equal(t, "happiness", s.FileData.Name)
+}
+
+type customPathUnmarshalText []string
+
+func (p *customPathUnmarshalText) UnmarshalText(text []byte) error {
+	elems := strings.Split(string(text), "/")
+	n := len(elems)
+	if n < 2 {
+		return errors.New("invalid format")
+	}
+
+	*p = elems
+	return nil
+}
+
+var _ encoding.TextUnmarshaler = (*customPathUnmarshalText)(nil)
+
+func TestMappingCustomSliceUnmarshalTextUri(t *testing.T) {
+	var s struct {
+		FileData customPathUnmarshalText `uri:"path,parser=encoding.TextUnmarshaler"`
+	}
+	err := mappingByPtr(&s, formSource{"path": {`bar/foo`}}, "uri")
+	require.NoError(t, err)
+
+	assert.Equal(t, "bar", s.FileData[0])
+	assert.Equal(t, "foo", s.FileData[1])
+}
+
+func TestMappingCustomSliceUnmarshalTextForm(t *testing.T) {
+	var s struct {
+		FileData customPathUnmarshalText `form:"path,parser=encoding.TextUnmarshaler"`
+	}
+	err := mappingByPtr(&s, formSource{"path": {`bar/foo`}}, "form")
+	require.NoError(t, err)
+
+	assert.Equal(t, "bar", s.FileData[0])
+	assert.Equal(t, "foo", s.FileData[1])
+}
+
+func TestMappingCustomSliceUnmarshalTextStopsWhenError(t *testing.T) {
+	var s struct {
+		FileData customPathUnmarshalText `form:"path,parser=encoding.TextUnmarshaler"`
+	}
+	err := mappingByPtr(&s, formSource{"path": {"invalid"}}, "form")
+	require.ErrorContains(t, err, "invalid format")
+	require.Empty(t, s.FileData)
+}
+
+func TestMappingCustomSliceOfSliceUnmarshalTextUri(t *testing.T) {
+	var s struct {
+		FileData []customPathUnmarshalText `uri:"path,parser=encoding.TextUnmarshaler" collection_format:"csv"`
+	}
+	err := mappingByPtr(&s, formSource{"path": {"bar/foo,bar/foo/spam"}}, "uri")
+	require.NoError(t, err)
+	assert.Equal(t, []customPathUnmarshalText{{"bar", "foo"}, {"bar", "foo", "spam"}}, s.FileData)
+}
+
+func TestMappingCustomSliceOfSliceUnmarshalTextForm(t *testing.T) {
+	var s struct {
+		FileData []customPathUnmarshalText `form:"path,parser=encoding.TextUnmarshaler" collection_format:"csv"`
+	}
+	err := mappingByPtr(&s, formSource{"path": {"bar/foo,bar/foo/spam"}}, "form")
+	require.NoError(t, err)
+	assert.Equal(t, []customPathUnmarshalText{{"bar", "foo"}, {"bar", "foo", "spam"}}, s.FileData)
+}
+
+func TestMappingCustomSliceOfSliceUnmarshalTextDefault(t *testing.T) {
+	var s struct {
+		FileData []customPathUnmarshalText `form:"path,default=bar/foo;bar/foo/spam,parser=encoding.TextUnmarshaler" collection_format:"csv"`
+	}
+	err := mappingByPtr(&s, formSource{"path": {}}, "form")
+	require.NoError(t, err)
+	assert.Equal(t, []customPathUnmarshalText{{"bar", "foo"}, {"bar", "foo", "spam"}}, s.FileData)
+}
+
+type objectIDUnmarshalText [12]byte
+
+func (o *objectIDUnmarshalText) UnmarshalText(text []byte) error {
+	oid, err := convertToOidUnmarshalText(string(text))
+	if err != nil {
+		return err
+	}
+
+	*o = oid
+	return nil
+}
+
+func convertToOidUnmarshalText(s string) (objectIDUnmarshalText, error) {
+	oid, err := convertTo(s)
+	return objectIDUnmarshalText(oid), err
+}
+
+var _ encoding.TextUnmarshaler = (*objectIDUnmarshalText)(nil)
+
+func TestMappingCustomArrayUnmarshalTextUri(t *testing.T) {
+	var s struct {
+		FileData objectIDUnmarshalText `uri:"id,parser=encoding.TextUnmarshaler"`
+	}
+	val := `664a062ac74a8ad104e0e80f`
+	err := mappingByPtr(&s, formSource{"id": {val}}, "uri")
+	require.NoError(t, err)
+
+	expected, _ := convertToOidUnmarshalText(val)
+	assert.Equal(t, expected, s.FileData)
+}
+
+func TestMappingCustomArrayUnmarshalTextForm(t *testing.T) {
+	var s struct {
+		FileData objectIDUnmarshalText `form:"id,parser=encoding.TextUnmarshaler"`
+	}
+	val := `664a062ac74a8ad104e0e80f`
+	err := mappingByPtr(&s, formSource{"id": {val}}, "form")
+	require.NoError(t, err)
+
+	expected, _ := convertToOidUnmarshalText(val)
+	assert.Equal(t, expected, s.FileData)
+}
+
+func TestMappingCustomArrayOfArrayUnmarshalTextUri(t *testing.T) {
+	id1, _ := convertToOidUnmarshalText(`664a062ac74a8ad104e0e80e`)
+	id2, _ := convertToOidUnmarshalText(`664a062ac74a8ad104e0e80f`)
+
+	var s struct {
+		FileData []objectIDUnmarshalText `uri:"ids,parser=encoding.TextUnmarshaler" collection_format:"csv"`
+	}
+	err := mappingByPtr(&s, formSource{"ids": {`664a062ac74a8ad104e0e80e,664a062ac74a8ad104e0e80f`}}, "uri")
+	require.NoError(t, err)
+	assert.Equal(t, []objectIDUnmarshalText{id1, id2}, s.FileData)
+}
+
+func TestMappingCustomArrayOfArrayUnmarshalTextForm(t *testing.T) {
+	id1, _ := convertToOidUnmarshalText(`664a062ac74a8ad104e0e80e`)
+	id2, _ := convertToOidUnmarshalText(`664a062ac74a8ad104e0e80f`)
+
+	var s struct {
+		FileData []objectIDUnmarshalText `form:"ids,parser=encoding.TextUnmarshaler" collection_format:"csv"`
+	}
+	err := mappingByPtr(&s, formSource{"ids": {`664a062ac74a8ad104e0e80e,664a062ac74a8ad104e0e80f`}}, "form")
+	require.NoError(t, err)
+	assert.Equal(t, []objectIDUnmarshalText{id1, id2}, s.FileData)
+}
+
+func TestMappingCustomArrayOfArrayUnmarshalTextDefault(t *testing.T) {
+	id1, _ := convertToOidUnmarshalText(`664a062ac74a8ad104e0e80e`)
+	id2, _ := convertToOidUnmarshalText(`664a062ac74a8ad104e0e80f`)
+
+	var s struct {
+		FileData []objectIDUnmarshalText `form:"ids,default=664a062ac74a8ad104e0e80e;664a062ac74a8ad104e0e80f,parser=encoding.TextUnmarshaler" collection_format:"csv"`
+	}
+	err := mappingByPtr(&s, formSource{"ids": {}}, "form")
+	require.NoError(t, err)
+	assert.Equal(t, []objectIDUnmarshalText{id1, id2}, s.FileData)
+}
+
+// If someone specifies parser=TextUnmarshaler and it's not defined for the type, gin should revert to using its default
+// binding logic.
+func TestMappingUsingBindUnmarshalerAndTextUnmarshalerWhenOnlyBindUnmarshalerDefined(t *testing.T) {
+	var s struct {
+		Hex                customUnmarshalParamHex `form:"hex"`
+		HexByUnmarshalText customUnmarshalParamHex `form:"hex2,parser=encoding.TextUnmarshaler"`
+	}
+	err := mappingByPtr(&s, formSource{
+		"hex":  {`f5`},
+		"hex2": {`f5`},
+	}, "form")
+	require.NoError(t, err)
+
+	assert.EqualValues(t, 0xf5, s.Hex)
+	assert.EqualValues(t, 0xf5, s.HexByUnmarshalText) // reverts to BindUnmarshaler binding
+}
+
+// If someone does not specify parser=TextUnmarshaler even when it's defined for the type, gin should ignore the
+// UnmarshalText logic and continue using its default binding logic. (This ensures gin does not break backwards
+// compatibility)
+func TestMappingUsingBindUnmarshalerAndTextUnmarshalerWhenOnlyTextUnmarshalerDefined(t *testing.T) {
+	var s struct {
+		Hex                customUnmarshalTextHex `form:"hex"`
+		HexByUnmarshalText customUnmarshalTextHex `form:"hex2,parser=encoding.TextUnmarshaler"`
+	}
+	err := mappingByPtr(&s, formSource{
+		"hex":  {`11`},
+		"hex2": {`11`},
+	}, "form")
+	require.NoError(t, err)
+
+	assert.EqualValues(t, 11, s.Hex)                  // this is using default int binding, not our custom hex binding. 0x11 should be 17 in decimal
+	assert.EqualValues(t, 0x11, s.HexByUnmarshalText) // correct expected value for normal hex binding
+}
+
+type customHexUnmarshalParamAndUnmarshalText int
+
+func (f *customHexUnmarshalParamAndUnmarshalText) UnmarshalParam(param string) error {
+	return errors.New("should not be called in unit test if parser tag present")
+}
+
+func (f *customHexUnmarshalParamAndUnmarshalText) UnmarshalText(text []byte) error {
+	v, err := strconv.ParseInt(string(text), 16, 64)
+	if err != nil {
+		return err
+	}
+	*f = customHexUnmarshalParamAndUnmarshalText(v)
+	return nil
+}
+
+// If a type has both UnmarshalParam and UnmarshalText methods defined, but the parser tag is set to TextUnmarshaler,
+// then only the UnmarshalText method should be invoked.
+func TestMappingUsingTextUnmarshalerWhenBindUnmarshalerAlsoDefined(t *testing.T) {
+	var s struct {
+		Hex customHexUnmarshalParamAndUnmarshalText `form:"hex,parser=encoding.TextUnmarshaler"`
+	}
+	err := mappingByPtr(&s, formSource{
+		"hex": {`f5`},
+	}, "form")
+	require.NoError(t, err)
+
+	assert.EqualValues(t, 0xf5, s.Hex)
+}
+
+// ====  TextUnmarshaler tests END ====
 
 func TestMappingEmptyValues(t *testing.T) {
 	t.Run("slice with default", func(t *testing.T) {
