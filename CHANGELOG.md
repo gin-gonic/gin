@@ -47,7 +47,6 @@
 ### Build process updates / CI
 
 - ci: update Go version support to 1.25+ across CI and docs ([#4550](https://github.com/gin-gonic/gin/pull/4550))
-- chore: bump minimum Go version to 1.24 and update workflows ([#4388](https://github.com/gin-gonic/gin/pull/4388))
 - chore(binding): upgrade bson dependency to mongo-driver v2 ([#4549](https://github.com/gin-gonic/gin/pull/4549))
 
 ## Gin v1.11.0
