@@ -20,7 +20,7 @@
 - perf(tree): optimize path parsing using strings.Count ([#4246](https://github.com/gin-gonic/gin/pull/4246))
 - chore(logger): allow skipping query string output ([#4547](https://github.com/gin-gonic/gin/pull/4547))
 - chore(context): always trust xff headers from unix socket ([#3359](https://github.com/gin-gonic/gin/pull/3359))
-- chore(response): prevent Flush() panic when `http.Flusher` ([#4479](https://github.com/gin-gonic/gin/pull/4479))
+- chore(response): prevent Flush() panic when the underlying ResponseWriter does not implement `http.Flusher` ([#4479](https://github.com/gin-gonic/gin/pull/4479))
 - refactor(recovery): smart error comparison ([#4142](https://github.com/gin-gonic/gin/pull/4142))
 - refactor(context): replace hardcoded localhost IPs with constants ([#4481](https://github.com/gin-gonic/gin/pull/4481))
 - refactor(utils): move util functions to utils.go ([#4467](https://github.com/gin-gonic/gin/pull/4467))
