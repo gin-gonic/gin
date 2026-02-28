@@ -11,7 +11,7 @@
 [![Open Source Helpers](https://www.codetriage.com/gin-gonic/gin/badges/users.svg)](https://www.codetriage.com/gin-gonic/gin)
 [![Release](https://img.shields.io/github/release/gin-gonic/gin.svg?style=flat-square)](https://github.com/gin-gonic/gin/releases)
 
-## 📰 [Announcing Gin 1.11.0!](https://gin-gonic.com/en/blog/news/gin-1-11-0-release-announcement/)
+## 📰 [Announcing Gin 1.12.0!](https://gin-gonic.com/en/blog/news/gin-1-12-0-release-announcement/)
 
 Read about the latest features and improvements in Gin 1.11.0 on our official blog.
 
