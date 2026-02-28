@@ -33,7 +33,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest]
-        go: ["1.24", "1.25", "1.26"]
+        go: ["1.25", "1.26"]
         test-tags:
           [
             "",
