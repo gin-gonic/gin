@@ -1056,6 +1056,7 @@ func (c *Context) requestHeader(key string) string {
 /************************************/
 
 // bodyAllowedForStatus is a copy of http.bodyAllowedForStatus non-exported function.
+// Uses http.StatusContinue constant for better code clarity.
 func bodyAllowedForStatus(status int) bool {
 	switch {
 	case status >= http.StatusContinue && status < http.StatusOK:
@@ -1221,6 +1222,12 @@ func (c *Context) PureJSON(code int, obj any) {
 // It also sets the Content-Type as "application/xml".
 func (c *Context) XML(code int, obj any) {
 	c.Render(code, render.XML{Data: obj})
+}
+
+// PDF writes the given PDF binary data into the response body.
+// It also sets the Content-Type as "application/pdf".
+func (c *Context) PDF(code int, data []byte) {
+	c.Render(code, render.PDF{Data: data})
 }
 
 // YAML serializes the given struct as YAML into the response body.

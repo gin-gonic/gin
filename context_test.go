@@ -32,7 +32,7 @@ import (
 	testdata "github.com/gin-gonic/gin/testdata/protoexample"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/v2/bson"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -1031,6 +1031,7 @@ func TestContextGetCookie(t *testing.T) {
 }
 
 func TestContextBodyAllowedForStatus(t *testing.T) {
+	assert.False(t, bodyAllowedForStatus(http.StatusContinue))
 	assert.False(t, bodyAllowedForStatus(http.StatusProcessing))
 	assert.False(t, bodyAllowedForStatus(http.StatusNoContent))
 	assert.False(t, bodyAllowedForStatus(http.StatusNotModified))
@@ -1317,6 +1318,33 @@ func TestContextRenderNoContentXML(t *testing.T) {
 	assert.Equal(t, http.StatusNoContent, w.Code)
 	assert.Empty(t, w.Body.String())
 	assert.Equal(t, "application/xml; charset=utf-8", w.Header().Get("Content-Type"))
+}
+
+// TestContextRenderPDF tests that the response is serialized as PDF
+// and Content-Type is set to application/pdf
+func TestContextRenderPDF(t *testing.T) {
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
+
+	data := []byte("%Test pdf content")
+	c.PDF(http.StatusCreated, data)
+
+	assert.Equal(t, http.StatusCreated, w.Code)
+	assert.Equal(t, data, w.Body.Bytes())
+	assert.Equal(t, "application/pdf", w.Header().Get("Content-Type"))
+}
+
+// Tests that no PDF is rendered if code is 204
+func TestContextRenderNoContentPDF(t *testing.T) {
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
+
+	data := []byte("%Test pdf content")
+	c.PDF(http.StatusNoContent, data)
+
+	assert.Equal(t, http.StatusNoContent, w.Code)
+	assert.Empty(t, w.Body.Bytes())
+	assert.Equal(t, "application/pdf", w.Header().Get("Content-Type"))
 }
 
 // TestContextRenderString tests that the response is returned
@@ -2947,6 +2975,16 @@ func TestContextGetRawData(t *testing.T) {
 	assert.Equal(t, "Fetch binary post data", string(data))
 }
 
+func TestContextGetRawDataNilBody(t *testing.T) {
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	c.Request, _ = http.NewRequest(http.MethodPost, "/", nil)
+
+	data, err := c.GetRawData()
+	assert.Nil(t, data)
+	require.Error(t, err)
+	assert.Equal(t, "cannot read nil body", err.Error())
+}
+
 func TestContextRenderDataFromReader(t *testing.T) {
 	w := httptest.NewRecorder()
 	c, _ := CreateTestContext(w)
@@ -3534,6 +3572,24 @@ func TestContextSetCookieData(t *testing.T) {
 		c.SetCookieData(cookie)
 		setCookie := c.Writer.Header().Get("Set-Cookie")
 		assert.Contains(t, setCookie, "SameSite=None")
+	})
+
+	// Test that SameSiteDefaultMode inherits from context's sameSite
+	t.Run("SameSiteDefaultMode inherits context sameSite", func(t *testing.T) {
+		c, _ := CreateTestContext(httptest.NewRecorder())
+		c.SetSameSite(http.SameSiteStrictMode)
+		cookie := &http.Cookie{
+			Name:     "user",
+			Value:    "gin",
+			Path:     "/",
+			Domain:   "localhost",
+			Secure:   true,
+			HttpOnly: true,
+			SameSite: http.SameSiteDefaultMode,
+		}
+		c.SetCookieData(cookie)
+		setCookie := c.Writer.Header().Get("Set-Cookie")
+		assert.Contains(t, setCookie, "SameSite=Strict")
 	})
 }
 

@@ -818,7 +818,72 @@ walk: // Outer loop for walking the tree
 			return nil
 		}
 
-		n = n.children[0]
+		// When wildChild is true, try static children first (via indices)
+		// before falling back to the wildcard child. This ensures that
+		// case-insensitive lookups prefer static routes over param routes
+		// (e.g., /PREFIX/XXX should resolve to /prefix/xxx, not match :id).
+		if len(n.indices) > 0 {
+			rb = shiftNRuneBytes(rb, npLen)
+
+			if rb[0] != 0 {
+				idxc := rb[0]
+				for i, c := range []byte(n.indices) {
+					if c == idxc {
+						if out := n.children[i].findCaseInsensitivePathRec(
+							path, ciPath, rb, fixTrailingSlash,
+						); out != nil {
+							return out
+						}
+						break
+					}
+				}
+			} else {
+				var rv rune
+				var off int
+				for max_ := min(npLen, 3); off < max_; off++ {
+					if i := npLen - off; utf8.RuneStart(oldPath[i]) {
+						rv, _ = utf8.DecodeRuneInString(oldPath[i:])
+						break
+					}
+				}
+
+				lo := unicode.ToLower(rv)
+				utf8.EncodeRune(rb[:], lo)
+				rb = shiftNRuneBytes(rb, off)
+
+				idxc := rb[0]
+				for i, c := range []byte(n.indices) {
+					if c == idxc {
+						if out := n.children[i].findCaseInsensitivePathRec(
+							path, ciPath, rb, fixTrailingSlash,
+						); out != nil {
+							return out
+						}
+						break
+					}
+				}
+
+				if up := unicode.ToUpper(rv); up != lo {
+					utf8.EncodeRune(rb[:], up)
+					rb = shiftNRuneBytes(rb, off)
+
+					idxc := rb[0]
+					for i, c := range []byte(n.indices) {
+						if c == idxc {
+							if out := n.children[i].findCaseInsensitivePathRec(
+								path, ciPath, rb, fixTrailingSlash,
+							); out != nil {
+								return out
+							}
+							break
+						}
+					}
+				}
+			}
+		}
+
+		// Fall back to wildcard child, which is always at the end of the array
+		n = n.children[len(n.children)-1]
 		switch n.nType {
 		case param:
 			// Find param end (either '/' or path end)
