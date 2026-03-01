@@ -5,6 +5,7 @@
 package binding
 
 import (
+	"reflect"
 	"testing"
 	"time"
 
@@ -64,4 +65,33 @@ func BenchmarkMapFormName(b *testing.B) {
 
 	t := b
 	assert.Equal(t, "mike", s.Name)
+}
+
+// customUnmarshalTextString is a custom type that implements encoding.TextUnmarshaler.
+// It stores the unmarshaled text in the Value field.
+type customUnmarshalTextString struct {
+	Value string
+}
+
+func (t *customUnmarshalTextString) UnmarshalText(text []byte) error {
+	t.Value = string(text)
+	return nil
+}
+
+// BenchmarkTrySetUsingParserTextUnmarshaler benchmarks the performance of trySetUsingParser
+// when using the "encoding.TextUnmarshaler" parser to unmarshal a string value.
+func BenchmarkTrySetUsingParserTextUnmarshaler(b *testing.B) {
+	var target customUnmarshalTextString
+	value := reflect.ValueOf(&target).Elem()
+	testValue := "hello world"
+	parser := "encoding.TextUnmarshaler"
+
+	b.ResetTimer()
+	b.ReportAllocs()
+	for b.Loop() {
+		_, err := trySetUsingParser(testValue, value, parser)
+		if err != nil {
+			b.Fatal(err)
+		}
+	}
 }

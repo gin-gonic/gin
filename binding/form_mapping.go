@@ -201,7 +201,7 @@ func trySetCustom(val string, value reflect.Value) (isSet bool, err error) {
 func trySetUsingParser(val string, value reflect.Value, parser string) (isSet bool, err error) {
 	switch parser {
 	case "encoding.TextUnmarshaler":
-		v, ok := value.Addr().Interface().(encoding.TextUnmarshaler)
+		v, ok := reflect.TypeAssert[encoding.TextUnmarshaler](value)
 		if !ok {
 			return false, nil
 		}
