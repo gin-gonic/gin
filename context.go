@@ -813,8 +813,19 @@ func (c *Context) BindUri(obj any) error {
 // - Caller must provide Content-Type header to select the correct body binding (eg "application/json" for JSON binding)
 // - Binding validation tags are verified after all request parts have been bound
 func (c *Context) BindAll(obj any) error {
-	if err := c.ShouldBindAll(obj); err != nil {
-		c.AbortWithError(http.StatusBadRequest, err).SetType(ErrorTypeBind) //nolint: errcheck
+	err := c.ShouldBindAll(obj)
+	if err != nil {
+		var maxBytesErr *http.MaxBytesError
+
+		// Note: When using sonic or go-json as JSON encoder, they do not propagate the http.MaxBytesError error
+		// https://github.com/goccy/go-json/issues/485
+		// https://github.com/bytedance/sonic/issues/800
+		switch {
+		case errors.As(err, &maxBytesErr):
+			c.AbortWithError(http.StatusRequestEntityTooLarge, err).SetType(ErrorTypeBind) //nolint: errcheck
+		default:
+			c.AbortWithError(http.StatusBadRequest, err).SetType(ErrorTypeBind) //nolint: errcheck
+		}
 		return err
 	}
 	return nil
