@@ -2318,7 +2318,7 @@ func TestContextBindAll(t *testing.T) {
 
 	c.Request, _ = http.NewRequest(http.MethodPost, "/1234?foo=true", strings.NewReader(`{"bar":"spam"}`))
 	c.Params = []Param{{Key: "id", Value: "1234"}}
-	c.Request.Header.Add("Content-Type", MIMEJSON) // set fake content-type
+	c.Request.Header.Add("Content-Type", MIMEJSON)
 	c.Request.Header.Add("Limit", "100")
 
 	var obj struct {
@@ -2340,7 +2340,7 @@ func TestContextBindAll_400OnError(t *testing.T) {
 	c, _ := CreateTestContext(w)
 
 	c.Request, _ = http.NewRequest(http.MethodPost, "/1234?foo=true", strings.NewReader(`{"bar":"spam"}`))
-	c.Request.Header.Add("Content-Type", MIMEJSON) // set fake content-type
+	c.Request.Header.Add("Content-Type", MIMEJSON)
 	c.Request.Header.Add("Limit", "100")
 
 	var obj struct {
@@ -2351,6 +2351,45 @@ func TestContextBindAll_400OnError(t *testing.T) {
 	}
 	err := c.BindAll(&obj)
 	require.ErrorContains(t, err, "Field validation for 'ID' failed")
+}
+
+func TestContextBindAll_413MaxBytes(t *testing.T) {
+	// When using go-json as JSON encoder, they do not propagate the http.MaxBytesError error
+	// The response will fail with a generic 400 instead of 413
+	// https://github.com/goccy/go-json/issues/485
+	var expectedCode int
+	switch json.Package {
+	case "github.com/goccy/go-json":
+		expectedCode = http.StatusBadRequest
+	default:
+		expectedCode = http.StatusRequestEntityTooLarge
+	}
+
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
+
+	c.Request, _ = http.NewRequest(http.MethodPost, "/1234?foo=true", strings.NewReader(`{"bar":"spam"}`))
+	c.Params = []Param{{Key: "id", Value: "1234"}}
+	c.Request.Header.Add("Content-Type", MIMEJSON)
+	c.Request.Header.Add("Limit", "100")
+	c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, 10)
+
+	var obj struct {
+		Limit int    `header:"limit" binding:"required"`
+		ID    string `uri:"id" binding:"required,numeric"`
+		Foo   bool   `form:"foo" binding:"required"`
+		Bar   string `form:"bar" xml:"bar" binding:"required"`
+	}
+	err := c.BindAll(&obj)
+	require.Error(t, err)
+	if json.Package != "github.com/goccy/go-json" {
+		var maxBytesErr *http.MaxBytesError
+		require.ErrorAs(t, err, &maxBytesErr)
+	}
+	c.Writer.WriteHeaderNow()
+
+	assert.Equal(t, expectedCode, w.Code)
+	assert.True(t, c.IsAborted())
 }
 
 func TestContextBadAutoBind(t *testing.T) {
