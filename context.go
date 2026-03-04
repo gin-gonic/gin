@@ -804,6 +804,33 @@ func (c *Context) BindUri(obj any) error {
 	return nil
 }
 
+// BindAll binds the passed struct pointer using all available binding engines.
+// It will abort the request with HTTP 400 if any error occurs.
+//
+// Note:
+// - Caller must tag struct fields appropriately for the desired binding (eg `header:"xxx"` vs `uri:"xxx"`)
+// - Caller must ensure no duplication between field names (else use separate binding engines instead)
+// - Caller must provide Content-Type header to select the correct body binding (eg "application/json" for JSON binding)
+// - Binding validation tags are verified after all request parts have been bound
+func (c *Context) BindAll(obj any) error {
+	err := c.ShouldBindAll(obj)
+	if err != nil {
+		var maxBytesErr *http.MaxBytesError
+
+		// Note: When using sonic or go-json as JSON encoder, they do not propagate the http.MaxBytesError error
+		// https://github.com/goccy/go-json/issues/485
+		// https://github.com/bytedance/sonic/issues/800
+		switch {
+		case errors.As(err, &maxBytesErr):
+			c.AbortWithError(http.StatusRequestEntityTooLarge, err).SetType(ErrorTypeBind) //nolint: errcheck
+		default:
+			c.AbortWithError(http.StatusBadRequest, err).SetType(ErrorTypeBind) //nolint: errcheck
+		}
+		return err
+	}
+	return nil
+}
+
 // MustBindWith binds the passed struct pointer using the specified binding engine.
 // It will abort the request with HTTP 400 if any error occurs.
 // See the binding package.
@@ -912,6 +939,22 @@ func (c *Context) ShouldBindUri(obj any) error {
 		m[v.Key] = []string{v.Value}
 	}
 	return binding.Uri.BindUri(m, obj)
+}
+
+// ShouldBindAll binds the passed struct pointer using all the available binding engines.
+// Like c.Bind() but this method does not set the response status code to 400 or abort if input is not valid.
+//
+// Note:
+// - Caller must tag struct fields appropriately for the desired binding (eg `header:"xxx"` vs `uri:"xxx"`)
+// - Caller must ensure no duplication between field names (else use separate binding engines instead)
+// - Caller must provide Content-Type header to select the correct body binding (eg "application/json" for JSON binding)
+// - Binding validation tags are verified after all request parts have been bound
+func (c *Context) ShouldBindAll(obj any) error {
+	uriParams := make(map[string][]string, len(c.Params))
+	for _, v := range c.Params {
+		uriParams[v.Key] = []string{v.Value}
+	}
+	return binding.All.BindMany(c.Request, uriParams, obj)
 }
 
 // ShouldBindWith binds the passed struct pointer using the specified binding engine.
