@@ -1,0 +1,94 @@
+# Gin Web Framework — Cursor Rules
+
+You are working on **Gin**, a high-performance HTTP web framework for Go. It provides a Martini-like API with httprouter-based routing.
+
+## Project Structure
+
+This is a single Go module (`github.com/gin-gonic/gin`), not a monorepo.
+
+- Root package `gin` — core framework (router, context, engine, middleware)
+- `binding/` — request binding and validation (JSON, XML, YAML, TOML, Protobuf, BSON)
+- `render/` — response rendering (JSON, XML, HTML, YAML, Protobuf, etc.)
+- `internal/` — internal utilities (not exported)
+- `docs/` — extended documentation (`doc.md`)
+- `testdata/` — test fixtures
+
+## Go Conventions
+
+- Go 1.25+ is required. Use modern Go idioms and standard library features.
+- Every file starts with the copyright header:
+  ```go
+  // Copyright 2014 Manu Martinez-Almeida. All rights reserved.
+  // Use of this source code is governed by a MIT style
+  // license that can be found in the LICENSE file.
+  ```
+- Package name is `gin` for the root, matching subdirectory names for sub-packages.
+- Use `gofmt` / `goimports` formatting — this is non-negotiable.
+
+## Code Style
+
+- **Linter**: `golangci-lint` v2 with the config in `.golangci.yml`. Key enabled linters: `gosec`, `errorlint`, `revive`, `misspell`, `perfsprint`, `testifylint`.
+- Prefer `fmt.Errorf("...: %w", err)` for error wrapping (`errorlint`).
+- Use `errors.Is()` and `errors.As()` instead of direct error comparison.
+- Use standard library string/int conversion functions where possible (`perfsprint`).
+- Avoid naked returns (`nakedret` linter enabled).
+- All exported types, functions, and methods must have doc comments.
+
+## Core Patterns
+
+- **`gin.Context`** is the central type — it carries request, response, middleware chain, and metadata. Passed as `*gin.Context` (pointer).
+- **`gin.Engine`** embeds `RouterGroup` and is the top-level router.
+- **`gin.H`** is the shorthand for `map[string]any` — use it for quick JSON responses.
+- **Middleware** signature: `func(c *gin.Context)`. Call `c.Next()` to continue the chain, `c.Abort()` to stop.
+- **Handler** signature: `gin.HandlerFunc` which is `func(*gin.Context)`.
+- Route grouping via `router.Group("/api")` with group-scoped middleware.
+
+## Binding & Validation
+
+- Request binding uses struct tags: `json`, `xml`, `form`, `uri`, `header`, `yaml`, `toml`.
+- Validation uses `go-playground/validator/v10` with `binding:"required"` tags.
+- `ShouldBind*` methods return errors without aborting; `Bind*` methods abort on error (status 400).
+- Custom validators can be registered on the binding engine.
+
+## Rendering
+
+- Use `c.JSON()`, `c.XML()`, `c.YAML()`, `c.TOML()`, `c.ProtoBuf()` for structured responses.
+- Use `c.HTML()` for template rendering with `html/template`.
+- Use `c.String()` for plain text responses.
+- Always pass `http.Status*` constants for status codes, not raw integers.
+
+## Testing
+
+- Tests use the standard `testing` package with **`testify`** (`assert`, `require`).
+- Test files are `*_test.go` alongside source files in the same package.
+- Use `httptest.NewRecorder()` and `http.NewRequest()` for handler testing.
+- Run tests: `go test ./...`
+- Benchmarks are in `benchmarks_test.go` — performance-sensitive changes should include benchmarks.
+
+## Error Handling
+
+- Use `c.Error(err)` to attach errors to the context for middleware to handle.
+- Custom error types in `errors.go` — `gin.Error` wraps errors with metadata and type classification.
+- Never panic in handlers — use proper error returns or `c.AbortWithStatusJSON()`.
+
+## Naming Conventions
+
+- Files: `lowercase.go`, matching the primary type or concept they contain.
+- Types: `PascalCase` — e.g., `Context`, `Engine`, `RouterGroup`.
+- Constants: `PascalCase` for exported, `camelCase` for unexported. MIME types use `MIME` prefix (`MIMEJSON`).
+- Interfaces: verb-based names (e.g., `ResponseWriter`, `IRouter`, `IRoutes`).
+- Test functions: `TestTypeName_MethodName` pattern.
+
+## Performance
+
+- Gin is designed for zero-allocation routing — be mindful of heap allocations.
+- `Context` objects are pooled via `sync.Pool` — never store `*gin.Context` outside the handler lifecycle.
+- Prefer `strings.Builder` over string concatenation.
+- Use `context.go`'s built-in methods over reimplementing request parsing.
+
+## Contributing
+
+- PRs target the `master` branch.
+- Squash to no more than two commits.
+- All CI checks must pass (GitHub Actions).
+- New features must include tests. Document in `docs/doc.md`, not the README.
