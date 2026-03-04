@@ -22,7 +22,7 @@
   - [How to write log file](#how-to-write-log-file)
   - [Custom Log Format](#custom-log-format)
   - [Controlling Log output coloring](#controlling-log-output-coloring)
-  - [Avoid logging query strings](#avoid-loging-query-strings)
+  - [Avoid logging query strings](#avoid-logging-query-strings)
   - [Model binding and validation](#model-binding-and-validation)
   - [Custom Validators](#custom-validators)
   - [Only Bind Query String](#only-bind-query-string)
