@@ -30,6 +30,7 @@
   - [Bind default value if none provided](#bind-default-value-if-none-provided)
   - [Collection format for arrays](#collection-format-for-arrays)
   - [Bind Uri](#bind-uri)
+  - [Bind with encoding.TextUnmarshaler by default](#bind-with-encodingTextUnmarshaler-by-default)
   - [Bind custom unmarshaler](#bind-custom-unmarshaler)
   - [Bind Header](#bind-header)
   - [Bind HTML checkboxes](#bind-html-checkboxes)
@@ -1021,6 +1022,48 @@ Test it with:
 curl -v localhost:8088/thinkerou/987fbc97-4bed-5078-9f07-9141ba07c9f3
 curl -v localhost:8088/thinkerou/not-uuid
 ```
+
+### Bind with encoding.TextUnmarshaler by default
+
+By default, Gin binds using its own logic that does not account for `encoding.TextUnmarshaler`. 
+To bind using `encoding.TextUnmarshaler` by default, add the build tag `gin_bind_encoding` during the build process.
+
+```go
+package main
+
+import (
+  "github.com/gin-gonic/gin"
+  "github.com/gofrs/uuid"
+)
+
+func main() {
+  route := gin.Default()
+  var request struct {
+    Uuid uuid.UUID `form:"uuid" binding:"uuid"`
+  }
+
+  route.GET("/test", func(ctx *gin.Context) {
+    _ = ctx.BindQuery(&request)
+    ctx.JSON(200, request)
+  })
+  _ = route.Run(":8088")
+}
+```
+
+Test it with:
+
+```sh
+go run -tags=gin_bind_encoding main.go
+# Then in another terminal
+curl 'localhost:8088/test?uuid=70d9b500-fa26-11dd-876f-322495cdf0f7'
+```
+Result
+```sh
+{"Uuid":"70d9b500-fa26-11dd-876f-322495cdf0f7"}
+```
+
+Note:
+- This feature is not active by default to avoid breaking changes for existing users dependent on gin's default binding logic
 
 ### Bind custom unmarshaler
 
