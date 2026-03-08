@@ -27,7 +27,7 @@ func TestRunTestHandlerFlushesStatusCode(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			w := httptest.NewRecorder()
-			req := httptest.NewRequest("GET", "/", nil)
+			req := httptest.NewRequest(http.MethodGet, "/", nil)
 			code := tt.statusCode
 
 			c := RunTestHandler(w, req, func(c *Context) {
@@ -42,7 +42,7 @@ func TestRunTestHandlerFlushesStatusCode(t *testing.T) {
 
 func TestRunTestHandlerMultipleHandlers(t *testing.T) {
 	w := httptest.NewRecorder()
-	req := httptest.NewRequest("POST", "/resource", nil)
+	req := httptest.NewRequest(http.MethodPost, "/resource", nil)
 
 	callOrder := []string{}
 
@@ -65,7 +65,7 @@ func TestRunTestHandlerMultipleHandlers(t *testing.T) {
 
 func TestRunTestHandlerDefaultStatus(t *testing.T) {
 	w := httptest.NewRecorder()
-	req := httptest.NewRequest("GET", "/", nil)
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
 
 	RunTestHandler(w, req, func(c *Context) {
 		// Handler that does not set a status explicitly.
@@ -76,7 +76,7 @@ func TestRunTestHandlerDefaultStatus(t *testing.T) {
 
 func TestRunTestHandlerSetsRequest(t *testing.T) {
 	w := httptest.NewRecorder()
-	req := httptest.NewRequest("PUT", "/items/42", nil)
+	req := httptest.NewRequest(http.MethodPut, "/items/42", nil)
 
 	c := RunTestHandler(w, req, func(c *Context) {
 		c.Status(http.StatusOK)
