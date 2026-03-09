@@ -483,9 +483,35 @@ func (engine *Engine) validateHeader(header string) (clientIP string, valid bool
 	if header == "" {
 		return "", false
 	}
+	var ipStr string
 	items := strings.Split(header, ",")
 	for i := len(items) - 1; i >= 0; i-- {
-		ipStr := strings.TrimSpace(items[i])
+		item := strings.TrimSpace(items[i])
+		// [IPv6] or [IPv6]:port
+		if strings.HasPrefix(item, "[") {
+			if idx := strings.IndexByte(item, ']'); idx > 0 {
+				ipPart := item[1:idx]
+				if ip := net.ParseIP(ipPart); ip != nil {
+					if idx == len(item)-1 || (idx+1 < len(item) && item[idx+1] == ':') {
+						ipStr = ipPart
+					}
+				}
+			}
+		} else if ip := net.ParseIP(item); ip != nil {
+			// plain IPv4 or IPv6
+			ipStr = item
+		} else if idx := strings.LastIndexByte(item, ':'); idx > 0 {
+			// IPv4:port
+			ipPart := item[:idx]
+			if ip := net.ParseIP(ipPart); ip != nil {
+				ipStr = ipPart
+			}
+		}
+
+		if ipStr == "" {
+			break
+		}
+
 		ip := net.ParseIP(ipStr)
 		if ip == nil {
 			break
