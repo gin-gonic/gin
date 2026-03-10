@@ -1128,7 +1128,8 @@ func TestValidateHeader_IssueCases(t *testing.T) {
 			header:    "[240e:318:2f4a:de56::240]:38792",
 			wantIP:    "240e:318:2f4a:de56::240",
 			wantValid: true,
-		}, {
+		},
+		{
 			name:      "invalid ip",
 			header:    "abc",
 			wantIP:    "",
