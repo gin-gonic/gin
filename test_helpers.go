@@ -49,10 +49,7 @@ func waitForServerReady(url string, maxAttempts int) error {
 		}
 
 		// Exponential backoff: 10ms, 20ms, 40ms, 80ms, 160ms...
-		backoff := time.Duration(10*(1<<uint(i))) * time.Millisecond
-		if backoff > 500*time.Millisecond {
-			backoff = 500 * time.Millisecond
-		}
+		backoff := min(time.Duration(10*(1<<uint(i)))*time.Millisecond, 500*time.Millisecond)
 		time.Sleep(backoff)
 	}
 
