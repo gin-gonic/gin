@@ -64,7 +64,20 @@ func testRequest(t *testing.T, params ...string) {
 }
 
 func TestRunEmpty(t *testing.T) {
-	os.Setenv("PORT", "")
+	// Listen on a random available port to avoid conflicts
+	l, err := net.Listen("tcp", "localhost:0")
+	require.NoError(t, err)
+	defer l.Close()
+	addr := l.Addr().String()
+	_, port, err := net.SplitHostPort(addr)
+	require.NoError(t, err)
+
+    // Close the listener so router.Run() can bind to it (there's a small race here, but better than hardcoded 8080)
+    // Actually, router.Run() calls http.ListenAndServe which creates its own listener.
+    // If we close 'l', 'router.Run' can pick it up. 
+    l.Close()
+    
+	os.Setenv("PORT", port)
 	router := New()
 	go func() {
 		router.GET("/example", func(c *Context) { c.String(http.StatusOK, "it worked") })
@@ -72,11 +85,11 @@ func TestRunEmpty(t *testing.T) {
 	}()
 
 	// Wait for server to be ready with exponential backoff
-	err := waitForServerReady("http://localhost:8080/example", 10)
+	err = waitForServerReady("http://"+addr+"/example", 10)
 	require.NoError(t, err, "server should start successfully")
 
-	require.Error(t, router.Run(":8080"))
-	testRequest(t, "http://localhost:8080/example")
+	require.Error(t, router.Run(":"+port))
+	testRequest(t, "http://"+addr+"/example")
 }
 
 func TestBadTrustedCIDRs(t *testing.T) {
