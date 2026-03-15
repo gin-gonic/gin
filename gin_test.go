@@ -1084,3 +1084,106 @@ func TestUpdateRouteTreesCalledOnce(t *testing.T) {
 		assert.Equal(t, "ok", w.Body.String())
 	}
 }
+
+func TestValidateHeader_IssueCases(t *testing.T) {
+	r := New()
+
+	err := r.SetTrustedProxies([]string{"0.0.0.0/0", "::/0"})
+	if err != nil {
+		t.Fatalf("SetTrustedProxies failed: %v", err)
+	}
+
+	tests := []struct {
+		name      string
+		header    string
+		wantIP    string
+		wantValid bool
+	}{
+		{
+			name:      "IPv4 plain",
+			header:    "127.0.0.1",
+			wantIP:    "127.0.0.1",
+			wantValid: true,
+		},
+		{
+			name:      "IPv4 with port (ARR/IIS)",
+			header:    "127.0.0.1:38792",
+			wantIP:    "127.0.0.1",
+			wantValid: true,
+		},
+		{
+			name:      "IPv6 plain",
+			header:    "240e:318:2f4a:de56::240",
+			wantIP:    "240e:318:2f4a:de56::240",
+			wantValid: true,
+		},
+		{
+			name:      "IPv6 with brackets (IIS style)",
+			header:    "[240e:318:2f4a:de56::240]",
+			wantIP:    "240e:318:2f4a:de56::240",
+			wantValid: true,
+		},
+		{
+			name:      "IPv6 with brackets + port (ARR/IIS or cloud LB)",
+			header:    "[240e:318:2f4a:de56::240]:38792",
+			wantIP:    "240e:318:2f4a:de56::240",
+			wantValid: true,
+		},
+		{
+			name:      "invalid ip",
+			header:    "abc",
+			wantIP:    "",
+			wantValid: false,
+		},
+		{
+			name:      "ipv6 missing closing bracket",
+			header:    "[240e:318:2f4a:de56::240",
+			wantIP:    "",
+			wantValid: false,
+		},
+		{
+			name:      "ipv6 bracket invalid suffix",
+			header:    "[240e:318:2f4a:de56::240]abc",
+			wantIP:    "",
+			wantValid: false,
+		},
+		{
+			name:      "multiple ipv4",
+			header:    "1.1.1.1, 127.0.0.1",
+			wantIP:    "1.1.1.1",
+			wantValid: true,
+		},
+		{
+			name:      "multiple ipv6",
+			header:    "240e:318:2f4a:de56::111, 240e:318:2f4a:de56::240",
+			wantIP:    "240e:318:2f4a:de56::111",
+			wantValid: true,
+		},
+		{
+			name:      "full",
+			header:    "1.1.1.1, 127.0.0.1, 192.168.3.1:5050, 240e:318:2f4a:de56::1111, [240e:318:2f4a:de56::2222], [240e:318:2f4a:de56::3333]:7080",
+			wantIP:    "1.1.1.1",
+			wantValid: true,
+		},
+		// ---------- empty / whitespace ----------
+		{
+			name:      "empty header",
+			header:    "",
+			wantIP:    "",
+			wantValid: false,
+		},
+		{
+			name:      "whitespace header",
+			header:    "   ",
+			wantIP:    "",
+			wantValid: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ip, valid := r.validateHeader(tt.header)
+			assert.Equal(t, tt.wantIP, ip)
+			assert.Equal(t, tt.wantValid, valid)
+		})
+	}
+}
