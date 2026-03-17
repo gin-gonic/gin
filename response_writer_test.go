@@ -17,7 +17,6 @@ import (
 
 // TODO
 // func (w *responseWriter) Hijack() (net.Conn, *bufio.ReadWriter, error) {
-// func (w *responseWriter) CloseNotify() <-chan bool {
 // func (w *responseWriter) Flush() {
 
 var (
@@ -26,7 +25,6 @@ var (
 	_ http.ResponseWriter = ResponseWriter(&responseWriter{})
 	_ http.Hijacker       = ResponseWriter(&responseWriter{})
 	_ http.Flusher        = ResponseWriter(&responseWriter{})
-	_ http.CloseNotifier  = ResponseWriter(&responseWriter{})
 )
 
 func init() {
@@ -118,10 +116,6 @@ func TestResponseWriterHijack(t *testing.T) {
 		require.NoError(t, err)
 	})
 	assert.True(t, w.Written())
-
-	assert.Panics(t, func() {
-		w.CloseNotify()
-	})
 
 	w.Flush()
 }
