@@ -41,6 +41,7 @@ jobs:
             '--ldflags="-checklinkname=0" -tags sonic',
             "-tags go_json",
             "-race",
+            "-tags gin_bind_encoding",
           ]
         include:
           - os: ubuntu-latest
