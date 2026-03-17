@@ -3023,27 +3023,26 @@ func TestContextRenderDataFromReaderNoHeaders(t *testing.T) {
 
 type TestResponseRecorder struct {
 	*httptest.ResponseRecorder
-	closeChannel chan bool
-}
-
-func (r *TestResponseRecorder) CloseNotify() <-chan bool {
-	return r.closeChannel
+	cancel context.CancelFunc
 }
 
 func (r *TestResponseRecorder) closeClient() {
-	r.closeChannel <- true
+	r.cancel()
 }
 
-func CreateTestResponseRecorder() *TestResponseRecorder {
+func CreateTestResponseRecorder() (*TestResponseRecorder, *http.Request) {
+	ctx, cancel := context.WithCancel(context.Background())
+	req, _ := http.NewRequestWithContext(ctx, http.MethodGet, "/", nil)
 	return &TestResponseRecorder{
 		httptest.NewRecorder(),
-		make(chan bool, 1),
-	}
+		cancel,
+	}, req
 }
 
 func TestContextStream(t *testing.T) {
-	w := CreateTestResponseRecorder()
+	w, req := CreateTestResponseRecorder()
 	c, _ := CreateTestContext(w)
+	c.Request = req
 
 	stopStream := true
 	c.Stream(func(w io.Writer) bool {
@@ -3061,8 +3060,9 @@ func TestContextStream(t *testing.T) {
 }
 
 func TestContextStreamWithClientGone(t *testing.T) {
-	w := CreateTestResponseRecorder()
+	w, req := CreateTestResponseRecorder()
 	c, _ := CreateTestContext(w)
+	c.Request = req
 
 	c.Stream(func(writer io.Writer) bool {
 		defer func() {
@@ -3079,7 +3079,7 @@ func TestContextStreamWithClientGone(t *testing.T) {
 }
 
 func TestContextResetInHandler(t *testing.T) {
-	w := CreateTestResponseRecorder()
+	w, _ := CreateTestResponseRecorder()
 	c, _ := CreateTestContext(w)
 
 	c.handlers = []HandlerFunc{
