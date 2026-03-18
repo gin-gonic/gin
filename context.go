@@ -907,11 +907,17 @@ func (c *Context) ShouldBindHeader(obj any) error {
 // ShouldBindUri binds the passed struct pointer using the specified binding engine.
 // It works like ShouldBindJSON but binds parameters from the URI.
 func (c *Context) ShouldBindUri(obj any) error {
+	return c.ShouldBindUriWith(obj, binding.Uri)
+}
+
+// ShouldBindUriWith binds the passed struct pointer using the specified uri
+// binding engine. See the binding package.
+func (c *Context) ShouldBindUriWith(obj any, b binding.BindingUri) error {
 	m := make(map[string][]string, len(c.Params))
 	for _, v := range c.Params {
 		m[v.Key] = []string{v.Value}
 	}
-	return binding.Uri.BindUri(m, obj)
+	return b.BindUri(m, obj)
 }
 
 // ShouldBindWith binds the passed struct pointer using the specified binding engine.
