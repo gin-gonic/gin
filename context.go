@@ -717,6 +717,46 @@ func (c *Context) MultipartForm() (*multipart.Form, error) {
 
 // SaveUploadedFile uploads the form file to specific dst.
 func (c *Context) SaveUploadedFile(file *multipart.FileHeader, dst string, perm ...fs.FileMode) error {
+	return c.saveUploadedFile(file, dst, perm,
+		os.MkdirAll,
+		os.Chmod,
+		func(name string) (*os.File, error) {
+			return os.OpenFile(name, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0o666)
+		},
+	)
+}
+
+// SaveUploadedFileToRoot uploads the form file to dst within root.
+//
+// Unlike SaveUploadedFile, all filesystem operations are constrained to root,
+// so path traversal and symlink escapes outside root are rejected by os.Root.
+// This method requires Go 1.25+.
+func (c *Context) SaveUploadedFileToRoot(file *multipart.FileHeader, dst string, root *os.Root, perm ...fs.FileMode) error {
+	if root == nil {
+		return errors.New("root is nil")
+	}
+
+	return c.saveUploadedFile(file, dst, perm,
+		func(name string, mode os.FileMode) error {
+			return root.MkdirAll(name, mode)
+		},
+		func(name string, mode os.FileMode) error {
+			return root.Chmod(name, mode)
+		},
+		func(name string) (*os.File, error) {
+			return root.OpenFile(name, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0o666)
+		},
+	)
+}
+
+func (c *Context) saveUploadedFile(
+	file *multipart.FileHeader,
+	dst string,
+	perm []fs.FileMode,
+	mkdirAll func(string, os.FileMode) error,
+	chmod func(string, os.FileMode) error,
+	openFile func(string) (*os.File, error),
+) error {
 	src, err := file.Open()
 	if err != nil {
 		return err
@@ -725,17 +765,21 @@ func (c *Context) SaveUploadedFile(file *multipart.FileHeader, dst string, perm 
 
 	var mode os.FileMode = 0o750
 	if len(perm) > 0 {
-		mode = perm[0]
+		mode = os.FileMode(perm[0])
 	}
+	dst = filepath.Clean(dst)
 	dir := filepath.Dir(dst)
-	if err = os.MkdirAll(dir, mode); err != nil {
-		return err
-	}
-	if err = os.Chmod(dir, mode); err != nil {
-		return err
-	}
 
-	out, err := os.Create(dst)
+	if dir != "." && dir != "/" {
+		if err = mkdirAll(dir, mode); err != nil {
+			return err
+		}
+
+		if err = chmod(dir, mode); err != nil {
+			return err
+		}
+	}
+	out, err := openFile(dst)
 	if err != nil {
 		return err
 	}
@@ -743,6 +787,7 @@ func (c *Context) SaveUploadedFile(file *multipart.FileHeader, dst string, perm 
 
 	_, err = io.Copy(out, src)
 	return err
+
 }
 
 // Bind checks the Method and Content-Type to select a binding engine automatically,

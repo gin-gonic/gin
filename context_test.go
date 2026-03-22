@@ -274,6 +274,110 @@ func TestSaveUploadedFileWithPermissionFailed(t *testing.T) {
 	require.Error(t, c.SaveUploadedFile(f, "test/permission_test", mode))
 }
 
+func TestSaveUploadedFileToRoot(t *testing.T) {
+	buf := new(bytes.Buffer)
+	mw := multipart.NewWriter(buf)
+	w, err := mw.CreateFormFile("file", "permission_test")
+	require.NoError(t, err)
+	_, err = w.Write([]byte("permission_test"))
+	require.NoError(t, err)
+	mw.Close()
+
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	c.Request, _ = http.NewRequest(http.MethodPost, "/", buf)
+	c.Request.Header.Set("Content-Type", mw.FormDataContentType())
+	f, err := c.FormFile("file")
+	require.NoError(t, err)
+
+	rootDir := t.TempDir()
+	root, err := os.OpenRoot(rootDir)
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		require.NoError(t, root.Close())
+	})
+
+	var mode fs.FileMode = 0o755
+	require.NoError(t, c.SaveUploadedFileToRoot(f, "test/permission_test", root, mode))
+
+	content, err := os.ReadFile(filepath.Join(rootDir, "test", "permission_test"))
+	require.NoError(t, err)
+	assert.Equal(t, "permission_test", string(content))
+
+	info, err := os.Stat(filepath.Join(rootDir, "test"))
+	require.NoError(t, err)
+	assert.Equal(t, mode, info.Mode().Perm())
+}
+
+func TestSaveUploadedFileToRootRejectsPathTraversal(t *testing.T) {
+	buf := new(bytes.Buffer)
+	mw := multipart.NewWriter(buf)
+	w, err := mw.CreateFormFile("file", "escape.txt")
+	require.NoError(t, err)
+	_, err = w.Write([]byte("escape"))
+	require.NoError(t, err)
+	mw.Close()
+
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	c.Request, _ = http.NewRequest(http.MethodPost, "/", buf)
+	c.Request.Header.Set("Content-Type", mw.FormDataContentType())
+	f, err := c.FormFile("file")
+	require.NoError(t, err)
+
+	baseDir := t.TempDir()
+	rootDir := filepath.Join(baseDir, "root")
+	require.NoError(t, os.Mkdir(rootDir, 0o755))
+	root, err := os.OpenRoot(rootDir)
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		require.NoError(t, root.Close())
+	})
+
+	err = c.SaveUploadedFileToRoot(f, "../escape.txt", root)
+	require.Error(t, err)
+	assert.ErrorContains(t, err, "path escapes")
+
+	_, err = os.Stat(filepath.Join(baseDir, "escape.txt"))
+	assert.ErrorIs(t, err, os.ErrNotExist)
+}
+
+func TestSaveUploadedFileToRootRejectsSymlinkEscape(t *testing.T) {
+	buf := new(bytes.Buffer)
+	mw := multipart.NewWriter(buf)
+	w, err := mw.CreateFormFile("file", "escape.txt")
+	require.NoError(t, err)
+	_, err = w.Write([]byte("escape"))
+	require.NoError(t, err)
+	mw.Close()
+
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	c.Request, _ = http.NewRequest(http.MethodPost, "/", buf)
+	c.Request.Header.Set("Content-Type", mw.FormDataContentType())
+	f, err := c.FormFile("file")
+	require.NoError(t, err)
+
+	baseDir := t.TempDir()
+	rootDir := filepath.Join(baseDir, "root")
+	outsideDir := filepath.Join(baseDir, "outside")
+	require.NoError(t, os.Mkdir(rootDir, 0o755))
+	require.NoError(t, os.Mkdir(outsideDir, 0o755))
+
+	if err := os.Symlink(outsideDir, filepath.Join(rootDir, "link")); err != nil {
+		t.Skipf("symlink unsupported: %v", err)
+	}
+
+	root, err := os.OpenRoot(rootDir)
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		require.NoError(t, root.Close())
+	})
+
+	err = c.SaveUploadedFileToRoot(f, "link/escape.txt", root)
+	require.Error(t, err)
+
+	_, err = os.Stat(filepath.Join(outsideDir, "escape.txt"))
+	assert.ErrorIs(t, err, os.ErrNotExist)
+}
+
 func TestContextReset(t *testing.T) {
 	router := New()
 	c := router.allocateContext(0)
