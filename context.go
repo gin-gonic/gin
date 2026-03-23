@@ -787,7 +787,6 @@ func (c *Context) saveUploadedFile(
 
 	_, err = io.Copy(out, src)
 	return err
-
 }
 
 // Bind checks the Method and Content-Type to select a binding engine automatically,

@@ -334,10 +334,10 @@ func TestSaveUploadedFileToRootRejectsPathTraversal(t *testing.T) {
 
 	err = c.SaveUploadedFileToRoot(f, "../escape.txt", root)
 	require.Error(t, err)
-	assert.ErrorContains(t, err, "path escapes")
+	require.ErrorContains(t, err, "path escapes")
 
 	_, err = os.Stat(filepath.Join(baseDir, "escape.txt"))
-	assert.ErrorIs(t, err, os.ErrNotExist)
+	require.ErrorIs(t, err, os.ErrNotExist)
 }
 
 func TestSaveUploadedFileToRootRejectsSymlinkEscape(t *testing.T) {
@@ -375,7 +375,7 @@ func TestSaveUploadedFileToRootRejectsSymlinkEscape(t *testing.T) {
 	require.Error(t, err)
 
 	_, err = os.Stat(filepath.Join(outsideDir, "escape.txt"))
-	assert.ErrorIs(t, err, os.ErrNotExist)
+	require.ErrorIs(t, err, os.ErrNotExist)
 }
 
 func TestContextReset(t *testing.T) {
