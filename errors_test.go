@@ -149,7 +149,7 @@ func TestErrorJoinUnwrap(t *testing.T) {
 	err2 := errors.New("store error")
 	joinedErr := errors.Join(err1, err2)
 
-	c.Error(joinedErr)
+	_ = c.Error(joinedErr)
 
 	// Should be unwrapped into 2 separate errors
 	assert.Len(t, c.Errors, 2)
@@ -158,9 +158,9 @@ func TestErrorJoinUnwrap(t *testing.T) {
 
 	// Test mixed usage
 	c2, _ := CreateTestContext(httptest.NewRecorder())
-	c2.Error(errors.New("gin error"))
-	c2.Error(errors.Join(err1, err2))
-	c2.Error(errors.New("other error"))
+	_ = c2.Error(errors.New("gin error"))
+	_ = c2.Error(errors.Join(err1, err2))
+	_ = c2.Error(errors.New("other error"))
 
 	assert.Len(t, c2.Errors, 4)
 	expected := `Error #01: gin error
@@ -174,7 +174,7 @@ Error #04: other error
 	c3, _ := CreateTestContext(httptest.NewRecorder())
 	emptyJoin := errors.Join() // Creates nil error
 	if emptyJoin != nil {
-		c3.Error(emptyJoin)
+		_ = c3.Error(emptyJoin)
 		// errors.Join() with no arguments returns nil, so this shouldn't panic
 	}
 
@@ -183,10 +183,9 @@ Error #04: other error
 	err3 := errors.New("nested1")
 	err4 := errors.New("nested2")
 	nestedJoin := errors.Join(errors.Join(err3, err4), errors.New("outer"))
-	c4.Error(nestedJoin)
+	_ = c4.Error(nestedJoin)
 	assert.Len(t, c4.Errors, 3)
 	assert.Equal(t, "nested1", c4.Errors[0].Error())
 	assert.Equal(t, "nested2", c4.Errors[1].Error())
 	assert.Equal(t, "outer", c4.Errors[2].Error())
 }
-

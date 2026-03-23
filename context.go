@@ -263,7 +263,7 @@ func (c *Context) Error(err error) *Error {
 		if len(errs) > 0 {
 			// Recursively add each error from the joined errors
 			for _, e := range errs {
-				c.Error(e)
+				_ = c.Error(e)
 			}
 			// Return the last added error
 			return c.Errors.Last()
