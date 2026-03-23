@@ -7,6 +7,7 @@ package gin
 import (
 	"errors"
 	"fmt"
+	"net/http/httptest"
 	"testing"
 
 	"github.com/gin-gonic/gin/codec/json"
@@ -138,3 +139,54 @@ func TestErrorUnwrap(t *testing.T) {
 	var testErrNonPointer TestErr
 	require.ErrorAs(t, wrappedErr, &testErrNonPointer)
 }
+
+// TestErrorJoinUnwrap tests that gin.Error() automatically unwraps errors.Join() created joined errors.
+func TestErrorJoinUnwrap(t *testing.T) {
+	c, _ := CreateTestContext(httptest.NewRecorder())
+
+	// Test with errors.Join()
+	err1 := errors.New("service error")
+	err2 := errors.New("store error")
+	joinedErr := errors.Join(err1, err2)
+
+	c.Error(joinedErr)
+
+	// Should be unwrapped into 2 separate errors
+	assert.Len(t, c.Errors, 2)
+	assert.Equal(t, "service error", c.Errors[0].Error())
+	assert.Equal(t, "store error", c.Errors[1].Error())
+
+	// Test mixed usage
+	c2, _ := CreateTestContext(httptest.NewRecorder())
+	c2.Error(errors.New("gin error"))
+	c2.Error(errors.Join(err1, err2))
+	c2.Error(errors.New("other error"))
+
+	assert.Len(t, c2.Errors, 4)
+	expected := `Error #01: gin error
+Error #02: service error
+Error #03: store error
+Error #04: other error
+`
+	assert.Equal(t, expected, c2.Errors.String())
+
+	// Test empty join (edge case)
+	c3, _ := CreateTestContext(httptest.NewRecorder())
+	emptyJoin := errors.Join() // Creates nil error
+	if emptyJoin != nil {
+		c3.Error(emptyJoin)
+		// errors.Join() with no arguments returns nil, so this shouldn't panic
+	}
+
+	// Test nested joins
+	c4, _ := CreateTestContext(httptest.NewRecorder())
+	err3 := errors.New("nested1")
+	err4 := errors.New("nested2")
+	nestedJoin := errors.Join(errors.Join(err3, err4), errors.New("outer"))
+	c4.Error(nestedJoin)
+	assert.Len(t, c4.Errors, 3)
+	assert.Equal(t, "nested1", c4.Errors[0].Error())
+	assert.Equal(t, "nested2", c4.Errors[1].Error())
+	assert.Equal(t, "outer", c4.Errors[2].Error())
+}
+
