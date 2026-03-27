@@ -3131,7 +3131,7 @@ func TestRemoteIPFail(t *testing.T) {
 	c.Request.RemoteAddr = "[:::]:80"
 	ip, err := netip.ParseAddr(c.RemoteIP())
 	trust := c.engine.isTrustedProxy(ip)
-	assert.NotNil(t, err)
+	require.Error(t, err)
 	assert.False(t, trust)
 }
 

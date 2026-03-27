@@ -970,14 +970,6 @@ func TestPrepareTrustedCIRDsWith(t *testing.T) {
 	}
 }
 
-func parseCIDR(cidr string) netip.Prefix {
-	prefix, err := netip.ParsePrefix(cidr)
-	if err != nil {
-		fmt.Println(err)
-	}
-	return prefix.Masked()
-}
-
 func assertRoutePresent(t *testing.T, gotRoutes RoutesInfo, wantRoute RouteInfo) {
 	for _, gotRoute := range gotRoutes {
 		if gotRoute.Path == wantRoute.Path && gotRoute.Method == wantRoute.Method {
