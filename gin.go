@@ -9,6 +9,7 @@ import (
 	"html/template"
 	"net"
 	"net/http"
+	"net/netip"
 	"os"
 	"path"
 	"strings"
@@ -36,15 +37,9 @@ var (
 
 var defaultPlatform string
 
-var defaultTrustedCIDRs = []*net.IPNet{
-	{ // 0.0.0.0/0 (IPv4)
-		IP:   net.IP{0x0, 0x0, 0x0, 0x0},
-		Mask: net.IPMask{0x0, 0x0, 0x0, 0x0},
-	},
-	{ // ::/0 (IPv6)
-		IP:   net.IP{0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0},
-		Mask: net.IPMask{0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0},
-	},
+var defaultTrustedCIDRs = []netip.Prefix{
+	netip.MustParsePrefix("0.0.0.0/0"), // IPv4
+	netip.MustParsePrefix("::/0"),      // IPv6
 }
 
 // HandlerFunc defines the handler used by gin middleware as return value.
@@ -185,7 +180,7 @@ type Engine struct {
 	maxParams        uint16
 	maxSections      uint16
 	trustedProxies   []string
-	trustedCIDRs     []*net.IPNet
+	trustedCIDRs     []netip.Prefix
 }
 
 var _ IRouter = (*Engine)(nil)
@@ -411,33 +406,31 @@ func iterate(path, method string, routes RoutesInfo, root *node) RoutesInfo {
 	return routes
 }
 
-func (engine *Engine) prepareTrustedCIDRs() ([]*net.IPNet, error) {
+func (engine *Engine) prepareTrustedCIDRs() ([]netip.Prefix, error) {
 	if engine.trustedProxies == nil {
 		return nil, nil
 	}
 
-	cidr := make([]*net.IPNet, 0, len(engine.trustedProxies))
+	cidrs := make([]netip.Prefix, 0, len(engine.trustedProxies))
 	for _, trustedProxy := range engine.trustedProxies {
 		if !strings.Contains(trustedProxy, "/") {
-			ip := parseIP(trustedProxy)
-			if ip == nil {
-				return cidr, &net.ParseError{Type: "IP address", Text: trustedProxy}
+			addr, err := netip.ParseAddr(trustedProxy)
+			if err != nil {
+				return cidrs, &net.ParseError{Type: "IP address", Text: trustedProxy}
 			}
-
-			switch len(ip) {
-			case net.IPv4len:
+			if addr.Is4() {
 				trustedProxy += "/32"
-			case net.IPv6len:
+			} else {
 				trustedProxy += "/128"
 			}
 		}
-		_, cidrNet, err := net.ParseCIDR(trustedProxy)
+		prefix, err := netip.ParsePrefix(trustedProxy)
 		if err != nil {
-			return cidr, err
+			return cidrs, err
 		}
-		cidr = append(cidr, cidrNet)
+		cidrs = append(cidrs, prefix.Masked())
 	}
-	return cidr, nil
+	return cidrs, nil
 }
 
 // SetTrustedProxies set a list of network origins (IPv4 addresses,
@@ -455,7 +448,7 @@ func (engine *Engine) SetTrustedProxies(trustedProxies []string) error {
 
 // isUnsafeTrustedProxies checks if Engine.trustedCIDRs contains all IPs, it's not safe if it has (returns true)
 func (engine *Engine) isUnsafeTrustedProxies() bool {
-	return engine.isTrustedProxy(net.ParseIP("0.0.0.0")) || engine.isTrustedProxy(net.ParseIP("::"))
+	return engine.isTrustedProxy(netip.MustParseAddr("0.0.0.0")) || engine.isTrustedProxy(netip.MustParseAddr("::"))
 }
 
 // parseTrustedProxies parse Engine.trustedProxies to Engine.trustedCIDRs
@@ -466,7 +459,7 @@ func (engine *Engine) parseTrustedProxies() error {
 }
 
 // isTrustedProxy will check whether the IP address is included in the trusted list according to Engine.trustedCIDRs
-func (engine *Engine) isTrustedProxy(ip net.IP) bool {
+func (engine *Engine) isTrustedProxy(ip netip.Addr) bool {
 	if engine.trustedCIDRs == nil {
 		return false
 	}
@@ -486,8 +479,8 @@ func (engine *Engine) validateHeader(header string) (clientIP string, valid bool
 	items := strings.Split(header, ",")
 	for i := len(items) - 1; i >= 0; i-- {
 		ipStr := strings.TrimSpace(items[i])
-		ip := net.ParseIP(ipStr)
-		if ip == nil {
+		ip, err := netip.ParseAddr(ipStr)
+		if err != nil {
 			break
 		}
 
@@ -518,20 +511,6 @@ func (engine *Engine) updateRouteTrees() {
 	for _, tree := range engine.trees {
 		updateRouteTree(tree.root)
 	}
-}
-
-// parseIP parse a string representation of an IP and returns a net.IP with the
-// minimum byte representation or nil if input is invalid.
-func parseIP(ip string) net.IP {
-	parsedIP := net.ParseIP(ip)
-
-	if ipv4 := parsedIP.To4(); ipv4 != nil {
-		// return ip in a 4-byte representation
-		return ipv4
-	}
-
-	// return ip in a 16-byte representation or nil
-	return parsedIP
 }
 
 // Run attaches the router to a http.Server and starts listening and serving HTTP requests.
