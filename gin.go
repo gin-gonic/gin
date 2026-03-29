@@ -486,6 +486,7 @@ func (engine *Engine) validateHeader(header string) (clientIP string, valid bool
 	items := strings.Split(header, ",")
 	for i := len(items) - 1; i >= 0; i-- {
 		ipStr := strings.TrimSpace(items[i])
+		ipStr = normalizeIP(ipStr)
 		ip := net.ParseIP(ipStr)
 		if ip == nil {
 			break
@@ -498,6 +499,25 @@ func (engine *Engine) validateHeader(header string) (clientIP string, valid bool
 		}
 	}
 	return "", false
+}
+
+// normalizeIP strips brackets and port from an IP address string.
+// This handles non-standard X-Forwarded-For header content like:
+//   - IPv6 with brackets: [::1] or [2001:db8::1]
+//   - IPv4 with port: 192.168.1.1:8080
+//   - IPv6 with brackets and port: [::1]:8080
+func normalizeIP(ipStr string) string {
+	// Try to split host and port (handles "ip:port" and "[ipv6]:port" formats)
+	if host, _, err := net.SplitHostPort(ipStr); err == nil {
+		return host
+	}
+	// If SplitHostPort fails, it might be an IPv6 with brackets only
+	// e.g., "[2001:db8::1]" - strip the brackets
+	if len(ipStr) > 1 && ipStr[0] == '[' && ipStr[len(ipStr)-1] == ']' {
+		return ipStr[1 : len(ipStr)-1]
+	}
+	// Return as-is for plain IPs (IPv4 or IPv6 without brackets)
+	return ipStr
 }
 
 // updateRouteTree do update to the route tree recursively

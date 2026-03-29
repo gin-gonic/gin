@@ -1156,3 +1156,38 @@ func TestUpdateRouteTreesCalledOnce(t *testing.T) {
 		assert.Equal(t, "ok", w.Body.String())
 	}
 }
+
+// TestNormalizeIP tests the normalizeIP function for handling non-standard
+// X-Forwarded-For header content (issue #4572)
+func TestNormalizeIP(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected string
+	}{
+		// Plain IPv4
+		{name: "plain IPv4", input: "192.168.1.1", expected: "192.168.1.1"},
+		// IPv4 with port
+		{name: "IPv4 with port", input: "192.168.1.1:8080", expected: "192.168.1.1"},
+		// Plain IPv6
+		{name: "plain IPv6", input: "::1", expected: "::1"},
+		{name: "plain IPv6 full", input: "2001:db8::1", expected: "2001:db8::1"},
+		// IPv6 with brackets only
+		{name: "IPv6 with brackets only", input: "[::1]", expected: "::1"},
+		{name: "IPv6 with brackets full", input: "[2001:db8::1]", expected: "2001:db8::1"},
+		// IPv6 with brackets and port
+		{name: "IPv6 with brackets and port", input: "[::1]:8080", expected: "::1"},
+		{name: "IPv6 with brackets and port full", input: "[2001:db8::1]:8080", expected: "2001:db8::1"},
+		// Empty string
+		{name: "empty string", input: "", expected: ""},
+		// Invalid IP (return as-is for net.ParseIP to handle)
+		{name: "invalid IP", input: "not-an-ip", expected: "not-an-ip"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := normalizeIP(tt.input)
+			assert.Equal(t, tt.expected, result)
+		})
+	}
+}
