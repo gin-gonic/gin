@@ -94,6 +94,11 @@ type Context struct {
 	// SameSite allows a server to define a cookie attribute making it impossible for
 	// the browser to send this cookie along with cross-site requests.
 	sameSite http.SameSite
+
+	// wroteResponse tracks whether a response has been written to the client.
+	// This is used to warn about multiple response writes, which can lead to
+	// unexpected behavior.
+	wroteResponse bool
 }
 
 /************************************/
@@ -113,6 +118,7 @@ func (c *Context) reset() {
 	c.queryCache = nil
 	c.formCache = nil
 	c.sameSite = 0
+	c.wroteResponse = false
 	*c.params = (*c.params)[:0]
 	*c.skippedNodes = (*c.skippedNodes)[:0]
 }
@@ -1150,11 +1156,15 @@ func (c *Context) Cookie(name string) (string, error) {
 
 // Render writes the response headers and calls render.Render to render data.
 func (c *Context) Render(code int, r render.Render) {
+	if c.wroteResponse {
+		debugPrint("[WARNING] Multiple response writes detected. This may cause unexpected behavior.")
+	}
 	c.Status(code)
 
 	if !bodyAllowedForStatus(code) {
 		r.WriteContentType(c.Writer)
 		c.Writer.WriteHeaderNow()
+		c.wroteResponse = true
 		return
 	}
 
@@ -1163,6 +1173,7 @@ func (c *Context) Render(code int, r render.Render) {
 		_ = c.Error(err)
 		c.Abort()
 	}
+	c.wroteResponse = true
 }
 
 // HTML renders the HTTP template specified by its file name.
