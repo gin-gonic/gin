@@ -488,6 +488,13 @@ func (engine *Engine) validateHeader(header string) (clientIP string, valid bool
 		ipStr := strings.TrimSpace(items[i])
 		ip := net.ParseIP(ipStr)
 		if ip == nil {
+			// Try to normalize the IP string. Some reverse proxies may send:
+			// 1. IPv6 addresses with square brackets: [240e:318:2f4a:de56::240]
+			// 2. IPv4 addresses with port: 192.168.8.39:38792
+			// 3. IPv6 addresses with square brackets and port: [240e:318:2f4a:de56::240]:38792
+			ipStr, ip = normalizeIPFromHeader(ipStr)
+		}
+		if ip == nil {
 			break
 		}
 
@@ -498,6 +505,41 @@ func (engine *Engine) validateHeader(header string) (clientIP string, valid bool
 		}
 	}
 	return "", false
+}
+
+// normalizeIPFromHeader normalizes an IP string from X-Forwarded-For or similar headers.
+// It handles various formats that reverse proxies may send:
+// 1. IPv6 addresses with square brackets: [240e:318:2f4a:de56::240] -> 240e:318:2f4a:de56::240
+// 2. IPv4 addresses with port: 192.168.8.39:38792 -> 192.168.8.39
+// 3. IPv6 addresses with square brackets and port: [240e:318:2f4a:de56::240]:38792 -> 240e:318:2f4a:de56::240
+// It returns the normalized IP string and the parsed net.IP.
+func normalizeIPFromHeader(ipStr string) (string, net.IP) {
+	// First, try to split host and port (handles "IP:port" and "[IPv6]:port" formats)
+	host, _, err := net.SplitHostPort(ipStr)
+	if err == nil {
+		// Successfully split, now try to parse the host part
+		if ip := net.ParseIP(host); ip != nil {
+			return host, ip
+		}
+		// If host still has brackets (shouldn't happen, but be safe), try to remove them
+		return tryRemoveBracketsAndParse(host)
+	}
+
+	// SplitHostPort failed, the input might be just an IP with brackets: [IPv6]
+	return tryRemoveBracketsAndParse(ipStr)
+}
+
+// tryRemoveBracketsAndParse attempts to remove square brackets from an IP string and parse it.
+// This handles cases like "[240e:318:2f4a:de56::240]" which some reverse proxies send.
+func tryRemoveBracketsAndParse(ipStr string) (string, net.IP) {
+	// Check if the string is enclosed in square brackets
+	if len(ipStr) >= 2 && ipStr[0] == '[' && ipStr[len(ipStr)-1] == ']' {
+		inner := ipStr[1 : len(ipStr)-1]
+		if ip := net.ParseIP(inner); ip != nil {
+			return inner, ip
+		}
+	}
+	return "", nil
 }
 
 // updateRouteTree do update to the route tree recursively
