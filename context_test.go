@@ -3808,3 +3808,47 @@ func BenchmarkGetMapFromFormData(b *testing.B) {
 		})
 	}
 }
+
+func TestRenderMultipleWritesWarning(t *testing.T) {
+	// Test that a warning is printed when attempting to write response body multiple times
+	var w *httptest.ResponseRecorder
+	re := captureOutput(t, func() {
+		SetMode(DebugMode)
+		router := New()
+		router.GET("/test", func(c *Context) {
+			c.JSON(http.StatusOK, H{"first": "response"})
+			c.JSON(http.StatusOK, H{"second": "response"}) // Should trigger warning
+		})
+		w = httptest.NewRecorder()
+		req := httptest.NewRequest(http.MethodGet, "/test", nil)
+		router.ServeHTTP(w, req)
+		SetMode(TestMode)
+	})
+
+	// Should contain the warning about multiple writes
+	assert.Contains(t, re, "[WARNING] Response body already written")
+	assert.Contains(t, re, "200")
+
+	// Verify the response body contains both responses (behavior unchanged)
+	assert.Contains(t, w.Body.String(), "first")
+	assert.Contains(t, w.Body.String(), "second")
+}
+
+func TestRenderMultipleWritesNoWarningInReleaseMode(t *testing.T) {
+	// Test that no warning is printed in release mode
+	re := captureOutput(t, func() {
+		SetMode(ReleaseMode)
+		router := New()
+		router.GET("/test", func(c *Context) {
+			c.JSON(http.StatusOK, H{"first": "response"})
+			c.JSON(http.StatusOK, H{"second": "response"})
+		})
+		w := httptest.NewRecorder()
+		req := httptest.NewRequest(http.MethodGet, "/test", nil)
+		router.ServeHTTP(w, req)
+		SetMode(TestMode)
+	})
+
+	// Should not contain the warning in release mode
+	assert.NotContains(t, re, "[WARNING] Response body already written")
+}
