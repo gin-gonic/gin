@@ -55,6 +55,7 @@ func init() {
 }
 
 // SetMode sets gin mode according to input string.
+// It panics if the value is not a valid gin mode (debug, release, or test).
 func SetMode(value string) {
 	if value == "" {
 		if flag.Lookup("test.v") != nil {
