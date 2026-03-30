@@ -4,7 +4,7 @@ go 1.25.0
 
 require (
 	github.com/bytedance/sonic v1.15.0
-	github.com/gin-contrib/sse v1.1.0
+	github.com/gin-contrib/sse v1.1.1
 	github.com/go-playground/validator/v10 v10.30.1
 	github.com/goccy/go-json v0.10.6
 	github.com/goccy/go-yaml v1.19.2
