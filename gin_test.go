@@ -1169,74 +1169,74 @@ func TestValidateHeaderWithNonStandardFormats(t *testing.T) {
 	_ = engine.SetTrustedProxies([]string{"127.0.0.1", "::1"})
 
 	testCases := []struct {
-		name           string
-		header         string
-		expectedIP     string
-		expectedValid  bool
+		name          string
+		header        string
+		expectedIP    string
+		expectedValid bool
 	}{
 		// Standard formats (should already work)
 		{
-			name:           "IPv4 plain",
-			header:         "192.168.8.39",
-			expectedIP:     "192.168.8.39",
-			expectedValid:  true,
+			name:          "IPv4 plain",
+			header:        "192.168.8.39",
+			expectedIP:    "192.168.8.39",
+			expectedValid: true,
 		},
 		{
-			name:           "IPv6 plain",
-			header:         "240e:318:2f4a:de56::240",
-			expectedIP:     "240e:318:2f4a:de56::240",
-			expectedValid:  true,
+			name:          "IPv6 plain",
+			header:        "240e:318:2f4a:de56::240",
+			expectedIP:    "240e:318:2f4a:de56::240",
+			expectedValid: true,
 		},
 		// Non-standard formats (issue #4572)
 		{
-			name:           "IPv6 with square brackets",
-			header:         "[240e:318:2f4a:de56::240]",
-			expectedIP:     "240e:318:2f4a:de56::240",
-			expectedValid:  true,
+			name:          "IPv6 with square brackets",
+			header:        "[240e:318:2f4a:de56::240]",
+			expectedIP:    "240e:318:2f4a:de56::240",
+			expectedValid: true,
 		},
 		{
-			name:           "IPv4 with port",
-			header:         "192.168.8.39:38792",
-			expectedIP:     "192.168.8.39",
-			expectedValid:  true,
+			name:          "IPv4 with port",
+			header:        "192.168.8.39:38792",
+			expectedIP:    "192.168.8.39",
+			expectedValid: true,
 		},
 		{
-			name:           "IPv6 with square brackets and port",
-			header:         "[240e:318:2f4a:de56::240]:38792",
-			expectedIP:     "240e:318:2f4a:de56::240",
-			expectedValid:  true,
+			name:          "IPv6 with square brackets and port",
+			header:        "[240e:318:2f4a:de56::240]:38792",
+			expectedIP:    "240e:318:2f4a:de56::240",
+			expectedValid: true,
 		},
 		// Multiple entries in X-Forwarded-For with non-standard formats
 		{
-			name:           "Multiple IPv6 with brackets",
-			header:         "[240e:318:2f4a:de56::240], 127.0.0.1",
-			expectedIP:     "240e:318:2f4a:de56::240",
-			expectedValid:  true,
+			name:          "Multiple IPv6 with brackets",
+			header:        "[240e:318:2f4a:de56::240], 127.0.0.1",
+			expectedIP:    "240e:318:2f4a:de56::240",
+			expectedValid: true,
 		},
 		{
-			name:           "Multiple IPv4 with ports",
-			header:         "192.168.8.39:38792, 127.0.0.1:1234",
-			expectedIP:     "192.168.8.39",
-			expectedValid:  true,
+			name:          "Multiple IPv4 with ports",
+			header:        "192.168.8.39:38792, 127.0.0.1:1234",
+			expectedIP:    "192.168.8.39",
+			expectedValid: true,
 		},
 		{
-			name:           "IPv4 with port in chain",
-			header:         "10.0.0.1:45678, 192.168.8.39:38792, 127.0.0.1",
-			expectedIP:     "192.168.8.39",
-			expectedValid:  true,
+			name:          "IPv4 with port in chain",
+			header:        "10.0.0.1:45678, 192.168.8.39:38792, 127.0.0.1",
+			expectedIP:    "192.168.8.39",
+			expectedValid: true,
 		},
 		// Invalid cases
 		{
-			name:           "Invalid IP",
-			header:         "invalid-ip",
-			expectedIP:     "",
-			expectedValid:  false,
+			name:          "Invalid IP",
+			header:        "invalid-ip",
+			expectedIP:    "",
+			expectedValid: false,
 		},
 		{
-			name:           "Empty header",
-			header:         "",
-			expectedIP:     "",
-			expectedValid:  false,
+			name:          "Empty header",
+			header:        "",
+			expectedIP:    "",
+			expectedValid: false,
 		},
 	}
 
@@ -1252,73 +1252,73 @@ func TestValidateHeaderWithNonStandardFormats(t *testing.T) {
 // TestNormalizeIPFromHeader tests the normalizeIPFromHeader helper function.
 func TestNormalizeIPFromHeader(t *testing.T) {
 	testCases := []struct {
-		name        string
-		input       string
-		expectedIP  string
-		expectedOK  bool
+		name       string
+		input      string
+		expectedIP string
+		expectedOK bool
 	}{
 		// Standard formats
 		{
-			name:        "IPv4 plain",
-			input:       "192.168.8.39",
-			expectedIP:  "",
-			expectedOK:  false, // net.ParseIP succeeds on plain IPv4, so normalizeIPFromHeader isn't called
+			name:       "IPv4 plain",
+			input:      "192.168.8.39",
+			expectedIP: "",
+			expectedOK: false, // net.ParseIP succeeds on plain IPv4, so normalizeIPFromHeader isn't called
 		},
 		{
-			name:        "IPv6 plain",
-			input:       "240e:318:2f4a:de56::240",
-			expectedIP:  "",
-			expectedOK:  false, // net.ParseIP succeeds on plain IPv6, so normalizeIPFromHeader isn't called
+			name:       "IPv6 plain",
+			input:      "240e:318:2f4a:de56::240",
+			expectedIP: "",
+			expectedOK: false, // net.ParseIP succeeds on plain IPv6, so normalizeIPFromHeader isn't called
 		},
 		// Non-standard formats that need normalization
 		{
-			name:        "IPv6 with square brackets",
-			input:       "[240e:318:2f4a:de56::240]",
-			expectedIP:  "240e:318:2f4a:de56::240",
-			expectedOK:  true,
+			name:       "IPv6 with square brackets",
+			input:      "[240e:318:2f4a:de56::240]",
+			expectedIP: "240e:318:2f4a:de56::240",
+			expectedOK: true,
 		},
 		{
-			name:        "IPv4 with port",
-			input:       "192.168.8.39:38792",
-			expectedIP:  "192.168.8.39",
-			expectedOK:  true,
+			name:       "IPv4 with port",
+			input:      "192.168.8.39:38792",
+			expectedIP: "192.168.8.39",
+			expectedOK: true,
 		},
 		{
-			name:        "IPv6 with square brackets and port",
-			input:       "[240e:318:2f4a:de56::240]:38792",
-			expectedIP:  "240e:318:2f4a:de56::240",
-			expectedOK:  true,
+			name:       "IPv6 with square brackets and port",
+			input:      "[240e:318:2f4a:de56::240]:38792",
+			expectedIP: "240e:318:2f4a:de56::240",
+			expectedOK: true,
 		},
 		{
-			name:        "IPv6 localhost with brackets and port",
-			input:       "[::1]:1234",
-			expectedIP:  "::1",
-			expectedOK:  true,
+			name:       "IPv6 localhost with brackets and port",
+			input:      "[::1]:1234",
+			expectedIP: "::1",
+			expectedOK: true,
 		},
 		// Invalid cases
 		{
-			name:        "Invalid IP",
-			input:       "invalid-ip",
-			expectedIP:  "",
-			expectedOK:  false,
+			name:       "Invalid IP",
+			input:      "invalid-ip",
+			expectedIP: "",
+			expectedOK: false,
 		},
 		{
-			name:        "Empty string",
-			input:       "",
-			expectedIP:  "",
-			expectedOK:  false,
+			name:       "Empty string",
+			input:      "",
+			expectedIP: "",
+			expectedOK: false,
 		},
 		{
-			name:        "Just brackets",
-			input:       "[]",
-			expectedIP:  "",
-			expectedOK:  false,
+			name:       "Just brackets",
+			input:      "[]",
+			expectedIP: "",
+			expectedOK: false,
 		},
 		{
-			name:        "IPv4 with invalid port",
-			input:       "192.168.8.39:abc",
-			expectedIP:  "",
-			expectedOK:  false,
+			name:       "IPv4 with invalid port",
+			input:      "192.168.8.39:abc",
+			expectedIP: "",
+			expectedOK: false,
 		},
 	}
 
