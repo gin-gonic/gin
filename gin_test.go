@@ -1156,3 +1156,258 @@ func TestUpdateRouteTreesCalledOnce(t *testing.T) {
 		assert.Equal(t, "ok", w.Body.String())
 	}
 }
+
+// TestValidateHeaderWithNonStandardFormats tests that validateHeader can handle
+// non-standard X-Forwarded-For header formats as described in issue #4572.
+// These include:
+// 1. IPv6 addresses with square brackets: [240e:318:2f4a:de56::240]
+// 2. IPv4 addresses with port: 192.168.8.39:38792
+// 3. IPv6 addresses with square brackets and port: [240e:318:2f4a:de56::240]:38792
+func TestValidateHeaderWithNonStandardFormats(t *testing.T) {
+	SetMode(TestMode)
+	engine := New()
+	_ = engine.SetTrustedProxies([]string{"127.0.0.1", "::1"})
+
+	testCases := []struct {
+		name           string
+		header         string
+		expectedIP     string
+		expectedValid  bool
+	}{
+		// Standard formats (should already work)
+		{
+			name:           "IPv4 plain",
+			header:         "192.168.8.39",
+			expectedIP:     "192.168.8.39",
+			expectedValid:  true,
+		},
+		{
+			name:           "IPv6 plain",
+			header:         "240e:318:2f4a:de56::240",
+			expectedIP:     "240e:318:2f4a:de56::240",
+			expectedValid:  true,
+		},
+		// Non-standard formats (issue #4572)
+		{
+			name:           "IPv6 with square brackets",
+			header:         "[240e:318:2f4a:de56::240]",
+			expectedIP:     "240e:318:2f4a:de56::240",
+			expectedValid:  true,
+		},
+		{
+			name:           "IPv4 with port",
+			header:         "192.168.8.39:38792",
+			expectedIP:     "192.168.8.39",
+			expectedValid:  true,
+		},
+		{
+			name:           "IPv6 with square brackets and port",
+			header:         "[240e:318:2f4a:de56::240]:38792",
+			expectedIP:     "240e:318:2f4a:de56::240",
+			expectedValid:  true,
+		},
+		// Multiple entries in X-Forwarded-For with non-standard formats
+		{
+			name:           "Multiple IPv6 with brackets",
+			header:         "[240e:318:2f4a:de56::240], 127.0.0.1",
+			expectedIP:     "240e:318:2f4a:de56::240",
+			expectedValid:  true,
+		},
+		{
+			name:           "Multiple IPv4 with ports",
+			header:         "192.168.8.39:38792, 127.0.0.1:1234",
+			expectedIP:     "192.168.8.39",
+			expectedValid:  true,
+		},
+		{
+			name:           "IPv4 with port in chain",
+			header:         "10.0.0.1:45678, 192.168.8.39:38792, 127.0.0.1",
+			expectedIP:     "192.168.8.39",
+			expectedValid:  true,
+		},
+		// Invalid cases
+		{
+			name:           "Invalid IP",
+			header:         "invalid-ip",
+			expectedIP:     "",
+			expectedValid:  false,
+		},
+		{
+			name:           "Empty header",
+			header:         "",
+			expectedIP:     "",
+			expectedValid:  false,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			ip, valid := engine.validateHeader(tc.header)
+			assert.Equal(t, tc.expectedValid, valid)
+			assert.Equal(t, tc.expectedIP, ip)
+		})
+	}
+}
+
+// TestNormalizeIPFromHeader tests the normalizeIPFromHeader helper function.
+func TestNormalizeIPFromHeader(t *testing.T) {
+	testCases := []struct {
+		name        string
+		input       string
+		expectedIP  string
+		expectedOK  bool
+	}{
+		// Standard formats
+		{
+			name:        "IPv4 plain",
+			input:       "192.168.8.39",
+			expectedIP:  "",
+			expectedOK:  false, // net.ParseIP succeeds on plain IPv4, so normalizeIPFromHeader isn't called
+		},
+		{
+			name:        "IPv6 plain",
+			input:       "240e:318:2f4a:de56::240",
+			expectedIP:  "",
+			expectedOK:  false, // net.ParseIP succeeds on plain IPv6, so normalizeIPFromHeader isn't called
+		},
+		// Non-standard formats that need normalization
+		{
+			name:        "IPv6 with square brackets",
+			input:       "[240e:318:2f4a:de56::240]",
+			expectedIP:  "240e:318:2f4a:de56::240",
+			expectedOK:  true,
+		},
+		{
+			name:        "IPv4 with port",
+			input:       "192.168.8.39:38792",
+			expectedIP:  "192.168.8.39",
+			expectedOK:  true,
+		},
+		{
+			name:        "IPv6 with square brackets and port",
+			input:       "[240e:318:2f4a:de56::240]:38792",
+			expectedIP:  "240e:318:2f4a:de56::240",
+			expectedOK:  true,
+		},
+		{
+			name:        "IPv6 localhost with brackets and port",
+			input:       "[::1]:1234",
+			expectedIP:  "::1",
+			expectedOK:  true,
+		},
+		// Invalid cases
+		{
+			name:        "Invalid IP",
+			input:       "invalid-ip",
+			expectedIP:  "",
+			expectedOK:  false,
+		},
+		{
+			name:        "Empty string",
+			input:       "",
+			expectedIP:  "",
+			expectedOK:  false,
+		},
+		{
+			name:        "Just brackets",
+			input:       "[]",
+			expectedIP:  "",
+			expectedOK:  false,
+		},
+		{
+			name:        "IPv4 with invalid port",
+			input:       "192.168.8.39:abc",
+			expectedIP:  "",
+			expectedOK:  false,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			ip, parsedIP := normalizeIPFromHeader(tc.input)
+			if tc.expectedOK {
+				assert.NotNil(t, parsedIP)
+				assert.Equal(t, tc.expectedIP, ip)
+			} else {
+				assert.Nil(t, parsedIP)
+			}
+		})
+	}
+}
+
+// TestClientIPWithNonStandardXForwardedFor tests that ClientIP correctly handles
+// non-standard X-Forwarded-For header formats as described in issue #4572.
+func TestClientIPWithNonStandardXForwardedFor(t *testing.T) {
+	SetMode(TestMode)
+
+	testCases := []struct {
+		name           string
+		remoteAddr     string
+		xForwardedFor  string
+		trustedProxies []string
+		expectedIP     string
+	}{
+		// IPv6 with square brackets
+		{
+			name:           "IPv6 with square brackets in X-Forwarded-For",
+			remoteAddr:     "127.0.0.1:1234",
+			xForwardedFor:  "[240e:318:2f4a:de56::240]",
+			trustedProxies: []string{"127.0.0.1"},
+			expectedIP:     "240e:318:2f4a:de56::240",
+		},
+		// IPv4 with port
+		{
+			name:           "IPv4 with port in X-Forwarded-For",
+			remoteAddr:     "127.0.0.1:1234",
+			xForwardedFor:  "192.168.8.39:38792",
+			trustedProxies: []string{"127.0.0.1"},
+			expectedIP:     "192.168.8.39",
+		},
+		// IPv6 with square brackets and port
+		{
+			name:           "IPv6 with square brackets and port in X-Forwarded-For",
+			remoteAddr:     "127.0.0.1:1234",
+			xForwardedFor:  "[240e:318:2f4a:de56::240]:38792",
+			trustedProxies: []string{"127.0.0.1"},
+			expectedIP:     "240e:318:2f4a:de56::240",
+		},
+		// Multiple entries with non-standard formats
+		{
+			name:           "Chain with IPv6 with brackets and port",
+			remoteAddr:     "127.0.0.1:1234",
+			xForwardedFor:  "[2001:db8::1]:8080, [240e:318:2f4a:de56::240]:12345",
+			trustedProxies: []string{"127.0.0.1"},
+			expectedIP:     "240e:318:2f4a:de56::240",
+		},
+		// Standard format should still work
+		{
+			name:           "Standard IPv4",
+			remoteAddr:     "127.0.0.1:1234",
+			xForwardedFor:  "192.168.8.39",
+			trustedProxies: []string{"127.0.0.1"},
+			expectedIP:     "192.168.8.39",
+		},
+		{
+			name:           "Standard IPv6",
+			remoteAddr:     "127.0.0.1:1234",
+			xForwardedFor:  "240e:318:2f4a:de56::240",
+			trustedProxies: []string{"127.0.0.1"},
+			expectedIP:     "240e:318:2f4a:de56::240",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			c, _ := CreateTestContext(httptest.NewRecorder())
+			c.Request, _ = http.NewRequest(http.MethodGet, "/test", nil)
+			c.Request.Header.Set("X-Forwarded-For", tc.xForwardedFor)
+			c.Request.RemoteAddr = tc.remoteAddr
+
+			c.engine.ForwardedByClientIP = true
+			c.engine.RemoteIPHeaders = []string{"X-Forwarded-For"}
+			_ = c.engine.SetTrustedProxies(tc.trustedProxies)
+
+			assert.Equal(t, tc.expectedIP, c.ClientIP())
+		})
+	}
+}
