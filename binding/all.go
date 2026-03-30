@@ -36,11 +36,16 @@ func (allBinding) BindMany(req *http.Request, uriParams map[string][]string, obj
 
 	// from context.Bind (for body/post-form/anything else)
 	contentType := req.Header.Get("Content-Type")
-	// trim contentType parameters, e.g. "application/json; charset=utf-8" -> "application/json"
-	contentTypeLastIdx := strings.IndexAny(contentType, " ;")
+	contentTypeLastIdx := strings.IndexAny(contentType, " ;") // trim "application/json; charset=utf-8" -> "application/json"
 	if contentTypeLastIdx != -1 {
 		contentType = contentType[:contentTypeLastIdx]
 	}
+
+	// if no Content-Type, assume request has no body. This avoids binding query params again in binding.Default
+	if contentType == "" {
+		return validate(obj)
+	}
+
 	b := Default(req.Method, contentType)
 	// final validation done by whatever binding is selected here
 	return b.Bind(req, obj)
