@@ -256,6 +256,33 @@ func TestRecoveryWithWriterWithCustomRecovery(t *testing.T) {
 	SetMode(TestMode)
 }
 
+func TestRecoveryWithWriterUsesOnlyFirstRecoveryFunc(t *testing.T) {
+	buffer := new(strings.Builder)
+	router := New()
+
+	calls := 0
+	first := func(c *Context, err any) {
+		calls++
+		assert.Equal(t, "Oops, Houston, we have a problem", err)
+		c.AbortWithStatus(http.StatusBadRequest)
+	}
+	second := func(c *Context, err any) {
+		calls += 100
+		c.AbortWithStatus(http.StatusTeapot)
+	}
+
+	router.Use(RecoveryWithWriter(buffer, first, second))
+	router.GET("/recovery", func(_ *Context) {
+		panic("Oops, Houston, we have a problem")
+	})
+
+	w := PerformRequest(router, http.MethodGet, "/recovery")
+
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+	assert.Equal(t, 1, calls)
+	assert.Contains(t, buffer.String(), "panic recovered")
+}
+
 func TestSecureRequestDump(t *testing.T) {
 	tests := []struct {
 		name           string
