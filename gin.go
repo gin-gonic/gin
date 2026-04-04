@@ -334,8 +334,9 @@ func (engine *Engine) NoMethod(handlers ...HandlerFunc) {
 	engine.rebuild405Handlers()
 }
 
-// Use attaches a global middleware to the router. i.e. the middleware attached through Use() will be
-// included in the handlers chain for every single request. Even 404, 405, static files...
+// Use attaches a global middleware to the router. Middleware attached through Use() is included
+// in the handlers chain for routes registered after the call. For 404 and 405 requests, Gin
+// rebuilds the handler chain from the current middleware set.
 // For example, this is the right place for a logger or error management middleware.
 func (engine *Engine) Use(middleware ...HandlerFunc) IRoutes {
 	engine.RouterGroup.Use(middleware...)
