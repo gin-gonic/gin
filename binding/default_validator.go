@@ -27,12 +27,12 @@ func (err SliceValidationError) Error() string {
 	}
 
 	var b strings.Builder
-	for i := range len(err) {
-		if err[i] != nil {
+	for i, e := range err {
+		if e != nil {
 			if b.Len() > 0 {
 				b.WriteString("\n")
 			}
-			b.WriteString("[" + strconv.Itoa(i) + "]: " + err[i].Error())
+			b.WriteString("[" + strconv.Itoa(i) + "]: " + e.Error())
 		}
 	}
 	return b.String()
