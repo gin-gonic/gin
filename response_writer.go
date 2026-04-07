@@ -17,7 +17,10 @@ const (
 	defaultStatus = http.StatusOK
 )
 
-var errHijackAlreadyWritten = errors.New("gin: response body already written")
+var (
+	errHijackAlreadyWritten = errors.New("gin: response body already written")
+	errHijackNotSupported   = errors.New("gin: underlying ResponseWriter does not implement http.Hijacker")
+)
 
 // ResponseWriter ...
 type ResponseWriter interface {
@@ -117,12 +120,21 @@ func (w *responseWriter) Hijack() (net.Conn, *bufio.ReadWriter, error) {
 	if w.size < 0 {
 		w.size = 0
 	}
-	return w.ResponseWriter.(http.Hijacker).Hijack()
+	if hijacker, ok := w.ResponseWriter.(http.Hijacker); ok {
+		return hijacker.Hijack()
+	}
+	return nil, nil, errHijackNotSupported
 }
 
 // CloseNotify implements the http.CloseNotifier interface.
+//
+// Deprecated: the CloseNotifier interface predates Go's context package.
+// New code should use Request.Context instead.
 func (w *responseWriter) CloseNotify() <-chan bool {
-	return w.ResponseWriter.(http.CloseNotifier).CloseNotify()
+	if cn, ok := w.ResponseWriter.(http.CloseNotifier); ok {
+		return cn.CloseNotify()
+	}
+	return nil
 }
 
 // Flush implements the http.Flusher interface.
