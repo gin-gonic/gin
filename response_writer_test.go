@@ -319,8 +319,7 @@ type mockCloseNotifier struct {
 }
 
 func (m *mockCloseNotifier) CloseNotify() <-chan bool {
-	ch := make(chan bool, 1)
-	return ch
+	return make(chan bool)
 }
 
 func TestCloseNotifyWithCloseNotifier(t *testing.T) {
