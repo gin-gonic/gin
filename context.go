@@ -734,7 +734,7 @@ func (c *Context) SaveUploadedFile(file *multipart.FileHeader, dst string, perm 
 	}
 	// Only chmod newly created directories to avoid "operation not permitted"
 	// errors on pre-existing directories we may not own (e.g., /tmp).
-	if statErr != nil {
+	if os.IsNotExist(statErr) {
 		if err = os.Chmod(dir, mode); err != nil {
 			return err
 		}

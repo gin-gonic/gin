@@ -294,9 +294,6 @@ func TestSaveUploadedFileToExistingDir(t *testing.T) {
 	dir := t.TempDir()
 	dst := filepath.Join(dir, "uploaded.txt")
 	require.NoError(t, c.SaveUploadedFile(f, dst))
-	t.Cleanup(func() {
-		os.Remove(dst)
-	})
 }
 
 func TestContextReset(t *testing.T) {
