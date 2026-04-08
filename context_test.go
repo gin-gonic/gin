@@ -274,6 +274,28 @@ func TestSaveUploadedFileWithPermissionFailed(t *testing.T) {
 	require.Error(t, c.SaveUploadedFile(f, "test/permission_test", mode))
 }
 
+func TestSaveUploadedFileToExistingDir(t *testing.T) {
+	buf := new(bytes.Buffer)
+	mw := multipart.NewWriter(buf)
+	w, err := mw.CreateFormFile("file", "test")
+	require.NoError(t, err)
+	_, err = w.Write([]byte("test"))
+	require.NoError(t, err)
+	mw.Close()
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	c.Request, _ = http.NewRequest(http.MethodPost, "/", buf)
+	c.Request.Header.Set("Content-Type", mw.FormDataContentType())
+	f, err := c.FormFile("file")
+	require.NoError(t, err)
+
+	// Save to a pre-existing directory. Previously this would fail with
+	// "chmod <dir>: operation not permitted" when the directory was not
+	// owned by the current process (e.g., /tmp).
+	dir := t.TempDir()
+	dst := filepath.Join(dir, "uploaded.txt")
+	require.NoError(t, c.SaveUploadedFile(f, dst))
+}
+
 func TestContextReset(t *testing.T) {
 	router := New()
 	c := router.allocateContext(0)
