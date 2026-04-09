@@ -99,8 +99,8 @@ func secureRequestDump(r *http.Request) string {
 	httpRequest, _ := httputil.DumpRequest(r, false)
 	lines := strings.Split(bytesconv.BytesToString(httpRequest), "\r\n")
 	for i, line := range lines {
-		if strings.HasPrefix(line, "Authorization:") {
-			lines[i] = "Authorization: *"
+		if strings.HasPrefix(line, "Authorization:") || strings.HasPrefix(line, "Proxy-Authorization:") {
+			lines[i] = strings.SplitN(line, ":", 2)[0] + ": *"
 		}
 	}
 	return strings.Join(lines, "\r\n")
