@@ -294,6 +294,16 @@ func TestSecureRequestDump(t *testing.T) {
 			wantNotContain: "token123",
 		},
 		{
+			name: "Proxy-Authorization header",
+			req: func() *http.Request {
+				r, _ := http.NewRequest(http.MethodGet, "http://example.com", nil)
+				r.Header.Set("Proxy-Authorization", "Basic cHJveHk6c2VjcmV0")
+				return r
+			}(),
+			wantContains:   "Proxy-Authorization: *",
+			wantNotContain: "Basic cHJveHk6c2VjcmV0",
+		},
+		{
 			name: "No Authorization header",
 			req: func() *http.Request {
 				r, _ := http.NewRequest(http.MethodGet, "http://example.com", nil)
