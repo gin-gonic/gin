@@ -274,6 +274,68 @@ func TestSaveUploadedFileWithPermissionFailed(t *testing.T) {
 	require.Error(t, c.SaveUploadedFile(f, "test/permission_test", mode))
 }
 
+// TestSaveUploadedFilePreservesExistingDirPermissions is a regression test for
+// https://github.com/gin-gonic/gin/issues/4622. SaveUploadedFile must not chmod
+// a directory that already exists (e.g. /tmp), otherwise it fails with
+// "operation not permitted" when the process does not own that directory.
+func TestSaveUploadedFilePreservesExistingDirPermissions(t *testing.T) {
+	buf := new(bytes.Buffer)
+	mw := multipart.NewWriter(buf)
+	w, err := mw.CreateFormFile("file", "existing_dir_test")
+	require.NoError(t, err)
+	_, err = w.Write([]byte("existing_dir_test"))
+	require.NoError(t, err)
+	mw.Close()
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	c.Request, _ = http.NewRequest(http.MethodPost, "/", buf)
+	c.Request.Header.Set("Content-Type", mw.FormDataContentType())
+	f, err := c.FormFile("file")
+	require.NoError(t, err)
+
+	// Create a pre-existing directory with a mode that differs from the one
+	// we pass to SaveUploadedFile, mimicking a non-owned target like /tmp.
+	const existingMode fs.FileMode = 0o700
+	dir := t.TempDir()
+	require.NoError(t, os.Chmod(dir, existingMode))
+
+	var mode fs.FileMode = 0o755
+	require.NoError(t, c.SaveUploadedFile(f, filepath.Join(dir, "existing_dir_test"), mode))
+
+	info, err := os.Stat(dir)
+	require.NoError(t, err)
+	assert.Equal(t, existingMode, info.Mode().Perm(), "pre-existing directory mode must not be modified")
+
+	content, err := os.ReadFile(filepath.Join(dir, "existing_dir_test"))
+	require.NoError(t, err)
+	assert.Equal(t, "existing_dir_test", string(content))
+}
+
+// TestSaveUploadedFileAppliesModeToCreatedDir ensures we still apply the
+// requested mode when SaveUploadedFile actually creates the destination
+// directory, preserving the behavior introduced in #4088.
+func TestSaveUploadedFileAppliesModeToCreatedDir(t *testing.T) {
+	buf := new(bytes.Buffer)
+	mw := multipart.NewWriter(buf)
+	w, err := mw.CreateFormFile("file", "created_dir_test")
+	require.NoError(t, err)
+	_, err = w.Write([]byte("created_dir_test"))
+	require.NoError(t, err)
+	mw.Close()
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	c.Request, _ = http.NewRequest(http.MethodPost, "/", buf)
+	c.Request.Header.Set("Content-Type", mw.FormDataContentType())
+	f, err := c.FormFile("file")
+	require.NoError(t, err)
+
+	nested := filepath.Join(t.TempDir(), "nested")
+	var mode fs.FileMode = 0o755
+	require.NoError(t, c.SaveUploadedFile(f, filepath.Join(nested, "created_dir_test"), mode))
+
+	info, err := os.Stat(nested)
+	require.NoError(t, err)
+	assert.Equal(t, mode, info.Mode().Perm())
+}
+
 func TestContextReset(t *testing.T) {
 	router := New()
 	c := router.allocateContext(0)
