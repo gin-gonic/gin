@@ -244,14 +244,35 @@ func (c *Context) AbortWithError(code int, err error) *Error {
 /********* ERROR MANAGEMENT *********/
 /************************************/
 
+// joinedError is an interface for errors that wrap multiple inner errors,
+// such as those created by errors.Join.
+type joinedError interface {
+	Unwrap() []error
+}
+
 // Error attaches an error to the current context. The error is pushed to a list of errors.
 // It's a good idea to call Error for each error that occurred during the resolution of a request.
 // A middleware can be used to collect all the errors and push them to a database together,
 // print a log, or append it in the HTTP response.
 // Error will panic if err is nil.
+// If err is a joined error (created by errors.Join), it is unwrapped and each
+// individual error is added as a separate entry. The last *Error added is returned.
 func (c *Context) Error(err error) *Error {
 	if err == nil {
 		panic("err is nil")
+	}
+
+	// Unwrap joined errors so each one becomes a separate entry.
+	if joined, ok := err.(joinedError); ok {
+		errs := joined.Unwrap()
+		if len(errs) > 0 {
+			var last *Error
+			for _, e := range errs {
+				last = c.Error(e)
+			}
+			return last
+		}
+		// Fall through for empty joined errors — store as-is.
 	}
 
 	var parsedError *Error

@@ -1982,6 +1982,63 @@ func TestContextTypedError(t *testing.T) {
 	assert.Equal(t, []string{"externo 0", "interno 0"}, c.Errors.Errors())
 }
 
+func TestContextErrorJoined(t *testing.T) {
+	c, _ := CreateTestContext(httptest.NewRecorder())
+
+	// Single errors around the joined one.
+	c.Error(errors.New("first")) //nolint: errcheck
+
+	joined := errors.Join(errors.New("service error"), errors.New("store error"))
+	last := c.Error(joined) //nolint: errcheck
+
+	c.Error(errors.New("last")) //nolint: errcheck
+
+	// Joined error must be unwrapped into separate entries.
+	assert.Len(t, c.Errors, 4)
+	assert.Equal(t, "first", c.Errors[0].Error())
+	assert.Equal(t, "service error", c.Errors[1].Error())
+	assert.Equal(t, "store error", c.Errors[2].Error())
+	assert.Equal(t, "last", c.Errors[3].Error())
+
+	// Return value is the last unwrapped entry.
+	assert.Equal(t, "store error", last.Error())
+
+	// All unwrapped entries default to ErrorTypePrivate.
+	for _, e := range c.Errors {
+		assert.Equal(t, ErrorTypePrivate, e.Type)
+	}
+
+	// String output should list each error individually.
+	expected := "Error #01: first\nError #02: service error\nError #03: store error\nError #04: last\n"
+	assert.Equal(t, expected, c.Errors.String())
+}
+
+func TestContextErrorNestedJoined(t *testing.T) {
+	c, _ := CreateTestContext(httptest.NewRecorder())
+
+	inner := errors.Join(errors.New("a"), errors.New("b"))
+	outer := errors.Join(inner, errors.New("c"))
+	c.Error(outer) //nolint: errcheck
+
+	assert.Len(t, c.Errors, 3)
+	assert.Equal(t, []string{"a", "b", "c"}, c.Errors.Errors())
+}
+
+func TestContextErrorJoinedWithTypedError(t *testing.T) {
+	c, _ := CreateTestContext(httptest.NewRecorder())
+
+	typedErr := &Error{Err: errors.New("typed"), Type: ErrorTypePublic, Meta: "meta"}
+	joined := errors.Join(errors.New("plain"), typedErr)
+	c.Error(joined) //nolint: errcheck
+
+	assert.Len(t, c.Errors, 2)
+	assert.Equal(t, "plain", c.Errors[0].Error())
+	assert.Equal(t, ErrorTypePrivate, c.Errors[0].Type)
+	assert.Equal(t, "typed", c.Errors[1].Error())
+	assert.Equal(t, ErrorTypePublic, c.Errors[1].Type)
+	assert.Equal(t, "meta", c.Errors[1].Meta)
+}
+
 func TestContextAbortWithError(t *testing.T) {
 	w := httptest.NewRecorder()
 	c, _ := CreateTestContext(w)
