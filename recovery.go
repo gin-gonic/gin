@@ -91,19 +91,29 @@ func CustomRecoveryWithWriter(out io.Writer, handle RecoveryFunc) HandlerFunc {
 	}
 }
 
-// secureRequestDump returns a sanitized HTTP request dump where the Authorization header,
-// if present, is replaced with a masked value ("Authorization: *") to avoid leaking sensitive credentials.
+// secureRequestDump returns a sanitized HTTP request dump where the Authorization
+// and Proxy-Authorization headers, if present, are replaced with a masked value
+// (e.g. "Authorization: *") to avoid leaking sensitive credentials.
 //
-// Currently, only the Authorization header is sanitized. All other headers and request data remain unchanged.
+// Header name matching is case-insensitive since HTTP headers are case-insensitive
+// per RFC 9110. All other headers and request data remain unchanged.
 func secureRequestDump(r *http.Request) string {
 	httpRequest, _ := httputil.DumpRequest(r, false)
 	lines := strings.Split(bytesconv.BytesToString(httpRequest), "\r\n")
 	for i, line := range lines {
-		if strings.HasPrefix(line, "Authorization:") || strings.HasPrefix(line, "Proxy-Authorization:") {
-			lines[i] = strings.SplitN(line, ":", 2)[0] + ": *"
+		switch {
+		case hasHeaderPrefixFold(line, "Authorization:"):
+			lines[i] = "Authorization: *"
+		case hasHeaderPrefixFold(line, "Proxy-Authorization:"):
+			lines[i] = "Proxy-Authorization: *"
 		}
 	}
 	return strings.Join(lines, "\r\n")
+}
+
+// hasHeaderPrefixFold reports whether line begins with prefix, ignoring ASCII case.
+func hasHeaderPrefixFold(line, prefix string) bool {
+	return len(line) >= len(prefix) && strings.EqualFold(line[:len(prefix)], prefix)
 }
 
 func defaultHandleRecovery(c *Context, _ any) {
