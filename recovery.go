@@ -100,20 +100,19 @@ func CustomRecoveryWithWriter(out io.Writer, handle RecoveryFunc) HandlerFunc {
 func secureRequestDump(r *http.Request) string {
 	httpRequest, _ := httputil.DumpRequest(r, false)
 	lines := strings.Split(bytesconv.BytesToString(httpRequest), "\r\n")
+	const (
+		authPrefix  = "Authorization:"
+		proxyPrefix = "Proxy-Authorization:"
+	)
 	for i, line := range lines {
 		switch {
-		case hasHeaderPrefixFold(line, "Authorization:"):
+		case len(line) >= len(authPrefix) && strings.EqualFold(line[:len(authPrefix)], authPrefix):
 			lines[i] = "Authorization: *"
-		case hasHeaderPrefixFold(line, "Proxy-Authorization:"):
+		case len(line) >= len(proxyPrefix) && strings.EqualFold(line[:len(proxyPrefix)], proxyPrefix):
 			lines[i] = "Proxy-Authorization: *"
 		}
 	}
 	return strings.Join(lines, "\r\n")
-}
-
-// hasHeaderPrefixFold reports whether line begins with prefix, ignoring ASCII case.
-func hasHeaderPrefixFold(line, prefix string) bool {
-	return len(line) >= len(prefix) && strings.EqualFold(line[:len(prefix)], prefix)
 }
 
 func defaultHandleRecovery(c *Context, _ any) {
