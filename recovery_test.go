@@ -274,24 +274,66 @@ func TestSecureRequestDump(t *testing.T) {
 			wantNotContain: "Bearer secret-token",
 		},
 		{
+			// Bypass http.Header.Set canonicalization to put a lowercase
+			// header name on the wire and verify case-insensitive matching.
 			name: "authorization header lowercase",
 			req: func() *http.Request {
 				r, _ := http.NewRequest(http.MethodGet, "http://example.com", nil)
-				r.Header.Set("authorization", "some-secret")
+				r.Header["authorization"] = []string{"some-secret"}
 				return r
 			}(),
 			wantContains:   "Authorization: *",
 			wantNotContain: "some-secret",
 		},
 		{
+			name: "AUTHORIZATION header uppercase",
+			req: func() *http.Request {
+				r, _ := http.NewRequest(http.MethodGet, "http://example.com", nil)
+				r.Header["AUTHORIZATION"] = []string{"UPPER-SECRET"}
+				return r
+			}(),
+			wantContains:   "Authorization: *",
+			wantNotContain: "UPPER-SECRET",
+		},
+		{
 			name: "Authorization header mixed case",
 			req: func() *http.Request {
 				r, _ := http.NewRequest(http.MethodGet, "http://example.com", nil)
-				r.Header.Set("AuThOrIzAtIoN", "token123")
+				r.Header["AuThOrIzAtIoN"] = []string{"token123"}
 				return r
 			}(),
 			wantContains:   "Authorization: *",
 			wantNotContain: "token123",
+		},
+		{
+			name: "Proxy-Authorization header",
+			req: func() *http.Request {
+				r, _ := http.NewRequest(http.MethodGet, "http://example.com", nil)
+				r.Header.Set("Proxy-Authorization", "Basic cHJveHk6c2VjcmV0")
+				return r
+			}(),
+			wantContains:   "Proxy-Authorization: *",
+			wantNotContain: "Basic cHJveHk6c2VjcmV0",
+		},
+		{
+			name: "proxy-authorization header lowercase",
+			req: func() *http.Request {
+				r, _ := http.NewRequest(http.MethodGet, "http://example.com", nil)
+				r.Header["proxy-authorization"] = []string{"Basic bG93ZXI="}
+				return r
+			}(),
+			wantContains:   "Proxy-Authorization: *",
+			wantNotContain: "Basic bG93ZXI=",
+		},
+		{
+			name: "PROXY-AUTHORIZATION header uppercase",
+			req: func() *http.Request {
+				r, _ := http.NewRequest(http.MethodGet, "http://example.com", nil)
+				r.Header["PROXY-AUTHORIZATION"] = []string{"Basic VVBQRVI="}
+				return r
+			}(),
+			wantContains:   "Proxy-Authorization: *",
+			wantNotContain: "Basic VVBQRVI=",
 		},
 		{
 			name: "No Authorization header",

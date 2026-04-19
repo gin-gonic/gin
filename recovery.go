@@ -91,16 +91,25 @@ func CustomRecoveryWithWriter(out io.Writer, handle RecoveryFunc) HandlerFunc {
 	}
 }
 
-// secureRequestDump returns a sanitized HTTP request dump where the Authorization header,
-// if present, is replaced with a masked value ("Authorization: *") to avoid leaking sensitive credentials.
+// secureRequestDump returns a sanitized HTTP request dump where the Authorization
+// and Proxy-Authorization headers, if present, are replaced with a masked value
+// (e.g. "Authorization: *") to avoid leaking sensitive credentials.
 //
-// Currently, only the Authorization header is sanitized. All other headers and request data remain unchanged.
+// Header name matching is case-insensitive since HTTP headers are case-insensitive
+// per RFC 9110. All other headers and request data remain unchanged.
 func secureRequestDump(r *http.Request) string {
 	httpRequest, _ := httputil.DumpRequest(r, false)
 	lines := strings.Split(bytesconv.BytesToString(httpRequest), "\r\n")
+	const (
+		authPrefix  = "Authorization:"
+		proxyPrefix = "Proxy-Authorization:"
+	)
 	for i, line := range lines {
-		if strings.HasPrefix(line, "Authorization:") {
+		switch {
+		case len(line) >= len(authPrefix) && strings.EqualFold(line[:len(authPrefix)], authPrefix):
 			lines[i] = "Authorization: *"
+		case len(line) >= len(proxyPrefix) && strings.EqualFold(line[:len(proxyPrefix)], proxyPrefix):
+			lines[i] = "Proxy-Authorization: *"
 		}
 	}
 	return strings.Join(lines, "\r\n")

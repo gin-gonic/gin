@@ -261,6 +261,17 @@ func TestRenderAsciiJSON(t *testing.T) {
 	assert.Equal(t, "3.1415926", w2.Body.String())
 }
 
+func TestRenderAsciiJSONSupplementaryUnicode(t *testing.T) {
+	w := httptest.NewRecorder()
+	data := map[string]string{"emoji": "😀"}
+
+	err := (AsciiJSON{data}).Render(w)
+	require.NoError(t, err)
+	// U+1F600 must be encoded as UTF-16 surrogate pair per RFC 8259.
+	// Use Contains to verify the surrogate pair encoding in the raw output.
+	assert.Contains(t, w.Body.String(), `\ud83d\ude00`)
+}
+
 func TestRenderAsciiJSONFail(t *testing.T) {
 	w := httptest.NewRecorder()
 	data := make(chan int)
