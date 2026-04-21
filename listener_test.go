@@ -71,7 +71,7 @@ func TestLimitedListenerAtLimit(t *testing.T) {
 	client := &http.Client{Timeout: 500 * time.Millisecond}
 	_, err := client.Get(server.URL)
 	// Connection should be rejected
-	assert.Error(t, err, "expected connection to be rejected")
+	require.Error(t, err, "expected connection to be rejected")
 
 	// Release the blocked connections
 	close(block)
@@ -106,7 +106,7 @@ func TestLimitedConnRelease(t *testing.T) {
 	// Second request should fail
 	client := &http.Client{Timeout: 200 * time.Millisecond}
 	_, err := client.Get(server.URL)
-	assert.Error(t, err, "expected connection to be rejected when limit reached")
+	require.Error(t, err, "expected connection to be rejected when limit reached")
 
 	// Release the first connection
 	close(block)

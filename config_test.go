@@ -26,7 +26,7 @@ func TestLoadConfig(t *testing.T) {
 
 func TestLoadConfigNotFound(t *testing.T) {
 	opt, err := LoadConfig("nonexistent.yaml")
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Nil(t, opt)
 }
 
@@ -41,7 +41,7 @@ func TestLoadConfigInvalidYAML(t *testing.T) {
 	tmpFile.Close()
 
 	opt, err := LoadConfig(tmpFile.Name())
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Nil(t, opt)
 }
 
