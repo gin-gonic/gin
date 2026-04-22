@@ -115,7 +115,7 @@ func TestResponseWriterHijack(t *testing.T) {
 
 	// Hijack on a non-hijacker writer returns an error without panicking.
 	_, _, err := w.Hijack()
-	assert.Error(t, err)
+	require.Error(t, err)
 	// Capability check happens before state mutation, so Written() stays false on failure.
 	assert.False(t, w.Written())
 
@@ -352,7 +352,7 @@ func TestResponseWriterOptionalInterfaceFallbacks(t *testing.T) {
 			conn, buf, err := rw.Hijack()
 			assert.Nil(t, conn)
 			assert.Nil(t, buf)
-			assert.Error(t, err)
+			require.Error(t, err)
 			assert.Contains(t, err.Error(), "does not support hijacking")
 		})
 		// Capability check happens before state mutation, so Written() stays false on failure.
