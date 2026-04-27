@@ -3808,3 +3808,164 @@ func BenchmarkGetMapFromFormData(b *testing.B) {
 		})
 	}
 }
+
+func TestContextBindJSONStrict(t *testing.T) {
+	t.Run("normal request with known fields should succeed", func(t *testing.T) {
+		w := httptest.NewRecorder()
+		c, _ := CreateTestContext(w)
+
+		c.Request, _ = http.NewRequest(http.MethodPost, "/", strings.NewReader(`{"foo":"bar", "bar":"foo"}`))
+		c.Request.Header.Add("Content-Type", MIMEJSON)
+
+		var obj struct {
+			Foo string `json:"foo"`
+			Bar string `json:"bar"`
+		}
+		require.NoError(t, c.BindJSONStrict(&obj))
+		assert.Equal(t, "foo", obj.Bar)
+		assert.Equal(t, "bar", obj.Foo)
+		assert.Equal(t, 0, w.Body.Len())
+		assert.False(t, c.IsAborted())
+	})
+
+	t.Run("request with unknown fields should return 400 and abort", func(t *testing.T) {
+		w := httptest.NewRecorder()
+		c, _ := CreateTestContext(w)
+
+		c.Request, _ = http.NewRequest(http.MethodPost, "/", strings.NewReader(`{"foo":"bar", "unknown":"field"}`))
+		c.Request.Header.Add("Content-Type", MIMEJSON)
+
+		var obj struct {
+			Foo string `json:"foo"`
+		}
+		require.Error(t, c.BindJSONStrict(&obj))
+		assert.Contains(t, c.Errors.Last().Err.Error(), "unknown field")
+		assert.Equal(t, http.StatusBadRequest, w.Code)
+		assert.True(t, c.IsAborted())
+	})
+
+	t.Run("invalid JSON should return 400 and abort", func(t *testing.T) {
+		w := httptest.NewRecorder()
+		c, _ := CreateTestContext(w)
+
+		c.Request, _ = http.NewRequest(http.MethodPost, "/", strings.NewReader(`{"foo":"bar"`))
+		c.Request.Header.Add("Content-Type", MIMEJSON)
+
+		var obj struct {
+			Foo string `json:"foo"`
+		}
+		require.Error(t, c.BindJSONStrict(&obj))
+		assert.Equal(t, http.StatusBadRequest, w.Code)
+		assert.True(t, c.IsAborted())
+	})
+
+	t.Run("empty body should return 400 and abort", func(t *testing.T) {
+		w := httptest.NewRecorder()
+		c, _ := CreateTestContext(w)
+
+		c.Request, _ = http.NewRequest(http.MethodPost, "/", strings.NewReader(""))
+		c.Request.Header.Add("Content-Type", MIMEJSON)
+
+		var obj struct {
+			Foo string `json:"foo"`
+		}
+		require.Error(t, c.BindJSONStrict(&obj))
+		assert.Equal(t, http.StatusBadRequest, w.Code)
+		assert.True(t, c.IsAborted())
+	})
+}
+
+func TestContextShouldBindJSONStrict(t *testing.T) {
+	t.Run("normal request with known fields should succeed", func(t *testing.T) {
+		w := httptest.NewRecorder()
+		c, _ := CreateTestContext(w)
+
+		c.Request, _ = http.NewRequest(http.MethodPost, "/", strings.NewReader(`{"foo":"bar", "bar":"foo"}`))
+		c.Request.Header.Add("Content-Type", MIMEJSON)
+
+		var obj struct {
+			Foo string `json:"foo"`
+			Bar string `json:"bar"`
+		}
+		require.NoError(t, c.ShouldBindJSONStrict(&obj))
+		assert.Equal(t, "foo", obj.Bar)
+		assert.Equal(t, "bar", obj.Foo)
+		assert.Equal(t, 0, w.Body.Len())
+		assert.False(t, c.IsAborted())
+	})
+
+	t.Run("request with unknown fields should return error but not abort", func(t *testing.T) {
+		w := httptest.NewRecorder()
+		c, _ := CreateTestContext(w)
+
+		c.Request, _ = http.NewRequest(http.MethodPost, "/", strings.NewReader(`{"foo":"bar", "unknown":"field"}`))
+		c.Request.Header.Add("Content-Type", MIMEJSON)
+
+		var obj struct {
+			Foo string `json:"foo"`
+		}
+		err := c.ShouldBindJSONStrict(&obj)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "unknown field")
+		assert.False(t, c.IsAborted())
+	})
+
+	t.Run("invalid JSON should return error but not abort", func(t *testing.T) {
+		w := httptest.NewRecorder()
+		c, _ := CreateTestContext(w)
+
+		c.Request, _ = http.NewRequest(http.MethodPost, "/", strings.NewReader(`{"foo":"bar"`))
+		c.Request.Header.Add("Content-Type", MIMEJSON)
+
+		var obj struct {
+			Foo string `json:"foo"`
+		}
+		err := c.ShouldBindJSONStrict(&obj)
+		require.Error(t, err)
+		assert.False(t, c.IsAborted())
+	})
+}
+
+func TestContextJSONBindingIndependence(t *testing.T) {
+	t.Run("BindJSON should ignore unknown fields when global switch is off", func(t *testing.T) {
+		oldValue := binding.EnableDecoderDisallowUnknownFields
+		defer func() {
+			binding.EnableDecoderDisallowUnknownFields = oldValue
+		}()
+		binding.EnableDecoderDisallowUnknownFields = false
+
+		w := httptest.NewRecorder()
+		c, _ := CreateTestContext(w)
+
+		c.Request, _ = http.NewRequest(http.MethodPost, "/", strings.NewReader(`{"foo":"bar", "unknown":"field"}`))
+		c.Request.Header.Add("Content-Type", MIMEJSON)
+
+		var obj struct {
+			Foo string `json:"foo"`
+		}
+		require.NoError(t, c.BindJSON(&obj))
+		assert.Equal(t, "bar", obj.Foo)
+		assert.False(t, c.IsAborted())
+	})
+
+	t.Run("BindJSONStrict should always reject unknown fields regardless of global switch", func(t *testing.T) {
+		oldValue := binding.EnableDecoderDisallowUnknownFields
+		defer func() {
+			binding.EnableDecoderDisallowUnknownFields = oldValue
+		}()
+		binding.EnableDecoderDisallowUnknownFields = false
+
+		w := httptest.NewRecorder()
+		c, _ := CreateTestContext(w)
+
+		c.Request, _ = http.NewRequest(http.MethodPost, "/", strings.NewReader(`{"foo":"bar", "unknown":"field"}`))
+		c.Request.Header.Add("Content-Type", MIMEJSON)
+
+		var obj struct {
+			Foo string `json:"foo"`
+		}
+		require.Error(t, c.BindJSONStrict(&obj))
+		assert.Contains(t, c.Errors.Last().Err.Error(), "unknown field")
+		assert.True(t, c.IsAborted())
+	})
+}

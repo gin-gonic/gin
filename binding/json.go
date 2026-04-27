@@ -54,3 +54,32 @@ func decodeJSON(r io.Reader, obj any) error {
 	}
 	return validate(obj)
 }
+
+type jsonStrictBinding struct{}
+
+func (jsonStrictBinding) Name() string {
+	return "json-strict"
+}
+
+func (jsonStrictBinding) Bind(req *http.Request, obj any) error {
+	if req == nil || req.Body == nil {
+		return errors.New("invalid request")
+	}
+	return decodeJSONStrict(req.Body, obj)
+}
+
+func (jsonStrictBinding) BindBody(body []byte, obj any) error {
+	return decodeJSONStrict(bytes.NewReader(body), obj)
+}
+
+func decodeJSONStrict(r io.Reader, obj any) error {
+	decoder := json.API.NewDecoder(r)
+	if EnableDecoderUseNumber {
+		decoder.UseNumber()
+	}
+	decoder.DisallowUnknownFields()
+	if err := decoder.Decode(obj); err != nil {
+		return err
+	}
+	return validate(obj)
+}
