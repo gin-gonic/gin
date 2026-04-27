@@ -214,3 +214,69 @@ func (tpc timePointerCodec) Decode(ptr unsafe.Pointer, iter *jsoniter.Iterator) 
 }
 
 // endregion
+
+func TestJSONStrictBindingBindBody(t *testing.T) {
+	t.Run("normal request with known fields", func(t *testing.T) {
+		var s struct {
+			Foo string `json:"foo"`
+		}
+		err := jsonStrictBinding{}.BindBody([]byte(`{"foo": "FOO"}`), &s)
+		require.NoError(t, err)
+		assert.Equal(t, "FOO", s.Foo)
+	})
+
+	t.Run("request with unknown fields should error", func(t *testing.T) {
+		var s struct {
+			Foo string `json:"foo"`
+		}
+		err := jsonStrictBinding{}.BindBody([]byte(`{"foo": "FOO", "bar": "BAR"}`), &s)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "unknown field")
+	})
+
+	t.Run("empty body should error", func(t *testing.T) {
+		var s struct {
+			Foo string `json:"foo"`
+		}
+		err := jsonStrictBinding{}.BindBody([]byte{}, &s)
+		require.Error(t, err)
+	})
+
+	t.Run("invalid JSON should error", func(t *testing.T) {
+		var s struct {
+			Foo string `json:"foo"`
+		}
+		err := jsonStrictBinding{}.BindBody([]byte(`{"foo": "FOO"`), &s)
+		require.Error(t, err)
+	})
+
+	t.Run("jsonBinding should ignore unknown fields when global switch is off", func(t *testing.T) {
+		oldValue := EnableDecoderDisallowUnknownFields
+		defer func() {
+			EnableDecoderDisallowUnknownFields = oldValue
+		}()
+		EnableDecoderDisallowUnknownFields = false
+
+		var s struct {
+			Foo string `json:"foo"`
+		}
+		err := jsonBinding{}.BindBody([]byte(`{"foo": "FOO", "bar": "BAR"}`), &s)
+		require.NoError(t, err)
+		assert.Equal(t, "FOO", s.Foo)
+	})
+
+	t.Run("jsonStrictBinding should always reject unknown fields regardless of global switch", func(t *testing.T) {
+		oldValue := EnableDecoderDisallowUnknownFields
+		defer func() {
+			EnableDecoderDisallowUnknownFields = oldValue
+		}()
+		EnableDecoderDisallowUnknownFields = false
+
+		var s struct {
+			Foo string `json:"foo"`
+		}
+		err := jsonStrictBinding{}.BindBody([]byte(`{"foo": "FOO", "bar": "BAR"}`), &s)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "unknown field")
+	})
+}

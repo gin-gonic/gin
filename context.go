@@ -764,6 +764,13 @@ func (c *Context) BindJSON(obj any) error {
 	return c.MustBindWith(obj, binding.JSON)
 }
 
+// BindJSONStrict is a shortcut for c.MustBindWith(obj, binding.JSONStrict).
+// It will return an error and abort the request with HTTP 400 if any error occurs,
+// including when the JSON contains unknown fields.
+func (c *Context) BindJSONStrict(obj any) error {
+	return c.MustBindWith(obj, binding.JSONStrict)
+}
+
 // BindXML is a shortcut for c.MustBindWith(obj, binding.BindXML).
 func (c *Context) BindXML(obj any) error {
 	return c.MustBindWith(obj, binding.XML)
@@ -866,6 +873,13 @@ func (c *Context) ShouldBind(obj any) error {
 //	c.JSON(http.StatusOK, user)
 func (c *Context) ShouldBindJSON(obj any) error {
 	return c.ShouldBindWith(obj, binding.JSON)
+}
+
+// ShouldBindJSONStrict is a shortcut for c.ShouldBindWith(obj, binding.JSONStrict).
+// It works like ShouldBindJSON but returns an error if the JSON contains unknown fields.
+// This method does not set the response status code to 400 or abort if input is not valid.
+func (c *Context) ShouldBindJSONStrict(obj any) error {
+	return c.ShouldBindWith(obj, binding.JSONStrict)
 }
 
 // ShouldBindXML is a shortcut for c.ShouldBindWith(obj, binding.XML).
