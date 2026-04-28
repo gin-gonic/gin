@@ -130,18 +130,28 @@ func (n *node) incrementChildPrio(pos int) int {
 	return newPos
 }
 
+func (n *node) compareEmptyTree(path string, fullPath string, handlers HandlersChain) {
+	if len(n.path) == 0 && len(n.children) == 0 {
+		n.insertChild(path, fullPath, handlers)
+		n.nType = root
+		return
+	}
+}
+
 // addRoute adds a node with the given handle to the path.
 // Not concurrency-safe!
 func (n *node) addRoute(path string, handlers HandlersChain) {
 	fullPath := path
 	n.priority++
 
-	// Empty tree
-	if len(n.path) == 0 && len(n.children) == 0 {
-		n.insertChild(path, fullPath, handlers)
-		n.nType = root
-		return
-	}
+	// // Empty tree
+	// if len(n.path) == 0 && len(n.children) == 0 {
+	// 	n.insertChild(path, fullPath, handlers)
+	// 	n.nType = root
+	// 	return
+	// }
+
+	n.compareEmptyTree(path, fullPath, handlers)
 
 	parentFullPathIndex := 0
 
