@@ -113,15 +113,16 @@ func TestResponseWriterHijack(t *testing.T) {
 	writer.reset(testWriter)
 	w := ResponseWriter(writer)
 
-	assert.Panics(t, func() {
-		_, _, err := w.Hijack()
-		require.NoError(t, err)
-	})
+	// httptest.ResponseRecorder doesn't implement http.Hijacker; return
+	// http.ErrNotSupported instead of panicking (#4638).
+	conn, buf, err := w.Hijack()
+	assert.Nil(t, conn)
+	assert.Nil(t, buf)
+	require.ErrorIs(t, err, http.ErrNotSupported)
 	assert.True(t, w.Written())
 
-	assert.Panics(t, func() {
-		w.CloseNotify()
-	})
+	// CloseNotify on a non-CloseNotifier returns nil instead of panicking.
+	assert.Nil(t, w.CloseNotify())
 
 	w.Flush()
 }
