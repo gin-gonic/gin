@@ -1328,9 +1328,15 @@ func (c *Context) SSEvent(name string, message any) {
 func (c *Context) Stream(step func(w io.Writer) bool) bool {
 	w := c.Writer
 	clientGone := w.CloseNotify()
+	var requestGone <-chan struct{}
+	if c.Request != nil {
+		requestGone = c.Request.Context().Done()
+	}
 	for {
 		select {
 		case <-clientGone:
+			return true
+		case <-requestGone:
 			return true
 		default:
 			keepOpen := step(w)

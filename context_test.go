@@ -3078,6 +3078,25 @@ func TestContextStreamWithClientGone(t *testing.T) {
 	assert.Equal(t, "test", w.Body.String())
 }
 
+func TestContextStreamWithRequestContextDone(t *testing.T) {
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
+
+	reqCtx, cancel := context.WithCancel(context.Background())
+	cancel()
+	c.Request = httptest.NewRequest(http.MethodGet, "/", nil).WithContext(reqCtx)
+
+	disconnected := c.Stream(func(writer io.Writer) bool {
+		_, err := writer.Write([]byte("test"))
+		require.NoError(t, err)
+
+		return true
+	})
+
+	assert.True(t, disconnected)
+	assert.Empty(t, w.Body.String())
+}
+
 func TestContextResetInHandler(t *testing.T) {
 	w := CreateTestResponseRecorder()
 	c, _ := CreateTestContext(w)
