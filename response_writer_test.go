@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -113,17 +114,34 @@ func TestResponseWriterHijack(t *testing.T) {
 	writer.reset(testWriter)
 	w := ResponseWriter(writer)
 
-	assert.Panics(t, func() {
-		_, _, err := w.Hijack()
-		require.NoError(t, err)
-	})
-	assert.True(t, w.Written())
+	_, _, err := w.Hijack()
+	require.ErrorIs(t, err, http.ErrNotSupported)
+	assert.False(t, w.Written())
 
-	assert.Panics(t, func() {
-		w.CloseNotify()
-	})
+	assert.Nil(t, w.CloseNotify())
 
 	w.Flush()
+}
+
+func TestResponseWriterHijackWithTimeoutHandler(t *testing.T) {
+	var hijackErr error
+	var closeNotify <-chan bool
+	var written bool
+
+	handler := http.TimeoutHandler(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		writer := &responseWriter{}
+		writer.reset(w)
+
+		_, _, hijackErr = writer.Hijack()
+		closeNotify = writer.CloseNotify()
+		written = writer.Written()
+	}), time.Second, "")
+
+	handler.ServeHTTP(httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, "/", nil))
+
+	require.ErrorIs(t, hijackErr, http.ErrNotSupported)
+	assert.Nil(t, closeNotify)
+	assert.False(t, written)
 }
 
 type mockHijacker struct {
