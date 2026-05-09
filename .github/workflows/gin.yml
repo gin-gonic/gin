@@ -26,7 +26,7 @@ jobs:
       - name: Setup golangci-lint
         uses: golangci/golangci-lint-action@v9
         with:
-          version: v2.9
+          version: v2.11
           args: --verbose
   test:
     needs: lint
@@ -78,6 +78,6 @@ jobs:
         run: make test
 
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v5
+        uses: codecov/codecov-action@v6
         with:
           flags: ${{ matrix.os }},go-${{ matrix.go }},${{ matrix.test-tags }}

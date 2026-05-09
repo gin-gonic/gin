@@ -209,7 +209,7 @@ Gin powers many high-traffic applications and services in production:
 
 ## 🤝 Contributing
 
-Gin is the work of hundreds of contributors from around the world. We welcome and appreciate your contributions!
+Gin is the work of hundreds of contributors from around the world. We welcome and appreciate your contributions! See the full list of [contributors](https://github.com/gin-gonic/gin/graphs/contributors).
 
 ### How to Contribute
 
