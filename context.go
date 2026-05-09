@@ -728,11 +728,17 @@ func (c *Context) SaveUploadedFile(file *multipart.FileHeader, dst string, perm 
 		mode = perm[0]
 	}
 	dir := filepath.Dir(dst)
+	// Check if directory exists to only chmod newly created directories
+	_, statErr := os.Stat(dir)
+	dirExists := !os.IsNotExist(statErr)
 	if err = os.MkdirAll(dir, mode); err != nil {
 		return err
 	}
-	if err = os.Chmod(dir, mode); err != nil {
-		return err
+	// Only chmod if directory was newly created (fixes #4622)
+	if !dirExists {
+		if err = os.Chmod(dir, mode); err != nil {
+			return err
+		}
 	}
 
 	out, err := os.Create(dst)
