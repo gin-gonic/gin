@@ -17,7 +17,10 @@ const (
 	defaultStatus = http.StatusOK
 )
 
-var errHijackAlreadyWritten = errors.New("gin: response body already written")
+var (
+	errHijackAlreadyWritten = errors.New("gin: response body already written")
+	errHijackNotSupported   = errors.New("gin: underlying ResponseWriter does not support hijacking")
+)
 
 // ResponseWriter ...
 type ResponseWriter interface {
@@ -109,20 +112,25 @@ func (w *responseWriter) Written() bool {
 
 // Hijack implements the http.Hijacker interface.
 func (w *responseWriter) Hijack() (net.Conn, *bufio.ReadWriter, error) {
-	// Allow hijacking before any data is written (size == -1) or after headers are written (size == 0),
-	// but not after body data is written (size > 0). For compatibility with websocket libraries (e.g., github.com/coder/websocket)
 	if w.size > 0 {
 		return nil, nil, errHijackAlreadyWritten
+	}
+	hijacker, ok := w.ResponseWriter.(http.Hijacker)
+	if !ok {
+		return nil, nil, errHijackNotSupported
 	}
 	if w.size < 0 {
 		w.size = 0
 	}
-	return w.ResponseWriter.(http.Hijacker).Hijack()
+	return hijacker.Hijack()
 }
 
 // CloseNotify implements the http.CloseNotifier interface.
 func (w *responseWriter) CloseNotify() <-chan bool {
-	return w.ResponseWriter.(http.CloseNotifier).CloseNotify()
+	if cn, ok := w.ResponseWriter.(http.CloseNotifier); ok {
+		return cn.CloseNotify()
+	}
+	return nil
 }
 
 // Flush implements the http.Flusher interface.

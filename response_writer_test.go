@@ -113,17 +113,13 @@ func TestResponseWriterHijack(t *testing.T) {
 	writer.reset(testWriter)
 	w := ResponseWriter(writer)
 
-	assert.Panics(t, func() {
-		_, _, err := w.Hijack()
-		require.NoError(t, err)
-	})
-	assert.True(t, w.Written())
+	// Hijack on a non-hijacker writer returns an error without panicking.
+	_, _, err := w.Hijack()
+	require.Error(t, err)
+	// Capability check happens before state mutation, so Written() stays false on failure.
+	assert.False(t, w.Written())
 
-	assert.Panics(t, func() {
-		w.CloseNotify()
-	})
-
-	w.Flush()
+	assert.NotPanics(t, func() { w.Flush() })
 }
 
 type mockHijacker struct {
@@ -314,4 +310,52 @@ func TestPusherWithoutPusher(t *testing.T) {
 
 	pusher := w.Pusher()
 	assert.Nil(t, pusher, "Expected pusher to be nil")
+}
+
+// mockNonHijackerWriter implements only http.ResponseWriter.
+// It intentionally does NOT implement http.Hijacker, http.Flusher, or http.CloseNotifier.
+type mockNonHijackerWriter struct {
+	headers http.Header
+}
+
+func (m *mockNonHijackerWriter) Header() http.Header {
+	if m.headers == nil {
+		m.headers = make(http.Header)
+	}
+	return m.headers
+}
+
+func (m *mockNonHijackerWriter) Write(b []byte) (int, error) {
+	return len(b), nil
+}
+
+func (m *mockNonHijackerWriter) WriteHeader(statusCode int) {}
+
+func TestResponseWriterOptionalInterfaceFallbacks(t *testing.T) {
+	w := &mockNonHijackerWriter{}
+	rw := &responseWriter{}
+	rw.reset(w)
+
+	t.Run("Flush does not panic without Flusher", func(t *testing.T) {
+		assert.NotPanics(t, func() { rw.Flush() })
+	})
+
+	t.Run("CloseNotify returns nil without CloseNotifier", func(t *testing.T) {
+		var ch <-chan bool
+		assert.NotPanics(t, func() { ch = rw.CloseNotify() })
+		assert.Nil(t, ch)
+	})
+
+	t.Run("Hijack returns error without Hijacker", func(t *testing.T) {
+		rw.reset(w) // reset state so Written() starts false
+		assert.NotPanics(t, func() {
+			conn, buf, err := rw.Hijack()
+			assert.Nil(t, conn)
+			assert.Nil(t, buf)
+			require.Error(t, err)
+			assert.Contains(t, err.Error(), "does not support hijacking")
+		})
+		// Capability check happens before state mutation, so Written() stays false on failure.
+		assert.False(t, rw.Written())
+	})
 }
