@@ -246,14 +246,40 @@ func TestSaveUploadedFileWithPermission(t *testing.T) {
 	f, err := c.FormFile("file")
 	require.NoError(t, err)
 	assert.Equal(t, "permission_test", f.Filename)
+	dst := filepath.Join(t.TempDir(), "uploads", "permission_test")
 	var mode fs.FileMode = 0o755
-	require.NoError(t, c.SaveUploadedFile(f, "permission_test", mode))
-	t.Cleanup(func() {
-		assert.NoError(t, os.Remove("permission_test"))
-	})
-	info, err := os.Stat(filepath.Dir("permission_test"))
+	require.NoError(t, c.SaveUploadedFile(f, dst, mode))
+	info, err := os.Stat(filepath.Dir(dst))
 	require.NoError(t, err)
 	assert.Equal(t, info.Mode().Perm(), mode)
+}
+
+func TestSaveUploadedFileWithPermissionExistingDirectory(t *testing.T) {
+	buf := new(bytes.Buffer)
+	mw := multipart.NewWriter(buf)
+	w, err := mw.CreateFormFile("file", "permission_test")
+	require.NoError(t, err)
+	_, err = w.Write([]byte("permission_test"))
+	require.NoError(t, err)
+	mw.Close()
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	c.Request, _ = http.NewRequest(http.MethodPost, "/", buf)
+	c.Request.Header.Set("Content-Type", mw.FormDataContentType())
+	f, err := c.FormFile("file")
+	require.NoError(t, err)
+	assert.Equal(t, "permission_test", f.Filename)
+
+	dstDir := filepath.Join(t.TempDir(), "uploads")
+	const existingMode fs.FileMode = 0o700
+	require.NoError(t, os.Mkdir(dstDir, existingMode))
+
+	var mode fs.FileMode = 0o755
+	dst := filepath.Join(dstDir, "permission_test")
+	require.NoError(t, c.SaveUploadedFile(f, dst, mode))
+
+	info, err := os.Stat(dstDir)
+	require.NoError(t, err)
+	assert.Equal(t, existingMode, info.Mode().Perm())
 }
 
 func TestSaveUploadedFileWithPermissionFailed(t *testing.T) {
@@ -271,7 +297,7 @@ func TestSaveUploadedFileWithPermissionFailed(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, "permission_test", f.Filename)
 	var mode fs.FileMode = 0o644
-	require.Error(t, c.SaveUploadedFile(f, "test/permission_test", mode))
+	require.Error(t, c.SaveUploadedFile(f, filepath.Join(t.TempDir(), "test", "permission_test"), mode))
 }
 
 func TestContextReset(t *testing.T) {
