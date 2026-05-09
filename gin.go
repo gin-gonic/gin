@@ -418,7 +418,7 @@ func (engine *Engine) prepareTrustedCIDRs() ([]netip.Prefix, error) {
 			if err != nil {
 				return cidrs, &net.ParseError{Type: "IP address", Text: trustedProxy}
 			}
-			if addr.Is4() {
+			if addr.Unmap().Is4() {
 				trustedProxy += "/32"
 			} else {
 				trustedProxy += "/128"

@@ -1022,6 +1022,9 @@ func (c *Context) ClientIP() string {
 			}
 		}
 	}
+	if !remoteIP.IsValid() {
+		return ""
+	}
 	return remoteIP.String()
 }
 
