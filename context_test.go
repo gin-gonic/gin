@@ -1984,6 +1984,12 @@ func TestContextClientIP(t *testing.T) {
 	c.Request.RemoteAddr = addr.String()
 	assert.Equal(t, "20.20.20.20", c.ClientIP())
 
+	// unix address with no valid forwarded header: remoteIP stays zero, must return ""
+	c.Request.Header.Del("X-Forwarded-For")
+	c.Request.Header.Del("X-Real-IP")
+	assert.Empty(t, c.ClientIP())
+	resetContextForClientIPTests(c)
+
 	// reset
 	c.Request = c.Request.WithContext(context.Background())
 	resetContextForClientIPTests(c)
