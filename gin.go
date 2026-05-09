@@ -418,11 +418,13 @@ func (engine *Engine) prepareTrustedCIDRs() ([]netip.Prefix, error) {
 			if err != nil {
 				return cidrs, &net.ParseError{Type: "IP address", Text: trustedProxy}
 			}
-			if addr.Unmap().Is4() {
-				trustedProxy += "/32"
-			} else {
-				trustedProxy += "/128"
+			addr = addr.Unmap()
+			bits := 128
+			if addr.Is4() {
+				bits = 32
 			}
+			cidrs = append(cidrs, netip.PrefixFrom(addr, bits))
+			continue
 		}
 		prefix, err := netip.ParsePrefix(trustedProxy)
 		if err != nil {
