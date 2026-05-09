@@ -426,7 +426,7 @@ func (engine *Engine) prepareTrustedCIDRs() ([]netip.Prefix, error) {
 		}
 		prefix, err := netip.ParsePrefix(trustedProxy)
 		if err != nil {
-			return cidrs, err
+			return cidrs, &net.ParseError{Type: "CIDR address", Text: trustedProxy}
 		}
 		cidrs = append(cidrs, prefix.Masked())
 	}
