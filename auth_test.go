@@ -92,6 +92,7 @@ func TestBasicAuthSucceed(t *testing.T) {
 	w := httptest.NewRecorder()
 	req, _ := http.NewRequest(http.MethodGet, "/login", nil)
 	req.Header.Set("Authorization", authorizationHeader("admin", "password"))
+	req.Header.Set("X-Forwarded-Proto", "https")
 	router.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusOK, w.Code)
@@ -111,11 +112,32 @@ func TestBasicAuth401(t *testing.T) {
 	w := httptest.NewRecorder()
 	req, _ := http.NewRequest(http.MethodGet, "/login", nil)
 	req.Header.Set("Authorization", "Basic "+base64.StdEncoding.EncodeToString([]byte("admin:password")))
+	req.Header.Set("X-Forwarded-Proto", "https")
 	router.ServeHTTP(w, req)
 
 	assert.False(t, called)
 	assert.Equal(t, http.StatusUnauthorized, w.Code)
 	assert.Equal(t, "Basic realm=\"Authorization Required\"", w.Header().Get("WWW-Authenticate"))
+}
+
+func TestBasicAuth403OverHTTP(t *testing.T) {
+	called := false
+	accounts := Accounts{"foo": "bar"}
+	router := New()
+	router.Use(BasicAuth(accounts))
+	router.GET("/login", func(c *Context) {
+		called = true
+		c.String(http.StatusOK, c.MustGet(AuthUserKey).(string))
+	})
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest(http.MethodGet, "/login", nil)
+	req.Header.Set("Authorization", authorizationHeader("foo", "bar"))
+	// No X-Forwarded-Proto and no TLS — must be rejected before credentials are checked.
+	router.ServeHTTP(w, req)
+
+	assert.False(t, called)
+	assert.Equal(t, http.StatusForbidden, w.Code)
 }
 
 func TestBasicAuth401WithCustomRealm(t *testing.T) {
@@ -131,6 +153,7 @@ func TestBasicAuth401WithCustomRealm(t *testing.T) {
 	w := httptest.NewRecorder()
 	req, _ := http.NewRequest(http.MethodGet, "/login", nil)
 	req.Header.Set("Authorization", "Basic "+base64.StdEncoding.EncodeToString([]byte("admin:password")))
+	req.Header.Set("X-Forwarded-Proto", "https")
 	router.ServeHTTP(w, req)
 
 	assert.False(t, called)
@@ -149,6 +172,7 @@ func TestBasicAuthForProxySucceed(t *testing.T) {
 	w := httptest.NewRecorder()
 	req, _ := http.NewRequest(http.MethodGet, "/test", nil)
 	req.Header.Set("Proxy-Authorization", authorizationHeader("admin", "password"))
+	req.Header.Set("X-Forwarded-Proto", "https")
 	router.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusOK, w.Code)
@@ -168,9 +192,30 @@ func TestBasicAuthForProxy407(t *testing.T) {
 	w := httptest.NewRecorder()
 	req, _ := http.NewRequest(http.MethodGet, "/test", nil)
 	req.Header.Set("Proxy-Authorization", "Basic "+base64.StdEncoding.EncodeToString([]byte("admin:password")))
+	req.Header.Set("X-Forwarded-Proto", "https")
 	router.ServeHTTP(w, req)
 
 	assert.False(t, called)
 	assert.Equal(t, http.StatusProxyAuthRequired, w.Code)
 	assert.Equal(t, "Basic realm=\"Proxy Authorization Required\"", w.Header().Get("Proxy-Authenticate"))
+}
+
+func TestBasicAuthForProxy403OverHTTP(t *testing.T) {
+	called := false
+	accounts := Accounts{"foo": "bar"}
+	router := New()
+	router.Use(BasicAuthForProxy(accounts, ""))
+	router.Any("/*proxyPath", func(c *Context) {
+		called = true
+		c.String(http.StatusOK, c.MustGet(AuthProxyUserKey).(string))
+	})
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest(http.MethodGet, "/test", nil)
+	req.Header.Set("Proxy-Authorization", authorizationHeader("foo", "bar"))
+	// No X-Forwarded-Proto and no TLS — must be rejected before credentials are checked.
+	router.ServeHTTP(w, req)
+
+	assert.False(t, called)
+	assert.Equal(t, http.StatusForbidden, w.Code)
 }
