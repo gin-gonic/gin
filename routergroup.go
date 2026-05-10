@@ -223,6 +223,10 @@ func (group *RouterGroup) createStaticHandler(relativePath string, fs http.FileS
 		}
 
 		file := c.Param("filepath")
+		file = path.Clean("/" + file)[1:]
+		if file == "" {
+			file = "."
+		}
 		// Check if file exists and/or if we have permission to access it
 		f, err := fs.Open(file)
 		if err != nil {
