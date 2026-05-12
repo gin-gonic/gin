@@ -123,6 +123,16 @@ func Default(method, contentType string) Binding {
 	}
 }
 
+// bindingIncludesQueryParsing reports whether a binding parses URL query values as part of Bind.
+func bindingIncludesQueryParsing(binding Binding) bool {
+	switch binding {
+	case Form, FormPost, FormMultipart:
+		return true
+	default:
+		return false
+	}
+}
+
 func validate(obj any) error {
 	if Validator == nil {
 		return nil
