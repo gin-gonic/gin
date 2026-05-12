@@ -809,9 +809,9 @@ func (c *Context) BindUri(obj any) error {
 //
 // Note:
 //   - Caller must tag struct fields appropriately for the desired binding (eg `header:"xxx"` vs `uri:"xxx"`)
-//   - Caller must ensure no duplication between field names (else use separate binding engines instead)
+//   - Caller must ensure no duplication between field names. Duplication may result in undefined behavior. (use separate binding engines instead)
 //   - Caller must provide Content-Type header to select the correct body binding (eg "application/json" for JSON binding).
-//     A request without Content-Type will result in no body binding
+//     A request without Content-Type will fallback to gin's default behavior for body binding (see ShouldBind)
 //   - Binding validation tags are verified after all request parts have been bound
 func (c *Context) BindAll(obj any) error {
 	err := c.ShouldBindAll(obj)
@@ -947,9 +947,9 @@ func (c *Context) ShouldBindUri(obj any) error {
 //
 // Note:
 //   - Caller must tag struct fields appropriately for the desired binding (eg `header:"xxx"` vs `uri:"xxx"`)
-//   - Caller must ensure no duplication between field names (else use separate binding engines instead)
+//   - Caller must ensure no duplication between field names. Duplicate fields may result in undefined behavior. (use separate binding engines instead)
 //   - Caller must provide Content-Type header to select the correct body binding (eg "application/json" for JSON binding).
-//     A request without Content-Type will result in no body binding
+//     A request without Content-Type will fallback to gin's default behavior for body binding (see ShouldBind)
 //   - Binding validation tags are verified after all request parts have been bound
 func (c *Context) ShouldBindAll(obj any) error {
 	uriParams := make(map[string][]string, len(c.Params))
