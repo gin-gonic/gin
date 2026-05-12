@@ -28,25 +28,22 @@ func (allBinding) BindMany(req *http.Request, uriParams map[string][]string, obj
 		return err
 	}
 
-	// from binding.Query
-	values := req.URL.Query()
-	if err := mapForm(obj, values); err != nil {
-		return err
-	}
-
 	// from context.Bind (for body/post-form/anything else)
 	contentType := req.Header.Get("Content-Type")
 	contentTypeLastIdx := strings.IndexAny(contentType, " ;") // trim "application/json; charset=utf-8" -> "application/json"
 	if contentTypeLastIdx != -1 {
 		contentType = contentType[:contentTypeLastIdx]
 	}
+	b := Default(req.Method, contentType)
 
-	// if no Content-Type, assume request has no body. This avoids binding query params again in binding.Default
-	if contentType == "" {
-		return validate(obj)
+	// Since req.ParseForm() reads body and query, check whether the selected binding includes query parsing before parsing query values explicitly.
+	if !bindingIncludesQueryParsing(b) {
+		// from binding.Query
+		if err := mapForm(obj, req.URL.Query()); err != nil {
+			return err
+		}
 	}
 
-	b := Default(req.Method, contentType)
-	// final validation done by whatever binding is selected here
+	// final validation done by whatever binding was selected by Default
 	return b.Bind(req, obj)
 }
