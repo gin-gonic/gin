@@ -2312,6 +2312,86 @@ func TestContextBindWithTOML(t *testing.T) {
 	assert.Equal(t, 0, w.Body.Len())
 }
 
+func TestContextBindAll(t *testing.T) {
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
+
+	c.Request, _ = http.NewRequest(http.MethodPost, "/1234?foo=true", strings.NewReader(`{"bar":"spam"}`))
+	c.Params = []Param{{Key: "id", Value: "1234"}}
+	c.Request.Header.Add("Content-Type", MIMEJSON)
+	c.Request.Header.Add("Limit", "100")
+
+	var obj struct {
+		Limit int    `header:"limit" binding:"required"`
+		ID    string `uri:"id" binding:"required,numeric"`
+		Foo   bool   `form:"foo" binding:"required"`
+		Bar   string `form:"bar" xml:"bar" binding:"required"`
+	}
+	require.NoError(t, c.BindAll(&obj))
+	assert.Equal(t, 100, obj.Limit)
+	assert.Equal(t, "1234", obj.ID)
+	assert.Equal(t, "true", c.Request.FormValue("foo"))
+	assert.Equal(t, "spam", obj.Bar)
+	assert.Empty(t, c.Errors)
+}
+
+func TestContextBindAll_400OnError(t *testing.T) {
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
+
+	c.Request, _ = http.NewRequest(http.MethodPost, "/1234?foo=true", strings.NewReader(`{"bar":"spam"}`))
+	c.Request.Header.Add("Content-Type", MIMEJSON)
+	c.Request.Header.Add("Limit", "100")
+
+	var obj struct {
+		Limit int    `header:"limit" binding:"required"`
+		ID    string `uri:"id" binding:"required,numeric"`
+		Foo   bool   `form:"foo" binding:"required"`
+		Bar   string `form:"bar" xml:"bar" binding:"required"`
+	}
+	err := c.BindAll(&obj)
+	require.ErrorContains(t, err, "Field validation for 'ID' failed")
+}
+
+func TestContextBindAll_413MaxBytes(t *testing.T) {
+	// When using go-json as JSON encoder, they do not propagate the http.MaxBytesError error
+	// The response will fail with a generic 400 instead of 413
+	// https://github.com/goccy/go-json/issues/485
+	var expectedCode int
+	switch json.Package {
+	case "github.com/goccy/go-json":
+		expectedCode = http.StatusBadRequest
+	default:
+		expectedCode = http.StatusRequestEntityTooLarge
+	}
+
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
+
+	c.Request, _ = http.NewRequest(http.MethodPost, "/1234?foo=true", strings.NewReader(`{"bar":"spam"}`))
+	c.Params = []Param{{Key: "id", Value: "1234"}}
+	c.Request.Header.Add("Content-Type", MIMEJSON)
+	c.Request.Header.Add("Limit", "100")
+	c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, 10)
+
+	var obj struct {
+		Limit int    `header:"limit" binding:"required"`
+		ID    string `uri:"id" binding:"required,numeric"`
+		Foo   bool   `form:"foo" binding:"required"`
+		Bar   string `form:"bar" xml:"bar" binding:"required"`
+	}
+	err := c.BindAll(&obj)
+	require.Error(t, err)
+	if json.Package != "github.com/goccy/go-json" {
+		var maxBytesErr *http.MaxBytesError
+		require.ErrorAs(t, err, &maxBytesErr)
+	}
+	c.Writer.WriteHeaderNow()
+
+	assert.Equal(t, expectedCode, w.Code)
+	assert.True(t, c.IsAborted())
+}
+
 func TestContextBadAutoBind(t *testing.T) {
 	w := httptest.NewRecorder()
 	c, _ := CreateTestContext(w)
@@ -2484,6 +2564,29 @@ func TestContextShouldBindWithTOML(t *testing.T) {
 	assert.Equal(t, "foo", obj.Bar)
 	assert.Equal(t, "bar", obj.Foo)
 	assert.Equal(t, 0, w.Body.Len())
+}
+
+func TestContextShouldBindAll(t *testing.T) {
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
+
+	c.Request, _ = http.NewRequest(http.MethodPost, "/1234?foo=true", strings.NewReader(`{"bar":"spam"}`))
+	c.Params = []Param{{Key: "id", Value: "1234"}}
+	c.Request.Header.Add("Content-Type", MIMEJSON) // set fake content-type
+	c.Request.Header.Add("Limit", "100")
+
+	var obj struct {
+		Limit int    `header:"limit" binding:"required"`
+		ID    string `uri:"id" binding:"required,numeric"`
+		Foo   bool   `form:"foo" binding:"required"`
+		Bar   string `form:"bar" xml:"bar" binding:"required"`
+	}
+	require.NoError(t, c.ShouldBindAll(&obj))
+	assert.Equal(t, 100, obj.Limit)
+	assert.Equal(t, "1234", obj.ID)
+	assert.Equal(t, "true", c.Request.FormValue("foo"))
+	assert.Equal(t, "spam", obj.Bar)
+	assert.Empty(t, c.Errors)
 }
 
 func TestContextBadAutoShouldBind(t *testing.T) {

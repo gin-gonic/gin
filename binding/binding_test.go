@@ -35,6 +35,13 @@ type QueryTest struct {
 	appkey
 }
 
+type FooStructHeaderUriQueryBody struct {
+	Limit int    `header:"limit" binding:"required"`
+	ID    string `uri:"id" binding:"required,numeric"`
+	Foo   bool   `form:"foo" binding:"required"`
+	Bar   string `form:"bar" xml:"bar" binding:"required"`
+}
+
 type FooStruct struct {
 	Foo string `msgpack:"foo" json:"foo" form:"foo" xml:"foo" binding:"required,max=32"`
 }
@@ -145,6 +152,10 @@ type FooStructForStringPtrType struct {
 
 type FooStructForMapPtrType struct {
 	PtrBar *map[string]any `form:"ptr_bar"`
+}
+
+type FooStructForAllFormPrecedence struct {
+	Count int `form:"count" binding:"required"`
 }
 
 func TestBindingDefault(t *testing.T) {
@@ -1426,6 +1437,172 @@ func testProtoBodyBindingFail(t *testing.T, b Binding, name, path, badPath, body
 	req.Header.Add("Content-Type", MIMEPROTOBUF)
 	err = ProtoBuf.Bind(req, &obj)
 	require.Error(t, err)
+}
+
+func TestBindingAll(t *testing.T) {
+	b := All
+	assert.Equal(t, "all", b.Name())
+}
+
+func TestBindingAllHeader(t *testing.T) {
+	b := All
+
+	type tHeader struct {
+		Limit int `header:"limit"`
+	}
+	var theader tHeader
+	req := requestWithBody(http.MethodGet, "/", "")
+	req.Header.Add("limit", "1000")
+	require.NoError(t, b.BindMany(req, nil, &theader))
+	assert.Equal(t, 1000, theader.Limit)
+
+	// fail case
+	type failStruct struct {
+		Fail map[string]any `header:"fail"`
+	}
+	req = requestWithBody(http.MethodGet, "/", "")
+	req.Header.Add("fail", `{fail:fail}`)
+	err := b.BindMany(req, nil, &failStruct{})
+	require.Error(t, err)
+}
+
+func TestBindingAllUri(t *testing.T) {
+	b := All
+
+	type Tag struct {
+		Name string `uri:"name"`
+	}
+	var tag Tag
+	req := requestWithBody(http.MethodGet, "/thinkerou", "")
+	m := map[string][]string{"name": {"thinkerou"}}
+	require.NoError(t, b.BindMany(req, m, &tag))
+	assert.Equal(t, "thinkerou", tag.Name)
+
+	// fail case
+	type NotSupportStruct struct {
+		Name map[string]any `uri:"name"`
+	}
+	var not NotSupportStruct
+	require.Error(t, b.BindMany(req, m, &not))
+	assert.Equal(t, map[string]any(nil), not.Name)
+}
+
+func TestBindingAllQuery(t *testing.T) {
+	b := All
+
+	obj := FooBarStruct{}
+	req := requestWithBody(http.MethodGet, "/?foo=bar&bar=foo", "")
+	err := b.BindMany(req, nil, &obj)
+	require.NoError(t, err)
+	assert.Equal(t, "bar", obj.Foo)
+	assert.Equal(t, "foo", obj.Bar)
+
+	// fail case
+	obj2 := FooStructForBoolType{}
+	req = requestWithBody(http.MethodGet, "/?bool_foo=fasl", "")
+	err = b.BindMany(req, nil, &obj2)
+	require.Error(t, err)
+
+	// fail case 2
+	obj3 := FooStructForBoolType{}
+	req = requestWithBody(http.MethodPost, "/?bool_foo=fasl", "{}")
+	req.Header.Set("Content-Type", MIMEJSON)
+	err = b.BindMany(req, nil, &obj3)
+	require.Error(t, err)
+}
+
+func TestBindingAllBody(t *testing.T) {
+	b := All
+
+	obj := FooStruct{}
+	req := requestWithBody(http.MethodPost, "/", `{"foo": "bar"}`)
+	req.Header.Set("Content-Type", MIMEJSON+"; charset=utf-8")
+	err := b.BindMany(req, nil, &obj)
+	require.NoError(t, err)
+	assert.Equal(t, "bar", obj.Foo)
+
+	// fail case
+	obj2 := FooStruct{}
+	req = requestWithBody(http.MethodPost, "/", `{"bar": "foo"}`)
+	req.Header.Set("Content-Type", MIMEJSON)
+	err = b.BindMany(req, nil, &obj2)
+	require.Error(t, err)
+}
+
+// TestBindingAllFormBodyOverridesInvalidQuery. Since req.ParseForm() reads body and query, invalid queries are replaced
+// by valid values in body
+func TestBindingAllFormBodyOverridesInvalidQuery(t *testing.T) {
+	b := All
+
+	obj := FooStructForAllFormPrecedence{}
+	req := requestWithBody(http.MethodPost, "/?count=invalid", "count=7")
+	req.Header.Set("Content-Type", MIMEPOSTForm)
+	err := b.BindMany(req, nil, &obj)
+	require.NoError(t, err)
+	assert.Equal(t, 7, obj.Count)
+}
+
+func TestBindingAllHeaderUriQueryBody(t *testing.T) {
+	b := All
+
+	obj := FooStructHeaderUriQueryBody{}
+	req := requestWithBody(http.MethodPost, "/?foo=true", `bar=spam`)
+	req.Header.Set("Limit", "100")
+	req.Header.Set("Content-Type", MIMEPOSTForm)
+	m := map[string][]string{"id": {"1234"}}
+	err := b.BindMany(req, m, &obj)
+	require.NoError(t, err)
+	assert.Equal(t, 100, obj.Limit)
+	assert.Equal(t, "1234", obj.ID)
+	assert.True(t, obj.Foo)
+	assert.Equal(t, "spam", obj.Bar)
+}
+
+func TestBindingAllHeaderUriQueryBody_FailWhenHeaderMissing(t *testing.T) {
+	b := All
+
+	obj := FooStructHeaderUriQueryBody{}
+	req := requestWithBody(http.MethodPost, "/?foo=true", `bar=spam`)
+	req.Header.Set("Content-Type", MIMEPOSTForm)
+	m := map[string][]string{"id": {"1234"}}
+	err := b.BindMany(req, m, &obj)
+	require.ErrorContains(t, err, "validation for 'Limit' failed")
+}
+
+func TestBindingAllHeaderUriQueryBody_FailWhenUriInvalid(t *testing.T) {
+	b := All
+
+	obj := FooStructHeaderUriQueryBody{}
+	req := requestWithBody(http.MethodPost, "/?foo=true", `bar=spam`)
+	req.Header.Set("Limit", "100")
+	req.Header.Set("Content-Type", MIMEPOSTForm)
+	m := map[string][]string{"id": {"123x"}}
+	err := b.BindMany(req, m, &obj)
+	require.ErrorContains(t, err, "validation for 'ID' failed on the 'numeric' tag")
+}
+
+func TestBindingAllHeaderUriQueryBody_FailWhenQueryMissing(t *testing.T) {
+	b := All
+
+	obj := FooStructHeaderUriQueryBody{}
+	req := requestWithBody(http.MethodPost, "/", `bar=spam`)
+	req.Header.Set("Limit", "100")
+	req.Header.Set("Content-Type", MIMEPOSTForm)
+	m := map[string][]string{"id": {"1234"}}
+	err := b.BindMany(req, m, &obj)
+	require.ErrorContains(t, err, "validation for 'Foo' failed")
+}
+
+func TestBindingAllHeaderUriQueryBody_FailWhenBodyMissing(t *testing.T) {
+	b := All
+
+	obj := FooStructHeaderUriQueryBody{}
+	req := requestWithBody(http.MethodPost, "/?foo=true", `xxx=spam`)
+	req.Header.Set("Limit", "100")
+	req.Header.Set("Content-Type", MIMEPOSTForm)
+	m := map[string][]string{"id": {"1234"}}
+	err := b.BindMany(req, m, &obj)
+	require.ErrorContains(t, err, "validation for 'Bar' failed")
 }
 
 func requestWithBody(method, path, body string) (req *http.Request) {
