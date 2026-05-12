@@ -154,6 +154,10 @@ type FooStructForMapPtrType struct {
 	PtrBar *map[string]any `form:"ptr_bar"`
 }
 
+type FooStructForAllFormPrecedence struct {
+	Count int `form:"count" binding:"required"`
+}
+
 func TestBindingDefault(t *testing.T) {
 	assert.Equal(t, Form, Default(http.MethodGet, ""))
 	assert.Equal(t, Form, Default(http.MethodGet, MIMEJSON))
@@ -1498,6 +1502,13 @@ func TestBindingAllQuery(t *testing.T) {
 	req = requestWithBody(http.MethodGet, "/?bool_foo=fasl", "")
 	err = b.BindMany(req, nil, &obj2)
 	require.Error(t, err)
+
+	// fail case 2
+	obj3 := FooStructForBoolType{}
+	req = requestWithBody(http.MethodPost, "/?bool_foo=fasl", "{}")
+	req.Header.Set("Content-Type", MIMEJSON)
+	err = b.BindMany(req, nil, &obj3)
+	require.Error(t, err)
 }
 
 func TestBindingAllBody(t *testing.T) {
@@ -1516,6 +1527,19 @@ func TestBindingAllBody(t *testing.T) {
 	req.Header.Set("Content-Type", MIMEJSON)
 	err = b.BindMany(req, nil, &obj2)
 	require.Error(t, err)
+}
+
+// TestBindingAllFormBodyOverridesInvalidQuery. Since req.ParseForm() reads body and query, invalid queries are replaced
+// by valid values in body
+func TestBindingAllFormBodyOverridesInvalidQuery(t *testing.T) {
+	b := All
+
+	obj := FooStructForAllFormPrecedence{}
+	req := requestWithBody(http.MethodPost, "/?count=invalid", "count=7")
+	req.Header.Set("Content-Type", MIMEPOSTForm)
+	err := b.BindMany(req, nil, &obj)
+	require.NoError(t, err)
+	assert.Equal(t, 7, obj.Count)
 }
 
 func TestBindingAllHeaderUriQueryBody(t *testing.T) {
