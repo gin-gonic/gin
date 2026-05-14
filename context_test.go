@@ -2107,6 +2107,31 @@ func TestContextClientIP(t *testing.T) {
 
 	c.engine.TrustedPlatform = ""
 
+	// Test non-standard X-Forwarded-For header content (issue #4572)
+	// IPv6 with brackets only
+	resetContextForClientIPTests(c)
+	_ = c.engine.SetTrustedProxies([]string{"40.40.40.40"})
+	c.Request.Header.Set("X-Forwarded-For", " [::1], 20.20.20.20, 30.30.30.30")
+	assert.Equal(t, "::1", c.ClientIP())
+
+	// IPv6 with brackets and port
+	resetContextForClientIPTests(c)
+	_ = c.engine.SetTrustedProxies([]string{"40.40.40.40"})
+	c.Request.Header.Set("X-Forwarded-For", "[2001:db8::1]:8080, 30.30.30.30")
+	assert.Equal(t, "2001:db8::1", c.ClientIP())
+
+	// IPv4 with port
+	resetContextForClientIPTests(c)
+	_ = c.engine.SetTrustedProxies([]string{"40.40.40.40", "30.30.30.30"})
+	c.Request.Header.Set("X-Forwarded-For", "20.20.20.20:8888, 30.30.30.30")
+	assert.Equal(t, "20.20.20.20", c.ClientIP())
+
+	// Mixed: IPv6 with brackets, IPv4 with port
+	resetContextForClientIPTests(c)
+	_ = c.engine.SetTrustedProxies([]string{"40.40.40.40", "30.30.30.30"})
+	c.Request.Header.Set("X-Forwarded-For", "[::1]:9999, 20.20.20.20:8080, 30.30.30.30")
+	assert.Equal(t, "::1", c.ClientIP())
+
 	// no port
 	c.Request.RemoteAddr = "50.50.50.50"
 	assert.Empty(t, c.ClientIP())
