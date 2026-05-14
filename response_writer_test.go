@@ -113,15 +113,12 @@ func TestResponseWriterHijack(t *testing.T) {
 	writer.reset(testWriter)
 	w := ResponseWriter(writer)
 
-	assert.Panics(t, func() {
-		_, _, err := w.Hijack()
-		require.NoError(t, err)
-	})
+	_, _, err := w.Hijack()
+	require.ErrorIs(t, err, errHijackNotSupported)
 	assert.True(t, w.Written())
 
-	assert.Panics(t, func() {
-		w.CloseNotify()
-	})
+	ch := w.CloseNotify()
+	assert.NotNil(t, ch)
 
 	w.Flush()
 }
@@ -314,4 +311,49 @@ func TestPusherWithoutPusher(t *testing.T) {
 
 	pusher := w.Pusher()
 	assert.Nil(t, pusher, "Expected pusher to be nil")
+}
+
+// mockCloseNotifier is an http.ResponseWriter that implements http.CloseNotifier.
+type mockCloseNotifier struct {
+	*httptest.ResponseRecorder
+}
+
+func (m *mockCloseNotifier) CloseNotify() <-chan bool {
+	return make(chan bool)
+}
+
+func TestCloseNotifyWithCloseNotifier(t *testing.T) {
+	rw := &mockCloseNotifier{ResponseRecorder: httptest.NewRecorder()}
+	w := &responseWriter{}
+	w.reset(rw)
+
+	ch := w.CloseNotify()
+	assert.NotNil(t, ch, "Expected CloseNotify channel to be non-nil")
+}
+
+func TestCloseNotifyWithoutCloseNotifier(t *testing.T) {
+	// httptest.NewRecorder does not implement http.CloseNotifier
+	rw := httptest.NewRecorder()
+	w := &responseWriter{}
+	w.reset(rw)
+
+	ch := w.CloseNotify()
+	assert.NotNil(t, ch, "Expected non-nil channel when CloseNotifier is not supported")
+	select {
+	case <-ch:
+		t.Fatal("channel should never fire when CloseNotifier is not supported")
+	default:
+	}
+}
+
+func TestHijackWithoutHijacker(t *testing.T) {
+	// httptest.NewRecorder does not implement http.Hijacker
+	rw := httptest.NewRecorder()
+	w := &responseWriter{}
+	w.reset(rw)
+
+	conn, buf, err := w.Hijack()
+	assert.Nil(t, conn)
+	assert.Nil(t, buf)
+	require.ErrorIs(t, err, errHijackNotSupported)
 }
