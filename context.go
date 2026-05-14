@@ -254,6 +254,22 @@ func (c *Context) Error(err error) *Error {
 		panic("err is nil")
 	}
 
+	// Unwrap errors.Join() created joinErr
+	type unwrapper interface {
+		Unwrap() []error
+	}
+	if joinErr, ok := err.(unwrapper); ok {
+		errs := joinErr.Unwrap()
+		if len(errs) > 0 {
+			// Recursively add each error from the joined errors
+			for _, e := range errs {
+				_ = c.Error(e)
+			}
+			// Return the last added error
+			return c.Errors.Last()
+		}
+	}
+
 	var parsedError *Error
 	ok := errors.As(err, &parsedError)
 	if !ok {
