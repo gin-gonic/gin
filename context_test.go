@@ -20,6 +20,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"runtime"
 	"strconv"
 	"strings"
 	"sync"
@@ -247,13 +248,15 @@ func TestSaveUploadedFileWithPermission(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, "permission_test", f.Filename)
 	var mode fs.FileMode = 0o755
-	require.NoError(t, c.SaveUploadedFile(f, "permission_test", mode))
-	t.Cleanup(func() {
-		assert.NoError(t, os.Remove("permission_test"))
-	})
-	info, err := os.Stat(filepath.Dir("permission_test"))
-	require.NoError(t, err)
-	assert.Equal(t, info.Mode().Perm(), mode)
+	tmpDir := t.TempDir()
+	newSubDir := filepath.Join(tmpDir, "newdir")
+	dst := filepath.Join(newSubDir, "permission_test")
+	require.NoError(t, c.SaveUploadedFile(f, dst, mode))
+	if runtime.GOOS != "windows" {
+		info, err := os.Stat(newSubDir)
+		require.NoError(t, err)
+		assert.Equal(t, mode, info.Mode().Perm())
+	}
 }
 
 func TestSaveUploadedFileWithPermissionFailed(t *testing.T) {
