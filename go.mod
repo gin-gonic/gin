@@ -9,7 +9,7 @@ require (
 	github.com/goccy/go-json v0.10.6
 	github.com/goccy/go-yaml v1.19.2
 	github.com/json-iterator/go v1.1.12
-	github.com/mattn/go-isatty v0.0.20
+	github.com/mattn/go-isatty v0.0.21
 	github.com/modern-go/reflect2 v1.0.2
 	github.com/pelletier/go-toml/v2 v2.2.4
 	github.com/quic-go/quic-go v0.59.0
