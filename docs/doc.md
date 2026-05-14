@@ -281,6 +281,23 @@ References issue [#774](https://github.com/gin-gonic/gin/issues/774) and detail 
 
 > The filename is always optional and must not be used blindly by the application: path information should be stripped, and conversion to the server file system rules should be done.
 
+If `dst` comes from user input, prefer constraining writes with `os.OpenRoot` and `SaveUploadedFileToRoot` so `..` traversal and symlink escapes cannot write outside your upload directory.
+
+`os.Root` is available in Go 1.25+.
+
+```go
+root, err := os.OpenRoot("./uploads")
+if err != nil {
+  log.Fatal(err)
+}
+defer root.Close()
+
+if err := c.SaveUploadedFileToRoot(file, dst, root); err != nil {
+  c.String(http.StatusBadRequest, "upload failed: %v", err)
+  return
+}
+```
+
 ```go
 func main() {
   router := gin.Default()
