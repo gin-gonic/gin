@@ -17,6 +17,7 @@ type Redirect struct {
 }
 
 // Render (Redirect) redirects the http request to new location and writes redirect response.
+// It panics if the status code is not a valid redirect status code (300-308, except 201).
 func (r Redirect) Render(w http.ResponseWriter) error {
 	if (r.Code < http.StatusMultipleChoices || r.Code > http.StatusPermanentRedirect) && r.Code != http.StatusCreated {
 		panic(fmt.Sprintf("Cannot redirect with status code %d", r.Code))
