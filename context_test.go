@@ -2112,6 +2112,44 @@ func TestContextClientIP(t *testing.T) {
 	assert.Empty(t, c.ClientIP())
 }
 
+func TestContextClientIPWithNonstandardXForwardedFor(t *testing.T) {
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	c.Request, _ = http.NewRequest(http.MethodGet, "/", nil)
+	c.engine.trustedCIDRs = defaultTrustedCIDRs
+	c.engine.ForwardedByClientIP = true
+	c.engine.RemoteIPHeaders = []string{"X-Forwarded-For"}
+	c.Request.RemoteAddr = "127.0.0.1:1234"
+
+	// IPv4 with port (e.g., IIS ARR with TCP port enabled)
+	c.Request.Header.Set("X-Forwarded-For", "192.168.8.39:38792")
+	assert.Equal(t, "192.168.8.39", c.ClientIP())
+
+	// IPv6 with brackets (e.g., IIS reverse proxy)
+	c.Request.Header.Set("X-Forwarded-For", "[240e:318:2f4a:de56::240]")
+	assert.Equal(t, "240e:318:2f4a:de56::240", c.ClientIP())
+
+	// IPv6 with brackets and port
+	c.Request.Header.Set("X-Forwarded-For", "[240e:318:2f4a:de56::240]:38792")
+	assert.Equal(t, "240e:318:2f4a:de56::240", c.ClientIP())
+
+	// Standard IPv4 still works
+	c.Request.Header.Set("X-Forwarded-For", "192.168.8.39")
+	assert.Equal(t, "192.168.8.39", c.ClientIP())
+
+	// Standard IPv6 still works
+	c.Request.Header.Set("X-Forwarded-For", "240e:318:2f4a:de56::240")
+	assert.Equal(t, "240e:318:2f4a:de56::240", c.ClientIP())
+
+	// Multiple IPs with non-standard format (mixed)
+	_ = c.engine.SetTrustedProxies([]string{"127.0.0.1", "30.30.30.30"})
+	c.Request.Header.Set("X-Forwarded-For", "192.168.8.39:38792, 30.30.30.30")
+	assert.Equal(t, "192.168.8.39", c.ClientIP())
+
+	// Multiple IPs with bracketed IPv6
+	c.Request.Header.Set("X-Forwarded-For", "[240e:318:2f4a:de56::240]:38792, 30.30.30.30")
+	assert.Equal(t, "240e:318:2f4a:de56::240", c.ClientIP())
+}
+
 func resetContextForClientIPTests(c *Context) {
 	c.Request.Header.Set("X-Real-IP", " 10.10.10.10  ")
 	c.Request.Header.Set("X-Forwarded-For", "  20.20.20.20, 30.30.30.30")

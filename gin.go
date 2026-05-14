@@ -488,7 +488,14 @@ func (engine *Engine) validateHeader(header string) (clientIP string, valid bool
 		ipStr := strings.TrimSpace(items[i])
 		ip := net.ParseIP(ipStr)
 		if ip == nil {
-			break
+			// Try to parse non-standard formats:
+			// - IPv4 with port: "192.168.1.1:8080"
+			// - IPv6 with brackets: "[::1]"
+			// - IPv6 with brackets and port: "[::1]:8080"
+			ip, ipStr = parseNonstandardIP(ipStr)
+			if ip == nil {
+				break
+			}
 		}
 
 		// X-Forwarded-For is appended by proxy
@@ -498,6 +505,36 @@ func (engine *Engine) validateHeader(header string) (clientIP string, valid bool
 		}
 	}
 	return "", false
+}
+
+// parseNonstandardIP parses non-standard IP formats commonly found in
+// X-Forwarded-For headers set by reverse proxies like IIS or cloud load balancers.
+// It handles:
+//   - IPv4 with port: "192.168.1.1:8080"
+//   - IPv6 with brackets: "[::1]"
+//   - IPv6 with brackets and port: "[::1]:8080"
+//
+// Returns the parsed net.IP and the clean IP string, or (nil, "") if parsing fails.
+func parseNonstandardIP(raw string) (net.IP, string) {
+	// Try net.SplitHostPort to handle "ip:port" and "[ip]:port" formats
+	host, _, err := net.SplitHostPort(raw)
+	if err == nil {
+		ip := net.ParseIP(host)
+		if ip != nil {
+			return ip, host
+		}
+	}
+
+	// Handle bare bracketed IPv6 without port: "[::1]"
+	if len(raw) > 2 && raw[0] == '[' && raw[len(raw)-1] == ']' {
+		host := raw[1 : len(raw)-1]
+		ip := net.ParseIP(host)
+		if ip != nil {
+			return ip, host
+		}
+	}
+
+	return nil, ""
 }
 
 // updateRouteTree do update to the route tree recursively
