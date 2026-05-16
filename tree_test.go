@@ -939,6 +939,40 @@ func TestTreeExpandParamsCapacity(t *testing.T) {
 	}
 }
 
+func TestTreeFindCaseInsensitivePathWithWildcardChildAndBufferedRune(t *testing.T) {
+	tree := &node{
+		path:      "/",
+		indices:   "x",
+		wildChild: true,
+		children: []*node{
+			{path: "x", handlers: fakeHandler("/x"), fullPath: "/x"},
+			{path: ":id", nType: param, handlers: fakeHandler("/:id"), fullPath: "/:id"},
+		},
+	}
+
+	out := tree.findCaseInsensitivePathRec("/x", nil, [4]byte{0, 'x'}, false)
+	if string(out) != "/x" {
+		t.Fatalf("Wrong result: got %s, want /x", string(out))
+	}
+}
+
+func TestTreeFindCaseInsensitivePathWithWildcardChildAndUppercaseStatic(t *testing.T) {
+	tree := &node{
+		path:      "/",
+		indices:   "A",
+		wildChild: true,
+		children: []*node{
+			{path: "A", handlers: fakeHandler("/A"), fullPath: "/A"},
+			{path: ":id", nType: param, handlers: fakeHandler("/:id"), fullPath: "/:id"},
+		},
+	}
+
+	out := tree.findCaseInsensitivePathRec("/a", nil, [4]byte{}, false)
+	if string(out) != "/A" {
+		t.Fatalf("Wrong result: got %s, want /A", string(out))
+	}
+}
+
 func TestTreeWildcardConflictEx(t *testing.T) {
 	conflicts := [...]struct {
 		route        string
