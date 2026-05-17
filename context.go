@@ -1053,7 +1053,6 @@ func (c *Context) IsWebsocket() bool {
 // Reference:
 // https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/X-Forwarded-Proto
 func (c *Context) Scheme() string {
-
 	if c.Request.TLS != nil {
 		return "https"
 	}
@@ -1069,11 +1068,9 @@ func (c *Context) Scheme() string {
 	if scheme := c.requestHeader("X-Url-Scheme"); scheme != "" {
 		return scheme
 	}
-
 	if scheme := c.Request.URL.Scheme; scheme != "" {
 		return scheme
 	}
-
 	return "http"
 }
 
