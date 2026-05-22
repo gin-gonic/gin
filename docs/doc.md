@@ -1879,6 +1879,36 @@ func main() {
 }
 ```
 
+### Server-Sent Events (SSE)
+
+Use `c.InitSSE()` to set the required headers, then `c.SSEvent()` + `c.Writer.Flush()` to push events:
+
+```go
+router.GET("/stream", func(c *gin.Context) {
+  c.InitSSE()
+  for i := range 5 {
+    c.SSEvent("message", gin.H{"count": i})
+    c.Writer.Flush()
+  }
+})
+```
+
+For a long-running stream that stops when the client disconnects, use `c.SSEStream()`:
+
+```go
+router.GET("/stream", func(c *gin.Context) {
+  i := 0
+  c.SSEStream(func(c *gin.Context) bool {
+    i++
+    c.SSEvent("message", gin.H{"count": i})
+    return i < 10 // return false to end the stream normally
+  })
+})
+```
+
+`SSEStream` returns `true` if the client disconnected mid-stream, `false` if the step
+function ended the stream by returning `false`.
+
 ### HTML rendering
 
 Using LoadHTMLGlob() or LoadHTMLFiles() or LoadHTMLFS()

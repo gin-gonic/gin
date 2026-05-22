@@ -1441,6 +1441,58 @@ func TestContextRenderSSE(t *testing.T) {
 	assert.Equal(t, strings.ReplaceAll(w.Body.String(), " ", ""), strings.ReplaceAll("event:float\ndata:1.5\n\nid:123\ndata:text\n\nevent:chat\ndata:{\"bar\":\"foo\",\"foo\":\"bar\"}\n\n", " ", ""))
 }
 
+func TestContextInitSSE(t *testing.T) {
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
+	c.Request, _ = http.NewRequest(http.MethodGet, "/", nil)
+
+	c.InitSSE()
+
+	assert.Equal(t, sse.ContentType, w.Header().Get("Content-Type"))
+	assert.Equal(t, "no-cache", w.Header().Get("Cache-Control"))
+	assert.Equal(t, "keep-alive", w.Header().Get("Connection"))
+	assert.Equal(t, http.StatusOK, w.Code)
+}
+
+func TestContextSSEStreamNormalEnd(t *testing.T) {
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
+	c.Request, _ = http.NewRequest(http.MethodGet, "/", nil)
+
+	count := 0
+	disconnected := c.SSEStream(func(c *Context) bool {
+		count++
+		c.SSEvent("ping", count)
+		return count < 3
+	})
+
+	assert.False(t, disconnected)
+	assert.Equal(t, 3, count)
+	assert.Equal(t, sse.ContentType, w.Header().Get("Content-Type"))
+	assert.Equal(t, "no-cache", w.Header().Get("Cache-Control"))
+	assert.Equal(t, "keep-alive", w.Header().Get("Connection"))
+	assert.Contains(t, w.Body.String(), "event:ping")
+}
+
+func TestContextSSEStreamClientDisconnect(t *testing.T) {
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	c.Request, _ = http.NewRequestWithContext(ctx, http.MethodGet, "/", nil)
+
+	// step cancels the context and returns true (keep streaming).
+	// On the next loop iteration SSEStream's outer select sees ctx.Done()
+	// is closed and returns true, indicating client disconnected.
+	result := c.SSEStream(func(c *Context) bool {
+		cancel() // simulate client disconnect
+		return true
+	})
+
+	assert.True(t, result)
+}
+
 func TestContextRenderFile(t *testing.T) {
 	w := httptest.NewRecorder()
 	c, _ := CreateTestContext(w)
@@ -3030,10 +3082,6 @@ func (r *TestResponseRecorder) CloseNotify() <-chan bool {
 	return r.closeChannel
 }
 
-func (r *TestResponseRecorder) closeClient() {
-	r.closeChannel <- true
-}
-
 func CreateTestResponseRecorder() *TestResponseRecorder {
 	return &TestResponseRecorder{
 		httptest.NewRecorder(),
@@ -3044,6 +3092,7 @@ func CreateTestResponseRecorder() *TestResponseRecorder {
 func TestContextStream(t *testing.T) {
 	w := CreateTestResponseRecorder()
 	c, _ := CreateTestContext(w)
+	c.Request, _ = http.NewRequest(http.MethodGet, "/", nil)
 
 	stopStream := true
 	c.Stream(func(w io.Writer) bool {
@@ -3064,17 +3113,21 @@ func TestContextStreamWithClientGone(t *testing.T) {
 	w := CreateTestResponseRecorder()
 	c, _ := CreateTestContext(w)
 
-	c.Stream(func(writer io.Writer) bool {
-		defer func() {
-			w.closeClient()
-		}()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	c.Request, _ = http.NewRequestWithContext(ctx, http.MethodGet, "/", nil)
 
+	// step cancels the context and returns true (keep streaming).
+	// On the next loop iteration Stream's outer select sees clientGone
+	// is closed and returns true, indicating client disconnected.
+	result := c.Stream(func(writer io.Writer) bool {
 		_, err := writer.Write([]byte("test"))
 		require.NoError(t, err)
-
+		cancel() // simulate client disconnect
 		return true
 	})
 
+	assert.True(t, result)
 	assert.Equal(t, "test", w.Body.String())
 }
 
