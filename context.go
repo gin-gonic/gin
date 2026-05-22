@@ -723,6 +723,16 @@ func dirExists(path string) bool {
 	return info.IsDir()
 }
 
+func ensureDirWithMode(dir string, mode fs.FileMode) error {
+	if dirExists(dir) {
+		return nil
+	}
+	if err := os.MkdirAll(dir, mode); err != nil {
+		return err
+	}
+	return os.Chmod(dir, mode)
+}
+
 // SaveUploadedFile uploads the form file to specific dst.
 func (c *Context) SaveUploadedFile(file *multipart.FileHeader, dst string, perm ...fs.FileMode) error {
 	src, err := file.Open()
@@ -736,16 +746,9 @@ func (c *Context) SaveUploadedFile(file *multipart.FileHeader, dst string, perm 
 		mode = perm[0]
 	}
 	dir := filepath.Dir(dst)
-	dirExisted := dirExists(dir)
-	if err = os.MkdirAll(dir, mode); err != nil {
-		return err
-	}
 	// Only chmod newly created directories. Attempting to chmod
 	// pre-existing directories (e.g. /tmp) may fail with EPERM.
-	if !dirExisted {
-		err = os.Chmod(dir, mode)
-	}
-	if err != nil {
+	if err = ensureDirWithMode(dir, mode); err != nil {
 		return err
 	}
 
