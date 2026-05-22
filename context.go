@@ -717,7 +717,10 @@ func (c *Context) MultipartForm() (*multipart.Form, error) {
 
 func dirExists(path string) bool {
 	info, err := os.Stat(path)
-	return err == nil && info.IsDir()
+	if err != nil {
+		return false
+	}
+	return info.IsDir()
 }
 
 // SaveUploadedFile uploads the form file to specific dst.
