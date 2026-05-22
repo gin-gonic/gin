@@ -740,9 +740,10 @@ func (c *Context) SaveUploadedFile(file *multipart.FileHeader, dst string, perm 
 	// Only chmod newly created directories. Attempting to chmod
 	// pre-existing directories (e.g. /tmp) may fail with EPERM.
 	if !dirExisted {
-		if err = os.Chmod(dir, mode); err != nil {
-			return err
-		}
+		err = os.Chmod(dir, mode)
+	}
+	if err != nil {
+		return err
 	}
 
 	out, err := os.Create(dst)
