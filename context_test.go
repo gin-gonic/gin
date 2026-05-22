@@ -260,6 +260,51 @@ func TestSaveUploadedFileWithPermission(t *testing.T) {
 	}
 }
 
+func TestDirExists(t *testing.T) {
+	tmpDir := t.TempDir()
+	assert.True(t, dirExists(tmpDir))
+	assert.False(t, dirExists(filepath.Join(tmpDir, "missing")))
+
+	filePath := filepath.Join(tmpDir, "file")
+	require.NoError(t, os.WriteFile(filePath, []byte("test"), 0o600))
+	assert.False(t, dirExists(filePath))
+}
+
+func TestSaveUploadedFileKeepsExistingDirPermission(t *testing.T) {
+	buf := new(bytes.Buffer)
+	mw := multipart.NewWriter(buf)
+	w, err := mw.CreateFormFile("file", "permission_test")
+	require.NoError(t, err)
+	_, err = w.Write([]byte("permission_test"))
+	require.NoError(t, err)
+	mw.Close()
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	c.Request, _ = http.NewRequest(http.MethodPost, "/", buf)
+	c.Request.Header.Set("Content-Type", mw.FormDataContentType())
+	f, err := c.FormFile("file")
+	require.NoError(t, err)
+
+	tmpDir := t.TempDir()
+	existingDir := filepath.Join(tmpDir, "existing")
+	require.NoError(t, os.Mkdir(existingDir, 0o700))
+	if runtime.GOOS != "windows" {
+		require.NoError(t, os.Chmod(existingDir, 0o700))
+	}
+
+	var mode fs.FileMode = 0o755
+	dst := filepath.Join(existingDir, "permission_test")
+	require.NoError(t, c.SaveUploadedFile(f, dst, mode))
+
+	saved, err := os.ReadFile(dst)
+	require.NoError(t, err)
+	assert.Equal(t, "permission_test", string(saved))
+	if runtime.GOOS != "windows" {
+		info, err := os.Stat(existingDir)
+		require.NoError(t, err)
+		assert.Equal(t, fs.FileMode(0o700), info.Mode().Perm())
+	}
+}
+
 func TestSaveUploadedFileWithPermissionFailed(t *testing.T) {
 	buf := new(bytes.Buffer)
 	mw := multipart.NewWriter(buf)
