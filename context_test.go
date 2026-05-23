@@ -2916,6 +2916,21 @@ func TestContextShouldBindBodyWithPlain(t *testing.T) {
 	}
 }
 
+func TestContextShouldBindBodyWithProtoBuf(t *testing.T) {
+	label := "FOO"
+	protoBody, err := proto.Marshal(&testdata.Test{Label: &label})
+	require.NoError(t, err)
+
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
+	c.Request = httptest.NewRequest(http.MethodPost, "/", bytes.NewReader(protoBody))
+
+	obj := testdata.Test{}
+	require.NoError(t, c.ShouldBindBodyWithProtoBuf(&obj))
+	require.NotNil(t, obj.Label)
+	assert.Equal(t, "FOO", *obj.Label)
+}
+
 func TestContextGolangContext(t *testing.T) {
 	c, _ := CreateTestContext(httptest.NewRecorder())
 	c.Request, _ = http.NewRequest(http.MethodPost, "/", strings.NewReader(`{"foo":"bar", "bar":"foo"}`))
