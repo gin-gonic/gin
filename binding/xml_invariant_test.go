@@ -108,11 +108,11 @@ func TestXMLBindingAdversarialInputs(t *testing.T) {
 <root attr="&e3;">value</root>`,
 		},
 		{
-			name: "malformed_xml",
+			name:    "malformed_xml",
 			payload: `<?xml version="1.0"?><root><unclosed><also_unclosed>text`,
 		},
 		{
-			name: "null_bytes",
+			name:    "null_bytes",
 			payload: "<?xml version=\"1.0\"?><root>\x00\x00\x00</root>",
 		},
 		{
@@ -140,7 +140,6 @@ func TestXMLBindingAdversarialInputs(t *testing.T) {
 	xmlBind := xmlBinding{}
 
 	for _, tc := range payloads {
-		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			// Measure baseline memory
 			var memBefore runtime.MemStats
