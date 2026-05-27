@@ -149,6 +149,141 @@ func TestContextFile(t *testing.T) {
 	})
 }
 
+// TestContextFileFromFS tests edge cases for Context.FileFromFS() method
+// Complements TestContextRenderFileFromFS by covering error cases and different HTTP methods
+func TestContextFileFromFS(t *testing.T) {
+	// Test serving a non-existent file returns 404
+	t.Run("non-existent file returns 404", func(t *testing.T) {
+		fs := http.Dir("testdata")
+
+		w := httptest.NewRecorder()
+		c, _ := CreateTestContext(w)
+		c.Request = httptest.NewRequest(http.MethodGet, "/test", nil)
+
+		c.FileFromFS("non_existent_file.txt", fs)
+
+		assert.Equal(t, http.StatusNotFound, w.Code)
+	})
+
+	// Test HEAD request handling
+	t.Run("HEAD request returns headers without body", func(t *testing.T) {
+		testFile := "test_file.txt"
+		fs := http.Dir("testdata")
+
+		w := httptest.NewRecorder()
+		c, _ := CreateTestContext(w)
+		c.Request = httptest.NewRequest(http.MethodHead, "/test", nil)
+
+		c.FileFromFS(testFile, fs)
+
+		assert.Equal(t, http.StatusOK, w.Code)
+		assert.Empty(t, w.Body.String())
+		assert.Equal(t, "text/plain; charset=utf-8", w.Header().Get("Content-Type"))
+	})
+
+	// Test directory access behavior
+	t.Run("directory access behavior", func(t *testing.T) {
+		fs := http.Dir(".")
+
+		w := httptest.NewRecorder()
+		c, _ := CreateTestContext(w)
+		c.Request = httptest.NewRequest(http.MethodGet, "/test", nil)
+
+		c.FileFromFS("testdata", fs)
+
+		// Directory serving behavior may vary: forbidden, redirect, or listing
+		assert.True(t, w.Code == http.StatusForbidden || w.Code == http.StatusMovedPermanently || w.Code == http.StatusOK)
+	})
+
+	// Test Range request support
+	t.Run("Range request support", func(t *testing.T) {
+		testFile := "test_file.txt"
+		fs := http.Dir("testdata")
+
+		w := httptest.NewRecorder()
+		c, _ := CreateTestContext(w)
+		c.Request = httptest.NewRequest(http.MethodGet, "/test", nil)
+		c.Request.Header.Set("Range", "bytes=0-10")
+
+		c.FileFromFS(testFile, fs)
+
+		assert.Equal(t, http.StatusPartialContent, w.Code)
+		assert.Equal(t, "bytes", w.Header().Get("Accept-Ranges"))
+		assert.Contains(t, w.Header().Get("Content-Range"), "bytes 0-10")
+	})
+}
+
+// TestContextFileAttachment tests edge cases for Context.FileAttachment() method
+// Complements TestContextRenderAttachment, TestContextRenderAndEscapeAttachment, and TestContextRenderUTF8Attachment
+// by covering error cases, different HTTP methods, and additional UTF-8 scenarios
+func TestContextFileAttachment(t *testing.T) {
+	// Test serving non-existent file returns 404
+	t.Run("non-existent file returns 404", func(t *testing.T) {
+		filename := "download.txt"
+
+		w := httptest.NewRecorder()
+		c, _ := CreateTestContext(w)
+		c.Request = httptest.NewRequest(http.MethodGet, "/test", nil)
+
+		c.FileAttachment("non_existent_file.txt", filename)
+
+		assert.Equal(t, http.StatusNotFound, w.Code)
+		assert.Equal(t, `attachment; filename="download.txt"`, w.Header().Get("Content-Disposition"))
+	})
+
+	// Test HEAD request returns headers without body
+	t.Run("HEAD request returns headers without body", func(t *testing.T) {
+		testFile := "testdata/test_file.txt"
+		filename := "download.txt"
+
+		w := httptest.NewRecorder()
+		c, _ := CreateTestContext(w)
+		c.Request = httptest.NewRequest(http.MethodHead, "/test", nil)
+
+		c.FileAttachment(testFile, filename)
+
+		assert.Equal(t, http.StatusOK, w.Code)
+		assert.Empty(t, w.Body.String())
+		assert.Equal(t, `attachment; filename="download.txt"`, w.Header().Get("Content-Disposition"))
+		assert.Equal(t, "text/plain; charset=utf-8", w.Header().Get("Content-Type"))
+	})
+
+	// Test Range request support
+	t.Run("Range request support", func(t *testing.T) {
+		testFile := "testdata/test_file.txt"
+		filename := "download.txt"
+
+		w := httptest.NewRecorder()
+		c, _ := CreateTestContext(w)
+		c.Request = httptest.NewRequest(http.MethodGet, "/test", nil)
+		c.Request.Header.Set("Range", "bytes=0-10")
+
+		c.FileAttachment(testFile, filename)
+
+		assert.Equal(t, http.StatusPartialContent, w.Code)
+		assert.Equal(t, `attachment; filename="download.txt"`, w.Header().Get("Content-Disposition"))
+		assert.Equal(t, "bytes", w.Header().Get("Accept-Ranges"))
+		assert.Contains(t, w.Header().Get("Content-Range"), "bytes 0-10")
+	})
+
+	// Test Chinese UTF-8 filename handling
+	t.Run("Chinese UTF-8 filename", func(t *testing.T) {
+		testFile := "testdata/test_file.txt"
+		filename := "中文文件名.txt"
+
+		w := httptest.NewRecorder()
+		c, _ := CreateTestContext(w)
+		c.Request = httptest.NewRequest(http.MethodGet, "/test", nil)
+
+		c.FileAttachment(testFile, filename)
+
+		assert.Equal(t, http.StatusOK, w.Code)
+		assert.Contains(t, w.Body.String(), "This is a test file")
+		assert.Contains(t, w.Header().Get("Content-Disposition"), "attachment; filename*=UTF-8''")
+		assert.Contains(t, w.Header().Get("Content-Disposition"), url.QueryEscape(filename))
+	})
+}
+
 func TestContextFormFile(t *testing.T) {
 	buf := new(bytes.Buffer)
 	mw := multipart.NewWriter(buf)
