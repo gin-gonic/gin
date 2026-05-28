@@ -619,8 +619,8 @@ func (c *Context) DefaultPostForm(key, defaultValue string) string {
 // For example, during a PATCH request to update the user's email:
 //
 //	    email=mail@example.com  -->  ("mail@example.com", true) := GetPostForm("email") // set email to "mail@example.com"
-//		   email=                  -->  ("", true) := GetPostForm("email") // set email to ""
-//	                            -->  ("", false) := GetPostForm("email") // do nothing with email
+//		email=                  -->  ("", true) := GetPostForm("email")                 // set email to ""
+//	                            -->  ("", false) := GetPostForm("email")                // do nothing with email
 func (c *Context) GetPostForm(key string) (string, bool) {
 	if values, ok := c.GetPostFormArray(key); ok {
 		return values[0], ok
