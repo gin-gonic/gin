@@ -114,12 +114,14 @@ func TestResponseWriterHijack(t *testing.T) {
 	w := ResponseWriter(writer)
 
 	// httptest.ResponseRecorder doesn't implement http.Hijacker; return
-	// http.ErrNotSupported instead of panicking (#4638).
+	// http.ErrNotSupported instead of panicking (#4638). On unsupported the
+	// writer state stays untouched so the handler can still emit a normal
+	// HTTP response as a fallback.
 	conn, buf, err := w.Hijack()
 	assert.Nil(t, conn)
 	assert.Nil(t, buf)
 	require.ErrorIs(t, err, http.ErrNotSupported)
-	assert.True(t, w.Written())
+	assert.False(t, w.Written())
 
 	// CloseNotify on a non-CloseNotifier returns nil instead of panicking.
 	assert.Nil(t, w.CloseNotify())
