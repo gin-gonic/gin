@@ -108,7 +108,7 @@ Gin enables `MsgPack` rendering feature by default. But you can disable this fea
 go build -tags=nomsgpack .
 ```
 
-This is useful to reduce the binary size of executable files. See the [detail information](https://github.com/gin-gonic/gin/pull/1852).
+This is useful to reduce the binary size of executable files. See the [detailed information](https://github.com/gin-gonic/gin/pull/1852).
 
 ## Routing
 
@@ -944,7 +944,7 @@ import (
   "github.com/go-playground/validator/v10"
 )
 
-// Booking contains binded and validated data.
+// Booking contains bound and validated data.
 type Booking struct {
   CheckIn  time.Time `form:"check_in" binding:"required,bookabledate" time_format:"2006-01-02"`
   CheckOut time.Time `form:"check_out" binding:"required,gtfield=CheckIn" time_format:"2006-01-02"`
@@ -998,7 +998,7 @@ See the [struct-lvl-validation example](https://github.com/gin-gonic/examples/tr
 
 ### Only Bind Query String
 
-`ShouldBindQuery` function only binds the query params and not the post data. See the [detail information](https://github.com/gin-gonic/gin/issues/742#issuecomment-315953017).
+`ShouldBindQuery` function only binds the query params and not the post data. See the [detailed information](https://github.com/gin-gonic/gin/issues/742#issuecomment-315953017).
 
 ```go
 package main
@@ -1035,7 +1035,7 @@ func startPage(c *gin.Context) {
 
 ### Bind Query String or Post Data
 
-See the [detail information](https://github.com/gin-gonic/gin/issues/742#issuecomment-264681292).
+See the [detailed information](https://github.com/gin-gonic/gin/issues/742#issuecomment-264681292).
 
 ```go
 package main
@@ -1191,7 +1191,7 @@ curl -X GET "localhost:8085/testing?name=appleboy&addresses=foo,bar&birthday=199
 
 ### Bind Uri
 
-See the [detail information](https://github.com/gin-gonic/gin/issues/846).
+See the [detailed information](https://github.com/gin-gonic/gin/issues/846).
 
 ```go
 package main
@@ -1379,7 +1379,7 @@ func main() {
 
 ### Bind HTML checkboxes
 
-See the [detail information](https://github.com/gin-gonic/gin/issues/129#issuecomment-124260092)
+See the [detailed information](https://github.com/gin-gonic/gin/issues/129#issuecomment-124260092)
 
 main.go
 
@@ -1469,7 +1469,7 @@ curl -X POST -v --form name=user --form "avatar=@./avatar.png" http://localhost:
 
 ### Bind form-data request with custom struct
 
-The follow example using custom struct:
+The following example uses a custom struct:
 
 ```go
 type StructA struct {
@@ -1530,7 +1530,7 @@ func main() {
 }
 ```
 
-Using the command `curl` command result:
+Using the `curl` command result:
 
 ```sh
 $ curl "http://localhost:8080/getb?field_a=hello&field_b=world"
@@ -1770,7 +1770,7 @@ func main() {
 
 #### AsciiJSON
 
-Using AsciiJSON to Generates ASCII-only JSON with escaped non-ASCII characters.
+Using AsciiJSON to Generate ASCII-only JSON with escaped non-ASCII characters.
 
 ```go
 func main() {
@@ -2413,7 +2413,7 @@ func main() {
 
 ### http2 server push
 
-http.Pusher is supported only **go1.8+**. See the [golang blog](https://go.dev/blog/h2push) for detail information.
+http.Pusher is supported only **go1.8+**. See the [golang blog](https://go.dev/blog/h2push) for detailed information.
 
 ```go
 package main
