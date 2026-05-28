@@ -26,6 +26,9 @@ const localhostIP = "127.0.0.1"
 const localhostIPv6 = "::1"
 
 // Bind is a helper function for given interface object and returns a Gin middleware.
+//
+// Bind panics if val is a pointer; pass the struct value directly
+// (e.g., Use: gin.Bind(Struct{}) instead of gin.Bind(&Struct{})).
 func Bind(val any) HandlerFunc {
 	value := reflect.ValueOf(val)
 	if value.Kind() == reflect.Ptr {
