@@ -14,9 +14,12 @@ import (
 // This is useful for tests that need to set up a new Gin engine instance
 // along with a context, for example, to test middleware that doesn't depend on
 // specific routes. The ResponseWriter `w` is used to initialize the context's writer.
-func CreateTestContext(w http.ResponseWriter) (c *Context, r *Engine) {
+func CreateTestContext(w http.ResponseWriter, opts ...func(c *Context)) (c *Context, r *Engine) {
 	r = New()
 	c = r.allocateContext(0)
+	for _, opt := range opts {
+		opt(c)
+	}
 	c.reset()
 	c.writermem.reset(w)
 	return
