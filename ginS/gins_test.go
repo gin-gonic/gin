@@ -244,3 +244,44 @@ func TestStaticFS(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, w.Code)
 }
+
+func TestLoadHTMLGlob(t *testing.T) {
+	assert.NotPanics(t, func() {
+		LoadHTMLGlob("../testdata/template/*.tmpl")
+	})
+	assert.NotNil(t, engine())
+}
+
+func TestLoadHTMLFiles(t *testing.T) {
+	assert.NotPanics(t, func() {
+		LoadHTMLFiles("../testdata/template/hello.tmpl", "../testdata/template/raw.tmpl")
+	})
+	assert.NotNil(t, engine())
+}
+
+func TestLoadHTMLFS(t *testing.T) {
+	assert.NotPanics(t, func() {
+		LoadHTMLFS(http.Dir("../testdata/template"), "*.tmpl")
+	})
+	assert.NotNil(t, engine())
+}
+
+func TestRunError(t *testing.T) {
+	err := Run("not-valid-address")
+	assert.Error(t, err)
+}
+
+func TestRunTLSError(t *testing.T) {
+	err := RunTLS(":0", "/nonexistent.cert", "/nonexistent.key")
+	assert.Error(t, err)
+}
+
+func TestRunUnixError(t *testing.T) {
+	err := RunUnix("/nonexistent/deep/path/gin-test.sock")
+	assert.Error(t, err)
+}
+
+func TestRunFdError(t *testing.T) {
+	err := RunFd(99999)
+	assert.Error(t, err)
+}

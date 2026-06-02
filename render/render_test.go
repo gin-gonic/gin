@@ -805,3 +805,14 @@ func TestRenderWriteError(t *testing.T) {
 	require.Error(t, err)
 	assert.Equal(t, "write error", err.Error())
 }
+
+func TestRedirectWriteContentType(t *testing.T) {
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest(http.MethodGet, "/", nil)
+	r := Redirect{Code: http.StatusFound, Request: req, Location: "/new"}
+	// WriteContentType is a no-op for Redirect; verify it doesn't panic
+	assert.NotPanics(t, func() {
+		r.WriteContentType(w)
+	})
+	assert.Empty(t, w.Header().Get("Content-Type"))
+}
