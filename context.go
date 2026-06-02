@@ -36,6 +36,7 @@ const (
 	MIMEPlain             = binding.MIMEPlain
 	MIMEPOSTForm          = binding.MIMEPOSTForm
 	MIMEMultipartPOSTForm = binding.MIMEMultipartPOSTForm
+	MIMEMultipartMixed    = binding.MIMEMultipartMixed
 	MIMEYAML              = binding.MIMEYAML
 	MIMEYAML2             = binding.MIMEYAML2
 	MIMETOML              = binding.MIMETOML
@@ -639,7 +640,7 @@ func (c *Context) initFormCache() {
 	if c.formCache == nil {
 		c.formCache = make(url.Values)
 		req := c.Request
-		if err := req.ParseMultipartForm(c.engine.MaxMultipartMemory); err != nil {
+		if err := parseMultipartForm(req, c.engine.MaxMultipartMemory); err != nil {
 			if !errors.Is(err, http.ErrNotMultipart) {
 				debugPrint("error on parse multipart form array: %v", err)
 			}
@@ -697,7 +698,7 @@ func getMapFromFormData(m map[string][]string, key string) (map[string]string, b
 // FormFile returns the first file for the provided form key.
 func (c *Context) FormFile(name string) (*multipart.FileHeader, error) {
 	if c.Request.MultipartForm == nil {
-		if err := c.Request.ParseMultipartForm(c.engine.MaxMultipartMemory); err != nil {
+		if err := parseMultipartForm(c.Request, c.engine.MaxMultipartMemory); err != nil {
 			return nil, err
 		}
 	}
@@ -711,7 +712,7 @@ func (c *Context) FormFile(name string) (*multipart.FileHeader, error) {
 
 // MultipartForm is the parsed multipart form, including file uploads.
 func (c *Context) MultipartForm() (*multipart.Form, error) {
-	err := c.Request.ParseMultipartForm(c.engine.MaxMultipartMemory)
+	err := parseMultipartForm(c.Request, c.engine.MaxMultipartMemory)
 	return c.Request.MultipartForm, err
 }
 
