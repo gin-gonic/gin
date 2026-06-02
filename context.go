@@ -1185,6 +1185,18 @@ func (c *Context) Render(code int, r render.Render) {
 		return
 	}
 
+	if c.Writer.Size() > 0 && IsDebugging() {
+		// Skip this warning when:
+		//   - status code is -1, which is used for special/streaming-style renders (including some
+		//     non-streaming helpers like redirects) where multiple writes are expected, and
+		//   - the renderer is an SSE event, since Server-Sent Events are sent as a stream.
+		if code != -1 {
+			if _, ok := r.(sse.Event); !ok {
+				debugPrint("[WARNING] Response body already written. Attempting to write again with status code %d", code)
+			}
+		}
+	}
+
 	if err := r.Render(c.Writer); err != nil {
 		// Pushing error to c.Errors
 		_ = c.Error(err)
