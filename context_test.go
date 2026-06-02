@@ -1452,6 +1452,7 @@ func TestContextInitSSE(t *testing.T) {
 	assert.Equal(t, "no-cache", w.Header().Get("Cache-Control"))
 	assert.Equal(t, "keep-alive", w.Header().Get("Connection"))
 	assert.Equal(t, http.StatusOK, w.Code)
+	assert.True(t, w.Flushed)
 }
 
 func TestContextSSEStreamNormalEnd(t *testing.T) {
@@ -1472,6 +1473,22 @@ func TestContextSSEStreamNormalEnd(t *testing.T) {
 	assert.Equal(t, "no-cache", w.Header().Get("Cache-Control"))
 	assert.Equal(t, "keep-alive", w.Header().Get("Connection"))
 	assert.Contains(t, w.Body.String(), "event:ping")
+}
+
+func TestContextSSEStreamNilRequest(t *testing.T) {
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
+	// c.Request is intentionally left nil to verify no panic
+
+	count := 0
+	assert.NotPanics(t, func() {
+		disconnected := c.SSEStream(func(c *Context) bool {
+			count++
+			return count < 2
+		})
+		assert.False(t, disconnected)
+	})
+	assert.Equal(t, 2, count)
 }
 
 func TestContextSSEStreamClientDisconnect(t *testing.T) {
@@ -3129,6 +3146,24 @@ func TestContextStreamWithClientGone(t *testing.T) {
 
 	assert.True(t, result)
 	assert.Equal(t, "test", w.Body.String())
+}
+
+func TestContextStreamNilRequest(t *testing.T) {
+	w := CreateTestResponseRecorder()
+	c, _ := CreateTestContext(w)
+	// c.Request is intentionally left nil to verify no panic
+
+	count := 0
+	assert.NotPanics(t, func() {
+		disconnected := c.Stream(func(writer io.Writer) bool {
+			count++
+			_, err := writer.Write([]byte("x"))
+			require.NoError(t, err)
+			return count < 2
+		})
+		assert.False(t, disconnected)
+	})
+	assert.Equal(t, 2, count)
 }
 
 func TestContextResetInHandler(t *testing.T) {

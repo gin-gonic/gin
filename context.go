@@ -1335,6 +1335,7 @@ func (c *Context) InitSSE() {
 	c.Writer.Header().Set("Cache-Control", "no-cache")
 	c.Writer.Header().Set("Connection", "keep-alive")
 	c.Writer.WriteHeaderNow()
+	c.Writer.Flush()
 }
 
 // SSEvent writes a Server-Sent Event into the body stream.
@@ -1377,10 +1378,13 @@ func (c *Context) SSEvent(name string, message any) {
 //	})
 func (c *Context) SSEStream(step func(c *Context) bool) bool {
 	c.InitSSE()
-	ctx := c.Request.Context()
+	var done <-chan struct{}
+	if c.Request != nil {
+		done = c.Request.Context().Done()
+	}
 	for {
 		select {
-		case <-ctx.Done():
+		case <-done:
 			return true
 		default:
 			if !step(c) {
@@ -1395,7 +1399,10 @@ func (c *Context) SSEStream(step func(c *Context) bool) bool {
 // indicates "Is client disconnected in middle of stream"
 func (c *Context) Stream(step func(w io.Writer) bool) bool {
 	w := c.Writer
-	clientGone := c.Request.Context().Done()
+	var clientGone <-chan struct{}
+	if c.Request != nil {
+		clientGone = c.Request.Context().Done()
+	}
 	for {
 		select {
 		case <-clientGone:
