@@ -1047,6 +1047,33 @@ func (c *Context) IsWebsocket() bool {
 	return false
 }
 
+// Scheme returns the HTTP scheme of the request ("http" or "https").
+// When running behind reverse proxies or load balancers `Request.URL.Scheme` is usually empty.
+// the original scheme is commonly forwarded via headers such as X-Forwarded-Proto.
+// Reference:
+// https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/X-Forwarded-Proto
+func (c *Context) Scheme() string {
+	if c.Request.TLS != nil {
+		return "https"
+	}
+	if scheme := c.requestHeader("X-Forwarded-Proto"); scheme != "" {
+		return scheme
+	}
+	if scheme := c.requestHeader("X-Forwarded-Protocol"); scheme != "" {
+		return scheme
+	}
+	if ssl := c.requestHeader("X-Forwarded-Ssl"); ssl == "on" {
+		return "https"
+	}
+	if scheme := c.requestHeader("X-Url-Scheme"); scheme != "" {
+		return scheme
+	}
+	if scheme := c.Request.URL.Scheme; scheme != "" {
+		return scheme
+	}
+	return "http"
+}
+
 func (c *Context) requestHeader(key string) string {
 	return c.Request.Header.Get(key)
 }
