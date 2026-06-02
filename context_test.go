@@ -1429,8 +1429,8 @@ func TestContextRenderMultipleJSON(t *testing.T) {
 	w := httptest.NewRecorder()
 	c, _ := CreateTestContext(w)
 
-	oldMode := os.Getenv("GIN_MODE")
-	defer os.Setenv("GIN_MODE", oldMode)
+	oldMode := Mode()
+	defer SetMode(oldMode)
 	SetMode(DebugMode)
 
 	output := captureOutput(t, func() {
@@ -1448,8 +1448,8 @@ func TestContextRenderMultipleSSE(t *testing.T) {
 	w := httptest.NewRecorder()
 	c, _ := CreateTestContext(w)
 
-	oldMode := os.Getenv("GIN_MODE")
-	defer os.Setenv("GIN_MODE", oldMode)
+	oldMode := Mode()
+	defer SetMode(oldMode)
 	SetMode(DebugMode)
 
 	output := captureOutput(t, func() {
