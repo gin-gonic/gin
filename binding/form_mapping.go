@@ -159,7 +159,8 @@ func tryToSetValue(value reflect.Value, field reflect.StructField, setter setter
 		opt, opts = head(opts, ",")
 
 		k, v := head(opt, "=")
-		if k == "default" {
+		switch k {
+		case "default":
 			setOpt.isDefaultExists = true
 			setOpt.defaultValue = v
 
@@ -170,7 +171,7 @@ func tryToSetValue(value reflect.Value, field reflect.StructField, setter setter
 					setOpt.defaultValue = strings.ReplaceAll(v, ";", ",")
 				}
 			}
-		} else if k == "parser" {
+		case "parser":
 			setOpt.parser = v
 		}
 	}
