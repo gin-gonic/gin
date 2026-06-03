@@ -10,6 +10,7 @@ import (
 	"html/template"
 	"net/http"
 	"unicode"
+	"unicode/utf16"
 
 	"github.com/gin-gonic/gin/codec/json"
 	"github.com/gin-gonic/gin/internal/bytesconv"
@@ -160,11 +161,17 @@ func (r AsciiJSON) Render(w http.ResponseWriter) error {
 	}
 
 	var buffer bytes.Buffer
-	escapeBuf := make([]byte, 0, 6) // Preallocate 6 bytes for Unicode escape sequences
+	escapeBuf := make([]byte, 0, 12) // Preallocate for a \uXXXX\uXXXX surrogate pair
 
 	for _, r := range bytesconv.BytesToString(ret) {
 		if r > unicode.MaxASCII {
-			escapeBuf = fmt.Appendf(escapeBuf[:0], "\\u%04x", r) // Reuse escapeBuf
+			if r > 0xFFFF {
+				// Non-BMP code points must be escaped as a UTF-16 surrogate pair.
+				r1, r2 := utf16.EncodeRune(r)
+				escapeBuf = fmt.Appendf(escapeBuf[:0], "\\u%04x\\u%04x", r1, r2)
+			} else {
+				escapeBuf = fmt.Appendf(escapeBuf[:0], "\\u%04x", r) // Reuse escapeBuf
+			}
 			buffer.Write(escapeBuf)
 		} else {
 			buffer.WriteByte(byte(r))
