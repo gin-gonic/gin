@@ -9,7 +9,6 @@ We welcome both issue reports and pull requests! Please follow these guidelines 
   - Review existing issues and provide feedback or react to them.
   - Use English for all communications — it is the language all maintainers read and write.
   - For questions, configuration or deployment problems, please use the [Discussions Forum](https://github.com/gin-gonic/gin/discussions).
-  - For bug reports involving sensitive security issues, email <appleboy.tw@gmail.com> instead of posting publicly.
 
 - **Reporting a bug:**
   - Please provide a clear description of your issue, and a minimal reproducible code example if possible.
