@@ -122,6 +122,13 @@ type Engine struct {
 	// handler.
 	HandleMethodNotAllowed bool
 
+	// SkipMethodNotAllowedMiddleware if enabled, global middleware registered via Use()
+	// will not be executed for 405 Method Not Allowed responses. This allows
+	// NoMethod handlers to run without triggering middleware that may reject
+	// the request (e.g., authentication, checksum validation) before the 405
+	// response can be sent.
+	SkipMethodNotAllowedMiddleware bool
+
 	// ForwardedByClientIP if enabled, client IP will be parsed from the request's headers that
 	// match those stored at `(*gin.Engine).RemoteIPHeaders`. If no IP was
 	// fetched, it falls back to the IP obtained from
@@ -358,6 +365,10 @@ func (engine *Engine) rebuild404Handlers() {
 }
 
 func (engine *Engine) rebuild405Handlers() {
+	if engine.SkipMethodNotAllowedMiddleware {
+		engine.allNoMethod = engine.noMethod
+		return
+	}
 	engine.allNoMethod = engine.combineHandlers(engine.noMethod)
 }
 
