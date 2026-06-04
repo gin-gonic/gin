@@ -7,6 +7,7 @@ package gin
 import (
 	"bytes"
 	"context"
+	"crypto/tls"
 	"errors"
 	"fmt"
 	"html/template"
@@ -3022,6 +3023,65 @@ func TestWebsocketsRequired(t *testing.T) {
 	c.Request.Header.Set("Host", "server.example.com")
 
 	assert.False(t, c.IsWebsocket())
+}
+
+func TestContextScheme(t *testing.T) {
+	// TLS connection takes highest priority.
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	c.Request, _ = http.NewRequest(http.MethodGet, "/", nil)
+	c.Request.TLS = &tls.ConnectionState{}
+	assert.Equal(t, "https", c.Scheme())
+
+	// X-Forwarded-Proto header.
+	c, _ = CreateTestContext(httptest.NewRecorder())
+	c.Request, _ = http.NewRequest(http.MethodGet, "/", nil)
+	c.Request.Header.Set("X-Forwarded-Proto", "https")
+	assert.Equal(t, "https", c.Scheme())
+
+	c, _ = CreateTestContext(httptest.NewRecorder())
+	c.Request, _ = http.NewRequest(http.MethodGet, "/", nil)
+	c.Request.Header.Set("X-Forwarded-Proto", "http")
+	assert.Equal(t, "http", c.Scheme())
+
+	// X-Forwarded-Protocol header.
+	c, _ = CreateTestContext(httptest.NewRecorder())
+	c.Request, _ = http.NewRequest(http.MethodGet, "/", nil)
+	c.Request.Header.Set("X-Forwarded-Protocol", "https")
+	assert.Equal(t, "https", c.Scheme())
+
+	// X-Forwarded-Ssl: on header.
+	c, _ = CreateTestContext(httptest.NewRecorder())
+	c.Request, _ = http.NewRequest(http.MethodGet, "/", nil)
+	c.Request.Header.Set("X-Forwarded-Ssl", "on")
+	assert.Equal(t, "https", c.Scheme())
+
+	c, _ = CreateTestContext(httptest.NewRecorder())
+	c.Request, _ = http.NewRequest(http.MethodGet, "/", nil)
+	c.Request.Header.Set("X-Forwarded-Ssl", "off")
+	assert.Equal(t, "http", c.Scheme())
+
+	// X-Url-Scheme header.
+	c, _ = CreateTestContext(httptest.NewRecorder())
+	c.Request, _ = http.NewRequest(http.MethodGet, "/", nil)
+	c.Request.Header.Set("X-Url-Scheme", "https")
+	assert.Equal(t, "https", c.Scheme())
+
+	// Request.URL.Scheme fallback.
+	c, _ = CreateTestContext(httptest.NewRecorder())
+	c.Request, _ = http.NewRequest(http.MethodGet, "https://example.com/", nil)
+	assert.Equal(t, "https", c.Scheme())
+
+	// Default fallback: plain http.
+	c, _ = CreateTestContext(httptest.NewRecorder())
+	c.Request, _ = http.NewRequest(http.MethodGet, "/", nil)
+	assert.Equal(t, "http", c.Scheme())
+
+	// TLS takes priority over X-Forwarded-Proto.
+	c, _ = CreateTestContext(httptest.NewRecorder())
+	c.Request, _ = http.NewRequest(http.MethodGet, "/", nil)
+	c.Request.TLS = &tls.ConnectionState{}
+	c.Request.Header.Set("X-Forwarded-Proto", "http")
+	assert.Equal(t, "https", c.Scheme())
 }
 
 func TestGetRequestHeaderValue(t *testing.T) {

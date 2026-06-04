@@ -619,8 +619,8 @@ func (c *Context) DefaultPostForm(key, defaultValue string) string {
 // For example, during a PATCH request to update the user's email:
 //
 //	    email=mail@example.com  -->  ("mail@example.com", true) := GetPostForm("email") // set email to "mail@example.com"
-//		   email=                  -->  ("", true) := GetPostForm("email") // set email to ""
-//	                            -->  ("", false) := GetPostForm("email") // do nothing with email
+//		email=                  -->  ("", true) := GetPostForm("email")                 // set email to ""
+//	                            -->  ("", false) := GetPostForm("email")                // do nothing with email
 func (c *Context) GetPostForm(key string) (string, bool) {
 	if values, ok := c.GetPostFormArray(key); ok {
 		return values[0], ok
@@ -1045,6 +1045,33 @@ func (c *Context) IsWebsocket() bool {
 		return true
 	}
 	return false
+}
+
+// Scheme returns the HTTP scheme of the request ("http" or "https").
+// When running behind reverse proxies or load balancers `Request.URL.Scheme` is usually empty.
+// the original scheme is commonly forwarded via headers such as X-Forwarded-Proto.
+// Reference:
+// https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/X-Forwarded-Proto
+func (c *Context) Scheme() string {
+	if c.Request.TLS != nil {
+		return "https"
+	}
+	if scheme := c.requestHeader("X-Forwarded-Proto"); scheme != "" {
+		return scheme
+	}
+	if scheme := c.requestHeader("X-Forwarded-Protocol"); scheme != "" {
+		return scheme
+	}
+	if ssl := c.requestHeader("X-Forwarded-Ssl"); ssl == "on" {
+		return "https"
+	}
+	if scheme := c.requestHeader("X-Url-Scheme"); scheme != "" {
+		return scheme
+	}
+	if scheme := c.Request.URL.Scheme; scheme != "" {
+		return scheme
+	}
+	return "http"
 }
 
 func (c *Context) requestHeader(key string) string {
