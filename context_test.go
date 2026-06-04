@@ -247,14 +247,19 @@ func TestSaveUploadedFileWithPermission(t *testing.T) {
 	f, err := c.FormFile("file")
 	require.NoError(t, err)
 	assert.Equal(t, "permission_test", f.Filename)
+
+	// Save into a not-yet-existing subdirectory so the requested mode is
+	// applied by MkdirAll/Chmod and the assertion is independent of the
+	// test runner's working-directory permissions.
+	parent := t.TempDir()
+	newDir := filepath.Join(parent, "perm_subdir")
+	dst := filepath.Join(newDir, "permission_test")
+
 	var mode fs.FileMode = 0o755
-	require.NoError(t, c.SaveUploadedFile(f, "permission_test", mode))
-	t.Cleanup(func() {
-		assert.NoError(t, os.Remove("permission_test"))
-	})
-	info, err := os.Stat(filepath.Dir("permission_test"))
+	require.NoError(t, c.SaveUploadedFile(f, dst, mode))
+	info, err := os.Stat(newDir)
 	require.NoError(t, err)
-	assert.Equal(t, info.Mode().Perm(), mode)
+	assert.Equal(t, mode, info.Mode().Perm())
 }
 
 func TestSaveUploadedFileWithPermissionFailed(t *testing.T) {
@@ -273,6 +278,39 @@ func TestSaveUploadedFileWithPermissionFailed(t *testing.T) {
 	assert.Equal(t, "permission_test", f.Filename)
 	var mode fs.FileMode = 0o644
 	require.Error(t, c.SaveUploadedFile(f, "test/permission_test", mode))
+}
+
+// TestSaveUploadedFileExistingDir verifies that SaveUploadedFile does not
+// alter permissions on a pre-existing target directory (regression test for
+// #4622, where chmod on a system dir like /tmp would fail).
+func TestSaveUploadedFileExistingDir(t *testing.T) {
+	buf := new(bytes.Buffer)
+	mw := multipart.NewWriter(buf)
+	w, err := mw.CreateFormFile("file", "existing_dir_test")
+	require.NoError(t, err)
+	_, err = w.Write([]byte("existing_dir_test"))
+	require.NoError(t, err)
+	mw.Close()
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	c.Request, _ = http.NewRequest(http.MethodPost, "/", buf)
+	c.Request.Header.Set("Content-Type", mw.FormDataContentType())
+	f, err := c.FormFile("file")
+	require.NoError(t, err)
+
+	// Create a target directory with a non-default permission and
+	// confirm SaveUploadedFile leaves the existing perm untouched.
+	dir := t.TempDir()
+	var existingPerm fs.FileMode = 0o700
+	require.NoError(t, os.Chmod(dir, existingPerm))
+
+	dst := filepath.Join(dir, "existing_dir_test")
+	var mode fs.FileMode = 0o755
+	require.NoError(t, c.SaveUploadedFile(f, dst, mode))
+
+	info, err := os.Stat(dir)
+	require.NoError(t, err)
+	assert.Equal(t, existingPerm, info.Mode().Perm(),
+		"existing directory permissions must not be modified")
 }
 
 func TestContextReset(t *testing.T) {
