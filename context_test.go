@@ -688,6 +688,50 @@ func TestContextCopy(t *testing.T) {
 	assert.Equal(t, cp.fullPath, c.fullPath)
 }
 
+func TestContextCopyCopiesErrors(t *testing.T) {
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	c.Request, _ = http.NewRequest(http.MethodGet, "/", nil)
+	_ = c.Error(errors.New("first error"))
+	_ = c.Error(errors.New("second error"))
+
+	cp := c.Copy()
+
+	// copied context has the same errors
+	assert.Equal(t, len(c.Errors), len(cp.Errors))
+	assert.Equal(t, c.Errors[0].Error(), cp.Errors[0].Error())
+	assert.Equal(t, c.Errors[1].Error(), cp.Errors[1].Error())
+
+	// mutations on the copy do not affect the original
+	_ = cp.Error(errors.New("third error"))
+	assert.Len(t, c.Errors, 2)
+	assert.Len(t, cp.Errors, 3)
+}
+
+func TestContextCopyCopiesAccepted(t *testing.T) {
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	c.Request, _ = http.NewRequest(http.MethodGet, "/", nil)
+	c.SetAccepted("application/json", "text/html")
+
+	cp := c.Copy()
+
+	assert.Equal(t, c.Accepted, cp.Accepted)
+
+	// mutations on the copy do not affect the original
+	cp.SetAccepted("text/plain")
+	assert.Equal(t, []string{"application/json", "text/html"}, c.Accepted)
+	assert.Equal(t, []string{"text/plain"}, cp.Accepted)
+}
+
+func TestContextCopyNilErrorsAndAccepted(t *testing.T) {
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	c.Request, _ = http.NewRequest(http.MethodGet, "/", nil)
+
+	cp := c.Copy()
+
+	assert.Nil(t, cp.Errors)
+	assert.Nil(t, cp.Accepted)
+}
+
 func TestContextHandlerName(t *testing.T) {
 	c, _ := CreateTestContext(httptest.NewRecorder())
 	c.handlers = HandlersChain{func(c *Context) {}, handlerNameTest}
