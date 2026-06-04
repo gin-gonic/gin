@@ -697,7 +697,7 @@ func TestContextCopyCopiesErrors(t *testing.T) {
 	cp := c.Copy()
 
 	// copied context has the same errors
-	assert.Equal(t, len(c.Errors), len(cp.Errors))
+	assert.Len(t, cp.Errors, 2)
 	assert.Equal(t, c.Errors[0].Error(), cp.Errors[0].Error())
 	assert.Equal(t, c.Errors[1].Error(), cp.Errors[1].Error())
 
