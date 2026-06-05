@@ -1342,7 +1342,34 @@ func (c *Context) FileAttachment(filepath, filename string) {
 	http.ServeFile(c.Writer, c.Request, filepath)
 }
 
+// InitSSE prepares the response for a Server-Sent Events stream by setting the
+// required HTTP headers: Content-Type is set to "text/event-stream",
+// Cache-Control to "no-cache", and Connection to "keep-alive".
+// The headers are flushed to the client immediately so that the browser opens
+// the stream before the first event is sent.
+//
+// Call this once at the beginning of your SSE handler, before any SSEvent call:
+//
+//	router.GET("/stream", func(c *gin.Context) {
+//	    c.InitSSE()
+//	    for i := range 5 {
+//	        c.SSEvent("message", i)
+//	        c.Writer.Flush()
+//	    }
+//	})
+func (c *Context) InitSSE() {
+	c.Writer.Header().Set("Content-Type", sse.ContentType)
+	c.Writer.Header().Set("Cache-Control", "no-cache")
+	c.Writer.Header().Set("Connection", "keep-alive")
+	c.Writer.WriteHeaderNow()
+	c.Writer.Flush()
+}
+
 // SSEvent writes a Server-Sent Event into the body stream.
+// It sets Content-Type and Cache-Control headers on the first call if they have
+// not already been set (e.g. by InitSSE). The writer is NOT flushed automatically;
+// call c.Writer.Flush() after each event to push it to the client immediately.
+// To include the optional id or retry fields use c.Render(-1, sse.Event{…}) directly.
 func (c *Context) SSEvent(name string, message any) {
 	c.Render(-1, sse.Event{
 		Event: name,
@@ -1350,11 +1377,59 @@ func (c *Context) SSEvent(name string, message any) {
 	})
 }
 
+// SSEStream initializes an SSE response and calls step in a loop to send events
+// until either the client disconnects or step returns false.
+//
+// It returns true when the client disconnected (c.Request.Context() was cancelled)
+// and false when step returned false (normal end-of-stream).
+//
+// The writer is flushed automatically after every successful step call.
+// step receives the current Context so it can call c.SSEvent, c.Render, or
+// inspect c.Request.Context().Done() for its own blocking select:
+//
+//	router.GET("/events", func(c *gin.Context) {
+//	    ch := make(chan string)
+//	    go produce(ch)
+//	    c.SSEStream(func(c *gin.Context) bool {
+//	        select {
+//	        case msg, ok := <-ch:
+//	            if !ok {
+//	                return false      // channel closed → end stream normally
+//	            }
+//	            c.SSEvent("message", msg)
+//	            return true
+//	        case <-c.Request.Context().Done():
+//	            return false          // client gone → end stream
+//	        }
+//	    })
+//	})
+func (c *Context) SSEStream(step func(c *Context) bool) bool {
+	c.InitSSE()
+	var done <-chan struct{}
+	if c.Request != nil {
+		done = c.Request.Context().Done()
+	}
+	for {
+		select {
+		case <-done:
+			return true
+		default:
+			if !step(c) {
+				return false
+			}
+			c.Writer.Flush()
+		}
+	}
+}
+
 // Stream sends a streaming response and returns a boolean
 // indicates "Is client disconnected in middle of stream"
 func (c *Context) Stream(step func(w io.Writer) bool) bool {
 	w := c.Writer
-	clientGone := w.CloseNotify()
+	var clientGone <-chan struct{}
+	if c.Request != nil {
+		clientGone = c.Request.Context().Done()
+	}
 	for {
 		select {
 		case <-clientGone:

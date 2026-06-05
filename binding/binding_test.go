@@ -1432,3 +1432,23 @@ func requestWithBody(method, path, body string) (req *http.Request) {
 	req, _ = http.NewRequest(method, path, bytes.NewBufferString(body))
 	return
 }
+
+func TestPlainBindingBody(t *testing.T) {
+	p := Plain
+
+	var s string
+	require.NoError(t, p.BindBody([]byte("hello body"), &s))
+	assert.Equal(t, "hello body", s)
+
+	var bs []byte
+	require.NoError(t, p.BindBody([]byte("bytes body"), &bs))
+	assert.Equal(t, []byte("bytes body"), bs)
+
+	var i int
+	require.Error(t, p.BindBody([]byte("fail"), &i))
+
+	require.NoError(t, p.BindBody([]byte(""), nil))
+
+	var ptr *string
+	require.NoError(t, p.BindBody([]byte(""), ptr))
+}
