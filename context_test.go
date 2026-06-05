@@ -3992,7 +3992,13 @@ func TestWildcardParamUnicodeConcurrency(t *testing.T) {
 		go func() {
 			defer wg.Done()
 			for _, p := range paths {
-				req, _ := http.NewRequest(http.MethodGet, p, nil)
+				req, err := http.NewRequest(http.MethodGet, p, nil)
+				if err != nil {
+					mu.Lock()
+					errs = append(errs, "failed to create request: " + err.Error())
+					mu.Unlock()
+					continue
+				}
 				w := httptest.NewRecorder()
 				router.ServeHTTP(w, req)
 
