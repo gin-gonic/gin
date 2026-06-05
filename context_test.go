@@ -3868,3 +3868,38 @@ func BenchmarkGetMapFromFormData(b *testing.B) {
 		})
 	}
 }
+
+func TestWildcardParamUnicodeConcurrency(t *testing.T) {
+	router := New()
+	
+	router.GET("/user/:name", func(c *Context) {
+		name := c.Param("name")
+		assert.NotEmpty(t, name)
+	})
+	
+	router.GET("/files/*filepath", func(c *Context) {
+		filepath := c.Param("filepath")
+		assert.NotEmpty(t, filepath)
+	})
+
+	var wg sync.WaitGroup
+	paths := []string{
+		"/user/जयेश",
+		"/files/🎉/photo.png",
+		"/user/こんにちは",
+	}
+
+	for i := 0; i < 20; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for _, p := range paths {
+				req, _ := http.NewRequest(http.MethodGet, p, nil)
+				w := httptest.NewRecorder()
+				router.ServeHTTP(w, req)
+				assert.Equal(t, http.StatusOK, w.Code)
+			}
+		}()
+	}
+	wg.Wait()
+}
