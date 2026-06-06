@@ -728,11 +728,18 @@ func (c *Context) SaveUploadedFile(file *multipart.FileHeader, dst string, perm 
 		mode = perm[0]
 	}
 	dir := filepath.Dir(dst)
-	if err = os.MkdirAll(dir, mode); err != nil {
-		return err
-	}
-	if err = os.Chmod(dir, mode); err != nil {
-		return err
+	if dir != "." {
+		if _, err = os.Stat(dir); err != nil {
+			if !errors.Is(err, fs.ErrNotExist) {
+				return err
+			}
+			if err = os.MkdirAll(dir, mode); err != nil {
+				return err
+			}
+			if err = os.Chmod(dir, mode); err != nil {
+				return err
+			}
+		}
 	}
 
 	out, err := os.Create(dst)
