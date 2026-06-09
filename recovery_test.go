@@ -5,6 +5,7 @@
 package gin
 
 import (
+	"errors"
 	"net"
 	"net/http"
 	"os"
@@ -150,6 +151,48 @@ func TestPanicWithAbortHandler(t *testing.T) {
 	out := buf.String()
 	assert.Contains(t, out, "net/http: abort Handler")
 	assert.NotContains(t, out, "panic recovered")
+}
+
+func TestPanicInHandlerRecordsError(t *testing.T) {
+	tests := []struct {
+		name         string
+		recoveredErr any
+		expectedErr  string
+	}{
+		{
+			name:         "string panic",
+			recoveredErr: "Oops, Houston, we have a problem",
+			expectedErr:  "Oops, Houston, we have a problem",
+		},
+		{
+			name:         "error panic",
+			recoveredErr: errors.New("recovered error"),
+			expectedErr:  "recovered error",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			router := New()
+
+			var recoveredErrors errorMsgs
+			router.Use(func(c *Context) {
+				c.Next()
+				recoveredErrors = c.Errors
+			})
+			router.Use(RecoveryWithWriter(nil))
+			router.GET("/recovery", func(_ *Context) {
+				panic(tt.recoveredErr)
+			})
+
+			w := PerformRequest(router, http.MethodGet, "/recovery")
+
+			assert.Equal(t, http.StatusInternalServerError, w.Code)
+			if assert.Len(t, recoveredErrors, 1) {
+				assert.EqualError(t, recoveredErrors[0], tt.expectedErr)
+			}
+		})
+	}
 }
 
 func TestCustomRecoveryWithWriter(t *testing.T) {
