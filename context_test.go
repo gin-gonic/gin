@@ -275,6 +275,40 @@ func TestSaveUploadedFileWithPermissionFailed(t *testing.T) {
 	require.Error(t, c.SaveUploadedFile(f, "test/permission_test", mode))
 }
 
+// TestSaveUploadedFileToExistingDir is a regression test for issue #4622.
+// SaveUploadedFile must not call os.Chmod on a directory that already exists,
+// because the process may not own it (e.g. /tmp on Linux/macOS).
+func TestSaveUploadedFileToExistingDir(t *testing.T) {
+	buf := new(bytes.Buffer)
+	mw := multipart.NewWriter(buf)
+	w, err := mw.CreateFormFile("file", "existing_dir_test")
+	require.NoError(t, err)
+	_, err = w.Write([]byte("existing_dir_test"))
+	require.NoError(t, err)
+	mw.Close()
+
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	c.Request, _ = http.NewRequest(http.MethodPost, "/", buf)
+	c.Request.Header.Set("Content-Type", mw.FormDataContentType())
+	f, err := c.FormFile("file")
+	require.NoError(t, err)
+
+	// Use os.TempDir() which is guaranteed to already exist and may not be
+	// owned by the current process — this is exactly the scenario from #4622.
+	dst := filepath.Join(os.TempDir(), "gin_save_uploaded_regression_test.txt")
+	t.Cleanup(func() {
+		_ = os.Remove(dst)
+	})
+
+	// Must not fail with "chmod ...: operation not permitted"
+	require.NoError(t, c.SaveUploadedFile(f, dst))
+
+	// Verify the file was actually written with correct content
+	content, err := os.ReadFile(dst)
+	require.NoError(t, err)
+	assert.Equal(t, "existing_dir_test", string(content))
+}
+
 func TestContextReset(t *testing.T) {
 	router := New()
 	c := router.allocateContext(0)

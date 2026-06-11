@@ -716,6 +716,10 @@ func (c *Context) MultipartForm() (*multipart.Form, error) {
 }
 
 // SaveUploadedFile uploads the form file to specific dst.
+// An optional perm argument allows specifying the permission bits for any
+// newly created directories. If not provided, the default is 0750.
+// Note: permissions are only applied to directories created by this call;
+// pre-existing directories (e.g. /tmp) are not modified.
 func (c *Context) SaveUploadedFile(file *multipart.FileHeader, dst string, perm ...fs.FileMode) error {
 	src, err := file.Open()
 	if err != nil {
@@ -728,11 +732,20 @@ func (c *Context) SaveUploadedFile(file *multipart.FileHeader, dst string, perm 
 		mode = perm[0]
 	}
 	dir := filepath.Dir(dst)
+	// Check if the directory already exists before calling MkdirAll so we
+	// know whether to apply chmod. We must not chmod pre-existing directories
+	// (e.g. /tmp) because the process may not own them.
+	_, statErr := os.Stat(dir)
 	if err = os.MkdirAll(dir, mode); err != nil {
 		return err
 	}
-	if err = os.Chmod(dir, mode); err != nil {
-		return err
+	// Only apply chmod when the directory was freshly created by MkdirAll.
+	// If the directory already existed, os.Stat returned nil, so we skip
+	// the chmod to avoid "operation not permitted" on unowned directories.
+	if errors.Is(statErr, os.ErrNotExist) {
+		if err = os.Chmod(dir, mode); err != nil {
+			return err
+		}
 	}
 
 	out, err := os.Create(dst)
