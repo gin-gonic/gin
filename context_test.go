@@ -3868,3 +3868,56 @@ func BenchmarkGetMapFromFormData(b *testing.B) {
 		})
 	}
 }
+
+func TestWildcardParamUnicodeConcurrency(t *testing.T) {
+	router := New()
+
+	var mu sync.Mutex
+	var errs []string
+
+	router.GET("/user/:name", func(c *Context) {
+		name := c.Param("name")
+		if name == "" {
+			mu.Lock()
+			errs = append(errs, "name param is empty")
+			mu.Unlock()
+		}
+	})
+
+	router.GET("/files/*filepath", func(c *Context) {
+		filepath := c.Param("filepath")
+		if filepath == "" {
+			mu.Lock()
+			errs = append(errs, "filepath param is empty")
+			mu.Unlock()
+		}
+	})
+
+	var wg sync.WaitGroup
+	paths := []string{
+		"/user/जयेश",
+		"/files/🎉/photo.png",
+		"/user/こんにちは",
+	}
+
+	for i := 0; i < 20; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for _, p := range paths {
+				req, _ := http.NewRequest(http.MethodGet, p, nil)
+				w := httptest.NewRecorder()
+				router.ServeHTTP(w, req)
+
+				if w.Code != http.StatusOK {
+					mu.Lock()
+					errs = append(errs, "status code is not 200")
+					mu.Unlock()
+				}
+			}
+		}()
+	}
+	wg.Wait()
+
+	assert.Empty(t, errs)
+}

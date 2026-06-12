@@ -509,6 +509,11 @@ walk: // Outer loop for walking the tree
 						// Expand slice within preallocated capacity
 						i := len(*value.params)
 						*value.params = (*value.params)[:i+1]
+
+						// Ensure 'end' index lands exactly on a valid UTF-8 rune boundary
+						for end > 0 && end < len(path) && !utf8.RuneStart(path[end]) {
+							end--
+						}
 						val := path[:end]
 						if unescape {
 							if v, err := url.QueryUnescape(val); err == nil {
