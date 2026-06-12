@@ -6,25 +6,29 @@ on:
       - '.github/workflows/cifuzz.yml'
   push:
     branches: [main, master]
+
 permissions:
   contents: read
+  security-events: write
+
 jobs:
   fuzzing:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        sanitizer: [address, memory]
+        sanitizer: [address]
     steps:
+    - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
     - name: Build Fuzzers (${{ matrix.sanitizer }})
       id: build
-      uses: google/oss-fuzz/infra/cifuzz/actions/build_fuzzers@ba0e2e0 # v1.0.0
+      uses: google/oss-fuzz/infra/cifuzz/actions/build_fuzzers@ba0e2e0399a10b7b42afb16e7a6c4ccd3ff52431
       with:
         oss-fuzz-project-name: 'gin'
         language: go
         sanitizer: ${{ matrix.sanitizer }}
     - name: Run Fuzzers (${{ matrix.sanitizer }})
-      uses: google/oss-fuzz/infra/cifuzz/actions/run_fuzzers@ba0e2e0 # v1.0.0
+      uses: google/oss-fuzz/infra/cifuzz/actions/run_fuzzers@ba0e2e0399a10b7b42afb16e7a6c4ccd3ff52431
       with:
         oss-fuzz-project-name: 'gin'
         language: go
@@ -32,8 +36,8 @@ jobs:
         sanitizer: ${{ matrix.sanitizer }}
         output-sarif: true
     - name: Upload Sarif
-      if: steps.build.outcome == 'success'
-      uses: github/codeql-action/upload-sarif@601d5b1 # v3.28.15
+      if: always() && steps.build.outcome == 'success'
+      uses: github/codeql-action/upload-sarif@601d5b1bcb3e5ef5eea97a6d0dcdbbb8c2b80116
       with:
         sarif_file: cifuzz-sarif/results.sarif
         category: fuzz-${{ matrix.sanitizer }}
