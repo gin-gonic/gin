@@ -1,0 +1,38 @@
+name: CIFuzz
+on:
+  pull_request:
+    paths:
+      - '**'
+  push:
+    branches: [main, master]
+permissions:
+  contents: read
+jobs:
+  fuzzing:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        sanitizer: [address]
+    steps:
+    - name: Build Fuzzers (${{ matrix.sanitizer }})
+      id: build
+      uses: google/oss-fuzz/infra/cifuzz/actions/build_fuzzers@master
+      with:
+        oss-fuzz-project-name: 'gin'
+        language: go
+        sanitizer: ${{ matrix.sanitizer }}
+    - name: Run Fuzzers (${{ matrix.sanitizer }})
+      uses: google/oss-fuzz/infra/cifuzz/actions/run_fuzzers@master
+      with:
+        oss-fuzz-project-name: 'gin'
+        language: go
+        fuzz-seconds: 300
+        sanitizer: ${{ matrix.sanitizer }}
+        output-sarif: true
+    - name: Upload Sarif
+      if: always() && steps.build.outcome == 'success'
+      uses: github/codeql-action/upload-sarif@v3
+      with:
+        sarif_file: cifuzz-sarif/results.sarif
+        category: fuzz-${{ matrix.sanitizer }}
