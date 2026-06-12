@@ -2,7 +2,8 @@ name: CIFuzz
 on:
   pull_request:
     paths:
-      - '**'
+      - '**.go'
+      - '.github/workflows/cifuzz.yml'
   push:
     branches: [main, master]
 permissions:
@@ -13,17 +14,17 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        sanitizer: [address]
+        sanitizer: [address, memory]
     steps:
     - name: Build Fuzzers (${{ matrix.sanitizer }})
       id: build
-      uses: google/oss-fuzz/infra/cifuzz/actions/build_fuzzers@master
+      uses: google/oss-fuzz/infra/cifuzz/actions/build_fuzzers@ba0e2e0 # v1.0.0
       with:
         oss-fuzz-project-name: 'gin'
         language: go
         sanitizer: ${{ matrix.sanitizer }}
     - name: Run Fuzzers (${{ matrix.sanitizer }})
-      uses: google/oss-fuzz/infra/cifuzz/actions/run_fuzzers@master
+      uses: google/oss-fuzz/infra/cifuzz/actions/run_fuzzers@ba0e2e0 # v1.0.0
       with:
         oss-fuzz-project-name: 'gin'
         language: go
@@ -31,8 +32,8 @@ jobs:
         sanitizer: ${{ matrix.sanitizer }}
         output-sarif: true
     - name: Upload Sarif
-      if: always() && steps.build.outcome == 'success'
-      uses: github/codeql-action/upload-sarif@v3
+      if: steps.build.outcome == 'success'
+      uses: github/codeql-action/upload-sarif@601d5b1 # v3.28.15
       with:
         sarif_file: cifuzz-sarif/results.sarif
         category: fuzz-${{ matrix.sanitizer }}
