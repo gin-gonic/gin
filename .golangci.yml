@@ -67,7 +67,7 @@ formatters:
   settings:
     gofmt:
       rewrite-rules:
-        - pattern: 'interface{}'
+        - pattern: 'any'
           replacement: 'any'
   exclusions:
     generated: lax
