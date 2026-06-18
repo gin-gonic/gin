@@ -715,6 +715,24 @@ func (c *Context) MultipartForm() (*multipart.Form, error) {
 	return c.Request.MultipartForm, err
 }
 
+func dirExists(path string) bool {
+	info, err := os.Stat(path)
+	if err != nil {
+		return false
+	}
+	return info.IsDir()
+}
+
+func ensureDirWithMode(dir string, mode fs.FileMode) error {
+	if dirExists(dir) {
+		return nil
+	}
+	if err := os.MkdirAll(dir, mode); err != nil {
+		return err
+	}
+	return os.Chmod(dir, mode)
+}
+
 // SaveUploadedFile uploads the form file to specific dst.
 func (c *Context) SaveUploadedFile(file *multipart.FileHeader, dst string, perm ...fs.FileMode) error {
 	src, err := file.Open()
@@ -728,10 +746,9 @@ func (c *Context) SaveUploadedFile(file *multipart.FileHeader, dst string, perm 
 		mode = perm[0]
 	}
 	dir := filepath.Dir(dst)
-	if err = os.MkdirAll(dir, mode); err != nil {
-		return err
-	}
-	if err = os.Chmod(dir, mode); err != nil {
+	// Only chmod newly created directories. Attempting to chmod
+	// pre-existing directories (e.g. /tmp) may fail with EPERM.
+	if err = ensureDirWithMode(dir, mode); err != nil {
 		return err
 	}
 
