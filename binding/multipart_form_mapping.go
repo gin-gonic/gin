@@ -34,7 +34,7 @@ func (r *multipartRequest) TrySet(value reflect.Value, field reflect.StructField
 
 func setByMultipartFormFile(value reflect.Value, field reflect.StructField, files []*multipart.FileHeader) (isSet bool, err error) {
 	switch value.Kind() {
-	case reflect.Ptr:
+	case reflect.Pointer:
 		switch value.Interface().(type) {
 		case *multipart.FileHeader:
 			value.Set(reflect.ValueOf(files[0]))

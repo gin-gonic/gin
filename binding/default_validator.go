@@ -51,7 +51,7 @@ func (v *defaultValidator) ValidateStruct(obj any) error {
 
 	value := reflect.ValueOf(obj)
 	switch value.Kind() {
-	case reflect.Ptr:
+	case reflect.Pointer:
 		if value.Elem().Kind() != reflect.Struct {
 			return v.ValidateStruct(value.Elem().Interface())
 		}
