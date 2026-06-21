@@ -774,16 +774,6 @@ func (c *Context) BindQuery(obj any) error {
 	return c.MustBindWith(obj, binding.Query)
 }
 
-// BindYAML is a shortcut for c.MustBindWith(obj, binding.YAML).
-func (c *Context) BindYAML(obj any) error {
-	return c.MustBindWith(obj, binding.YAML)
-}
-
-// BindTOML is a shortcut for c.MustBindWith(obj, binding.TOML).
-func (c *Context) BindTOML(obj any) error {
-	return c.MustBindWith(obj, binding.TOML)
-}
-
 // BindPlain is a shortcut for c.MustBindWith(obj, binding.Plain).
 func (c *Context) BindPlain(obj any) error {
 	return c.MustBindWith(obj, binding.Plain)
@@ -880,18 +870,6 @@ func (c *Context) ShouldBindQuery(obj any) error {
 	return c.ShouldBindWith(obj, binding.Query)
 }
 
-// ShouldBindYAML is a shortcut for c.ShouldBindWith(obj, binding.YAML).
-// It works like ShouldBindJSON but binds the request body as YAML data.
-func (c *Context) ShouldBindYAML(obj any) error {
-	return c.ShouldBindWith(obj, binding.YAML)
-}
-
-// ShouldBindTOML is a shortcut for c.ShouldBindWith(obj, binding.TOML).
-// It works like ShouldBindJSON but binds the request body as TOML data.
-func (c *Context) ShouldBindTOML(obj any) error {
-	return c.ShouldBindWith(obj, binding.TOML)
-}
-
 // ShouldBindPlain is a shortcut for c.ShouldBindWith(obj, binding.Plain).
 // It works like ShouldBindJSON but binds plain text data from the request body.
 func (c *Context) ShouldBindPlain(obj any) error {
@@ -950,16 +928,6 @@ func (c *Context) ShouldBindBodyWithJSON(obj any) error {
 // ShouldBindBodyWithXML is a shortcut for c.ShouldBindBodyWith(obj, binding.XML).
 func (c *Context) ShouldBindBodyWithXML(obj any) error {
 	return c.ShouldBindBodyWith(obj, binding.XML)
-}
-
-// ShouldBindBodyWithYAML is a shortcut for c.ShouldBindBodyWith(obj, binding.YAML).
-func (c *Context) ShouldBindBodyWithYAML(obj any) error {
-	return c.ShouldBindBodyWith(obj, binding.YAML)
-}
-
-// ShouldBindBodyWithTOML is a shortcut for c.ShouldBindBodyWith(obj, binding.TOML).
-func (c *Context) ShouldBindBodyWithTOML(obj any) error {
-	return c.ShouldBindBodyWith(obj, binding.TOML)
 }
 
 // ShouldBindBodyWithPlain is a shortcut for c.ShouldBindBodyWith(obj, binding.Plain).
@@ -1257,26 +1225,6 @@ func (c *Context) PDF(code int, data []byte) {
 	c.Render(code, render.PDF{Data: data})
 }
 
-// YAML serializes the given struct as YAML into the response body.
-func (c *Context) YAML(code int, obj any) {
-	c.Render(code, render.YAML{Data: obj})
-}
-
-// TOML serializes the given struct as TOML into the response body.
-func (c *Context) TOML(code int, obj any) {
-	c.Render(code, render.TOML{Data: obj})
-}
-
-// ProtoBuf serializes the given struct as ProtoBuf into the response body.
-func (c *Context) ProtoBuf(code int, obj any) {
-	c.Render(code, render.ProtoBuf{Data: obj})
-}
-
-// BSON serializes the given struct as BSON into the response body.
-func (c *Context) BSON(code int, obj any) {
-	c.Render(code, render.BSON{Data: obj})
-}
-
 // String writes the given string into the response body.
 func (c *Context) String(code int, format string, values ...any) {
 	c.Render(code, render.String{Format: format, Data: values})
@@ -1389,7 +1337,8 @@ type Negotiate struct {
 
 // Negotiate calls different Render according to acceptable Accept format.
 func (c *Context) Negotiate(code int, config Negotiate) {
-	switch c.NegotiateFormat(config.Offered...) {
+	format := c.NegotiateFormat(config.Offered...)
+	switch format {
 	case binding.MIMEJSON:
 		data := chooseData(config.JSONData, config.Data)
 		c.JSON(code, data)
@@ -1402,23 +1351,26 @@ func (c *Context) Negotiate(code int, config Negotiate) {
 		data := chooseData(config.XMLData, config.Data)
 		c.XML(code, data)
 
-	case binding.MIMEYAML, binding.MIMEYAML2:
-		data := chooseData(config.YAMLData, config.Data)
-		c.YAML(code, data)
-
-	case binding.MIMETOML:
-		data := chooseData(config.TOMLData, config.Data)
-		c.TOML(code, data)
-
-	case binding.MIMEPROTOBUF:
-		data := chooseData(config.PROTOBUFData, config.Data)
-		c.ProtoBuf(code, data)
-
-	case binding.MIMEBSON:
-		data := chooseData(config.BSONData, config.Data)
-		c.BSON(code, data)
-
 	default:
+		// Non-core formats (YAML, TOML, ProtoBuf, BSON, ...) are served through
+		// the render registry, which is populated only when the matching
+		// github.com/gin-gonic/gin/render/<format> subpackage is imported.
+		data := config.Data
+		switch format {
+		case binding.MIMEYAML, binding.MIMEYAML2:
+			data = chooseData(config.YAMLData, config.Data)
+		case binding.MIMETOML:
+			data = chooseData(config.TOMLData, config.Data)
+		case binding.MIMEPROTOBUF:
+			data = chooseData(config.PROTOBUFData, config.Data)
+		case binding.MIMEBSON:
+			data = chooseData(config.BSONData, config.Data)
+		}
+
+		if r, ok := render.Negotiate(format, data); ok {
+			c.Render(code, r)
+			return
+		}
 		c.AbortWithError(http.StatusNotAcceptable, errors.New("the accepted formats are not offered by the server")) //nolint: errcheck
 	}
 }

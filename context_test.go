@@ -30,11 +30,8 @@ import (
 	"github.com/gin-contrib/sse"
 	"github.com/gin-gonic/gin/binding"
 	"github.com/gin-gonic/gin/codec/json"
-	testdata "github.com/gin-gonic/gin/testdata/protoexample"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.mongodb.org/mongo-driver/v2/bson"
-	"google.golang.org/protobuf/proto"
 )
 
 var _ context.Context = (*Context)(nil)
@@ -1511,56 +1508,6 @@ func TestContextRenderUTF8Attachment(t *testing.T) {
 	assert.Equal(t, `attachment; filename*=UTF-8''`+url.QueryEscape(newFilename), w.Header().Get("Content-Disposition"))
 }
 
-// TestContextRenderYAML tests that the response is serialized as YAML
-// and Content-Type is set to application/yaml
-func TestContextRenderYAML(t *testing.T) {
-	w := httptest.NewRecorder()
-	c, _ := CreateTestContext(w)
-
-	c.YAML(http.StatusCreated, H{"foo": "bar"})
-
-	assert.Equal(t, http.StatusCreated, w.Code)
-	assert.Equal(t, "foo: bar\n", w.Body.String())
-	assert.Equal(t, "application/yaml; charset=utf-8", w.Header().Get("Content-Type"))
-}
-
-// TestContextRenderTOML tests that the response is serialized as TOML
-// and Content-Type is set to application/toml
-func TestContextRenderTOML(t *testing.T) {
-	w := httptest.NewRecorder()
-	c, _ := CreateTestContext(w)
-
-	c.TOML(http.StatusCreated, H{"foo": "bar"})
-
-	assert.Equal(t, http.StatusCreated, w.Code)
-	assert.Equal(t, "foo = 'bar'\n", w.Body.String())
-	assert.Equal(t, "application/toml; charset=utf-8", w.Header().Get("Content-Type"))
-}
-
-// TestContextRenderProtoBuf tests that the response is serialized as ProtoBuf
-// and Content-Type is set to application/x-protobuf
-// and we just use the example protobuf to check if the response is correct
-func TestContextRenderProtoBuf(t *testing.T) {
-	w := httptest.NewRecorder()
-	c, _ := CreateTestContext(w)
-
-	reps := []int64{int64(1), int64(2)}
-	label := "test"
-	data := &testdata.Test{
-		Label: &label,
-		Reps:  reps,
-	}
-
-	c.ProtoBuf(http.StatusCreated, data)
-
-	protoData, err := proto.Marshal(data)
-	require.NoError(t, err)
-
-	assert.Equal(t, http.StatusCreated, w.Code)
-	assert.Equal(t, string(protoData), w.Body.String())
-	assert.Equal(t, "application/x-protobuf", w.Header().Get("Content-Type"))
-}
-
 func TestContextHeaders(t *testing.T) {
 	c, _ := CreateTestContext(httptest.NewRecorder())
 	c.Header("Content-Type", "text/plain")
@@ -1657,36 +1604,6 @@ func TestContextNegotiationWithXML(t *testing.T) {
 	assert.Equal(t, "application/xml; charset=utf-8", w.Header().Get("Content-Type"))
 }
 
-func TestContextNegotiationWithYAML(t *testing.T) {
-	w := httptest.NewRecorder()
-	c, _ := CreateTestContext(w)
-	c.Request, _ = http.NewRequest(http.MethodPost, "", nil)
-
-	c.Negotiate(http.StatusOK, Negotiate{
-		Offered: []string{MIMEYAML, MIMEXML, MIMEJSON, MIMETOML, MIMEYAML2},
-		Data:    H{"foo": "bar"},
-	})
-
-	assert.Equal(t, http.StatusOK, w.Code)
-	assert.Equal(t, "foo: bar\n", w.Body.String())
-	assert.Equal(t, "application/yaml; charset=utf-8", w.Header().Get("Content-Type"))
-}
-
-func TestContextNegotiationWithTOML(t *testing.T) {
-	w := httptest.NewRecorder()
-	c, _ := CreateTestContext(w)
-	c.Request, _ = http.NewRequest(http.MethodPost, "", nil)
-
-	c.Negotiate(http.StatusOK, Negotiate{
-		Offered: []string{MIMETOML, MIMEXML, MIMEJSON, MIMEYAML, MIMEYAML2},
-		Data:    H{"foo": "bar"},
-	})
-
-	assert.Equal(t, http.StatusOK, w.Code)
-	assert.Equal(t, "foo = 'bar'\n", w.Body.String())
-	assert.Equal(t, "application/toml; charset=utf-8", w.Header().Get("Content-Type"))
-}
-
 func TestContextNegotiationWithHTML(t *testing.T) {
 	w := httptest.NewRecorder()
 	c, router := CreateTestContext(w)
@@ -1703,49 +1620,6 @@ func TestContextNegotiationWithHTML(t *testing.T) {
 	assert.Equal(t, http.StatusOK, w.Code)
 	assert.Equal(t, "Hello gin", w.Body.String())
 	assert.Equal(t, "text/html; charset=utf-8", w.Header().Get("Content-Type"))
-}
-
-func TestContextNegotiationWithPROTOBUF(t *testing.T) {
-	w := httptest.NewRecorder()
-	c, _ := CreateTestContext(w)
-	c.Request = httptest.NewRequest(http.MethodPost, "/", nil)
-
-	reps := []int64{int64(1), int64(2)}
-	label := "test"
-	data := &testdata.Test{
-		Label: &label,
-		Reps:  reps,
-	}
-
-	c.Negotiate(http.StatusCreated, Negotiate{
-		Offered: []string{MIMEPROTOBUF, MIMEJSON, MIMEXML},
-		Data:    data,
-	})
-
-	// Marshal original data for comparison
-	protoData, err := proto.Marshal(data)
-	require.NoError(t, err)
-
-	assert.Equal(t, http.StatusCreated, w.Code)
-	assert.Equal(t, string(protoData), w.Body.String())
-	assert.Equal(t, "application/x-protobuf", w.Header().Get("Content-Type"))
-}
-
-func TestContextNegotiationWithBSON(t *testing.T) {
-	w := httptest.NewRecorder()
-	c, _ := CreateTestContext(w)
-	c.Request, _ = http.NewRequest(http.MethodPost, "", nil)
-
-	c.Negotiate(http.StatusOK, Negotiate{
-		Offered: []string{MIMEBSON, MIMEXML, MIMEJSON, MIMEYAML, MIMEYAML2},
-		Data:    H{"foo": "bar"},
-	})
-
-	bData, _ := bson.Marshal(H{"foo": "bar"})
-
-	assert.Equal(t, http.StatusOK, w.Code)
-	assert.Equal(t, string(bData), w.Body.String())
-	assert.Equal(t, "application/bson", w.Header().Get("Content-Type"))
 }
 
 func TestContextNegotiationNotSupport(t *testing.T) {
@@ -2279,40 +2153,6 @@ func TestContextBindWithQuery(t *testing.T) {
 	assert.Equal(t, 0, w.Body.Len())
 }
 
-func TestContextBindWithYAML(t *testing.T) {
-	w := httptest.NewRecorder()
-	c, _ := CreateTestContext(w)
-
-	c.Request, _ = http.NewRequest(http.MethodPost, "/", strings.NewReader("foo: bar\nbar: foo"))
-	c.Request.Header.Add("Content-Type", MIMEXML) // set fake content-type
-
-	var obj struct {
-		Foo string `yaml:"foo"`
-		Bar string `yaml:"bar"`
-	}
-	require.NoError(t, c.BindYAML(&obj))
-	assert.Equal(t, "foo", obj.Bar)
-	assert.Equal(t, "bar", obj.Foo)
-	assert.Equal(t, 0, w.Body.Len())
-}
-
-func TestContextBindWithTOML(t *testing.T) {
-	w := httptest.NewRecorder()
-	c, _ := CreateTestContext(w)
-
-	c.Request, _ = http.NewRequest(http.MethodPost, "/", strings.NewReader("foo = 'bar'\nbar = 'foo'"))
-	c.Request.Header.Add("Content-Type", MIMEXML) // set fake content-type
-
-	var obj struct {
-		Foo string `toml:"foo"`
-		Bar string `toml:"bar"`
-	}
-	require.NoError(t, c.BindTOML(&obj))
-	assert.Equal(t, "foo", obj.Bar)
-	assert.Equal(t, "bar", obj.Foo)
-	assert.Equal(t, 0, w.Body.Len())
-}
-
 func TestContextBadAutoBind(t *testing.T) {
 	w := httptest.NewRecorder()
 	c, _ := CreateTestContext(w)
@@ -2453,40 +2293,6 @@ func TestContextShouldBindWithQuery(t *testing.T) {
 	assert.Equal(t, 0, w.Body.Len())
 }
 
-func TestContextShouldBindWithYAML(t *testing.T) {
-	w := httptest.NewRecorder()
-	c, _ := CreateTestContext(w)
-
-	c.Request, _ = http.NewRequest(http.MethodPost, "/", strings.NewReader("foo: bar\nbar: foo"))
-	c.Request.Header.Add("Content-Type", MIMEXML) // set fake content-type
-
-	var obj struct {
-		Foo string `yaml:"foo"`
-		Bar string `yaml:"bar"`
-	}
-	require.NoError(t, c.ShouldBindYAML(&obj))
-	assert.Equal(t, "foo", obj.Bar)
-	assert.Equal(t, "bar", obj.Foo)
-	assert.Equal(t, 0, w.Body.Len())
-}
-
-func TestContextShouldBindWithTOML(t *testing.T) {
-	w := httptest.NewRecorder()
-	c, _ := CreateTestContext(w)
-
-	c.Request, _ = http.NewRequest(http.MethodPost, "/", strings.NewReader("foo='bar'\nbar= 'foo'"))
-	c.Request.Header.Add("Content-Type", MIMETOML) // set fake content-type
-
-	var obj struct {
-		Foo string `toml:"foo"`
-		Bar string `toml:"bar"`
-	}
-	require.NoError(t, c.ShouldBindTOML(&obj))
-	assert.Equal(t, "foo", obj.Bar)
-	assert.Equal(t, "bar", obj.Foo)
-	assert.Equal(t, 0, w.Body.Len())
-}
-
 func TestContextBadAutoShouldBind(t *testing.T) {
 	w := httptest.NewRecorder()
 	c, _ := CreateTestContext(w)
@@ -2604,16 +2410,6 @@ func TestContextShouldBindBodyWithJSON(t *testing.T) {
 <foo>FOO</foo>
 </root>`,
 		},
-		{
-			name:        " JSON & YAML-BODY ",
-			bindingBody: binding.YAML,
-			body:        `foo: FOO`,
-		},
-		{
-			name:        " JSON & TOM-BODY ",
-			bindingBody: binding.TOML,
-			body:        `foo=FOO`,
-		},
 	} {
 		t.Logf("testing: %s", tt.name)
 
@@ -2633,16 +2429,6 @@ func TestContextShouldBindBodyWithJSON(t *testing.T) {
 		}
 
 		if tt.bindingBody == binding.XML {
-			require.Error(t, c.ShouldBindBodyWithJSON(&objJSON))
-			assert.Equal(t, typeJSON{}, objJSON)
-		}
-
-		if tt.bindingBody == binding.YAML {
-			require.Error(t, c.ShouldBindBodyWithJSON(&objJSON))
-			assert.Equal(t, typeJSON{}, objJSON)
-		}
-
-		if tt.bindingBody == binding.TOML {
 			require.Error(t, c.ShouldBindBodyWithJSON(&objJSON))
 			assert.Equal(t, typeJSON{}, objJSON)
 		}
@@ -2668,16 +2454,6 @@ func TestContextShouldBindBodyWithXML(t *testing.T) {
 <foo>FOO</foo>
 </root>`,
 		},
-		{
-			name:        " XML & YAML-BODY ",
-			bindingBody: binding.YAML,
-			body:        `foo: FOO`,
-		},
-		{
-			name:        " XML & TOM-BODY ",
-			bindingBody: binding.TOML,
-			body:        `foo=FOO`,
-		},
 	} {
 		t.Logf("testing: %s", tt.name)
 
@@ -2700,145 +2476,6 @@ func TestContextShouldBindBodyWithXML(t *testing.T) {
 			require.NoError(t, c.ShouldBindBodyWithXML(&objXML))
 			assert.Equal(t, typeXML{"FOO"}, objXML)
 		}
-
-		if tt.bindingBody == binding.YAML {
-			require.Error(t, c.ShouldBindBodyWithXML(&objXML))
-			assert.Equal(t, typeXML{}, objXML)
-		}
-
-		if tt.bindingBody == binding.TOML {
-			require.Error(t, c.ShouldBindBodyWithXML(&objXML))
-			assert.Equal(t, typeXML{}, objXML)
-		}
-	}
-}
-
-func TestContextShouldBindBodyWithYAML(t *testing.T) {
-	for _, tt := range []struct {
-		name        string
-		bindingBody binding.BindingBody
-		body        string
-	}{
-		{
-			name:        " YAML & JSON-BODY ",
-			bindingBody: binding.JSON,
-			body:        `{"foo":"FOO"}`,
-		},
-		{
-			name:        " YAML & XML-BODY ",
-			bindingBody: binding.XML,
-			body: `<?xml version="1.0" encoding="UTF-8"?>
-<root>
-<foo>FOO</foo>
-</root>`,
-		},
-		{
-			name:        " YAML & YAML-BODY ",
-			bindingBody: binding.YAML,
-			body:        `foo: FOO`,
-		},
-		{
-			name:        " YAML & TOM-BODY ",
-			bindingBody: binding.TOML,
-			body:        `foo=FOO`,
-		},
-	} {
-		t.Logf("testing: %s", tt.name)
-
-		w := httptest.NewRecorder()
-		c, _ := CreateTestContext(w)
-
-		c.Request, _ = http.NewRequest(http.MethodPost, "/", bytes.NewBufferString(tt.body))
-
-		type typeYAML struct {
-			Foo string `yaml:"foo" binding:"required"`
-		}
-		objYAML := typeYAML{}
-
-		// YAML belongs to a super collection of JSON, so JSON can be parsed by YAML
-		if tt.bindingBody == binding.JSON {
-			require.NoError(t, c.ShouldBindBodyWithYAML(&objYAML))
-			assert.Equal(t, typeYAML{"FOO"}, objYAML)
-		}
-
-		if tt.bindingBody == binding.XML {
-			require.Error(t, c.ShouldBindBodyWithYAML(&objYAML))
-			assert.Equal(t, typeYAML{}, objYAML)
-		}
-
-		if tt.bindingBody == binding.YAML {
-			require.NoError(t, c.ShouldBindBodyWithYAML(&objYAML))
-			assert.Equal(t, typeYAML{"FOO"}, objYAML)
-		}
-
-		if tt.bindingBody == binding.TOML {
-			require.Error(t, c.ShouldBindBodyWithYAML(&objYAML))
-			assert.Equal(t, typeYAML{}, objYAML)
-		}
-	}
-}
-
-func TestContextShouldBindBodyWithTOML(t *testing.T) {
-	for _, tt := range []struct {
-		name        string
-		bindingBody binding.BindingBody
-		body        string
-	}{
-		{
-			name:        " TOML & JSON-BODY ",
-			bindingBody: binding.JSON,
-			body:        `{"foo":"FOO"}`,
-		},
-		{
-			name:        " TOML & XML-BODY ",
-			bindingBody: binding.XML,
-			body: `<?xml version="1.0" encoding="UTF-8"?>
-<root>
-<foo>FOO</foo>
-</root>`,
-		},
-		{
-			name:        " TOML & YAML-BODY ",
-			bindingBody: binding.YAML,
-			body:        `foo: FOO`,
-		},
-		{
-			name:        " TOML & TOM-BODY ",
-			bindingBody: binding.TOML,
-			body:        `foo = 'FOO'`,
-		},
-	} {
-		t.Logf("testing: %s", tt.name)
-
-		w := httptest.NewRecorder()
-		c, _ := CreateTestContext(w)
-
-		c.Request, _ = http.NewRequest(http.MethodPost, "/", bytes.NewBufferString(tt.body))
-
-		type typeTOML struct {
-			Foo string `toml:"foo" binding:"required"`
-		}
-		objTOML := typeTOML{}
-
-		if tt.bindingBody == binding.JSON {
-			require.Error(t, c.ShouldBindBodyWithTOML(&objTOML))
-			assert.Equal(t, typeTOML{}, objTOML)
-		}
-
-		if tt.bindingBody == binding.XML {
-			require.Error(t, c.ShouldBindBodyWithTOML(&objTOML))
-			assert.Equal(t, typeTOML{}, objTOML)
-		}
-
-		if tt.bindingBody == binding.YAML {
-			require.Error(t, c.ShouldBindBodyWithTOML(&objTOML))
-			assert.Equal(t, typeTOML{}, objTOML)
-		}
-
-		if tt.bindingBody == binding.TOML {
-			require.NoError(t, c.ShouldBindBodyWithTOML(&objTOML))
-			assert.Equal(t, typeTOML{"FOO"}, objTOML)
-		}
 	}
 }
 
@@ -2860,16 +2497,6 @@ func TestContextShouldBindBodyWithPlain(t *testing.T) {
 <root>
 <foo>FOO</foo>
 </root>`,
-		},
-		{
-			name:        " JSON & YAML-BODY ",
-			bindingBody: binding.YAML,
-			body:        `foo: FOO`,
-		},
-		{
-			name:        " JSON & TOM-BODY ",
-			bindingBody: binding.TOML,
-			body:        `foo=FOO`,
 		},
 		{
 			name:        " JSON & Plain-BODY ",
@@ -2901,16 +2528,6 @@ func TestContextShouldBindBodyWithPlain(t *testing.T) {
 		}
 
 		if tt.bindingBody == binding.XML {
-			require.Error(t, c.ShouldBindBodyWithJSON(&objJSON))
-			assert.Equal(t, typeJSON{}, objJSON)
-		}
-
-		if tt.bindingBody == binding.YAML {
-			require.Error(t, c.ShouldBindBodyWithJSON(&objJSON))
-			assert.Equal(t, typeJSON{}, objJSON)
-		}
-
-		if tt.bindingBody == binding.TOML {
 			require.Error(t, c.ShouldBindBodyWithJSON(&objJSON))
 			assert.Equal(t, typeJSON{}, objJSON)
 		}

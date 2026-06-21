@@ -9,18 +9,14 @@ import (
 	"errors"
 	"html/template"
 	"io"
-	"net"
 	"net/http"
 	"net/http/httptest"
 	"strconv"
 	"strings"
 	"testing"
 
-	testdata "github.com/gin-gonic/gin/testdata/protoexample"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.mongodb.org/mongo-driver/v2/bson"
-	"google.golang.org/protobuf/proto"
 )
 
 func TestRenderJSON(t *testing.T) {
@@ -303,142 +299,6 @@ func (h xmlmap) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
 	}
 
 	return e.EncodeToken(xml.EndElement{Name: start.Name})
-}
-
-func TestRenderYAML(t *testing.T) {
-	w := httptest.NewRecorder()
-	data := `
-a : Easy!
-b:
-	c: 2
-	d: [3, 4]
-	`
-	(YAML{data}).WriteContentType(w)
-	assert.Equal(t, "application/yaml; charset=utf-8", w.Header().Get("Content-Type"))
-
-	err := (YAML{data}).Render(w)
-	require.NoError(t, err)
-
-	// With github.com/goccy/go-yaml, the output format is different from gopkg.in/yaml.v3
-	// We're checking that the output contains the expected data, not the exact formatting
-	output := w.Body.String()
-	assert.Contains(t, output, "a : Easy!")
-	assert.Contains(t, output, "b:")
-	assert.Contains(t, output, "c: 2")
-	assert.Contains(t, output, "d: [3, 4]")
-	assert.Equal(t, "application/yaml; charset=utf-8", w.Header().Get("Content-Type"))
-}
-
-type fail struct{}
-
-// Hook MarshalYAML
-func (ft *fail) MarshalYAML() (any, error) {
-	return nil, errors.New("fail")
-}
-
-func TestRenderYAMLFail(t *testing.T) {
-	w := httptest.NewRecorder()
-	err := (YAML{&fail{}}).Render(w)
-	require.Error(t, err)
-}
-
-func TestRenderTOML(t *testing.T) {
-	w := httptest.NewRecorder()
-	data := map[string]any{
-		"foo":  "bar",
-		"html": "<b>",
-	}
-	(TOML{data}).WriteContentType(w)
-	assert.Equal(t, "application/toml; charset=utf-8", w.Header().Get("Content-Type"))
-
-	err := (TOML{data}).Render(w)
-	require.NoError(t, err)
-	assert.Equal(t, "foo = 'bar'\nhtml = '<b>'\n", w.Body.String())
-	assert.Equal(t, "application/toml; charset=utf-8", w.Header().Get("Content-Type"))
-}
-
-func TestRenderTOMLFail(t *testing.T) {
-	w := httptest.NewRecorder()
-	err := (TOML{net.IPv4bcast}).Render(w)
-	require.Error(t, err)
-}
-
-// test Protobuf rendering
-func TestRenderProtoBuf(t *testing.T) {
-	w := httptest.NewRecorder()
-	reps := []int64{int64(1), int64(2)}
-	label := "test"
-	data := &testdata.Test{
-		Label: &label,
-		Reps:  reps,
-	}
-
-	(ProtoBuf{data}).WriteContentType(w)
-	protoData, err := proto.Marshal(data)
-	require.NoError(t, err)
-	assert.Equal(t, "application/x-protobuf", w.Header().Get("Content-Type"))
-
-	err = (ProtoBuf{data}).Render(w)
-
-	require.NoError(t, err)
-	assert.Equal(t, string(protoData), w.Body.String())
-	assert.Equal(t, "application/x-protobuf", w.Header().Get("Content-Type"))
-}
-
-func TestRenderProtoBufFail(t *testing.T) {
-	w := httptest.NewRecorder()
-	data := &testdata.Test{}
-	err := (ProtoBuf{data}).Render(w)
-	require.Error(t, err)
-}
-
-func TestRenderBSON(t *testing.T) {
-	w := httptest.NewRecorder()
-	reps := []int64{int64(1), int64(2)}
-	type mystruct struct {
-		Label string
-		Reps  []int64
-	}
-
-	data := &mystruct{
-		Label: "test",
-		Reps:  reps,
-	}
-
-	(BSON{data}).WriteContentType(w)
-	bsonData, err := bson.Marshal(data)
-	require.NoError(t, err)
-	assert.Equal(t, "application/bson", w.Header().Get("Content-Type"))
-
-	err = (BSON{data}).Render(w)
-
-	require.NoError(t, err)
-	assert.Equal(t, bsonData, w.Body.Bytes())
-	assert.Equal(t, "application/bson", w.Header().Get("Content-Type"))
-}
-
-func TestRenderBSONError(t *testing.T) {
-	w := httptest.NewRecorder()
-	data := make(chan int)
-
-	err := (BSON{data}).Render(w)
-	require.Error(t, err)
-}
-
-func TestRenderBSONWriteError(t *testing.T) {
-	type testStruct struct {
-		Value string
-	}
-	data := &testStruct{Value: "test"}
-
-	ew := &errorWriter{
-		ErrThreshold:     1,
-		ResponseRecorder: httptest.NewRecorder(),
-	}
-
-	err := (BSON{data}).Render(ew)
-	require.Error(t, err)
-	assert.Equal(t, "write error", err.Error())
 }
 
 func TestRenderXML(t *testing.T) {
