@@ -190,6 +190,7 @@ func TestPanicInHandlerRecordsError(t *testing.T) {
 			assert.Equal(t, http.StatusInternalServerError, w.Code)
 			if assert.Len(t, recoveredErrors, 1) {
 				assert.EqualError(t, recoveredErrors[0], tt.expectedErr)
+				assert.Equal(t, ErrorTypePrivate, recoveredErrors[0].Type)
 			}
 		})
 	}
