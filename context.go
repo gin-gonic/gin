@@ -1107,8 +1107,15 @@ func bodyAllowedForStatus(status int) bool {
 }
 
 // Status sets the HTTP response code.
+// For status codes that do not allow a response body (1xx, 204, 304),
+// the status is flushed immediately so that httptest.ResponseRecorder
+// and similar wrappers record the correct status without requiring a
+// subsequent Write call.
 func (c *Context) Status(code int) {
 	c.Writer.WriteHeader(code)
+	if !bodyAllowedForStatus(code) {
+		c.Writer.WriteHeaderNow()
+	}
 }
 
 // Header is an intelligent shortcut for c.Writer.Header().Set(key, value).

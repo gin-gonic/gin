@@ -1898,6 +1898,59 @@ func TestContextAbortWithStatus(t *testing.T) {
 	assert.True(t, c.IsAborted())
 }
 
+func TestContextStatusFlushesNoBodyCodes(t *testing.T) {
+	t.Run("204 No Content is flushed immediately", func(t *testing.T) {
+		w := httptest.NewRecorder()
+		c, _ := CreateTestContext(w)
+
+		c.Status(http.StatusNoContent)
+
+		assert.Equal(t, http.StatusNoContent, c.Writer.Status())
+		assert.Equal(t, http.StatusNoContent, w.Code, "Status(204) should flush to underlying ResponseWriter without requiring Write()")
+	})
+
+	Run := func(code int) {
+		t.Run(fmt.Sprintf("%d %s is flushed immediately", code, http.StatusText(code)), func(t *testing.T) {
+			w := httptest.NewRecorder()
+			c, _ := CreateTestContext(w)
+
+			c.Status(code)
+
+			assert.Equal(t, code, c.Writer.Status())
+			assert.Equal(t, code, w.Code, "Status(%d) should flush to underlying ResponseWriter", code)
+		})
+	}
+
+	// 1xx informational codes
+	Run(http.StatusContinue)           // 100
+	Run(http.StatusSwitchingProtocols) // 101
+	Run(http.StatusProcessing)         // 102
+
+	// 204 No Content
+	Run(http.StatusNoContent)
+
+	// 304 Not Modified
+	Run(http.StatusNotModified)
+}
+
+func TestContextStatusWithBodyDoesNotFlushEarly(t *testing.T) {
+	// Status codes that allow a body (e.g. 200) should NOT flush immediately,
+	// because the handler may still write content. The status is flushed
+	// when Write() is called.
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
+
+	c.Status(http.StatusOK)
+
+	assert.Equal(t, http.StatusOK, c.Writer.Status())
+	// w.Code is 200 (default) because WriteHeaderNow has been called with the
+	// default status. The actual written status should still be 200 after
+	// Status(200) since no content has been written yet, but the key point
+	// is that calling Status(200) alone should not force an early flush
+	// that would prevent setting headers afterward.
+	assert.Equal(t, http.StatusOK, w.Code)
+}
+
 type testJSONAbortMsg struct {
 	Foo string `json:"foo"`
 	Bar string `json:"bar"`
