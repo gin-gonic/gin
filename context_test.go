@@ -274,6 +274,50 @@ func TestSaveUploadedFileWithPermissionFailed(t *testing.T) {
 	require.Error(t, c.SaveUploadedFile(f, dst, mode))
 }
 
+// TestSaveUploadedFileToExistingDir is a regression test for issue #4622.
+// SaveUploadedFile must not call os.Chmod on a directory that already exists,
+// because the process may not own it (e.g. /tmp on Linux/macOS), where chmod
+// fails with "operation not permitted". This asserts the behavioral contract
+// directly — a pre-existing directory's permissions are left unchanged — so it
+// catches the regression on every platform, including environments (root/CI,
+// user-owned $TMPDIR) where chmod on the temp dir would otherwise succeed.
+func TestSaveUploadedFileToExistingDir(t *testing.T) {
+	buf := new(bytes.Buffer)
+	mw := multipart.NewWriter(buf)
+	w, err := mw.CreateFormFile("file", "existing_dir_test")
+	require.NoError(t, err)
+	_, err = w.Write([]byte("existing_dir_test"))
+	require.NoError(t, err)
+	mw.Close()
+
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	c.Request, _ = http.NewRequest(http.MethodPost, "/", buf)
+	c.Request.Header.Set("Content-Type", mw.FormDataContentType())
+	f, err := c.FormFile("file")
+	require.NoError(t, err)
+
+	// A pre-existing directory owned by this process, set to a known mode.
+	dir := t.TempDir()
+	require.NoError(t, os.Chmod(dir, 0o700))
+
+	// Pass a perm that differs from the directory's current mode. The fix must
+	// not apply it to the pre-existing directory; the old code chmod'd it
+	// unconditionally, which also failed outright on unowned dirs like /tmp.
+	dst := filepath.Join(dir, "existing_dir_test.txt")
+	require.NoError(t, c.SaveUploadedFile(f, dst, 0o755))
+
+	// The pre-existing directory's permissions must be unchanged.
+	info, err := os.Stat(dir)
+	require.NoError(t, err)
+	assert.Equal(t, os.FileMode(0o700), info.Mode().Perm(),
+		"permissions of a pre-existing directory must not be modified")
+
+	// The file must still be written with the correct content.
+	content, err := os.ReadFile(dst)
+	require.NoError(t, err)
+	assert.Equal(t, "existing_dir_test", string(content))
+}
+
 func TestContextReset(t *testing.T) {
 	router := New()
 	c := router.allocateContext(0)
