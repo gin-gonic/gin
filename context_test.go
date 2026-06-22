@@ -276,7 +276,11 @@ func TestSaveUploadedFileWithPermissionFailed(t *testing.T) {
 
 // TestSaveUploadedFileToExistingDir is a regression test for issue #4622.
 // SaveUploadedFile must not call os.Chmod on a directory that already exists,
-// because the process may not own it (e.g. /tmp on Linux/macOS).
+// because the process may not own it (e.g. /tmp on Linux/macOS), where chmod
+// fails with "operation not permitted". This asserts the behavioral contract
+// directly — a pre-existing directory's permissions are left unchanged — so it
+// catches the regression on every platform, including environments (root/CI,
+// user-owned $TMPDIR) where chmod on the temp dir would otherwise succeed.
 func TestSaveUploadedFileToExistingDir(t *testing.T) {
 	buf := new(bytes.Buffer)
 	mw := multipart.NewWriter(buf)
@@ -292,17 +296,23 @@ func TestSaveUploadedFileToExistingDir(t *testing.T) {
 	f, err := c.FormFile("file")
 	require.NoError(t, err)
 
-	// Use os.TempDir() which is guaranteed to already exist and may not be
-	// owned by the current process — this is exactly the scenario from #4622.
-	dst := filepath.Join(os.TempDir(), "gin_save_uploaded_regression_test.txt")
-	t.Cleanup(func() {
-		_ = os.Remove(dst)
-	})
+	// A pre-existing directory owned by this process, set to a known mode.
+	dir := t.TempDir()
+	require.NoError(t, os.Chmod(dir, 0o700))
 
-	// Must not fail with "chmod ...: operation not permitted"
-	require.NoError(t, c.SaveUploadedFile(f, dst))
+	// Pass a perm that differs from the directory's current mode. The fix must
+	// not apply it to the pre-existing directory; the old code chmod'd it
+	// unconditionally, which also failed outright on unowned dirs like /tmp.
+	dst := filepath.Join(dir, "existing_dir_test.txt")
+	require.NoError(t, c.SaveUploadedFile(f, dst, 0o755))
 
-	// Verify the file was actually written with correct content
+	// The pre-existing directory's permissions must be unchanged.
+	info, err := os.Stat(dir)
+	require.NoError(t, err)
+	assert.Equal(t, os.FileMode(0o700), info.Mode().Perm(),
+		"permissions of a pre-existing directory must not be modified")
+
+	// The file must still be written with the correct content.
 	content, err := os.ReadFile(dst)
 	require.NoError(t, err)
 	assert.Equal(t, "existing_dir_test", string(content))
