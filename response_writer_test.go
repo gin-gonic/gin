@@ -15,10 +15,33 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// TODO
-// func (w *responseWriter) Hijack() (net.Conn, *bufio.ReadWriter, error) {
-// func (w *responseWriter) CloseNotify() <-chan bool {
-// func (w *responseWriter) Flush() {
+// TestResponseWriterFlushWithFlusher verifies Flush() calls the underlying Flusher.
+func TestResponseWriterFlushWithFlusher(t *testing.T) {
+	testWriter := httptest.NewRecorder()
+	writer := &responseWriter{ResponseWriter: testWriter}
+	writer.Flush()
+	assert.True(t, testWriter.Flushed)
+}
+
+// TestResponseWriterFlushWithNonFlusher verifies Flush() is a no-op
+// when the underlying ResponseWriter does not implement http.Flusher.
+// Guards against the panic reported in https://github.com/gin-gonic/gin/issues/4460
+func TestResponseWriterFlushWithNonFlusher(t *testing.T) {
+	nonFlusher := &nonFlusherWriter{header: http.Header{}}
+	writer := &responseWriter{ResponseWriter: nonFlusher}
+	require.NotPanics(t, func() {
+		writer.Flush()
+	})
+}
+
+// nonFlusherWriter is a minimal http.ResponseWriter that does NOT implement http.Flusher.
+type nonFlusherWriter struct {
+	header http.Header
+}
+
+func (w *nonFlusherWriter) Header() http.Header         { return w.header }
+func (w *nonFlusherWriter) Write(b []byte) (int, error) { return len(b), nil }
+func (w *nonFlusherWriter) WriteHeader(code int)        {}
 
 var (
 	_ ResponseWriter      = &responseWriter{}

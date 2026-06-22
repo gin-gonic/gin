@@ -248,13 +248,11 @@ func TestSaveUploadedFileWithPermission(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, "permission_test", f.Filename)
 	var mode fs.FileMode = 0o755
-	require.NoError(t, c.SaveUploadedFile(f, "permission_test", mode))
-	t.Cleanup(func() {
-		assert.NoError(t, os.Remove("permission_test"))
-	})
-	info, err := os.Stat(filepath.Dir("permission_test"))
+	dst := filepath.Join(t.TempDir(), "subdir", "permission_test")
+	require.NoError(t, c.SaveUploadedFile(f, dst, mode))
+	info, err := os.Stat(filepath.Dir(dst))
 	require.NoError(t, err)
-	assert.Equal(t, info.Mode().Perm(), mode)
+	assert.Equal(t, mode, info.Mode().Perm())
 }
 
 func TestSaveUploadedFileWithPermissionFailed(t *testing.T) {
@@ -272,7 +270,8 @@ func TestSaveUploadedFileWithPermissionFailed(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, "permission_test", f.Filename)
 	var mode fs.FileMode = 0o644
-	require.Error(t, c.SaveUploadedFile(f, "test/permission_test", mode))
+	dst := filepath.Join(t.TempDir(), "test", "permission_test")
+	require.Error(t, c.SaveUploadedFile(f, dst, mode))
 }
 
 // TestSaveUploadedFileToExistingDir is a regression test for issue #4622.
@@ -721,6 +720,50 @@ func TestContextCopy(t *testing.T) {
 	cp.Set("foo", "notBar")
 	assert.NotEqual(t, cp.Keys["foo"], c.Keys["foo"])
 	assert.Equal(t, cp.fullPath, c.fullPath)
+}
+
+func TestContextCopyCopiesErrors(t *testing.T) {
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	c.Request, _ = http.NewRequest(http.MethodGet, "/", nil)
+	_ = c.Error(errors.New("first error"))
+	_ = c.Error(errors.New("second error"))
+
+	cp := c.Copy()
+
+	// copied context has the same errors
+	assert.Len(t, cp.Errors, 2)
+	assert.Equal(t, c.Errors[0].Error(), cp.Errors[0].Error())
+	assert.Equal(t, c.Errors[1].Error(), cp.Errors[1].Error())
+
+	// mutations on the copy do not affect the original
+	_ = cp.Error(errors.New("third error"))
+	assert.Len(t, c.Errors, 2)
+	assert.Len(t, cp.Errors, 3)
+}
+
+func TestContextCopyCopiesAccepted(t *testing.T) {
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	c.Request, _ = http.NewRequest(http.MethodGet, "/", nil)
+	c.SetAccepted("application/json", "text/html")
+
+	cp := c.Copy()
+
+	assert.Equal(t, c.Accepted, cp.Accepted)
+
+	// mutations on the copy do not affect the original
+	cp.SetAccepted("text/plain")
+	assert.Equal(t, []string{"application/json", "text/html"}, c.Accepted)
+	assert.Equal(t, []string{"text/plain"}, cp.Accepted)
+}
+
+func TestContextCopyNilErrorsAndAccepted(t *testing.T) {
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	c.Request, _ = http.NewRequest(http.MethodGet, "/", nil)
+
+	cp := c.Copy()
+
+	assert.Nil(t, cp.Errors)
+	assert.Nil(t, cp.Accepted)
 }
 
 func TestContextHandlerName(t *testing.T) {
