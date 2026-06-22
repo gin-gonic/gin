@@ -7,6 +7,7 @@ package gin
 import (
 	"bytes"
 	"context"
+	"crypto/tls"
 	"errors"
 	"fmt"
 	"html/template"
@@ -32,7 +33,7 @@ import (
 	testdata "github.com/gin-gonic/gin/testdata/protoexample"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/v2/bson"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -1075,6 +1076,7 @@ func TestContextGetCookie(t *testing.T) {
 }
 
 func TestContextBodyAllowedForStatus(t *testing.T) {
+	assert.False(t, bodyAllowedForStatus(http.StatusContinue))
 	assert.False(t, bodyAllowedForStatus(http.StatusProcessing))
 	assert.False(t, bodyAllowedForStatus(http.StatusNoContent))
 	assert.False(t, bodyAllowedForStatus(http.StatusNotModified))
@@ -1361,6 +1363,33 @@ func TestContextRenderNoContentXML(t *testing.T) {
 	assert.Equal(t, http.StatusNoContent, w.Code)
 	assert.Empty(t, w.Body.String())
 	assert.Equal(t, "application/xml; charset=utf-8", w.Header().Get("Content-Type"))
+}
+
+// TestContextRenderPDF tests that the response is serialized as PDF
+// and Content-Type is set to application/pdf
+func TestContextRenderPDF(t *testing.T) {
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
+
+	data := []byte("%Test pdf content")
+	c.PDF(http.StatusCreated, data)
+
+	assert.Equal(t, http.StatusCreated, w.Code)
+	assert.Equal(t, data, w.Body.Bytes())
+	assert.Equal(t, "application/pdf", w.Header().Get("Content-Type"))
+}
+
+// Tests that no PDF is rendered if code is 204
+func TestContextRenderNoContentPDF(t *testing.T) {
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
+
+	data := []byte("%Test pdf content")
+	c.PDF(http.StatusNoContent, data)
+
+	assert.Equal(t, http.StatusNoContent, w.Code)
+	assert.Empty(t, w.Body.Bytes())
+	assert.Equal(t, "application/pdf", w.Header().Get("Content-Type"))
 }
 
 // TestContextRenderString tests that the response is returned
@@ -2971,6 +3000,65 @@ func TestWebsocketsRequired(t *testing.T) {
 	assert.False(t, c.IsWebsocket())
 }
 
+func TestContextScheme(t *testing.T) {
+	// TLS connection takes highest priority.
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	c.Request, _ = http.NewRequest(http.MethodGet, "/", nil)
+	c.Request.TLS = &tls.ConnectionState{}
+	assert.Equal(t, "https", c.Scheme())
+
+	// X-Forwarded-Proto header.
+	c, _ = CreateTestContext(httptest.NewRecorder())
+	c.Request, _ = http.NewRequest(http.MethodGet, "/", nil)
+	c.Request.Header.Set("X-Forwarded-Proto", "https")
+	assert.Equal(t, "https", c.Scheme())
+
+	c, _ = CreateTestContext(httptest.NewRecorder())
+	c.Request, _ = http.NewRequest(http.MethodGet, "/", nil)
+	c.Request.Header.Set("X-Forwarded-Proto", "http")
+	assert.Equal(t, "http", c.Scheme())
+
+	// X-Forwarded-Protocol header.
+	c, _ = CreateTestContext(httptest.NewRecorder())
+	c.Request, _ = http.NewRequest(http.MethodGet, "/", nil)
+	c.Request.Header.Set("X-Forwarded-Protocol", "https")
+	assert.Equal(t, "https", c.Scheme())
+
+	// X-Forwarded-Ssl: on header.
+	c, _ = CreateTestContext(httptest.NewRecorder())
+	c.Request, _ = http.NewRequest(http.MethodGet, "/", nil)
+	c.Request.Header.Set("X-Forwarded-Ssl", "on")
+	assert.Equal(t, "https", c.Scheme())
+
+	c, _ = CreateTestContext(httptest.NewRecorder())
+	c.Request, _ = http.NewRequest(http.MethodGet, "/", nil)
+	c.Request.Header.Set("X-Forwarded-Ssl", "off")
+	assert.Equal(t, "http", c.Scheme())
+
+	// X-Url-Scheme header.
+	c, _ = CreateTestContext(httptest.NewRecorder())
+	c.Request, _ = http.NewRequest(http.MethodGet, "/", nil)
+	c.Request.Header.Set("X-Url-Scheme", "https")
+	assert.Equal(t, "https", c.Scheme())
+
+	// Request.URL.Scheme fallback.
+	c, _ = CreateTestContext(httptest.NewRecorder())
+	c.Request, _ = http.NewRequest(http.MethodGet, "https://example.com/", nil)
+	assert.Equal(t, "https", c.Scheme())
+
+	// Default fallback: plain http.
+	c, _ = CreateTestContext(httptest.NewRecorder())
+	c.Request, _ = http.NewRequest(http.MethodGet, "/", nil)
+	assert.Equal(t, "http", c.Scheme())
+
+	// TLS takes priority over X-Forwarded-Proto.
+	c, _ = CreateTestContext(httptest.NewRecorder())
+	c.Request, _ = http.NewRequest(http.MethodGet, "/", nil)
+	c.Request.TLS = &tls.ConnectionState{}
+	c.Request.Header.Set("X-Forwarded-Proto", "http")
+	assert.Equal(t, "https", c.Scheme())
+}
+
 func TestGetRequestHeaderValue(t *testing.T) {
 	c, _ := CreateTestContext(httptest.NewRecorder())
 	c.Request, _ = http.NewRequest(http.MethodGet, "/chat", nil)
@@ -2989,6 +3077,16 @@ func TestContextGetRawData(t *testing.T) {
 	data, err := c.GetRawData()
 	require.NoError(t, err)
 	assert.Equal(t, "Fetch binary post data", string(data))
+}
+
+func TestContextGetRawDataNilBody(t *testing.T) {
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	c.Request, _ = http.NewRequest(http.MethodPost, "/", nil)
+
+	data, err := c.GetRawData()
+	assert.Nil(t, data)
+	require.Error(t, err)
+	assert.Equal(t, "cannot read nil body", err.Error())
 }
 
 func TestContextRenderDataFromReader(t *testing.T) {
@@ -3578,6 +3676,24 @@ func TestContextSetCookieData(t *testing.T) {
 		c.SetCookieData(cookie)
 		setCookie := c.Writer.Header().Get("Set-Cookie")
 		assert.Contains(t, setCookie, "SameSite=None")
+	})
+
+	// Test that SameSiteDefaultMode inherits from context's sameSite
+	t.Run("SameSiteDefaultMode inherits context sameSite", func(t *testing.T) {
+		c, _ := CreateTestContext(httptest.NewRecorder())
+		c.SetSameSite(http.SameSiteStrictMode)
+		cookie := &http.Cookie{
+			Name:     "user",
+			Value:    "gin",
+			Path:     "/",
+			Domain:   "localhost",
+			Secure:   true,
+			HttpOnly: true,
+			SameSite: http.SameSiteDefaultMode,
+		}
+		c.SetCookieData(cookie)
+		setCookie := c.Writer.Header().Get("Set-Cookie")
+		assert.Contains(t, setCookie, "SameSite=Strict")
 	})
 }
 

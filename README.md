@@ -11,9 +11,9 @@
 [![Open Source Helpers](https://www.codetriage.com/gin-gonic/gin/badges/users.svg)](https://www.codetriage.com/gin-gonic/gin)
 [![Release](https://img.shields.io/github/release/gin-gonic/gin.svg?style=flat-square)](https://github.com/gin-gonic/gin/releases)
 
-## 📰 [Announcing Gin 1.11.0!](https://gin-gonic.com/en/blog/news/gin-1-11-0-release-announcement/)
+## 📰 Gin 1.12.0 is now available!
 
-Read about the latest features and improvements in Gin 1.11.0 on our official blog.
+We're excited to announce the release of **[Gin 1.12.0](https://gin-gonic.com/en/blog/news/gin-1-12-0-release-announcement/)**! This release brings new features, performance improvements, and important bug fixes. Check out the [release announcement](https://gin-gonic.com/en/blog/news/gin-1-12-0-release-announcement/) on our official blog for the full details.
 
 ---
 
@@ -44,7 +44,7 @@ Gin combines the simplicity of Express.js-style routing with Go's performance ch
 
 ### Prerequisites
 
-- **Go version**: Gin requires [Go](https://go.dev/) version [1.24](https://go.dev/doc/devel/release#go1.24.0) or above
+- **Go version**: Gin requires [Go](https://go.dev/) version [1.25](https://go.dev/doc/devel/release#go1.25.0) or above
 - **Basic Go knowledge**: Familiarity with Go syntax and package management is helpful
 
 ### Installation
@@ -209,7 +209,7 @@ Gin powers many high-traffic applications and services in production:
 
 ## 🤝 Contributing
 
-Gin is the work of hundreds of contributors from around the world. We welcome and appreciate your contributions!
+Gin is the work of hundreds of contributors from around the world. We welcome and appreciate your contributions! See the full list of [contributors](https://github.com/gin-gonic/gin/graphs/contributors).
 
 ### How to Contribute
 

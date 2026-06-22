@@ -26,14 +26,14 @@ jobs:
       - name: Setup golangci-lint
         uses: golangci/golangci-lint-action@v9
         with:
-          version: v2.6
+          version: v2.11
           args: --verbose
   test:
     needs: lint
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest]
-        go: ["1.24", "1.25"]
+        go: ["1.25", "1.26"]
         test-tags:
           [
             "",
@@ -78,6 +78,6 @@ jobs:
         run: make test
 
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v5
+        uses: codecov/codecov-action@v6
         with:
           flags: ${{ matrix.os }},go-${{ matrix.go }},${{ matrix.test-tags }}

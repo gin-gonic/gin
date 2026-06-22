@@ -48,6 +48,11 @@ type LoggerConfig struct {
 	// Optional.
 	SkipPaths []string
 
+	// SkipQueryString indicates that query strings should not be written
+	// for cases such as when API keys are passed via query strings.
+	// Optional. Default value is false.
+	SkipQueryString bool
+
 	// Skip is a Skipper that indicates which logs should not be written.
 	// Optional.
 	Skip Skipper
@@ -298,7 +303,7 @@ func LoggerWithConfig(conf LoggerConfig) HandlerFunc {
 
 		param.BodySize = c.Writer.Size()
 
-		if raw != "" {
+		if raw != "" && !conf.SkipQueryString {
 			path = path + "?" + raw
 		}
 
