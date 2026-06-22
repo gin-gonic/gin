@@ -270,7 +270,8 @@ func TestSaveUploadedFileWithPermissionFailed(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, "permission_test", f.Filename)
 	var mode fs.FileMode = 0o644
-	require.Error(t, c.SaveUploadedFile(f, "test/permission_test", mode))
+	dst := filepath.Join(t.TempDir(), "test", "permission_test")
+	require.Error(t, c.SaveUploadedFile(f, dst, mode))
 }
 
 func TestContextReset(t *testing.T) {
