@@ -25,7 +25,7 @@ func TestResponseWriterFlushWithFlusher(t *testing.T) {
 
 // TestResponseWriterFlushWithNonFlusher verifies Flush() is a no-op
 // when the underlying ResponseWriter does not implement http.Flusher.
-// Reproduces the panic reported in https://github.com/gin-gonic/gin/issues/4460
+// Guards against the panic reported in https://github.com/gin-gonic/gin/issues/4460
 func TestResponseWriterFlushWithNonFlusher(t *testing.T) {
 	nonFlusher := &nonFlusherWriter{header: http.Header{}}
 	writer := &responseWriter{ResponseWriter: nonFlusher}
@@ -341,6 +341,3 @@ func TestPusherWithoutPusher(t *testing.T) {
 	pusher := w.Pusher()
 	assert.Nil(t, pusher, "Expected pusher to be nil")
 }
-
-// TestResponseWriterFlushWithFlusher verifies that Flush() delegates to
-// the underlying writer when it implements http.Flusher.
