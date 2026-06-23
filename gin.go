@@ -811,6 +811,7 @@ func redirectFixedPath(c *Context, root *node, trailingSlash bool) bool {
 
 	if fixedPath, ok := root.findCaseInsensitivePath(cleanPath(rPath), trailingSlash); ok {
 		req.URL.Path = bytesconv.BytesToString(fixedPath)
+		req.URL.RawPath = ""
 		redirectRequest(c)
 		return true
 	}
