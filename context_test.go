@@ -271,14 +271,7 @@ func TestSaveUploadedFileWithPermissionFailed(t *testing.T) {
 	assert.Equal(t, "permission_test", f.Filename)
 	var mode fs.FileMode = 0o644
 	dst := filepath.Join(t.TempDir(), "test", "permission_test")
-	// The fix in #4702 only chmods the directory when it is newly created.
-	// When running as root, chmod on any directory succeeds, so this test
-	// cannot reliably assert failure. Instead, verify that the directory
-	// is created with the requested mode and the file is written correctly.
-	require.NoError(t, c.SaveUploadedFile(f, dst, mode))
-	info, err := os.Stat(filepath.Dir(dst))
-	require.NoError(t, err)
-	assert.Equal(t, mode, info.Mode().Perm())
+	require.Error(t, c.SaveUploadedFile(f, dst, mode))
 }
 
 // TestSaveUploadedFileToExistingDir is a regression test for issue #4622.
