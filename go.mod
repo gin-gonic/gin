@@ -12,7 +12,7 @@ require (
 	github.com/mattn/go-isatty v0.0.20
 	github.com/modern-go/reflect2 v1.0.2
 	github.com/pelletier/go-toml/v2 v2.2.4
-	github.com/quic-go/quic-go v0.59.0
+	github.com/quic-go/quic-go v0.60.0
 	github.com/stretchr/testify v1.11.1
 	github.com/ugorji/go/codec v1.3.1
 	go.mongodb.org/mongo-driver/v2 v2.5.0

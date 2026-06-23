@@ -248,13 +248,11 @@ func TestSaveUploadedFileWithPermission(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, "permission_test", f.Filename)
 	var mode fs.FileMode = 0o755
-	require.NoError(t, c.SaveUploadedFile(f, "permission_test", mode))
-	t.Cleanup(func() {
-		assert.NoError(t, os.Remove("permission_test"))
-	})
-	info, err := os.Stat(filepath.Dir("permission_test"))
+	dst := filepath.Join(t.TempDir(), "subdir", "permission_test")
+	require.NoError(t, c.SaveUploadedFile(f, dst, mode))
+	info, err := os.Stat(filepath.Dir(dst))
 	require.NoError(t, err)
-	assert.Equal(t, info.Mode().Perm(), mode)
+	assert.Equal(t, mode, info.Mode().Perm())
 }
 
 func TestSaveUploadedFileWithPermissionFailed(t *testing.T) {
@@ -272,7 +270,52 @@ func TestSaveUploadedFileWithPermissionFailed(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, "permission_test", f.Filename)
 	var mode fs.FileMode = 0o644
-	require.Error(t, c.SaveUploadedFile(f, "test/permission_test", mode))
+	dst := filepath.Join(t.TempDir(), "test", "permission_test")
+	require.Error(t, c.SaveUploadedFile(f, dst, mode))
+}
+
+// TestSaveUploadedFileToExistingDir is a regression test for issue #4622.
+// SaveUploadedFile must not call os.Chmod on a directory that already exists,
+// because the process may not own it (e.g. /tmp on Linux/macOS), where chmod
+// fails with "operation not permitted". This asserts the behavioral contract
+// directly — a pre-existing directory's permissions are left unchanged — so it
+// catches the regression on every platform, including environments (root/CI,
+// user-owned $TMPDIR) where chmod on the temp dir would otherwise succeed.
+func TestSaveUploadedFileToExistingDir(t *testing.T) {
+	buf := new(bytes.Buffer)
+	mw := multipart.NewWriter(buf)
+	w, err := mw.CreateFormFile("file", "existing_dir_test")
+	require.NoError(t, err)
+	_, err = w.Write([]byte("existing_dir_test"))
+	require.NoError(t, err)
+	mw.Close()
+
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	c.Request, _ = http.NewRequest(http.MethodPost, "/", buf)
+	c.Request.Header.Set("Content-Type", mw.FormDataContentType())
+	f, err := c.FormFile("file")
+	require.NoError(t, err)
+
+	// A pre-existing directory owned by this process, set to a known mode.
+	dir := t.TempDir()
+	require.NoError(t, os.Chmod(dir, 0o700))
+
+	// Pass a perm that differs from the directory's current mode. The fix must
+	// not apply it to the pre-existing directory; the old code chmod'd it
+	// unconditionally, which also failed outright on unowned dirs like /tmp.
+	dst := filepath.Join(dir, "existing_dir_test.txt")
+	require.NoError(t, c.SaveUploadedFile(f, dst, 0o755))
+
+	// The pre-existing directory's permissions must be unchanged.
+	info, err := os.Stat(dir)
+	require.NoError(t, err)
+	assert.Equal(t, os.FileMode(0o700), info.Mode().Perm(),
+		"permissions of a pre-existing directory must not be modified")
+
+	// The file must still be written with the correct content.
+	content, err := os.ReadFile(dst)
+	require.NoError(t, err)
+	assert.Equal(t, "existing_dir_test", string(content))
 }
 
 func TestContextReset(t *testing.T) {
@@ -687,6 +730,50 @@ func TestContextCopy(t *testing.T) {
 	cp.Set("foo", "notBar")
 	assert.NotEqual(t, cp.Keys["foo"], c.Keys["foo"])
 	assert.Equal(t, cp.fullPath, c.fullPath)
+}
+
+func TestContextCopyCopiesErrors(t *testing.T) {
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	c.Request, _ = http.NewRequest(http.MethodGet, "/", nil)
+	_ = c.Error(errors.New("first error"))
+	_ = c.Error(errors.New("second error"))
+
+	cp := c.Copy()
+
+	// copied context has the same errors
+	assert.Len(t, cp.Errors, 2)
+	assert.Equal(t, c.Errors[0].Error(), cp.Errors[0].Error())
+	assert.Equal(t, c.Errors[1].Error(), cp.Errors[1].Error())
+
+	// mutations on the copy do not affect the original
+	_ = cp.Error(errors.New("third error"))
+	assert.Len(t, c.Errors, 2)
+	assert.Len(t, cp.Errors, 3)
+}
+
+func TestContextCopyCopiesAccepted(t *testing.T) {
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	c.Request, _ = http.NewRequest(http.MethodGet, "/", nil)
+	c.SetAccepted("application/json", "text/html")
+
+	cp := c.Copy()
+
+	assert.Equal(t, c.Accepted, cp.Accepted)
+
+	// mutations on the copy do not affect the original
+	cp.SetAccepted("text/plain")
+	assert.Equal(t, []string{"application/json", "text/html"}, c.Accepted)
+	assert.Equal(t, []string{"text/plain"}, cp.Accepted)
+}
+
+func TestContextCopyNilErrorsAndAccepted(t *testing.T) {
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	c.Request, _ = http.NewRequest(http.MethodGet, "/", nil)
+
+	cp := c.Copy()
+
+	assert.Nil(t, cp.Errors)
+	assert.Nil(t, cp.Accepted)
 }
 
 func TestContextHandlerName(t *testing.T) {
