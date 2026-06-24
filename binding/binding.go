@@ -2,8 +2,6 @@
 // Use of this source code is governed by a MIT style
 // license that can be found in the LICENSE file.
 
-//go:build !nomsgpack
-
 package binding
 
 import "net/http"
@@ -73,6 +71,11 @@ var Validator StructValidator = &defaultValidator{}
 
 // These implement the Binding interface and can be used to bind the data
 // present in the request to struct instances.
+//
+// Bindings for non-core content types (MsgPack, BSON, YAML, TOML, ProtoBuf)
+// are no longer registered here. Import the matching subpackage under
+// github.com/gin-gonic/gin/render/<format> to opt in; its init() registers the
+// binding with Default via Register so content-type negotiation keeps working.
 var (
 	JSON          BindingBody = jsonBinding{}
 	XML           BindingBody = xmlBinding{}
@@ -80,18 +83,27 @@ var (
 	Query         Binding     = queryBinding{}
 	FormPost      Binding     = formPostBinding{}
 	FormMultipart Binding     = formMultipartBinding{}
-	ProtoBuf      BindingBody = protobufBinding{}
-	MsgPack       BindingBody = msgpackBinding{}
-	YAML          BindingBody = yamlBinding{}
 	Uri           BindingUri  = uriBinding{}
 	Header        Binding     = headerBinding{}
 	Plain         BindingBody = plainBinding{}
-	TOML          BindingBody = tomlBinding{}
-	BSON          BindingBody = bsonBinding{}
 )
 
+// registry maps a content type to the Binding registered for it by an optional
+// format subpackage. It is only written from init() functions before main runs,
+// so it needs no synchronization.
+var registry = map[string]Binding{}
+
+// Register associates a Binding with one content type so that Default (and
+// therefore ShouldBind/Bind content-type negotiation) can resolve it. It is
+// intended to be called from an init() function in a format subpackage, e.g.
+// github.com/gin-gonic/gin/render/msgpack.
+func Register(contentType string, b Binding) {
+	registry[contentType] = b
+}
+
 // Default returns the appropriate Binding instance based on the HTTP method
-// and the content type.
+// and the content type. Content types served by an optional format subpackage
+// are resolved through the registry populated by Register.
 func Default(method, contentType string) Binding {
 	if method == http.MethodGet {
 		return Form
@@ -102,21 +114,22 @@ func Default(method, contentType string) Binding {
 		return JSON
 	case MIMEXML, MIMEXML2:
 		return XML
-	case MIMEPROTOBUF:
-		return ProtoBuf
-	case MIMEMSGPACK, MIMEMSGPACK2:
-		return MsgPack
-	case MIMEYAML, MIMEYAML2:
-		return YAML
-	case MIMETOML:
-		return TOML
 	case MIMEMultipartPOSTForm:
 		return FormMultipart
-	case MIMEBSON:
-		return BSON
-	default: // case MIMEPOSTForm:
+	case MIMEPOSTForm:
 		return Form
 	}
+
+	if b, ok := registry[contentType]; ok {
+		return b
+	}
+	return Form
+}
+
+// Validate runs the registered StructValidator against obj. Format subpackages
+// call it after decoding so that the `binding:""` struct tags keep working.
+func Validate(obj any) error {
+	return validate(obj)
 }
 
 func validate(obj any) error {
