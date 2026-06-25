@@ -1263,6 +1263,18 @@ func TestContextRenderNoContentSecureJSON(t *testing.T) {
 	assert.Equal(t, "application/json; charset=utf-8", w.Header().Get("Content-Type"))
 }
 
+func TestContextAsciiJSONNonBMP(t *testing.T) {
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
+
+	// Non-BMP characters (emoji) should be encoded as UTF-16 surrogate pairs
+	c.AsciiJSON(http.StatusOK, H{"emoji": "😀"})
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Equal(t, "{\"emoji\":\"\\ud83d\\ude00\"}", w.Body.String())
+	assert.Equal(t, "application/json", w.Header().Get("Content-Type"))
+}
+
 func TestContextRenderNoContentAsciiJSON(t *testing.T) {
 	w := httptest.NewRecorder()
 	c, _ := CreateTestContext(w)
