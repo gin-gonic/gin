@@ -120,6 +120,55 @@ func TestH2c(t *testing.T) {
 	assert.Equal(t, "<h1>Hello world</h1>", string(resp))
 }
 
+func TestH2CHandlerDefaultConfig(t *testing.T) {
+	r := Default()
+	r.UseH2C = true
+	handler := r.Handler()
+	// When UseH2C is true and H2CConfig is nil, Handler() should return an h2c handler (not the engine itself).
+	assert.NotEqual(t, r, handler)
+}
+
+func TestH2CHandlerWithCustomConfig(t *testing.T) {
+	ln, err := net.Listen("tcp", localhostIP+":0")
+	if err != nil {
+		t.Error(err)
+	}
+	r := Default()
+	r.UseH2C = true
+	r.H2CConfig = &http2.Server{
+		IdleTimeout: 60 * time.Second,
+	}
+	r.GET("/", func(c *Context) {
+		c.String(200, "<h1>Hello world</h1>")
+	})
+	go func() {
+		err := http.Serve(ln, r.Handler())
+		if err != nil {
+			t.Log(err)
+		}
+	}()
+	defer ln.Close()
+
+	url := "http://" + ln.Addr().String() + "/"
+
+	httpClient := http.Client{
+		Transport: &http2.Transport{
+			AllowHTTP: true,
+			DialTLS: func(netw, addr string, cfg *tls.Config) (net.Conn, error) {
+				return net.Dial(netw, addr)
+			},
+		},
+	}
+
+	res, err := httpClient.Get(url)
+	if err != nil {
+		t.Error(err)
+	}
+
+	resp, _ := io.ReadAll(res.Body)
+	assert.Equal(t, "<h1>Hello world</h1>", string(resp))
+}
+
 func TestLoadHTMLGlobTestMode(t *testing.T) {
 	ts := setupHTMLFiles(
 		t,
