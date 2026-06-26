@@ -511,7 +511,7 @@ walk: // Outer loop for walking the tree
 						*value.params = (*value.params)[:i+1]
 						val := path[:end]
 						if unescape {
-							if v, err := url.QueryUnescape(val); err == nil {
+							if v, err := url.PathUnescape(val); err == nil {
 								val = v
 							}
 						}
@@ -564,7 +564,7 @@ walk: // Outer loop for walking the tree
 						*value.params = (*value.params)[:i+1]
 						val := path
 						if unescape {
-							if v, err := url.QueryUnescape(path); err == nil {
+							if v, err := url.PathUnescape(val); err == nil {
 								val = v
 							}
 						}
