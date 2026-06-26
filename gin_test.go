@@ -1156,3 +1156,62 @@ func TestUpdateRouteTreesCalledOnce(t *testing.T) {
 		assert.Equal(t, "ok", w.Body.String())
 	}
 }
+
+// Test the fix for https://github.com/gin-gonic/gin/issues/4189
+func TestSkipMethodNotAllowedMiddleware(t *testing.T) {
+	g := New()
+	g.HandleMethodNotAllowed = true
+	g.SkipMethodNotAllowedMiddleware = true
+
+	var middlewareCalled bool
+	middleware := func(c *Context) {
+		middlewareCalled = true
+		c.Next()
+	}
+	noMethodHandler := func(c *Context) {
+		c.String(http.StatusMethodNotAllowed, "method not allowed")
+	}
+
+	g.Use(middleware)
+	g.NoMethod(noMethodHandler)
+	g.POST("/test", func(c *Context) {
+		c.String(http.StatusOK, "ok")
+	})
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest(http.MethodGet, "/test", nil)
+	g.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusMethodNotAllowed, w.Code)
+	assert.Equal(t, "method not allowed", w.Body.String())
+	assert.False(t, middlewareCalled, "middleware should not be called when SkipMethodNotAllowedMiddleware is true")
+}
+
+func TestSkipMethodNotAllowedMiddlewareDisabled(t *testing.T) {
+	g := New()
+	g.HandleMethodNotAllowed = true
+	g.SkipMethodNotAllowedMiddleware = false
+
+	var middlewareCalled bool
+	middleware := func(c *Context) {
+		middlewareCalled = true
+		c.Next()
+	}
+	noMethodHandler := func(c *Context) {
+		c.String(http.StatusMethodNotAllowed, "method not allowed")
+	}
+
+	g.Use(middleware)
+	g.NoMethod(noMethodHandler)
+	g.POST("/test", func(c *Context) {
+		c.String(http.StatusOK, "ok")
+	})
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest(http.MethodGet, "/test", nil)
+	g.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusMethodNotAllowed, w.Code)
+	assert.Equal(t, "method not allowed", w.Body.String())
+	assert.True(t, middlewareCalled, "middleware should be called when SkipMethodNotAllowedMiddleware is false")
+}
