@@ -787,7 +787,7 @@ func (c *Context) BindJSON(obj any) error {
 	return c.MustBindWith(obj, binding.JSON)
 }
 
-// BindXML is a shortcut for c.MustBindWith(obj, binding.BindXML).
+// BindXML is a shortcut for c.MustBindWith(obj, binding.XML).
 func (c *Context) BindXML(obj any) error {
 	return c.MustBindWith(obj, binding.XML)
 }
