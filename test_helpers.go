@@ -41,7 +41,7 @@ func waitForServerReady(url string, maxAttempts int) error {
 		Timeout: 100 * time.Millisecond,
 	}
 
-	for i := 0; i < maxAttempts; i++ {
+	for i := range maxAttempts {
 		resp, err := client.Get(url)
 		if err == nil {
 			resp.Body.Close()
