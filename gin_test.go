@@ -570,6 +570,37 @@ func TestRebuild404Handlers(t *testing.T) {
 	compareFunc(t, router.allNoRoute[1], middleware0)
 }
 
+func TestUseOnlyAppliesToRoutesRegisteredAfterIt(t *testing.T) {
+	signature := ""
+	router := New()
+
+	router.GET("/before", func(c *Context) {
+		signature += "A"
+		c.Status(http.StatusNoContent)
+	})
+
+	router.Use(func(c *Context) {
+		signature += "M"
+		c.Next()
+		signature += "N"
+	})
+
+	router.GET("/after", func(c *Context) {
+		signature += "B"
+		c.Status(http.StatusNoContent)
+	})
+
+	w := PerformRequest(router, http.MethodGet, "/before")
+	assert.Equal(t, http.StatusNoContent, w.Code)
+	assert.Equal(t, "A", signature)
+
+	signature = ""
+
+	w = PerformRequest(router, http.MethodGet, "/after")
+	assert.Equal(t, http.StatusNoContent, w.Code)
+	assert.Equal(t, "MBN", signature)
+}
+
 func TestNoMethodWithGlobalHandlers(t *testing.T) {
 	var middleware0 HandlerFunc = func(c *Context) {}
 	var middleware1 HandlerFunc = func(c *Context) {}
