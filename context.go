@@ -15,6 +15,7 @@ import (
 	"mime/multipart"
 	"net"
 	"net/http"
+	"net/netip"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -1014,7 +1015,7 @@ func (c *Context) ClientIP() string {
 
 	var (
 		trusted  bool
-		remoteIP net.IP
+		remoteIP netip.Addr
 	)
 	// If gin is listening a unix socket, always trust it.
 	localAddr, ok := c.Request.Context().Value(http.LocalAddrContextKey).(net.Addr)
@@ -1027,8 +1028,9 @@ func (c *Context) ClientIP() string {
 		// It also checks if the remoteIP is a trusted proxy or not.
 		// In order to perform this validation, it will see if the IP is contained within at least one of the CIDR blocks
 		// defined by Engine.SetTrustedProxies()
-		remoteIP = net.ParseIP(c.RemoteIP())
-		if remoteIP == nil {
+		var err error
+		remoteIP, err = netip.ParseAddr(c.RemoteIP())
+		if err != nil {
 			return ""
 		}
 		trusted = c.engine.isTrustedProxy(remoteIP)
@@ -1042,6 +1044,9 @@ func (c *Context) ClientIP() string {
 				return ip
 			}
 		}
+	}
+	if !remoteIP.IsValid() {
+		return ""
 	}
 	return remoteIP.String()
 }

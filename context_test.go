@@ -17,6 +17,7 @@ import (
 	"net"
 	"net/http"
 	"net/http/httptest"
+	"net/netip"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -2071,6 +2072,12 @@ func TestContextClientIP(t *testing.T) {
 	c.Request.RemoteAddr = addr.String()
 	assert.Equal(t, "20.20.20.20", c.ClientIP())
 
+	// unix address with no valid forwarded header: remoteIP stays zero, must return ""
+	c.Request.Header.Del("X-Forwarded-For")
+	c.Request.Header.Del("X-Real-IP")
+	assert.Empty(t, c.ClientIP())
+	resetContextForClientIPTests(c)
+
 	// reset
 	c.Request = c.Request.WithContext(context.Background())
 	resetContextForClientIPTests(c)
@@ -3275,9 +3282,9 @@ func TestRemoteIPFail(t *testing.T) {
 	c, _ := CreateTestContext(httptest.NewRecorder())
 	c.Request, _ = http.NewRequest(http.MethodPost, "/", nil)
 	c.Request.RemoteAddr = "[:::]:80"
-	ip := net.ParseIP(c.RemoteIP())
+	ip, err := netip.ParseAddr(c.RemoteIP())
 	trust := c.engine.isTrustedProxy(ip)
-	assert.Nil(t, ip)
+	require.Error(t, err)
 	assert.False(t, trust)
 }
 
