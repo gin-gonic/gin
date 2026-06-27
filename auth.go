@@ -52,6 +52,12 @@ func BasicAuthForRealm(accounts Accounts, realm string) HandlerFunc {
 	realm = "Basic realm=" + strconv.Quote(realm)
 	pairs := processAccounts(accounts)
 	return func(c *Context) {
+		// Enforce HTTPS: Basic Auth credentials are Base64-encoded, not
+		// encrypted, and must not be transmitted over plain HTTP.
+		if c.Request.TLS == nil && c.GetHeader("X-Forwarded-Proto") != "https" {
+			c.AbortWithStatus(http.StatusForbidden)
+			return
+		}
 		// Search user in the slice of allowed credentials
 		user, found := pairs.searchCredential(c.requestHeader("Authorization"))
 		if !found {
@@ -102,6 +108,12 @@ func BasicAuthForProxy(accounts Accounts, realm string) HandlerFunc {
 	realm = "Basic realm=" + strconv.Quote(realm)
 	pairs := processAccounts(accounts)
 	return func(c *Context) {
+		// Enforce HTTPS: Basic Auth credentials are Base64-encoded, not
+		// encrypted, and must not be transmitted over plain HTTP.
+		if c.Request.TLS == nil && c.GetHeader("X-Forwarded-Proto") != "https" {
+			c.AbortWithStatus(http.StatusForbidden)
+			return
+		}
 		proxyUser, found := pairs.searchCredential(c.requestHeader("Proxy-Authorization"))
 		if !found {
 			// Credentials doesn't match, we return 407 and abort handlers chain.
