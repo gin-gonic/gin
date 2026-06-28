@@ -66,7 +66,9 @@ type Context struct {
 	Params   Params
 	handlers HandlersChain
 	index    int8
-	fullPath string
+	// abortedBy is the index of the handler that called Abort(), if any.
+	abortedBy int8
+	fullPath  string
 
 	engine       *Engine
 	params       *Params
@@ -105,6 +107,7 @@ func (c *Context) reset() {
 	c.Params = c.Params[:0]
 	c.handlers = nil
 	c.index = -1
+	c.abortedBy = -1
 
 	c.fullPath = ""
 	c.Keys = nil
@@ -129,6 +132,7 @@ func (c *Context) Copy() *Context {
 	cp.writermem.ResponseWriter = nil
 	cp.Writer = &cp.writermem
 	cp.index = abortIndex
+	cp.abortedBy = c.abortedBy
 	cp.handlers = nil
 	cp.fullPath = c.fullPath
 
@@ -215,7 +219,27 @@ func (c *Context) IsAborted() bool {
 // If the authorization fails (ex: the password does not match), call Abort to ensure the remaining handlers
 // for this request are not called.
 func (c *Context) Abort() {
+	if !c.IsAborted() {
+		c.abortedBy = c.index
+	}
 	c.index = abortIndex
+}
+
+// AbortedByHandler returns the handler that called Abort(), if available.
+func (c *Context) AbortedByHandler() HandlerFunc {
+	if c.abortedBy < 0 || int(c.abortedBy) >= len(c.handlers) {
+		return nil
+	}
+	return c.handlers[c.abortedBy]
+}
+
+// AbortedBy returns the handler name that called Abort().
+func (c *Context) AbortedBy() string {
+	h := c.AbortedByHandler()
+	if h == nil {
+		return ""
+	}
+	return nameOfFunction(h)
 }
 
 // AbortWithStatus calls `Abort()` and writes the headers with the specified status code.

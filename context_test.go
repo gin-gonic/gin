@@ -801,6 +801,18 @@ func handlerNameTest(c *Context) {
 func handlerNameTest2(c *Context) {
 }
 
+func abortedByMiddleware1(c *Context) {
+	c.Next()
+}
+
+func abortedByMiddleware2(c *Context) {
+	c.Abort()
+}
+
+func abortedByMiddleware3(c *Context) {
+	c.Abort()
+}
+
 var handlerTest HandlerFunc = func(c *Context) {
 }
 
@@ -809,6 +821,42 @@ func TestContextHandler(t *testing.T) {
 	c.handlers = HandlersChain{func(c *Context) {}, handlerTest}
 
 	assert.Equal(t, reflect.ValueOf(handlerTest).Pointer(), reflect.ValueOf(c.Handler()).Pointer())
+}
+
+func TestContextAbortedByWithoutHandler(t *testing.T) {
+	c, _ := CreateTestContext(httptest.NewRecorder())
+
+	assert.Nil(t, c.AbortedByHandler())
+	assert.Empty(t, c.AbortedBy())
+
+	c.Abort()
+
+	assert.True(t, c.IsAborted())
+	assert.Nil(t, c.AbortedByHandler())
+	assert.Empty(t, c.AbortedBy())
+}
+
+func TestContextAbortedByHandler(t *testing.T) {
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	c.handlers = HandlersChain{abortedByMiddleware1, abortedByMiddleware2, abortedByMiddleware3}
+
+	c.Next()
+
+	assert.True(t, c.IsAborted())
+	assert.Equal(t, reflect.ValueOf(abortedByMiddleware2).Pointer(), reflect.ValueOf(c.AbortedByHandler()).Pointer())
+	assert.Regexp(t, "^(.*/vendor/)?github.com/gin-gonic/gin.abortedByMiddleware2$", c.AbortedBy())
+}
+
+func TestContextAbortedByPreserveFirstAborter(t *testing.T) {
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	c.handlers = HandlersChain{abortedByMiddleware2}
+
+	c.Next()
+	firstAborter := c.AbortedByHandler()
+	c.Abort()
+
+	assert.True(t, c.IsAborted())
+	assert.Equal(t, reflect.ValueOf(firstAborter).Pointer(), reflect.ValueOf(c.AbortedByHandler()).Pointer())
 }
 
 func TestContextQuery(t *testing.T) {
