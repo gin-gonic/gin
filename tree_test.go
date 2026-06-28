@@ -93,6 +93,18 @@ func TestCountParams(t *testing.T) {
 	if countParams("/path/:param1/static/*catch-all") != 2 {
 		t.Fail()
 	}
+	if countParams("/users:batchGet") != 0 {
+		t.Fail()
+	}
+	if countParams("/users:go") != 0 {
+		t.Fail()
+	}
+	if countParams("/v:version") != 1 {
+		t.Fail()
+	}
+	if countParams("/customers/:customer_id:mutate") != 1 {
+		t.Fail()
+	}
 	if countParams(strings.Repeat("/:param", 256)) != 256 {
 		t.Fail()
 	}
@@ -496,8 +508,6 @@ func TestEmptyWildcardName(t *testing.T) {
 	tree := &node{}
 
 	routes := [...]string{
-		"/user:",
-		"/user:/",
 		"/cmd/:/",
 		"/src/*",
 	}
@@ -540,9 +550,9 @@ func TestTreeDoubleWildcard(t *testing.T) {
 	const panicMsg = "only one wildcard per path segment is allowed"
 
 	routes := [...]string{
-		"/:foo:bar",
-		"/:foo:bar/",
 		"/:foo*bar",
+		"/:foo*bar:baz",
+		"/*foo:bar",
 	}
 
 	for _, route := range routes {
@@ -555,6 +565,49 @@ func TestTreeDoubleWildcard(t *testing.T) {
 			t.Fatalf(`"Expected panic "%s" for route '%s', got "%v"`, panicMsg, route, recv)
 		}
 	}
+}
+
+func TestTreeCustomVerb(t *testing.T) {
+	tree := &node{}
+
+	routes := [...]string{
+		"/user:",
+		"/user:/",
+		"/users:batchGet",
+		"/users:batchCreate",
+		"/customers/:customer_id",
+		"/customers/:customer_id:mutate",
+	}
+	for _, route := range routes {
+		tree.addRoute(route, fakeHandler(route))
+	}
+
+	checkRequests(t, tree, testRequests{
+		{"/user:", false, "/user:", nil},
+		{"/user:/", false, "/user:/", nil},
+		{"/users:batchGet", false, "/users:batchGet", nil},
+		{"/users:batchCreate", false, "/users:batchCreate", nil},
+		{"/customers/123", false, "/customers/:customer_id", Params{Param{Key: "customer_id", Value: "123"}}},
+		{"/customers/123:mutate", false, "/customers/:customer_id:mutate", Params{Param{Key: "customer_id", Value: "123"}}},
+		{"/customers/123:mutatex", false, "/customers/:customer_id", Params{Param{Key: "customer_id", Value: "123:mutatex"}}},
+	})
+}
+
+func TestTreeCustomVerbBeforeBaseParam(t *testing.T) {
+	tree := &node{}
+
+	routes := [...]string{
+		"/customers/:customer_id:mutate",
+		"/customers/:customer_id",
+	}
+	for _, route := range routes {
+		tree.addRoute(route, fakeHandler(route))
+	}
+
+	checkRequests(t, tree, testRequests{
+		{"/customers/123", false, "/customers/:customer_id", Params{Param{Key: "customer_id", Value: "123"}}},
+		{"/customers/123:mutate", false, "/customers/:customer_id:mutate", Params{Param{Key: "customer_id", Value: "123"}}},
+	})
 }
 
 /*func TestTreeDuplicateWildcard(t *testing.T) {
@@ -721,6 +774,8 @@ func TestTreeFindCaseInsensitivePath(t *testing.T) {
 		"/hi",
 		"/b/",
 		"/ABC/",
+		"/users:batchGet",
+		"/customers/:customer_id:mutate",
 		"/search/:query",
 		"/cmd/:tool/",
 		"/src/*filepath",
@@ -798,6 +853,8 @@ func TestTreeFindCaseInsensitivePath(t *testing.T) {
 		{"/aBc/", "/ABC/", true, false},
 		{"/abC", "/ABC/", true, true},
 		{"/abC/", "/ABC/", true, false},
+		{"/USERS:BATCHGET", "/users:batchGet", true, false},
+		{"/USERS:BATCHGET/", "/users:batchGet", true, true},
 		{"/SEARCH/QUERY", "/search/QUERY", true, false},
 		{"/SEARCH/QUERY/", "/search/QUERY", true, true},
 		{"/CMD/TOOL/", "/cmd/TOOL/", true, false},
@@ -949,7 +1006,6 @@ func TestTreeWildcardConflictEx(t *testing.T) {
 		{"/who/are/foo", "/foo", `/who/are/\*you`, `/\*you`},
 		{"/who/are/foo/", "/foo/", `/who/are/\*you`, `/\*you`},
 		{"/who/are/foo/bar", "/foo/bar", `/who/are/\*you`, `/\*you`},
-		{"/con:nection", ":nection", `/con:tact`, `:tact`},
 	}
 
 	for _, conflict := range conflicts {
