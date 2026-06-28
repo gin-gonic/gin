@@ -789,3 +789,107 @@ func TestEngineHandleMethodNotAllowedCornerCase(t *testing.T) {
 	w := PerformRequest(r, http.MethodGet, "/base/v1/user/groups")
 	assert.Equal(t, http.StatusNotFound, w.Code)
 }
+
+func TestRouterGoogleAIPCustomVerbRoutes(t *testing.T) {
+	router := New()
+
+	router.POST("/users:batchGet", func(c *Context) {
+		assert.Equal(t, "/users:batchGet", c.FullPath())
+		c.String(http.StatusOK, "batch-get")
+	})
+	router.POST("/users:go", func(c *Context) {
+		assert.Equal(t, "/users:go", c.FullPath())
+		assert.Empty(t, c.Param("go"))
+		c.String(http.StatusOK, "go")
+	})
+	router.POST("/users:batchCreate", func(c *Context) {
+		assert.Equal(t, "/users:batchCreate", c.FullPath())
+		c.String(http.StatusOK, "batch-create")
+	})
+
+	w := PerformRequest(router, http.MethodPost, "/users:batchGet")
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Equal(t, "batch-get", w.Body.String())
+
+	w = PerformRequest(router, http.MethodPost, "/users:batchCreate")
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Equal(t, "batch-create", w.Body.String())
+
+	w = PerformRequest(router, http.MethodPost, "/users:go")
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Equal(t, "go", w.Body.String())
+
+	w = PerformRequest(router, http.MethodPost, "/users:anything")
+	assert.Equal(t, http.StatusNotFound, w.Code)
+}
+
+func TestRouterGoogleAIPCustomVerbAfterParam(t *testing.T) {
+	router := New()
+
+	router.POST("/customers/:customer_id", func(c *Context) {
+		assert.Equal(t, "/customers/:customer_id", c.FullPath())
+		assert.Equal(t, "123", c.Param("customer_id"))
+		c.String(http.StatusOK, "get")
+	})
+	router.POST("/customers/:customer_id:mutate", func(c *Context) {
+		assert.Equal(t, "/customers/:customer_id:mutate", c.FullPath())
+		assert.Equal(t, "123", c.Param("customer_id"))
+		c.String(http.StatusOK, "mutate")
+	})
+	router.POST("/customers/:customer_id:mutate/static", func(c *Context) {
+		assert.Equal(t, "/customers/:customer_id:mutate/static", c.FullPath())
+		assert.Equal(t, "123", c.Param("customer_id"))
+		c.String(http.StatusOK, "static")
+	})
+	router.POST("/customers/:customer_id:mutate/:name", func(c *Context) {
+		assert.Equal(t, "/customers/:customer_id:mutate/:name", c.FullPath())
+		assert.Equal(t, "123", c.Param("customer_id"))
+		c.String(http.StatusOK, c.Param("name"))
+	})
+	router.POST("/customers/:customer_id/devices", func(c *Context) {
+		assert.Equal(t, "/customers/:customer_id/devices", c.FullPath())
+		assert.Equal(t, "123", c.Param("customer_id"))
+		c.String(http.StatusOK, "devices")
+	})
+
+	w := PerformRequest(router, http.MethodPost, "/customers/123")
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Equal(t, "get", w.Body.String())
+
+	w = PerformRequest(router, http.MethodPost, "/customers/123:mutate")
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Equal(t, "mutate", w.Body.String())
+
+	w = PerformRequest(router, http.MethodPost, "/customers/123:mutate/static")
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Equal(t, "static", w.Body.String())
+
+	w = PerformRequest(router, http.MethodPost, "/customers/123:mutate/details")
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Equal(t, "details", w.Body.String())
+
+	w = PerformRequest(router, http.MethodPost, "/customers/123/devices")
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Equal(t, "devices", w.Body.String())
+}
+
+func TestRouterPrefixParamRoutesRemainSupported(t *testing.T) {
+	router := New()
+
+	router.GET("/id:id", func(c *Context) {
+		assert.Equal(t, "/id:id", c.FullPath())
+		c.String(http.StatusOK, c.Param("id"))
+	})
+	router.GET("/v:version", func(c *Context) {
+		assert.Equal(t, "/v:version", c.FullPath())
+		c.String(http.StatusOK, c.Param("version"))
+	})
+
+	w := PerformRequest(router, http.MethodGet, "/id123")
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Equal(t, "123", w.Body.String())
+
+	w = PerformRequest(router, http.MethodGet, "/v1")
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Equal(t, "1", w.Body.String())
+}

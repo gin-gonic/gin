@@ -171,6 +171,16 @@ func main() {
     c.String(http.StatusOK, "The available groups are [...]")
   })
 
+  // Gin also supports literal colon suffixes used by custom verbs, such as Google AIP-136.
+  router.POST("/users:batchGet", func(c *gin.Context) {
+    c.String(http.StatusOK, "batch get users")
+  })
+
+  router.POST("/customers/:customerID:mutate", func(c *gin.Context) {
+    customerID := c.Param("customerID")
+    c.String(http.StatusOK, "mutate customer %s", customerID)
+  })
+
   router.Run(":8080")
 }
 ```
