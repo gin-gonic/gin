@@ -732,6 +732,49 @@ func TestContextCopy(t *testing.T) {
 	assert.Equal(t, cp.fullPath, c.fullPath)
 }
 
+func TestContextCopyConcurrentKeysAccess(t *testing.T) {
+	c, _ := CreateTestContext(httptest.NewRecorder())
+
+	for i := 0; i < 100; i++ {
+		c.mu.Lock()
+		c.Keys = nil
+		c.mu.Unlock()
+
+		start := make(chan struct{})
+		var wg sync.WaitGroup
+		wg.Add(2)
+
+		go func() {
+			defer wg.Done()
+			<-start
+			c.Set("foo", "bar")
+		}()
+
+		go func() {
+			defer wg.Done()
+			<-start
+			_ = c.Copy()
+		}()
+
+		close(start)
+		wg.Wait()
+	}
+}
+
+func BenchmarkContextCopy(b *testing.B) {
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	c.Request = httptest.NewRequest(http.MethodGet, "/", nil)
+	c.Params = Params{{Key: "id", Value: "123"}}
+	c.Set("foo", "bar")
+	c.SetAccepted(MIMEJSON)
+	_ = c.Error(errors.New("first error"))
+
+	b.ReportAllocs()
+	for b.Loop() {
+		_ = c.Copy()
+	}
+}
+
 func TestContextCopyCopiesErrors(t *testing.T) {
 	c, _ := CreateTestContext(httptest.NewRecorder())
 	c.Request, _ = http.NewRequest(http.MethodGet, "/", nil)
