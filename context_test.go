@@ -2100,8 +2100,8 @@ func TestContextErrorWithEmptyUnwrap(t *testing.T) {
 
 type emptyJoinError struct{ err error }
 
-func (e emptyJoinError) Error() string     { return e.err.Error() }
-func (e emptyJoinError) Unwrap() []error   { return nil }
+func (e emptyJoinError) Error() string   { return e.err.Error() }
+func (e emptyJoinError) Unwrap() []error { return nil }
 
 func TestContextAbortWithError(t *testing.T) {
 	w := httptest.NewRecorder()
