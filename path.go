@@ -25,12 +25,19 @@ func cleanPath(p string) string {
 	if p == "" {
 		return "/"
 	}
-	// Prevent scheme-relative ("//...") or backslash-based absolute ("/\\...") paths.
-	for len(p) > 1 && p[0] == '/' && p[1] == '/' {
-		p = p[1:]
-	}
-	if len(p) > 1 && p[0] == '/' && p[1] == '\\' {
-		p = "/" + p[2:]
+	// Prevent scheme-relative or backslash-based absolute redirects by
+	// normalizing any leading run of '/' and '\' down to exactly one '/'.
+	if len(p) > 0 && (p[0] == '/' || p[0] == '\\') {
+		i := 0
+		for i < len(p) && (p[i] == '/' || p[i] == '\\') {
+			i++
+		}
+		if i == len(p) {
+			return "/"
+		}
+		if i > 1 || p[0] == '\\' {
+			p = "/" + p[i:]
+		}
 	}
 
 	// Reasonably sized buffer on stack to avoid allocations in the common case.
