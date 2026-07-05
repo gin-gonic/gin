@@ -6,7 +6,7 @@
   - [Build with json replacement](#build-with-json-replacement)
   - [Build without MsgPack rendering feature](#build-without-msgpack-rendering-feature)
 - [Routing](#routing)
-  - [Using GET, POST, PUT, PATCH, DELETE and OPTIONS](#using-get-post-put-patch-delete-and-options)
+  - [Using GET, POST, PUT, PATCH, QUERY, DELETE and OPTIONS](#using-get-post-put-patch-delete-query-and-options)
   - [Parameters in path](#parameters-in-path)
   - [Querystring parameters](#querystring-parameters)
   - [Multipart/Urlencoded Form](#multiparturlencoded-form)
@@ -114,7 +114,7 @@ This is useful to reduce the binary size of executable files. See the [detail in
 
 > Learn how to define routes, handle parameters, and organize endpoints.
 
-### Using GET, POST, PUT, PATCH, DELETE and OPTIONS
+### Using GET, POST, PUT, PATCH, DELETE, QUERY and OPTIONS
 
 ```go
 func main() {
@@ -127,6 +127,7 @@ func main() {
   router.PUT("/somePut", putting)
   router.DELETE("/someDelete", deleting)
   router.PATCH("/somePatch", patching)
+  router.QUERY("/somePatch", querying)
   router.HEAD("/someHead", head)
   router.OPTIONS("/someOptions", options)
 

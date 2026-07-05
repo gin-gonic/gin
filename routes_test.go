@@ -116,6 +116,7 @@ func TestRouterGroupRouteOK(t *testing.T) {
 	testRouteOK(http.MethodDelete, t)
 	testRouteOK(http.MethodConnect, t)
 	testRouteOK(http.MethodTrace, t)
+	testRouteOK(MethodQuery, t)
 }
 
 func TestRouteNotOK(t *testing.T) {
@@ -128,6 +129,7 @@ func TestRouteNotOK(t *testing.T) {
 	testRouteNotOK(http.MethodDelete, t)
 	testRouteNotOK(http.MethodConnect, t)
 	testRouteNotOK(http.MethodTrace, t)
+	testRouteNotOK(MethodQuery, t)
 }
 
 func TestRouteNotOK2(t *testing.T) {
@@ -140,6 +142,7 @@ func TestRouteNotOK2(t *testing.T) {
 	testRouteNotOK2(http.MethodDelete, t)
 	testRouteNotOK2(http.MethodConnect, t)
 	testRouteNotOK2(http.MethodTrace, t)
+	testRouteNotOK2(MethodQuery, t)
 }
 
 func TestRouteRedirectTrailingSlash(t *testing.T) {
