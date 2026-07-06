@@ -990,6 +990,11 @@ func (c *Context) ShouldBindBodyWithPlain(obj any) error {
 	return c.ShouldBindBodyWith(obj, binding.Plain)
 }
 
+// ShouldBindBodyWithProtoBuf is a shortcut for c.ShouldBindBodyWith(obj, binding.ProtoBuf).
+func (c *Context) ShouldBindBodyWithProtoBuf(obj any) error {
+	return c.ShouldBindBodyWith(obj, binding.ProtoBuf)
+}
+
 // ClientIP implements one best effort algorithm to return the real client IP.
 // It calls c.RemoteIP() under the hood, to check if the remote IP is a trusted proxy or not.
 // If it is it will then try to parse the headers defined in Engine.RemoteIPHeaders (defaulting to [X-Forwarded-For, X-Real-IP]).

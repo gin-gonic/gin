@@ -1576,6 +1576,7 @@ For this, you can use `c.ShouldBindBodyWith` or shortcuts.
 - `c.ShouldBindBodyWithXML` is a shortcut for c.ShouldBindBodyWith(obj, binding.XML).
 - `c.ShouldBindBodyWithYAML` is a shortcut for c.ShouldBindBodyWith(obj, binding.YAML).
 - `c.ShouldBindBodyWithTOML` is a shortcut for c.ShouldBindBodyWith(obj, binding.TOML).
+- `c.ShouldBindBodyWithProtoBuf` is a shortcut for c.ShouldBindBodyWith(obj, binding.ProtoBuf).
 
 ```go
 func SomeHandler(c *gin.Context) {
