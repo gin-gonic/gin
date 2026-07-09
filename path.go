@@ -26,6 +26,22 @@ func cleanPath(p string) string {
 		return "/"
 	}
 
+	if len(p) > 1 {
+		if p[0] != '/' && isSingleCleanPathSegment(p) {
+			return "/" + p
+		}
+		if p[0] == '/' {
+			if p[1] == '/' {
+				if cleaned, ok := cleanRepeatedLeadingSlash(p); ok {
+					return cleaned
+				}
+			}
+			if cleaned, ok := cleanTrailingParentPath(p); ok {
+				return cleaned
+			}
+		}
+	}
+
 	// Reasonably sized buffer on stack to avoid allocations in the common case.
 	// If a larger buffer is required, it gets allocated dynamically.
 	buf := make([]byte, 0, stackBufSize)
@@ -121,6 +137,67 @@ func cleanPath(p string) string {
 		return p[:w]
 	}
 	return string(buf[:w])
+}
+
+func isSingleCleanPathSegment(s string) bool {
+	if s == "." || s == ".." {
+		return false
+	}
+	for i := 0; i < len(s); i++ {
+		if s[i] == '/' {
+			return false
+		}
+	}
+	return true
+}
+
+func cleanRepeatedLeadingSlash(p string) (string, bool) {
+	i := 1
+	for i < len(p) && p[i] == '/' {
+		i++
+	}
+	if i == len(p) || p[i:] == "." || p[i:] == ".." {
+		return "/", true
+	}
+	if isSingleCleanPathSegment(p[i:]) {
+		return p[i-1:], true
+	}
+	return "", false
+}
+
+func cleanTrailingParentPath(p string) (string, bool) {
+	parentEnd := len(p) - 3
+	if parentEnd < 1 || p[parentEnd:] != "/.." || !isCleanAbsolutePath(p[:parentEnd]) {
+		return "", false
+	}
+
+	segmentStart := parentEnd - 1
+	for segmentStart > 0 && p[segmentStart] != '/' {
+		segmentStart--
+	}
+	if segmentStart == 0 {
+		return "/", true
+	}
+	return p[:segmentStart], true
+}
+
+func isCleanAbsolutePath(p string) bool {
+	if p == "" || p[0] != '/' {
+		return false
+	}
+
+	segmentStart := 1
+	for i := 1; i <= len(p); i++ {
+		if i < len(p) && p[i] != '/' {
+			continue
+		}
+		switch p[segmentStart:i] {
+		case "", ".", "..":
+			return false
+		}
+		segmentStart = i + 1
+	}
+	return true
 }
 
 // Internal helper to lazily create a buffer if necessary.
