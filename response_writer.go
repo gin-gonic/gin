@@ -44,6 +44,9 @@ type ResponseWriter interface {
 
 	// Pusher get the http.Pusher for server push
 	Pusher() http.Pusher
+
+	// Unwrap get the underlying http.ResponseWriter
+	Unwrap() http.ResponseWriter
 }
 
 type responseWriter struct {
