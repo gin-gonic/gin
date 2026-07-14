@@ -389,7 +389,8 @@ func setWithProperType(val string, value reflect.Value, field reflect.StructFiel
 
 func setIntField(val string, bitSize int, field reflect.Value) error {
 	if val == "" {
-		val = "0"
+		field.SetInt(0)
+		return nil
 	}
 	intVal, err := strconv.ParseInt(val, 10, bitSize)
 	if err == nil {
@@ -400,7 +401,8 @@ func setIntField(val string, bitSize int, field reflect.Value) error {
 
 func setUintField(val string, bitSize int, field reflect.Value) error {
 	if val == "" {
-		val = "0"
+		field.SetUint(0)
+		return nil
 	}
 	uintVal, err := strconv.ParseUint(val, 10, bitSize)
 	if err == nil {
@@ -411,7 +413,8 @@ func setUintField(val string, bitSize int, field reflect.Value) error {
 
 func setBoolField(val string, field reflect.Value) error {
 	if val == "" {
-		val = "false"
+		field.SetBool(false)
+		return nil
 	}
 	boolVal, err := strconv.ParseBool(val)
 	if err == nil {
@@ -422,7 +425,8 @@ func setBoolField(val string, field reflect.Value) error {
 
 func setFloatField(val string, bitSize int, field reflect.Value) error {
 	if val == "" {
-		val = "0.0"
+		field.SetFloat(0)
+		return nil
 	}
 	floatVal, err := strconv.ParseFloat(val, bitSize)
 	if err == nil {
@@ -509,7 +513,8 @@ func setSlice(vals []string, value reflect.Value, field reflect.StructField, opt
 
 func setTimeDuration(val string, value reflect.Value) error {
 	if val == "" {
-		val = "0"
+		value.Set(reflect.ValueOf(time.Duration(0)))
+		return nil
 	}
 
 	d, err := time.ParseDuration(val)
