@@ -5,6 +5,7 @@
 package render
 
 import (
+	"encoding/json"
 	"encoding/xml"
 	"errors"
 	"html/template"
@@ -259,6 +260,23 @@ func TestRenderAsciiJSON(t *testing.T) {
 	err = (AsciiJSON{data2}).Render(w2)
 	require.NoError(t, err)
 	assert.Equal(t, "3.1415926", w2.Body.String())
+}
+
+func TestRenderAsciiJSONNonBMP(t *testing.T) {
+	w := httptest.NewRecorder()
+	data := map[string]any{"msg": "😀"}
+
+	err := (AsciiJSON{data}).Render(w)
+	require.NoError(t, err)
+
+	// U+1F600 is outside the Basic Multilingual Plane and must be encoded as
+	// a UTF-16 surrogate pair (RFC 8259 §7), not a single \u escape with 5+
+	// hex digits.
+	assert.Equal(t, "{\"msg\":\"\\ud83d\\ude00\"}", w.Body.String())
+
+	var decoded map[string]string
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &decoded))
+	assert.Equal(t, "😀", decoded["msg"])
 }
 
 func TestRenderAsciiJSONFail(t *testing.T) {
