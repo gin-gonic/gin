@@ -34,6 +34,30 @@ func CreateTestContextOnly(w http.ResponseWriter, r *Engine) (c *Context) {
 	return
 }
 
+// RunTestHandler creates a test context, assigns the given request, executes
+// the provided handler chain, and flushes the status code to the underlying
+// ResponseWriter. This solves the problem where ctx.Status() sets the status
+// internally but does not flush it to an httptest.ResponseRecorder when using
+// CreateTestContext directly.
+//
+// Example usage:
+//
+//	w := httptest.NewRecorder()
+//	req := httptest.NewRequest("POST", "/resource", nil)
+//	c := gin.RunTestHandler(w, req, func(c *gin.Context) {
+//	    c.Status(http.StatusCreated)
+//	})
+//	// w.Code is now 201, not 200
+func RunTestHandler(w http.ResponseWriter, req *http.Request, handlers ...HandlerFunc) *Context {
+	c, _ := CreateTestContext(w)
+	c.Request = req
+	c.handlers = handlers
+	c.index = -1
+	c.Next()
+	c.Writer.WriteHeaderNow()
+	return c
+}
+
 // waitForServerReady waits for a server to be ready by making HTTP requests
 // with exponential backoff. This is more reliable than time.Sleep() for testing.
 func waitForServerReady(url string, maxAttempts int) error {
