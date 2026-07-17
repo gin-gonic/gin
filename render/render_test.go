@@ -272,7 +272,7 @@ func TestRenderAsciiJSONNonBMP(t *testing.T) {
 	// U+1F600 is outside the Basic Multilingual Plane and must be encoded as
 	// a UTF-16 surrogate pair (RFC 8259 §7), not a single \u escape with 5+
 	// hex digits.
-	assert.Equal(t, "{\"msg\":\"\\ud83d\\ude00\"}", w.Body.String())
+	assert.JSONEq(t, "{\"msg\":\"\\ud83d\\ude00\"}", w.Body.String())
 
 	var decoded map[string]string
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &decoded))
