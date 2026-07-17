@@ -140,6 +140,9 @@ func cleanPath(p string) string {
 }
 
 func isSingleCleanPathSegment(s string) bool {
+	if s == "" {
+		return false
+	}
 	if s == "." || s == ".." {
 		return false
 	}
@@ -184,6 +187,9 @@ func cleanTrailingParentPath(p string) (string, bool) {
 func isCleanAbsolutePath(p string) bool {
 	if p == "" || p[0] != '/' {
 		return false
+	}
+	if p == "/" {
+		return true
 	}
 
 	segmentStart := 1
