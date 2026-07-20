@@ -507,8 +507,11 @@ func (c *Context) Delete(key any) {
 //	router.GET("/user/:id", func(c *gin.Context) {
 //	    // a GET request to /user/john
 //	    id := c.Param("id") // id == "john"
-//	    // a GET request to /user/john/
-//	    id := c.Param("id") // id == "/john/"
+//	})
+//
+//	router.GET("/user/*action", func(c *gin.Context) {
+//	    // a GET request to /user/john/send
+//	    action := c.Param("action") // action == "/john/send"
 //	})
 func (c *Context) Param(key string) string {
 	return c.Params.ByName(key)
