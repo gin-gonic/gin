@@ -1,0 +1,70 @@
+name: CI Benchmark
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  benchmark:
+    strategy:
+      fail-fast: false
+      matrix:
+        runner:
+          - ubuntu-latest
+          - monkci-runners-4vcpu
+          - monkci-ubuntu-24.04-4-3600iops
+    name: Benchmark @ ${{ matrix.runner }}
+    runs-on: ${{ matrix.runner }}
+    env:
+      GO111MODULE: on
+      GOPROXY: https://proxy.golang.org
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "^1"
+          cache: true
+
+      - name: Run Benchmarks
+        run: go test -bench=. -benchmem -benchtime=3s ./...
+
+      - name: Upload Benchmark Results
+        uses: actions/upload-artifact@v4
+        with:
+          name: benchmark-results-${{ matrix.runner }}
+          path: benchmark-results-${{ matrix.runner }}.txt
+          if-no-files-found: ignore
+
+  compare:
+    needs: benchmark
+    runs-on: ubuntu-latest
+    name: Compare Benchmark Results
+    steps:
+      - name: Download all benchmark artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: benchmark-results-*
+          merge-multiple: true
+
+      - name: Display Results
+        run: |
+          echo "===== Benchmark Comparison ====="
+          for f in benchmark-results-*.txt; do
+            echo ""
+            echo "----- Runner: ${f} -----"
+            cat "$f" || echo "(no results)"
+          done
