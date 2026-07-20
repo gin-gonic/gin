@@ -16,6 +16,18 @@ import (
 type defaultValidator struct {
 	once     sync.Once
 	validate *validator.Validate
+	opts     []validator.Option
+}
+
+// NewStructValidator returns a StructValidator backed by go-playground/validator
+// with the given options applied at construction time.
+//
+// This is needed for options that can only be set via validator.New, such as
+// validator.WithRequiredStructEnabled(). Example:
+//
+//	binding.Validator = binding.NewStructValidator(validator.WithRequiredStructEnabled())
+func NewStructValidator(opts ...validator.Option) StructValidator {
+	return &defaultValidator{opts: opts}
 }
 
 type SliceValidationError []error
@@ -92,7 +104,7 @@ func (v *defaultValidator) Engine() any {
 
 func (v *defaultValidator) lazyinit() {
 	v.once.Do(func() {
-		v.validate = validator.New()
+		v.validate = validator.New(v.opts...)
 		v.validate.SetTagName("binding")
 	})
 }

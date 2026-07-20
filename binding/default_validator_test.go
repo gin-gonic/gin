@@ -7,6 +7,8 @@ package binding
 import (
 	"errors"
 	"testing"
+
+	"github.com/go-playground/validator/v10"
 )
 
 func TestSliceValidationError(t *testing.T) {
@@ -86,5 +88,32 @@ func TestDefaultValidator(t *testing.T) {
 				t.Errorf("defaultValidator.Validate() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
+	}
+}
+
+func TestNewStructValidatorRequiredStruct(t *testing.T) {
+	type myUUID struct {
+		S string
+	}
+	type createReq struct {
+		ID myUUID `binding:"required"`
+	}
+
+	// without the option, required is a no-op on non-pointer struct fields
+	if err := (&defaultValidator{}).ValidateStruct(createReq{}); err != nil {
+		t.Fatalf("default validator: unexpected error: %v", err)
+	}
+
+	v := NewStructValidator(validator.WithRequiredStructEnabled())
+	if err := v.ValidateStruct(createReq{}); err == nil {
+		t.Fatal("WithRequiredStructEnabled: expected required error on zero struct field")
+	}
+	if err := v.ValidateStruct(createReq{ID: myUUID{S: "x"}}); err != nil {
+		t.Fatalf("WithRequiredStructEnabled: unexpected error for non-zero field: %v", err)
+	}
+
+	engine, ok := v.Engine().(*validator.Validate)
+	if !ok || engine == nil {
+		t.Fatalf("Engine() = %T, want *validator.Validate", v.Engine())
 	}
 }
