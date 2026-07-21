@@ -171,3 +171,13 @@ func TestSafeUint16(t *testing.T) {
 	assert.Equal(t, uint16(100), safeUint16(100))
 	assert.Equal(t, uint16(math.MaxUint16), safeUint16(int(math.MaxUint16)+123))
 }
+
+func TestNameOfFunctionNil(t *testing.T) {
+	if got := nameOfFunction(nil); got != "" {
+		t.Fatalf("got %q", got)
+	}
+	var f HandlerFunc
+	if got := nameOfFunction(f); got != "" {
+		t.Fatalf("nil func got %q", got)
+	}
+}

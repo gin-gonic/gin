@@ -129,7 +129,14 @@ func lastChar(str string) uint8 {
 }
 
 func nameOfFunction(f any) string {
-	return runtime.FuncForPC(reflect.ValueOf(f).Pointer()).Name()
+	v := reflect.ValueOf(f)
+	if !v.IsValid() || (v.Kind() == reflect.Func && v.IsNil()) {
+		return ""
+	}
+	if fn := runtime.FuncForPC(v.Pointer()); fn != nil {
+		return fn.Name()
+	}
+	return ""
 }
 
 func joinPaths(absolutePath, relativePath string) string {
