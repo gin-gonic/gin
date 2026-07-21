@@ -1063,9 +1063,20 @@ func (c *Context) ContentType() string {
 // IsWebsocket returns true if the request headers indicate that a websocket
 // handshake is being initiated by the client.
 func (c *Context) IsWebsocket() bool {
-	if strings.Contains(strings.ToLower(c.requestHeader("Connection")), "upgrade") &&
+	if hasConnectionToken(c.requestHeader("Connection"), "upgrade") &&
 		strings.EqualFold(c.requestHeader("Upgrade"), "websocket") {
 		return true
+	}
+	return false
+}
+
+// hasConnectionToken reports whether name appears as a comma-separated token
+// in a Connection header (RFC 9110), case-insensitively.
+func hasConnectionToken(header, name string) bool {
+	for part := range strings.SplitSeq(header, ",") {
+		if strings.EqualFold(strings.TrimSpace(part), name) {
+			return true
+		}
 	}
 	return false
 }

@@ -3955,3 +3955,21 @@ func BenchmarkGetMapFromFormData(b *testing.B) {
 		})
 	}
 }
+
+func TestContextIsWebsocketConnectionToken(t *testing.T) {
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	c.Request, _ = http.NewRequest(http.MethodGet, "/", nil)
+	c.Request.Header.Set("Connection", "keep-alive")
+	c.Request.Header.Set("Upgrade", "websocket")
+	assert.False(t, c.IsWebsocket())
+
+	c.Request.Header.Set("Connection", "Upgrade")
+	assert.True(t, c.IsWebsocket())
+
+	c.Request.Header.Set("Connection", "keep-alive, Upgrade")
+	assert.True(t, c.IsWebsocket())
+
+	// Substring in a different token must not match ("keep-alive-upgrade").
+	c.Request.Header.Set("Connection", "keep-alive-upgrade")
+	assert.False(t, c.IsWebsocket())
+}
