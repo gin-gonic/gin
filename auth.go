@@ -13,10 +13,10 @@ import (
 	"github.com/gin-gonic/gin/internal/bytesconv"
 )
 
-// AuthUserKey is the cookie name for user credential in basic auth.
+// AuthUserKey is the Context key for the authenticated username in basic auth.
 const AuthUserKey = "user"
 
-// AuthProxyUserKey is the cookie name for proxy_user credential in basic auth for proxy.
+// AuthProxyUserKey is the Context key for the authenticated proxy username in basic auth.
 const AuthProxyUserKey = "proxy_user"
 
 // Accounts defines a key/value for user/pass list of authorized logins.
