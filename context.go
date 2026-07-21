@@ -117,8 +117,13 @@ func (c *Context) reset() {
 	*c.skippedNodes = (*c.skippedNodes)[:0]
 }
 
-// Copy returns a copy of the current context that can be safely used outside the request's scope.
-// This has to be used when the context has to be passed to a goroutine.
+// Copy returns a copy of the current context that can be safely used outside the
+// request handler (for example in a goroutine).
+//
+// The copy keeps Request, Params, Keys, Errors, Accepted and fullPath, but clears
+// handlers and sets Writer's underlying ResponseWriter to nil so response-writing
+// methods (JSON, String, Status with flush, etc.) must not be used on the copy —
+// they will panic. Use the original context for writing the HTTP response.
 func (c *Context) Copy() *Context {
 	cp := Context{
 		writermem: c.writermem,
@@ -1119,7 +1124,12 @@ func bodyAllowedForStatus(status int) bool {
 	return true
 }
 
-// Status sets the HTTP response code.
+// Status sets the HTTP response code that will be written when the response is flushed.
+//
+// The status is stored on the ResponseWriter and is only pushed to the underlying
+// http.ResponseWriter when body data is written or WriteHeaderNow is called.
+// In unit tests using httptest.ResponseRecorder, prefer assert.Equal(t, code, c.Writer.Status())
+// after Status(code), or call c.Writer.WriteHeaderNow() before reading w.Code.
 func (c *Context) Status(code int) {
 	c.Writer.WriteHeader(code)
 }
