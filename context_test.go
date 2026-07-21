@@ -3955,3 +3955,11 @@ func BenchmarkGetMapFromFormData(b *testing.B) {
 		})
 	}
 }
+
+func TestContextValueNonStringKey(t *testing.T) {
+	type ctxKey struct{}
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	c.Request, _ = http.NewRequest(http.MethodGet, "/", nil)
+	c.Set(ctxKey{}, "secret")
+	assert.Equal(t, "secret", c.Value(ctxKey{}))
+}
