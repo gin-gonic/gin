@@ -5,6 +5,8 @@
 package gin
 
 import (
+	"net/http"
+
 	"github.com/gin-gonic/gin/codec/json"
 )
 
@@ -57,4 +59,27 @@ func (p Problem) MarshalJSON() ([]byte, error) {
 		obj["instance"] = p.Instance
 	}
 	return json.API.Marshal(obj)
+}
+
+// ProblemDetails returns a middleware that renders errors attached to the
+// Context (see Context.Error) as an RFC 9457 problem details JSON response.
+// It does nothing if no errors were attached or if a response body or header
+// was already written. The response status code is kept when it is an error
+// status, otherwise it defaults to 500 Internal Server Error.
+// WARNING: the last attached error's message is exposed to the client as the
+// problem detail member. Do not attach errors whose messages must stay
+// private, or write the response yourself instead.
+func ProblemDetails() HandlerFunc {
+	return func(c *Context) {
+		c.Next()
+
+		if len(c.Errors) == 0 || c.Writer.Written() {
+			return
+		}
+		status := c.Writer.Status()
+		if status < http.StatusBadRequest {
+			status = http.StatusInternalServerError
+		}
+		c.ProblemJSON(status, Problem{Detail: c.Errors.Last().Error()})
+	}
 }

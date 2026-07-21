@@ -1862,6 +1862,28 @@ func main() {
 }
 ```
 
+The `gin.ProblemDetails()` middleware renders errors attached with `c.Error()` as problem details responses, so handlers only need to report errors. The response status code is kept when it is an error status, otherwise it defaults to `500`. The last attached error's message is exposed to the client as the problem `detail` member, so do not attach errors whose messages must stay private.
+
+```go
+func main() {
+  r := gin.Default()
+  r.Use(gin.ProblemDetails())
+
+  r.GET("/users/:id", func(c *gin.Context) {
+    user, err := lookup(c.Param("id"))
+    if err != nil {
+      c.Status(http.StatusNotFound)
+      c.Error(err) //nolint:errcheck
+      return
+    }
+    c.JSON(http.StatusOK, user)
+  })
+
+  // listen and serve on 0.0.0.0:8080
+  r.Run(":8080")
+}
+```
+
 ### Serving static files
 
 ```go
