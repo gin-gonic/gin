@@ -160,8 +160,9 @@ func (c *Context) HandlerName() string {
 	return nameOfFunction(c.handlers.Last())
 }
 
-// HandlerNames returns a list of all registered handlers for this context in descending order,
-// following the semantics of HandlerName()
+// HandlerNames returns the names of all registered handlers for this context in
+// registration order (middleware first, terminal handler last). HandlerName() returns
+// only the last handler's name.
 func (c *Context) HandlerNames() []string {
 	hn := make([]string, 0, len(c.handlers))
 	for _, val := range c.handlers {
