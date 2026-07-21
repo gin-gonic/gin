@@ -1266,6 +1266,14 @@ func TestContextClientIPWithMultipleHeaders(t *testing.T) {
 	assert.Equal(t, "5.6.7.8", c.ClientIP())
 }
 
+func TestContextClientIPTrustedPlatformMultiValue(t *testing.T) {
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	c.Request, _ = http.NewRequest(http.MethodGet, "/", nil)
+	c.engine.TrustedPlatform = "X-Custom-IP"
+	c.Request.Header.Set("X-Custom-IP", "1.2.3.4, 5.6.7.8")
+	assert.Equal(t, "1.2.3.4", c.ClientIP())
+}
+
 func TestContextClientIPWithSingleHeader(t *testing.T) {
 	c, _ := CreateTestContext(httptest.NewRecorder())
 	c.Request, _ = http.NewRequest(http.MethodGet, "/test", nil)

@@ -998,8 +998,9 @@ func (c *Context) ShouldBindBodyWithPlain(obj any) error {
 func (c *Context) ClientIP() string {
 	// Check if we're running on a trusted platform, continue running backwards if error
 	if c.engine.TrustedPlatform != "" {
-		// Developers can define their own header of Trusted Platform or use predefined constants
-		if addr := c.requestHeader(c.engine.TrustedPlatform); addr != "" {
+		// Developers can define their own header of Trusted Platform or use predefined constants.
+		// Multi-value headers use the left-most entry (common proxy semantics).
+		if addr := firstHeaderValue(c.requestHeader(c.engine.TrustedPlatform)); addr != "" {
 			return addr
 		}
 	}
@@ -1053,6 +1054,16 @@ func (c *Context) RemoteIP() string {
 		return ""
 	}
 	return ip
+}
+
+
+// firstHeaderValue returns the left-most non-empty token from a possibly
+// comma-separated proxy header value (for example X-Forwarded-Proto: "https, http").
+func firstHeaderValue(header string) string {
+	if i := strings.IndexByte(header, ','); i >= 0 {
+		header = header[:i]
+	}
+	return strings.TrimSpace(header)
 }
 
 // ContentType returns the Content-Type header of the request.
