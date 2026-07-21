@@ -1056,7 +1056,6 @@ func (c *Context) RemoteIP() string {
 	return ip
 }
 
-
 // firstHeaderValue returns the left-most non-empty token from a possibly
 // comma-separated proxy header value (for example X-Forwarded-Proto: "https, http").
 func firstHeaderValue(header string) string {
