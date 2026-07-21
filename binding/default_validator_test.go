@@ -88,3 +88,12 @@ func TestDefaultValidator(t *testing.T) {
 		})
 	}
 }
+
+func TestValidateStructNilPointer(t *testing.T) {
+	var p *struct {
+		A string `binding:"required"`
+	}
+	require.NoError(t, Validator.ValidateStruct(p))
+	var i *int
+	require.NoError(t, Validator.ValidateStruct(i))
+}
