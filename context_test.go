@@ -1595,7 +1595,23 @@ func TestContextRenderUTF8Attachment(t *testing.T) {
 
 	assert.Equal(t, 200, w.Code)
 	assert.Contains(t, w.Body.String(), "func New(opts ...OptionFunc) *Engine {")
-	assert.Equal(t, `attachment; filename*=UTF-8''`+url.QueryEscape(newFilename), w.Header().Get("Content-Disposition"))
+	assert.Equal(t, `attachment; filename*=UTF-8''`+url.PathEscape(newFilename), w.Header().Get("Content-Disposition"))
+}
+
+func TestContextRenderUTF8AttachmentWithSpace(t *testing.T) {
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
+	// Non-ASCII + space: PathEscape uses %20; QueryEscape would wrongly use '+'.
+	newFilename := "报告 测试.go"
+
+	c.Request, _ = http.NewRequest(http.MethodGet, "/", nil)
+	c.FileAttachment("./gin.go", newFilename)
+
+	assert.Equal(t, 200, w.Code)
+	got := w.Header().Get("Content-Disposition")
+	assert.Equal(t, `attachment; filename*=UTF-8''`+url.PathEscape(newFilename), got)
+	assert.NotContains(t, got, "+")
+	assert.Contains(t, got, "%20")
 }
 
 // TestContextRenderYAML tests that the response is serialized as YAML

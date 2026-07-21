@@ -1360,7 +1360,9 @@ func (c *Context) FileAttachment(filepath, filename string) {
 	if isASCII(filename) {
 		c.Writer.Header().Set("Content-Disposition", `attachment; filename="`+escapeQuotes(filename)+`"`)
 	} else {
-		c.Writer.Header().Set("Content-Disposition", `attachment; filename*=UTF-8''`+url.QueryEscape(filename))
+		// RFC 5987 filename* values use percent-encoding (space as %20).
+		// url.QueryEscape is wrong here because it encodes spaces as '+'.
+		c.Writer.Header().Set("Content-Disposition", `attachment; filename*=UTF-8''`+url.PathEscape(filename))
 	}
 	http.ServeFile(c.Writer, c.Request, filepath)
 }
