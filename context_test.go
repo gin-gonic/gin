@@ -1329,6 +1329,54 @@ func TestContextRenderPureJSON(t *testing.T) {
 	assert.Equal(t, "application/json; charset=utf-8", w.Header().Get("Content-Type"))
 }
 
+// Tests that the response is serialized as an RFC 9457 problem details object
+// and Content-Type is set to application/problem+json
+// and empty Status and Title members are defaulted from the response code
+func TestContextRenderProblemJSON(t *testing.T) {
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
+
+	c.ProblemJSON(http.StatusForbidden, Problem{
+		Type:       "https://example.com/probs/out-of-credit",
+		Detail:     "Your current balance is 30, but that costs 50.",
+		Extensions: map[string]any{"balance": 30},
+	})
+
+	assert.Equal(t, http.StatusForbidden, w.Code)
+	assert.JSONEq(t, `{
+		"type": "https://example.com/probs/out-of-credit",
+		"title": "Forbidden",
+		"status": 403,
+		"detail": "Your current balance is 30, but that costs 50.",
+		"balance": 30
+	}`, w.Body.String())
+	assert.Equal(t, "application/problem+json; charset=utf-8", w.Header().Get("Content-Type"))
+}
+
+func TestContextRenderProblemJSONPointerDefaults(t *testing.T) {
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
+
+	p := &Problem{Detail: "no such user"}
+	c.ProblemJSON(http.StatusNotFound, p)
+
+	assert.Equal(t, http.StatusNotFound, w.Code)
+	assert.JSONEq(t, `{"title":"Not Found","status":404,"detail":"no such user"}`, w.Body.String())
+	// the caller's Problem must not be mutated
+	assert.Equal(t, &Problem{Detail: "no such user"}, p)
+}
+
+func TestContextRenderProblemJSONCustomObject(t *testing.T) {
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
+
+	c.ProblemJSON(http.StatusBadRequest, H{"title": "Bad Request", "status": 400})
+
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+	assert.JSONEq(t, `{"title":"Bad Request","status":400}`, w.Body.String())
+	assert.Equal(t, "application/problem+json; charset=utf-8", w.Header().Get("Content-Type"))
+}
+
 // Tests that the response executes the templates
 // and responds with Content-Type set to text/html
 func TestContextRenderHTML(t *testing.T) {
@@ -1971,6 +2019,21 @@ func TestContextAbortWithStatusJSON(t *testing.T) {
 	require.NoError(t, err)
 	jsonStringBody := buf.String()
 	assert.JSONEq(t, "{\"foo\":\"fooValue\",\"bar\":\"barValue\"}", jsonStringBody)
+}
+
+func TestContextAbortWithProblemJSON(t *testing.T) {
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
+	c.index = 4
+
+	c.AbortWithProblemJSON(http.StatusNotFound, Problem{Detail: "no such user"})
+
+	assert.Equal(t, abortIndex, c.index)
+	assert.Equal(t, http.StatusNotFound, c.Writer.Status())
+	assert.Equal(t, http.StatusNotFound, w.Code)
+	assert.True(t, c.IsAborted())
+	assert.Equal(t, "application/problem+json; charset=utf-8", w.Header().Get("Content-Type"))
+	assert.JSONEq(t, `{"title":"Not Found","status":404,"detail":"no such user"}`, w.Body.String())
 }
 
 func TestContextAbortWithStatusPureJSON(t *testing.T) {

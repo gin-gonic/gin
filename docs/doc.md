@@ -52,6 +52,7 @@
     - [JSONP](#jsonp)
     - [AsciiJSON](#asciijson)
     - [PureJSON](#purejson)
+    - [ProblemJSON](#problemjson)
   - [Serving static files](#serving-static-files)
   - [Serving data from file](#serving-data-from-file)
   - [Serving data from reader](#serving-data-from-reader)
@@ -1812,6 +1813,48 @@ func main() {
     c.PureJSON(http.StatusOK, gin.H{
       "html": "<b>Hello, world!</b>",
     })
+  })
+
+  // listen and serve on 0.0.0.0:8080
+  r.Run(":8080")
+}
+```
+
+#### ProblemJSON
+
+ProblemJSON serializes error responses as [RFC 9457](https://www.rfc-editor.org/rfc/rfc9457) problem details objects and sets the Content-Type to `application/problem+json`.
+
+When the object is a `gin.Problem`, a zero `Status` defaults to the response code and an empty `Title` defaults to the standard status text. Extension members are serialized as top-level members of the problem details object.
+
+```go
+func main() {
+  r := gin.Default()
+
+  r.GET("/orders/:id", func(c *gin.Context) {
+    c.ProblemJSON(http.StatusForbidden, gin.Problem{
+      Type:       "https://example.com/probs/out-of-credit",
+      Detail:     "Your current balance is 30, but that costs 50.",
+      Instance:   "/orders/" + c.Param("id"),
+      Extensions: map[string]any{"balance": 30},
+    })
+    // Response body:
+    // {
+    //   "type": "https://example.com/probs/out-of-credit",
+    //   "title": "Forbidden",
+    //   "status": 403,
+    //   "detail": "Your current balance is 30, but that costs 50.",
+    //   "instance": "/orders/1234",
+    //   "balance": 30
+    // }
+  })
+
+  // In middleware, AbortWithProblemJSON stops the chain and writes the problem details response.
+  r.Use(func(c *gin.Context) {
+    if c.GetHeader("Authorization") == "" {
+      c.AbortWithProblemJSON(http.StatusUnauthorized, gin.Problem{Detail: "missing credentials"})
+      return
+    }
+    c.Next()
   })
 
   // listen and serve on 0.0.0.0:8080

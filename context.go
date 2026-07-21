@@ -242,6 +242,15 @@ func (c *Context) AbortWithStatusJSON(code int, jsonObj any) {
 	c.JSON(code, jsonObj)
 }
 
+// AbortWithProblemJSON calls `Abort()` and then `ProblemJSON` internally.
+// This method stops the chain, writes the status code and returns an RFC 9457
+// problem details JSON body.
+// It also sets the Content-Type as "application/problem+json".
+func (c *Context) AbortWithProblemJSON(code int, obj any) {
+	c.Abort()
+	c.ProblemJSON(code, obj)
+}
+
 // AbortWithError calls `AbortWithStatus()` and `Error()` internally.
 // This method stops the chain, writes the status code and pushes the specified error to `c.Errors`.
 // See Context.Error() for more details.
@@ -1266,6 +1275,33 @@ func (c *Context) AsciiJSON(code int, obj any) {
 // PureJSON, unlike JSON, does not replace special html characters with their unicode entities.
 func (c *Context) PureJSON(code int, obj any) {
 	c.Render(code, render.PureJSON{Data: obj})
+}
+
+// ProblemJSON serializes the given struct as an RFC 9457 problem details
+// JSON object into the response body.
+// It also sets the Content-Type as "application/problem+json".
+// If obj is a Problem or *Problem, a zero Status is defaulted to code and
+// an empty Title is defaulted to http.StatusText(code).
+func (c *Context) ProblemJSON(code int, obj any) {
+	switch p := obj.(type) {
+	case Problem:
+		obj = problemWithDefaults(p, code)
+	case *Problem:
+		if p != nil {
+			obj = problemWithDefaults(*p, code)
+		}
+	}
+	c.Render(code, render.ProblemJSON{Data: obj})
+}
+
+func problemWithDefaults(p Problem, code int) Problem {
+	if p.Status == 0 {
+		p.Status = code
+	}
+	if p.Title == "" {
+		p.Title = http.StatusText(p.Status)
+	}
+	return p
 }
 
 // XML serializes the given struct as XML into the response body.
