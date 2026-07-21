@@ -93,7 +93,11 @@ func TestValidateStructNilPointer(t *testing.T) {
 	var p *struct {
 		A string `binding:"required"`
 	}
-	require.NoError(t, Validator.ValidateStruct(p))
+	if err := Validator.ValidateStruct(p); err != nil {
+		t.Fatalf("nil *struct: %v", err)
+	}
 	var i *int
-	require.NoError(t, Validator.ValidateStruct(i))
+	if err := Validator.ValidateStruct(i); err != nil {
+		t.Fatalf("nil *int: %v", err)
+	}
 }
