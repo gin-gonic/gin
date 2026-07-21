@@ -26,5 +26,8 @@ func (b bsonBinding) Bind(req *http.Request, obj any) error {
 }
 
 func (bsonBinding) BindBody(body []byte, obj any) error {
-	return bson.Unmarshal(body, obj)
+	if err := bson.Unmarshal(body, obj); err != nil {
+		return err
+	}
+	return validate(obj)
 }
