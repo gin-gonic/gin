@@ -347,19 +347,71 @@ func TestSecureRequestDump(t *testing.T) {
 			wantContains:   "",
 			wantNotContain: "Authorization: *",
 		},
+		{
+			name: "Cookie header is masked",
+			req: func() *http.Request {
+				r, _ := http.NewRequest(http.MethodGet, "http://example.com", nil)
+				r.Header.Set("Cookie", "session=super-secret; theme=dark")
+				return r
+			}(),
+			wantContains:   "Cookie: *",
+			wantNotContain: "super-secret",
+		},
+		{
+			name: "Proxy-Authorization header is masked",
+			req: func() *http.Request {
+				r, _ := http.NewRequest(http.MethodGet, "http://example.com", nil)
+				r.Header.Set("Proxy-Authorization", "Basic dXNlcjpwYXNz")
+				return r
+			}(),
+			wantContains:   "Proxy-Authorization: *",
+			wantNotContain: "dXNlcjpwYXNz",
+		},
+		{
+			name: "multiple sensitive headers are masked",
+			req: func() *http.Request {
+				r, _ := http.NewRequest(http.MethodGet, "http://example.com", nil)
+				r.Header.Set("Authorization", "Bearer tok")
+				r.Header.Set("Cookie", "sid=abc")
+				r.Header.Set("Proxy-Authorization", "Basic xyz")
+				r.Header.Set("X-Request-Id", "req-1")
+				return r
+			}(),
+			wantContains:   "X-Request-Id: req-1",
+			wantNotContain: "Bearer tok",
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			result := secureRequestDump(tt.req)
 			if tt.wantContains != "" && !strings.Contains(result, tt.wantContains) {
-				t.Errorf("maskHeaders() = %q, want contains %q", result, tt.wantContains)
+				t.Errorf("secureRequestDump() = %q, want contains %q", result, tt.wantContains)
 			}
 			if tt.wantNotContain != "" && strings.Contains(result, tt.wantNotContain) {
-				t.Errorf("maskHeaders() = %q, want NOT contain %q", result, tt.wantNotContain)
+				t.Errorf("secureRequestDump() = %q, want NOT contain %q", result, tt.wantNotContain)
 			}
 		})
 	}
+
+	// Combined check: secrets from every sensitive header must be gone.
+	t.Run("no secret values remain when all sensitive headers set", func(t *testing.T) {
+		r, _ := http.NewRequest(http.MethodGet, "http://example.com", nil)
+		r.Header.Set("Authorization", "Bearer tok")
+		r.Header.Set("Cookie", "sid=abc")
+		r.Header.Set("Proxy-Authorization", "Basic xyz")
+		result := secureRequestDump(r)
+		for _, secret := range []string{"Bearer tok", "sid=abc", "Basic xyz"} {
+			if strings.Contains(result, secret) {
+				t.Errorf("secureRequestDump leaked %q in %q", secret, result)
+			}
+		}
+		for _, masked := range []string{"Authorization: *", "Cookie: *", "Proxy-Authorization: *"} {
+			if !strings.Contains(result, masked) {
+				t.Errorf("secureRequestDump missing %q in %q", masked, result)
+			}
+		}
+	})
 }
 
 // TestReadNthLine tests the readNthLine function with various scenarios.

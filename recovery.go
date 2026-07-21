@@ -91,19 +91,37 @@ func CustomRecoveryWithWriter(out io.Writer, handle RecoveryFunc) HandlerFunc {
 	}
 }
 
-// secureRequestDump returns a sanitized HTTP request dump where the Authorization header,
-// if present, is replaced with a masked value ("Authorization: *") to avoid leaking sensitive credentials.
+// secureRequestDump returns a sanitized HTTP request dump where sensitive
+// credential headers are replaced with a masked value ("Header-Name: *")
+// so panic recovery logs do not leak secrets.
 //
-// Currently, only the Authorization header is sanitized. All other headers and request data remain unchanged.
+// Masked headers: Authorization, Proxy-Authorization, Cookie.
 func secureRequestDump(r *http.Request) string {
 	httpRequest, _ := httputil.DumpRequest(r, false)
 	lines := strings.Split(bytesconv.BytesToString(httpRequest), "\r\n")
 	for i, line := range lines {
-		if strings.HasPrefix(line, "Authorization:") {
-			lines[i] = "Authorization: *"
+		name, ok := headerName(line)
+		if !ok {
+			continue
+		}
+		switch {
+		case strings.EqualFold(name, "Authorization"),
+			strings.EqualFold(name, "Proxy-Authorization"),
+			strings.EqualFold(name, "Cookie"):
+			// Keep the canonical header name from the dump for stable log output.
+			lines[i] = name + ": *"
 		}
 	}
 	return strings.Join(lines, "\r\n")
+}
+
+// headerName returns the header field name from a single dump line "Name: value".
+func headerName(line string) (string, bool) {
+	idx := strings.IndexByte(line, ':')
+	if idx <= 0 {
+		return "", false
+	}
+	return line[:idx], true
 }
 
 func defaultHandleRecovery(c *Context, err any) {
