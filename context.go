@@ -1043,6 +1043,12 @@ func (c *Context) ClientIP() string {
 			}
 		}
 	}
+	// Unix listeners mark the request as trusted without parsing RemoteAddr.
+	// When no client IP header is present, remoteIP stays nil — return empty
+	// instead of the net.IP nil string "<nil>".
+	if remoteIP == nil {
+		return ""
+	}
 	return remoteIP.String()
 }
 
@@ -1073,28 +1079,38 @@ func (c *Context) IsWebsocket() bool {
 // Scheme returns the HTTP scheme of the request ("http" or "https").
 // When running behind reverse proxies or load balancers `Request.URL.Scheme` is usually empty.
 // the original scheme is commonly forwarded via headers such as X-Forwarded-Proto.
+// Multi-value proxy headers (e.g. "https, http") use the left-most value.
 // Reference:
 // https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/X-Forwarded-Proto
 func (c *Context) Scheme() string {
 	if c.Request.TLS != nil {
 		return "https"
 	}
-	if scheme := c.requestHeader("X-Forwarded-Proto"); scheme != "" {
+	if scheme := firstHeaderValue(c.requestHeader("X-Forwarded-Proto")); scheme != "" {
 		return scheme
 	}
-	if scheme := c.requestHeader("X-Forwarded-Protocol"); scheme != "" {
+	if scheme := firstHeaderValue(c.requestHeader("X-Forwarded-Protocol")); scheme != "" {
 		return scheme
 	}
 	if ssl := c.requestHeader("X-Forwarded-Ssl"); ssl == "on" {
 		return "https"
 	}
-	if scheme := c.requestHeader("X-Url-Scheme"); scheme != "" {
+	if scheme := firstHeaderValue(c.requestHeader("X-Url-Scheme")); scheme != "" {
 		return scheme
 	}
 	if scheme := c.Request.URL.Scheme; scheme != "" {
 		return scheme
 	}
 	return "http"
+}
+
+// firstHeaderValue returns the left-most non-empty token from a possibly
+// comma-separated proxy header value (for example X-Forwarded-Proto: "https, http").
+func firstHeaderValue(header string) string {
+	if i := strings.IndexByte(header, ','); i >= 0 {
+		header = header[:i]
+	}
+	return strings.TrimSpace(header)
 }
 
 func (c *Context) requestHeader(key string) string {

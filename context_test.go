@@ -2071,6 +2071,13 @@ func TestContextClientIP(t *testing.T) {
 	c.Request.RemoteAddr = addr.String()
 	assert.Equal(t, "20.20.20.20", c.ClientIP())
 
+	// unix without client IP headers must not return net.IP's "<nil>" string
+	c.Request.Header.Del("X-Forwarded-For")
+	c.Request.Header.Del("X-Real-IP")
+	c.Request.Header.Del("X-Appengine-Remote-Addr")
+	c.engine.TrustedPlatform = ""
+	assert.Empty(t, c.ClientIP())
+
 	// reset
 	c.Request = c.Request.WithContext(context.Background())
 	resetContextForClientIPTests(c)
@@ -3099,6 +3106,17 @@ func TestContextScheme(t *testing.T) {
 	c.Request, _ = http.NewRequest(http.MethodGet, "/", nil)
 	c.Request.TLS = &tls.ConnectionState{}
 	c.Request.Header.Set("X-Forwarded-Proto", "http")
+	assert.Equal(t, "https", c.Scheme())
+
+	// Multi-value proxy headers use the left-most scheme.
+	c, _ = CreateTestContext(httptest.NewRecorder())
+	c.Request, _ = http.NewRequest(http.MethodGet, "/", nil)
+	c.Request.Header.Set("X-Forwarded-Proto", "https, http")
+	assert.Equal(t, "https", c.Scheme())
+
+	c, _ = CreateTestContext(httptest.NewRecorder())
+	c.Request, _ = http.NewRequest(http.MethodGet, "/", nil)
+	c.Request.Header.Set("X-Forwarded-Protocol", " https , http")
 	assert.Equal(t, "https", c.Scheme())
 }
 
