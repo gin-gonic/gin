@@ -2453,6 +2453,22 @@ func TestContextShouldBindWithJSON(t *testing.T) {
 	assert.Equal(t, 0, w.Body.Len())
 }
 
+func TestContextShouldBindWithQUERY(t *testing.T) {
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
+
+	c.Request, _ = http.NewRequest(MethodQuery, "/", strings.NewReader(`{"foo":"bar", "bar":"foo"}`))
+	c.Request.Header.Add("Content-Type", MIMEJSON)
+
+	var obj struct {
+		Foo string `json:"foo"`
+		Bar string `json:"bar"`
+	}
+	require.NoError(t, c.ShouldBind(&obj))
+	assert.Equal(t, "foo", obj.Bar)
+	assert.Equal(t, "bar", obj.Foo)
+}
+
 func TestContextShouldBindWithXML(t *testing.T) {
 	w := httptest.NewRecorder()
 	c, _ := CreateTestContext(w)

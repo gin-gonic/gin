@@ -26,6 +26,9 @@ const (
 	MIMEBSON              = "application/bson"
 )
 
+// MethodQuery is the HTTP QUERY method defined by RFC 9530. until http.MethodQuery is available.
+const MethodQuery string = "QUERY"
+
 // Binding describes the interface which needs to be implemented for binding the
 // data present in the request such as JSON request body, query parameters or
 // the form POST.

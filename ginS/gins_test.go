@@ -31,6 +31,19 @@ func TestGET(t *testing.T) {
 	assert.Equal(t, "test", w.Body.String())
 }
 
+func TestQUERY(t *testing.T) {
+	QUERY("/query", func(c *gin.Context) {
+		c.String(http.StatusOK, "query")
+	})
+
+	req := httptest.NewRequest("QUERY", "/query", nil)
+	w := httptest.NewRecorder()
+	engine().ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Equal(t, "query", w.Body.String())
+}
+
 func TestPOST(t *testing.T) {
 	POST("/post", func(c *gin.Context) {
 		c.String(http.StatusCreated, "created")

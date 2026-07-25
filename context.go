@@ -43,6 +43,9 @@ const (
 	MIMEBSON              = binding.MIMEBSON
 )
 
+// MethodQuery is the HTTP QUERY method defined by RFC 9530. until http.MethodQuery is available.
+const MethodQuery = binding.MethodQuery
+
 // BodyBytesKey indicates a default body bytes key.
 const BodyBytesKey = "_gin-gonic/gin/bodybyteskey"
 

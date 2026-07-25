@@ -19,7 +19,7 @@ var (
 	anyMethods = []string{
 		http.MethodGet, http.MethodPost, http.MethodPut, http.MethodPatch,
 		http.MethodHead, http.MethodOptions, http.MethodDelete, http.MethodConnect,
-		http.MethodTrace,
+		http.MethodTrace, MethodQuery,
 	}
 )
 
@@ -36,6 +36,7 @@ type IRoutes interface {
 	Handle(string, string, ...HandlerFunc) IRoutes
 	Any(string, ...HandlerFunc) IRoutes
 	GET(string, ...HandlerFunc) IRoutes
+	QUERY(string, ...HandlerFunc) IRoutes
 	POST(string, ...HandlerFunc) IRoutes
 	DELETE(string, ...HandlerFunc) IRoutes
 	PATCH(string, ...HandlerFunc) IRoutes
@@ -115,6 +116,11 @@ func (group *RouterGroup) POST(relativePath string, handlers ...HandlerFunc) IRo
 // GET is a shortcut for router.Handle("GET", path, handlers).
 func (group *RouterGroup) GET(relativePath string, handlers ...HandlerFunc) IRoutes {
 	return group.handle(http.MethodGet, relativePath, handlers)
+}
+
+// QUERY is a shortcut for router.Handle("QUERY", path, handlers).
+func (group *RouterGroup) QUERY(relativePath string, handlers ...HandlerFunc) IRoutes {
+	return group.handle(MethodQuery, relativePath, handlers)
 }
 
 // DELETE is a shortcut for router.Handle("DELETE", path, handlers).
