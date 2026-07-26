@@ -1024,6 +1024,22 @@ func TestWithOptionFunc(t *testing.T) {
 	assertRoutePresent(t, routes, RouteInfo{Path: "/test2", Method: http.MethodGet, Handler: "github.com/gin-gonic/gin.handlerTest2"})
 }
 
+func TestNewDefaultReadHeaderTimeout(t *testing.T) {
+	r := New()
+	assert.Equal(t, defaultReadHeaderTimeout, r.ReadHeaderTimeout)
+}
+
+func TestNewReadHeaderTimeoutOverride(t *testing.T) {
+	r := New(func(e *Engine) {
+		e.ReadHeaderTimeout = 0
+	})
+	assert.Equal(t, time.Duration(0), r.ReadHeaderTimeout)
+
+	r2 := New()
+	r2.ReadHeaderTimeout = 30 * time.Second
+	assert.Equal(t, 30*time.Second, r2.ReadHeaderTimeout)
+}
+
 type Birthday string
 
 func (b *Birthday) UnmarshalParam(param string) error {

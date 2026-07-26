@@ -245,6 +245,37 @@ func TestRunWithPort(t *testing.T) {
 	testRequest(t, "http://localhost:5150/example")
 }
 
+func TestRunDefaultReadHeaderTimeout(t *testing.T) {
+	router := New()
+	router.ReadHeaderTimeout = 200 * time.Millisecond
+	router.GET("/example", func(c *Context) { c.String(http.StatusOK, "it worked") })
+	go func() {
+		assert.NoError(t, router.Run(":5151"))
+	}()
+
+	// Wait for server to be ready with exponential backoff
+	err := waitForServerReady("http://localhost:5151/example", 10)
+	require.NoError(t, err, "server should start successfully")
+
+	// A normal request should still succeed unaffected by the header timeout.
+	testRequest(t, "http://localhost:5151/example")
+
+	// Open a raw connection and trickle in a partial request header,
+	// never completing it. The server should close the connection once
+	// ReadHeaderTimeout elapses instead of waiting forever.
+	conn, err := net.Dial("tcp", "localhost:5151")
+	require.NoError(t, err)
+	defer conn.Close()
+
+	_, err = fmt.Fprint(conn, "GET /example HTTP/1.1\r\nHost: localhost\r\n")
+	require.NoError(t, err)
+
+	require.NoError(t, conn.SetReadDeadline(time.Now().Add(2*time.Second)))
+	buf := make([]byte, 1)
+	_, err = conn.Read(buf)
+	assert.ErrorIs(t, err, io.EOF, "connection should be closed by the server after ReadHeaderTimeout")
+}
+
 func TestUnixSocket(t *testing.T) {
 	router := New()
 
