@@ -7,6 +7,7 @@ package gin
 import (
 	"encoding/xml"
 	"math"
+	"mime"
 	"net/http"
 	"os"
 	"path"
@@ -89,10 +90,13 @@ func assert1(guard bool, text string) {
 }
 
 func filterFlags(content string) string {
-	for i, char := range content {
-		if char == ' ' || char == ';' {
-			return content[:i]
-		}
+	mediatype, _, _ := mime.ParseMediaType(content)
+	if mediatype != "" {
+		return mediatype
+	}
+	// Fallback to simple parsing if mime.ParseMediaType fails
+	if i := strings.IndexAny(content, " ;"); i >= 0 {
+		return content[:i]
 	}
 	return content
 }
