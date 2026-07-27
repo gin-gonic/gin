@@ -940,6 +940,7 @@ func (c *Context) ShouldBindUri(obj any) error {
 // ShouldBindWith binds the passed struct pointer using the specified binding engine.
 // See the binding package.
 func (c *Context) ShouldBindWith(obj any, b binding.Binding) error {
+	c.limitRequestBody()
 	return b.Bind(c.Request, obj)
 }
 
@@ -949,6 +950,7 @@ func (c *Context) ShouldBindWith(obj any, b binding.Binding) error {
 // NOTE: This method reads the body before binding. So you should use
 // ShouldBindWith for better performance if you need to call only once.
 func (c *Context) ShouldBindBodyWith(obj any, bb binding.BindingBody) (err error) {
+	c.limitRequestBody()
 	var body []byte
 	if cb, ok := c.Get(BodyBytesKey); ok {
 		if cbb, ok := cb.([]byte); ok {
@@ -963,6 +965,19 @@ func (c *Context) ShouldBindBodyWith(obj any, bb binding.BindingBody) (err error
 		c.Set(BodyBytesKey, body)
 	}
 	return bb.BindBody(body, obj)
+}
+
+// limitRequestBody wraps c.Request.Body in place so that reading more than
+// c.engine.MaxRequestBodyBytes from it fails with *http.MaxBytesError, which
+// MustBindWith already maps to a 413 response.
+func (c *Context) limitRequestBody() {
+	if c.engine == nil || c.engine.MaxRequestBodyBytes <= 0 {
+		return
+	}
+	if c.Request == nil || c.Request.Body == nil {
+		return
+	}
+	c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, c.engine.MaxRequestBodyBytes)
 }
 
 // ShouldBindBodyWithJSON is a shortcut for c.ShouldBindBodyWith(obj, binding.JSON).

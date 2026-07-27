@@ -23,10 +23,11 @@ import (
 )
 
 const (
-	defaultMultipartMemory = 32 << 20 // 32 MB
-	escapedColon           = "\\:"
-	colon                  = ":"
-	backslash              = "\\"
+	defaultMultipartMemory     = 32 << 20  // 32 MB
+	defaultMaxRequestBodyBytes = 128 << 20 // 128 MiB
+	escapedColon               = "\\:"
+	colon                      = ":"
+	backslash                  = "\\"
 )
 
 var (
@@ -166,6 +167,13 @@ type Engine struct {
 	// method call.
 	MaxMultipartMemory int64
 
+	// MaxRequestBodyBytes limits how many bytes Context's Bind*/ShouldBind*/
+	// ShouldBindBodyWith* methods will read from a request body before failing
+	// with a 413. It protects against a client sending an oversized or
+	// malformed body that would otherwise be buffered into memory in full
+	// before being rejected. Set to <= 0 to disable and read bodies unbounded.
+	MaxRequestBodyBytes int64
+
 	// UseH2C enable h2c support.
 	UseH2C bool
 
@@ -219,6 +227,7 @@ func New(opts ...OptionFunc) *Engine {
 		RemoveExtraSlash:       false,
 		UnescapePathValues:     true,
 		MaxMultipartMemory:     defaultMultipartMemory,
+		MaxRequestBodyBytes:    defaultMaxRequestBodyBytes,
 		trees:                  make(methodTrees, 0, 9),
 		delims:                 render.Delims{Left: "{{", Right: "}}"},
 		secureJSONPrefix:       "while(1);",
