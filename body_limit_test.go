@@ -18,14 +18,26 @@ import (
 	"go.mongodb.org/mongo-driver/v2/bson"
 )
 
+// maxBytesErrorPropagates reports whether the active JSON backend propagates
+// *http.MaxBytesError through Decode()/Unmarshal(). goccy/go-json normalizes
+// a MaxBytesReader read failure into a generic EOF, discarding the original
+// error (see the caveat in context.go's MustBindWith and
+// https://github.com/goccy/go-json/issues/485). bytedance/sonic was reported
+// to have the same issue (https://github.com/bytedance/sonic/issues/800), but
+// that no longer reproduces with the sonic version currently pinned in
+// go.mod — verified locally via `go test -tags sonic`.
+func maxBytesErrorPropagates() bool {
+	return json.Package != "github.com/goccy/go-json"
+}
+
 // expectedTooLargeStatus mirrors the go-json caveat documented in
 // TestContextBindRequestTooLarge: go-json does not propagate
 // *http.MaxBytesError, so the response falls back to a generic 400.
 func expectedTooLargeStatus() int {
-	if json.Package == "github.com/goccy/go-json" {
-		return http.StatusBadRequest
+	if maxBytesErrorPropagates() {
+		return http.StatusRequestEntityTooLarge
 	}
-	return http.StatusRequestEntityTooLarge
+	return http.StatusBadRequest
 }
 
 // --- unit-level: limitRequestBody branch coverage ---
@@ -112,7 +124,7 @@ func TestBindExceedsBodyLimit(t *testing.T) {
 	require.Error(t, err)
 	c.Writer.WriteHeaderNow()
 
-	if json.Package != "github.com/goccy/go-json" {
+	if maxBytesErrorPropagates() {
 		var maxBytesErr *http.MaxBytesError
 		require.ErrorAs(t, err, &maxBytesErr)
 	}
@@ -200,8 +212,11 @@ func TestBindBodyLimitAcrossFormats(t *testing.T) {
 
 			err := c.ShouldBindWith(tt.target(), tt.b)
 			require.Error(t, err)
-			var maxBytesErr *http.MaxBytesError
-			require.ErrorAs(t, err, &maxBytesErr)
+
+			if tt.name != "json" || maxBytesErrorPropagates() {
+				var maxBytesErr *http.MaxBytesError
+				require.ErrorAs(t, err, &maxBytesErr)
+			}
 		})
 	}
 }
