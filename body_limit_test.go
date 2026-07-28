@@ -254,7 +254,7 @@ func TestShouldBindBodyWithWithinBodyLimit(t *testing.T) {
 
 	cached, ok := c.Get(BodyBytesKey)
 	require.True(t, ok)
-	assert.Equal(t, []byte(`{"foo":"bar"}`), cached)
+	assert.JSONEq(t, `{"foo":"bar"}`, string(cached.([]byte)))
 }
 
 func TestShouldBindBodyWithCachedReadBypassesReWrap(t *testing.T) {
