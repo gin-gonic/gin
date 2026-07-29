@@ -5,6 +5,7 @@
 package binding
 
 import (
+	"errors"
 	"io"
 	"net/http"
 
@@ -18,11 +19,14 @@ func (bsonBinding) Name() string {
 }
 
 func (b bsonBinding) Bind(req *http.Request, obj any) error {
-	buf, err := io.ReadAll(req.Body)
-	if err == nil {
-		err = b.BindBody(buf, obj)
+	body, err := io.ReadAll(io.LimitReader(req.Body, MaxBodySize+1))
+	if err != nil {
+		return err
 	}
-	return err
+	if int64(len(body)) > MaxBodySize {
+		return errors.New("request body too large")
+	}
+	return b.BindBody(body, obj)
 }
 
 func (bsonBinding) BindBody(body []byte, obj any) error {
