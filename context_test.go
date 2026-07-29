@@ -3995,7 +3995,7 @@ func TestWildcardParamUnicodeConcurrency(t *testing.T) {
 				req, err := http.NewRequest(http.MethodGet, p, nil)
 				if err != nil {
 					mu.Lock()
-					errs = append(errs, "failed to create request: " + err.Error())
+					errs = append(errs, "failed to create request: "+err.Error())
 					mu.Unlock()
 					continue
 				}
