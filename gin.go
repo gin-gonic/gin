@@ -10,6 +10,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"time"
 	"path"
 	"strings"
 	"sync"
@@ -548,8 +549,9 @@ func (engine *Engine) Run(addr ...string) (err error) {
 	address := resolveAddress(addr)
 	debugPrint("Listening and serving HTTP on %s\n", address)
 	server := &http.Server{ // #nosec G112
-		Addr:    address,
-		Handler: engine.Handler(),
+		Addr:              address,
+		Handler:           engine.Handler(),
+		ReadHeaderTimeout: 10 * time.Second,
 	}
 	err = server.ListenAndServe()
 	return
