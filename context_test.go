@@ -3955,3 +3955,15 @@ func BenchmarkGetMapFromFormData(b *testing.B) {
 		})
 	}
 }
+
+func TestInitFormCacheWithMalformedMultipart(t *testing.T) {
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	// Valid multipart content-type but body that is not valid multipart data.
+	// ParseMultipartForm will return a non-ErrNotMultipart error, exercising
+	// the debugPrint branch in initFormCache.
+	c.Request, _ = http.NewRequest(http.MethodPost, "/", strings.NewReader("not-multipart-data"))
+	c.Request.Header.Set("Content-Type", "multipart/form-data; boundary=boundary123")
+
+	// Should not panic; missing key returns empty string.
+	assert.Empty(t, c.PostForm("key"))
+}
