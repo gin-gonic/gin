@@ -223,6 +223,10 @@ func (group *RouterGroup) createStaticHandler(relativePath string, fs http.FileS
 		}
 
 		file := c.Param("filepath")
+		// Clean the path to handle trailing slashes and invalid paths.
+		// Many fs.FS implementations (e.g. fs.Sub, http.FS) reject paths with
+		// trailing slashes because fs.ValidPath considers them invalid.
+		file = path.Clean(file)
 		// Check if file exists and/or if we have permission to access it
 		f, err := fs.Open(file)
 		if err != nil {
