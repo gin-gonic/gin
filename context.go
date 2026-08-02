@@ -1339,6 +1339,24 @@ func (c *Context) File(filepath string) {
 
 // FileFromFS writes the specified file from http.FileSystem into the body stream in an efficient way.
 func (c *Context) FileFromFS(filepath string, fs http.FileSystem) {
+	file, err := fs.Open(filepath)
+	if err != nil {
+		http.NotFound(c.Writer, c.Request)
+		return
+	}
+	defer file.Close()
+
+	info, err := file.Stat()
+	if err != nil {
+		http.NotFound(c.Writer, c.Request)
+		return
+	}
+
+	if !info.IsDir() {
+		http.ServeContent(c.Writer, c.Request, filepath, info.ModTime(), file)
+		return
+	}
+
 	defer func(old string) {
 		c.Request.URL.Path = old
 	}(c.Request.URL.Path)
