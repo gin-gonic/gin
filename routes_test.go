@@ -527,6 +527,23 @@ func TestRouteNotAllowedEnabled3(t *testing.T) {
 	assert.Contains(t, allowed, http.MethodPost)
 }
 
+func TestRouteNotAllowedDoesNotReuseSkippedNodes(t *testing.T) {
+	router := New()
+	router.HandleMethodNotAllowed = true
+	router.POST("/b", func(c *Context) {})
+	router.POST("/:p0", func(c *Context) {})
+	router.PUT("/a/:p1", func(c *Context) {})
+
+	// The POST probe for the Allow header matches static "/b" while
+	// recording the skipped wildcard ":p0". handleHTTPRequest must reset
+	// c.skippedNodes before probing the PUT tree, or the stale entry
+	// leaks the POST route into the PUT lookup and PUT is wrongly
+	// reported in the Allow header.
+	w := PerformRequest(router, http.MethodGet, "/b")
+	assert.Equal(t, http.StatusMethodNotAllowed, w.Code)
+	assert.Equal(t, http.MethodPost, w.Header().Get("Allow"))
+}
+
 func TestRouteNotAllowedDisabled(t *testing.T) {
 	router := New()
 	router.HandleMethodNotAllowed = false
