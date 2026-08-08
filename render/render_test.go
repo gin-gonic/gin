@@ -5,6 +5,7 @@
 package render
 
 import (
+	"encoding/json"
 	"encoding/xml"
 	"errors"
 	"html/template"
@@ -267,6 +268,22 @@ func TestRenderAsciiJSONFail(t *testing.T) {
 
 	// json: unsupported type: chan int
 	require.Error(t, (AsciiJSON{data}).Render(w))
+}
+
+func TestRenderAsciiJSONNonBMP(t *testing.T) {
+	w := httptest.NewRecorder()
+	data := map[string]string{"msg": "😀"}
+
+	err := (AsciiJSON{Data: data}).Render(w)
+	require.NoError(t, err)
+
+	// Non-BMP characters must be encoded as UTF-16 surrogate pairs
+	assert.Equal(t, `{"msg":"\ud83d\ude00"}`, w.Body.String())
+
+	// Verify round-trip: json.Unmarshal should recover the original emoji
+	var decoded map[string]string
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &decoded))
+	assert.Equal(t, "😀", decoded["msg"])
 }
 
 func TestRenderPureJSON(t *testing.T) {
