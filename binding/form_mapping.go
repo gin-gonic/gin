@@ -196,6 +196,14 @@ func trySetCustom(val string, value reflect.Value) (isSet bool, err error) {
 	return false, nil
 }
 
+// wrapBindErr prefixes a bind error with the form/query field name.
+func wrapBindErr(fieldName string, err error) error {
+	if err == nil || fieldName == "" {
+		return err
+	}
+	return fmt.Errorf("%s: %w", fieldName, err)
+}
+
 // trySetUsingParser tries to set a custom type value based on the presence of the "parser" tag on the field.
 // If the parser tag does not exist or does not match any of the supported parsers, gin will skip over this.
 func trySetUsingParser(val string, value reflect.Value, parser string) (isSet bool, err error) {
@@ -264,9 +272,9 @@ func setByForm(value reflect.Value, field reflect.StructField, form map[string][
 		}
 
 		if ok, err = trySetUsingParser(vs[0], value, opt.parser); ok {
-			return ok, err
+			return ok, wrapBindErr(tagValue, err)
 		} else if ok, err = trySetCustom(vs[0], value); ok {
-			return ok, err
+			return ok, wrapBindErr(tagValue, err)
 		}
 
 		if vs, err = trySplit(vs, field); err != nil {
@@ -289,9 +297,9 @@ func setByForm(value reflect.Value, field reflect.StructField, form map[string][
 		}
 
 		if ok, err = trySetUsingParser(vs[0], value, opt.parser); ok {
-			return ok, err
+			return ok, wrapBindErr(tagValue, err)
 		} else if ok, err = trySetCustom(vs[0], value); ok {
-			return ok, err
+			return ok, wrapBindErr(tagValue, err)
 		}
 
 		if vs, err = trySplit(vs, field); err != nil {
@@ -312,9 +320,9 @@ func setByForm(value reflect.Value, field reflect.StructField, form map[string][
 		}
 
 		if ok, err = trySetUsingParser(val, value, opt.parser); ok {
-			return ok, err
+			return ok, wrapBindErr(tagValue, err)
 		} else if ok, err = trySetCustom(val, value); ok {
-			return ok, err
+			return ok, wrapBindErr(tagValue, err)
 		}
 		return true, setWithProperType(val, value, field, opt)
 	}
@@ -323,9 +331,9 @@ func setByForm(value reflect.Value, field reflect.StructField, form map[string][
 func setWithProperType(val string, value reflect.Value, field reflect.StructField, opt setOptions) error {
 	// this if-check is required for parsing nested types like []MyId, where MyId is [12]byte
 	if ok, err := trySetUsingParser(val, value, opt.parser); ok {
-		return err
+		return wrapBindErr(field.Name, err)
 	} else if ok, err = trySetCustom(val, value); ok {
-		return err
+		return wrapBindErr(field.Name, err)
 	}
 
 	// If it is a string type, no spaces are removed, and the user data is not modified here
