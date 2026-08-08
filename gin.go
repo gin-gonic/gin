@@ -122,6 +122,13 @@ type Engine struct {
 	// handler.
 	HandleMethodNotAllowed bool
 
+	// NoMethodSkipHandlers when true, the 405 chain is only Engine.NoMethod
+	// handlers — global middleware from Engine.Use is not prepended. Default
+	// false keeps historical behavior (logger/recovery still run on 405).
+	// Only applies when HandleMethodNotAllowed is true.
+	// Set this before Use/NoMethod (rebuild happens on those calls).
+	NoMethodSkipHandlers bool
+
 	// ForwardedByClientIP if enabled, client IP will be parsed from the request's headers that
 	// match those stored at `(*gin.Engine).RemoteIPHeaders`. If no IP was
 	// fetched, it falls back to the IP obtained from
@@ -358,6 +365,10 @@ func (engine *Engine) rebuild404Handlers() {
 }
 
 func (engine *Engine) rebuild405Handlers() {
+	if engine.NoMethodSkipHandlers {
+		engine.allNoMethod = engine.noMethod
+		return
+	}
 	engine.allNoMethod = engine.combineHandlers(engine.noMethod)
 }
 
