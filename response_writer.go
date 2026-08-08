@@ -18,6 +18,7 @@ const (
 )
 
 var errHijackAlreadyWritten = errors.New("gin: response body already written")
+var errHijacked = errors.New("gin: connection hijacked")
 
 // ResponseWriter ...
 type ResponseWriter interface {
@@ -48,8 +49,9 @@ type ResponseWriter interface {
 
 type responseWriter struct {
 	http.ResponseWriter
-	size   int
-	status int
+	size     int
+	status   int
+	hijacked bool
 }
 
 var _ ResponseWriter = (*responseWriter)(nil)
@@ -62,6 +64,7 @@ func (w *responseWriter) reset(writer http.ResponseWriter) {
 	w.ResponseWriter = writer
 	w.size = noWritten
 	w.status = defaultStatus
+	w.hijacked = false
 }
 
 func (w *responseWriter) WriteHeader(code int) {
@@ -75,6 +78,9 @@ func (w *responseWriter) WriteHeader(code int) {
 }
 
 func (w *responseWriter) WriteHeaderNow() {
+	if w.hijacked {
+		return
+	}
 	if !w.Written() {
 		w.size = 0
 		w.ResponseWriter.WriteHeader(w.status)
@@ -82,6 +88,9 @@ func (w *responseWriter) WriteHeaderNow() {
 }
 
 func (w *responseWriter) Write(data []byte) (n int, err error) {
+	if w.hijacked {
+		return 0, errHijacked
+	}
 	w.WriteHeaderNow()
 	n, err = w.ResponseWriter.Write(data)
 	w.size += n
@@ -89,6 +98,9 @@ func (w *responseWriter) Write(data []byte) (n int, err error) {
 }
 
 func (w *responseWriter) WriteString(s string) (n int, err error) {
+	if w.hijacked {
+		return 0, errHijacked
+	}
 	w.WriteHeaderNow()
 	n, err = io.WriteString(w.ResponseWriter, s)
 	w.size += n
@@ -121,7 +133,11 @@ func (w *responseWriter) Hijack() (net.Conn, *bufio.ReadWriter, error) {
 	if w.size < 0 {
 		w.size = 0
 	}
-	return hijacker.Hijack()
+	conn, rw, err := hijacker.Hijack()
+	if err == nil {
+		w.hijacked = true
+	}
+	return conn, rw, err
 }
 
 // CloseNotify implements the http.CloseNotifier interface.
