@@ -222,7 +222,9 @@ func (group *RouterGroup) createStaticHandler(relativePath string, fs http.FileS
 			c.Writer.WriteHeader(http.StatusNotFound)
 		}
 
-		file := c.Param("filepath")
+		// Normalize like net/http.FileServer so embed/fs.Sub preflight Open
+		// accepts directory URLs with trailing slashes (#4451).
+		file := path.Clean("/" + c.Param("filepath"))
 		// Check if file exists and/or if we have permission to access it
 		f, err := fs.Open(file)
 		if err != nil {
