@@ -17,8 +17,10 @@ const (
 	defaultStatus = http.StatusOK
 )
 
-var errHijackAlreadyWritten = errors.New("gin: response body already written")
-var errHijacked = errors.New("gin: connection hijacked")
+var (
+	errHijackAlreadyWritten = errors.New("gin: response body already written")
+	errHijacked             = errors.New("gin: connection hijacked")
+)
 
 // ResponseWriter ...
 type ResponseWriter interface {

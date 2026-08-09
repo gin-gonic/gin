@@ -300,7 +300,6 @@ func TestResponseWriterWriteAfterHijack(t *testing.T) {
 	assert.Equal(t, 0, hijacker.Body.Len())
 }
 
-
 func TestResponseWriterFlush(t *testing.T) {
 	testServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		writer := &responseWriter{}
