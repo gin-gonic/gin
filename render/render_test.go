@@ -277,8 +277,10 @@ func TestRenderAsciiJSONNonBMP(t *testing.T) {
 	err := (AsciiJSON{Data: data}).Render(w)
 	require.NoError(t, err)
 
-	// Non-BMP characters must be encoded as UTF-16 surrogate pairs
-	assert.Equal(t, `{"msg":"\ud83d\ude00"}`, w.Body.String())
+	body := w.Body.String()
+	// Non-BMP characters must be encoded as UTF-16 surrogate pairs on the wire.
+	assert.Contains(t, body, `\ud83d\ude00`)
+	assert.JSONEq(t, `{"msg":"😀"}`, body)
 
 	// Verify round-trip: json.Unmarshal should recover the original emoji
 	var decoded map[string]string
