@@ -302,8 +302,10 @@ func TestServeHTTPCleansMultipartFormAfterWithContext(t *testing.T) {
 	router := New()
 	router.MaxMultipartMemory = 32 // force temp file
 
+	// Named key type required by staticcheck SA1029 (avoid empty anonymous struct keys).
+	type withContextMarker struct{}
 	router.Use(func(c *Context) {
-		c.Request = c.Request.WithContext(context.WithValue(c.Request.Context(), struct{}{}, 1))
+		c.Request = c.Request.WithContext(context.WithValue(c.Request.Context(), withContextMarker{}, 1))
 		c.Next()
 	})
 
