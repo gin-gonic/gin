@@ -156,6 +156,134 @@ func TestMiddlewareNoMethodDisabled(t *testing.T) {
 	assert.Equal(t, "AC X DB", signature)
 }
 
+// Test the fix for https://github.com/gin-gonic/gin/issues/4189
+func TestMiddlewareNoMethodSkipped(t *testing.T) {
+	signature := ""
+	router := New()
+	router.HandleMethodNotAllowed = true
+	router.SkipMethodNotAllowedMiddleware = true
+	router.Use(func(c *Context) {
+		signature += "A"
+		c.Next()
+		signature += "B"
+	})
+	router.Use(func(c *Context) {
+		signature += "C"
+		c.Next()
+		signature += "D"
+	})
+	router.NoMethod(func(c *Context) {
+		signature += "E"
+		c.Next()
+		signature += "F"
+	}, func(c *Context) {
+		signature += "G"
+		c.Next()
+		signature += "H"
+	})
+	router.NoRoute(func(c *Context) {
+		signature += " X "
+	})
+	router.POST("/", func(c *Context) {
+		signature += " XX "
+	})
+
+	// RUN
+	w := PerformRequest(router, http.MethodGet, "/")
+
+	// TEST
+	assert.Equal(t, http.StatusMethodNotAllowed, w.Code)
+	assert.Equal(t, http.MethodPost, w.Header().Get("Allow"))
+	assert.Equal(t, "EGHF", signature)
+}
+
+// The flag is read when the request is served, so it takes effect even when it
+// is set after Use() and NoMethod() have already built the handlers chain.
+func TestMiddlewareNoMethodSkippedSetAfterRegistration(t *testing.T) {
+	signature := ""
+	router := New()
+	router.HandleMethodNotAllowed = true
+	router.Use(func(c *Context) {
+		signature += "A"
+		c.Next()
+		signature += "B"
+	})
+	router.NoMethod(func(c *Context) {
+		signature += "E"
+		c.Next()
+		signature += "F"
+	})
+	router.POST("/", func(c *Context) {
+		signature += " XX "
+	})
+	router.SkipMethodNotAllowedMiddleware = true
+
+	// RUN
+	w := PerformRequest(router, http.MethodGet, "/")
+
+	// TEST
+	assert.Equal(t, http.StatusMethodNotAllowed, w.Code)
+	assert.Equal(t, "EF", signature)
+}
+
+func TestMiddlewareNoMethodSkippedWithoutNoMethodHandlers(t *testing.T) {
+	signature := ""
+	router := New()
+	router.HandleMethodNotAllowed = true
+	router.SkipMethodNotAllowedMiddleware = true
+	router.Use(func(c *Context) {
+		signature += "A"
+		c.Next()
+		signature += "B"
+	})
+	router.POST("/", func(c *Context) {
+		signature += " XX "
+	})
+
+	// RUN
+	w := PerformRequest(router, http.MethodGet, "/")
+
+	// TEST
+	assert.Equal(t, http.StatusMethodNotAllowed, w.Code)
+	assert.Equal(t, "405 method not allowed", w.Body.String())
+	assert.Empty(t, signature)
+}
+
+// The flag only covers 405 responses, requests falling through to NoRoute must
+// keep running the global middleware.
+func TestMiddlewareNoMethodSkippedDoesNotAffectNoRoute(t *testing.T) {
+	signature := ""
+	router := New()
+	router.HandleMethodNotAllowed = true
+	router.SkipMethodNotAllowedMiddleware = true
+	router.Use(func(c *Context) {
+		signature += "A"
+		c.Next()
+		signature += "B"
+	})
+	router.Use(func(c *Context) {
+		signature += "C"
+		c.Next()
+		signature += "D"
+	})
+	router.NoMethod(func(c *Context) {
+		signature += " E "
+	})
+	router.NoRoute(func(c *Context) {
+		signature += " X "
+	})
+	router.POST("/", func(c *Context) {
+		signature += " XX "
+	})
+
+	// RUN
+	w := PerformRequest(router, http.MethodGet, "/not-registered")
+
+	// TEST
+	assert.Equal(t, http.StatusNotFound, w.Code)
+	assert.Equal(t, "AC X DB", signature)
+}
+
 func TestMiddlewareAbort(t *testing.T) {
 	signature := ""
 	router := New()
