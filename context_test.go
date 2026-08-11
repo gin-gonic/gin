@@ -928,6 +928,16 @@ func TestContextPostFormOnEmptyRequest(t *testing.T) {
 	})
 }
 
+func TestContextPostFormMalformedMultipart(t *testing.T) {
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	c.Request, _ = http.NewRequest(http.MethodPost, "/", strings.NewReader("not multipart"))
+	c.Request.Header.Set("Content-Type", "multipart/form-data; boundary=xxx")
+
+	assert.NotPanics(t, func() {
+		assert.Empty(t, c.PostForm("NoKey"))
+	})
+}
+
 func TestContextQueryAndPostForm(t *testing.T) {
 	c, _ := CreateTestContext(httptest.NewRecorder())
 	body := strings.NewReader("foo=bar&page=11&both=&foo=second")
