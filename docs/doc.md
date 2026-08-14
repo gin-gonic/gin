@@ -7,6 +7,7 @@
   - [Build without MsgPack rendering feature](#build-without-msgpack-rendering-feature)
 - [Routing](#routing)
   - [Using GET, POST, PUT, PATCH, DELETE and OPTIONS](#using-get-post-put-patch-delete-and-options)
+  - [Using the QUERY method](#using-the-query-method)
   - [Parameters in path](#parameters-in-path)
   - [Querystring parameters](#querystring-parameters)
   - [Multipart/Urlencoded Form](#multiparturlencoded-form)
@@ -134,6 +135,46 @@ func main() {
   // PORT environment variable was defined.
   router.Run()
   // router.Run(":3000") for a hard coded port
+}
+```
+
+### Using the QUERY method
+
+`QUERY` is the safe and idempotent method defined by [RFC 10008](https://www.rfc-editor.org/info/rfc10008/). It carries its query in the request body, so you can send a query that is too large or too structured for a URL without turning it into a `POST`.
+
+```go
+func main() {
+  router := gin.Default()
+
+  router.QUERY("/search", func(c *gin.Context) {
+    var query struct {
+      Term string `json:"term"`
+    }
+    if err := c.ShouldBindJSON(&query); err != nil {
+      c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+      return
+    }
+    c.JSON(http.StatusOK, gin.H{"term": query.Term})
+  })
+
+  router.Run()
+}
+```
+
+Use the `gin.MethodQuery` constant wherever an HTTP method name is expected, for example when building a request in a test:
+
+```go
+req := httptest.NewRequest(gin.MethodQuery, "/search", body)
+```
+
+Two things to keep in mind:
+
+- `router.Any` does not register `QUERY`, so existing catch-all routes keep matching exactly the methods they matched before. Use `router.QUERY` or `router.Match([]string{gin.MethodQuery, http.MethodPost}, ...)` when you want it.
+- `QUERY` is not part of the `gin.IRoutes` interface. `*gin.Engine` and `*gin.RouterGroup` expose it directly; if you only hold an `IRoutes` value, assert to `gin.IQueryRoutes` first.
+
+```go
+if q, ok := routes.(gin.IQueryRoutes); ok {
+  q.QUERY("/search", searching)
 }
 ```
 

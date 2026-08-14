@@ -11,6 +11,11 @@ import (
 	"strings"
 )
 
+// MethodQuery is the HTTP QUERY method defined by RFC 10008. It is declared
+// here because the standard library does not provide http.MethodQuery yet.
+// Once it does, this constant keeps the same value and stays valid.
+const MethodQuery = "QUERY"
+
 var (
 	// regEnLetter matches english letters for http method name
 	regEnLetter = regexp.MustCompile("^[A-Z]+$")
@@ -50,6 +55,22 @@ type IRoutes interface {
 	StaticFS(string, http.FileSystem) IRoutes
 }
 
+// IQueryRoutes defines the router handle interface for the HTTP QUERY method.
+//
+// It is deliberately kept out of IRoutes: adding a method to IRoutes would
+// break every type outside of Gin that implements it, such as test doubles and
+// wrappers. Type assert when you only hold an IRoutes value:
+//
+//	if q, ok := routes.(gin.IQueryRoutes); ok {
+//		q.QUERY("/search", handler)
+//	}
+//
+// *gin.RouterGroup and *gin.Engine satisfy this interface, so the assertion is
+// only needed when the concrete type has been erased.
+type IQueryRoutes interface {
+	QUERY(string, ...HandlerFunc) IRoutes
+}
+
 // RouterGroup is used internally to configure router, a RouterGroup is associated with
 // a prefix and an array of handlers (middleware).
 type RouterGroup struct {
@@ -59,7 +80,10 @@ type RouterGroup struct {
 	root     bool
 }
 
-var _ IRouter = (*RouterGroup)(nil)
+var (
+	_ IRouter      = (*RouterGroup)(nil)
+	_ IQueryRoutes = (*RouterGroup)(nil)
+)
 
 // Use adds middleware to the group, see example code in GitHub.
 func (group *RouterGroup) Use(middleware ...HandlerFunc) IRoutes {
@@ -117,6 +141,15 @@ func (group *RouterGroup) GET(relativePath string, handlers ...HandlerFunc) IRou
 	return group.handle(http.MethodGet, relativePath, handlers)
 }
 
+// QUERY is a shortcut for router.Handle("QUERY", path, handlers).
+//
+// QUERY is the safe and idempotent method defined by RFC 10008 that carries its
+// query in the request body. The body is read like any other body, for example
+// with c.ShouldBindJSON.
+func (group *RouterGroup) QUERY(relativePath string, handlers ...HandlerFunc) IRoutes {
+	return group.handle(MethodQuery, relativePath, handlers)
+}
+
 // DELETE is a shortcut for router.Handle("DELETE", path, handlers).
 func (group *RouterGroup) DELETE(relativePath string, handlers ...HandlerFunc) IRoutes {
 	return group.handle(http.MethodDelete, relativePath, handlers)
@@ -144,6 +177,10 @@ func (group *RouterGroup) HEAD(relativePath string, handlers ...HandlerFunc) IRo
 
 // Any registers a route that matches all the HTTP methods.
 // GET, POST, PUT, PATCH, HEAD, OPTIONS, DELETE, CONNECT, TRACE.
+//
+// QUERY is not part of that list, so that Any keeps registering exactly the
+// same routes as before. Register it with QUERY, or with
+// Match([]string{gin.MethodQuery, ...}, ...) to combine it with other methods.
 func (group *RouterGroup) Any(relativePath string, handlers ...HandlerFunc) IRoutes {
 	for _, method := range anyMethods {
 		group.handle(method, relativePath, handlers)
