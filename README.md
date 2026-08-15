@@ -92,14 +92,21 @@ func main() {
 **Running the application:**
 
 1. Save the code above as `main.go`
-2. Run the application:
+2. Initialize a Go module and download dependencies:
+
+   ```sh
+   go mod init example.com/gin-quickstart
+   go mod tidy
+   ```
+
+3. Run the application:
 
    ```sh
    go run main.go
    ```
 
-3. Open your browser and visit [`http://localhost:8080/ping`](http://localhost:8080/ping)
-4. You should see: `{"message":"pong"}`
+4. Open your browser and visit [`http://localhost:8080/ping`](http://localhost:8080/ping)
+5. You should see: `{"message":"pong"}`
 
 **What this example demonstrates:**
 
