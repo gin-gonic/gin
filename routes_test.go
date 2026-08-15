@@ -10,6 +10,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -84,6 +85,60 @@ func testRouteNotOK2(method string, t *testing.T) {
 
 	assert.False(t, passed)
 	assert.Equal(t, http.StatusMethodNotAllowed, w.Code)
+}
+
+// TestRouteQuery tests that a QUERY route is invoked and can read the request
+// body, which is the whole point of the method (RFC 10008).
+func TestRouteQuery(t *testing.T) {
+	type search struct {
+		Term string `json:"term"`
+	}
+
+	router := New()
+	router.QUERY("/search", func(c *Context) {
+		var body search
+		require.NoError(t, c.ShouldBindJSON(&body))
+		c.String(http.StatusOK, body.Term)
+	})
+
+	req := httptest.NewRequest(MethodQuery, "/search", strings.NewReader(`{"term":"gin"}`))
+	req.Header.Set("Content-Type", MIMEJSON)
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Equal(t, "gin", w.Body.String())
+}
+
+// TestRouteQueryNotRegisteredByAny documents that Any does not register QUERY,
+// so that existing Any routes keep matching exactly the methods they used to.
+func TestRouteQueryNotRegisteredByAny(t *testing.T) {
+	router := New()
+	router.Any("/test", func(c *Context) {
+		c.Status(http.StatusOK)
+	})
+
+	w := PerformRequest(router, MethodQuery, "/test")
+
+	assert.Equal(t, http.StatusNotFound, w.Code)
+}
+
+// TestQueryRoutesInterface tests that a router reached through IRoutes can
+// still register a QUERY route via the IQueryRoutes assertion.
+func TestQueryRoutesInterface(t *testing.T) {
+	router := New()
+
+	var routes IRoutes = router.Group("/v1")
+	queryRoutes, ok := routes.(IQueryRoutes)
+	require.True(t, ok)
+
+	queryRoutes.QUERY("/search", func(c *Context) {
+		c.Status(http.StatusOK)
+	})
+
+	w := PerformRequest(router, MethodQuery, "/v1/search")
+
+	assert.Equal(t, http.StatusOK, w.Code)
 }
 
 func TestRouterMethod(t *testing.T) {
