@@ -55,7 +55,7 @@ func cleanPath(p string) string {
 
 	// A bit more clunky without a 'lazybuf' like the path package, but the loop
 	// gets completely inlined (bufApp calls).
-	// loop has no expensive function calls (except 1x make)		// So in contrast to the path package this loop has no expensive function
+	// So in contrast to the path package this loop has no expensive function
 	// calls (except make, if needed).
 
 	for r < n {
