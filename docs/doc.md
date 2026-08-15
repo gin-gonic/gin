@@ -459,6 +459,10 @@ func main() {
 }
 ```
 
+Attach global middleware before registering routes. Routes added before a `Use()` call are not
+retroactively wrapped, while `404` and `405` handlers are rebuilt from the current global
+middleware chain.
+
 ### Custom Middleware
 
 ```go
