@@ -141,6 +141,16 @@ func (c *Context) Copy() *Context {
 	cp.Params = make([]Param, len(cParams))
 	copy(cp.Params, cParams)
 
+	if c.Errors != nil {
+		cp.Errors = make(errorMsgs, len(c.Errors))
+		copy(cp.Errors, c.Errors)
+	}
+
+	if c.Accepted != nil {
+		cp.Accepted = make([]string, len(c.Accepted))
+		copy(cp.Accepted, c.Accepted)
+	}
+
 	return &cp
 }
 
@@ -619,8 +629,8 @@ func (c *Context) DefaultPostForm(key, defaultValue string) string {
 // For example, during a PATCH request to update the user's email:
 //
 //	    email=mail@example.com  -->  ("mail@example.com", true) := GetPostForm("email") // set email to "mail@example.com"
-//		   email=                  -->  ("", true) := GetPostForm("email") // set email to ""
-//	                            -->  ("", false) := GetPostForm("email") // do nothing with email
+//		email=                  -->  ("", true) := GetPostForm("email")                 // set email to ""
+//	                            -->  ("", false) := GetPostForm("email")                // do nothing with email
 func (c *Context) GetPostForm(key string) (string, bool) {
 	if values, ok := c.GetPostFormArray(key); ok {
 		return values[0], ok
@@ -716,6 +726,11 @@ func (c *Context) MultipartForm() (*multipart.Form, error) {
 }
 
 // SaveUploadedFile uploads the form file to specific dst.
+// An optional perm argument specifies the permission bits used when creating
+// the destination directory. If not provided, the default is 0750. The exact
+// permission is enforced only on the destination directory and only when it is
+// newly created by this call; pre-existing directories (e.g. /tmp) are not
+// modified.
 func (c *Context) SaveUploadedFile(file *multipart.FileHeader, dst string, perm ...fs.FileMode) error {
 	src, err := file.Open()
 	if err != nil {
@@ -728,11 +743,19 @@ func (c *Context) SaveUploadedFile(file *multipart.FileHeader, dst string, perm 
 		mode = perm[0]
 	}
 	dir := filepath.Dir(dst)
+	// Record whether the destination directory exists before MkdirAll, so we
+	// only chmod a directory we just created. Chmod'ing a pre-existing directory
+	// the process does not own (e.g. /tmp) fails with "operation not permitted"
+	// (#4622). A non-ErrNotExist stat error also skips chmod and lets MkdirAll
+	// surface the underlying failure.
+	_, statErr := os.Stat(dir)
 	if err = os.MkdirAll(dir, mode); err != nil {
 		return err
 	}
-	if err = os.Chmod(dir, mode); err != nil {
-		return err
+	if errors.Is(statErr, os.ErrNotExist) {
+		if err = os.Chmod(dir, mode); err != nil {
+			return err
+		}
 	}
 
 	out, err := os.Create(dst)
@@ -764,7 +787,7 @@ func (c *Context) BindJSON(obj any) error {
 	return c.MustBindWith(obj, binding.JSON)
 }
 
-// BindXML is a shortcut for c.MustBindWith(obj, binding.BindXML).
+// BindXML is a shortcut for c.MustBindWith(obj, binding.XML).
 func (c *Context) BindXML(obj any) error {
 	return c.MustBindWith(obj, binding.XML)
 }
@@ -1045,6 +1068,33 @@ func (c *Context) IsWebsocket() bool {
 		return true
 	}
 	return false
+}
+
+// Scheme returns the HTTP scheme of the request ("http" or "https").
+// When running behind reverse proxies or load balancers `Request.URL.Scheme` is usually empty.
+// the original scheme is commonly forwarded via headers such as X-Forwarded-Proto.
+// Reference:
+// https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/X-Forwarded-Proto
+func (c *Context) Scheme() string {
+	if c.Request.TLS != nil {
+		return "https"
+	}
+	if scheme := c.requestHeader("X-Forwarded-Proto"); scheme != "" {
+		return scheme
+	}
+	if scheme := c.requestHeader("X-Forwarded-Protocol"); scheme != "" {
+		return scheme
+	}
+	if ssl := c.requestHeader("X-Forwarded-Ssl"); ssl == "on" {
+		return "https"
+	}
+	if scheme := c.requestHeader("X-Url-Scheme"); scheme != "" {
+		return scheme
+	}
+	if scheme := c.Request.URL.Scheme; scheme != "" {
+		return scheme
+	}
+	return "http"
 }
 
 func (c *Context) requestHeader(key string) string {
