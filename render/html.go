@@ -5,6 +5,7 @@
 package render
 
 import (
+	"errors"
 	"html/template"
 	"net/http"
 
@@ -50,6 +51,8 @@ type HTML struct {
 
 var htmlContentType = []string{"text/html; charset=utf-8"}
 
+var errHTMLRendererNotConfigured = errors.New("html renderer is not configured")
+
 // Instance (HTMLProduction) returns an HTML instance which it realizes Render interface.
 func (r HTMLProduction) Instance(name string, data any) Render {
 	return HTML{
@@ -88,6 +91,9 @@ func (r HTMLDebug) loadTemplate() *template.Template {
 // Render (HTML) executes template and writes its result with custom ContentType for response.
 func (r HTML) Render(w http.ResponseWriter) error {
 	r.WriteContentType(w)
+	if r.Template == nil {
+		return errHTMLRendererNotConfigured
+	}
 
 	if r.Name == "" {
 		return r.Template.Execute(w, r.Data)
