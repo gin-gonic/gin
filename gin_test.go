@@ -1156,3 +1156,80 @@ func TestUpdateRouteTreesCalledOnce(t *testing.T) {
 		assert.Equal(t, "ok", w.Body.String())
 	}
 }
+
+func TestParseNonstandardIP(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		wantIP   bool
+		wantAddr string
+	}{
+		// IPv4 with port
+		{"ipv4 with port", "192.168.8.39:38792", true, "192.168.8.39"},
+		// IPv6 with brackets
+		{"ipv6 with brackets", "[240e:318:2f4a:de56::240]", true, "240e:318:2f4a:de56::240"},
+		// IPv6 with brackets and port
+		{"ipv6 with brackets and port", "[240e:318:2f4a:de56::240]:38792", true, "240e:318:2f4a:de56::240"},
+		// Loopback IPv6 with brackets
+		{"loopback ipv6 with brackets", "[::1]", true, "::1"},
+		// Loopback IPv6 with brackets and port
+		{"loopback ipv6 with brackets and port", "[::1]:8080", true, "::1"},
+		// Plain IPv4 (should fail - not non-standard)
+		{"plain ipv4", "192.168.1.1", false, ""},
+		// Plain IPv6 (should fail - not non-standard)
+		{"plain ipv6", "::1", false, ""},
+		// Invalid input
+		{"invalid", "not-an-ip", false, ""},
+		// Empty string
+		{"empty", "", false, ""},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ip, addr := parseNonstandardIP(tt.input)
+			if tt.wantIP {
+				assert.NotNil(t, ip, "expected non-nil IP for input %q", tt.input)
+				assert.Equal(t, tt.wantAddr, addr)
+			} else {
+				assert.Nil(t, ip, "expected nil IP for input %q", tt.input)
+				assert.Empty(t, addr)
+			}
+		})
+	}
+}
+
+func TestValidateHeaderWithNonstandardIPs(t *testing.T) {
+	engine := New()
+	_ = engine.SetTrustedProxies([]string{"0.0.0.0/0", "::/0"})
+
+	tests := []struct {
+		name   string
+		header string
+		wantIP string
+		wantOK bool
+	}{
+		// Standard formats (should still work)
+		{"standard ipv4", "192.168.1.1", "192.168.1.1", true},
+		{"standard ipv6", "240e:318:2f4a:de56::240", "240e:318:2f4a:de56::240", true},
+		// Non-standard formats
+		{"ipv4 with port", "192.168.8.39:38792", "192.168.8.39", true},
+		{"ipv6 with brackets", "[240e:318:2f4a:de56::240]", "240e:318:2f4a:de56::240", true},
+		{"ipv6 with brackets and port", "[240e:318:2f4a:de56::240]:38792", "240e:318:2f4a:de56::240", true},
+		// Mixed with multiple IPs
+		{"mixed standard and nonstandard", "192.168.8.39:38792, 10.0.0.1", "192.168.8.39", true},
+		{"mixed bracketed ipv6 and standard", "[::1]:8080, 10.0.0.1", "::1", true},
+		// Invalid header
+		{"empty header", "", "", false},
+		{"completely invalid", "not-an-ip", "", false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ip, valid := engine.validateHeader(tt.header)
+			assert.Equal(t, tt.wantOK, valid, "valid mismatch for header %q", tt.header)
+			if tt.wantOK {
+				assert.Equal(t, tt.wantIP, ip, "IP mismatch for header %q", tt.header)
+			}
+		})
+	}
+}
