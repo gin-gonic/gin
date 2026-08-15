@@ -78,13 +78,69 @@ func (n *node) addChild(child *node) {
 }
 
 func countParams(path string) uint16 {
-	colons := strings.Count(path, ":")
-	stars := strings.Count(path, "*")
-	return safeUint16(colons + stars)
+	var count uint16
+	skipLeadingColon := false
+	for {
+		wildcard, i, _ := findWildcard(path, skipLeadingColon)
+		if i < 0 {
+			return count
+		}
+		count++
+
+		path = path[i+len(wildcard):]
+		skipLeadingColon = len(path) > 0 && wildcard[0] == ':' && path[0] == ':'
+	}
 }
 
 func countSections(path string) uint16 {
 	return safeUint16(strings.Count(path, "/"))
+}
+
+func isParamStart(path string, i int) bool {
+	if i == 0 || path[i-1] == '/' {
+		return true
+	}
+	if i == len(path)-1 || path[i+1] == '/' {
+		return false
+	}
+
+	switch path[i-1] {
+	case '_', '-', '.':
+		return true
+	}
+
+	segmentStart := strings.LastIndexByte(path[:i], '/') + 1
+	prefix := path[segmentStart:i]
+	return len(prefix) == 0 || prefix[len(prefix)-1] != 's'
+}
+
+func (n *node) childIndex(c byte) int {
+	for i, idx := range []byte(n.indices) {
+		if idx == c {
+			return i
+		}
+	}
+	return -1
+}
+
+func (n *node) findStaticParamChild(path string, end int, match func(*node, string) bool) (int, int) {
+	for j := end - 1; j >= 0; j-- {
+		for i, c := range []byte(n.indices) {
+			if c == '/' || path[j] != c || !strings.HasPrefix(path[j:], n.children[i].path) {
+				continue
+			}
+			if match == nil || match(n.children[i], path[j:]) {
+				return i, j
+			}
+		}
+	}
+	return -1, end
+}
+
+func staticParamChildCanMatch(child *node, path string) bool {
+	skippedNodes := make([]skippedNode, 0, int(countSections(path))+1)
+	value := child.getValue(path, nil, &skippedNodes, false)
+	return value.handlers != nil || value.tsr
 }
 
 type nodeType uint8
@@ -180,9 +236,13 @@ walk:
 			c := path[0]
 
 			// '/' after param
-			if n.nType == param && c == '/' && len(n.children) == 1 {
+			if n.nType == param && c == '/' {
+				childIndex := n.childIndex('/')
+				if childIndex < 0 {
+					goto insert
+				}
 				parentFullPathIndex += len(n.path)
-				n = n.children[0]
+				n = n.children[childIndex]
 				n.priority++
 				continue walk
 			}
@@ -198,7 +258,9 @@ walk:
 			}
 
 			// Otherwise insert it
-			if c != ':' && c != '*' && n.nType != catchAll {
+		insert:
+			skipLeadingColonForInsert := n.nType == param && c == ':'
+			if (c != ':' && c != '*' || n.nType == param && c == ':') && n.nType != catchAll {
 				// []byte for proper unicode char conversion, see #65
 				n.indices += bytesconv.BytesToString([]byte{c})
 				child := &node{
@@ -217,7 +279,7 @@ walk:
 					// Adding a child to a catchAll is not possible
 					n.nType != catchAll &&
 					// Check for longer wildcard, e.g. :name and :names
-					(len(n.path) >= len(path) || path[len(n.path)] == '/') {
+					(len(n.path) >= len(path) || path[len(n.path)] == '/' || path[len(n.path)] == ':') {
 					continue walk
 				}
 
@@ -234,7 +296,7 @@ walk:
 					"'")
 			}
 
-			n.insertChild(path, fullPath, handlers)
+			n.insertChildWithSkip(path, fullPath, handlers, skipLeadingColonForInsert)
 			return
 		}
 
@@ -250,7 +312,7 @@ walk:
 
 // Search for a wildcard segment and check the name for invalid characters.
 // Returns -1 as index, if no wildcard was found.
-func findWildcard(path string) (wildcard string, i int, valid bool) {
+func findWildcard(path string, skipLeadingColon bool) (wildcard string, i int, valid bool) {
 	// Find start
 	escapeColon := false
 	for start, c := range []byte(path) {
@@ -265,7 +327,15 @@ func findWildcard(path string) (wildcard string, i int, valid bool) {
 			escapeColon = true
 			continue
 		}
-		// A wildcard starts with ':' (param) or '*' (catch-all)
+		// A wildcard starts with ':' (param) or '*' (catch-all).
+		// Colons inside literal segments stay static so custom verb routes
+		// such as /users:batchGet can coexist with regular parameters.
+		if skipLeadingColon && start == 0 && c == ':' {
+			continue
+		}
+		if c == ':' && !isParamStart(path, start) {
+			continue
+		}
 		if c != ':' && c != '*' {
 			continue
 		}
@@ -276,7 +346,12 @@ func findWildcard(path string) (wildcard string, i int, valid bool) {
 			switch c {
 			case '/':
 				return path[start : start+1+end], start, valid
-			case ':', '*':
+			case ':':
+				if path[start] == ':' {
+					return path[start : start+1+end], start, valid
+				}
+				valid = false
+			case '*':
 				valid = false
 			}
 		}
@@ -286,9 +361,13 @@ func findWildcard(path string) (wildcard string, i int, valid bool) {
 }
 
 func (n *node) insertChild(path string, fullPath string, handlers HandlersChain) {
+	n.insertChildWithSkip(path, fullPath, handlers, false)
+}
+
+func (n *node) insertChildWithSkip(path string, fullPath string, handlers HandlersChain, skipLeadingColon bool) {
 	for {
 		// Find prefix until first wildcard
-		wildcard, i, valid := findWildcard(path)
+		wildcard, i, valid := findWildcard(path, skipLeadingColon)
 		if i < 0 { // No wildcard found
 			break
 		}
@@ -325,11 +404,13 @@ func (n *node) insertChild(path string, fullPath string, handlers HandlersChain)
 			// will be another subpath starting with '/'
 			if len(wildcard) < len(path) {
 				path = path[len(wildcard):]
+				skipLeadingColon = path[0] == ':'
 
 				child := &node{
 					priority: 1,
 					fullPath: fullPath,
 				}
+				n.indices += bytesconv.BytesToString([]byte{path[0]})
 				n.addChild(child)
 				n = child
 				continue
@@ -485,14 +566,12 @@ walk: // Outer loop for walking the tree
 
 				switch n.nType {
 				case param:
-					// fix truncate the parameter
-					// tree_test.go  line: 204
-
 					// Find param end (either '/' or path end)
 					end := 0
 					for end < len(path) && path[end] != '/' {
 						end++
 					}
+					childIndex, end := n.findStaticParamChild(path, end, staticParamChildCanMatch)
 
 					// Save param value
 					if params != nil {
@@ -521,12 +600,22 @@ walk: // Outer loop for walking the tree
 						}
 					}
 
+					if childIndex >= 0 {
+						path = path[end:]
+						n = n.children[childIndex]
+						continue walk
+					}
+
 					// we need to go deeper!
 					if end < len(path) {
 						if len(n.children) > 0 {
-							path = path[end:]
-							n = n.children[0]
-							continue walk
+							for i, c := range []byte(n.indices) {
+								if c == '/' {
+									path = path[end:]
+									n = n.children[i]
+									continue walk
+								}
+							}
 						}
 
 						// ... but we can't
@@ -538,10 +627,10 @@ walk: // Outer loop for walking the tree
 						value.fullPath = n.fullPath
 						return value
 					}
-					if len(n.children) == 1 {
+					if childIndex := n.childIndex('/'); childIndex >= 0 {
 						// No handle found. Check if a handle for this path + a
 						// trailing slash exists for TSR recommendation
-						n = n.children[0]
+						n = n.children[childIndex]
 						value.tsr = (n.path == "/" && n.handlers != nil) || (n.path == "" && n.indices == "/")
 					}
 					return value
@@ -891,18 +980,30 @@ walk: // Outer loop for walking the tree
 			for end < len(path) && path[end] != '/' {
 				end++
 			}
+			childIndex, end := n.findStaticParamChild(path, end, nil)
 
 			// Add param value to case insensitive path
 			ciPath = append(ciPath, path[:end]...)
 
+			if childIndex >= 0 {
+				n = n.children[childIndex]
+				npLen = len(n.path)
+				path = path[end:]
+				continue
+			}
+
 			// We need to go deeper!
 			if end < len(path) {
 				if len(n.children) > 0 {
-					// Continue with child node
-					n = n.children[0]
-					npLen = len(n.path)
-					path = path[end:]
-					continue
+					for i, c := range []byte(n.indices) {
+						if c == '/' {
+							// Continue with child node
+							n = n.children[i]
+							npLen = len(n.path)
+							path = path[end:]
+							continue walk
+						}
+					}
 				}
 
 				// ... but we can't
@@ -916,12 +1017,14 @@ walk: // Outer loop for walking the tree
 				return ciPath
 			}
 
-			if fixTrailingSlash && len(n.children) == 1 {
+			if fixTrailingSlash {
 				// No handle found. Check if a handle for this path + a
 				// trailing slash exists
-				n = n.children[0]
-				if n.path == "/" && n.handlers != nil {
-					return append(ciPath, '/')
+				if childIndex := n.childIndex('/'); childIndex >= 0 {
+					n = n.children[childIndex]
+					if n.path == "/" && n.handlers != nil {
+						return append(ciPath, '/')
+					}
 				}
 			}
 
