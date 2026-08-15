@@ -7,6 +7,7 @@ package gin
 import (
 	"bytes"
 	"encoding/xml"
+	"errors"
 	"fmt"
 	"math"
 	"net/http"
@@ -155,6 +156,27 @@ func TestMarshalXMLforHSuccess(t *testing.T) {
 	require.NoError(t, err)
 	assert.Contains(t, string(data), "<key1>value1</key1>")
 	assert.Contains(t, string(data), "<key2>123</key2>")
+}
+
+// errXMLWriter always fails, to exercise encoder write-error paths.
+type errXMLWriter struct{}
+
+func (errXMLWriter) Write(_ []byte) (int, error) { return 0, errors.New("write failed") }
+
+// TestMarshalXMLEncodeTokenError covers the branch where the opening
+// EncodeToken(start) fails. xml.Encoder buffers its output, so the failing
+// writer is only reached once the buffer overflows; we prime it with a large
+// token first, which puts the encoder into an error state. MarshalXML's very
+// first EncodeToken then returns that cached write error.
+func TestMarshalXMLEncodeTokenError(t *testing.T) {
+	enc := xml.NewEncoder(errXMLWriter{})
+
+	// Overflow the encoder's internal buffer so it flushes to the failing
+	// writer and latches the error.
+	require.Error(t, enc.EncodeToken(xml.CharData(bytes.Repeat([]byte("a"), 8192))))
+
+	err := H{"key": "value"}.MarshalXML(enc, xml.StartElement{})
+	assert.Error(t, err)
 }
 
 func TestIsASCII(t *testing.T) {
