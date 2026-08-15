@@ -11,6 +11,9 @@ import (
 	"strings"
 )
 
+// MethodQuery is the HTTP QUERY method defined by RFC 10008.
+const MethodQuery = "QUERY"
+
 var (
 	// regEnLetter matches english letters for http method name
 	regEnLetter = regexp.MustCompile("^[A-Z]+$")
@@ -19,7 +22,7 @@ var (
 	anyMethods = []string{
 		http.MethodGet, http.MethodPost, http.MethodPut, http.MethodPatch,
 		http.MethodHead, http.MethodOptions, http.MethodDelete, http.MethodConnect,
-		http.MethodTrace,
+		http.MethodTrace, MethodQuery,
 	}
 )
 
@@ -36,6 +39,7 @@ type IRoutes interface {
 	Handle(string, string, ...HandlerFunc) IRoutes
 	Any(string, ...HandlerFunc) IRoutes
 	GET(string, ...HandlerFunc) IRoutes
+	QUERY(string, ...HandlerFunc) IRoutes
 	POST(string, ...HandlerFunc) IRoutes
 	DELETE(string, ...HandlerFunc) IRoutes
 	PATCH(string, ...HandlerFunc) IRoutes
@@ -117,6 +121,11 @@ func (group *RouterGroup) GET(relativePath string, handlers ...HandlerFunc) IRou
 	return group.handle(http.MethodGet, relativePath, handlers)
 }
 
+// QUERY is a shortcut for router.Handle("QUERY", path, handlers).
+func (group *RouterGroup) QUERY(relativePath string, handlers ...HandlerFunc) IRoutes {
+	return group.handle(MethodQuery, relativePath, handlers)
+}
+
 // DELETE is a shortcut for router.Handle("DELETE", path, handlers).
 func (group *RouterGroup) DELETE(relativePath string, handlers ...HandlerFunc) IRoutes {
 	return group.handle(http.MethodDelete, relativePath, handlers)
@@ -143,7 +152,7 @@ func (group *RouterGroup) HEAD(relativePath string, handlers ...HandlerFunc) IRo
 }
 
 // Any registers a route that matches all the HTTP methods.
-// GET, POST, PUT, PATCH, HEAD, OPTIONS, DELETE, CONNECT, TRACE.
+// GET, POST, PUT, PATCH, HEAD, OPTIONS, DELETE, CONNECT, TRACE, QUERY.
 func (group *RouterGroup) Any(relativePath string, handlers ...HandlerFunc) IRoutes {
 	for _, method := range anyMethods {
 		group.handle(method, relativePath, handlers)

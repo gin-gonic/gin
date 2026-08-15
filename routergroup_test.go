@@ -42,6 +42,7 @@ func TestRouterGroupBasicHandle(t *testing.T) {
 	performRequestInGroup(t, http.MethodDelete)
 	performRequestInGroup(t, http.MethodHead)
 	performRequestInGroup(t, http.MethodOptions)
+	performRequestInGroup(t, MethodQuery)
 }
 
 func performRequestInGroup(t *testing.T, method string) {
@@ -78,6 +79,9 @@ func performRequestInGroup(t *testing.T, method string) {
 	case http.MethodOptions:
 		v1.OPTIONS("/test", handler)
 		login.OPTIONS("/test", handler)
+	case MethodQuery:
+		v1.QUERY("/test", handler)
+		login.QUERY("/test", handler)
 	default:
 		panic("unknown method")
 	}
@@ -182,6 +186,7 @@ func testRoutesInterface(t *testing.T, r IRoutes) {
 	assert.Equal(t, r, r.Handle(http.MethodGet, "/handler", handler))
 	assert.Equal(t, r, r.Any("/any", handler))
 	assert.Equal(t, r, r.GET("/", handler))
+	assert.Equal(t, r, r.QUERY("/", handler))
 	assert.Equal(t, r, r.POST("/", handler))
 	assert.Equal(t, r, r.DELETE("/", handler))
 	assert.Equal(t, r, r.PATCH("/", handler))
