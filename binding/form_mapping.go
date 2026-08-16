@@ -373,9 +373,9 @@ func setWithProperType(val string, value reflect.Value, field reflect.StructFiel
 		case multipart.FileHeader:
 			return nil
 		}
-		return json.API.Unmarshal(bytesconv.StringToBytes(val), value.Addr().Interface())
+		return unmarshalFieldAsJSON(val, value)
 	case reflect.Map:
-		return json.API.Unmarshal(bytesconv.StringToBytes(val), value.Addr().Interface())
+		return unmarshalFieldAsJSON(val, value)
 	case reflect.Ptr:
 		if !value.Elem().IsValid() {
 			value.Set(reflect.New(value.Type().Elem()))
@@ -546,5 +546,26 @@ func setFormMap(ptr any, form map[string][]string) error {
 		ptrMap[k] = v[len(v)-1] // pick last
 	}
 
+	return nil
+}
+
+// unmarshalFieldAsJSON tries to unmarshal a form value as JSON. If the initial
+// unmarshal fails, it retries by wrapping the value in double quotes, treating
+// the form value as a JSON string. This is necessary because form values are
+// plain strings (e.g. "2020/09/23 13:20:49") while json.Unmarshal expects
+// valid JSON input (e.g. quoted strings for string-like values).
+func unmarshalFieldAsJSON(val string, value reflect.Value) error {
+	b := bytesconv.StringToBytes(val)
+	if err := json.API.Unmarshal(b, value.Addr().Interface()); err != nil {
+		// The raw form value is not valid JSON. Wrap it in quotes so that
+		// types implementing json.Unmarshaler that expect a JSON string
+		// (e.g. custom datetime types) can decode it successfully.
+		quoted := `"` + val + `"`
+		if errRetry := json.API.Unmarshal(bytesconv.StringToBytes(quoted), value.Addr().Interface()); errRetry != nil {
+			// Return the original error — the quoted attempt was only a
+			// best-effort fallback.
+			return err
+		}
+	}
 	return nil
 }
