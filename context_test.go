@@ -903,6 +903,41 @@ func TestContextDefaultQueryOnEmptyRequest(t *testing.T) {
 	})
 }
 
+func TestContextPostFormOnEmptyRequest(t *testing.T) {
+	c, _ := CreateTestContext(httptest.NewRecorder()) // here c.Request == nil
+	assert.NotPanics(t, func() {
+		value, ok := c.GetPostForm("NoKey")
+		assert.False(t, ok)
+		assert.Empty(t, value)
+	})
+	assert.NotPanics(t, func() {
+		assert.Equal(t, "nada", c.DefaultPostForm("NoKey", "nada"))
+	})
+	assert.NotPanics(t, func() {
+		assert.Empty(t, c.PostForm("NoKey"))
+	})
+	assert.NotPanics(t, func() {
+		values, ok := c.GetPostFormArray("NoKey")
+		assert.False(t, ok)
+		assert.Empty(t, values)
+	})
+	assert.NotPanics(t, func() {
+		dicts, ok := c.GetPostFormMap("NoKey")
+		assert.False(t, ok)
+		assert.Empty(t, dicts)
+	})
+}
+
+func TestContextPostFormMalformedMultipart(t *testing.T) {
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	c.Request, _ = http.NewRequest(http.MethodPost, "/", strings.NewReader("not multipart"))
+	c.Request.Header.Set("Content-Type", "multipart/form-data; boundary=xxx")
+
+	assert.NotPanics(t, func() {
+		assert.Empty(t, c.PostForm("NoKey"))
+	})
+}
+
 func TestContextQueryAndPostForm(t *testing.T) {
 	c, _ := CreateTestContext(httptest.NewRecorder())
 	body := strings.NewReader("foo=bar&page=11&both=&foo=second")
