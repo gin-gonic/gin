@@ -417,41 +417,38 @@ type skippedNode struct {
 // given path.
 func (n *node) getValue(path string, params *Params, skippedNodes *[]skippedNode, unescape bool) (value nodeValue) {
 	var globalParamsCount int16
+	var skipStatic bool
 
 walk: // Outer loop for walking the tree
 	for {
 		prefix := n.path
 		if len(path) > len(prefix) {
 			if path[:len(prefix)] == prefix {
+				fullPath := path
 				path = path[len(prefix):]
 
 				// Try all the non-wildcard children first by matching the indices
 				idxc := path[0]
-				for i, c := range []byte(n.indices) {
-					if c == idxc {
-						//  strings.HasPrefix(n.children[len(n.children)-1].path, ":") == n.wildChild
-						if n.wildChild {
-							index := len(*skippedNodes)
-							*skippedNodes = (*skippedNodes)[:index+1]
-							(*skippedNodes)[index] = skippedNode{
-								path: prefix + path,
-								node: &node{
-									path:      n.path,
-									wildChild: n.wildChild,
-									nType:     n.nType,
-									priority:  n.priority,
-									children:  n.children,
-									handlers:  n.handlers,
-									fullPath:  n.fullPath,
-								},
-								paramsCount: globalParamsCount,
+				if !skipStatic {
+					for i, c := range []byte(n.indices) {
+						if c == idxc {
+							//  strings.HasPrefix(n.children[len(n.children)-1].path, ":") == n.wildChild
+							if n.wildChild {
+								index := len(*skippedNodes)
+								*skippedNodes = (*skippedNodes)[:index+1]
+								(*skippedNodes)[index] = skippedNode{
+									path:        fullPath,
+									node:        n,
+									paramsCount: globalParamsCount,
+								}
 							}
-						}
 
-						n = n.children[i]
-						continue walk
+							n = n.children[i]
+							continue walk
+						}
 					}
 				}
+				skipStatic = false
 
 				if !n.wildChild {
 					// If the path at the end of the loop is not equal to '/' and the current node has no child nodes
@@ -467,6 +464,7 @@ walk: // Outer loop for walking the tree
 									*value.params = (*value.params)[:skippedNode.paramsCount]
 								}
 								globalParamsCount = skippedNode.paramsCount
+								skipStatic = true
 								continue walk
 							}
 						}
@@ -598,6 +596,7 @@ walk: // Outer loop for walking the tree
 							*value.params = (*value.params)[:skippedNode.paramsCount]
 						}
 						globalParamsCount = skippedNode.paramsCount
+						skipStatic = true
 						continue walk
 					}
 				}
@@ -655,6 +654,7 @@ walk: // Outer loop for walking the tree
 						*value.params = (*value.params)[:skippedNode.paramsCount]
 					}
 					globalParamsCount = skippedNode.paramsCount
+					skipStatic = true
 					continue walk
 				}
 			}

@@ -8,10 +8,13 @@ import (
 	"html/template"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func init() {
@@ -214,6 +217,24 @@ func TestSetHTMLTemplate(t *testing.T) {
 	assert.NotNil(t, engine())
 }
 
+func TestLoadHTMLGlob(t *testing.T) {
+	LoadHTMLGlob("../testdata/template/*")
+
+	assert.NotNil(t, engine())
+}
+
+func TestLoadHTMLFiles(t *testing.T) {
+	LoadHTMLFiles("../testdata/template/hello.tmpl", "../testdata/template/raw.tmpl")
+
+	assert.NotNil(t, engine())
+}
+
+func TestLoadHTMLFS(t *testing.T) {
+	LoadHTMLFS(http.Dir("../testdata"), "template/hello.tmpl", "template/raw.tmpl")
+
+	assert.NotNil(t, engine())
+}
+
 func TestStaticFile(t *testing.T) {
 	StaticFile("/static-file", "../testdata/test_file.txt")
 
@@ -222,6 +243,33 @@ func TestStaticFile(t *testing.T) {
 	engine().ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusOK, w.Code)
+}
+
+func TestRunReturnsListenError(t *testing.T) {
+	err := Run("127.0.0.1:bad-port")
+
+	require.Error(t, err)
+}
+
+func TestRunTLSReturnsListenError(t *testing.T) {
+	err := RunTLS("127.0.0.1:bad-port", "../testdata/certificate/cert.pem", "../testdata/certificate/key.pem")
+
+	require.Error(t, err)
+}
+
+func TestRunUnixReturnsListenError(t *testing.T) {
+	err := RunUnix(filepath.Join(t.TempDir(), "missing", "gin.sock"))
+
+	require.Error(t, err)
+}
+
+func TestRunFdReturnsListenerError(t *testing.T) {
+	file, err := os.CreateTemp(t.TempDir(), "gin-fd")
+	require.NoError(t, err)
+
+	err = RunFd(int(file.Fd()))
+
+	require.Error(t, err)
 }
 
 func TestStatic(t *testing.T) {
