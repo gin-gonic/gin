@@ -2048,6 +2048,61 @@ func TestContextTypedError(t *testing.T) {
 	assert.Equal(t, []string{"externo 0", "interno 0"}, c.Errors.Errors())
 }
 
+func TestContextErrorWithJoinedErrors(t *testing.T) {
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	assert.Empty(t, c.Errors)
+
+	firstErr := errors.New("first error")
+	secondErr := errors.New("second error")
+	c.Error(errors.Join(firstErr, secondErr)) //nolint: errcheck
+
+	assert.Len(t, c.Errors, 2)
+	assert.Equal(t, firstErr, c.Errors[0].Err)
+	assert.Equal(t, secondErr, c.Errors[1].Err)
+	assert.Equal(t, ErrorTypePrivate, c.Errors[0].Type)
+	assert.Equal(t, ErrorTypePrivate, c.Errors[1].Type)
+}
+
+func TestContextErrorWithNestedJoinedErrors(t *testing.T) {
+	c, _ := CreateTestContext(httptest.NewRecorder())
+
+	c.Error(errors.Join( //nolint: errcheck
+		errors.New("first"),
+		errors.Join(errors.New("second"), errors.New("third")),
+		errors.New("fourth"),
+	))
+
+	assert.Len(t, c.Errors, 4)
+	assert.Equal(t, []string{"first", "second", "third", "fourth"}, c.Errors.Errors())
+}
+
+func TestContextErrorJoinPreservesGinErrorType(t *testing.T) {
+	c, _ := CreateTestContext(httptest.NewRecorder())
+
+	ginErr := &Error{Err: errors.New("typed"), Type: ErrorTypePublic}
+	c.Error(errors.Join(ginErr, errors.New("plain"))) //nolint: errcheck
+
+	assert.Len(t, c.Errors, 2)
+	assert.Equal(t, ErrorTypePublic, c.Errors[0].Type)
+	assert.Equal(t, ErrorTypePrivate, c.Errors[1].Type)
+}
+
+func TestContextErrorWithEmptyUnwrap(t *testing.T) {
+	// Custom error that implements Unwrap() []error but returns empty slice
+	c, _ := CreateTestContext(httptest.NewRecorder())
+
+	emptyJoinErr := emptyJoinError{errors.New("wrapped")}
+	c.Error(emptyJoinErr) //nolint: errcheck
+
+	assert.Len(t, c.Errors, 1)
+	assert.Equal(t, ErrorTypePrivate, c.Errors[0].Type)
+}
+
+type emptyJoinError struct{ err error }
+
+func (e emptyJoinError) Error() string   { return e.err.Error() }
+func (e emptyJoinError) Unwrap() []error { return nil }
+
 func TestContextAbortWithError(t *testing.T) {
 	w := httptest.NewRecorder()
 	c, _ := CreateTestContext(w)
