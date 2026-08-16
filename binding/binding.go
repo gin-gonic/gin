@@ -26,6 +26,11 @@ const (
 	MIMEBSON              = "application/bson"
 )
 
+// DefaultMaxBodySize is the maximum request body size (in bytes) that the BSON,
+// Protobuf, and Plain binders will read. Requests with a body larger than this
+// limit return an error. Set to 0 to disable the limit.
+const DefaultMaxBodySize = 32 << 20 // 32 MB
+
 // Binding describes the interface which needs to be implemented for binding the
 // data present in the request such as JSON request body, query parameters or
 // the form POST.
