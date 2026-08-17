@@ -588,6 +588,11 @@ func (c *Context) initQueryCache() {
 // GetQueryArray returns a slice of strings for a given query key, plus
 // a boolean value whether at least one value exists for the given key.
 func (c *Context) GetQueryArray(key string) (values []string, ok bool) {
+	if c.Request == nil || c.Request.URL == nil || c.Request.URL.RawQuery == "" {
+		// Fast path to save unnecessary allocations when the query string is empty
+		return nil, false
+	}
+
 	c.initQueryCache()
 	values, ok = c.queryCache[key]
 	return
@@ -602,6 +607,11 @@ func (c *Context) QueryMap(key string) (dicts map[string]string) {
 // GetQueryMap returns a map for a given query key, plus a boolean value
 // whether at least one value exists for the given key.
 func (c *Context) GetQueryMap(key string) (map[string]string, bool) {
+	if c.Request == nil || c.Request.URL == nil || c.Request.URL.RawQuery == "" {
+		// Fast path to save unnecessary allocations when the query string is empty
+		return nil, false
+	}
+
 	c.initQueryCache()
 	return getMapFromFormData(c.queryCache, key)
 }
