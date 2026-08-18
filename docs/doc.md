@@ -932,6 +932,14 @@ Skip-validation: Running the example above using the `curl` command returns an e
 
 It is also possible to register custom validators. See the [example code](https://github.com/gin-gonic/examples/tree/master/custom-validation/server.go).
 
+Constructor-only validator options can be applied by replacing `binding.Validator` before handling requests:
+
+```go
+binding.Validator = binding.NewStructValidator(
+  validator.WithRequiredStructEnabled(),
+)
+```
+
 ```go
 package main
 
