@@ -3513,6 +3513,21 @@ func TestCreateTestContextWithRouteParams(t *testing.T) {
 	assert.Equal(t, "hello gin", w.Body.String())
 }
 
+func TestCreateTestContextStatusRequiresFlush(t *testing.T) {
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
+	c.Request = httptest.NewRequest(http.MethodGet, "/", nil)
+
+	// Status() buffers the code but does not flush to the ResponseWriter
+	c.Status(http.StatusCreated)
+	assert.Equal(t, http.StatusCreated, c.Writer.Status())
+	assert.Equal(t, http.StatusOK, w.Code, "status not yet flushed to recorder")
+
+	// After WriteHeaderNow, the recorder observes the status code
+	c.Writer.WriteHeaderNow()
+	assert.Equal(t, http.StatusCreated, w.Code)
+}
+
 type interceptedWriter struct {
 	ResponseWriter
 	b *bytes.Buffer
