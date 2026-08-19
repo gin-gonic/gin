@@ -505,6 +505,23 @@ func (f *customUnmarshalParamHex) UnmarshalParam(param string) error {
 	return nil
 }
 
+type failUnmarshalParam struct{}
+
+func (f *failUnmarshalParam) UnmarshalParam(param string) error {
+	return errors.New("boom")
+}
+
+func TestBindUnmarshalerErrorIncludesFieldName(t *testing.T) {
+	var s struct {
+		ID failUnmarshalParam `form:"uuid4"`
+	}
+	err := mappingByPtr(&s, formSource{"uuid4": {"xxx"}}, "form")
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "uuid4")
+	assert.Contains(t, err.Error(), "boom")
+	assert.ErrorContains(t, err, "boom") // still unwrap-friendly via %w
+}
+
 func TestMappingCustomUnmarshalParamHexWithFormTag(t *testing.T) {
 	var s struct {
 		Foo customUnmarshalParamHex `form:"foo"`
