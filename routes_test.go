@@ -11,6 +11,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"testing/fstest"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -644,6 +645,23 @@ func TestRouterStaticFSNotFound(t *testing.T) {
 
 	w = PerformRequest(router, http.MethodHead, "/nonexistent")
 	assert.Equal(t, "non existent", w.Body.String())
+}
+
+func TestRouterStaticFSTrailingSlashEmbed(t *testing.T) {
+	fsys := fstest.MapFS{
+		"dir/index.html": &fstest.MapFile{Data: []byte("INDEX")},
+		"dir/file.txt":   &fstest.MapFile{Data: []byte("FILE")},
+	}
+	router := New()
+	router.StaticFS("/static", http.FS(fsys))
+
+	w := PerformRequest(router, http.MethodGet, "/static/dir/")
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Contains(t, w.Body.String(), "INDEX")
+
+	w = PerformRequest(router, http.MethodGet, "/static/dir/file.txt")
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Equal(t, "FILE", w.Body.String())
 }
 
 func TestRouterStaticFSFileNotFound(t *testing.T) {
