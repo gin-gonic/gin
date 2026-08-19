@@ -410,6 +410,36 @@ type skippedNode struct {
 	paramsCount int16
 }
 
+// rollbackToSkippedNode unwinds the skipped-wildcard stack after the walk hit
+// a dead end. It pops entries until it finds one whose saved remaining path
+// ends with the current remaining path, i.e. a branch point on the walk that
+// led here; entries from abandoned branches are discarded. If one is found,
+// the walk state saved there (remaining path, current node, captured params)
+// is restored and true is returned; the caller must then resume the walk
+// loop, which retries from the branch point with its wildcard child.
+func rollbackToSkippedNode(
+	skippedNodes *[]skippedNode,
+	path *string,
+	n **node,
+	params *Params,
+	globalParamsCount *int16,
+) bool {
+	for length := len(*skippedNodes); length > 0; length-- {
+		sn := (*skippedNodes)[length-1]
+		*skippedNodes = (*skippedNodes)[:length-1]
+		if strings.HasSuffix(sn.path, *path) {
+			*path = sn.path
+			*n = sn.node
+			if params != nil {
+				*params = (*params)[:sn.paramsCount]
+			}
+			*globalParamsCount = sn.paramsCount
+			return true
+		}
+	}
+	return false
+}
+
 // Returns the handle registered with the given path (key). The values of
 // wildcards are saved to a map.
 // If no handle can be found, a TSR (trailing slash redirect) recommendation is
@@ -457,18 +487,8 @@ walk: // Outer loop for walking the tree
 					// If the path at the end of the loop is not equal to '/' and the current node has no child nodes
 					// the current node needs to roll back to last valid skippedNode
 					if path != "/" {
-						for length := len(*skippedNodes); length > 0; length-- {
-							skippedNode := (*skippedNodes)[length-1]
-							*skippedNodes = (*skippedNodes)[:length-1]
-							if strings.HasSuffix(skippedNode.path, path) {
-								path = skippedNode.path
-								n = skippedNode.node
-								if value.params != nil {
-									*value.params = (*value.params)[:skippedNode.paramsCount]
-								}
-								globalParamsCount = skippedNode.paramsCount
-								continue walk
-							}
+						if rollbackToSkippedNode(skippedNodes, &path, &n, value.params, &globalParamsCount) {
+							continue walk
 						}
 					}
 
@@ -531,6 +551,11 @@ walk: // Outer loop for walking the tree
 
 						// ... but we can't
 						value.tsr = len(path) == end+1
+						if !value.tsr {
+							if rollbackToSkippedNode(skippedNodes, &path, &n, value.params, &globalParamsCount) {
+								continue walk
+							}
+						}
 						return value
 					}
 
@@ -543,6 +568,11 @@ walk: // Outer loop for walking the tree
 						// trailing slash exists for TSR recommendation
 						n = n.children[0]
 						value.tsr = (n.path == "/" && n.handlers != nil) || (n.path == "" && n.indices == "/")
+					}
+					if !value.tsr {
+						if rollbackToSkippedNode(skippedNodes, &path, &n, value.params, &globalParamsCount) {
+							continue walk
+						}
 					}
 					return value
 
@@ -588,18 +618,8 @@ walk: // Outer loop for walking the tree
 			// If the current path does not equal '/' and the node does not have a registered handle and the most recently matched node has a child node
 			// the current node needs to roll back to last valid skippedNode
 			if n.handlers == nil && path != "/" {
-				for length := len(*skippedNodes); length > 0; length-- {
-					skippedNode := (*skippedNodes)[length-1]
-					*skippedNodes = (*skippedNodes)[:length-1]
-					if strings.HasSuffix(skippedNode.path, path) {
-						path = skippedNode.path
-						n = skippedNode.node
-						if value.params != nil {
-							*value.params = (*value.params)[:skippedNode.paramsCount]
-						}
-						globalParamsCount = skippedNode.paramsCount
-						continue walk
-					}
+				if rollbackToSkippedNode(skippedNodes, &path, &n, value.params, &globalParamsCount) {
+					continue walk
 				}
 				//	n = latestNode.children[len(latestNode.children)-1]
 			}
@@ -645,18 +665,8 @@ walk: // Outer loop for walking the tree
 
 		// roll back to last valid skippedNode
 		if !value.tsr && path != "/" {
-			for length := len(*skippedNodes); length > 0; length-- {
-				skippedNode := (*skippedNodes)[length-1]
-				*skippedNodes = (*skippedNodes)[:length-1]
-				if strings.HasSuffix(skippedNode.path, path) {
-					path = skippedNode.path
-					n = skippedNode.node
-					if value.params != nil {
-						*value.params = (*value.params)[:skippedNode.paramsCount]
-					}
-					globalParamsCount = skippedNode.paramsCount
-					continue walk
-				}
+			if rollbackToSkippedNode(skippedNodes, &path, &n, value.params, &globalParamsCount) {
+				continue walk
 			}
 		}
 
