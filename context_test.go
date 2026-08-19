@@ -25,6 +25,7 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"testing/fstest"
 	"time"
 
 	"github.com/gin-contrib/sse"
@@ -1556,6 +1557,21 @@ func TestContextRenderFileFromFS(t *testing.T) {
 	// else, Content-Type='text/x-go; charset=utf-8'
 	assert.NotEmpty(t, w.Header().Get("Content-Type"))
 	assert.Equal(t, "/some/path", c.Request.URL.Path)
+}
+
+func TestContextRenderFileFromFSIndexHTML(t *testing.T) {
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
+
+	c.Request, _ = http.NewRequest(http.MethodGet, "/", nil)
+	c.FileFromFS("www/index.html", http.FS(fstest.MapFS{
+		"www/index.html": {Data: []byte("index")},
+	}))
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Equal(t, "index", w.Body.String())
+	assert.Empty(t, w.Header().Get("Location"))
+	assert.Equal(t, "/", c.Request.URL.Path)
 }
 
 func TestContextRenderAttachment(t *testing.T) {
