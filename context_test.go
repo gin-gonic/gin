@@ -274,6 +274,96 @@ func TestSaveUploadedFileWithPermissionFailed(t *testing.T) {
 	require.Error(t, c.SaveUploadedFile(f, dst, mode))
 }
 
+func multipartRequestWithFile(t *testing.T, field, filename string, size int) (*http.Request, string) {
+	t.Helper()
+	var body bytes.Buffer
+	mw := multipart.NewWriter(&body)
+	w, err := mw.CreateFormFile(field, filename)
+	require.NoError(t, err)
+	_, err = w.Write(bytes.Repeat([]byte("x"), size))
+	require.NoError(t, err)
+	require.NoError(t, mw.Close())
+	req := httptest.NewRequest(http.MethodPost, "/upload", &body)
+	req.Header.Set("Content-Type", mw.FormDataContentType())
+	return req, mw.FormDataContentType()
+}
+
+func multipartTempPath(t *testing.T, fh *multipart.FileHeader) string {
+	t.Helper()
+	f, err := fh.Open()
+	require.NoError(t, err)
+	defer f.Close()
+	of, ok := f.(*os.File)
+	require.True(t, ok, "expected on-disk multipart part (*os.File) so temp path is observable; raise MaxMultipartMemory spill threshold if this fails")
+	return of.Name()
+}
+
+func TestServeHTTPCleansMultipartFormAfterWithContext(t *testing.T) {
+	router := New()
+	router.MaxMultipartMemory = 32 // force temp file
+
+	// Named key type required by staticcheck SA1029 (avoid empty anonymous struct keys).
+	type withContextMarker struct{}
+	router.Use(func(c *Context) {
+		c.Request = c.Request.WithContext(context.WithValue(c.Request.Context(), withContextMarker{}, 1))
+		c.Next()
+	})
+
+	var tmpPath string
+	router.POST("/upload", func(c *Context) {
+		fh, err := c.FormFile("file")
+		require.NoError(t, err)
+		tmpPath = multipartTempPath(t, fh)
+		_, err = os.Stat(tmpPath)
+		require.NoError(t, err, "temp file must exist during handler")
+		c.Status(http.StatusOK)
+	})
+
+	req, _ := multipartRequestWithFile(t, "file", "big.bin", 2048)
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	require.NotEmpty(t, tmpPath)
+	_, err := os.Stat(tmpPath)
+	assert.True(t, os.IsNotExist(err), "temp file %s must be removed after ServeHTTP when middleware used WithContext", tmpPath)
+}
+
+func TestServeHTTPCleansMultipartFormWithoutRequestReplace(t *testing.T) {
+	router := New()
+	router.MaxMultipartMemory = 32 // force temp file
+
+	var tmpPath string
+	router.POST("/upload", func(c *Context) {
+		fh, err := c.FormFile("file")
+		require.NoError(t, err)
+		tmpPath = multipartTempPath(t, fh)
+		_, err = os.Stat(tmpPath)
+		require.NoError(t, err, "temp file must exist during handler")
+		c.Status(http.StatusOK)
+	})
+
+	req, _ := multipartRequestWithFile(t, "file", "big.bin", 2048)
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	require.NotEmpty(t, tmpPath)
+	_, err := os.Stat(tmpPath)
+	assert.True(t, os.IsNotExist(err), "temp file %s must be removed after ServeHTTP", tmpPath)
+}
+
+func TestContextCleanupMultipartFormNilSafe(t *testing.T) {
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	c.Request = nil
+	assert.NotPanics(t, func() { c.cleanupMultipartForm() })
+
+	c, _ = CreateTestContext(httptest.NewRecorder())
+	c.Request, _ = http.NewRequest(http.MethodPost, "/", nil)
+	c.Request.MultipartForm = nil
+	assert.NotPanics(t, func() { c.cleanupMultipartForm() })
+}
+
 // TestSaveUploadedFileToExistingDir is a regression test for issue #4622.
 // SaveUploadedFile must not call os.Chmod on a directory that already exists,
 // because the process may not own it (e.g. /tmp on Linux/macOS), where chmod
