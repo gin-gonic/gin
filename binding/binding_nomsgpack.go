@@ -17,6 +17,7 @@ const (
 	MIMEPlain             = "text/plain"
 	MIMEPOSTForm          = "application/x-www-form-urlencoded"
 	MIMEMultipartPOSTForm = "multipart/form-data"
+	MIMEMultipartMixed    = "multipart/mixed"
 	MIMEPROTOBUF          = "application/x-protobuf"
 	MIMEYAML              = "application/x-yaml"
 	MIMEYAML2             = "application/yaml"
@@ -102,7 +103,7 @@ func Default(method, contentType string) Binding {
 		return ProtoBuf
 	case MIMEYAML, MIMEYAML2:
 		return YAML
-	case MIMEMultipartPOSTForm:
+	case MIMEMultipartPOSTForm, MIMEMultipartMixed:
 		return FormMultipart
 	case MIMETOML:
 		return TOML

@@ -25,7 +25,7 @@ func (formBinding) Bind(req *http.Request, obj any) error {
 	if err := req.ParseForm(); err != nil {
 		return err
 	}
-	if err := req.ParseMultipartForm(defaultMemory); err != nil && !errors.Is(err, http.ErrNotMultipart) {
+	if err := parseMultipartForm(req, defaultMemory); err != nil && !errors.Is(err, http.ErrNotMultipart) {
 		return err
 	}
 	if err := mapForm(obj, req.Form); err != nil {
@@ -53,7 +53,7 @@ func (formMultipartBinding) Name() string {
 }
 
 func (formMultipartBinding) Bind(req *http.Request, obj any) error {
-	if err := req.ParseMultipartForm(defaultMemory); err != nil {
+	if err := parseMultipartForm(req, defaultMemory); err != nil {
 		return err
 	}
 	if err := mappingByPtr(obj, (*multipartRequest)(req), "form"); err != nil {

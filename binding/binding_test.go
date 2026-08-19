@@ -162,6 +162,8 @@ func TestBindingDefault(t *testing.T) {
 
 	assert.Equal(t, FormMultipart, Default(http.MethodPost, MIMEMultipartPOSTForm))
 	assert.Equal(t, FormMultipart, Default(http.MethodPut, MIMEMultipartPOSTForm))
+	assert.Equal(t, FormMultipart, Default(http.MethodPost, MIMEMultipartMixed))
+	assert.Equal(t, FormMultipart, Default(http.MethodPut, MIMEMultipartMixed))
 
 	assert.Equal(t, ProtoBuf, Default(http.MethodPost, MIMEPROTOBUF))
 	assert.Equal(t, ProtoBuf, Default(http.MethodPut, MIMEPROTOBUF))
@@ -593,6 +595,21 @@ func createFormMultipartRequest(t *testing.T) *http.Request {
 	return req
 }
 
+func createFormMultipartMixedRequest(t *testing.T) *http.Request {
+	boundary := "--testboundary"
+	body := new(bytes.Buffer)
+	mw := multipart.NewWriter(body)
+	defer mw.Close()
+
+	require.NoError(t, mw.SetBoundary(boundary))
+	require.NoError(t, mw.WriteField("foo", "bar"))
+	require.NoError(t, mw.WriteField("bar", "foo"))
+	req, err := http.NewRequest(http.MethodPost, "/?foo=getfoo&bar=getbar", body)
+	require.NoError(t, err)
+	req.Header.Set("Content-Type", MIMEMultipartMixed+"; boundary="+boundary)
+	return req
+}
+
 func createFormMultipartRequestForMap(t *testing.T) *http.Request {
 	boundary := "--testboundary"
 	body := new(bytes.Buffer)
@@ -627,6 +644,16 @@ func TestBindingFormPost(t *testing.T) {
 	require.NoError(t, FormPost.Bind(req, &obj))
 
 	assert.Equal(t, "form-urlencoded", FormPost.Name())
+	assert.Equal(t, "bar", obj.Foo)
+	assert.Equal(t, "foo", obj.Bar)
+}
+
+func TestBindingFormMultipartMixed(t *testing.T) {
+	req := createFormMultipartMixedRequest(t)
+	var obj FooBarStruct
+	require.NoError(t, FormMultipart.Bind(req, &obj))
+
+	assert.Equal(t, "multipart/form-data", FormMultipart.Name())
 	assert.Equal(t, "bar", obj.Foo)
 	assert.Equal(t, "foo", obj.Bar)
 }
@@ -930,6 +957,15 @@ func TestFormBindingMultipartFail(t *testing.T) {
 	require.NoError(t, err)
 	err = Form.Bind(req, &obj)
 	require.Error(t, err)
+}
+
+func TestFormBindingMultipartMixed(t *testing.T) {
+	obj := FooBarStruct{}
+	req := createFormMultipartMixedRequest(t)
+	err := Form.Bind(req, &obj)
+	require.NoError(t, err)
+	assert.Equal(t, "getfoo", obj.Foo)
+	assert.Equal(t, "getbar", obj.Bar)
 }
 
 func TestFormPostBindingFail(t *testing.T) {
