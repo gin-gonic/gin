@@ -1122,6 +1122,11 @@ func bodyAllowedForStatus(status int) bool {
 // Status sets the HTTP response code.
 func (c *Context) Status(code int) {
 	c.Writer.WriteHeader(code)
+	// No-body statuses never call Write(), so flush now. Matches Render
+	// and makes CreateTestContext / ResponseRecorder observe the code (#4071).
+	if !bodyAllowedForStatus(code) {
+		c.Writer.WriteHeaderNow()
+	}
 }
 
 // Header is an intelligent shortcut for c.Writer.Header().Set(key, value).

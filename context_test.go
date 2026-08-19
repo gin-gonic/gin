@@ -1134,6 +1134,30 @@ func (*TestRender) Render(http.ResponseWriter) error {
 
 func (*TestRender) WriteContentType(http.ResponseWriter) {}
 
+func TestContextStatusFlushesNoBodyCodes(t *testing.T) {
+	for _, code := range []int{
+		http.StatusContinue,    // 100
+		http.StatusNoContent,   // 204
+		http.StatusNotModified, // 304
+	} {
+		w := httptest.NewRecorder()
+		c, _ := CreateTestContext(w)
+		c.Status(code)
+		assert.Equal(t, code, w.Code, "Status(%d) must flush to ResponseRecorder", code)
+		assert.Equal(t, code, c.Writer.Status())
+	}
+}
+
+func TestContextStatusBuffersBodyAllowedCodes(t *testing.T) {
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
+	c.Status(http.StatusCreated) // 201 allows body
+	assert.Equal(t, http.StatusOK, w.Code, "body-allowed Status must not flush early")
+	assert.Equal(t, http.StatusCreated, c.Writer.Status())
+	c.Writer.WriteHeaderNow()
+	assert.Equal(t, http.StatusCreated, w.Code)
+}
+
 func TestContextRenderIfErr(t *testing.T) {
 	w := httptest.NewRecorder()
 	c, _ := CreateTestContext(w)
