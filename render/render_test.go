@@ -281,6 +281,29 @@ func TestRenderPureJSON(t *testing.T) {
 	assert.Equal(t, "application/json; charset=utf-8", w.Header().Get("Content-Type"))
 }
 
+func TestRenderProblemJSON(t *testing.T) {
+	w := httptest.NewRecorder()
+	data := map[string]any{
+		"type":   "https://example.com/probs/out-of-credit",
+		"title":  "You do not have enough credit.",
+		"status": 403,
+	}
+
+	err := (ProblemJSON{data}).Render(w)
+
+	require.NoError(t, err)
+	assert.JSONEq(t, "{\"type\":\"https://example.com/probs/out-of-credit\",\"title\":\"You do not have enough credit.\",\"status\":403}", w.Body.String())
+	assert.Equal(t, "application/problem+json; charset=utf-8", w.Header().Get("Content-Type"))
+}
+
+func TestRenderProblemJSONFail(t *testing.T) {
+	w := httptest.NewRecorder()
+	data := make(chan int)
+
+	// json: unsupported type: chan int
+	require.Error(t, (ProblemJSON{data}).Render(w))
+}
+
 type xmlmap map[string]any
 
 // Allows type H to be used with xml.Marshal

@@ -47,10 +47,17 @@ type PureJSON struct {
 	Data any
 }
 
+// ProblemJSON contains the given interface object, rendered as an
+// RFC 9457 problem details response.
+type ProblemJSON struct {
+	Data any
+}
+
 var (
-	jsonContentType      = []string{"application/json; charset=utf-8"}
-	jsonpContentType     = []string{"application/javascript; charset=utf-8"}
-	jsonASCIIContentType = []string{"application/json"}
+	jsonContentType        = []string{"application/json; charset=utf-8"}
+	jsonpContentType       = []string{"application/javascript; charset=utf-8"}
+	jsonASCIIContentType   = []string{"application/json"}
+	problemJSONContentType = []string{"application/problem+json; charset=utf-8"}
 )
 
 // Render (JSON) writes data with custom ContentType.
@@ -191,4 +198,20 @@ func (r PureJSON) Render(w http.ResponseWriter) error {
 // WriteContentType (PureJSON) writes custom ContentType.
 func (r PureJSON) WriteContentType(w http.ResponseWriter) {
 	writeContentType(w, jsonContentType)
+}
+
+// Render (ProblemJSON) marshals the given interface object and writes it with custom ContentType.
+func (r ProblemJSON) Render(w http.ResponseWriter) error {
+	r.WriteContentType(w)
+	jsonBytes, err := json.API.Marshal(r.Data)
+	if err != nil {
+		return err
+	}
+	_, err = w.Write(jsonBytes)
+	return err
+}
+
+// WriteContentType (ProblemJSON) writes problem details JSON ContentType.
+func (r ProblemJSON) WriteContentType(w http.ResponseWriter) {
+	writeContentType(w, problemJSONContentType)
 }
