@@ -216,6 +216,7 @@ func TestCreateEngine(t *testing.T) {
 	assert.Equal(t, "/", router.basePath)
 	assert.Equal(t, router.engine, router)
 	assert.Empty(t, router.Handlers)
+	assert.Equal(t, int64(defaultMaxRequestBodyBytes), router.MaxRequestBodyBytes)
 }
 
 func TestLoadHTMLFilesTestMode(t *testing.T) {
