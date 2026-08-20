@@ -13,6 +13,7 @@ import (
 	"path"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/gin-gonic/gin/internal/bytesconv"
 	filesystem "github.com/gin-gonic/gin/internal/fs"
@@ -24,6 +25,7 @@ import (
 
 const (
 	defaultMultipartMemory = 32 << 20 // 32 MB
+	defaultReadHeaderTimeout = 10 * time.Second
 	escapedColon           = "\\:"
 	colon                  = ":"
 	backslash              = "\\"
@@ -113,6 +115,17 @@ type Engine struct {
 	// For example /FOO and /..//Foo could be redirected to /foo.
 	// RedirectTrailingSlash is independent of this option.
 	RedirectFixedPath bool
+
+	// ReadHeaderTimeout is the maximum duration for reading the entire
+	// request header, including the body. A zero or negative value means
+	// there will be no timeout.
+	//
+	// This setting helps protect against Slowloris attacks by limiting
+	// the time a client can take to send headers. If the timeout expires
+	// before the full header is received, the server closes the connection.
+	// It corresponds directly to http.Server.ReadHeaderTimeout in the
+	// standard library.
+	ReadHeaderTimeout time.Duration
 
 	// HandleMethodNotAllowed if enabled, the router checks if another method is allowed for the
 	// current route, if the current request can not be routed.
@@ -210,6 +223,7 @@ func New(opts ...OptionFunc) *Engine {
 		FuncMap:                template.FuncMap{},
 		RedirectTrailingSlash:  true,
 		RedirectFixedPath:      false,
+		ReadHeaderTimeout:      defaultReadHeaderTimeout,
 		HandleMethodNotAllowed: false,
 		ForwardedByClientIP:    true,
 		RemoteIPHeaders:        []string{"X-Forwarded-For", "X-Real-IP"},
@@ -550,6 +564,7 @@ func (engine *Engine) Run(addr ...string) (err error) {
 	server := &http.Server{ // #nosec G112
 		Addr:    address,
 		Handler: engine.Handler(),
+		ReadHeaderTimeout: engine.ReadHeaderTimeout,
 	}
 	err = server.ListenAndServe()
 	return

@@ -605,3 +605,56 @@ func TestEscapedColon(t *testing.T) {
 	testRequest(t, ts.URL+"/r/r/:r", "", "/r/r/\\:r")
 	testRequest(t, ts.URL+"/r/r/r:r", "", "/r/r/r\\:r")
 }
+
+// Tests the ReadHeaderTimeout fail
+func TestEngineReadHeaderTimeout(t *testing.T) {
+	const timeout = 200 * time.Millisecond
+	
+	router := New()
+	router.ReadHeaderTimeout = timeout
+	router.GET("/test", func(c *Context) {
+		c.String(http.StatusOK, "ok")
+	})
+
+	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	require.NoError(t, err)
+	defer ln.Close()
+
+	go func() {
+		_ = http.Serve(ln, router.Handler())
+	}()
+
+	conn, err := net.Dial("tcp", ln.Addr().String())
+	require.NoError(t, err)
+	defer conn.Close()
+
+	_, err = conn.Write([]byte("GET /test HTTP/1.1\r\nHost: localhost\r\n"))
+	require.NoError(t, err)
+
+	conn.SetReadDeadline(time.Now().Add(timeout + 500*time.Millisecond))
+
+	buf := make([]byte, 1024)
+	_, err = conn.Read(buf)
+
+	assert.Error(t, err, "expected connection to be closed by server due to ReadHeaderTimeout")
+	
+	if err == nil {
+		t.Fatalf("expected error but got response: %s", string(buf))
+	}
+}
+
+// Tests the ReadHeaderTimeout success case
+func TestEngineReadHeaderTimeoutSuccess(t *testing.T) {
+	router := New()
+	router.ReadHeaderTimeout = 5 * time.Second
+	router.GET("/test", func(c *Context) {
+		c.String(http.StatusOK, "success")
+	})
+
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/test", nil)
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Equal(t, "success", w.Body.String())
+}

@@ -2091,6 +2091,18 @@ See a complete example in the `https://github.com/gin-gonic/examples/tree/master
 
 > Configure HTTP servers, TLS, proxies, and runtime settings.
 
+### Default Read header timeout
+
+You can change the default read header timeout by `engine.ReadHeaderTimeout` if its necessary.
+
+```go
+func main() {
+    router := gin.Default()
+    router.ReadHeaderTimeout = 5 * time.Second
+    http.ListenAndServe(":8000", router)
+}
+```
+
 ### Custom HTTP configuration
 
 Use `http.ListenAndServe()` directly, like this:
