@@ -2091,6 +2091,25 @@ See a complete example in the `https://github.com/gin-gonic/examples/tree/master
 
 > Configure HTTP servers, TLS, proxies, and runtime settings.
 
+### Default ReadHeaderTimeout
+
+`Run`, `RunTLS`, `RunUnix`, and `RunListener` build their `http.Server` with a default
+`ReadHeaderTimeout` of 5 seconds (`engine.ReadHeaderTimeout`), which mitigates
+Slowloris-style attacks where a client trickles request headers in slowly to exhaust
+server connections. It only bounds the time to read headers, not the request body or
+the response, so it's safe for streaming/SSE/long-polling handlers.
+
+To use a different value, or to disable it and restore the previous unbounded
+behavior, set the field before calling `Run`:
+
+```go
+func main() {
+  router := gin.Default()
+  router.ReadHeaderTimeout = 0 // disable, or set your own duration
+  router.Run(":8080")
+}
+```
+
 ### Custom HTTP configuration
 
 Use `http.ListenAndServe()` directly, like this:

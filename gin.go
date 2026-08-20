@@ -13,6 +13,7 @@ import (
 	"path"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/gin-gonic/gin/internal/bytesconv"
 	filesystem "github.com/gin-gonic/gin/internal/fs"
@@ -23,10 +24,11 @@ import (
 )
 
 const (
-	defaultMultipartMemory = 32 << 20 // 32 MB
-	escapedColon           = "\\:"
-	colon                  = ":"
-	backslash              = "\\"
+	defaultMultipartMemory   = 32 << 20 // 32 MB
+	defaultReadHeaderTimeout = 5 * time.Second
+	escapedColon             = "\\:"
+	colon                    = ":"
+	backslash                = "\\"
 )
 
 var (
@@ -166,6 +168,14 @@ type Engine struct {
 	// method call.
 	MaxMultipartMemory int64
 
+	// ReadHeaderTimeout is the amount of time allowed to read request headers on
+	// connections created by Run, RunTLS, RunUnix, and RunListener. It protects
+	// against Slowloris-style attacks where a client trickles headers in slowly.
+	// It does not bound how long handlers may take to read the body or write the
+	// response, so it is safe for streaming/SSE/long-polling handlers.
+	// Set to 0 to disable (restores pre-default unbounded behavior).
+	ReadHeaderTimeout time.Duration
+
 	// UseH2C enable h2c support.
 	UseH2C bool
 
@@ -199,6 +209,7 @@ var _ IRouter = (*Engine)(nil)
 // - UseRawPath:             false
 // - UseEscapedPath: 		 false
 // - UnescapePathValues:     true
+// - ReadHeaderTimeout:      5 * time.Second
 func New(opts ...OptionFunc) *Engine {
 	debugPrintWARNINGNew()
 	engine := &Engine{
@@ -219,6 +230,7 @@ func New(opts ...OptionFunc) *Engine {
 		RemoveExtraSlash:       false,
 		UnescapePathValues:     true,
 		MaxMultipartMemory:     defaultMultipartMemory,
+		ReadHeaderTimeout:      defaultReadHeaderTimeout,
 		trees:                  make(methodTrees, 0, 9),
 		delims:                 render.Delims{Left: "{{", Right: "}}"},
 		secureJSONPrefix:       "while(1);",
@@ -547,9 +559,10 @@ func (engine *Engine) Run(addr ...string) (err error) {
 	engine.updateRouteTrees()
 	address := resolveAddress(addr)
 	debugPrint("Listening and serving HTTP on %s\n", address)
-	server := &http.Server{ // #nosec G112
-		Addr:    address,
-		Handler: engine.Handler(),
+	server := &http.Server{
+		Addr:              address,
+		Handler:           engine.Handler(),
+		ReadHeaderTimeout: engine.ReadHeaderTimeout,
 	}
 	err = server.ListenAndServe()
 	return
@@ -567,9 +580,10 @@ func (engine *Engine) RunTLS(addr, certFile, keyFile string) (err error) {
 			"Please check https://github.com/gin-gonic/gin/blob/master/docs/doc.md#dont-trust-all-proxies for details.")
 	}
 
-	server := &http.Server{ // #nosec G112
-		Addr:    addr,
-		Handler: engine.Handler(),
+	server := &http.Server{
+		Addr:              addr,
+		Handler:           engine.Handler(),
+		ReadHeaderTimeout: engine.ReadHeaderTimeout,
 	}
 	err = server.ListenAndServeTLS(certFile, keyFile)
 	return
@@ -594,8 +608,9 @@ func (engine *Engine) RunUnix(file string) (err error) {
 	defer listener.Close()
 	defer os.Remove(file)
 
-	server := &http.Server{ // #nosec G112
-		Handler: engine.Handler(),
+	server := &http.Server{
+		Handler:           engine.Handler(),
+		ReadHeaderTimeout: engine.ReadHeaderTimeout,
 	}
 	err = server.Serve(listener)
 	return
@@ -651,8 +666,9 @@ func (engine *Engine) RunListener(listener net.Listener) (err error) {
 			"Please check https://github.com/gin-gonic/gin/blob/master/docs/doc.md#dont-trust-all-proxies for details.")
 	}
 
-	server := &http.Server{ // #nosec G112
-		Handler: engine.Handler(),
+	server := &http.Server{
+		Handler:           engine.Handler(),
+		ReadHeaderTimeout: engine.ReadHeaderTimeout,
 	}
 	err = server.Serve(listener)
 	return
