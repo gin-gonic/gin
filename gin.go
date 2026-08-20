@@ -25,7 +25,7 @@ import (
 
 const (
 	defaultMultipartMemory = 32 << 20 // 32 MB
-	defaultReadHeaderTimeout = 10 * time.Second
+	defaultReadHeaderTimeout = 5 * time.Second
 	escapedColon           = "\\:"
 	colon                  = ":"
 	backslash              = "\\"
