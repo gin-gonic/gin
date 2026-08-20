@@ -2091,6 +2091,17 @@ See a complete example in the `https://github.com/gin-gonic/examples/tree/master
 
 > Configure HTTP servers, TLS, proxies, and runtime settings.
 
+### ReadHeaderTimeout
+
+You can configure the maximum duration for reading the entire request header by setting `engine.ReadHeaderTimeout`. This helps protect against Slowloris attacks by limiting the time a client can take to send headers.
+
+```go
+func main() {
+    router := gin.New() // or gin.Default()
+    router.ReadHeaderTimeout = 5 * time.Second
+    http.ListenAndServe(":8000", router)
+}
+
 ### Custom HTTP configuration
 
 Use `http.ListenAndServe()` directly, like this:
