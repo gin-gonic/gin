@@ -915,7 +915,7 @@ func TestMappingCustomSliceOfSliceUnmarshalTextDefault(t *testing.T) {
 	var s struct {
 		FileData []customPathUnmarshalText `form:"path,default=bar/foo;bar/foo/spam,parser=encoding.TextUnmarshaler" collection_format:"csv"`
 	}
-	err := mappingByPtr(&s, formSource{"path": {}}, "form")
+	err := mappingByPtr(&s, formSource{"path": nil}, "form")
 	require.NoError(t, err)
 	assert.Equal(t, []customPathUnmarshalText{{"bar", "foo"}, {"bar", "foo", "spam"}}, s.FileData)
 }
@@ -994,7 +994,7 @@ func TestMappingCustomArrayOfArrayUnmarshalTextDefault(t *testing.T) {
 	var s struct {
 		FileData []objectIDUnmarshalText `form:"ids,default=664a062ac74a8ad104e0e80e;664a062ac74a8ad104e0e80f,parser=encoding.TextUnmarshaler" collection_format:"csv"`
 	}
-	err := mappingByPtr(&s, formSource{"ids": {}}, "form")
+	err := mappingByPtr(&s, formSource{"ids": nil}, "form")
 	require.NoError(t, err)
 	assert.Equal(t, []objectIDUnmarshalText{id1, id2}, s.FileData)
 }
@@ -1079,7 +1079,7 @@ func TestMappingEmptyValues(t *testing.T) {
 		// field present but empty
 		err = mappingByPtr(&s, formSource{"slice": {}}, "form")
 		require.NoError(t, err)
-		assert.Equal(t, []int{5}, s.Slice)
+		assert.Equal(t, []int{}, s.Slice)
 
 		// field present with values
 		err = mappingByPtr(&s, formSource{"slice": {"1", "2", "3"}}, "form")
@@ -1108,10 +1108,15 @@ func TestMappingEmptyValues(t *testing.T) {
 			Slice []int `form:"slice"`
 		}
 
-		// field present but empty
-		err := mappingByPtr(&s, formSource{"slice": {}}, "form")
+		// field not present
+		err := mappingByPtr(&s, formSource{}, "form")
 		require.NoError(t, err)
 		assert.Equal(t, []int(nil), s.Slice)
+
+		// field present but empty
+		err = mappingByPtr(&s, formSource{"slice": {}}, "form")
+		require.NoError(t, err)
+		assert.Equal(t, []int{}, s.Slice)
 	})
 
 	t.Run("array without default", func(t *testing.T) {
@@ -1140,7 +1145,7 @@ func TestMappingEmptyValues(t *testing.T) {
 		// field present but empty
 		err = mappingByPtr(&s, formSource{"slice_multi": {}, "slice_csv": {}}, "form")
 		require.NoError(t, err)
-		assert.Equal(t, []int{1, 2, 3}, s.SliceMulti)
-		assert.Equal(t, []int{1, 2, 3}, s.SliceCsv)
+		assert.Equal(t, []int{}, s.SliceMulti)
+		assert.Equal(t, []int{}, s.SliceCsv)
 	})
 }
