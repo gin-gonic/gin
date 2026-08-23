@@ -486,6 +486,17 @@ func (engine *Engine) validateHeader(header string) (clientIP string, valid bool
 	items := strings.Split(header, ",")
 	for i := len(items) - 1; i >= 0; i-- {
 		ipStr := strings.TrimSpace(items[i])
+
+		// Handle IPv6 with brackets and/or port: [::1], [::1]:8080, 192.168.1.1:8080
+		// net.SplitHostPort handles all these cases and strips brackets
+		if host, _, err := net.SplitHostPort(ipStr); err == nil {
+			ipStr = host
+		} else {
+			// No port present, just strip brackets if any (bare IPv6 like [::1])
+			ipStr = strings.TrimPrefix(ipStr, "[")
+			ipStr = strings.TrimSuffix(ipStr, "]")
+		}
+
 		ip := net.ParseIP(ipStr)
 		if ip == nil {
 			break
