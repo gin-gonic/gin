@@ -83,6 +83,8 @@ func (group *RouterGroup) BasePath() string {
 	return group.basePath
 }
 
+// Handle registers a new request handle and middleware with the given path and method.
+// It panics if httpMethod is not a valid HTTP method.
 func (group *RouterGroup) handle(httpMethod, relativePath string, handlers HandlersChain) IRoutes {
 	absolutePath := group.calculateAbsolutePath(relativePath)
 	handlers = group.combineHandlers(handlers)
@@ -200,6 +202,7 @@ func (group *RouterGroup) Static(relativePath, root string) IRoutes {
 
 // StaticFS works just like `Static()` but a custom `http.FileSystem` can be used instead.
 // Gin by default uses: gin.Dir()
+// It panics if relativePath contains URL parameters (: or *).
 func (group *RouterGroup) StaticFS(relativePath string, fs http.FileSystem) IRoutes {
 	if strings.Contains(relativePath, ":") || strings.Contains(relativePath, "*") {
 		panic("URL parameters can not be used when serving a static folder")
