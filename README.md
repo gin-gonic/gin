@@ -143,7 +143,7 @@ The comprehensive documentation is available on [gin-gonic.com](https://gin-goni
 
 ## ⚡ Performance Benchmarks
 
-Gin demonstrates exceptional performance compared to other Go web frameworks. It uses a custom version of [HttpRouter](https://github.com/julienschmidt/httprouter) for maximum efficiency. [View detailed benchmarks →](/BENCHMARKS.md)
+Gin demonstrates exceptional performance compared to other Go web frameworks. It uses a custom version of [HttpRouter](https://github.com/julienschmidt/httprouter) for maximum efficiency. [View detailed benchmarks →](BENCHMARKS.md)
 
 **Gin vs. Other Go Frameworks** (GitHub API routing benchmark):
 
