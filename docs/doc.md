@@ -817,6 +817,8 @@ func main() {
 
 To bind a request body into a type, use model binding. We currently support binding of JSON, XML, YAML, TOML and standard form values (foo=bar&boo=baz).
 
+JSON, XML, YAML, and TOML binders stream the request body. BSON and Protobuf binders buffer the full body first. By default that buffer is unbounded (historical behavior). To cap it, set `binding.MaxBodyBytes` at process start, for example `binding.MaxBodyBytes = 32 << 20`. Oversized bodies return `*http.MaxBytesError`, and `MustBindWith` responds with HTTP 413.
+
 Gin uses [**go-playground/validator/v10**](https://github.com/go-playground/validator) for validation. Check the full docs on tags usage [here](https://pkg.go.dev/github.com/go-playground/validator#hdr-Baked_In_Validators_and_Tags).
 
 Note that you need to set the corresponding binding tag on all fields you want to bind. For example, when binding from JSON, set `json:"fieldname"`.

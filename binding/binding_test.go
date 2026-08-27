@@ -747,6 +747,96 @@ func TestBindingBSON(t *testing.T) {
 		string(data[1:]))
 }
 
+func TestBindingBSONBodySizeLimit(t *testing.T) {
+	orig := MaxBodyBytes
+	MaxBodyBytes = 16
+	t.Cleanup(func() { MaxBodyBytes = orig })
+
+	var obj any
+	req := requestWithBody(http.MethodPost, "/", strings.Repeat("x", 32))
+	err := BSON.Bind(req, &obj)
+	require.Error(t, err)
+	var maxErr *http.MaxBytesError
+	require.ErrorAs(t, err, &maxErr)
+	assert.Equal(t, int64(16), maxErr.Limit)
+}
+
+func TestBindingProtoBufBodySizeLimit(t *testing.T) {
+	orig := MaxBodyBytes
+	MaxBodyBytes = 8
+	t.Cleanup(func() { MaxBodyBytes = orig })
+
+	obj := protoexample.Test{}
+	req := requestWithBody(http.MethodPost, "/", strings.Repeat("x", 32))
+	err := ProtoBuf.Bind(req, &obj)
+	require.Error(t, err)
+	var maxErr *http.MaxBytesError
+	require.ErrorAs(t, err, &maxErr)
+	assert.Equal(t, int64(8), maxErr.Limit)
+}
+
+func TestBindingProtoBufBodySizeLimitReadError(t *testing.T) {
+	orig := MaxBodyBytes
+	MaxBodyBytes = 32
+	t.Cleanup(func() { MaxBodyBytes = orig })
+
+	obj := protoexample.Test{}
+	req := requestWithBody(http.MethodPost, "/", "")
+	req.Body = io.NopCloser(&hook{})
+	require.Error(t, ProtoBuf.Bind(req, &obj))
+}
+
+func TestBindingProtoBufBodySizeLimitAllowsBodyWithinLimit(t *testing.T) {
+	test := &protoexample.Test{
+		Label: proto.String("yes"),
+	}
+	data, err := proto.Marshal(test)
+	require.NoError(t, err)
+
+	orig := MaxBodyBytes
+	MaxBodyBytes = int64(len(data))
+	t.Cleanup(func() { MaxBodyBytes = orig })
+
+	obj := protoexample.Test{}
+	req := requestWithBody(http.MethodPost, "/", string(data))
+	require.NoError(t, ProtoBuf.Bind(req, &obj))
+	assert.Equal(t, "yes", *obj.Label)
+}
+
+func TestBindingBodySizeLimitDisabledByDefault(t *testing.T) {
+	assert.Equal(t, int64(0), MaxBodyBytes)
+
+	orig := MaxBodyBytes
+	MaxBodyBytes = 0
+	t.Cleanup(func() { MaxBodyBytes = orig })
+
+	var obj FooStruct
+	obj.Foo = "bar"
+	data, err := bson.Marshal(&obj)
+	require.NoError(t, err)
+
+	var got FooStruct
+	req := requestWithBody(http.MethodPost, "/", string(data))
+	require.NoError(t, BSON.Bind(req, &got))
+	assert.Equal(t, "bar", got.Foo)
+}
+
+func TestBindingBodySizeLimitAllowsBodyWithinLimit(t *testing.T) {
+	var obj FooStruct
+	obj.Foo = "bar"
+	data, err := bson.Marshal(&obj)
+	require.NoError(t, err)
+
+	orig := MaxBodyBytes
+	MaxBodyBytes = int64(len(data))
+	t.Cleanup(func() { MaxBodyBytes = orig })
+
+	var got FooStruct
+	req := requestWithBody(http.MethodPost, "/", string(data))
+	require.NoError(t, BSON.Bind(req, &got))
+	assert.Equal(t, "bar", got.Foo)
+}
+
 func TestValidationFails(t *testing.T) {
 	var obj FooStruct
 	req := requestWithBody(http.MethodPost, "/", `{"bar": "foo"}`)

@@ -5,7 +5,6 @@
 package binding
 
 import (
-	"io"
 	"net/http"
 
 	"go.mongodb.org/mongo-driver/v2/bson"
@@ -18,7 +17,7 @@ func (bsonBinding) Name() string {
 }
 
 func (b bsonBinding) Bind(req *http.Request, obj any) error {
-	buf, err := io.ReadAll(req.Body)
+	buf, err := readBody(req.Body)
 	if err == nil {
 		err = b.BindBody(buf, obj)
 	}
