@@ -903,6 +903,33 @@ func TestContextDefaultQueryOnEmptyRequest(t *testing.T) {
 	})
 }
 
+func TestContextPostFormOnEmptyRequest(t *testing.T) {
+	c, _ := CreateTestContext(httptest.NewRecorder()) // here c.Request == nil
+	assert.NotPanics(t, func() {
+		value, ok := c.GetPostForm("key")
+		assert.False(t, ok)
+		assert.Empty(t, value)
+	})
+	assert.NotPanics(t, func() {
+		assert.Empty(t, c.PostForm("key"))
+	})
+	assert.NotPanics(t, func() {
+		assert.Equal(t, "fallback", c.DefaultPostForm("key", "fallback"))
+	})
+	assert.NotPanics(t, func() {
+		values, ok := c.GetPostFormArray("key")
+		assert.False(t, ok)
+		assert.Empty(t, values)
+		assert.Empty(t, c.PostFormArray("key"))
+	})
+	assert.NotPanics(t, func() {
+		dicts, ok := c.GetPostFormMap("key")
+		assert.False(t, ok)
+		assert.Empty(t, dicts)
+		assert.Empty(t, c.PostFormMap("key"))
+	})
+}
+
 func TestContextQueryAndPostForm(t *testing.T) {
 	c, _ := CreateTestContext(httptest.NewRecorder())
 	body := strings.NewReader("foo=bar&page=11&both=&foo=second")
