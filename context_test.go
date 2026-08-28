@@ -3955,3 +3955,24 @@ func BenchmarkGetMapFromFormData(b *testing.B) {
 		})
 	}
 }
+
+func TestContextPostFormWithoutRequest(t *testing.T) {
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	c.Request = nil
+
+	val, ok := c.GetPostForm("key")
+	assert.False(t, ok)
+	assert.Empty(t, val)
+
+	val = c.PostForm("key")
+	assert.Empty(t, val)
+
+	val = c.DefaultPostForm("key", "default_val")
+	assert.Equal(t, "default_val", val)
+
+	vals := c.PostFormArray("key")
+	assert.Empty(t, vals)
+
+	mapVals := c.PostFormMap("key")
+	assert.Empty(t, mapVals)
+}
