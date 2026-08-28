@@ -3957,22 +3957,41 @@ func BenchmarkGetMapFromFormData(b *testing.B) {
 }
 
 func TestContextPostFormWithoutRequest(t *testing.T) {
-	c, _ := CreateTestContext(httptest.NewRecorder())
-	c.Request = nil
-
-	val, ok := c.GetPostForm("key")
+	// Case 1: c.Request is nil, c.engine is nil
+	c1 := &Context{}
+	val, ok := c1.GetPostForm("key")
 	assert.False(t, ok)
 	assert.Empty(t, val)
+	assert.Empty(t, c1.PostForm("key"))
+	assert.Equal(t, "default_val", c1.DefaultPostForm("key", "default_val"))
+	assert.Empty(t, c1.PostFormArray("key"))
+	assert.Empty(t, c1.PostFormMap("key"))
 
-	val = c.PostForm("key")
+	// Case 2: c.Request is nil, c.engine is not nil
+	c2, _ := CreateTestContext(httptest.NewRecorder())
+	c2.Request = nil
+	val, ok = c2.GetPostForm("key")
+	assert.False(t, ok)
 	assert.Empty(t, val)
+	assert.Empty(t, c2.PostForm("key"))
+	assert.Equal(t, "default_val", c2.DefaultPostForm("key", "default_val"))
+	assert.Empty(t, c2.PostFormArray("key"))
+	assert.Empty(t, c2.PostFormMap("key"))
 
-	val = c.DefaultPostForm("key", "default_val")
-	assert.Equal(t, "default_val", val)
+	// Case 3: c.Request is not nil, c.engine is nil
+	c3 := &Context{}
+	req3, _ := http.NewRequest(http.MethodPost, "/", strings.NewReader("key=value3"))
+	req3.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	c3.Request = req3
+	val, ok = c3.GetPostForm("key")
+	assert.True(t, ok)
+	assert.Equal(t, "value3", val)
 
-	vals := c.PostFormArray("key")
-	assert.Empty(t, vals)
-
-	mapVals := c.PostFormMap("key")
-	assert.Empty(t, mapVals)
+	// Case 4: c.Request has multipart error, c.engine is nil
+	c4 := &Context{}
+	req4, _ := http.NewRequest(http.MethodPost, "/", strings.NewReader("bad multipart payload"))
+	req4.Header.Set("Content-Type", "multipart/form-data; boundary=boundary")
+	c4.Request = req4
+	val, ok = c4.GetPostForm("key")
+	assert.False(t, ok)
 }
