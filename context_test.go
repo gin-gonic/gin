@@ -3992,6 +3992,6 @@ func TestContextPostFormWithoutRequest(t *testing.T) {
 	req4, _ := http.NewRequest(http.MethodPost, "/", strings.NewReader("bad multipart payload"))
 	req4.Header.Set("Content-Type", "multipart/form-data; boundary=boundary")
 	c4.Request = req4
-	val, ok = c4.GetPostForm("key")
+	_, ok = c4.GetPostForm("key")
 	assert.False(t, ok)
 }
