@@ -743,6 +743,9 @@ func (engine *Engine) handleHTTPRequest(c *Context) {
 			if tree.method == httpMethod {
 				continue
 			}
+			// Reset skippedNodes before each getValue call to prevent accumulation
+			// across multiple method trees, which could cause slice bounds panic
+			*c.skippedNodes = (*c.skippedNodes)[:0]
 			if value := tree.root.getValue(rPath, nil, c.skippedNodes, unescape); value.handlers != nil {
 				allowed = append(allowed, tree.method)
 			}
