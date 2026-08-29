@@ -11,7 +11,7 @@ func TestHandleMethodNotAllowedSkippedNodesPanic(t *testing.T) {
 	router := New()
 	router.HandleMethodNotAllowed = true
 
-	h := func(c *Context) {}
+	h := func(_ *Context) {}
 	router.OPTIONS("/:p0/:p1/a/:p2", h)
 	router.GET("/:p0/:p1/a/:p2", h)
 	router.PATCH("/b/:p0/:p1/c", h)
