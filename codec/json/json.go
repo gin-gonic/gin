@@ -2,7 +2,7 @@
 // Use of this source code is governed by a MIT style
 // license that can be found in the LICENSE file.
 
-//go:build !jsoniter && !go_json && !(sonic && (linux || windows || darwin))
+//go:build !(jsonv2 && go1.27 && goexperiment.jsonv2) && !jsoniter && !go_json && !(sonic && (linux || windows || darwin))
 
 package json
 

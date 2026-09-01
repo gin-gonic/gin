@@ -33,13 +33,14 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest]
-        go: ["1.25", "1.26"]
+        go: ["1.25", "1.26", "1.27"]
         test-tags:
           [
             "",
             "-tags nomsgpack",
             '--ldflags="-checklinkname=0" -tags sonic',
             "-tags go_json",
+            "-tags jsonv2",
             "-race",
           ]
         include:
