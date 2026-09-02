@@ -160,11 +160,21 @@ func (r AsciiJSON) Render(w http.ResponseWriter) error {
 	}
 
 	var buffer bytes.Buffer
-	escapeBuf := make([]byte, 0, 6) // Preallocate 6 bytes for Unicode escape sequences
+	escapeBuf := make([]byte, 0, 12) // 12 bytes for a UTF-16 surrogate pair (\uHHHH\uLLLL)
 
 	for _, r := range bytesconv.BytesToString(ret) {
 		if r > unicode.MaxASCII {
-			escapeBuf = fmt.Appendf(escapeBuf[:0], "\\u%04x", r) // Reuse escapeBuf
+			if r > 0xFFFF {
+				// Non-BMP character: encode as a UTF-16 surrogate pair per RFC 8259 §7.
+				// \u alone cannot represent code points above U+FFFF (it is always 4 hex digits),
+				// so we split the rune into a high surrogate and a low surrogate.
+				r -= 0x10000
+				high := 0xD800 + (r>>10)&0x3FF
+				low := 0xDC00 + r&0x3FF
+				escapeBuf = fmt.Appendf(escapeBuf[:0], "\\u%04x\\u%04x", high, low)
+			} else {
+				escapeBuf = fmt.Appendf(escapeBuf[:0], "\\u%04x", r)
+			}
 			buffer.Write(escapeBuf)
 		} else {
 			buffer.WriteByte(byte(r))
