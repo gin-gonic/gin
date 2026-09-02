@@ -743,6 +743,11 @@ func (engine *Engine) handleHTTPRequest(c *Context) {
 			if tree.method == httpMethod {
 				continue
 			}
+			// Reset skippedNodes before each getValue call so residue from the
+			// previous tree does not accumulate. The slice is allocated once per
+			// pooled Context with a fixed capacity (engine.maxSections); getValue
+			// extends it with a raw reslice that panics if len exceeds cap.
+			*c.skippedNodes = (*c.skippedNodes)[:0]
 			if value := tree.root.getValue(rPath, nil, c.skippedNodes, unescape); value.handlers != nil {
 				allowed = append(allowed, tree.method)
 			}

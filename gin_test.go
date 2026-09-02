@@ -1058,6 +1058,38 @@ func TestMethodNotAllowedNoRoute(t *testing.T) {
 	assert.Equal(t, http.StatusNotFound, resp.Code)
 }
 
+// TestMethodNotAllowedSkippedNodesPanic is a regression test for #4818.
+// With HandleMethodNotAllowed enabled, handleHTTPRequest calls getValue once
+// per method tree to build the Allow header. Each call may push onto
+// c.skippedNodes, which has a fixed capacity (engine.maxSections). Without a
+// reset between calls the slice fills up and a subsequent reslice panics with
+// "slice bounds out of range". Because the panic occurs before any handler
+// runs, gin.Recovery() cannot catch it and the client receives an empty reply.
+func TestMethodNotAllowedSkippedNodesPanic(t *testing.T) {
+	SetMode(ReleaseMode)
+	router := New()
+	router.HandleMethodNotAllowed = true
+
+	h := func(c *Context) {}
+	router.OPTIONS("/:p0/:p1/a/:p2", h)
+	router.GET("/:p0/:p1/a/:p2", h)
+	router.PATCH("/b/:p0/:p1/c", h)
+	router.DELETE("/b/:p0/:p1/d/:p3", h)
+	router.GET("/b/:p0/:p1/e/f", h)
+	router.POST("/b/:p0/:p1/g/:p4/h", h)
+	router.OPTIONS("/b/:p0/:p1/g/:p4/h", h)
+	router.DELETE("/b/cache", h)
+	router.GET("/b/clients/:p1/g", h)
+	router.POST("/b/clients/:p1/g", h)
+	router.PATCH("/b/clients/:p1/g/:p4", h)
+	router.OPTIONS("/b/clients/:p1/g/:p4", h)
+
+	req := httptest.NewRequest(http.MethodPost, "/b/clients/42", nil)
+	w := httptest.NewRecorder()
+	assert.NotPanics(t, func() { router.ServeHTTP(w, req) })
+	assert.Equal(t, http.StatusMethodNotAllowed, w.Code)
+}
+
 // Test the fix for https://github.com/gin-gonic/gin/pull/4415
 func TestLiteralColonWithRun(t *testing.T) {
 	SetMode(TestMode)
