@@ -278,6 +278,28 @@ func TestResponseWriterHijackAfterWriteHeaderNow(t *testing.T) {
 	}
 }
 
+func TestResponseWriterWriteAfterHijack(t *testing.T) {
+	hijacker := &mockHijacker{ResponseRecorder: httptest.NewRecorder()}
+	w := &responseWriter{}
+	w.reset(hijacker)
+
+	_, _, err := w.Hijack()
+	require.NoError(t, err)
+	assert.True(t, w.hijacked)
+
+	n, err := w.Write([]byte("nope"))
+	assert.Equal(t, 0, n)
+	require.ErrorIs(t, err, errHijacked)
+
+	n, err = w.WriteString("nope")
+	assert.Equal(t, 0, n)
+	require.ErrorIs(t, err, errHijacked)
+
+	assert.NotPanics(t, func() { w.WriteHeaderNow() })
+	// underlying recorder body must stay empty (no write-after-hijack)
+	assert.Equal(t, 0, hijacker.Body.Len())
+}
+
 func TestResponseWriterFlush(t *testing.T) {
 	testServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		writer := &responseWriter{}
