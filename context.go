@@ -1190,6 +1190,11 @@ func (c *Context) SetCookieData(cookie *http.Cookie) {
 // If multiple cookies match the given name, only one cookie will
 // be returned.
 func (c *Context) Cookie(name string) (string, error) {
+	// A nil Request (e.g. Context from CreateTestContext) has no cookies:
+	// report the same error as a request without the named cookie.
+	if c.Request == nil {
+		return "", http.ErrNoCookie
+	}
 	cookie, err := c.Request.Cookie(name)
 	if err != nil {
 		return "", err
