@@ -418,6 +418,12 @@ type skippedNode struct {
 func (n *node) getValue(path string, params *Params, skippedNodes *[]skippedNode, unescape bool) (value nodeValue) {
 	var globalParamsCount int16
 
+	// The skippedNodes slice comes from the pooled Context with a fixed capacity and may still hold entries
+	// pushed by a previous getValue walk on the same Context, e.g. when handleHTTPRequest walks one method
+	// tree after another while collecting methods for the 405 response. Skipped nodes are only meaningful
+	// within a single walk, so start each walk from an empty list.
+	*skippedNodes = (*skippedNodes)[:0]
+
 walk: // Outer loop for walking the tree
 	for {
 		prefix := n.path

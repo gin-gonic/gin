@@ -1047,6 +1047,32 @@ func TestCustomUnmarshalStruct(t *testing.T) {
 	assert.Equal(t, `"2000/01/01"`, w.Body.String())
 }
 
+// Test the fix for https://github.com/gin-gonic/gin/issues/4818
+func TestMethodNotAllowedSkippedNodesOverflow(t *testing.T) {
+	SetMode(TestMode)
+	router := New()
+	router.HandleMethodNotAllowed = true
+
+	h := func(c *Context) {}
+	router.OPTIONS("/:p0/:p1/a/:p2", h)
+	router.GET("/:p0/:p1/a/:p2", h)
+	router.PATCH("/b/:p0/:p1/c", h)
+	router.DELETE("/b/:p0/:p1/d/:p3", h)
+	router.GET("/b/:p0/:p1/e/f", h)
+	router.POST("/b/:p0/:p1/g/:p4/h", h)
+	router.OPTIONS("/b/:p0/:p1/g/:p4/h", h)
+	router.DELETE("/b/cache", h)
+	router.GET("/b/clients/:p1/g", h)
+	router.POST("/b/clients/:p1/g", h)
+	router.PATCH("/b/clients/:p1/g/:p4", h)
+	router.OPTIONS("/b/clients/:p1/g/:p4", h)
+
+	req := httptest.NewRequest(http.MethodPost, "/b/clients/42", nil)
+	resp := httptest.NewRecorder()
+	assert.NotPanics(t, func() { router.ServeHTTP(resp, req) })
+	assert.Equal(t, http.StatusNotFound, resp.Code)
+}
+
 // Test the fix for https://github.com/gin-gonic/gin/issues/4002
 func TestMethodNotAllowedNoRoute(t *testing.T) {
 	g := New()
