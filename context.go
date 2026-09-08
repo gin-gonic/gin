@@ -1063,9 +1063,15 @@ func (c *Context) ContentType() string {
 // IsWebsocket returns true if the request headers indicate that a websocket
 // handshake is being initiated by the client.
 func (c *Context) IsWebsocket() bool {
-	if strings.Contains(strings.ToLower(c.requestHeader("Connection")), "upgrade") &&
-		strings.EqualFold(c.requestHeader("Upgrade"), "websocket") {
-		return true
+	if !strings.EqualFold(c.requestHeader("Upgrade"), "websocket") {
+		return false
+	}
+	for _, connection := range c.Request.Header.Values("Connection") {
+		for token := range strings.SplitSeq(connection, ",") {
+			if strings.EqualFold(strings.Trim(token, " \t"), "upgrade") {
+				return true
+			}
+		}
 	}
 	return false
 }
