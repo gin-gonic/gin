@@ -142,6 +142,13 @@ func (group *RouterGroup) HEAD(relativePath string, handlers ...HandlerFunc) IRo
 	return group.handle(http.MethodHead, relativePath, handlers)
 }
 
+// QUERY is a shortcut for router.Handle("QUERY", path, handlers).
+// The QUERY method is defined by RFC 10008 and is used to send a query
+// in the request body, similar to GET but with a body.
+func (group *RouterGroup) QUERY(relativePath string, handlers ...HandlerFunc) IRoutes {
+	return group.handle("QUERY", relativePath, handlers)
+}
+
 // Any registers a route that matches all the HTTP methods.
 // GET, POST, PUT, PATCH, HEAD, OPTIONS, DELETE, CONNECT, TRACE.
 func (group *RouterGroup) Any(relativePath string, handlers ...HandlerFunc) IRoutes {
