@@ -863,6 +863,14 @@ func (c *Context) ShouldBind(obj any) error {
 	return c.ShouldBindWith(obj, b)
 }
 
+// ShouldBindNoValidate selects a binding engine from the request and binds
+// into obj without invoking binding.Validator.
+func (c *Context) ShouldBindNoValidate(obj any) error {
+	// Every built-in returned by binding.Default implements BindingNoValidate.
+	b := binding.Default(c.Request.Method, c.ContentType()).(binding.BindingNoValidate)
+	return c.ShouldBindWithNoValidate(obj, b)
+}
+
 // ShouldBindJSON is a shortcut for c.ShouldBindWith(obj, binding.JSON).
 //
 // Example:
@@ -891,10 +899,20 @@ func (c *Context) ShouldBindJSON(obj any) error {
 	return c.ShouldBindWith(obj, binding.JSON)
 }
 
+// ShouldBindJSONNoValidate binds JSON without invoking binding.Validator.
+func (c *Context) ShouldBindJSONNoValidate(obj any) error {
+	return c.ShouldBindWithNoValidate(obj, binding.JSON)
+}
+
 // ShouldBindXML is a shortcut for c.ShouldBindWith(obj, binding.XML).
 // It works like ShouldBindJSON but binds the request body as XML data.
 func (c *Context) ShouldBindXML(obj any) error {
 	return c.ShouldBindWith(obj, binding.XML)
+}
+
+// ShouldBindXMLNoValidate binds XML without invoking binding.Validator.
+func (c *Context) ShouldBindXMLNoValidate(obj any) error {
+	return c.ShouldBindWithNoValidate(obj, binding.XML)
 }
 
 // ShouldBindQuery is a shortcut for c.ShouldBindWith(obj, binding.Query).
@@ -903,10 +921,20 @@ func (c *Context) ShouldBindQuery(obj any) error {
 	return c.ShouldBindWith(obj, binding.Query)
 }
 
+// ShouldBindQueryNoValidate binds query parameters without invoking binding.Validator.
+func (c *Context) ShouldBindQueryNoValidate(obj any) error {
+	return c.ShouldBindWithNoValidate(obj, binding.Query)
+}
+
 // ShouldBindYAML is a shortcut for c.ShouldBindWith(obj, binding.YAML).
 // It works like ShouldBindJSON but binds the request body as YAML data.
 func (c *Context) ShouldBindYAML(obj any) error {
 	return c.ShouldBindWith(obj, binding.YAML)
+}
+
+// ShouldBindYAMLNoValidate binds YAML without invoking binding.Validator.
+func (c *Context) ShouldBindYAMLNoValidate(obj any) error {
+	return c.ShouldBindWithNoValidate(obj, binding.YAML)
 }
 
 // ShouldBindTOML is a shortcut for c.ShouldBindWith(obj, binding.TOML).
@@ -915,16 +943,31 @@ func (c *Context) ShouldBindTOML(obj any) error {
 	return c.ShouldBindWith(obj, binding.TOML)
 }
 
+// ShouldBindTOMLNoValidate binds TOML without invoking binding.Validator.
+func (c *Context) ShouldBindTOMLNoValidate(obj any) error {
+	return c.ShouldBindWithNoValidate(obj, binding.TOML)
+}
+
 // ShouldBindPlain is a shortcut for c.ShouldBindWith(obj, binding.Plain).
 // It works like ShouldBindJSON but binds plain text data from the request body.
 func (c *Context) ShouldBindPlain(obj any) error {
 	return c.ShouldBindWith(obj, binding.Plain)
 }
 
+// ShouldBindPlainNoValidate binds plain text without invoking binding.Validator.
+func (c *Context) ShouldBindPlainNoValidate(obj any) error {
+	return c.ShouldBindWithNoValidate(obj, binding.Plain)
+}
+
 // ShouldBindHeader is a shortcut for c.ShouldBindWith(obj, binding.Header).
 // It works like ShouldBindJSON but binds values from HTTP headers.
 func (c *Context) ShouldBindHeader(obj any) error {
 	return c.ShouldBindWith(obj, binding.Header)
+}
+
+// ShouldBindHeaderNoValidate binds headers without invoking binding.Validator.
+func (c *Context) ShouldBindHeaderNoValidate(obj any) error {
+	return c.ShouldBindWithNoValidate(obj, binding.Header)
 }
 
 // ShouldBindUri binds the passed struct pointer using the specified binding engine.
@@ -937,10 +980,24 @@ func (c *Context) ShouldBindUri(obj any) error {
 	return binding.Uri.BindUri(m, obj)
 }
 
+// ShouldBindUriNoValidate binds URI parameters without invoking binding.Validator.
+func (c *Context) ShouldBindUriNoValidate(obj any) error {
+	m := make(map[string][]string, len(c.Params))
+	for _, v := range c.Params {
+		m[v.Key] = []string{v.Value}
+	}
+	return binding.Uri.BindUriNoValidate(m, obj)
+}
+
 // ShouldBindWith binds the passed struct pointer using the specified binding engine.
 // See the binding package.
 func (c *Context) ShouldBindWith(obj any, b binding.Binding) error {
 	return b.Bind(c.Request, obj)
+}
+
+// ShouldBindWithNoValidate binds with b without invoking binding.Validator.
+func (c *Context) ShouldBindWithNoValidate(obj any, b binding.BindingNoValidate) error {
+	return b.BindNoValidate(c.Request, obj)
 }
 
 // ShouldBindBodyWith is similar with ShouldBindWith, but it stores the request
@@ -965,9 +1022,33 @@ func (c *Context) ShouldBindBodyWith(obj any, bb binding.BindingBody) (err error
 	return bb.BindBody(body, obj)
 }
 
+// ShouldBindBodyWithNoValidate is like ShouldBindBodyWith, but it does not
+// invoke binding.Validator after decoding the cached body.
+func (c *Context) ShouldBindBodyWithNoValidate(obj any, bb binding.BindingBodyNoValidate) (err error) {
+	var body []byte
+	if cb, ok := c.Get(BodyBytesKey); ok {
+		if cbb, ok := cb.([]byte); ok {
+			body = cbb
+		}
+	}
+	if body == nil {
+		body, err = io.ReadAll(c.Request.Body)
+		if err != nil {
+			return err
+		}
+		c.Set(BodyBytesKey, body)
+	}
+	return bb.BindBodyNoValidate(body, obj)
+}
+
 // ShouldBindBodyWithJSON is a shortcut for c.ShouldBindBodyWith(obj, binding.JSON).
 func (c *Context) ShouldBindBodyWithJSON(obj any) error {
 	return c.ShouldBindBodyWith(obj, binding.JSON)
+}
+
+// ShouldBindBodyWithJSONNoValidate binds a reusable JSON body without validation.
+func (c *Context) ShouldBindBodyWithJSONNoValidate(obj any) error {
+	return c.ShouldBindBodyWithNoValidate(obj, binding.JSON)
 }
 
 // ShouldBindBodyWithXML is a shortcut for c.ShouldBindBodyWith(obj, binding.XML).
@@ -975,9 +1056,19 @@ func (c *Context) ShouldBindBodyWithXML(obj any) error {
 	return c.ShouldBindBodyWith(obj, binding.XML)
 }
 
+// ShouldBindBodyWithXMLNoValidate binds a reusable XML body without validation.
+func (c *Context) ShouldBindBodyWithXMLNoValidate(obj any) error {
+	return c.ShouldBindBodyWithNoValidate(obj, binding.XML)
+}
+
 // ShouldBindBodyWithYAML is a shortcut for c.ShouldBindBodyWith(obj, binding.YAML).
 func (c *Context) ShouldBindBodyWithYAML(obj any) error {
 	return c.ShouldBindBodyWith(obj, binding.YAML)
+}
+
+// ShouldBindBodyWithYAMLNoValidate binds a reusable YAML body without validation.
+func (c *Context) ShouldBindBodyWithYAMLNoValidate(obj any) error {
+	return c.ShouldBindBodyWithNoValidate(obj, binding.YAML)
 }
 
 // ShouldBindBodyWithTOML is a shortcut for c.ShouldBindBodyWith(obj, binding.TOML).
@@ -985,9 +1076,19 @@ func (c *Context) ShouldBindBodyWithTOML(obj any) error {
 	return c.ShouldBindBodyWith(obj, binding.TOML)
 }
 
+// ShouldBindBodyWithTOMLNoValidate binds a reusable TOML body without validation.
+func (c *Context) ShouldBindBodyWithTOMLNoValidate(obj any) error {
+	return c.ShouldBindBodyWithNoValidate(obj, binding.TOML)
+}
+
 // ShouldBindBodyWithPlain is a shortcut for c.ShouldBindBodyWith(obj, binding.Plain).
 func (c *Context) ShouldBindBodyWithPlain(obj any) error {
 	return c.ShouldBindBodyWith(obj, binding.Plain)
+}
+
+// ShouldBindBodyWithPlainNoValidate binds a reusable plain body without validation.
+func (c *Context) ShouldBindBodyWithPlainNoValidate(obj any) error {
+	return c.ShouldBindBodyWithNoValidate(obj, binding.Plain)
 }
 
 // ClientIP implements one best effort algorithm to return the real client IP.

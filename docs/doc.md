@@ -34,6 +34,7 @@
 - [Request Binding & Validation](#request-binding--validation)
   - [Model binding and validation](#model-binding-and-validation)
   - [Custom Validators](#custom-validators)
+  - [Bind from multiple sources before validation](#bind-from-multiple-sources-before-validation)
   - [Only Bind Query String](#only-bind-query-string)
   - [Bind Query String or Post Data](#bind-query-string-or-post-data)
   - [Bind default value if none provided](#bind-default-value-if-none-provided)
@@ -995,6 +996,43 @@ $ curl "localhost:8085/bookable?check_in=2000-03-09&check_out=2000-03-10"
 
 [Struct level validations](https://github.com/go-playground/validator/releases/tag/v8.7) can also be registered this way.
 See the [struct-lvl-validation example](https://github.com/gin-gonic/examples/tree/master/struct-lvl-validations) to learn more.
+
+### Bind from multiple sources before validation
+
+The standard binding methods validate after every bind. When one struct is populated from several request sources, use the `NoValidate` variants and validate the completed value explicitly:
+
+```go
+type UpdateUserRequest struct {
+  ID    string `uri:"id" binding:"required"`
+  Name  string `json:"name" binding:"required"`
+  Token string `header:"X-Token" binding:"required"`
+}
+
+func updateUser(c *gin.Context) {
+  var request UpdateUserRequest
+
+  if err := c.ShouldBindUriNoValidate(&request); err != nil {
+    c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+    return
+  }
+  if err := c.ShouldBindJSONNoValidate(&request); err != nil {
+    c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+    return
+  }
+  if err := c.ShouldBindHeaderNoValidate(&request); err != nil {
+    c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+    return
+  }
+  if err := binding.Validator.ValidateStruct(&request); err != nil {
+    c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+    return
+  }
+
+  c.Status(http.StatusNoContent)
+}
+```
+
+No-validation binding still returns decoding and mapping errors. It only defers struct validation and does not change the global validator.
 
 ### Only Bind Query String
 

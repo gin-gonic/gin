@@ -32,6 +32,13 @@ type Binding interface {
 	Bind(*http.Request, any) error
 }
 
+// BindingNoValidate adds BindNoValidate to Binding. BindNoValidate decodes or
+// maps request data without invoking Validator.
+type BindingNoValidate interface {
+	Binding
+	BindNoValidate(*http.Request, any) error
+}
+
 // BindingBody adds BindBody method to Binding. BindBody is similar with Bind,
 // but it reads the body from supplied bytes instead of req.Body.
 type BindingBody interface {
@@ -39,11 +46,24 @@ type BindingBody interface {
 	BindBody([]byte, any) error
 }
 
+// BindingBodyNoValidate adds body binding without validation.
+type BindingBodyNoValidate interface {
+	BindingBody
+	BindingNoValidate
+	BindBodyNoValidate([]byte, any) error
+}
+
 // BindingUri adds BindUri method to Binding. BindUri is similar with Bind,
 // but it reads the Params.
 type BindingUri interface {
 	Name() string
 	BindUri(map[string][]string, any) error
+}
+
+// BindingUriNoValidate adds URI binding without validation.
+type BindingUriNoValidate interface {
+	BindingUri
+	BindUriNoValidate(map[string][]string, any) error
 }
 
 // StructValidator is the minimal interface which needs to be implemented in
@@ -71,19 +91,19 @@ var Validator StructValidator = &defaultValidator{}
 // These implement the Binding interface and can be used to bind the data
 // present in the request to struct instances.
 var (
-	JSON          = jsonBinding{}
-	XML           = xmlBinding{}
-	Form          = formBinding{}
-	Query         = queryBinding{}
-	FormPost      = formPostBinding{}
-	FormMultipart = formMultipartBinding{}
-	ProtoBuf      = protobufBinding{}
-	YAML          = yamlBinding{}
-	Uri           = uriBinding{}
-	Header        = headerBinding{}
-	TOML          = tomlBinding{}
-	Plain         = plainBinding{}
-	BSON          BindingBody = bsonBinding{}
+	JSON          BindingBodyNoValidate = jsonBinding{}
+	XML           BindingBodyNoValidate = xmlBinding{}
+	Form          BindingNoValidate     = formBinding{}
+	Query         BindingNoValidate     = queryBinding{}
+	FormPost      BindingNoValidate     = formPostBinding{}
+	FormMultipart BindingNoValidate     = formMultipartBinding{}
+	ProtoBuf      BindingBodyNoValidate = protobufBinding{}
+	YAML          BindingBodyNoValidate = yamlBinding{}
+	Uri           BindingUriNoValidate  = uriBinding{}
+	Header        BindingNoValidate     = headerBinding{}
+	TOML          BindingBodyNoValidate = tomlBinding{}
+	Plain         BindingBodyNoValidate = plainBinding{}
+	BSON          BindingBodyNoValidate = bsonBinding{}
 )
 
 // Default returns the appropriate Binding instance based on the HTTP method
