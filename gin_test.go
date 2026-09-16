@@ -1157,7 +1157,6 @@ func TestUpdateRouteTreesCalledOnce(t *testing.T) {
 	}
 }
 
-
 func TestRouterQueryMethod(t *testing.T) {
 	router := New()
 	router.QUERY("/test", func(c *Context) {
