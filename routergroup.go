@@ -100,6 +100,8 @@ func (group *RouterGroup) handle(httpMethod, relativePath string, handlers Handl
 // This function is intended for bulk loading and to allow the usage of less
 // frequently used, non-standardized or custom methods (e.g. for internal
 // communication with a proxy).
+//
+// It panics if httpMethod is not a valid HTTP method (uppercase ASCII letters only).
 func (group *RouterGroup) Handle(httpMethod, relativePath string, handlers ...HandlerFunc) IRoutes {
 	if matched := regEnLetter.MatchString(httpMethod); !matched {
 		panic("http method " + httpMethod + " is not valid")
@@ -140,6 +142,13 @@ func (group *RouterGroup) OPTIONS(relativePath string, handlers ...HandlerFunc) 
 // HEAD is a shortcut for router.Handle("HEAD", path, handlers).
 func (group *RouterGroup) HEAD(relativePath string, handlers ...HandlerFunc) IRoutes {
 	return group.handle(http.MethodHead, relativePath, handlers)
+}
+
+// QUERY is a shortcut for router.Handle("QUERY", path, handlers).
+// The QUERY method is defined by RFC 10008 and is used to send a query
+// in the request body, similar to GET but with a body.
+func (group *RouterGroup) QUERY(relativePath string, handlers ...HandlerFunc) IRoutes {
+	return group.handle("QUERY", relativePath, handlers)
 }
 
 // Any registers a route that matches all the HTTP methods.
@@ -200,6 +209,7 @@ func (group *RouterGroup) Static(relativePath, root string) IRoutes {
 
 // StaticFS works just like `Static()` but a custom `http.FileSystem` can be used instead.
 // Gin by default uses: gin.Dir()
+// It panics if relativePath contains URL parameters (: or *).
 func (group *RouterGroup) StaticFS(relativePath string, fs http.FileSystem) IRoutes {
 	if strings.Contains(relativePath, ":") || strings.Contains(relativePath, "*") {
 		panic("URL parameters can not be used when serving a static folder")

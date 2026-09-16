@@ -1,6 +1,6 @@
 module github.com/gin-gonic/gin
 
-go 1.25.0
+go 1.26.0
 
 require (
 	github.com/bytedance/sonic v1.15.0
@@ -16,7 +16,7 @@ require (
 	github.com/stretchr/testify v1.11.1
 	github.com/ugorji/go/codec v1.3.1
 	go.mongodb.org/mongo-driver/v2 v2.5.0
-	golang.org/x/net v0.55.0
+	golang.org/x/net v0.57.0
 	google.golang.org/protobuf v1.36.11
 )
 
@@ -39,7 +39,7 @@ require (
 	github.com/twitchyliquid64/golang-asm v0.15.1 // indirect
 	go.uber.org/mock v0.6.0 // indirect
 	golang.org/x/arch v0.25.0 // indirect
-	golang.org/x/crypto v0.52.0 // indirect
-	golang.org/x/sys v0.45.0 // indirect
-	golang.org/x/text v0.37.0 // indirect
+	golang.org/x/crypto v0.56.0 // indirect
+	golang.org/x/sys v0.47.0 // indirect
+	golang.org/x/text v0.41.0 // indirect
 )
