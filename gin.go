@@ -122,6 +122,14 @@ type Engine struct {
 	// handler.
 	HandleMethodNotAllowed bool
 
+	// SkipMethodNotAllowedMiddleware if enabled, global middleware registered via Use()
+	// is not executed when the router answers with 405 Method Not Allowed. Only the
+	// handlers registered with NoMethod run. This lets a NoMethod handler reply with
+	// 405 even when a global middleware (authentication, checksum validation, ...)
+	// would otherwise abort the request first.
+	// Requires HandleMethodNotAllowed to be enabled.
+	SkipMethodNotAllowedMiddleware bool
+
 	// ForwardedByClientIP if enabled, client IP will be parsed from the request's headers that
 	// match those stored at `(*gin.Engine).RemoteIPHeaders`. If no IP was
 	// fetched, it falls back to the IP obtained from
@@ -337,6 +345,7 @@ func (engine *Engine) NoMethod(handlers ...HandlerFunc) {
 // Use attaches a global middleware to the router. i.e. the middleware attached through Use() will be
 // included in the handlers chain for every single request. Even 404, 405, static files...
 // For example, this is the right place for a logger or error management middleware.
+// Set Engine.SkipMethodNotAllowedMiddleware to exclude this middleware from 405 responses.
 func (engine *Engine) Use(middleware ...HandlerFunc) IRoutes {
 	engine.RouterGroup.Use(middleware...)
 	engine.rebuild404Handlers()
@@ -359,6 +368,18 @@ func (engine *Engine) rebuild404Handlers() {
 
 func (engine *Engine) rebuild405Handlers() {
 	engine.allNoMethod = engine.combineHandlers(engine.noMethod)
+}
+
+// noMethodHandlers returns the handlers chain used to answer 405 Method Not Allowed.
+// When SkipMethodNotAllowedMiddleware is enabled the global middleware registered
+// via Use() is left out, so only the NoMethod handlers run.
+// The choice is made here rather than in rebuild405Handlers so that it holds
+// regardless of the order in which Use(), NoMethod() and the flag are set.
+func (engine *Engine) noMethodHandlers() HandlersChain {
+	if engine.SkipMethodNotAllowedMiddleware {
+		return engine.noMethod
+	}
+	return engine.allNoMethod
 }
 
 func (engine *Engine) addRoute(method, path string, handlers HandlersChain) {
@@ -748,7 +769,7 @@ func (engine *Engine) handleHTTPRequest(c *Context) {
 			}
 		}
 		if len(allowed) > 0 {
-			c.handlers = engine.allNoMethod
+			c.handlers = engine.noMethodHandlers()
 			c.writermem.Header().Set("Allow", strings.Join(allowed, ", "))
 			serveError(c, http.StatusMethodNotAllowed, default405Body)
 			return

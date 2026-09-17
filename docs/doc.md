@@ -24,6 +24,7 @@
   - [Custom Recovery behavior](#custom-recovery-behavior)
   - [Using BasicAuth() middleware](#using-basicauth-middleware)
   - [Goroutines inside a middleware](#goroutines-inside-a-middleware)
+  - [Skip middleware for 405 responses](#skip-middleware-for-405-responses)
 - [Logging](#logging)
   - [How to write log file](#how-to-write-log-file)
   - [Custom Log Format](#custom-log-format)
@@ -604,6 +605,51 @@ func main() {
   r.Run(":8080")
 }
 ```
+
+### Skip middleware for 405 responses
+
+Middleware registered with `Use()` runs for every request, including the `405 Method Not
+Allowed` responses produced when `HandleMethodNotAllowed` is enabled. A middleware that
+rejects the request therefore aborts the chain before the `NoMethod()` handler can reply,
+and the client receives the middleware's response instead of a 405.
+
+Enable `SkipMethodNotAllowedMiddleware` to run only the `NoMethod()` handlers for those
+responses:
+
+```go
+func main() {
+  r := gin.New()
+  r.HandleMethodNotAllowed = true
+
+  // Without SkipMethodNotAllowedMiddleware this middleware answers "wrong checksum"
+  // with 400 for a GET request, because a GET carries no X-Checksum header.
+  r.SkipMethodNotAllowedMiddleware = true
+
+  r.Use(func(c *gin.Context) {
+    if c.GetHeader("X-Checksum") == "" {
+      c.String(http.StatusBadRequest, "wrong checksum")
+      c.Abort()
+      return
+    }
+    c.Next()
+  })
+
+  r.NoMethod(func(c *gin.Context) {
+    c.String(http.StatusMethodNotAllowed, "method not allowed")
+  })
+
+  r.POST("/ping", func(c *gin.Context) {
+    c.String(http.StatusOK, "pong")
+  })
+
+  // GET /ping now returns 405 "method not allowed" with an "Allow: POST" header.
+  r.Run(":8080")
+}
+```
+
+The option is disabled by default, so the existing behaviour is unchanged. It only
+applies to 405 responses; requests handled by `NoRoute()` still run the global
+middleware.
 
 ## Logging
 
