@@ -251,3 +251,41 @@ func TestMiddlewareWrite(t *testing.T) {
 	assert.Equal(t, http.StatusBadRequest, w.Code)
 	assert.Equal(t, strings.ReplaceAll("hola\n<map><foo>bar</foo></map>{\"foo\":\"bar\"}{\"foo\":\"bar\"}event:test\ndata:message\n\n", " ", ""), strings.ReplaceAll(w.Body.String(), " ", ""))
 }
+
+func TestNoMethodSkipHandlers(t *testing.T) {
+	router := New()
+	router.HandleMethodNotAllowed = true
+	router.NoMethodSkipHandlers = true
+	router.Use(func(c *Context) {
+		c.String(http.StatusBadRequest, "mw")
+		c.Abort()
+	})
+	router.NoMethod(func(c *Context) {
+		c.String(http.StatusMethodNotAllowed, "no method")
+	})
+	router.POST("/ping", func(c *Context) {
+		c.String(http.StatusOK, "pong")
+	})
+
+	w := PerformRequest(router, http.MethodGet, "/ping")
+	assert.Equal(t, http.StatusMethodNotAllowed, w.Code)
+	assert.Equal(t, "no method", w.Body.String())
+}
+
+func TestNoMethodIncludesGlobalMiddlewareByDefault(t *testing.T) {
+	router := New()
+	router.HandleMethodNotAllowed = true
+	// NoMethodSkipHandlers left false
+	router.Use(func(c *Context) {
+		c.String(http.StatusBadRequest, "mw")
+		c.Abort()
+	})
+	router.NoMethod(func(c *Context) {
+		c.String(http.StatusMethodNotAllowed, "no method")
+	})
+	router.POST("/ping", func(c *Context) { c.Status(http.StatusOK) })
+
+	w := PerformRequest(router, http.MethodGet, "/ping")
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+	assert.Equal(t, "mw", w.Body.String())
+}
