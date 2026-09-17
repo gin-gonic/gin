@@ -1208,6 +1208,10 @@ func (c *Context) Render(code int, r render.Render) {
 		return
 	}
 
+	if c.Writer.Written() {
+		debugPrint("[WARNING] Response body has already been written. Wanted to override response.")
+	}
+
 	if err := r.Render(c.Writer); err != nil {
 		// Pushing error to c.Errors
 		_ = c.Error(err)
