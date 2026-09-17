@@ -273,6 +273,24 @@ func TestRouteRedirectFixedPath(t *testing.T) {
 	assert.Equal(t, http.StatusTemporaryRedirect, w.Code)
 }
 
+func TestRouteRedirectFixedPathWithRawPath(t *testing.T) {
+	router := New()
+	router.RedirectFixedPath = true
+	router.RedirectTrailingSlash = false
+	router.UseRawPath = true
+	router.UnescapePathValues = false
+
+	router.GET("/あ", func(c *Context) {})
+
+	w := PerformRequest(router, http.MethodGet, "/%e3%81%82")
+	assert.Equal(t, "/%E3%81%82", w.Header().Get("Location"))
+	assert.Equal(t, http.StatusMovedPermanently, w.Code)
+
+	w = PerformRequest(router, http.MethodGet, "/%E3%81%82")
+	assert.Empty(t, w.Header().Get("Location"))
+	assert.Equal(t, http.StatusOK, w.Code)
+}
+
 // TestContextParamsGet tests that a parameter can be parsed from the URL.
 func TestRouteParamsByName(t *testing.T) {
 	name := ""
