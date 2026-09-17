@@ -4031,3 +4031,23 @@ func BenchmarkGetMapFromFormData(b *testing.B) {
 		})
 	}
 }
+
+func TestContextNegotiateFormatDoesNotMatchPrefixes(t *testing.T) {
+	for _, tc := range []struct {
+		accepted string
+		offered  string
+		want     string
+	}{
+		{"application/json", "application/json-seq", ""},
+		{"application/json-seq", "application/json", ""},
+		{"text/plain", "text/plaintext", ""},
+		{"application/json", "application/json", "application/json"},
+		{"application/*", "application/json-seq", "application/json-seq"},
+	} {
+		t.Run(tc.accepted+"/"+tc.offered, func(t *testing.T) {
+			c, _ := CreateTestContext(httptest.NewRecorder())
+			c.SetAccepted(tc.accepted)
+			assert.Equal(t, tc.want, c.NegotiateFormat(tc.offered))
+		})
+	}
+}
