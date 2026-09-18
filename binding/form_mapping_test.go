@@ -198,16 +198,28 @@ func TestMapFormWithTagMapPointer(t *testing.T) {
 		{"empty string map", new(map[string]string), map[string][]string{}, new(map[string]string), nil},
 		{"empty string slice map", new(map[string][]string), map[string][]string{}, new(map[string][]string), nil},
 		{"nil string map", new(map[string]string), form, &map[string]string{"foo": "last", "empty": ""}, nil},
-		{"nil string slice map", new(map[string][]string), form,
-			&map[string][]string{"foo": {"first", "last"}, "empty": {""}}, nil},
+		{
+			"nil string slice map", new(map[string][]string), form,
+			&map[string][]string{"foo": {"first", "last"}, "empty": {""}}, nil,
+		},
 		{"unsupported value", new(map[string]int), form, new(map[string]int), ErrConvertToMapString},
 		{"unsupported slice value", new(map[string][]int), form, new(map[string][]int), ErrConvertMapStringSlice},
 		{"unsupported named map", new(namedMap), form, new(namedMap), ErrConvertToMapString},
 		{"unsupported named slice map", new(namedSliceMap), form, new(namedSliceMap), ErrConvertMapStringSlice},
-		{"string map by value", map[string]string{"foo": "stale", "keep": "value"}, form,
-			map[string]string{"foo": "last", "empty": "", "keep": "value"}, nil},
-		{"string slice map by value", map[string][]string{"foo": {"stale"}, "keep": {"value"}}, form,
-			map[string][]string{"foo": {"first", "last"}, "empty": {""}, "keep": {"value"}}, nil},
+		{
+			"string map by value",
+			map[string]string{"foo": "stale", "keep": "value"},
+			form,
+			map[string]string{"foo": "last", "empty": "", "keep": "value"},
+			nil,
+		},
+		{
+			"string slice map by value",
+			map[string][]string{"foo": {"stale"}, "keep": {"value"}},
+			form,
+			map[string][]string{"foo": {"first", "last"}, "empty": {""}, "keep": {"value"}},
+			nil,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
