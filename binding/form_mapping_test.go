@@ -182,6 +182,51 @@ func TestMapFormWithTag(t *testing.T) {
 	assert.Equal(t, 6, s.F)
 }
 
+func TestMapFormWithTagMapPointer(t *testing.T) {
+	type namedMap map[string]string
+	type namedSliceMap map[string][]string
+	form := map[string][]string{"foo": {"first", "last"}, "empty": {""}}
+	tests := []struct {
+		name string
+		obj  any
+		form map[string][]string
+		want any
+		err  error
+	}{
+		{"absent string map", new(map[string]string), nil, new(map[string]string), nil},
+		{"absent string slice map", new(map[string][]string), nil, new(map[string][]string), nil},
+		{"empty string map", new(map[string]string), map[string][]string{}, new(map[string]string), nil},
+		{"empty string slice map", new(map[string][]string), map[string][]string{}, new(map[string][]string), nil},
+		{"nil string map", new(map[string]string), form, &map[string]string{"foo": "last", "empty": ""}, nil},
+		{"nil string slice map", new(map[string][]string), form,
+			&map[string][]string{"foo": {"first", "last"}, "empty": {""}}, nil},
+		{"unsupported value", new(map[string]int), form, new(map[string]int), ErrConvertToMapString},
+		{"unsupported slice value", new(map[string][]int), form, new(map[string][]int), ErrConvertMapStringSlice},
+		{"unsupported named map", new(namedMap), form, new(namedMap), ErrConvertToMapString},
+		{"unsupported named slice map", new(namedSliceMap), form, new(namedSliceMap), ErrConvertMapStringSlice},
+		{"string map by value", map[string]string{"foo": "stale", "keep": "value"}, form,
+			map[string]string{"foo": "last", "empty": "", "keep": "value"}, nil},
+		{"string slice map by value", map[string][]string{"foo": {"stale"}, "keep": {"value"}}, form,
+			map[string][]string{"foo": {"first", "last"}, "empty": {""}, "keep": {"value"}}, nil},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var err error
+			require.NotPanics(t, func() {
+				err = MapFormWithTag(tt.obj, tt.form, "externalTag")
+			})
+			if tt.err != nil {
+				require.ErrorIs(t, err, tt.err)
+				assert.Same(t, tt.err, err)
+			} else {
+				require.NoError(t, err)
+			}
+			assert.Equal(t, tt.want, tt.obj)
+			assert.Equal(t, map[string][]string{"foo": {"first", "last"}, "empty": {""}}, form)
+		})
+	}
+}
+
 func TestMappingTime(t *testing.T) {
 	var s struct {
 		Time      time.Time
