@@ -5,6 +5,7 @@
 package render
 
 import (
+	"encoding/json"
 	"encoding/xml"
 	"errors"
 	"html/template"
@@ -259,6 +260,48 @@ func TestRenderAsciiJSON(t *testing.T) {
 	err = (AsciiJSON{data2}).Render(w2)
 	require.NoError(t, err)
 	assert.Equal(t, "3.1415926", w2.Body.String())
+}
+
+func TestRenderAsciiJSONNonBMP(t *testing.T) {
+	// Non-BMP code points (> U+FFFF) must be encoded as UTF-16 surrogate pairs.
+	// Previously, fmt.Appendf(buf, "\\u%04x", r) emitted 5+ hex digits for such
+	// runes, which is invalid JSON — decoders misread the first 4 digits as a
+	// different character and left the remaining digit(s) as literal text.
+	// RFC 8259 §7: \u escapes are exactly 4 hex digits; non-BMP values use pairs.
+
+	cases := []struct {
+		name    string
+		input   string
+		want    string // exact \uHHHH\uLLLL literal
+		decoded string // value after json.Unmarshal round-trip
+	}{
+		// 😀 U+1F600: high=\uD83D low=\uDE00
+		{"grinning face", "😀", `\ud83d\ude00`, "😀"},
+		// 𝄞 U+1D11E: high=\uD834 low=\uDD1E
+		{"musical symbol G clef", "𝄞", `\ud834\udd1e`, "𝄞"},
+		// 𠀀 U+20000 (first CJK Extension B): high=\uD840 low=\uDC00
+		{"CJK Extension B first", "𠀀", `\ud840\udc00`, "𠀀"},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			w := httptest.NewRecorder()
+			err := (AsciiJSON{map[string]string{"v": tc.input}}).Render(w)
+			require.NoError(t, err)
+
+			body := w.Body.String()
+
+			// The surrogate pair must appear verbatim in the raw output.
+			assert.Contains(t, body, tc.want,
+				"expected surrogate pair %q in raw output %q", tc.want, body)
+
+			// The round-trip via json.Unmarshal must recover the original rune.
+			var decoded map[string]string
+			require.NoError(t, json.Unmarshal([]byte(body), &decoded))
+			assert.Equal(t, tc.decoded, decoded["v"],
+				"round-trip mismatch: got %q want %q", decoded["v"], tc.decoded)
+		})
+	}
 }
 
 func TestRenderAsciiJSONFail(t *testing.T) {
