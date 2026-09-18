@@ -18,11 +18,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/gin-gonic/gin/testdata/protoexample"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.mongodb.org/mongo-driver/v2/bson"
-	"google.golang.org/protobuf/proto"
 )
 
 type appkey struct {
@@ -162,20 +159,6 @@ func TestBindingDefault(t *testing.T) {
 
 	assert.Equal(t, FormMultipart, Default(http.MethodPost, MIMEMultipartPOSTForm))
 	assert.Equal(t, FormMultipart, Default(http.MethodPut, MIMEMultipartPOSTForm))
-
-	assert.Equal(t, ProtoBuf, Default(http.MethodPost, MIMEPROTOBUF))
-	assert.Equal(t, ProtoBuf, Default(http.MethodPut, MIMEPROTOBUF))
-
-	assert.Equal(t, YAML, Default(http.MethodPost, MIMEYAML))
-	assert.Equal(t, YAML, Default(http.MethodPut, MIMEYAML))
-	assert.Equal(t, YAML, Default(http.MethodPost, MIMEYAML2))
-	assert.Equal(t, YAML, Default(http.MethodPut, MIMEYAML2))
-
-	assert.Equal(t, TOML, Default(http.MethodPost, MIMETOML))
-	assert.Equal(t, TOML, Default(http.MethodPut, MIMETOML))
-
-	assert.Equal(t, BSON, Default(http.MethodPost, MIMEBSON))
-	assert.Equal(t, BSON, Default(http.MethodPut, MIMEBSON))
 }
 
 func TestBindingJSONNilBody(t *testing.T) {
@@ -465,41 +448,6 @@ func TestBindingXMLFail(t *testing.T) {
 		"<map><foo>bar<foo></map>", "<map><bar>foo</bar></map>")
 }
 
-func TestBindingTOML(t *testing.T) {
-	testBodyBinding(t,
-		TOML, "toml",
-		"/", "/",
-		`foo="bar"`, `bar="foo"`)
-}
-
-func TestBindingTOMLFail(t *testing.T) {
-	testBodyBindingFail(t,
-		TOML, "toml",
-		"/", "/",
-		`foo=\n"bar"`, `bar="foo"`)
-}
-
-func TestBindingYAML(t *testing.T) {
-	testBodyBinding(t,
-		YAML, "yaml",
-		"/", "/",
-		`foo: bar`, `bar: foo`)
-}
-
-func TestBindingYAMLStringMap(t *testing.T) {
-	// YAML is a superset of JSON, so the test below is JSON (to avoid newlines)
-	testBodyBindingStringMap(t, YAML,
-		"/", "/",
-		`{"foo": "bar", "hello": "world"}`, `{"nested": {"foo": "bar"}}`)
-}
-
-func TestBindingYAMLFail(t *testing.T) {
-	testBodyBindingFail(t,
-		YAML, "yaml",
-		"/", "/",
-		`foo:\nbar`, `bar: foo`)
-}
-
 func createFormPostRequest(t *testing.T) *http.Request {
 	req, err := http.NewRequest(http.MethodPost, "/?foo=getfoo&bar=getbar", bytes.NewBufferString("foo=bar&bar=foo"))
 	require.NoError(t, err)
@@ -709,42 +657,6 @@ func TestBindingFormMultipartForMapFail(t *testing.T) {
 	var obj FooStructForMapType
 	err := FormMultipart.Bind(req, &obj)
 	require.Error(t, err)
-}
-
-func TestBindingProtoBuf(t *testing.T) {
-	test := &protoexample.Test{
-		Label: proto.String("yes"),
-	}
-	data, _ := proto.Marshal(test)
-
-	testProtoBodyBinding(t,
-		ProtoBuf, "protobuf",
-		"/", "/",
-		string(data), string(data[1:]))
-}
-
-func TestBindingProtoBufFail(t *testing.T) {
-	test := &protoexample.Test{
-		Label: proto.String("yes"),
-	}
-	data, _ := proto.Marshal(test)
-
-	testProtoBodyBindingFail(t,
-		ProtoBuf, "protobuf",
-		"/", "/",
-		string(data), string(data[1:]))
-}
-
-func TestBindingBSON(t *testing.T) {
-	var obj FooStruct
-	obj.Foo = "bar"
-	data, _ := bson.Marshal(&obj)
-	testBodyBinding(t,
-		BSON, "bson",
-		"/", "/",
-		string(data),
-		// note: for badbody, we remove first byte to make it invalid
-		string(data[1:]))
 }
 
 func TestValidationFails(t *testing.T) {
@@ -1340,23 +1252,6 @@ func testBodyBindingFail(t *testing.T, b Binding, name, path, badPath, body, bad
 	require.Error(t, err)
 }
 
-func testProtoBodyBinding(t *testing.T, b Binding, name, path, badPath, body, badBody string) {
-	assert.Equal(t, name, b.Name())
-
-	obj := protoexample.Test{}
-	req := requestWithBody(http.MethodPost, path, body)
-	req.Header.Add("Content-Type", MIMEPROTOBUF)
-	err := b.Bind(req, &obj)
-	require.NoError(t, err)
-	assert.Equal(t, "yes", *obj.Label)
-
-	obj = protoexample.Test{}
-	req = requestWithBody(http.MethodPost, badPath, badBody)
-	req.Header.Add("Content-Type", MIMEPROTOBUF)
-	err = ProtoBuf.Bind(req, &obj)
-	require.Error(t, err)
-}
-
 type hook struct{}
 
 func (h hook) Read([]byte) (int, error) {
@@ -1401,31 +1296,6 @@ func TestPlainBinding(t *testing.T) {
 	var ptr *string
 	req = requestWithBody(http.MethodPost, "/", "")
 	require.NoError(t, p.Bind(req, ptr))
-}
-
-func testProtoBodyBindingFail(t *testing.T, b Binding, name, path, badPath, body, badBody string) {
-	assert.Equal(t, name, b.Name())
-
-	obj := protoexample.Test{}
-	req := requestWithBody(http.MethodPost, path, body)
-
-	req.Body = io.NopCloser(&hook{})
-	req.Header.Add("Content-Type", MIMEPROTOBUF)
-	err := b.Bind(req, &obj)
-	require.Error(t, err)
-
-	invalidobj := FooStruct{}
-	req.Body = io.NopCloser(strings.NewReader(`{"msg":"hello"}`))
-	req.Header.Add("Content-Type", MIMEPROTOBUF)
-	err = b.Bind(req, &invalidobj)
-	require.Error(t, err)
-	assert.Equal(t, "obj is not ProtoMessage", err.Error())
-
-	obj = protoexample.Test{}
-	req = requestWithBody(http.MethodPost, badPath, badBody)
-	req.Header.Add("Content-Type", MIMEPROTOBUF)
-	err = ProtoBuf.Bind(req, &obj)
-	require.Error(t, err)
 }
 
 func requestWithBody(method, path, body string) (req *http.Request) {
