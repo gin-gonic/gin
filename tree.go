@@ -418,6 +418,14 @@ type skippedNode struct {
 func (n *node) getValue(path string, params *Params, skippedNodes *[]skippedNode, unescape bool) (value nodeValue) {
 	var globalParamsCount int16
 
+	// Reset the skipped-nodes stack on entry. getValue is called once per
+	// method tree (e.g. in the HandleMethodNotAllowed loop) reusing the same
+	// pooled Context stack, and the walk below grows it via a raw reslice that
+	// cannot exceed engine.maxSections. Without this reset the residue from a
+	// previous tree leaks into the next call and can panic with "slice bounds
+	// out of range" once the accumulated length passes the capacity.
+	*skippedNodes = (*skippedNodes)[:0]
+
 walk: // Outer loop for walking the tree
 	for {
 		prefix := n.path
