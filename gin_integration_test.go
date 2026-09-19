@@ -25,6 +25,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// testRequest sends a request and validates its response.
 // params[0]=url example:http://127.0.0.1:8080/index (cannot be empty)
 // params[1]=response status (custom compare status) default:"200 OK"
 // params[2]=response body (custom compare content)  default:"it worked"
