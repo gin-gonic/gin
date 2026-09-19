@@ -1111,3 +1111,20 @@ func TestTreeFindCaseInsensitivePathWildcardParamAndStaticChild(t *testing.T) {
 		t.Errorf("Wrong result for '/prefix/something': %s", string(out))
 	}
 }
+
+func TestTreeWildcardParamImproperBoundaryCoverage(t *testing.T) {
+	tree := &node{}
+
+	// Register a path with a wild named parameter segment
+	tree.addRoute("/submit/:info", HandlersChain{func(c *Context) {}})
+
+	// Pass a path containing a multi-byte sequence where a standard byte segment lookup
+	// drifts directly into the middle of a continuation block.
+	// This exercises our inner boundary alignment decrement loop.
+	path := "/submit/जय"
+	value := tree.getValue(path, &Params{}, nil, false)
+
+	if value.handlers == nil {
+		t.Errorf("Routing fallback failed on multi-byte parameter verification evaluation.")
+	}
+}
