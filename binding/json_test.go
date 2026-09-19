@@ -37,6 +37,59 @@ func TestJSONBindingBindBodyMap(t *testing.T) {
 	assert.Equal(t, "world", s["hello"])
 }
 
+func TestJSONBindingWithTimeFormat(t *testing.T) {
+	// Test that time_format tag works with JSON binding (issue #2170)
+	type TimeFormatStruct struct {
+		Timestamp time.Time `json:"Timestamp" time_format:"2006-01-02 15:04:05"`
+		UnixTime   time.Time `json:"UnixTime" time_format:"unix"`
+		UnixNano   time.Time `json:"UnixNano" time_format:"unixNano"`
+	}
+
+	var s TimeFormatStruct
+	err := jsonBinding{}.BindBody([]byte(`{"Timestamp": "2001-11-11 11:11:11", "UnixTime": 1575528300, "UnixNano": 1575528300000000000}`), &s)
+	require.NoError(t, err)
+	assert.Equal(t, time.Date(2001, 11, 11, 11, 11, 11, 0, time.Local), s.Timestamp)
+	assert.Equal(t, time.Unix(1575528300, 0), s.UnixTime)
+	assert.Equal(t, time.Unix(0, 1575528300000000000), s.UnixNano)
+}
+
+func TestJSONBindingWithTimeFormatAndUTC(t *testing.T) {
+	// Test that time_format works with time_utc tag in JSON binding
+	type TimeUTCStruct struct {
+		LocalTime time.Time `json:"local_time" time_format:"2006-01-02" time_utc:"1"`
+	}
+
+	var s TimeUTCStruct
+	err := jsonBinding{}.BindBody([]byte(`{"local_time": "2001-11-11"}`), &s)
+	require.NoError(t, err)
+	assert.Equal(t, time.Date(2001, 11, 11, 0, 0, 0, 0, time.UTC), s.LocalTime)
+}
+
+func TestJSONBindingWithTimeFormatAndLocation(t *testing.T) {
+	// Test that time_format works with time_location tag in JSON binding
+	type TimeLocationStruct struct {
+		LocalTime time.Time `json:"local_time" time_format:"2006-01-02" time_location:"Asia/Shanghai"`
+	}
+
+	var s TimeLocationStruct
+	err := jsonBinding{}.BindBody([]byte(`{"local_time": "2001-11-11"}`), &s)
+	require.NoError(t, err)
+	loc, _ := time.LoadLocation("Asia/Shanghai")
+	assert.Equal(t, time.Date(2001, 11, 11, 0, 0, 0, 0, loc), s.LocalTime)
+}
+
+func TestJSONBindingWithoutTimeFormat(t *testing.T) {
+	// Test that RFC3339 format still works (no time_format tag)
+	type NoTimeFormatStruct struct {
+		Timestamp time.Time `json:"timestamp"`
+	}
+
+	var s NoTimeFormatStruct
+	err := jsonBinding{}.BindBody([]byte(`{"timestamp": "2001-11-11T11:11:11Z"}`), &s)
+	require.NoError(t, err)
+	assert.Equal(t, time.Date(2001, 11, 11, 11, 11, 11, 0, time.UTC), s.Timestamp)
+}
+
 func TestCustomJsonCodec(t *testing.T) {
 	// Restore json encoding configuration after testing
 	oldMarshal := json.API
