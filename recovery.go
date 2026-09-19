@@ -42,6 +42,7 @@ func CustomRecovery(handle RecoveryFunc) HandlerFunc {
 }
 
 // RecoveryWithWriter returns a middleware for a given writer that recovers from any panics and writes a 500 if there was one.
+// If recovery handlers are provided, only the first one is used.
 func RecoveryWithWriter(out io.Writer, recovery ...RecoveryFunc) HandlerFunc {
 	if len(recovery) > 0 {
 		return CustomRecoveryWithWriter(out, recovery[0])
