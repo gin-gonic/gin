@@ -42,6 +42,12 @@ var cleanTests = []cleanPathTest{
 	{"///abc", "/abc"},
 	{"//abc//", "/abc/"},
 
+	// Prevent scheme-relative and backslash-based open redirect (security)
+	{"/\\evil.com", "/evil.com"},
+	{"\\evil.com", "/evil.com"},
+	{"\\\\evil.com", "/evil.com"},
+	{"/\\/evil.com", "/evil.com"},
+
 	// Remove . elements
 	{".", "/"},
 	{"./", "/"},
