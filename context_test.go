@@ -846,8 +846,37 @@ func TestContextQuery(t *testing.T) {
 	assert.Empty(t, c.PostForm("foo"))
 }
 
+func TestContextQueryAllocations(t *testing.T) {
+	// URLs with empty query strings should not cause allocations
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	c.Request, _ = http.NewRequest(http.MethodGet, "http://example.com/", nil)
+
+	allocs := testing.AllocsPerRun(100, func() {
+		// Reset the query cache before each run because testing.AllocsPerRun does a warm-up for each test
+		c.queryCache = nil
+		_, _ = c.GetQuery("foo")
+	})
+	assert.Zero(t, allocs, "expected GetQuery to not cause allocations with empty query strings")
+
+	allocs = testing.AllocsPerRun(100, func() {
+		// Reset the query cache before each run because testing.AllocsPerRun does a warm-up for each test
+		c.queryCache = nil
+		_, _ = c.GetQueryArray("foo")
+	})
+	assert.Zero(t, allocs, "expected GetQueryArray to not cause allocations with empty query strings")
+
+	allocs = testing.AllocsPerRun(100, func() {
+		// Reset the query cache before each run because testing.AllocsPerRun does a warm-up for each test
+		c.queryCache = nil
+		_, _ = c.GetQueryMap("foo")
+	})
+	assert.Zero(t, allocs, "expected GetQueryMap to not cause allocations with empty query strings")
+}
+
 func TestContextInitQueryCache(t *testing.T) {
 	validURL, err := url.Parse("https://github.com/gin-gonic/gin/pull/3969?key=value&otherkey=othervalue")
+	require.NoError(t, err)
+	noQSURL, err := url.Parse("https://github.com/gin-gonic/gin/pull/3969")
 	require.NoError(t, err)
 
 	tests := []struct {
@@ -871,6 +900,13 @@ func TestContextInitQueryCache(t *testing.T) {
 		{
 			testName:           "queryCache should be empty when Request.URL is nil",
 			testContext:        &Context{Request: &http.Request{URL: nil}}, // explicit nil for readability
+			expectedQueryCache: url.Values{},
+		},
+		{
+			testName: "queryCache should be empty when URL has no query string",
+			testContext: &Context{
+				Request: &http.Request{URL: noQSURL},
+			},
 			expectedQueryCache: url.Values{},
 		},
 		{
