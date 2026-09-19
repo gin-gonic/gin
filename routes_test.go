@@ -51,7 +51,7 @@ func testRouteOK(method string, t *testing.T) {
 	assert.True(t, passedAny)
 }
 
-// TestSingleRouteOK tests that POST route is correctly invoked.
+// testRouteNotOK tests that a request with the wrong method returns a not found response.
 func testRouteNotOK(method string, t *testing.T) {
 	passed := false
 	router := New()
@@ -65,7 +65,7 @@ func testRouteNotOK(method string, t *testing.T) {
 	assert.Equal(t, http.StatusNotFound, w.Code)
 }
 
-// TestSingleRouteOK tests that POST route is correctly invoked.
+// testRouteNotOK2 tests that a request with the wrong method returns a method not allowed response.
 func testRouteNotOK2(method string, t *testing.T) {
 	passed := false
 	router := New()
@@ -273,7 +273,7 @@ func TestRouteRedirectFixedPath(t *testing.T) {
 	assert.Equal(t, http.StatusTemporaryRedirect, w.Code)
 }
 
-// TestContextParamsGet tests that a parameter can be parsed from the URL.
+// TestRouteParamsByName tests that route parameters can be parsed by name.
 func TestRouteParamsByName(t *testing.T) {
 	name := ""
 	lastName := ""
@@ -305,7 +305,7 @@ func TestRouteParamsByName(t *testing.T) {
 	assert.Equal(t, "/is/super/great", wild)
 }
 
-// TestContextParamsGet tests that a parameter can be parsed from the URL even with extra slashes.
+// TestRouteParamsByNameWithExtraSlash tests that route parameters can be parsed by name even with extra slashes.
 func TestRouteParamsByNameWithExtraSlash(t *testing.T) {
 	name := ""
 	lastName := ""
@@ -377,7 +377,7 @@ func TestRouteParamsNotEmpty(t *testing.T) {
 	assert.Equal(t, "/is/super/great", wild)
 }
 
-// TestHandleStaticFile - ensure the static file handles properly
+// TestRouteStaticFile tests that a static file is served correctly.
 func TestRouteStaticFile(t *testing.T) {
 	// SETUP file
 	testRoot, _ := os.Getwd()
@@ -412,7 +412,7 @@ func TestRouteStaticFile(t *testing.T) {
 	assert.Equal(t, http.StatusOK, w3.Code)
 }
 
-// TestHandleStaticFile - ensure the static file handles properly
+// TestRouteStaticFileFS tests that a static file from an http.FileSystem is served correctly.
 func TestRouteStaticFileFS(t *testing.T) {
 	// SETUP file
 	testRoot, _ := os.Getwd()
@@ -446,7 +446,7 @@ func TestRouteStaticFileFS(t *testing.T) {
 	assert.Equal(t, http.StatusOK, w3.Code)
 }
 
-// TestHandleStaticDir - ensure the root/sub dir handles properly
+// TestRouteStaticListingDir tests that static directory listing is enabled when configured.
 func TestRouteStaticListingDir(t *testing.T) {
 	router := New()
 	router.StaticFS("/", Dir("./", true))
@@ -458,7 +458,7 @@ func TestRouteStaticListingDir(t *testing.T) {
 	assert.Equal(t, "text/html; charset=utf-8", w.Header().Get("Content-Type"))
 }
 
-// TestHandleHeadToDir - ensure the root/sub dir handles properly
+// TestRouteStaticNoListing tests that static directory listing is disabled by default.
 func TestRouteStaticNoListing(t *testing.T) {
 	router := New()
 	router.Static("/", "./")
@@ -656,7 +656,7 @@ func TestRouterStaticFSFileNotFound(t *testing.T) {
 	})
 }
 
-// Reproduction test for the bug of issue #1805
+// TestMiddlewareCalledOnceByRouterStaticFSNotFound reproduces the bug reported in issue #1805.
 func TestMiddlewareCalledOnceByRouterStaticFSNotFound(t *testing.T) {
 	router := New()
 

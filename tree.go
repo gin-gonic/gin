@@ -107,7 +107,7 @@ type node struct {
 	fullPath  string
 }
 
-// Increments priority of the given child and reorders if necessary
+// incrementChildPrio increments the priority of the given child and reorders it if necessary.
 func (n *node) incrementChildPrio(pos int) int {
 	cs := n.children
 	cs[pos].priority++
@@ -683,7 +683,7 @@ func (n *node) findCaseInsensitivePath(path string, fixTrailingSlash bool) ([]by
 	return ciPath, ciPath != nil
 }
 
-// Shift bytes in array by n bytes left
+// shiftNRuneBytes shifts bytes in the array n positions to the left.
 func shiftNRuneBytes(rb [4]byte, n int) [4]byte {
 	switch n {
 	case 0:
@@ -699,7 +699,7 @@ func shiftNRuneBytes(rb [4]byte, n int) [4]byte {
 	}
 }
 
-// Recursive case-insensitive lookup function used by n.findCaseInsensitivePath
+// findCaseInsensitivePathRec recursively performs a case-insensitive path lookup.
 func (n *node) findCaseInsensitivePathRec(path string, ciPath []byte, rb [4]byte, fixTrailingSlash bool) []byte {
 	npLen := len(n.path)
 
