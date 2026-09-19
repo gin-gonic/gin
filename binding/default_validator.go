@@ -16,6 +16,15 @@ import (
 type defaultValidator struct {
 	once     sync.Once
 	validate *validator.Validate
+	options  []validator.Option
+}
+
+// NewStructValidator returns Gin's default StructValidator configured with
+// options passed to validator.New.
+func NewStructValidator(options ...validator.Option) StructValidator {
+	return &defaultValidator{
+		options: append([]validator.Option(nil), options...),
+	}
 }
 
 type SliceValidationError []error
@@ -92,7 +101,7 @@ func (v *defaultValidator) Engine() any {
 
 func (v *defaultValidator) lazyinit() {
 	v.once.Do(func() {
-		v.validate = validator.New()
+		v.validate = validator.New(v.options...)
 		v.validate.SetTagName("binding")
 	})
 }
