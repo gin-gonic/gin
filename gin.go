@@ -182,6 +182,11 @@ type Engine struct {
 	// UseH2C enable h2c support.
 	UseH2C bool
 
+	// H2CConfig optionally specifies the http2.Server configuration used for h2c connections.
+	// If nil, a default &http2.Server{} is used. Set this to configure options such as
+	// MaxConcurrentStreams, IdleTimeout, etc.
+	H2CConfig *http2.Server
+
 	// ContextWithFallback enable fallback Context.Deadline(), Context.Done(), Context.Err() and Context.Value() when Context.Request.Context() is not nil.
 	ContextWithFallback bool
 
@@ -260,6 +265,9 @@ func (engine *Engine) Handler() http.Handler {
 	}
 
 	h2s := &http2.Server{}
+	if engine.H2CConfig != nil {
+		h2s = engine.H2CConfig
+	}
 	return h2c.NewHandler(engine, h2s)
 }
 
