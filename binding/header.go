@@ -17,11 +17,18 @@ func (headerBinding) Name() string {
 }
 
 func (headerBinding) Bind(req *http.Request, obj any) error {
+	if err := (headerBinding{}).BindNoValidate(req, obj); err != nil {
+		return err
+	}
+	return validate(obj)
+}
+
+func (headerBinding) BindNoValidate(req *http.Request, obj any) error {
 	if err := mapHeader(obj, req.Header); err != nil {
 		return err
 	}
 
-	return validate(obj)
+	return nil
 }
 
 func mapHeader(ptr any, h map[string][]string) error {

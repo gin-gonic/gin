@@ -22,14 +22,26 @@ func (tomlBinding) Bind(req *http.Request, obj any) error {
 	return decodeToml(req.Body, obj)
 }
 
+func (tomlBinding) BindNoValidate(req *http.Request, obj any) error {
+	return decodeTomlNoValidate(req.Body, obj)
+}
+
 func (tomlBinding) BindBody(body []byte, obj any) error {
 	return decodeToml(bytes.NewReader(body), obj)
 }
 
+func (tomlBinding) BindBodyNoValidate(body []byte, obj any) error {
+	return decodeTomlNoValidate(bytes.NewReader(body), obj)
+}
+
 func decodeToml(r io.Reader, obj any) error {
-	decoder := toml.NewDecoder(r)
-	if err := decoder.Decode(obj); err != nil {
+	if err := decodeTomlNoValidate(r, obj); err != nil {
 		return err
 	}
 	return validate(obj)
+}
+
+func decodeTomlNoValidate(r io.Reader, obj any) error {
+	decoder := toml.NewDecoder(r)
+	return decoder.Decode(obj)
 }
