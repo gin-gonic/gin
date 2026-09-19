@@ -630,6 +630,16 @@ func TestRenderHTMLTemplate(t *testing.T) {
 	assert.Equal(t, "text/html; charset=utf-8", w.Header().Get("Content-Type"))
 }
 
+func TestRenderHTMLWithoutTemplate(t *testing.T) {
+	w := httptest.NewRecorder()
+
+	err := (HTML{}).Render(w)
+
+	require.EqualError(t, err, "html renderer is not configured")
+	assert.Empty(t, w.Body.String())
+	assert.Equal(t, "text/html; charset=utf-8", w.Header().Get("Content-Type"))
+}
+
 func TestRenderHTMLTemplateEmptyName(t *testing.T) {
 	w := httptest.NewRecorder()
 	templ := template.Must(template.New("").Parse(`Hello {{.name}}`))
