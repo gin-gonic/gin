@@ -143,15 +143,6 @@ func (group *RouterGroup) GET(relativePath string, handlers ...HandlerFunc) IRou
 	return group.handle(http.MethodGet, relativePath, handlers)
 }
 
-// QUERY is a shortcut for router.Handle("QUERY", path, handlers).
-//
-// QUERY is the safe and idempotent method defined by RFC 10008 that carries its
-// query in the request body. The body is read like any other body, for example
-// with c.ShouldBindJSON.
-func (group *RouterGroup) QUERY(relativePath string, handlers ...HandlerFunc) IRoutes {
-	return group.handle(MethodQuery, relativePath, handlers)
-}
-
 // DELETE is a shortcut for router.Handle("DELETE", path, handlers).
 func (group *RouterGroup) DELETE(relativePath string, handlers ...HandlerFunc) IRoutes {
 	return group.handle(http.MethodDelete, relativePath, handlers)
@@ -178,10 +169,12 @@ func (group *RouterGroup) HEAD(relativePath string, handlers ...HandlerFunc) IRo
 }
 
 // QUERY is a shortcut for router.Handle("QUERY", path, handlers).
-// The QUERY method is defined by RFC 10008 and is used to send a query
-// in the request body, similar to GET but with a body.
+//
+// QUERY is the safe and idempotent method defined by RFC 10008 that carries its
+// query in the request body. The body is read like any other body, for example
+// with c.ShouldBindJSON.
 func (group *RouterGroup) QUERY(relativePath string, handlers ...HandlerFunc) IRoutes {
-	return group.handle("QUERY", relativePath, handlers)
+	return group.handle(MethodQuery, relativePath, handlers)
 }
 
 // Any registers a route that matches all the HTTP methods.
