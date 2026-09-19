@@ -903,6 +903,15 @@ func TestContextDefaultQueryOnEmptyRequest(t *testing.T) {
 	})
 }
 
+func TestContextCookieWithNilRequest(t *testing.T) {
+	c, _ := CreateTestContext(httptest.NewRecorder()) // here c.Request == nil
+	assert.NotPanics(t, func() {
+		value, err := c.Cookie("NoCookie")
+		assert.Empty(t, value)
+		assert.ErrorIs(t, err, http.ErrNoCookie)
+	})
+}
+
 func TestContextQueryAndPostForm(t *testing.T) {
 	c, _ := CreateTestContext(httptest.NewRecorder())
 	body := strings.NewReader("foo=bar&page=11&both=&foo=second")
