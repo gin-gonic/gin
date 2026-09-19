@@ -776,6 +776,29 @@ func TestContextCopyNilErrorsAndAccepted(t *testing.T) {
 	assert.Nil(t, cp.Accepted)
 }
 
+func TestContextCopyRace(t *testing.T) {
+	c := &Context{}
+
+	var wg sync.WaitGroup
+	wg.Add(2)
+
+	go func() {
+		defer wg.Done()
+		for range 1000 {
+			c.Set("foo", "bar")
+		}
+	}()
+
+	go func() {
+		defer wg.Done()
+		for range 1000 {
+			c.Copy()
+		}
+	}()
+
+	wg.Wait()
+}
+
 func TestContextHandlerName(t *testing.T) {
 	c, _ := CreateTestContext(httptest.NewRecorder())
 	c.handlers = HandlersChain{func(c *Context) {}, handlerNameTest}
