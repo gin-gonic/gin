@@ -161,7 +161,8 @@ func resolveAddress(addr []string) string {
 	}
 }
 
-// https://stackoverflow.com/questions/53069040/checking-a-string-contains-only-ascii-characters
+// isASCII reports whether s contains only ASCII characters.
+// See https://stackoverflow.com/questions/53069040/checking-a-string-contains-only-ascii-characters.
 func isASCII(s string) bool {
 	for i := range len(s) {
 		if s[i] > unicode.MaxASCII {
