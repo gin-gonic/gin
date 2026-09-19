@@ -10,6 +10,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -51,7 +52,7 @@ func testRouteOK(method string, t *testing.T) {
 	assert.True(t, passedAny)
 }
 
-// TestSingleRouteOK tests that POST route is correctly invoked.
+// testRouteNotOK tests that a request with the wrong method returns a not found response.
 func testRouteNotOK(method string, t *testing.T) {
 	passed := false
 	router := New()
@@ -65,7 +66,7 @@ func testRouteNotOK(method string, t *testing.T) {
 	assert.Equal(t, http.StatusNotFound, w.Code)
 }
 
-// TestSingleRouteOK tests that POST route is correctly invoked.
+// testRouteNotOK2 tests that a request with the wrong method returns a method not allowed response.
 func testRouteNotOK2(method string, t *testing.T) {
 	passed := false
 	router := New()
@@ -84,6 +85,60 @@ func testRouteNotOK2(method string, t *testing.T) {
 
 	assert.False(t, passed)
 	assert.Equal(t, http.StatusMethodNotAllowed, w.Code)
+}
+
+// TestRouteQuery tests that a QUERY route is invoked and can read the request
+// body, which is the whole point of the method (RFC 10008).
+func TestRouteQuery(t *testing.T) {
+	type search struct {
+		Term string `json:"term"`
+	}
+
+	router := New()
+	router.QUERY("/search", func(c *Context) {
+		var body search
+		require.NoError(t, c.ShouldBindJSON(&body))
+		c.String(http.StatusOK, body.Term)
+	})
+
+	req := httptest.NewRequest(MethodQuery, "/search", strings.NewReader(`{"term":"gin"}`))
+	req.Header.Set("Content-Type", MIMEJSON)
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Equal(t, "gin", w.Body.String())
+}
+
+// TestRouteQueryNotRegisteredByAny documents that Any does not register QUERY,
+// so that existing Any routes keep matching exactly the methods they used to.
+func TestRouteQueryNotRegisteredByAny(t *testing.T) {
+	router := New()
+	router.Any("/test", func(c *Context) {
+		c.Status(http.StatusOK)
+	})
+
+	w := PerformRequest(router, MethodQuery, "/test")
+
+	assert.Equal(t, http.StatusNotFound, w.Code)
+}
+
+// TestQueryRoutesInterface tests that a router reached through IRoutes can
+// still register a QUERY route via the IQueryRoutes assertion.
+func TestQueryRoutesInterface(t *testing.T) {
+	router := New()
+
+	var routes IRoutes = router.Group("/v1")
+	queryRoutes, ok := routes.(IQueryRoutes)
+	require.True(t, ok)
+
+	queryRoutes.QUERY("/search", func(c *Context) {
+		c.Status(http.StatusOK)
+	})
+
+	w := PerformRequest(router, MethodQuery, "/v1/search")
+
+	assert.Equal(t, http.StatusOK, w.Code)
 }
 
 func TestRouterMethod(t *testing.T) {
@@ -273,7 +328,7 @@ func TestRouteRedirectFixedPath(t *testing.T) {
 	assert.Equal(t, http.StatusTemporaryRedirect, w.Code)
 }
 
-// TestContextParamsGet tests that a parameter can be parsed from the URL.
+// TestRouteParamsByName tests that route parameters can be parsed by name.
 func TestRouteParamsByName(t *testing.T) {
 	name := ""
 	lastName := ""
@@ -305,7 +360,7 @@ func TestRouteParamsByName(t *testing.T) {
 	assert.Equal(t, "/is/super/great", wild)
 }
 
-// TestContextParamsGet tests that a parameter can be parsed from the URL even with extra slashes.
+// TestRouteParamsByNameWithExtraSlash tests that route parameters can be parsed by name even with extra slashes.
 func TestRouteParamsByNameWithExtraSlash(t *testing.T) {
 	name := ""
 	lastName := ""
@@ -377,7 +432,7 @@ func TestRouteParamsNotEmpty(t *testing.T) {
 	assert.Equal(t, "/is/super/great", wild)
 }
 
-// TestHandleStaticFile - ensure the static file handles properly
+// TestRouteStaticFile tests that a static file is served correctly.
 func TestRouteStaticFile(t *testing.T) {
 	// SETUP file
 	testRoot, _ := os.Getwd()
@@ -412,7 +467,7 @@ func TestRouteStaticFile(t *testing.T) {
 	assert.Equal(t, http.StatusOK, w3.Code)
 }
 
-// TestHandleStaticFile - ensure the static file handles properly
+// TestRouteStaticFileFS tests that a static file from an http.FileSystem is served correctly.
 func TestRouteStaticFileFS(t *testing.T) {
 	// SETUP file
 	testRoot, _ := os.Getwd()
@@ -446,7 +501,7 @@ func TestRouteStaticFileFS(t *testing.T) {
 	assert.Equal(t, http.StatusOK, w3.Code)
 }
 
-// TestHandleStaticDir - ensure the root/sub dir handles properly
+// TestRouteStaticListingDir tests that static directory listing is enabled when configured.
 func TestRouteStaticListingDir(t *testing.T) {
 	router := New()
 	router.StaticFS("/", Dir("./", true))
@@ -458,7 +513,7 @@ func TestRouteStaticListingDir(t *testing.T) {
 	assert.Equal(t, "text/html; charset=utf-8", w.Header().Get("Content-Type"))
 }
 
-// TestHandleHeadToDir - ensure the root/sub dir handles properly
+// TestRouteStaticNoListing tests that static directory listing is disabled by default.
 func TestRouteStaticNoListing(t *testing.T) {
 	router := New()
 	router.Static("/", "./")
@@ -656,7 +711,7 @@ func TestRouterStaticFSFileNotFound(t *testing.T) {
 	})
 }
 
-// Reproduction test for the bug of issue #1805
+// TestMiddlewareCalledOnceByRouterStaticFSNotFound reproduces the bug reported in issue #1805.
 func TestMiddlewareCalledOnceByRouterStaticFSNotFound(t *testing.T) {
 	router := New()
 
