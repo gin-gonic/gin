@@ -440,6 +440,15 @@ walk: // Outer loop for walking the tree
 						//  strings.HasPrefix(n.children[len(n.children)-1].path, ":") == n.wildChild
 						if n.wildChild {
 							index := len(*skippedNodes)
+							// Preallocate capacity if necessary: the stack is
+							// sized from engine.maxSections when the Context was
+							// allocated, which can be stale for a pooled Context
+							// if routes were registered later.
+							if cap(*skippedNodes) < index+1 {
+								newSkippedNodes := make([]skippedNode, len(*skippedNodes), index+1)
+								copy(newSkippedNodes, *skippedNodes)
+								*skippedNodes = newSkippedNodes
+							}
 							*skippedNodes = (*skippedNodes)[:index+1]
 							(*skippedNodes)[index] = skippedNode{
 								path: prefix + path,
