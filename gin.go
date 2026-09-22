@@ -31,7 +31,7 @@ const (
 )
 
 // defaultReadHeaderTimeout is the default ReadHeaderTimeout applied to the
-// http.Server created by Run, RunTLS and RunListener. It protects against
+// http.Server created by Run, RunTLS, RunUnix and RunListener. It protects against
 // slowloris-style resource exhaustion when the caller does not configure a
 // custom http.Server.
 const defaultReadHeaderTimeout = 10 * time.Second
@@ -174,7 +174,7 @@ type Engine struct {
 	MaxMultipartMemory int64
 
 	// ReadHeaderTimeout is the maximum duration allowed for reading the request
-	// headers by the http.Server created through Run, RunTLS and RunListener.
+	// headers by the http.Server created through Run, RunTLS, RunUnix and RunListener.
 	// If zero or negative, a default of 10 seconds is used. Set to a positive
 	// value to customize, or use a custom http.Server directly to disable it.
 	ReadHeaderTimeout time.Duration
@@ -606,6 +606,9 @@ func (engine *Engine) RunTLS(addr, certFile, keyFile string) (err error) {
 // RunUnix attaches the router to a http.Server and starts listening and serving HTTP requests
 // through the specified unix socket (i.e. a file).
 // Note: this method will block the calling goroutine indefinitely unless an error happens.
+// The created http.Server is configured with a default ReadHeaderTimeout of 10 seconds
+// (configurable via Engine.ReadHeaderTimeout) to mitigate slowloris attacks.
+// For full control over timeouts, create a custom http.Server and use ServeHTTP.
 func (engine *Engine) RunUnix(file string) (err error) {
 	debugPrint("Listening and serving HTTP on unix:/%s", file)
 	defer func() { debugPrintError(err) }()
@@ -623,7 +626,8 @@ func (engine *Engine) RunUnix(file string) (err error) {
 	defer os.Remove(file)
 
 	server := &http.Server{ // #nosec G112
-		Handler: engine.Handler(),
+		Handler:           engine.Handler(),
+		ReadHeaderTimeout: engine.getReadHeaderTimeout(),
 	}
 	err = server.Serve(listener)
 	return
