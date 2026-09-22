@@ -956,6 +956,9 @@ func (c *Context) ShouldBindBodyWith(obj any, bb binding.BindingBody) (err error
 		}
 	}
 	if body == nil {
+		if c.Request.Body == nil {
+			return errors.New("cannot read nil body")
+		}
 		body, err = io.ReadAll(c.Request.Body)
 		if err != nil {
 			return err
