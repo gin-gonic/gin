@@ -132,9 +132,10 @@ func (c *Context) Copy() *Context {
 	cp.handlers = nil
 	cp.fullPath = c.fullPath
 
-	cKeys := c.Keys
 	c.mu.RLock()
-	cp.Keys = maps.Clone(cKeys)
+	if c.Keys != nil {
+		cp.Keys = maps.Clone(c.Keys)
+	}
 	c.mu.RUnlock()
 
 	cParams := c.Params
