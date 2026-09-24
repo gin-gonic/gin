@@ -289,7 +289,7 @@ func LoggerWithConfig(conf LoggerConfig) HandlerFunc {
 		param := LogFormatterParams{
 			Request: c.Request,
 			isTerm:  isTerm,
-			Keys:    c.Keys,
+			Keys:    c.GetKeysAsMap(),
 		}
 
 		// Stop timer
