@@ -845,6 +845,30 @@ func TestEngineHandleMethodNotAllowedCornerCase(t *testing.T) {
 	assert.Equal(t, http.StatusNotFound, w.Code)
 }
 
+func TestLateRouteRegistrationSkippedNodes(t *testing.T) {
+	router := New()
+	router.HandleMethodNotAllowed = true
+	router.GET("/a", func(c *Context) { c.Status(http.StatusOK) })
+
+	w := PerformRequest(router, http.MethodGet, "/a")
+	if w.Code != http.StatusOK {
+		t.Fatalf("warmup status = %d, want 200", w.Code)
+	}
+
+	h := func(c *Context) {}
+	router.GET("/x/y/z/w", h)
+	router.GET("/x/y/:id/w", h)
+	router.GET("/x/:id/z/w", h)
+	router.GET("/:id/y/z/w", h)
+
+	req := httptest.NewRequest(http.MethodPost, "/x/y/z/w/extra", nil)
+	w = httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+	if w.Code != http.StatusNotFound {
+		t.Fatalf("status = %d, want 404", w.Code)
+	}
+}
+
 // TestIssue4818_skippedNodesOverflow_Panic reproduces the panic from issue #4818:
 // with HandleMethodNotAllowed enabled, getValue is called once per method tree
 // reusing the same c.skippedNodes stack without resetting it, so residue
