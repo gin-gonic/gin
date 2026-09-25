@@ -994,6 +994,10 @@ func (c *Context) ShouldBindBodyWithPlain(obj any) error {
 // If it is it will then try to parse the headers defined in Engine.RemoteIPHeaders (defaulting to [X-Forwarded-For, X-Real-IP]).
 // If the headers are not syntactically valid OR the remote IP does not correspond to a trusted proxy,
 // the remote IP (coming from Request.RemoteAddr) is returned.
+//
+// When gin is listening on a unix socket the connection is always considered
+// trusted, so Engine.RemoteIPHeaders are consulted regardless of
+// Engine.SetTrustedProxies (including after SetTrustedProxies(nil)).
 func (c *Context) ClientIP() string {
 	// Check if we're running on a trusted platform, continue running backwards if error
 	if c.engine.TrustedPlatform != "" {
@@ -1041,6 +1045,14 @@ func (c *Context) ClientIP() string {
 				return ip
 			}
 		}
+	}
+
+	// remoteIP can be nil here only on a unix socket connection that carried
+	// no usable forwarding header (see the "always trust" branch above, which
+	// does not populate remoteIP). Return an empty string rather than the
+	// "<nil>" produced by net.IP(nil).String().
+	if remoteIP == nil {
+		return ""
 	}
 	return remoteIP.String()
 }

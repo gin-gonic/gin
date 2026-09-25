@@ -2300,6 +2300,24 @@ func TestContextClientIP(t *testing.T) {
 	assert.Empty(t, c.ClientIP())
 }
 
+// Over a unix socket without a usable forwarding header, ClientIP() must return
+// an empty string instead of "<nil>" (net.IP(nil).String()). See #2718.
+func TestContextClientIPUnixSocketWithoutHeaders(t *testing.T) {
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	c.Request, _ = http.NewRequest(http.MethodGet, "/", nil)
+	addr := &net.UnixAddr{Net: "unix", Name: "@"}
+	c.Request = c.Request.WithContext(context.WithValue(c.Request.Context(), http.LocalAddrContextKey, addr))
+	c.Request.RemoteAddr = addr.String()
+
+	assert.Empty(t, c.ClientIP())
+
+	c.Request.Header.Set("X-Real-IP", "5.6.7.8")
+	assert.Equal(t, "5.6.7.8", c.ClientIP())
+
+	c.Request.Header.Set("X-Forwarded-For", "1.2.3.4")
+	assert.Equal(t, "1.2.3.4", c.ClientIP())
+}
+
 func resetContextForClientIPTests(c *Context) {
 	c.Request.Header.Set("X-Real-IP", " 10.10.10.10  ")
 	c.Request.Header.Set("X-Forwarded-For", "  20.20.20.20, 30.30.30.30")

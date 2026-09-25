@@ -471,6 +471,12 @@ func (engine *Engine) prepareTrustedCIDRs() ([]*net.IPNet, error) {
 // by default. If you want to disable this feature, use
 // Engine.SetTrustedProxies(nil), then Context.ClientIP() will
 // return the remote address directly.
+//
+// Note: this does not apply when gin serves requests over a unix socket.
+// In that case ClientIP() always treats the connection as trusted and still
+// consults Engine.RemoteIPHeaders, even after SetTrustedProxies(nil). To make
+// ClientIP() ignore those headers for a unix socket, disable
+// Engine.ForwardedByClientIP (or set Engine.RemoteIPHeaders to nil).
 func (engine *Engine) SetTrustedProxies(trustedProxies []string) error {
 	engine.trustedProxies = trustedProxies
 	return engine.parseTrustedProxies()
