@@ -709,6 +709,30 @@ func TestContextGetStringMapStringSlice(t *testing.T) {
 	assert.Equal(t, []string{"foo"}, c.GetStringMapStringSlice("map")["foo"])
 }
 
+func TestCopyConcurrentWithSet(t *testing.T) {
+	c := &Context{}
+	var wg sync.WaitGroup
+	wg.Add(2)
+	go func() {
+		defer wg.Done()
+		for i := 0; i < 100; i++ {
+			c.Set(i, i)
+		}
+	}()
+	go func() {
+		defer wg.Done()
+		for i := 0; i < 100; i++ {
+			cp := c.Copy()
+			for k, v := range cp.Keys {
+				if k != v {
+					t.Errorf("copied key %v = %v, want %v", k, v, k)
+				}
+			}
+		}
+	}()
+	wg.Wait()
+}
+
 func TestContextCopy(t *testing.T) {
 	c, _ := CreateTestContext(httptest.NewRecorder())
 	c.index = 2
