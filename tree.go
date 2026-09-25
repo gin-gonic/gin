@@ -107,7 +107,7 @@ type node struct {
 	fullPath  string
 }
 
-// Increments priority of the given child and reorders if necessary
+// incrementChildPrio increments the priority of the given child and reorders it if necessary.
 func (n *node) incrementChildPrio(pos int) int {
 	cs := n.children
 	cs[pos].priority++
@@ -418,6 +418,14 @@ type skippedNode struct {
 func (n *node) getValue(path string, params *Params, skippedNodes *[]skippedNode, unescape bool) (value nodeValue) {
 	var globalParamsCount int16
 
+	// Reset the skipped-nodes stack on entry. getValue is called once per
+	// method tree (e.g. in the HandleMethodNotAllowed loop) reusing the same
+	// pooled Context stack, and the walk below grows it via a raw reslice that
+	// cannot exceed engine.maxSections. Without this reset the residue from a
+	// previous tree leaks into the next call and can panic with "slice bounds
+	// out of range" once the accumulated length passes the capacity.
+	*skippedNodes = (*skippedNodes)[:0]
+
 walk: // Outer loop for walking the tree
 	for {
 		prefix := n.path
@@ -683,7 +691,7 @@ func (n *node) findCaseInsensitivePath(path string, fixTrailingSlash bool) ([]by
 	return ciPath, ciPath != nil
 }
 
-// Shift bytes in array by n bytes left
+// shiftNRuneBytes shifts bytes in the array n positions to the left.
 func shiftNRuneBytes(rb [4]byte, n int) [4]byte {
 	switch n {
 	case 0:
@@ -699,7 +707,7 @@ func shiftNRuneBytes(rb [4]byte, n int) [4]byte {
 	}
 }
 
-// Recursive case-insensitive lookup function used by n.findCaseInsensitivePath
+// findCaseInsensitivePathRec recursively performs a case-insensitive path lookup.
 func (n *node) findCaseInsensitivePathRec(path string, ciPath []byte, rb [4]byte, fixTrailingSlash bool) []byte {
 	npLen := len(n.path)
 
