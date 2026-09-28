@@ -140,6 +140,8 @@ type setOptions struct {
 	defaultValue    string
 	// parser specifies what interface to use for reading the request & default values (e.g. `encoding.TextUnmarshaler`)
 	parser string
+	// fieldName is the tag value (or the Go field name when the tag is empty) used to prefix bind errors
+	fieldName string
 }
 
 func tryToSetValue(value reflect.Value, field reflect.StructField, setter setter, tag string) (bool, error) {
@@ -176,6 +178,7 @@ func tryToSetValue(value reflect.Value, field reflect.StructField, setter setter
 		}
 	}
 
+	setOpt.fieldName = tagValue
 	return setter.TrySet(value, field, tagValue, setOpt)
 }
 
@@ -196,8 +199,8 @@ func trySetCustom(val string, value reflect.Value) (isSet bool, err error) {
 	return false, nil
 }
 
-// wrapBindErr prefixes a bind error with the form/query field name.
-func wrapBindErr(fieldName string, err error) error {
+// prefixBindErr prefixes a bind error with the form/query field name.
+func prefixBindErr(fieldName string, err error) error {
 	if err == nil || fieldName == "" {
 		return err
 	}
@@ -255,6 +258,9 @@ func setByForm(value reflect.Value, field reflect.StructField, form map[string][
 	if !ok && !opt.isDefaultExists {
 		return false, nil
 	}
+	if opt.fieldName == "" {
+		opt.fieldName = tagValue
+	}
 
 	switch value.Kind() {
 	case reflect.Slice:
@@ -272,9 +278,9 @@ func setByForm(value reflect.Value, field reflect.StructField, form map[string][
 		}
 
 		if ok, err = trySetUsingParser(vs[0], value, opt.parser); ok {
-			return ok, wrapBindErr(tagValue, err)
+			return ok, prefixBindErr(opt.fieldName, err)
 		} else if ok, err = trySetCustom(vs[0], value); ok {
-			return ok, wrapBindErr(tagValue, err)
+			return ok, prefixBindErr(opt.fieldName, err)
 		}
 
 		if vs, err = trySplit(vs, field); err != nil {
@@ -297,9 +303,9 @@ func setByForm(value reflect.Value, field reflect.StructField, form map[string][
 		}
 
 		if ok, err = trySetUsingParser(vs[0], value, opt.parser); ok {
-			return ok, wrapBindErr(tagValue, err)
+			return ok, prefixBindErr(opt.fieldName, err)
 		} else if ok, err = trySetCustom(vs[0], value); ok {
-			return ok, wrapBindErr(tagValue, err)
+			return ok, prefixBindErr(opt.fieldName, err)
 		}
 
 		if vs, err = trySplit(vs, field); err != nil {
@@ -320,20 +326,24 @@ func setByForm(value reflect.Value, field reflect.StructField, form map[string][
 		}
 
 		if ok, err = trySetUsingParser(val, value, opt.parser); ok {
-			return ok, wrapBindErr(tagValue, err)
+			return ok, prefixBindErr(opt.fieldName, err)
 		} else if ok, err = trySetCustom(val, value); ok {
-			return ok, wrapBindErr(tagValue, err)
+			return ok, prefixBindErr(opt.fieldName, err)
 		}
 		return true, setWithProperType(val, value, field, opt)
 	}
 }
 
 func setWithProperType(val string, value reflect.Value, field reflect.StructField, opt setOptions) error {
+	// fieldName is set by tryToSetValue; the Go field name only covers direct calls.
+	if opt.fieldName == "" {
+		opt.fieldName = field.Name
+	}
 	// this if-check is required for parsing nested types like []MyId, where MyId is [12]byte
 	if ok, err := trySetUsingParser(val, value, opt.parser); ok {
-		return wrapBindErr(field.Name, err)
+		return prefixBindErr(opt.fieldName, err)
 	} else if ok, err = trySetCustom(val, value); ok {
-		return wrapBindErr(field.Name, err)
+		return prefixBindErr(opt.fieldName, err)
 	}
 
 	// If it is a string type, no spaces are removed, and the user data is not modified here
