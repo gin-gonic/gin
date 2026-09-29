@@ -941,3 +941,26 @@ func TestIssue4818_MethodNotAllowedManyTrees(t *testing.T) {
 		t.Fatalf("expected 405, got %d", w.Code)
 	}
 }
+
+// TestRouterSkippedNodesGrowsAfterLateRouteRegistration ensures that a Context
+// recycled from the pool can still walk a tree that became deeper after the
+// Context was allocated. The skippedNodes stack is sized from engine.maxSections
+// at allocation time, so routes registered after the first request used to make
+// the tree walk reslice the stack beyond its capacity and panic.
+func TestRouterSkippedNodesGrowsAfterLateRouteRegistration(t *testing.T) {
+	router := New()
+	router.GET("/a", func(c *Context) { c.String(http.StatusOK, "a") })
+
+	// Seed the pool with a Context sized for the shallow tree.
+	w := PerformRequest(router, http.MethodGet, "/a")
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	// Deepen the tree after a Context has already been pooled.
+	router.GET("/x/:p", func(c *Context) { c.String(http.StatusOK, "p") })
+	router.GET("/x/y/:q", func(c *Context) { c.String(http.StatusOK, "q") })
+	router.GET("/x/y/z/w", func(c *Context) { c.String(http.StatusOK, "w") })
+
+	w = PerformRequest(router, http.MethodGet, "/x/y/z/w")
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Equal(t, "w", w.Body.String())
+}
