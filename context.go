@@ -132,9 +132,8 @@ func (c *Context) Copy() *Context {
 	cp.handlers = nil
 	cp.fullPath = c.fullPath
 
-	cKeys := c.Keys
 	c.mu.RLock()
-	cp.Keys = maps.Clone(cKeys)
+	cp.Keys = maps.Clone(c.Keys)
 	c.mu.RUnlock()
 
 	cParams := c.Params
@@ -1219,6 +1218,11 @@ func (c *Context) Render(code int, r render.Render) {
 // It also updates the HTTP code and sets the Content-Type as "text/html".
 // See http://golang.org/doc/articles/wiki/
 func (c *Context) HTML(code int, name string, obj any) {
+	if c.engine.HTMLRender == nil {
+		c.Render(code, render.HTML{})
+		return
+	}
+
 	instance := c.engine.HTMLRender.Instance(name, obj)
 	c.Render(code, instance)
 }
