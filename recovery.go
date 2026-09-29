@@ -70,11 +70,10 @@ func CustomRecoveryWithWriter(out io.Writer, handle RecoveryFunc) HandlerFunc {
 						errors.Is(err, http.ErrAbortHandler)
 				}
 				if logger != nil {
-					colorStart, colorReset := "", ""
+					colorReset := ""
 					if consoleColorEnabled(out) {
-						colorStart = "\x1b[31m"
 						colorReset = reset
-						logger.SetPrefix("\n\n" + colorStart)
+						logger.SetPrefix("\n\n\x1b[31m")
 					} else {
 						logger.SetPrefix("\n\n")
 					}
