@@ -505,6 +505,84 @@ func (f *customUnmarshalParamHex) UnmarshalParam(param string) error {
 	return nil
 }
 
+var errBoom = errors.New("boom")
+
+type failUnmarshalParam struct{}
+
+func (f *failUnmarshalParam) UnmarshalParam(param string) error {
+	return errBoom
+}
+
+type failUnmarshalText string
+
+func (f *failUnmarshalText) UnmarshalText(text []byte) error {
+	return errBoom
+}
+
+func TestBindUnmarshalerErrorIncludesFieldName(t *testing.T) {
+	var formTag struct {
+		ID failUnmarshalParam `form:"uuid4"`
+	}
+	var queryTag struct {
+		ID failUnmarshalParam `query:"uuid4"`
+	}
+	var pointer struct {
+		ID *failUnmarshalParam `form:"uuid4"`
+	}
+	var slice struct {
+		IDs []failUnmarshalParam `form:"uuid4"`
+	}
+	var nested struct {
+		Inner struct {
+			ID failUnmarshalParam `form:"uuid4"`
+		}
+	}
+	var noTag struct {
+		ID failUnmarshalParam
+	}
+	var textParser struct {
+		ID failUnmarshalText `form:"uuid4,parser=encoding.TextUnmarshaler"`
+	}
+
+	tests := []struct {
+		name string
+		ptr  any
+		tag  string
+		want string
+	}{
+		{"form tag", &formTag, "form", "uuid4: boom"},
+		{"query tag", &queryTag, "query", "uuid4: boom"},
+		{"pointer field", &pointer, "form", "uuid4: boom"},
+		{"slice element", &slice, "form", "uuid4: boom"},
+		{"nested struct", &nested, "form", "uuid4: boom"},
+		{"TextUnmarshaler parser", &textParser, "form", "uuid4: boom"},
+		{"no tag falls back to field name", &noTag, "form", "ID: boom"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			form := formSource{"uuid4": {"xxx"}, "ID": {"xxx"}}
+			err := mappingByPtr(tt.ptr, form, tt.tag)
+			require.EqualError(t, err, tt.want)
+			require.ErrorIs(t, err, errBoom)
+		})
+	}
+}
+
+func TestBindUnmarshalerErrorNotPrefixedWithoutParser(t *testing.T) {
+	// Without a parser tag, UnmarshalText is not used and the value is set as a plain string.
+	var s struct {
+		ID failUnmarshalText `form:"uuid4"`
+	}
+	require.NoError(t, mappingByPtr(&s, formSource{"uuid4": {"xxx"}}, "form"))
+	assert.Equal(t, failUnmarshalText("xxx"), s.ID)
+}
+
+func TestPrefixBindErr(t *testing.T) {
+	require.NoError(t, prefixBindErr("uuid4", nil))
+	assert.Equal(t, errBoom, prefixBindErr("", errBoom))
+	require.EqualError(t, prefixBindErr("uuid4", errBoom), "uuid4: boom")
+}
+
 func TestMappingCustomUnmarshalParamHexWithFormTag(t *testing.T) {
 	var s struct {
 		Foo customUnmarshalParamHex `form:"foo"`
