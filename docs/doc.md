@@ -1167,7 +1167,7 @@ func main() {
 
 ```sh
 curl -X POST http://localhost:8080/person
-{"Name":"William","Age":10,"Friends":["Will","Bill"],"Colors":["red","blue"],"LapTimes":[1,2,3]}
+{"Name":"William","Age":10,"Friends":["Will","Bill"],"Addresses":["foo","bar"],"LapTimes":[1,2,3]}
 ```
 
 NOTE: For default [collection values](#collection-format-for-arrays), the following rules apply:
@@ -1762,7 +1762,7 @@ func main() {
 
 #### SecureJSON
 
-Using SecureJSON to prevent json hijacking. Default prepends `"while(1),"` to response body if the given struct is array values.
+Using SecureJSON to prevent json hijacking. Default prepends `"while(1);"` to response body if the given struct is array values.
 
 ```go
 func main() {
