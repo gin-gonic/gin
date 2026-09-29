@@ -2772,6 +2772,15 @@ func TestContextShouldBindBodyWith(t *testing.T) {
 	}
 }
 
+func TestContextShouldBindBodyWithNilBody(t *testing.T) {
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	c.Request = &http.Request{}
+
+	var obj struct{}
+	err := c.ShouldBindBodyWithJSON(&obj)
+	assert.EqualError(t, err, "cannot read nil body")
+}
+
 func TestContextShouldBindBodyWithJSON(t *testing.T) {
 	for _, tt := range []struct {
 		name        string
