@@ -301,6 +301,52 @@ func TestRouteRedirectTrailingSlash(t *testing.T) {
 	assert.Equal(t, http.StatusNotFound, w.Code)
 }
 
+func TestRouteMatchTrailingSlash(t *testing.T) {
+	router := New()
+	router.RedirectFixedPath = false
+	router.RedirectTrailingSlash = true
+	router.MatchTrailingSlash = true
+	router.GET("/path", func(c *Context) {
+		// The original request path must be left untouched (no redirect happened).
+		assert.Equal(t, "/path/", c.Request.URL.Path)
+		c.String(http.StatusOK, c.FullPath())
+	})
+	router.GET("/path2/", func(c *Context) { c.String(http.StatusOK, c.FullPath()) })
+	router.POST("/path3", func(c *Context) { c.String(http.StatusOK, c.FullPath()) })
+	router.GET("/users/:id/", func(c *Context) { c.String(http.StatusOK, c.Param("id")) })
+
+	// A route without a trailing slash is served directly for a request with one.
+	w := PerformRequest(router, http.MethodGet, "/path/")
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Empty(t, w.Header().Get("Location"))
+	assert.Equal(t, "/path", w.Body.String())
+
+	// A route with a trailing slash is served directly for a request without one.
+	w = PerformRequest(router, http.MethodGet, "/path2")
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Empty(t, w.Header().Get("Location"))
+	assert.Equal(t, "/path2/", w.Body.String())
+
+	w = PerformRequest(router, http.MethodPost, "/path3/")
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Empty(t, w.Header().Get("Location"))
+
+	// Params are still resolved correctly when matched via the toggled path.
+	w = PerformRequest(router, http.MethodGet, "/users/42")
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Equal(t, "42", w.Body.String())
+
+	// A path with no registered route at all still 404s.
+	w = PerformRequest(router, http.MethodGet, "/nope/")
+	assert.Equal(t, http.StatusNotFound, w.Code)
+
+	// When both options are enabled, MatchTrailingSlash takes precedence over redirecting.
+	router.MatchTrailingSlash = false
+	w = PerformRequest(router, http.MethodGet, "/path/")
+	assert.Equal(t, "/path", w.Header().Get("Location"))
+	assert.Equal(t, http.StatusMovedPermanently, w.Code)
+}
+
 func TestRouteRedirectFixedPath(t *testing.T) {
 	router := New()
 	router.RedirectFixedPath = true
