@@ -15,6 +15,7 @@ import (
 	"strings"
 	"time"
 
+	bindingcodec "github.com/gin-gonic/gin/codec/binding"
 	"github.com/gin-gonic/gin/codec/json"
 	"github.com/gin-gonic/gin/internal/bytesconv"
 )
@@ -185,17 +186,6 @@ type BindUnmarshaler interface {
 	UnmarshalParam(param string) error
 }
 
-// trySetCustom tries to set a custom type value
-// If the value implements the BindUnmarshaler interface, it will be used to set the value, we will return `true`
-// to skip the default value setting.
-func trySetCustom(val string, value reflect.Value) (isSet bool, err error) {
-	switch v := value.Addr().Interface().(type) {
-	case BindUnmarshaler:
-		return true, v.UnmarshalParam(val)
-	}
-	return false, nil
-}
-
 // trySetUsingParser tries to set a custom type value based on the presence of the "parser" tag on the field.
 // If the parser tag does not exist or does not match any of the supported parsers, gin will skip over this.
 func trySetUsingParser(val string, value reflect.Value, parser string) (isSet bool, err error) {
@@ -265,7 +255,7 @@ func setByForm(value reflect.Value, field reflect.StructField, form map[string][
 
 		if ok, err = trySetUsingParser(vs[0], value, opt.parser); ok {
 			return ok, err
-		} else if ok, err = trySetCustom(vs[0], value); ok {
+		} else if ok, err = bindingcodec.API.TrySetByInterface(vs[0], value); ok {
 			return ok, err
 		}
 
@@ -290,7 +280,7 @@ func setByForm(value reflect.Value, field reflect.StructField, form map[string][
 
 		if ok, err = trySetUsingParser(vs[0], value, opt.parser); ok {
 			return ok, err
-		} else if ok, err = trySetCustom(vs[0], value); ok {
+		} else if ok, err = bindingcodec.API.TrySetByInterface(vs[0], value); ok {
 			return ok, err
 		}
 
@@ -313,7 +303,7 @@ func setByForm(value reflect.Value, field reflect.StructField, form map[string][
 
 		if ok, err = trySetUsingParser(val, value, opt.parser); ok {
 			return ok, err
-		} else if ok, err = trySetCustom(val, value); ok {
+		} else if ok, err = bindingcodec.API.TrySetByInterface(val, value); ok {
 			return ok, err
 		}
 		return true, setWithProperType(val, value, field, opt)
@@ -324,7 +314,7 @@ func setWithProperType(val string, value reflect.Value, field reflect.StructFiel
 	// this if-check is required for parsing nested types like []MyId, where MyId is [12]byte
 	if ok, err := trySetUsingParser(val, value, opt.parser); ok {
 		return err
-	} else if ok, err = trySetCustom(val, value); ok {
+	} else if ok, err = bindingcodec.API.TrySetByInterface(val, value); ok {
 		return err
 	}
 
