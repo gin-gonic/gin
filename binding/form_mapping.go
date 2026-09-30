@@ -143,24 +143,24 @@ type setOptions struct {
 }
 
 func tryToSetValue(value reflect.Value, field reflect.StructField, setter setter, tag string) (bool, error) {
-	var tagValue string
 	var setOpt setOptions
 
-	tagValue = field.Tag.Get(tag)
-	tagValue, opts := head(tagValue, ",")
+	tagValue, opts := head(field.Tag.Get(tag), ",")
 
 	if tagValue == "" { // default value is FieldName
+		if field.Name == "" {
+			return false, nil
+		}
 		tagValue = field.Name
-	}
-	if tagValue == "" { // when field is "emptyField" variable
-		return false, nil
 	}
 
 	var opt string
 	for len(opts) > 0 {
 		opt, opts = head(opts, ",")
 
-		if k, v := head(opt, "="); k == "default" {
+		k, v := head(opt, "=")
+		switch k {
+		case "default":
 			setOpt.isDefaultExists = true
 			setOpt.defaultValue = v
 
@@ -171,7 +171,7 @@ func tryToSetValue(value reflect.Value, field reflect.StructField, setter setter
 					setOpt.defaultValue = strings.ReplaceAll(v, ";", ",")
 				}
 			}
-		} else if k, v = head(opt, "="); k == "parser" {
+		case "parser":
 			setOpt.parser = v
 		}
 	}
