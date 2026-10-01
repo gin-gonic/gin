@@ -1377,11 +1377,22 @@ func (c *Context) SSEvent(name string, message any) {
 	})
 }
 
+// InitSSE sets the response headers required for a Server-Sent Events stream
+// and flushes them immediately, so the client starts receiving the stream
+// without waiting for the first event.
+func (c *Context) InitSSE() {
+	c.Writer.Header().Set("Content-Type", "text/event-stream")
+	c.Writer.Header().Set("Cache-Control", "no-cache")
+	c.Writer.Header().Set("Connection", "keep-alive")
+	c.Writer.WriteHeaderNow()
+	c.Writer.Flush()
+}
+
 // Stream sends a streaming response and returns a boolean
 // indicates "Is client disconnected in middle of stream"
 func (c *Context) Stream(step func(w io.Writer) bool) bool {
 	w := c.Writer
-	clientGone := w.CloseNotify()
+	clientGone := c.Request.Context().Done()
 	for {
 		select {
 		case <-clientGone:
@@ -1389,6 +1400,27 @@ func (c *Context) Stream(step func(w io.Writer) bool) bool {
 		default:
 			keepOpen := step(w)
 			w.Flush()
+			if !keepOpen {
+				return false
+			}
+		}
+	}
+}
+
+// SSEStream initializes a Server-Sent Events response via InitSSE and then
+// repeatedly calls step, flushing after each call, until step returns false
+// or the client disconnects. It returns true if the client disconnected
+// before step returned false.
+func (c *Context) SSEStream(step func(c *Context) bool) bool {
+	c.InitSSE()
+	clientGone := c.Request.Context().Done()
+	for {
+		select {
+		case <-clientGone:
+			return true
+		default:
+			keepOpen := step(c)
+			c.Writer.Flush()
 			if !keepOpen {
 				return false
 			}
