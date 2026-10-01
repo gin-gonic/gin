@@ -1473,7 +1473,7 @@ func (c *Context) NegotiateFormat(offered ...string) string {
 					break
 				}
 			}
-			if i == len(accepted) {
+			if i == len(accepted) && i == len(offer) {
 				return offer
 			}
 		}
