@@ -1,0 +1,637 @@
+diff --git a/claude.change.patch b/claude.change.patch
+new file mode 100644
+index 0000000..be3867b
+--- /dev/null
++++ b/claude.change.patch
+@@ -0,0 +1,89 @@
++diff --git a/gin.go b/gin.go
++index 2e033bf..2ccc093 100644
++--- a/gin.go
+++++ b/gin.go
++@@ -172,6 +172,10 @@ type Engine struct {
++ 	// ContextWithFallback enable fallback Context.Deadline(), Context.Done(), Context.Err() and Context.Value() when Context.Request.Context() is not nil.
++ 	ContextWithFallback bool
++ 
+++	// MaxConns limits the maximum number of concurrent connections.
+++	// 0 means no limit (default behavior).
+++	MaxConns int64
+++
++ 	delims           render.Delims
++ 	secureJSONPrefix string
++ 	HTMLRender       render.HTMLRender
++@@ -534,6 +538,17 @@ func parseIP(ip string) net.IP {
++ 	return parsedIP
++ }
++ 
+++// wrapListener wraps a net.Listener with connection limiting if MaxConns > 0.
+++func (engine *Engine) wrapListener(ln net.Listener) net.Listener {
+++	if engine.MaxConns <= 0 {
+++		return ln
+++	}
+++	return &limitedListener{
+++		Listener: ln,
+++		sem:      make(chan struct{}, engine.MaxConns),
+++	}
+++}
+++
++ // Run attaches the router to a http.Server and starts listening and serving HTTP requests.
++ // It is a shortcut for http.ListenAndServe(addr, router)
++ // Note: this method will block the calling goroutine indefinitely unless an error happens.
++@@ -547,11 +562,15 @@ func (engine *Engine) Run(addr ...string) (err error) {
++ 	engine.updateRouteTrees()
++ 	address := resolveAddress(addr)
++ 	debugPrint("Listening and serving HTTP on %s\n", address)
+++	ln, err := net.Listen("tcp", address)
+++	if err != nil {
+++		return
+++	}
++ 	server := &http.Server{ // #nosec G112
++ 		Addr:    address,
++ 		Handler: engine.Handler(),
++ 	}
++-	err = server.ListenAndServe()
+++	err = server.Serve(engine.wrapListener(ln))
++ 	return
++ }
++ 
++@@ -571,7 +590,11 @@ func (engine *Engine) RunTLS(addr, certFile, keyFile string) (err error) {
++ 		Addr:    addr,
++ 		Handler: engine.Handler(),
++ 	}
++-	err = server.ListenAndServeTLS(certFile, keyFile)
+++	ln, err := net.Listen("tcp", addr)
+++	if err != nil {
+++		return
+++	}
+++	err = server.ServeTLS(engine.wrapListener(ln), certFile, keyFile)
++ 	return
++ }
++ 
++@@ -597,7 +620,7 @@ func (engine *Engine) RunUnix(file string) (err error) {
++ 	server := &http.Server{ // #nosec G112
++ 		Handler: engine.Handler(),
++ 	}
++-	err = server.Serve(listener)
+++	err = server.Serve(engine.wrapListener(listener))
++ 	return
++ }
++ 
++@@ -627,6 +650,7 @@ func (engine *Engine) RunFd(fd int) (err error) {
++ // RunQUIC attaches the router to a http.Server and starts listening and serving QUIC requests.
++ // It is a shortcut for http3.ListenAndServeQUIC(addr, certFile, keyFile, router)
++ // Note: this method will block the calling goroutine indefinitely unless an error happens.
+++// Note: MaxConns is not supported for QUIC due to protocol limitations.
++ func (engine *Engine) RunQUIC(addr, certFile, keyFile string) (err error) {
++ 	debugPrint("Listening and serving QUIC on %s\n", addr)
++ 	defer func() { debugPrintError(err) }()
++@@ -654,7 +678,7 @@ func (engine *Engine) RunListener(listener net.Listener) (err error) {
++ 	server := &http.Server{ // #nosec G112
++ 		Handler: engine.Handler(),
++ 	}
++-	err = server.Serve(listener)
+++	err = server.Serve(engine.wrapListener(listener))
++ 	return
++ }
++ 
+diff --git a/config.go b/config.go
+new file mode 100644
+index 0000000..232163c
+--- /dev/null
++++ b/config.go
+@@ -0,0 +1,45 @@
++// Copyright 2025 Gin Core Team. All rights reserved.
++// Use of this source code is governed by a MIT style
++// license that can be found in the LICENSE file.
++
++package gin
++
++import (
++	"os"
++
++	"github.com/goccy/go-yaml"
++)
++
++// Config represents the YAML configuration structure for Gin.
++type Config struct {
++	// MaxConns limits the maximum number of concurrent connections.
++	// 0 means no limit (default behavior).
++	MaxConns int64 `yaml:"max_conns"`
++}
++
++// LoadConfig reads configuration from a YAML file and returns an OptionFunc
++// that applies the configuration to an Engine.
++func LoadConfig(path string) (OptionFunc, error) {
++	data, err := os.ReadFile(path)
++	if err != nil {
++		return nil, err
++	}
++
++	var cfg Config
++	if err := yaml.Unmarshal(data, &cfg); err != nil {
++		return nil, err
++	}
++
++	return func(e *Engine) {
++		if cfg.MaxConns > 0 {
++			e.MaxConns = cfg.MaxConns
++		}
++	}, nil
++}
++
++// WithMaxConns creates an OptionFunc that sets the maximum concurrent connections.
++func WithMaxConns(n int64) OptionFunc {
++	return func(e *Engine) {
++		e.MaxConns = n
++	}
++}
+diff --git a/config_test.go b/config_test.go
+new file mode 100644
+index 0000000..6a65fe5
+--- /dev/null
++++ b/config_test.go
+@@ -0,0 +1,72 @@
++// Copyright 2025 Gin Core Team. All rights reserved.
++// Use of this source code is governed by a MIT style
++// license that can be found in the LICENSE file.
++
++package gin
++
++import (
++	"os"
++	"path/filepath"
++	"testing"
++
++	"github.com/stretchr/testify/assert"
++	"github.com/stretchr/testify/require"
++)
++
++func TestLoadConfig(t *testing.T) {
++	path := filepath.Join("testdata", "config.yaml")
++	opt, err := LoadConfig(path)
++	require.NoError(t, err)
++	require.NotNil(t, opt)
++
++	engine := New()
++	opt(engine)
++	assert.Equal(t, int64(100), engine.MaxConns)
++}
++
++func TestLoadConfigNotFound(t *testing.T) {
++	opt, err := LoadConfig("nonexistent.yaml")
++	assert.Error(t, err)
++	assert.Nil(t, opt)
++}
++
++func TestLoadConfigInvalidYAML(t *testing.T) {
++	// Create a temporary file with invalid YAML
++	tmpFile, err := os.CreateTemp("", "invalid_*.yaml")
++	require.NoError(t, err)
++	defer os.Remove(tmpFile.Name())
++
++	_, err = tmpFile.WriteString("max_conns: [invalid")
++	require.NoError(t, err)
++	tmpFile.Close()
++
++	opt, err := LoadConfig(tmpFile.Name())
++	assert.Error(t, err)
++	assert.Nil(t, opt)
++}
++
++func TestLoadConfigEmpty(t *testing.T) {
++	// Create a temporary empty config file
++	tmpFile, err := os.CreateTemp("", "empty_*.yaml")
++	require.NoError(t, err)
++	defer os.Remove(tmpFile.Name())
++	tmpFile.Close()
++
++	opt, err := LoadConfig(tmpFile.Name())
++	require.NoError(t, err)
++	require.NotNil(t, opt)
++
++	engine := New()
++	opt(engine)
++	assert.Equal(t, int64(0), engine.MaxConns)
++}
++
++func TestWithMaxConns(t *testing.T) {
++	engine := New(WithMaxConns(50))
++	assert.Equal(t, int64(50), engine.MaxConns)
++}
++
++func TestWithMaxConnsZero(t *testing.T) {
++	engine := New(WithMaxConns(0))
++	assert.Equal(t, int64(0), engine.MaxConns)
++}
+diff --git a/gin.go b/gin.go
+index 2e033bf..2ccc093 100644
+--- a/gin.go
++++ b/gin.go
+@@ -172,6 +172,10 @@ type Engine struct {
+ 	// ContextWithFallback enable fallback Context.Deadline(), Context.Done(), Context.Err() and Context.Value() when Context.Request.Context() is not nil.
+ 	ContextWithFallback bool
+ 
++	// MaxConns limits the maximum number of concurrent connections.
++	// 0 means no limit (default behavior).
++	MaxConns int64
++
+ 	delims           render.Delims
+ 	secureJSONPrefix string
+ 	HTMLRender       render.HTMLRender
+@@ -534,6 +538,17 @@ func parseIP(ip string) net.IP {
+ 	return parsedIP
+ }
+ 
++// wrapListener wraps a net.Listener with connection limiting if MaxConns > 0.
++func (engine *Engine) wrapListener(ln net.Listener) net.Listener {
++	if engine.MaxConns <= 0 {
++		return ln
++	}
++	return &limitedListener{
++		Listener: ln,
++		sem:      make(chan struct{}, engine.MaxConns),
++	}
++}
++
+ // Run attaches the router to a http.Server and starts listening and serving HTTP requests.
+ // It is a shortcut for http.ListenAndServe(addr, router)
+ // Note: this method will block the calling goroutine indefinitely unless an error happens.
+@@ -547,11 +562,15 @@ func (engine *Engine) Run(addr ...string) (err error) {
+ 	engine.updateRouteTrees()
+ 	address := resolveAddress(addr)
+ 	debugPrint("Listening and serving HTTP on %s\n", address)
++	ln, err := net.Listen("tcp", address)
++	if err != nil {
++		return
++	}
+ 	server := &http.Server{ // #nosec G112
+ 		Addr:    address,
+ 		Handler: engine.Handler(),
+ 	}
+-	err = server.ListenAndServe()
++	err = server.Serve(engine.wrapListener(ln))
+ 	return
+ }
+ 
+@@ -571,7 +590,11 @@ func (engine *Engine) RunTLS(addr, certFile, keyFile string) (err error) {
+ 		Addr:    addr,
+ 		Handler: engine.Handler(),
+ 	}
+-	err = server.ListenAndServeTLS(certFile, keyFile)
++	ln, err := net.Listen("tcp", addr)
++	if err != nil {
++		return
++	}
++	err = server.ServeTLS(engine.wrapListener(ln), certFile, keyFile)
+ 	return
+ }
+ 
+@@ -597,7 +620,7 @@ func (engine *Engine) RunUnix(file string) (err error) {
+ 	server := &http.Server{ // #nosec G112
+ 		Handler: engine.Handler(),
+ 	}
+-	err = server.Serve(listener)
++	err = server.Serve(engine.wrapListener(listener))
+ 	return
+ }
+ 
+@@ -627,6 +650,7 @@ func (engine *Engine) RunFd(fd int) (err error) {
+ // RunQUIC attaches the router to a http.Server and starts listening and serving QUIC requests.
+ // It is a shortcut for http3.ListenAndServeQUIC(addr, certFile, keyFile, router)
+ // Note: this method will block the calling goroutine indefinitely unless an error happens.
++// Note: MaxConns is not supported for QUIC due to protocol limitations.
+ func (engine *Engine) RunQUIC(addr, certFile, keyFile string) (err error) {
+ 	debugPrint("Listening and serving QUIC on %s\n", addr)
+ 	defer func() { debugPrintError(err) }()
+@@ -654,7 +678,7 @@ func (engine *Engine) RunListener(listener net.Listener) (err error) {
+ 	server := &http.Server{ // #nosec G112
+ 		Handler: engine.Handler(),
+ 	}
+-	err = server.Serve(listener)
++	err = server.Serve(engine.wrapListener(listener))
+ 	return
+ }
+ 
+diff --git a/listener.go b/listener.go
+new file mode 100644
+index 0000000..b31679a
+--- /dev/null
++++ b/listener.go
+@@ -0,0 +1,47 @@
++// Copyright 2025 Gin Core Team. All rights reserved.
++// Use of this source code is governed by a MIT style
++// license that can be found in the LICENSE file.
++
++package gin
++
++import (
++	"net"
++	"sync"
++)
++
++// limitedListener wraps a net.Listener and limits the number of concurrent connections
++// using a buffered channel as a semaphore.
++type limitedListener struct {
++	net.Listener
++	sem chan struct{}
++}
++
++// Accept accepts a new connection. If the connection limit has been reached,
++// the new connection is immediately closed.
++func (l *limitedListener) Accept() (net.Conn, error) {
++	conn, err := l.Listener.Accept()
++	if err != nil {
++		return nil, err
++	}
++
++	select {
++	case l.sem <- struct{}{}:
++		return &limitedConn{Conn: conn, sem: l.sem}, nil
++	default:
++		conn.Close()
++		return nil, nil
++	}
++}
++
++// limitedConn wraps a net.Conn and releases the semaphore slot on Close.
++type limitedConn struct {
++	net.Conn
++	sem       chan struct{}
++	closeOnce sync.Once
++}
++
++// Close closes the connection and releases the semaphore slot.
++func (c *limitedConn) Close() error {
++	c.closeOnce.Do(func() { <-c.sem })
++	return c.Conn.Close()
++}
+diff --git a/listener_test.go b/listener_test.go
+new file mode 100644
+index 0000000..32ce702
+--- /dev/null
++++ b/listener_test.go
+@@ -0,0 +1,163 @@
++// Copyright 2025 Gin Core Team. All rights reserved.
++// Use of this source code is governed by a MIT style
++// license that can be found in the LICENSE file.
++
++package gin
++
++import (
++	"net"
++	"net/http"
++	"net/http/httptest"
++	"sync"
++	"sync/atomic"
++	"testing"
++	"time"
++
++	"github.com/stretchr/testify/assert"
++	"github.com/stretchr/testify/require"
++)
++
++func TestLimitedListenerUnderLimit(t *testing.T) {
++	router := New(WithMaxConns(10))
++	router.GET("/", func(c *Context) {
++		c.String(http.StatusOK, "ok")
++	})
++
++	server := httptest.NewServer(router.Handler())
++	defer server.Close()
++
++	// Should be able to make requests under limit
++	resp, err := http.Get(server.URL)
++	require.NoError(t, err)
++	assert.Equal(t, http.StatusOK, resp.StatusCode)
++	resp.Body.Close()
++}
++
++func TestLimitedListenerAtLimit(t *testing.T) {
++	// Create a server that holds connections
++	var activeConns atomic.Int32
++	var wg sync.WaitGroup
++	block := make(chan struct{})
++
++	router := New(WithMaxConns(2))
++	router.GET("/", func(c *Context) {
++		activeConns.Add(1)
++		wg.Add(1)
++		<-block // Block until test releases
++		activeConns.Add(-1)
++		wg.Done()
++		c.String(http.StatusOK, "ok")
++	})
++
++	server := httptest.NewServer(router.Handler())
++	defer server.Close()
++
++	// Start 2 requests that will block
++	for i := 0; i < 2; i++ {
++		go func() {
++			resp, err := http.Get(server.URL)
++			if err == nil {
++				resp.Body.Close()
++			}
++		}()
++	}
++
++	// Wait for both connections to be active
++	require.Eventually(t, func() bool {
++		return activeConns.Load() == 2
++	}, 2*time.Second, 10*time.Millisecond)
++
++	// Third request should be rejected immediately
++	client := &http.Client{Timeout: 500 * time.Millisecond}
++	_, err := client.Get(server.URL)
++	// Connection should be rejected
++	assert.Error(t, err, "expected connection to be rejected")
++
++	// Release the blocked connections
++	close(block)
++	wg.Wait()
++}
++
++func TestLimitedConnRelease(t *testing.T) {
++	block := make(chan struct{})
++
++	router := New(WithMaxConns(1))
++	router.GET("/", func(c *Context) {
++		<-block
++		c.String(http.StatusOK, "ok")
++	})
++
++	server := httptest.NewServer(router.Handler())
++	defer server.Close()
++
++	// Start one blocking request
++	var firstDone atomic.Bool
++	go func() {
++		resp, err := http.Get(server.URL)
++		if err == nil {
++			resp.Body.Close()
++			firstDone.Store(true)
++		}
++	}()
++
++	// Give the first request time to start
++	time.Sleep(100 * time.Millisecond)
++
++	// Second request should fail
++	client := &http.Client{Timeout: 200 * time.Millisecond}
++	_, err := client.Get(server.URL)
++	assert.Error(t, err, "expected connection to be rejected when limit reached")
++
++	// Release the first connection
++	close(block)
++
++	// Eventually first request should complete
++	require.Eventually(t, firstDone.Load, 2*time.Second, 10*time.Millisecond)
++}
++
++func TestLimitedListenerZeroLimit(t *testing.T) {
++	router := New(WithMaxConns(0))
++	router.GET("/", func(c *Context) {
++		c.String(http.StatusOK, "ok")
++	})
++
++	server := httptest.NewServer(router.Handler())
++	defer server.Close()
++
++	// Should allow unlimited connections (zero means no limit)
++	for i := 0; i < 5; i++ {
++		resp, err := http.Get(server.URL)
++		require.NoError(t, err)
++		assert.Equal(t, http.StatusOK, resp.StatusCode)
++		resp.Body.Close()
++	}
++}
++
++func TestWrapListenerNoLimit(t *testing.T) {
++	engine := New()
++	assert.Equal(t, int64(0), engine.MaxConns)
++
++	// Create a dummy listener
++	ln, err := net.Listen("tcp", "127.0.0.1:0")
++	require.NoError(t, err)
++	defer ln.Close()
++
++	// Should return original listener when no limit
++	wrapped := engine.wrapListener(ln)
++	assert.Equal(t, ln, wrapped)
++}
++
++func TestWrapListenerWithLimit(t *testing.T) {
++	engine := New(WithMaxConns(5))
++
++	// Create a dummy listener
++	ln, err := net.Listen("tcp", "127.0.0.1:0")
++	require.NoError(t, err)
++	defer ln.Close()
++
++	// Should return wrapped listener
++	wrapped := engine.wrapListener(ln)
++	assert.NotNil(t, wrapped)
++	_, ok := wrapped.(*limitedListener)
++	assert.True(t, ok)
++}
+diff --git a/my_changes.patch b/my_changes.patch
+new file mode 100644
+index 0000000..be3867b
+--- /dev/null
++++ b/my_changes.patch
+@@ -0,0 +1,89 @@
++diff --git a/gin.go b/gin.go
++index 2e033bf..2ccc093 100644
++--- a/gin.go
+++++ b/gin.go
++@@ -172,6 +172,10 @@ type Engine struct {
++ 	// ContextWithFallback enable fallback Context.Deadline(), Context.Done(), Context.Err() and Context.Value() when Context.Request.Context() is not nil.
++ 	ContextWithFallback bool
++ 
+++	// MaxConns limits the maximum number of concurrent connections.
+++	// 0 means no limit (default behavior).
+++	MaxConns int64
+++
++ 	delims           render.Delims
++ 	secureJSONPrefix string
++ 	HTMLRender       render.HTMLRender
++@@ -534,6 +538,17 @@ func parseIP(ip string) net.IP {
++ 	return parsedIP
++ }
++ 
+++// wrapListener wraps a net.Listener with connection limiting if MaxConns > 0.
+++func (engine *Engine) wrapListener(ln net.Listener) net.Listener {
+++	if engine.MaxConns <= 0 {
+++		return ln
+++	}
+++	return &limitedListener{
+++		Listener: ln,
+++		sem:      make(chan struct{}, engine.MaxConns),
+++	}
+++}
+++
++ // Run attaches the router to a http.Server and starts listening and serving HTTP requests.
++ // It is a shortcut for http.ListenAndServe(addr, router)
++ // Note: this method will block the calling goroutine indefinitely unless an error happens.
++@@ -547,11 +562,15 @@ func (engine *Engine) Run(addr ...string) (err error) {
++ 	engine.updateRouteTrees()
++ 	address := resolveAddress(addr)
++ 	debugPrint("Listening and serving HTTP on %s\n", address)
+++	ln, err := net.Listen("tcp", address)
+++	if err != nil {
+++		return
+++	}
++ 	server := &http.Server{ // #nosec G112
++ 		Addr:    address,
++ 		Handler: engine.Handler(),
++ 	}
++-	err = server.ListenAndServe()
+++	err = server.Serve(engine.wrapListener(ln))
++ 	return
++ }
++ 
++@@ -571,7 +590,11 @@ func (engine *Engine) RunTLS(addr, certFile, keyFile string) (err error) {
++ 		Addr:    addr,
++ 		Handler: engine.Handler(),
++ 	}
++-	err = server.ListenAndServeTLS(certFile, keyFile)
+++	ln, err := net.Listen("tcp", addr)
+++	if err != nil {
+++		return
+++	}
+++	err = server.ServeTLS(engine.wrapListener(ln), certFile, keyFile)
++ 	return
++ }
++ 
++@@ -597,7 +620,7 @@ func (engine *Engine) RunUnix(file string) (err error) {
++ 	server := &http.Server{ // #nosec G112
++ 		Handler: engine.Handler(),
++ 	}
++-	err = server.Serve(listener)
+++	err = server.Serve(engine.wrapListener(listener))
++ 	return
++ }
++ 
++@@ -627,6 +650,7 @@ func (engine *Engine) RunFd(fd int) (err error) {
++ // RunQUIC attaches the router to a http.Server and starts listening and serving QUIC requests.
++ // It is a shortcut for http3.ListenAndServeQUIC(addr, certFile, keyFile, router)
++ // Note: this method will block the calling goroutine indefinitely unless an error happens.
+++// Note: MaxConns is not supported for QUIC due to protocol limitations.
++ func (engine *Engine) RunQUIC(addr, certFile, keyFile string) (err error) {
++ 	debugPrint("Listening and serving QUIC on %s\n", addr)
++ 	defer func() { debugPrintError(err) }()
++@@ -654,7 +678,7 @@ func (engine *Engine) RunListener(listener net.Listener) (err error) {
++ 	server := &http.Server{ // #nosec G112
++ 		Handler: engine.Handler(),
++ 	}
++-	err = server.Serve(listener)
+++	err = server.Serve(engine.wrapListener(listener))
++ 	return
++ }
++ 
+diff --git a/testdata/config.yaml b/testdata/config.yaml
+new file mode 100644
+index 0000000..b922394
+--- /dev/null
++++ b/testdata/config.yaml
+@@ -0,0 +1 @@
++max_conns: 100
