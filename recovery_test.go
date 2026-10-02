@@ -405,6 +405,74 @@ func TestReadNthLine(t *testing.T) {
 	}
 }
 
+// TestRecoveryRespectsConsoleColorMode asserts Recovery honors DisableConsoleColor /
+// ForceConsoleColor (issue #2505). Without ForceConsoleColor, a non-terminal writer
+// must not receive ANSI escape sequences.
+func TestRecoveryRespectsConsoleColorMode(t *testing.T) {
+	prev := consoleColorMode
+	t.Cleanup(func() { consoleColorMode = prev })
+
+	runPanic := func() string {
+		buffer := new(strings.Builder)
+		router := New()
+		router.Use(RecoveryWithWriter(buffer))
+		router.GET("/recovery", func(_ *Context) {
+			panic("color-mode check")
+		})
+		_ = PerformRequest(router, http.MethodGet, "/recovery")
+		return buffer.String()
+	}
+
+	DisableConsoleColor()
+	out := runPanic()
+	assert.Contains(t, out, "panic recovered")
+	assert.Contains(t, out, "color-mode check")
+	assert.NotContains(t, out, "\x1b[31m")
+	assert.NotContains(t, out, reset)
+
+	ForceConsoleColor()
+	out = runPanic()
+	assert.Contains(t, out, "panic recovered")
+	assert.Contains(t, out, "\x1b[31m")
+	assert.Contains(t, out, reset)
+
+	consoleColorMode = autoColor
+	out = runPanic()
+	assert.Contains(t, out, "panic recovered")
+	assert.NotContains(t, out, "\x1b[31m")
+	assert.NotContains(t, out, reset)
+}
+
+func TestRecoveryWithFileWriterAutoColor(t *testing.T) {
+	prev := consoleColorMode
+	t.Cleanup(func() { consoleColorMode = prev })
+	consoleColorMode = autoColor
+
+	file, err := os.CreateTemp(t.TempDir(), "recovery-*.log")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { assert.NoError(t, file.Close()) })
+
+	router := New()
+	router.Use(RecoveryWithWriter(file))
+	router.GET("/recovery", func(_ *Context) {
+		panic("file-writer check")
+	})
+
+	w := PerformRequest(router, http.MethodGet, "/recovery")
+	assert.Equal(t, http.StatusInternalServerError, w.Code)
+
+	output, err := os.ReadFile(file.Name())
+	if err != nil {
+		t.Fatal(err)
+	}
+	assert.Contains(t, string(output), "panic recovered")
+	assert.Contains(t, string(output), "file-writer check")
+	assert.Contains(t, string(output), t.Name())
+	assert.NotContains(t, string(output), "\x1b[")
+}
+
 func BenchmarkStack(b *testing.B) {
 	b.ReportAllocs()
 	for b.Loop() {

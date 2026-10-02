@@ -203,6 +203,26 @@ func ForceConsoleColor() {
 	consoleColorMode = forceColor
 }
 
+// consoleColorEnabled reports whether ANSI colors should be written to out,
+// matching Logger's DisableConsoleColor / ForceConsoleColor / auto-terminal rules.
+func consoleColorEnabled(out io.Writer) bool {
+	switch consoleColorMode {
+	case disableColor:
+		return false
+	case forceColor:
+		return true
+	default:
+		return writerIsTerminal(out)
+	}
+}
+
+func writerIsTerminal(out io.Writer) bool {
+	if w, ok := out.(*os.File); ok {
+		return isatty.IsTerminal(w.Fd()) || isatty.IsCygwinTerminal(w.Fd())
+	}
+	return false
+}
+
 // ErrorLogger returns a HandlerFunc for any error type.
 func ErrorLogger() HandlerFunc {
 	return ErrorLoggerT(ErrorTypeAny)

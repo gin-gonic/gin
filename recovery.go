@@ -53,7 +53,9 @@ func RecoveryWithWriter(out io.Writer, recovery ...RecoveryFunc) HandlerFunc {
 func CustomRecoveryWithWriter(out io.Writer, handle RecoveryFunc) HandlerFunc {
 	var logger *log.Logger
 	if out != nil {
-		logger = log.New(out, "\n\n\x1b[31m", log.LstdFlags)
+		// Color prefix/reset are applied per panic so DisableConsoleColor /
+		// ForceConsoleColor remain effective after the middleware is created.
+		logger = log.New(out, "\n\n", log.LstdFlags)
 	}
 	return func(c *Context) {
 		defer func() {
@@ -68,14 +70,21 @@ func CustomRecoveryWithWriter(out io.Writer, handle RecoveryFunc) HandlerFunc {
 						errors.Is(err, http.ErrAbortHandler)
 				}
 				if logger != nil {
+					colorReset := ""
+					if consoleColorEnabled(out) {
+						colorReset = reset
+						logger.SetPrefix("\n\n\x1b[31m")
+					} else {
+						logger.SetPrefix("\n\n")
+					}
 					if isBrokenPipe {
-						logger.Printf("%s\n%s%s", rec, secureRequestDump(c.Request), reset)
+						logger.Printf("%s\n%s%s", rec, secureRequestDump(c.Request), colorReset)
 					} else if IsDebugging() {
 						logger.Printf("[Recovery] %s panic recovered:\n%s\n%s\n%s%s",
-							timeFormat(time.Now()), secureRequestDump(c.Request), rec, stack(stackSkip), reset)
+							timeFormat(time.Now()), secureRequestDump(c.Request), rec, stack(stackSkip), colorReset)
 					} else {
 						logger.Printf("[Recovery] %s panic recovered:\n%s\n%s%s",
-							timeFormat(time.Now()), rec, stack(stackSkip), reset)
+							timeFormat(time.Now()), rec, stack(stackSkip), colorReset)
 					}
 				}
 				if isBrokenPipe {
