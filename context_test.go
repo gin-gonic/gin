@@ -1164,7 +1164,46 @@ func TestContextRenderIfErr(t *testing.T) {
 
 	c.Render(http.StatusOK, &TestRender{})
 
-	assert.Equal(t, errorMsgs{&Error{Err: errTestRender, Type: 1}}, c.Errors)
+	assert.Equal(t, errorMsgs{&Error{Err: errTestRender, Type: ErrorTypePrivate | ErrorTypeRender}}, c.Errors)
+	assert.Equal(t, c.Errors, c.Errors.ByType(ErrorTypeRender))
+	assert.True(t, c.IsAborted())
+}
+
+type failingJSONMarshaler struct {
+	err error
+}
+
+func (m failingJSONMarshaler) MarshalJSON() ([]byte, error) {
+	return nil, m.err
+}
+
+func TestContextRenderJSONErrorType(t *testing.T) {
+	for _, typ := range []ErrorType{ErrorTypePrivate, ErrorTypePublic, ErrorTypeBind | ErrorTypePrivate} {
+		t.Run(fmt.Sprintf("type_%d", typ), func(t *testing.T) {
+			original := &Error{Err: errTestRender, Type: typ, Meta: "render metadata"}
+			var captured *Context
+			called := false
+			router := New()
+			router.GET("/", func(c *Context) {
+				captured = c
+				c.JSON(http.StatusOK, failingJSONMarshaler{err: original})
+			}, func(c *Context) {
+				called = true
+			})
+
+			router.ServeHTTP(httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, "/", nil))
+
+			require.Len(t, captured.Errors, 1)
+			assert.Same(t, original, captured.Errors[0])
+			assert.Equal(t, typ|ErrorTypeRender, captured.Errors[0].Type)
+			assert.Equal(t, "render metadata", captured.Errors[0].Meta)
+			require.ErrorIs(t, captured.Errors[0], errTestRender)
+			assert.Len(t, captured.Errors.ByType(ErrorTypeRender), 1)
+			assert.Len(t, captured.Errors.ByType(typ), 1)
+			assert.True(t, captured.IsAborted())
+			assert.False(t, called)
+		})
+	}
 }
 
 // Tests that the response is serialized as JSON
