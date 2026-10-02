@@ -1111,3 +1111,25 @@ func TestTreeFindCaseInsensitivePathWildcardParamAndStaticChild(t *testing.T) {
 		t.Errorf("Wrong result for '/prefix/something': %s", string(out))
 	}
 }
+
+func TestTreeSkippedNodesDynamicGrowth(t *testing.T) {
+	tree := &node{}
+	routes := [...]string{
+		"/x/y/z/w",
+		"/x/y/:id/w",
+		"/x/:id/z/w",
+		"/:id/y/z/w",
+	}
+	for _, route := range routes {
+		tree.addRoute(route, fakeHandler(route))
+	}
+
+	skippedNodes := make([]skippedNode, 0, 1)
+	val := tree.getValue("/x/y/z/w/extra", nil, &skippedNodes, false)
+	if val.handlers != nil {
+		t.Fatalf("expected nil handlers, got %v", val.handlers)
+	}
+	if cap(skippedNodes) <= 1 {
+		t.Fatalf("expected skippedNodes capacity to grow beyond 1, got %d", cap(skippedNodes))
+	}
+}

@@ -1195,3 +1195,23 @@ func TestRouterQueryMethod(t *testing.T) {
 	router.ServeHTTP(w2, req2)
 	assert.Equal(t, http.StatusNotFound, w2.Code)
 }
+
+func TestLateRouteRegistrationSkippedNodes(t *testing.T) {
+	router := New()
+	router.HandleMethodNotAllowed = true
+	router.GET("/a", func(c *Context) { c.Status(http.StatusOK) })
+
+	w := PerformRequest(router, http.MethodGet, "/a")
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	h := func(c *Context) {}
+	router.GET("/x/y/z/w", h)
+	router.GET("/x/y/:id/w", h)
+	router.GET("/x/:id/z/w", h)
+	router.GET("/:id/y/z/w", h)
+
+	req := httptest.NewRequest(http.MethodPost, "/x/y/z/w/extra", nil)
+	w = httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusNotFound, w.Code)
+}
