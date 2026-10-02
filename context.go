@@ -1236,7 +1236,7 @@ func (c *Context) IndentedJSON(code int, obj any) {
 }
 
 // SecureJSON serializes the given struct as Secure JSON into the response body.
-// Default prepends "while(1)," to response body if the given struct is array values.
+// Default prepends "while(1);" to response body if the given struct is array values.
 // It also sets the Content-Type as "application/json".
 func (c *Context) SecureJSON(code int, obj any) {
 	c.Render(code, render.SecureJSON{Prefix: c.engine.secureJSONPrefix, Data: obj})
