@@ -4055,3 +4055,13 @@ func BenchmarkGetMapFromFormData(b *testing.B) {
 		})
 	}
 }
+
+func TestContextPostFormNoRequest(t *testing.T) {
+	c, _ := CreateTestContext(httptest.NewRecorder())
+
+	value, ok := c.GetPostForm("key")
+	assert.False(t, ok)
+	assert.Empty(t, value)
+	assert.Empty(t, c.PostForm("key"))
+	assert.Equal(t, "fallback", c.DefaultPostForm("key", "fallback"))
+}
