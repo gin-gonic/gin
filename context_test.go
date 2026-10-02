@@ -927,6 +927,79 @@ func TestContextDefaultQueryOnEmptyRequest(t *testing.T) {
 	})
 }
 
+func TestContextInitFormCache(t *testing.T) {
+	tests := []struct {
+		testName          string
+		testContext       *Context
+		expectedFormCache url.Values
+	}{
+		{
+			testName: "formCache should remain unchanged if already not nil",
+			testContext: &Context{
+				formCache: url.Values{"a": []string{"b"}},
+				Request:   nil,
+			},
+			expectedFormCache: url.Values{"a": []string{"b"}},
+		},
+		{
+			testName:          "formCache should be empty when Request is nil",
+			testContext:       &Context{Request: nil},
+			expectedFormCache: url.Values{},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.testName, func(t *testing.T) {
+			test.testContext.initFormCache()
+			assert.Equal(t, test.expectedFormCache, test.testContext.formCache)
+		})
+	}
+}
+
+func TestContextPostFormOnEmptyRequest(t *testing.T) {
+	c, _ := CreateTestContext(httptest.NewRecorder()) // here c.Request == nil
+	assert.NotPanics(t, func() {
+		value, ok := c.GetPostForm("NoKey")
+		assert.False(t, ok)
+		assert.Empty(t, value)
+	})
+	assert.NotPanics(t, func() {
+		assert.Equal(t, "nada", c.DefaultPostForm("NoKey", "nada"))
+	})
+	assert.NotPanics(t, func() {
+		assert.Empty(t, c.PostForm("NoKey"))
+	})
+	assert.NotPanics(t, func() {
+		values, ok := c.GetPostFormArray("NoKey")
+		assert.False(t, ok)
+		assert.Empty(t, values)
+	})
+	assert.NotPanics(t, func() {
+		assert.Empty(t, c.PostFormArray("NoKey"))
+	})
+	assert.NotPanics(t, func() {
+		m, ok := c.GetPostFormMap("NoKey")
+		assert.False(t, ok)
+		assert.Empty(t, m)
+	})
+	assert.NotPanics(t, func() {
+		assert.Empty(t, c.PostFormMap("NoKey"))
+	})
+
+	c2 := &Context{}
+	assert.NotPanics(t, func() {
+		value, ok := c2.GetPostForm("NoKey")
+		assert.False(t, ok)
+		assert.Empty(t, value)
+	})
+	assert.NotPanics(t, func() {
+		assert.Equal(t, "nada", c2.DefaultPostForm("NoKey", "nada"))
+	})
+	assert.NotPanics(t, func() {
+		assert.Empty(t, c2.PostForm("NoKey"))
+	})
+}
+
 func TestContextQueryAndPostForm(t *testing.T) {
 	c, _ := CreateTestContext(httptest.NewRecorder())
 	body := strings.NewReader("foo=bar&page=11&both=&foo=second")
