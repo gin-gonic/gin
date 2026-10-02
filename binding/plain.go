@@ -16,9 +16,12 @@ func (plainBinding) Name() string {
 }
 
 func (plainBinding) Bind(req *http.Request, obj any) error {
-	all, err := io.ReadAll(req.Body)
+	all, err := io.ReadAll(io.LimitReader(req.Body, DefaultMaxBodySize+1))
 	if err != nil {
 		return err
+	}
+	if len(all) > DefaultMaxBodySize {
+		return http.ErrBodyReadAfterClose
 	}
 
 	return decodePlain(all, obj)

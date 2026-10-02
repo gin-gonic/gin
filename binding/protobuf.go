@@ -19,9 +19,12 @@ func (protobufBinding) Name() string {
 }
 
 func (b protobufBinding) Bind(req *http.Request, obj any) error {
-	buf, err := io.ReadAll(req.Body)
+	buf, err := io.ReadAll(io.LimitReader(req.Body, DefaultMaxBodySize+1))
 	if err != nil {
 		return err
+	}
+	if len(buf) > DefaultMaxBodySize {
+		return http.ErrBodyReadAfterClose
 	}
 	return b.BindBody(buf, obj)
 }

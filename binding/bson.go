@@ -18,8 +18,11 @@ func (bsonBinding) Name() string {
 }
 
 func (b bsonBinding) Bind(req *http.Request, obj any) error {
-	buf, err := io.ReadAll(req.Body)
+	buf, err := io.ReadAll(io.LimitReader(req.Body, DefaultMaxBodySize+1))
 	if err == nil {
+		if len(buf) > DefaultMaxBodySize {
+			return http.ErrBodyReadAfterClose
+		}
 		err = b.BindBody(buf, obj)
 	}
 	return err
