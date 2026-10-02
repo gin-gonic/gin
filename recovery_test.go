@@ -443,6 +443,36 @@ func TestRecoveryRespectsConsoleColorMode(t *testing.T) {
 	assert.NotContains(t, out, reset)
 }
 
+func TestRecoveryWithFileWriterAutoColor(t *testing.T) {
+	prev := consoleColorMode
+	t.Cleanup(func() { consoleColorMode = prev })
+	consoleColorMode = autoColor
+
+	file, err := os.CreateTemp(t.TempDir(), "recovery-*.log")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { assert.NoError(t, file.Close()) })
+
+	router := New()
+	router.Use(RecoveryWithWriter(file))
+	router.GET("/recovery", func(_ *Context) {
+		panic("file-writer check")
+	})
+
+	w := PerformRequest(router, http.MethodGet, "/recovery")
+	assert.Equal(t, http.StatusInternalServerError, w.Code)
+
+	output, err := os.ReadFile(file.Name())
+	if err != nil {
+		t.Fatal(err)
+	}
+	assert.Contains(t, string(output), "panic recovered")
+	assert.Contains(t, string(output), "file-writer check")
+	assert.Contains(t, string(output), t.Name())
+	assert.NotContains(t, string(output), "\x1b[")
+}
+
 func BenchmarkStack(b *testing.B) {
 	b.ReportAllocs()
 	for b.Loop() {
