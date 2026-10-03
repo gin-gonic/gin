@@ -9,9 +9,15 @@ import (
 	"encoding/base64"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/gin-gonic/gin/internal/bytesconv"
 )
+
+// basicAuthFailureDelay is a small artificial delay applied on failed
+// authentication attempts to throttle brute-force and credential-stuffing
+// attacks against BasicAuth protected routes.
+const basicAuthFailureDelay = 500 * time.Millisecond
 
 // AuthUserKey is the cookie name for user credential in basic auth.
 const AuthUserKey = "user"
