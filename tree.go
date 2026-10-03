@@ -78,7 +78,7 @@ func (n *node) addChild(child *node) {
 }
 
 func countParams(path string) uint16 {
-	colons := strings.Count(path, ":")
+	colons := strings.Count(path, ":") - strings.Count(path, escapedColon)
 	stars := strings.Count(path, "*")
 	return safeUint16(colons + stars)
 }
@@ -97,14 +97,15 @@ const (
 )
 
 type node struct {
-	path      string
-	indices   string
-	wildChild bool
-	nType     nodeType
-	priority  uint32
-	children  []*node // child nodes, at most 1 :param style node at the end of the array
-	handlers  HandlersChain
-	fullPath  string
+	path               string
+	indices            string
+	wildChild          bool
+	customMethodSuffix bool
+	nType              nodeType
+	priority           uint32
+	children           []*node // child nodes, at most 1 :param style node at the end of the array
+	handlers           HandlersChain
+	fullPath           string
 }
 
 // incrementChildPrio increments the priority of the given child and reorders it if necessary.
@@ -155,14 +156,15 @@ walk:
 		// Split edge
 		if i < len(n.path) {
 			child := node{
-				path:      n.path[i:],
-				wildChild: n.wildChild,
-				nType:     static,
-				indices:   n.indices,
-				children:  n.children,
-				handlers:  n.handlers,
-				priority:  n.priority - 1,
-				fullPath:  n.fullPath,
+				path:               n.path[i:],
+				wildChild:          n.wildChild,
+				customMethodSuffix: n.customMethodSuffix,
+				nType:              static,
+				indices:            n.indices,
+				children:           n.children,
+				handlers:           n.handlers,
+				priority:           n.priority - 1,
+				fullPath:           n.fullPath,
 			}
 
 			n.children = []*node{&child}
@@ -179,8 +181,9 @@ walk:
 			path = path[i:]
 			c := path[0]
 
-			// '/' after param
-			if n.nType == param && c == '/' && len(n.children) == 1 {
+			// A param can be followed by a slash or an escaped literal colon.
+			if n.nType == param && len(n.children) == 1 &&
+				len(n.children[0].path) > 0 && n.children[0].path[0] == c {
 				parentFullPathIndex += len(n.path)
 				n = n.children[0]
 				n.priority++
@@ -199,6 +202,12 @@ walk:
 
 			// Otherwise insert it
 			if c != ':' && c != '*' && n.nType != catchAll {
+				if n.nType == param && n.indices == "" && len(n.children) > 0 {
+					n.indices = n.children[0].path[:1]
+				}
+				if n.nType == param && strings.HasPrefix(path, escapedColon) {
+					n.customMethodSuffix = true
+				}
 				// []byte for proper unicode char conversion, see #65
 				n.indices += bytesconv.BytesToString([]byte{c})
 				child := &node{
@@ -217,7 +226,8 @@ walk:
 					// Adding a child to a catchAll is not possible
 					n.nType != catchAll &&
 					// Check for longer wildcard, e.g. :name and :names
-					(len(n.path) >= len(path) || path[len(n.path)] == '/') {
+					(len(n.path) >= len(path) || path[len(n.path)] == '/' ||
+						strings.HasPrefix(path[len(n.path):], escapedColon)) {
 					continue walk
 				}
 
@@ -276,6 +286,10 @@ func findWildcard(path string) (wildcard string, i int, valid bool) {
 			switch c {
 			case '/':
 				return path[start : start+1+end], start, valid
+			case '\\':
+				if start+end+2 < len(path) && path[start+end+2] == ':' {
+					return path[start : start+1+end], start, valid
+				}
 			case ':', '*':
 				valid = false
 			}
@@ -325,6 +339,7 @@ func (n *node) insertChild(path string, fullPath string, handlers HandlersChain)
 			// will be another subpath starting with '/'
 			if len(wildcard) < len(path) {
 				path = path[len(wildcard):]
+				n.customMethodSuffix = strings.HasPrefix(path, escapedColon)
 
 				child := &node{
 					priority: 1,
@@ -410,6 +425,18 @@ type skippedNode struct {
 	paramsCount int16
 }
 
+// matchStaticSuffixPath checks whether a suffix route handles the remaining path.
+// This prevents a partial suffix match from hiding a regular parameter route.
+func matchStaticSuffixPath(n *node, suffix string) bool {
+	if suffix == n.path {
+		return n.handlers != nil
+	}
+	// A backtrack frame consumes at least one path byte; reserve enough room
+	// for getValue's stack even when several choices occur in one segment.
+	skipped := make([]skippedNode, 0, len(suffix))
+	return n.getValue(suffix, nil, &skipped, false).handlers != nil
+}
+
 // Returns the handle registered with the given path (key). The values of
 // wildcards are saved to a map.
 // If no handle can be found, a TSR (trailing slash redirect) recommendation is
@@ -444,13 +471,14 @@ walk: // Outer loop for walking the tree
 							(*skippedNodes)[index] = skippedNode{
 								path: prefix + path,
 								node: &node{
-									path:      n.path,
-									wildChild: n.wildChild,
-									nType:     n.nType,
-									priority:  n.priority,
-									children:  n.children,
-									handlers:  n.handlers,
-									fullPath:  n.fullPath,
+									path:               n.path,
+									wildChild:          n.wildChild,
+									customMethodSuffix: n.customMethodSuffix,
+									nType:              n.nType,
+									priority:           n.priority,
+									children:           n.children,
+									handlers:           n.handlers,
+									fullPath:           n.fullPath,
 								},
 								paramsCount: globalParamsCount,
 							}
@@ -501,6 +529,26 @@ walk: // Outer loop for walking the tree
 					for end < len(path) && path[end] != '/' {
 						end++
 					}
+					// A literal custom-method suffix takes precedence over a
+					// parameter that would otherwise consume the whole segment.
+					var suffixChild *node
+					if n.customMethodSuffix {
+						for _, child := range n.children {
+							if child.nType != static || !strings.HasPrefix(child.path, ":") {
+								continue
+							}
+							for i := end - 1; i > 0; i-- {
+								if path[i] == ':' && matchStaticSuffixPath(child, path[i:]) {
+									end = i
+									suffixChild = child
+									break
+								}
+							}
+							if suffixChild != nil {
+								break
+							}
+						}
+					}
 
 					// Save param value
 					if params != nil {
@@ -533,7 +581,15 @@ walk: // Outer loop for walking the tree
 					if end < len(path) {
 						if len(n.children) > 0 {
 							path = path[end:]
-							n = n.children[0]
+							if suffixChild != nil {
+								n = suffixChild
+							} else if n.indices == "" {
+								n = n.children[0]
+							} else if childIndex := strings.IndexByte(n.indices, path[0]); childIndex >= 0 {
+								n = n.children[childIndex]
+							} else {
+								return value
+							}
 							continue walk
 						}
 

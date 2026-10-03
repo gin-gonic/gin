@@ -29,6 +29,70 @@ func formatAsDate(t time.Time) string {
 	return fmt.Sprintf("%d/%02d/%02d", year, month, day)
 }
 
+func TestCustomMethodRouteSuffix(t *testing.T) {
+	router := New()
+	router.POST(`/v1/projects/:name\:undelete`, func(c *Context) {
+		c.String(http.StatusOK, "undelete:%s:%s", c.Param("name"), c.FullPath())
+	})
+	router.POST(`/v1/projects/:name\:archive`, func(c *Context) {
+		c.String(http.StatusOK, "archive:%s:%s", c.Param("name"), c.FullPath())
+	})
+	router.POST(`/v1/projects/:name`, func(c *Context) {
+		c.String(http.StatusOK, "project:%s", c.Param("name"))
+	})
+	router.POST(`/v1/projects/:name/details`, func(c *Context) {
+		c.String(http.StatusOK, "details:%s", c.Param("name"))
+	})
+	router.POST(`/v1/projects/fixed\:archive`, func(c *Context) {
+		c.String(http.StatusOK, "fixed")
+	})
+
+	for _, tc := range []struct {
+		path, body string
+	}{
+		{"/v1/projects/p123:undelete", "undelete:p123:/v1/projects/:name:undelete"},
+		{"/v1/projects/p123:archive", "archive:p123:/v1/projects/:name:archive"},
+		{"/v1/projects/p:a:archive", "archive:p:a:/v1/projects/:name:archive"},
+		{"/v1/projects/p123", "project:p123"},
+		{"/v1/projects/p123:unknown", "project:p123:unknown"},
+		{"/v1/projects/p123/details", "details:p123"},
+		{"/v1/projects/fixed:archive", "fixed"},
+	} {
+		w := PerformRequest(router, http.MethodPost, tc.path)
+		assert.Equal(t, http.StatusOK, w.Code, tc.path)
+		assert.Equal(t, tc.body, w.Body.String(), tc.path)
+	}
+
+	withoutPlainParam := New()
+	withoutPlainParam.POST(`/v1/projects/:name\:archive`, func(c *Context) {
+		c.String(http.StatusOK, c.Param("name"))
+	})
+	assert.Equal(t, http.StatusNotFound, PerformRequest(withoutPlainParam, http.MethodPost, "/v1/projects/p123:unknown").Code)
+	assert.Equal(t, "p123", PerformRequest(withoutPlainParam, http.MethodPost, "/v1/projects/p123:archive").Body.String())
+
+	plainFirst := New()
+	plainFirst.POST(`/v1/projects/:name`, func(c *Context) {
+		c.String(http.StatusOK, "plain:%s", c.Param("name"))
+	})
+	plainFirst.POST(`/v1/projects/:name/details`, func(c *Context) {
+		c.String(http.StatusOK, "details:%s", c.Param("name"))
+	})
+	plainFirst.POST(`/v1/projects/:name/other`, func(c *Context) {
+		c.String(http.StatusOK, "other:%s", c.Param("name"))
+	})
+	plainFirst.POST(`/v1/projects/:name\:archive`, func(c *Context) {
+		c.String(http.StatusOK, "archive:%s", c.Param("name"))
+	})
+	plainFirst.POST(`/v1/projects/:name\:archive/confirm`, func(c *Context) {
+		c.String(http.StatusOK, "confirm:%s", c.Param("name"))
+	})
+	assert.Equal(t, "archive:p123", PerformRequest(plainFirst, http.MethodPost, "/v1/projects/p123:archive").Body.String())
+	assert.Equal(t, "confirm:p123", PerformRequest(plainFirst, http.MethodPost, "/v1/projects/p123:archive/confirm").Body.String())
+	assert.Equal(t, "plain:p123", PerformRequest(plainFirst, http.MethodPost, "/v1/projects/p123").Body.String())
+	assert.Equal(t, "details:p123", PerformRequest(plainFirst, http.MethodPost, "/v1/projects/p123/details").Body.String())
+	assert.Equal(t, "other:p123:archive", PerformRequest(plainFirst, http.MethodPost, "/v1/projects/p123:archive/other").Body.String())
+}
+
 func setupHTMLFiles(t *testing.T, mode string, tls bool, loadMethod func(*Engine)) *httptest.Server {
 	SetMode(mode)
 	defer SetMode(TestMode)
