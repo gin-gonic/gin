@@ -132,6 +132,85 @@ func TestPathCleanLong(t *testing.T) {
 	}
 }
 
+func TestPathCleanFastPathHelpers(t *testing.T) {
+	cleanSegmentTests := []struct {
+		name string
+		path string
+		want bool
+	}{
+		{"empty", "", false},
+		{"dot", ".", false},
+		{"dotdot", "..", false},
+		{"nested", "abc/def", false},
+		{"clean", "abc", true},
+	}
+	for _, test := range cleanSegmentTests {
+		t.Run("single segment "+test.name, func(t *testing.T) {
+			assert.Equal(t, test.want, isSingleCleanPathSegment(test.path))
+		})
+	}
+
+	repeatedSlashTests := []struct {
+		name    string
+		path    string
+		want    string
+		wantHit bool
+	}{
+		{"only slashes", "///", "/", true},
+		{"dot segment", "//.", "/", true},
+		{"dotdot segment", "//..", "/", true},
+		{"single segment", "//abc", "/abc", true},
+		{"nested segment", "//abc/def", "", false},
+	}
+	for _, test := range repeatedSlashTests {
+		t.Run("leading slash "+test.name, func(t *testing.T) {
+			got, ok := cleanRepeatedLeadingSlash(test.path)
+			assert.Equal(t, test.wantHit, ok)
+			assert.Equal(t, test.want, got)
+		})
+	}
+
+	parentPathTests := []struct {
+		name    string
+		path    string
+		want    string
+		wantHit bool
+	}{
+		{"root parent", "/abc/..", "/", true},
+		{"clean parent", "/abc/b/..", "/abc", true},
+		{"not trailing parent", "/abc/b", "", false},
+		{"unclean prefix", "/abc/./b/..", "", false},
+	}
+	for _, test := range parentPathTests {
+		t.Run("trailing parent "+test.name, func(t *testing.T) {
+			got, ok := cleanTrailingParentPath(test.path)
+			assert.Equal(t, test.wantHit, ok)
+			assert.Equal(t, test.want, got)
+		})
+	}
+
+	absolutePathTests := []struct {
+		name string
+		path string
+		want bool
+	}{
+		{"empty", "", false},
+		{"relative", "abc", false},
+		{"root", "/", true},
+		{"single segment", "/abc", true},
+		{"nested", "/abc/def", true},
+		{"trailing slash", "/abc/", false},
+		{"dot segment", "/abc/./def", false},
+		{"dotdot segment", "/abc/../def", false},
+		{"empty segment", "/abc//def", false},
+	}
+	for _, test := range absolutePathTests {
+		t.Run("absolute path "+test.name, func(t *testing.T) {
+			assert.Equal(t, test.want, isCleanAbsolutePath(test.path))
+		})
+	}
+}
+
 func BenchmarkPathCleanLong(b *testing.B) {
 	cleanTests := genLongPaths()
 
