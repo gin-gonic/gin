@@ -216,6 +216,18 @@ func main() {
 }
 ```
 
+To place a literal colon after a path parameter, escape it in the route definition.
+This supports custom method URLs such as `/projects/p123:archive`:
+
+```go
+router.POST(`/projects/:name\:archive`, func(c *gin.Context) {
+  c.String(http.StatusOK, "Archive %s", c.Param("name")) // "p123"
+})
+```
+
+The suffix must match literally; it is not included in `name`. A regular
+`/projects/:name` route can coexist with this route and handles other suffixes.
+
 ### Querystring parameters
 
 ```go
