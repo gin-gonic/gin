@@ -165,7 +165,7 @@ func tryToSetValue(value reflect.Value, field reflect.StructField, setter setter
 			setOpt.defaultValue = v
 
 			// convert semicolon-separated default values to csv-separated values for processing in setByForm
-			if field.Type.Kind() == reflect.Slice || field.Type.Kind() == reflect.Array {
+			if value.Kind() == reflect.Slice || value.Kind() == reflect.Array {
 				cfTag := field.Tag.Get("collection_format")
 				if cfTag == "" || cfTag == "multi" || cfTag == "csv" {
 					setOpt.defaultValue = strings.ReplaceAll(v, ";", ",")
