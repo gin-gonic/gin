@@ -709,6 +709,30 @@ func TestContextGetStringMapStringSlice(t *testing.T) {
 	assert.Equal(t, []string{"foo"}, c.GetStringMapStringSlice("map")["foo"])
 }
 
+func TestCopyConcurrentWithSet(t *testing.T) {
+	c := &Context{}
+	var wg sync.WaitGroup
+	wg.Add(2)
+	go func() {
+		defer wg.Done()
+		for i := 0; i < 100; i++ {
+			c.Set(i, i)
+		}
+	}()
+	go func() {
+		defer wg.Done()
+		for i := 0; i < 100; i++ {
+			cp := c.Copy()
+			for k, v := range cp.Keys {
+				if k != v {
+					t.Errorf("copied key %v = %v, want %v", k, v, k)
+				}
+			}
+		}
+	}()
+	wg.Wait()
+}
+
 func TestContextCopy(t *testing.T) {
 	c, _ := CreateTestContext(httptest.NewRecorder())
 	c.index = 2
@@ -1352,6 +1376,82 @@ func TestContextRenderHTML(t *testing.T) {
 	assert.Equal(t, http.StatusCreated, w.Code)
 	assert.Equal(t, "Hello alexandernyquist", w.Body.String())
 	assert.Equal(t, "text/html; charset=utf-8", w.Header().Get("Content-Type"))
+}
+
+func TestContextRenderHTMLWithoutRenderer(t *testing.T) {
+	tests := []struct {
+		name           string
+		method         string
+		status         int
+		wantErrors     []string
+		wantAborted    bool
+		wantNextCalled bool
+	}{
+		{
+			name:        "body allowed",
+			method:      http.MethodGet,
+			status:      http.StatusAccepted,
+			wantErrors:  []string{"html renderer is not configured"},
+			wantAborted: true,
+		},
+		{
+			name:           "no content",
+			method:         http.MethodGet,
+			status:         http.StatusNoContent,
+			wantNextCalled: true,
+		},
+		{
+			name:           "not modified",
+			method:         http.MethodGet,
+			status:         http.StatusNotModified,
+			wantNextCalled: true,
+		},
+		{
+			name:        "head",
+			method:      http.MethodHead,
+			status:      http.StatusOK,
+			wantErrors:  []string{"html renderer is not configured"},
+			wantAborted: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			w := httptest.NewRecorder()
+			router := New()
+			var contextErrors []string
+			var contextAborted bool
+			nextHandlerCalled := false
+
+			handlers := []HandlerFunc{
+				func(c *Context) {
+					c.HTML(tt.status, "index.tmpl", H{"title": "Main website"})
+					contextErrors = c.Errors.Errors()
+					contextAborted = c.IsAborted()
+				},
+				func(_ *Context) {
+					nextHandlerCalled = true
+				},
+			}
+			if tt.method == http.MethodHead {
+				router.HEAD("/", handlers...)
+			} else {
+				router.GET("/", handlers...)
+			}
+
+			req := httptest.NewRequest(tt.method, "/", nil)
+			require.NotPanics(t, func() {
+				router.ServeHTTP(w, req)
+			})
+
+			assert.Equal(t, tt.status, w.Code)
+			assert.Equal(t, "text/html; charset=utf-8", w.Header().Get("Content-Type"))
+			assert.Equal(t, tt.wantErrors, contextErrors)
+			assert.Equal(t, tt.wantAborted, contextAborted)
+			assert.Equal(t, tt.wantNextCalled, nextHandlerCalled)
+			assert.Empty(t, w.Body.String())
+		})
+	}
 }
 
 func TestContextRenderHTML2(t *testing.T) {

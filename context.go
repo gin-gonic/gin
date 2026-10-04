@@ -132,9 +132,8 @@ func (c *Context) Copy() *Context {
 	cp.handlers = nil
 	cp.fullPath = c.fullPath
 
-	cKeys := c.Keys
 	c.mu.RLock()
-	cp.Keys = maps.Clone(cKeys)
+	cp.Keys = maps.Clone(c.Keys)
 	c.mu.RUnlock()
 
 	cParams := c.Params
@@ -1224,6 +1223,11 @@ func (c *Context) Render(code int, r render.Render) {
 // It also updates the HTTP code and sets the Content-Type as "text/html".
 // See http://golang.org/doc/articles/wiki/
 func (c *Context) HTML(code int, name string, obj any) {
+	if c.engine.HTMLRender == nil {
+		c.Render(code, render.HTML{})
+		return
+	}
+
 	instance := c.engine.HTMLRender.Instance(name, obj)
 	c.Render(code, instance)
 }
@@ -1237,7 +1241,7 @@ func (c *Context) IndentedJSON(code int, obj any) {
 }
 
 // SecureJSON serializes the given struct as Secure JSON into the response body.
-// Default prepends "while(1)," to response body if the given struct is array values.
+// Default prepends "while(1);" to response body if the given struct is array values.
 // It also sets the Content-Type as "application/json".
 func (c *Context) SecureJSON(code int, obj any) {
 	c.Render(code, render.SecureJSON{Prefix: c.engine.secureJSONPrefix, Data: obj})
