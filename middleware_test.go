@@ -289,3 +289,21 @@ func TestNoMethodIncludesGlobalMiddlewareByDefault(t *testing.T) {
 	assert.Equal(t, http.StatusBadRequest, w.Code)
 	assert.Equal(t, "mw", w.Body.String())
 }
+
+func TestNoMethodSkipHandlersSetAfterRegistration(t *testing.T) {
+	router := New()
+	router.HandleMethodNotAllowed = true
+	router.Use(func(c *Context) {
+		c.String(http.StatusBadRequest, "mw")
+		c.Abort()
+	})
+	router.NoMethod(func(c *Context) {
+		c.String(http.StatusMethodNotAllowed, "no method")
+	})
+	router.NoMethodSkipHandlers = true
+	router.POST("/ping", func(c *Context) { c.Status(http.StatusOK) })
+
+	w := PerformRequest(router, http.MethodGet, "/ping")
+	assert.Equal(t, http.StatusMethodNotAllowed, w.Code)
+	assert.Equal(t, "no method", w.Body.String())
+}

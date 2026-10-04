@@ -133,7 +133,6 @@ type Engine struct {
 	// handlers — global middleware from Engine.Use is not prepended. Default
 	// false keeps historical behavior (logger/recovery still run on 405).
 	// Only applies when HandleMethodNotAllowed is true.
-	// Set this before Use/NoMethod (rebuild happens on those calls).
 	NoMethodSkipHandlers bool
 
 	// ForwardedByClientIP if enabled, client IP will be parsed from the request's headers that
@@ -388,10 +387,6 @@ func (engine *Engine) rebuild404Handlers() {
 }
 
 func (engine *Engine) rebuild405Handlers() {
-	if engine.NoMethodSkipHandlers {
-		engine.allNoMethod = engine.noMethod
-		return
-	}
 	engine.allNoMethod = engine.combineHandlers(engine.noMethod)
 }
 
@@ -789,6 +784,9 @@ func (engine *Engine) handleHTTPRequest(c *Context) {
 		}
 		if len(allowed) > 0 {
 			c.handlers = engine.allNoMethod
+			if engine.NoMethodSkipHandlers {
+				c.handlers = engine.noMethod
+			}
 			c.writermem.Header().Set("Allow", strings.Join(allowed, ", "))
 			serveError(c, http.StatusMethodNotAllowed, default405Body)
 			return
