@@ -4,7 +4,10 @@
 
 package render
 
-import "net/http"
+import (
+	"net/http"
+	"slices"
+)
 
 // Render interface is to be implemented by JSON, XML, HTML, YAML and so on.
 type Render interface {
@@ -37,6 +40,6 @@ var (
 func writeContentType(w http.ResponseWriter, value []string) {
 	header := w.Header()
 	if val := header["Content-Type"]; len(val) == 0 {
-		header["Content-Type"] = value
+		header["Content-Type"] = slices.Clone(value)
 	}
 }
