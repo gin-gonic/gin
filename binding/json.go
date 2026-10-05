@@ -31,17 +31,31 @@ func (jsonBinding) Name() string {
 }
 
 func (jsonBinding) Bind(req *http.Request, obj any) error {
+	if err := (jsonBinding{}).BindNoValidate(req, obj); err != nil {
+		return err
+	}
+	return validate(obj)
+}
+
+func (jsonBinding) BindNoValidate(req *http.Request, obj any) error {
 	if req == nil || req.Body == nil {
 		return errors.New("invalid request")
 	}
-	return decodeJSON(req.Body, obj)
+	return decodeJSONNoValidate(req.Body, obj)
 }
 
 func (jsonBinding) BindBody(body []byte, obj any) error {
-	return decodeJSON(bytes.NewReader(body), obj)
+	if err := (jsonBinding{}).BindBodyNoValidate(body, obj); err != nil {
+		return err
+	}
+	return validate(obj)
 }
 
-func decodeJSON(r io.Reader, obj any) error {
+func (jsonBinding) BindBodyNoValidate(body []byte, obj any) error {
+	return decodeJSONNoValidate(bytes.NewReader(body), obj)
+}
+
+func decodeJSONNoValidate(r io.Reader, obj any) error {
 	decoder := json.API.NewDecoder(r)
 	if EnableDecoderUseNumber {
 		decoder.UseNumber()
@@ -52,5 +66,5 @@ func decodeJSON(r io.Reader, obj any) error {
 	if err := decoder.Decode(obj); err != nil {
 		return err
 	}
-	return validate(obj)
+	return nil
 }

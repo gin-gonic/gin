@@ -22,14 +22,26 @@ func (yamlBinding) Bind(req *http.Request, obj any) error {
 	return decodeYAML(req.Body, obj)
 }
 
+func (yamlBinding) BindNoValidate(req *http.Request, obj any) error {
+	return decodeYAMLNoValidate(req.Body, obj)
+}
+
 func (yamlBinding) BindBody(body []byte, obj any) error {
 	return decodeYAML(bytes.NewReader(body), obj)
 }
 
+func (yamlBinding) BindBodyNoValidate(body []byte, obj any) error {
+	return decodeYAMLNoValidate(bytes.NewReader(body), obj)
+}
+
 func decodeYAML(r io.Reader, obj any) error {
-	decoder := yaml.NewDecoder(r)
-	if err := decoder.Decode(obj); err != nil {
+	if err := decodeYAMLNoValidate(r, obj); err != nil {
 		return err
 	}
 	return validate(obj)
+}
+
+func decodeYAMLNoValidate(r io.Reader, obj any) error {
+	decoder := yaml.NewDecoder(r)
+	return decoder.Decode(obj)
 }

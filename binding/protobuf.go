@@ -19,14 +19,22 @@ func (protobufBinding) Name() string {
 }
 
 func (b protobufBinding) Bind(req *http.Request, obj any) error {
+	return b.BindNoValidate(req, obj)
+}
+
+func (b protobufBinding) BindNoValidate(req *http.Request, obj any) error {
 	buf, err := io.ReadAll(req.Body)
 	if err != nil {
 		return err
 	}
-	return b.BindBody(buf, obj)
+	return b.BindBodyNoValidate(buf, obj)
 }
 
 func (protobufBinding) BindBody(body []byte, obj any) error {
+	return (protobufBinding{}).BindBodyNoValidate(body, obj)
+}
+
+func (protobufBinding) BindBodyNoValidate(body []byte, obj any) error {
 	msg, ok := obj.(proto.Message)
 	if !ok {
 		return errors.New("obj is not ProtoMessage")

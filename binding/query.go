@@ -13,9 +13,16 @@ func (queryBinding) Name() string {
 }
 
 func (queryBinding) Bind(req *http.Request, obj any) error {
+	if err := (queryBinding{}).BindNoValidate(req, obj); err != nil {
+		return err
+	}
+	return validate(obj)
+}
+
+func (queryBinding) BindNoValidate(req *http.Request, obj any) error {
 	values := req.URL.Query()
 	if err := mapForm(obj, values); err != nil {
 		return err
 	}
-	return validate(obj)
+	return nil
 }

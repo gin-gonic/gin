@@ -24,14 +24,26 @@ func (msgpackBinding) Bind(req *http.Request, obj any) error {
 	return decodeMsgPack(req.Body, obj)
 }
 
+func (msgpackBinding) BindNoValidate(req *http.Request, obj any) error {
+	return decodeMsgPackNoValidate(req.Body, obj)
+}
+
 func (msgpackBinding) BindBody(body []byte, obj any) error {
 	return decodeMsgPack(bytes.NewReader(body), obj)
 }
 
+func (msgpackBinding) BindBodyNoValidate(body []byte, obj any) error {
+	return decodeMsgPackNoValidate(bytes.NewReader(body), obj)
+}
+
 func decodeMsgPack(r io.Reader, obj any) error {
-	cdc := new(codec.MsgpackHandle)
-	if err := codec.NewDecoder(r, cdc).Decode(&obj); err != nil {
+	if err := decodeMsgPackNoValidate(r, obj); err != nil {
 		return err
 	}
 	return validate(obj)
+}
+
+func decodeMsgPackNoValidate(r io.Reader, obj any) error {
+	cdc := new(codec.MsgpackHandle)
+	return codec.NewDecoder(r, cdc).Decode(&obj)
 }
