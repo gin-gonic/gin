@@ -743,6 +743,60 @@ func TestEngineHandleContextPreventsMiddlewareReEntry(t *testing.T) {
 	assert.Equal(t, int64(1), handlerCounterV2)
 }
 
+func TestEngineHandleContextAbortPreventsTargetHandler(t *testing.T) {
+	// Scenario from issue #2944:
+	// - /t1 internally redirects to /t2 via HandleContext
+	// - The /t2 chain starts with a middleware that aborts
+	// The abort must prevent the /t2 handler from running, even though
+	// the outer chain resumes after HandleContext returns.
+
+	var targetHandlerCalled int64
+
+	r := New()
+	r.GET("/t1", func(c *Context) {
+		c.Request.URL.Path = "/t2"
+		r.HandleContext(c)
+	})
+	r.Use(func(c *Context) {
+		c.AbortWithStatusJSON(http.StatusOK, H{"result": "mid"})
+	})
+	r.GET("/t2", func(c *Context) {
+		atomic.AddInt64(&targetHandlerCalled, 1)
+		c.JSON(http.StatusOK, H{"result": "t2"})
+	})
+
+	w := PerformRequest(r, http.MethodGet, "/t1")
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Equal(t, `{"result":"mid"}`, w.Body.String())
+	assert.Equal(t, int64(0), atomic.LoadInt64(&targetHandlerCalled))
+}
+
+func TestEngineHandleContextAbortWithNextPreventsTargetHandler(t *testing.T) {
+	// Variant from issue #2944 where the aborting middleware also
+	// calls Next() explicitly; the target handler must still not run.
+
+	var targetHandlerCalled int64
+
+	r := New()
+	r.GET("/t1", func(c *Context) {
+		c.Request.URL.Path = "/t2"
+		r.HandleContext(c)
+	})
+	r.Use(func(c *Context) {
+		c.AbortWithStatusJSON(http.StatusOK, H{"result": "mid"})
+		c.Next()
+	})
+	r.GET("/t2", func(c *Context) {
+		atomic.AddInt64(&targetHandlerCalled, 1)
+		c.JSON(http.StatusOK, H{"result": "t2"})
+	})
+
+	w := PerformRequest(r, http.MethodGet, "/t1")
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Equal(t, `{"result":"mid"}`, w.Body.String())
+	assert.Equal(t, int64(0), atomic.LoadInt64(&targetHandlerCalled))
+}
+
 func TestEngineHandleContextNoRouteWithGroupMiddleware(t *testing.T) {
 	// Scenario from issue #1848:
 	// - Engine with no global middleware (gin.New())
