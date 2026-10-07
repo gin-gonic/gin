@@ -4055,3 +4055,17 @@ func BenchmarkGetMapFromFormData(b *testing.B) {
 		})
 	}
 }
+
+func TestContextFormWithoutRequest(t *testing.T) {
+	// Regression test for https://github.com/gin-gonic/gin/issues/4772
+	// Form getters should not panic when c.Request is nil, and should
+	// behave like the query getters by returning empty/default values.
+	c, _ := CreateTestContext(httptest.NewRecorder())
+
+	assert.Equal(t, "", c.PostForm("key"))
+	assert.Equal(t, "fallback", c.DefaultPostForm("key", "fallback"))
+
+	value, ok := c.GetPostForm("key")
+	assert.Equal(t, "", value)
+	assert.False(t, ok)
+}
