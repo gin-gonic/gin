@@ -200,6 +200,58 @@ func TestContextMultipartForm(t *testing.T) {
 	require.NoError(t, c.SaveUploadedFile(f.File["file"][0], "test"))
 }
 
+func TestContextFormFileMixed(t *testing.T) {
+	buf := new(bytes.Buffer)
+	mw := multipart.NewWriter(buf)
+	w, err := mw.CreateFormFile("file", "mixed-test.txt")
+	require.NoError(t, err)
+	_, err = w.Write([]byte("mixed-content"))
+	require.NoError(t, err)
+	require.NoError(t, mw.Close())
+
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	c.Request, _ = http.NewRequest(http.MethodPost, "/", buf)
+	c.Request.Header.Set("Content-Type", MIMEMultipartMixed+"; boundary="+mw.Boundary())
+
+	f, err := c.FormFile("file")
+	require.NoError(t, err)
+	assert.Equal(t, "mixed-test.txt", f.Filename)
+}
+
+func TestContextMultipartFormMixed(t *testing.T) {
+	buf := new(bytes.Buffer)
+	mw := multipart.NewWriter(buf)
+	require.NoError(t, mw.WriteField("foo", "bar"))
+	w, err := mw.CreateFormFile("file", "mixed-test.txt")
+	require.NoError(t, err)
+	_, err = w.Write([]byte("mixed-content"))
+	require.NoError(t, err)
+	require.NoError(t, mw.Close())
+
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	c.Request, _ = http.NewRequest(http.MethodPost, "/", buf)
+	c.Request.Header.Set("Content-Type", MIMEMultipartMixed+"; boundary="+mw.Boundary())
+
+	f, err := c.MultipartForm()
+	require.NoError(t, err)
+	assert.NotNil(t, f)
+	assert.Equal(t, []string{"bar"}, f.Value["foo"])
+	assert.Len(t, f.File["file"], 1)
+}
+
+func TestContextPostFormMixed(t *testing.T) {
+	buf := new(bytes.Buffer)
+	mw := multipart.NewWriter(buf)
+	require.NoError(t, mw.WriteField("type", "image"))
+	require.NoError(t, mw.Close())
+
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	c.Request, _ = http.NewRequest(http.MethodPost, "/", buf)
+	c.Request.Header.Set("Content-Type", MIMEMultipartMixed+"; boundary="+mw.Boundary())
+
+	assert.Equal(t, "image", c.PostForm("type"))
+}
+
 func TestSaveUploadedOpenFailed(t *testing.T) {
 	buf := new(bytes.Buffer)
 	mw := multipart.NewWriter(buf)
