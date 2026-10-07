@@ -163,11 +163,13 @@ func TestIsASCII(t *testing.T) {
 }
 
 func TestSafeInt8(t *testing.T) {
+	assert.Equal(t, int8(0), safeInt8(0))
 	assert.Equal(t, int8(100), safeInt8(100))
 	assert.Equal(t, int8(math.MaxInt8), safeInt8(int(math.MaxInt8)+123))
 }
 
 func TestSafeUint16(t *testing.T) {
+	assert.Equal(t, uint16(0), safeUint16(0))
 	assert.Equal(t, uint16(100), safeUint16(100))
 	assert.Equal(t, uint16(math.MaxUint16), safeUint16(int(math.MaxUint16)+123))
 }
