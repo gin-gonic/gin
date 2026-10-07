@@ -121,6 +121,14 @@ func Benchmark404Many(B *testing.B) {
 	runRequest(B, router, http.MethodGet, "/viewfake")
 }
 
+func BenchmarkStaticRouteWithParamFallback(B *testing.B) {
+	router := New()
+	router.GET("/users/:id", func(c *Context) {})
+	router.GET("/users/new", func(c *Context) {})
+	router.GET("/users/:id/profile", func(c *Context) {})
+	runRequest(B, router, http.MethodGet, "/users/new")
+}
+
 type mockWriter struct {
 	headers http.Header
 }
