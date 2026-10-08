@@ -34,19 +34,38 @@ func (jsonBinding) Bind(req *http.Request, obj any) error {
 	if req == nil || req.Body == nil {
 		return errors.New("invalid request")
 	}
-	return decodeJSON(req.Body, obj)
+	return decodeJSON(req.Body, obj, false)
 }
 
 func (jsonBinding) BindBody(body []byte, obj any) error {
-	return decodeJSON(bytes.NewReader(body), obj)
+	return decodeJSON(bytes.NewReader(body), obj, false)
 }
 
-func decodeJSON(r io.Reader, obj any) error {
+// strictJSONBinding is a JSON binding which always rejects unknown fields,
+// regardless of the value of EnableDecoderDisallowUnknownFields.
+type strictJSONBinding struct{}
+
+func (strictJSONBinding) Name() string {
+	return "strict-json"
+}
+
+func (strictJSONBinding) Bind(req *http.Request, obj any) error {
+	if req == nil || req.Body == nil {
+		return errors.New("invalid request")
+	}
+	return decodeJSON(req.Body, obj, true)
+}
+
+func (strictJSONBinding) BindBody(body []byte, obj any) error {
+	return decodeJSON(bytes.NewReader(body), obj, true)
+}
+
+func decodeJSON(r io.Reader, obj any, strict bool) error {
 	decoder := json.API.NewDecoder(r)
 	if EnableDecoderUseNumber {
 		decoder.UseNumber()
 	}
-	if EnableDecoderDisallowUnknownFields {
+	if strict || EnableDecoderDisallowUnknownFields {
 		decoder.DisallowUnknownFields()
 	}
 	if err := decoder.Decode(obj); err != nil {
