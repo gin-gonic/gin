@@ -786,6 +786,12 @@ func (c *Context) BindJSON(obj any) error {
 	return c.MustBindWith(obj, binding.JSON)
 }
 
+// BindStrictJSON is a shortcut for c.MustBindWith(obj, binding.StrictJSON).
+// Unlike BindJSON, it rejects JSON objects containing fields that are unknown to obj.
+func (c *Context) BindStrictJSON(obj any) error {
+	return c.MustBindWith(obj, binding.StrictJSON)
+}
+
 // BindXML is a shortcut for c.MustBindWith(obj, binding.XML).
 func (c *Context) BindXML(obj any) error {
 	return c.MustBindWith(obj, binding.XML)
@@ -888,6 +894,14 @@ func (c *Context) ShouldBind(obj any) error {
 //	c.JSON(http.StatusOK, user)
 func (c *Context) ShouldBindJSON(obj any) error {
 	return c.ShouldBindWith(obj, binding.JSON)
+}
+
+// ShouldBindStrictJSON is a shortcut for c.ShouldBindWith(obj, binding.StrictJSON).
+// Unlike ShouldBindJSON, it returns an error if the JSON body contains fields
+// that are unknown to obj. It only affects this call, whereas
+// EnableJsonDecoderDisallowUnknownFields applies to every JSON binding.
+func (c *Context) ShouldBindStrictJSON(obj any) error {
+	return c.ShouldBindWith(obj, binding.StrictJSON)
 }
 
 // ShouldBindXML is a shortcut for c.ShouldBindWith(obj, binding.XML).
