@@ -110,9 +110,8 @@ func TestRouteQuery(t *testing.T) {
 	assert.Equal(t, "gin", w.Body.String())
 }
 
-// TestRouteQueryNotRegisteredByAny documents that Any does not register QUERY,
-// so that existing Any routes keep matching exactly the methods they used to.
-func TestRouteQueryNotRegisteredByAny(t *testing.T) {
+// TestRouteQueryRegisteredByAny documents that Any registers QUERY.
+func TestRouteQueryRegisteredByAny(t *testing.T) {
 	router := New()
 	router.Any("/test", func(c *Context) {
 		c.Status(http.StatusOK)
@@ -120,7 +119,7 @@ func TestRouteQueryNotRegisteredByAny(t *testing.T) {
 
 	w := PerformRequest(router, MethodQuery, "/test")
 
-	assert.Equal(t, http.StatusNotFound, w.Code)
+	assert.Equal(t, http.StatusOK, w.Code)
 }
 
 // TestQueryRoutesInterface tests that a router reached through IRoutes can
@@ -171,6 +170,7 @@ func TestRouterGroupRouteOK(t *testing.T) {
 	testRouteOK(http.MethodDelete, t)
 	testRouteOK(http.MethodConnect, t)
 	testRouteOK(http.MethodTrace, t)
+	testRouteOK(MethodQuery, t)
 }
 
 func TestRouteNotOK(t *testing.T) {
@@ -183,6 +183,7 @@ func TestRouteNotOK(t *testing.T) {
 	testRouteNotOK(http.MethodDelete, t)
 	testRouteNotOK(http.MethodConnect, t)
 	testRouteNotOK(http.MethodTrace, t)
+	testRouteNotOK(MethodQuery, t)
 }
 
 func TestRouteNotOK2(t *testing.T) {
@@ -195,6 +196,7 @@ func TestRouteNotOK2(t *testing.T) {
 	testRouteNotOK2(http.MethodDelete, t)
 	testRouteNotOK2(http.MethodConnect, t)
 	testRouteNotOK2(http.MethodTrace, t)
+	testRouteNotOK2(MethodQuery, t)
 }
 
 func TestRouteRedirectTrailingSlash(t *testing.T) {

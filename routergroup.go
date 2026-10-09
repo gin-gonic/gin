@@ -24,7 +24,7 @@ var (
 	anyMethods = []string{
 		http.MethodGet, http.MethodPost, http.MethodPut, http.MethodPatch,
 		http.MethodHead, http.MethodOptions, http.MethodDelete, http.MethodConnect,
-		http.MethodTrace,
+		http.MethodTrace, MethodQuery,
 	}
 )
 
@@ -178,11 +178,7 @@ func (group *RouterGroup) QUERY(relativePath string, handlers ...HandlerFunc) IR
 }
 
 // Any registers a route that matches all the HTTP methods.
-// GET, POST, PUT, PATCH, HEAD, OPTIONS, DELETE, CONNECT, TRACE.
-//
-// QUERY is not part of that list, so that Any keeps registering exactly the
-// same routes as before. Register it with QUERY, or with
-// Match([]string{gin.MethodQuery, ...}, ...) to combine it with other methods.
+// GET, POST, PUT, PATCH, HEAD, OPTIONS, DELETE, CONNECT, TRACE, QUERY.
 func (group *RouterGroup) Any(relativePath string, handlers ...HandlerFunc) IRoutes {
 	for _, method := range anyMethods {
 		group.handle(method, relativePath, handlers)
