@@ -2321,12 +2321,12 @@ func TestContextContentType(t *testing.T) {
 }
 
 func TestContextBindRequestTooLarge(t *testing.T) {
-	// When using go-json as JSON encoder, they do not propagate the http.MaxBytesError error
-	// The response will fail with a generic 400 instead of 413
+	// When using go-json or jsoniter as JSON encoder, they do not propagate the
+	// http.MaxBytesError error. The response will fail with a generic 400 instead of 413.
 	// https://github.com/goccy/go-json/issues/485
 	var expectedCode int
 	switch json.Package {
-	case "github.com/goccy/go-json":
+	case "github.com/goccy/go-json", "github.com/json-iterator/go":
 		expectedCode = http.StatusBadRequest
 	default:
 		expectedCode = http.StatusRequestEntityTooLarge

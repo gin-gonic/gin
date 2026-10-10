@@ -1144,3 +1144,48 @@ func TestMappingEmptyValues(t *testing.T) {
 		assert.Equal(t, []int{1, 2, 3}, s.SliceCsv)
 	})
 }
+
+// TestMappingFailingJSONDoesNotModifyFields covers the map fields that are
+// bound from a JSON value. JSON codecs differ in how much they write to the
+// destination before reporting an error, so a failed bind must not leave the
+// field in a partially updated state.
+//
+// Several invalid inputs are checked because how jsoniter writes to the
+// destination before failing depends on the input itself.
+func TestMappingFailingJSONDoesNotModifyFields(t *testing.T) {
+	invalid := []string{"abc", "{bad", "not-json", "["}
+
+	t.Run("map stays nil", func(t *testing.T) {
+		for _, val := range invalid {
+			var s struct {
+				Map map[string]any `form:"map"`
+			}
+
+			err := mappingByPtr(&s, formSource{"map": {val}}, "form")
+			require.Error(t, err, "input %q", val)
+			assert.Nil(t, s.Map, "input %q", val)
+		}
+	})
+
+	t.Run("existing map keeps its content", func(t *testing.T) {
+		for _, val := range invalid {
+			s := struct {
+				Map map[string]any `form:"map"`
+			}{Map: map[string]any{"keep": "me"}}
+
+			err := mappingByPtr(&s, formSource{"map": {val}}, "form")
+			require.Error(t, err, "input %q", val)
+			assert.Equal(t, map[string]any{"keep": "me"}, s.Map, "input %q", val)
+		}
+	})
+
+	t.Run("valid JSON is still bound", func(t *testing.T) {
+		var s struct {
+			Map map[string]any `form:"map"`
+		}
+
+		err := mappingByPtr(&s, formSource{"map": {`{"a":1}`}}, "form")
+		require.NoError(t, err)
+		assert.Equal(t, map[string]any{"a": float64(1)}, s.Map)
+	})
+}

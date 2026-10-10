@@ -375,7 +375,17 @@ func setWithProperType(val string, value reflect.Value, field reflect.StructFiel
 		}
 		return json.API.Unmarshal(bytesconv.StringToBytes(val), value.Addr().Interface())
 	case reflect.Map:
-		return json.API.Unmarshal(bytesconv.StringToBytes(val), value.Addr().Interface())
+		// Decode into a temporary value and only assign it once decoding
+		// succeeded. Some codecs write to the destination before reporting an
+		// error — jsoniter allocates or replaces the map even when the input is
+		// not valid JSON — which would leave the field modified even though the
+		// binding failed.
+		tmp := reflect.New(value.Type())
+		if err := json.API.Unmarshal(bytesconv.StringToBytes(val), tmp.Interface()); err != nil {
+			return err
+		}
+		value.Set(tmp.Elem())
+		return nil
 	case reflect.Ptr:
 		if !value.Elem().IsValid() {
 			value.Set(reflect.New(value.Type().Elem()))
