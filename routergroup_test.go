@@ -221,3 +221,25 @@ func TestRouterGroupCombineHandlersEmptySliceNotNil(t *testing.T) {
 	assert.NotNil(t, result, "result should not be nil even with empty handlers")
 	assert.Empty(t, result, "empty handlers should return empty chain")
 }
+
+func TestRouterGroupAny(t *testing.T) {
+	router := New()
+	router.Any("/any", func(c *Context) {
+		c.String(http.StatusOK, c.Request.Method)
+	})
+
+	v1 := router.Group("/v1")
+	v1.Any("/any", func(c *Context) {
+		c.String(http.StatusOK, "v1:"+c.Request.Method)
+	})
+
+	for _, method := range anyMethods {
+		w := PerformRequest(router, method, "/any")
+		assert.Equal(t, http.StatusOK, w.Code)
+		assert.Equal(t, method, w.Body.String())
+
+		w = PerformRequest(router, method, "/v1/any")
+		assert.Equal(t, http.StatusOK, w.Code)
+		assert.Equal(t, "v1:"+method, w.Body.String())
+	}
+}

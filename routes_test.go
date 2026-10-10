@@ -110,7 +110,7 @@ func TestRouteQuery(t *testing.T) {
 	assert.Equal(t, "gin", w.Body.String())
 }
 
-// TestRouteQueryRegisteredByAny tests that Any registers QUERY along with all other HTTP methods.
+// TestRouteQueryRegisteredByAny documents that Any registers QUERY.
 func TestRouteQueryRegisteredByAny(t *testing.T) {
 	router := New()
 	router.Any("/test", func(c *Context) {
@@ -183,6 +183,7 @@ func TestRouteNotOK(t *testing.T) {
 	testRouteNotOK(http.MethodDelete, t)
 	testRouteNotOK(http.MethodConnect, t)
 	testRouteNotOK(http.MethodTrace, t)
+	testRouteNotOK(MethodQuery, t)
 }
 
 func TestRouteNotOK2(t *testing.T) {
@@ -195,6 +196,7 @@ func TestRouteNotOK2(t *testing.T) {
 	testRouteNotOK2(http.MethodDelete, t)
 	testRouteNotOK2(http.MethodConnect, t)
 	testRouteNotOK2(http.MethodTrace, t)
+	testRouteNotOK2(MethodQuery, t)
 }
 
 func TestRouteRedirectTrailingSlash(t *testing.T) {
