@@ -53,6 +53,14 @@ func mapFormByTag(ptr any, form map[string][]string, tag string) error {
 	}
 	if ptrVal.Kind() == reflect.Map &&
 		ptrVal.Type().Key().Kind() == reflect.String {
+		if ptrVal.IsNil() && ptrVal.CanSet() && len(form) > 0 {
+			m := reflect.MakeMap(ptrVal.Type())
+			if err := setFormMap(m.Interface(), form); err != nil {
+				return err
+			}
+			ptrVal.Set(m)
+			return nil
+		}
 		if pointed != nil {
 			ptr = pointed
 		}

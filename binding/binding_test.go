@@ -11,6 +11,7 @@ import (
 	"io"
 	"mime/multipart"
 	"net/http"
+	"net/url"
 	"os"
 	"reflect"
 	"strconv"
@@ -449,6 +450,74 @@ func TestBindingQueryStringMap(t *testing.T) {
 	assert.Len(t, obj, 2)
 	assert.Equal(t, "2", obj["foo"])
 	assert.Equal(t, "world", obj["hello"])
+}
+
+func TestBindingMapPointer(t *testing.T) {
+	const data = "foo=first&foo=last&empty="
+	for _, b := range []struct {
+		binding Binding
+		path    string
+		body    string
+	}{
+		{Query, "/?" + data, ""},
+		{Form, "/", data},
+		{FormPost, "/", data},
+	} {
+		t.Run(b.binding.Name(), func(t *testing.T) {
+			tests := []struct {
+				name string
+				obj  any
+				want any
+			}{
+				{
+					"nil string map",
+					new(map[string]string),
+					&map[string]string{"foo": "last", "empty": ""},
+				},
+				{
+					"initialized string map",
+					&map[string]string{"foo": "stale", "keep": "value"},
+					&map[string]string{"foo": "last", "empty": "", "keep": "value"},
+				},
+				{
+					"nil string slice map",
+					new(map[string][]string),
+					&map[string][]string{"foo": {"first", "last"}, "empty": {""}},
+				},
+				{
+					"initialized string slice map",
+					&map[string][]string{"foo": {"stale"}, "keep": {"value"}},
+					&map[string][]string{"foo": {"first", "last"}, "empty": {""}, "keep": {"value"}},
+				},
+			}
+			for _, tt := range tests {
+				t.Run(tt.name, func(t *testing.T) {
+					req := requestWithBody(http.MethodPost, b.path, b.body)
+					req.Header.Set("Content-Type", MIMEPOSTForm)
+					require.NoError(t, req.ParseForm())
+					source := req.Form
+					var err error
+					require.NotPanics(t, func() {
+						err = b.binding.Bind(req, tt.obj)
+					})
+					require.NoError(t, err)
+					assert.Equal(t, tt.want, tt.obj)
+					assert.Equal(t, url.Values{"foo": {"first", "last"}, "empty": {""}}, source)
+				})
+			}
+		})
+	}
+}
+
+func TestBindingUriMapPointer(t *testing.T) {
+	form := map[string][]string{"foo": {"first", "last"}, "empty": {""}}
+	var stringMap map[string]string
+	require.NoError(t, Uri.BindUri(form, &stringMap))
+	assert.Equal(t, map[string]string{"foo": "last", "empty": ""}, stringMap)
+
+	var sliceMap map[string][]string
+	require.NoError(t, Uri.BindUri(form, &sliceMap))
+	assert.Equal(t, form, sliceMap)
 }
 
 func TestBindingXML(t *testing.T) {
