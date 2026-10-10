@@ -220,6 +220,54 @@ func TestResponseWriterHijackAfterWrite(t *testing.T) {
 	}
 }
 
+type failingHijacker struct {
+	*httptest.ResponseRecorder
+}
+
+func (f *failingHijacker) Hijack() (net.Conn, *bufio.ReadWriter, error) {
+	return nil, nil, http.ErrNotSupported
+}
+
+func TestResponseWriterHijackFailureKeepsWriterUsable(t *testing.T) {
+	testWriter := &failingHijacker{
+		ResponseRecorder: httptest.NewRecorder(),
+	}
+
+	writer := &responseWriter{}
+	writer.reset(testWriter)
+
+	w := ResponseWriter(writer)
+
+	conn, buf, err := w.Hijack()
+
+	assert.Nil(t, conn)
+	assert.Nil(t, buf)
+	require.ErrorIs(t, err, http.ErrNotSupported)
+
+	// Hijacking failed before any response was written.
+	// Keep the writer untouched so the handler can still
+	// emit a normal HTTP response as a fallback.
+	assert.False(t, w.Written())
+	assert.Equal(t, noWritten, w.Size())
+
+	http.Error(
+		w,
+		"hijack failed",
+		http.StatusInternalServerError,
+	)
+
+	assert.Equal(
+		t,
+		http.StatusInternalServerError,
+		testWriter.Code,
+	)
+	assert.Equal(
+		t,
+		"hijack failed\n",
+		testWriter.Body.String(),
+	)
+}
+
 // TestResponseWriterHijackAfterWriteHeaderNow verifies that hijacking is allowed after
 // WriteHeaderNow but blocked after body data is written.
 func TestResponseWriterHijackAfterWriteHeaderNow(t *testing.T) {
