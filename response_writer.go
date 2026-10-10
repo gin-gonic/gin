@@ -118,10 +118,11 @@ func (w *responseWriter) Hijack() (net.Conn, *bufio.ReadWriter, error) {
 	if !ok {
 		return nil, nil, http.ErrNotSupported
 	}
-	if w.size < 0 {
+	conn, rw, err := hijacker.Hijack()
+	if err == nil && w.size < 0 {
 		w.size = 0
 	}
-	return hijacker.Hijack()
+	return conn, rw, err
 }
 
 // CloseNotify implements the http.CloseNotifier interface.

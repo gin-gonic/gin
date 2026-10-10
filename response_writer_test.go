@@ -6,6 +6,8 @@ package gin
 
 import (
 	"bufio"
+	"errors"
+	"io"
 	"net"
 	"net/http"
 	"net/http/httptest"
@@ -161,6 +163,76 @@ type mockHijacker struct {
 func (m *mockHijacker) Hijack() (net.Conn, *bufio.ReadWriter, error) {
 	m.hijacked = true
 	return nil, nil, nil
+}
+
+type failingHijacker struct {
+	http.ResponseWriter
+	err error
+}
+
+func (m *failingHijacker) Hijack() (net.Conn, *bufio.ReadWriter, error) {
+	return nil, nil, m.err
+}
+
+func TestResponseWriterFailedHijack(t *testing.T) {
+	for _, committed := range []bool{false, true} {
+		name := "before_headers"
+		if committed {
+			name = "after_headers"
+		}
+		t.Run(name, func(t *testing.T) {
+			hijackErr := errors.New("hijack failed")
+			recorder := httptest.NewRecorder()
+			hijacker := &failingHijacker{ResponseWriter: recorder, err: hijackErr}
+			writer := &responseWriter{}
+			writer.reset(hijacker)
+			writer.WriteHeader(http.StatusAccepted)
+			if committed {
+				writer.WriteHeaderNow()
+			}
+			size := writer.Size()
+			conn, buf, err := writer.Hijack()
+			assert.Nil(t, conn)
+			assert.Nil(t, buf)
+			require.ErrorIs(t, err, hijackErr)
+			assert.Equal(t, size, writer.Size())
+			assert.Equal(t, committed, writer.Written())
+			if !committed {
+				writer.WriteHeader(http.StatusServiceUnavailable)
+			}
+			_, err = writer.WriteString("fallback")
+			require.NoError(t, err)
+			status := http.StatusAccepted
+			if !committed {
+				status = http.StatusServiceUnavailable
+			}
+			assert.Equal(t, status, recorder.Code)
+			assert.Equal(t, "fallback", recorder.Body.String())
+		})
+	}
+}
+
+func TestResponseWriterFailedHijackHTTP(t *testing.T) {
+	hijackErr := errors.New("hijack failed")
+	router := New()
+	router.GET("/", func(c *Context) {
+		_, _, err := c.Writer.Hijack()
+		if errors.Is(err, hijackErr) {
+			c.String(http.StatusServiceUnavailable, "fallback")
+		}
+	})
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		router.ServeHTTP(&failingHijacker{ResponseWriter: w, err: hijackErr}, r)
+	}))
+	defer server.Close()
+
+	resp, err := server.Client().Get(server.URL)
+	require.NoError(t, err)
+	defer resp.Body.Close()
+	body, err := io.ReadAll(resp.Body)
+	require.NoError(t, err)
+	assert.Equal(t, http.StatusServiceUnavailable, resp.StatusCode)
+	assert.Equal(t, "fallback", string(body))
 }
 
 func TestResponseWriterHijackAfterWrite(t *testing.T) {
