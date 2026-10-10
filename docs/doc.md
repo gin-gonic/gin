@@ -169,6 +169,7 @@ req := httptest.NewRequest(gin.MethodQuery, "/search", body)
 
 Keep in mind:
 
+- `router.Any` also registers `QUERY` alongside standard HTTP methods. Handlers registered with `Any` should respect QUERY's safe and idempotent semantics when processing that method.
 - `QUERY` is not part of the `gin.IRoutes` interface. `*gin.Engine` and `*gin.RouterGroup` expose it directly; if you only hold an `IRoutes` value, assert to `gin.IQueryRoutes` first.
 
 ```go
