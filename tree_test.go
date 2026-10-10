@@ -673,6 +673,48 @@ func TestTreeTrailingSlashRedirect(t *testing.T) {
 	}
 }
 
+func TestTreeWildcardBeatsTrailingSlashRedirect(t *testing.T) {
+	// A route that matches the request as it was sent must win over a static
+	// route that differs from it only by a trailing slash, since the latter is
+	// no more than a redirect recommendation.
+	tree := &node{}
+	for _, route := range [...]string{"/b/", "/:name"} {
+		tree.addRoute(route, fakeHandler(route))
+	}
+
+	checkRequests(t, tree, testRequests{
+		{"/b", false, "/:name", Params{Param{Key: "name", Value: "b"}}},
+		{"/c", false, "/:name", Params{Param{Key: "name", Value: "c"}}},
+		{"/b/", false, "/b/", nil},
+	})
+
+	// The mirror shape, with the trailing slash on the wildcard route.
+	tree = &node{}
+	for _, route := range [...]string{"/a/b", "/:p/b/"} {
+		tree.addRoute(route, fakeHandler(route))
+	}
+
+	checkRequests(t, tree, testRequests{
+		{"/a/b/", false, "/:p/b/", Params{Param{Key: "p", Value: "a"}}},
+		{"/x/b/", false, "/:p/b/", Params{Param{Key: "p", Value: "x"}}},
+		{"/a/b", false, "/a/b", nil},
+	})
+
+	// Backtracking must not swallow the recommendation when no wildcard route
+	// can serve the request either.
+	tree = &node{}
+	for _, route := range [...]string{"/b/", "/:name/x"} {
+		tree.addRoute(route, fakeHandler(route))
+	}
+
+	value := tree.getValue("/b", nil, getSkippedNodes(), false)
+	if value.handlers != nil {
+		t.Fatalf("non-nil handler for TSR route '/b'")
+	} else if !value.tsr {
+		t.Errorf("expected TSR recommendation for route '/b'")
+	}
+}
+
 func TestTreeRootTrailingSlashRedirect(t *testing.T) {
 	tree := &node{}
 

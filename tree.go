@@ -461,28 +461,32 @@ walk: // Outer loop for walking the tree
 				}
 
 				if !n.wildChild {
-					// If the path at the end of the loop is not equal to '/' and the current node has no child nodes
-					// the current node needs to roll back to last valid skippedNode
-					if path != "/" {
-						for length := len(*skippedNodes); length > 0; length-- {
-							skippedNode := (*skippedNodes)[length-1]
-							*skippedNodes = (*skippedNodes)[:length-1]
-							if strings.HasSuffix(skippedNode.path, path) {
-								path = skippedNode.path
-								n = skippedNode.node
-								if value.params != nil {
-									*value.params = (*value.params)[:skippedNode.paramsCount]
-								}
-								globalParamsCount = skippedNode.paramsCount
-								continue walk
+					// Nothing found below this node.
+					// We can recommend to redirect to the same URL without a
+					// trailing slash if a leaf exists for that path. That is only
+					// a recommendation though, so remember it and keep looking: a
+					// skipped wildcard that matches the request as it was sent
+					// beats redirecting the client somewhere else.
+					if path == "/" && n.handlers != nil {
+						value.tsr = true
+					}
+
+					// The current node needs to roll back to last valid skippedNode
+					for length := len(*skippedNodes); length > 0; length-- {
+						skippedNode := (*skippedNodes)[length-1]
+						*skippedNodes = (*skippedNodes)[:length-1]
+						if strings.HasSuffix(skippedNode.path, path) {
+							path = skippedNode.path
+							n = skippedNode.node
+							if value.params != nil {
+								*value.params = (*value.params)[:skippedNode.paramsCount]
 							}
+							globalParamsCount = skippedNode.paramsCount
+							continue walk
 						}
 					}
 
 					// Nothing found.
-					// We can recommend to redirect to the same URL without a
-					// trailing slash if a leaf exists for that path.
-					value.tsr = path == "/" && n.handlers != nil
 					return value
 				}
 
@@ -537,7 +541,9 @@ walk: // Outer loop for walking the tree
 						}
 
 						// ... but we can't
-						value.tsr = len(path) == end+1
+						if len(path) == end+1 {
+							value.tsr = true
+						}
 						return value
 					}
 
@@ -549,7 +555,9 @@ walk: // Outer loop for walking the tree
 						// No handle found. Check if a handle for this path + a
 						// trailing slash exists for TSR recommendation
 						n = n.children[0]
-						value.tsr = (n.path == "/" && n.handlers != nil) || (n.path == "" && n.indices == "/")
+						if (n.path == "/" && n.handlers != nil) || (n.path == "" && n.indices == "/") {
+							value.tsr = true
+						}
 					}
 					return value
 
@@ -635,8 +643,10 @@ walk: // Outer loop for walking the tree
 			for i, c := range []byte(n.indices) {
 				if c == '/' {
 					n = n.children[i]
-					value.tsr = (len(n.path) == 1 && n.handlers != nil) ||
-						(n.nType == catchAll && n.children[0].handlers != nil)
+					if (len(n.path) == 1 && n.handlers != nil) ||
+						(n.nType == catchAll && n.children[0].handlers != nil) {
+						value.tsr = true
+					}
 					return value
 				}
 			}
@@ -645,13 +655,17 @@ walk: // Outer loop for walking the tree
 		}
 
 		// Nothing found. We can recommend to redirect to the same URL with an
-		// extra trailing slash if a leaf exists for that path
-		value.tsr = path == "/" ||
+		// extra trailing slash if a leaf exists for that path. As above this is
+		// only a recommendation, so it does not stop the rollback below from
+		// looking for a route that matches the request as it was sent.
+		if path == "/" ||
 			(len(prefix) == len(path)+1 && prefix[len(path)] == '/' &&
-				path == prefix[:len(prefix)-1] && n.handlers != nil)
+				path == prefix[:len(prefix)-1] && n.handlers != nil) {
+			value.tsr = true
+		}
 
 		// roll back to last valid skippedNode
-		if !value.tsr && path != "/" {
+		if path != "/" {
 			for length := len(*skippedNodes); length > 0; length-- {
 				skippedNode := (*skippedNodes)[length-1]
 				*skippedNodes = (*skippedNodes)[:length-1]
