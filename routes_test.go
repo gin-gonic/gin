@@ -110,9 +110,8 @@ func TestRouteQuery(t *testing.T) {
 	assert.Equal(t, "gin", w.Body.String())
 }
 
-// TestRouteQueryNotRegisteredByAny documents that Any does not register QUERY,
-// so that existing Any routes keep matching exactly the methods they used to.
-func TestRouteQueryNotRegisteredByAny(t *testing.T) {
+// TestRouteQueryRegisteredByAny documents that Any registers QUERY.
+func TestRouteQueryRegisteredByAny(t *testing.T) {
 	router := New()
 	router.Any("/test", func(c *Context) {
 		c.Status(http.StatusOK)
@@ -120,7 +119,7 @@ func TestRouteQueryNotRegisteredByAny(t *testing.T) {
 
 	w := PerformRequest(router, MethodQuery, "/test")
 
-	assert.Equal(t, http.StatusNotFound, w.Code)
+	assert.Equal(t, http.StatusOK, w.Code)
 }
 
 // TestQueryRoutesInterface tests that a router reached through IRoutes can
@@ -171,6 +170,7 @@ func TestRouterGroupRouteOK(t *testing.T) {
 	testRouteOK(http.MethodDelete, t)
 	testRouteOK(http.MethodConnect, t)
 	testRouteOK(http.MethodTrace, t)
+	testRouteOK(MethodQuery, t)
 }
 
 func TestRouteNotOK(t *testing.T) {
@@ -183,6 +183,7 @@ func TestRouteNotOK(t *testing.T) {
 	testRouteNotOK(http.MethodDelete, t)
 	testRouteNotOK(http.MethodConnect, t)
 	testRouteNotOK(http.MethodTrace, t)
+	testRouteNotOK(MethodQuery, t)
 }
 
 func TestRouteNotOK2(t *testing.T) {
@@ -195,6 +196,7 @@ func TestRouteNotOK2(t *testing.T) {
 	testRouteNotOK2(http.MethodDelete, t)
 	testRouteNotOK2(http.MethodConnect, t)
 	testRouteNotOK2(http.MethodTrace, t)
+	testRouteNotOK2(MethodQuery, t)
 }
 
 func TestRouteRedirectTrailingSlash(t *testing.T) {
@@ -843,6 +845,30 @@ func TestEngineHandleMethodNotAllowedCornerCase(t *testing.T) {
 
 	w := PerformRequest(r, http.MethodGet, "/base/v1/user/groups")
 	assert.Equal(t, http.StatusNotFound, w.Code)
+}
+
+func TestLateRouteRegistrationSkippedNodes(t *testing.T) {
+	router := New()
+	router.HandleMethodNotAllowed = true
+	router.GET("/a", func(c *Context) { c.Status(http.StatusOK) })
+
+	w := PerformRequest(router, http.MethodGet, "/a")
+	if w.Code != http.StatusOK {
+		t.Fatalf("warmup status = %d, want 200", w.Code)
+	}
+
+	h := func(c *Context) {}
+	router.GET("/x/y/z/w", h)
+	router.GET("/x/y/:id/w", h)
+	router.GET("/x/:id/z/w", h)
+	router.GET("/:id/y/z/w", h)
+
+	req := httptest.NewRequest(http.MethodPost, "/x/y/z/w/extra", nil)
+	w = httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+	if w.Code != http.StatusNotFound {
+		t.Fatalf("status = %d, want 404", w.Code)
+	}
 }
 
 // TestIssue4818_skippedNodesOverflow_Panic reproduces the panic from issue #4818:
