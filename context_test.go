@@ -13,6 +13,7 @@ import (
 	"html/template"
 	"io"
 	"io/fs"
+	"mime"
 	"mime/multipart"
 	"net"
 	"net/http"
@@ -1696,6 +1697,23 @@ func TestContextRenderUTF8Attachment(t *testing.T) {
 	assert.Equal(t, 200, w.Code)
 	assert.Contains(t, w.Body.String(), "func New(opts ...OptionFunc) *Engine {")
 	assert.Equal(t, `attachment; filename*=UTF-8''`+url.QueryEscape(newFilename), w.Header().Get("Content-Disposition"))
+}
+
+func TestContextRenderUTF8AttachmentWithSpaces(t *testing.T) {
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
+	newFilename := "résumé final+v2.pdf"
+
+	c.Request, _ = http.NewRequest(http.MethodGet, "/", nil)
+	c.FileAttachment("./gin.go", newFilename)
+
+	contentDisposition := w.Header().Get("Content-Disposition")
+	assert.Equal(t, `attachment; filename*=UTF-8''r%C3%A9sum%C3%A9%20final%2Bv2.pdf`, contentDisposition)
+
+	// RFC 5987 percent-decoding must give back the original name.
+	_, params, err := mime.ParseMediaType(contentDisposition)
+	require.NoError(t, err)
+	assert.Equal(t, newFilename, params["filename"])
 }
 
 // TestContextRenderYAML tests that the response is serialized as YAML
