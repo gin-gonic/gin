@@ -1111,3 +1111,36 @@ func TestTreeFindCaseInsensitivePathWildcardParamAndStaticChild(t *testing.T) {
 		t.Errorf("Wrong result for '/prefix/something': %s", string(out))
 	}
 }
+
+func TestTreeParamFallbackAfterStaticDeadEnd(t *testing.T) {
+	tests := []struct {
+		name    string
+		routes  []string
+		request testRequests
+	}{
+		{
+			name:   "param has child but no handler",
+			routes: []string{"/:p0/:p1", "/bc/:p1/a"},
+			request: testRequests{
+				{"/bc/bc", false, "/:p0/:p1", Params{{Key: "p0", Value: "bc"}, {Key: "p1", Value: "bc"}}},
+			},
+		},
+		{
+			name:   "param has no child for remaining path",
+			routes: []string{"/:p0/:p1/:p2", "/bc/:p1"},
+			request: testRequests{
+				{"/bc/bc/bc", false, "/:p0/:p1/:p2", Params{{Key: "p0", Value: "bc"}, {Key: "p1", Value: "bc"}, {Key: "p2", Value: "bc"}}},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tree := &node{}
+			for _, route := range tt.routes {
+				tree.addRoute(route, fakeHandler(route))
+			}
+			checkRequests(t, tree, tt.request)
+		})
+	}
+}
