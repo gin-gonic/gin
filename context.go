@@ -1197,6 +1197,63 @@ func (c *Context) Cookie(name string) (string, error) {
 	return val, nil
 }
 
+// DeleteCookie expires the named cookie so that the client removes it. HTTP
+// has no dedicated delete operation; a cookie is removed by sending a
+// Set-Cookie header with the same name, path and domain and an already
+// expired date.
+//
+// The path defaults to "/" when empty. An empty domain targets a host-only
+// cookie, while a non-empty domain targets a domain-scoped cookie; callers
+// must pass the same path and domain used when the cookie was originally
+// set.
+//
+// SameSite is inherited from Context.SetSameSite. Secure is set
+// automatically when SameSite is None or when the name uses the __Secure-
+// or __Host- prefix, since browsers reject those cookies otherwise.
+// Set-Cookie headers are only honored before the response is written, so
+// DeleteCookie must be called before the handler writes the status or body.
+func (c *Context) DeleteCookie(name, path, domain string) {
+	if path == "" {
+		path = "/"
+	}
+
+	cookie := &http.Cookie{
+		Name:     name,
+		Path:     path,
+		Domain:   domain,
+		MaxAge:   -1,
+		Expires:  time.Unix(1, 0),
+		SameSite: c.sameSite,
+	}
+
+	if c.sameSite == http.SameSiteNoneMode ||
+		strings.HasPrefix(name, "__Secure-") ||
+		strings.HasPrefix(name, "__Host-") {
+		cookie.Secure = true
+	}
+
+	http.SetCookie(c.Writer, cookie)
+}
+
+// DeleteCookieData is the *http.Cookie counterpart of DeleteCookie. It
+// allows callers to control attributes such as SameSite, Secure or
+// Partitioned while Value, MaxAge and Expires are overwritten so the
+// cookie expires immediately. The provided cookie must have a valid Name.
+func (c *Context) DeleteCookieData(cookie *http.Cookie) {
+	if cookie.Path == "" {
+		cookie.Path = "/"
+	}
+
+	if cookie.SameSite == http.SameSiteDefaultMode {
+		cookie.SameSite = c.sameSite
+	}
+
+	cookie.Value = ""
+	cookie.MaxAge = -1
+	cookie.Expires = time.Unix(1, 0)
+	http.SetCookie(c.Writer, cookie)
+}
+
 // Render writes the response headers and calls render.Render to render data.
 func (c *Context) Render(code int, r render.Render) {
 	c.Status(code)

@@ -16,6 +16,7 @@ import (
 	"mime/multipart"
 	"net"
 	"net/http"
+	"net/http/cookiejar"
 	"net/http/httptest"
 	"net/url"
 	"os"
@@ -3838,6 +3839,208 @@ func TestContextSetCookieData(t *testing.T) {
 		setCookie := c.Writer.Header().Get("Set-Cookie")
 		assert.Contains(t, setCookie, "SameSite=Strict")
 	})
+}
+
+func TestContextDeleteCookie(t *testing.T) {
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	c.DeleteCookie("user", "/", "localhost")
+
+	setCookie := c.Writer.Header().Get("Set-Cookie")
+	assert.Contains(t, setCookie, "user=")
+	assert.Contains(t, setCookie, "Path=/")
+	assert.Contains(t, setCookie, "Domain=localhost")
+	assert.Contains(t, setCookie, "Max-Age=0")
+	assert.Contains(t, setCookie, "Expires=")
+}
+
+func TestContextDeleteCookiePathEmpty(t *testing.T) {
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	c.DeleteCookie("user", "", "")
+
+	setCookie := c.Writer.Header().Get("Set-Cookie")
+	assert.Contains(t, setCookie, "Path=/")
+	assert.NotContains(t, setCookie, "Domain=")
+	assert.Contains(t, setCookie, "Max-Age=0")
+}
+
+func TestContextDeleteCookieSameSite(t *testing.T) {
+	t.Run("SameSite is inherited from the context", func(t *testing.T) {
+		c, _ := CreateTestContext(httptest.NewRecorder())
+		c.SetSameSite(http.SameSiteStrictMode)
+		c.DeleteCookie("user", "/", "")
+
+		setCookie := c.Writer.Header().Get("Set-Cookie")
+		assert.Contains(t, setCookie, "SameSite=Strict")
+	})
+
+	t.Run("SameSite=None sets Secure", func(t *testing.T) {
+		c, _ := CreateTestContext(httptest.NewRecorder())
+		c.SetSameSite(http.SameSiteNoneMode)
+		c.DeleteCookie("user", "/", "")
+
+		setCookie := c.Writer.Header().Get("Set-Cookie")
+		assert.Contains(t, setCookie, "SameSite=None")
+		assert.Contains(t, setCookie, "Secure")
+	})
+}
+
+func TestContextDeleteCookieSecurePrefixes(t *testing.T) {
+	for _, name := range []string{"__Secure-user", "__Host-user"} {
+		t.Run(name, func(t *testing.T) {
+			c, _ := CreateTestContext(httptest.NewRecorder())
+			c.DeleteCookie(name, "/", "")
+
+			setCookie := c.Writer.Header().Get("Set-Cookie")
+			assert.Contains(t, setCookie, name+"=")
+			assert.Contains(t, setCookie, "Secure")
+		})
+	}
+}
+
+func TestContextDeleteCookieData(t *testing.T) {
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	cookie := &http.Cookie{
+		Name:     "user",
+		Value:    "gin",
+		Path:     "/",
+		Domain:   "localhost",
+		Secure:   true,
+		HttpOnly: true,
+	}
+
+	c.DeleteCookieData(cookie)
+
+	// The passed cookie is expired and cleared in place.
+	assert.Empty(t, cookie.Value)
+	assert.Equal(t, -1, cookie.MaxAge)
+	assert.False(t, cookie.Expires.IsZero())
+
+	setCookie := c.Writer.Header().Get("Set-Cookie")
+	assert.Contains(t, setCookie, "user=")
+	assert.NotContains(t, setCookie, "gin")
+	assert.Contains(t, setCookie, "Path=/")
+	assert.Contains(t, setCookie, "Domain=localhost")
+	assert.Contains(t, setCookie, "Max-Age=0")
+	assert.Contains(t, setCookie, "Expires=")
+	assert.Contains(t, setCookie, "HttpOnly")
+	assert.Contains(t, setCookie, "Secure")
+}
+
+func TestContextDeleteCookieDataPathEmpty(t *testing.T) {
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	c.DeleteCookieData(&http.Cookie{
+		Name:  "user",
+		Value: "gin",
+	})
+
+	setCookie := c.Writer.Header().Get("Set-Cookie")
+	assert.Contains(t, setCookie, "Path=/")
+	assert.NotContains(t, setCookie, "Domain=")
+	assert.Contains(t, setCookie, "Max-Age=0")
+}
+
+func TestContextDeleteCookieDataSameSite(t *testing.T) {
+	t.Run("SameSiteDefaultMode inherits context sameSite", func(t *testing.T) {
+		c, _ := CreateTestContext(httptest.NewRecorder())
+		c.SetSameSite(http.SameSiteStrictMode)
+		c.DeleteCookieData(&http.Cookie{
+			Name:     "user",
+			Value:    "gin",
+			Path:     "/",
+			SameSite: http.SameSiteDefaultMode,
+		})
+
+		setCookie := c.Writer.Header().Get("Set-Cookie")
+		assert.Contains(t, setCookie, "SameSite=Strict")
+	})
+
+	t.Run("explicit SameSite is preserved", func(t *testing.T) {
+		c, _ := CreateTestContext(httptest.NewRecorder())
+		c.SetSameSite(http.SameSiteStrictMode)
+		c.DeleteCookieData(&http.Cookie{
+			Name:     "user",
+			Value:    "gin",
+			Path:     "/",
+			SameSite: http.SameSiteNoneMode,
+			Secure:   true,
+		})
+
+		setCookie := c.Writer.Header().Get("Set-Cookie")
+		assert.Contains(t, setCookie, "SameSite=None")
+		assert.Contains(t, setCookie, "Secure")
+	})
+}
+
+func TestContextDeleteCookieDataPreservesAttributes(t *testing.T) {
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	c.DeleteCookieData(&http.Cookie{
+		Name:        "user",
+		Value:       "gin",
+		Path:        "/app",
+		Domain:      "localhost",
+		Secure:      true,
+		HttpOnly:    true,
+		Partitioned: true,
+	})
+
+	setCookie := c.Writer.Header().Get("Set-Cookie")
+	assert.Contains(t, setCookie, "Path=/app")
+	assert.Contains(t, setCookie, "Domain=localhost")
+	assert.Contains(t, setCookie, "HttpOnly")
+	assert.Contains(t, setCookie, "Secure")
+	assert.Contains(t, setCookie, "Partitioned")
+}
+
+func TestContextDeleteCookieEndToEnd(t *testing.T) {
+	router := New()
+	router.GET("/set", func(c *Context) {
+		c.SetCookieData(&http.Cookie{
+			Name:     "user",
+			Value:    "gin",
+			Path:     "/",
+			MaxAge:   3600,
+			HttpOnly: true,
+		})
+	})
+	router.GET("/delete", func(c *Context) {
+		c.DeleteCookie("user", "/", "")
+	})
+	router.GET("/read", func(c *Context) {
+		if _, err := c.Cookie("user"); err != nil {
+			c.String(http.StatusOK, "missing")
+			return
+		}
+		c.String(http.StatusOK, "present")
+	})
+
+	ts := httptest.NewServer(router)
+	defer ts.Close()
+
+	jar, err := cookiejar.New(nil)
+	require.NoError(t, err)
+
+	u, err := url.Parse(ts.URL)
+	require.NoError(t, err)
+
+	client := ts.Client()
+	client.Jar = jar
+
+	resp, err := client.Get(ts.URL + "/set")
+	require.NoError(t, err)
+	resp.Body.Close()
+	require.Len(t, jar.Cookies(u), 1)
+
+	resp, err = client.Get(ts.URL + "/delete")
+	require.NoError(t, err)
+	resp.Body.Close()
+	assert.Empty(t, jar.Cookies(u))
+
+	resp, err = client.Get(ts.URL + "/read")
+	require.NoError(t, err)
+	defer resp.Body.Close()
+	body, err := io.ReadAll(resp.Body)
+	require.NoError(t, err)
+	assert.Equal(t, "missing", string(body))
 }
 
 func TestGetMapFromFormData(t *testing.T) {
