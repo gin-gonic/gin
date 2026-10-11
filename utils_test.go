@@ -80,11 +80,44 @@ func TestChooseData(t *testing.T) {
 }
 
 func TestFilterFlags(t *testing.T) {
-	result := filterFlags("text/html ")
-	assert.Equal(t, "text/html", result)
+	tests := []struct {
+		name     string
+		input    string
+		expected string
+	}{
+		{"empty string", "", ""},
+		{"simple type", "text/html", "text/html"},
+		{"type with params", "text/html; charset=utf-8", "text/html"},
+		{"type with trailing semicolon", "text/html;", "text/html"},
 
-	result = filterFlags("text/html;")
-	assert.Equal(t, "text/html", result)
+		{"leading whitespace", " text/html", "text/html"},
+		{"trailing whitespace", "text/html ", "text/html"},
+		{"leading and trailing whitespace", " text/html ", "text/html"},
+		{"space before semicolon", "text/html ; charset=utf-8", "text/html"},
+		{"no space before semicolon", "text/html;charset=utf-8", "text/html"},
+
+		{"uppercase type", "TEXT/HTML", "text/html"},
+		{"mixed case type", "Text/Html", "text/html"},
+		{"uppercase with params", "TEXT/HTML; CHARSET=UTF-8", "text/html"},
+
+		{"valid base with invalid param", `text/html; charset="`, "text/html"},
+		{"valid base with malformed param value", "text/html; charset=\xff", "text/html"},
+		{"valid base with duplicate params", "application/xml;charset=utf-8;charset=utf-8", "application/xml"},
+
+		{"completely invalid", "\xff", "\xff"},
+		{"invalid with semicolon", "; charset=utf-8", ""},
+
+		{"application json", "application/json", "application/json"},
+		{"application xml", "application/xml", "application/xml"},
+		{"multipart form data", "multipart/form-data; boundary=something", "multipart/form-data"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := filterFlags(tt.input)
+			assert.Equal(t, tt.expected, result)
+		})
+	}
 }
 
 func TestFunctionName(t *testing.T) {
