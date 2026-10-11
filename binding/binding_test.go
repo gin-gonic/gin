@@ -747,6 +747,16 @@ func TestBindingBSON(t *testing.T) {
 		string(data[1:]))
 }
 
+func TestBindingBSONValidation(t *testing.T) {
+	// Empty Foo violates binding:"required" — validate() must be called after Unmarshal.
+	var obj FooStruct
+	data, _ := bson.Marshal(&obj)
+	req := requestWithBody(http.MethodPost, "/", string(data))
+	var result FooStruct
+	err := BSON.Bind(req, &result)
+	require.Error(t, err)
+}
+
 func TestValidationFails(t *testing.T) {
 	var obj FooStruct
 	req := requestWithBody(http.MethodPost, "/", `{"bar": "foo"}`)
