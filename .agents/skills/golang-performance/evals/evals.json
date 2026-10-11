@@ -1,0 +1,888 @@
+[
+  {
+    "id": 1,
+    "name": "profile-before-optimizing",
+    "description": "Tests whether the model insists on profiling before applying optimizations, rather than jumping straight to code changes",
+    "prompt": "Our Go HTTP API is slow. Average response time is 800ms. Here's the handler:\n\n```go\npackage api\n\nimport (\n    \"encoding/json\"\n    \"net/http\"\n    \"strings\"\n)\n\ntype Response struct {\n    Items []Item `json:\"items\"`\n}\n\ntype Item struct {\n    ID   int    `json:\"id\"`\n    Name string `json:\"name\"`\n    Tags string `json:\"tags\"`\n}\n\nfunc HandleList(w http.ResponseWriter, r *http.Request) {\n    items := fetchFromDB(r.Context())\n    for i := range items {\n        items[i].Tags = strings.ToUpper(items[i].Tags)\n    }\n    json.NewEncoder(w).Encode(Response{Items: items})\n}\n```\n\nOptimize this code to reduce the 800ms response time.",
+    "trap": "The 800ms latency is almost certainly from fetchFromDB (external bottleneck), not from strings.ToUpper or JSON encoding. Without the skill, the model will micro-optimize the Go code (use strings.Builder, preallocate, etc.) instead of pointing out that profiling is needed first and the bottleneck is likely external.",
+    "assertions": [
+      {"id": "1.1", "text": "Recommends profiling (pprof, fgprof, or tracing) before making code changes"},
+      {"id": "1.2", "text": "Identifies fetchFromDB as the likely bottleneck (external I/O, not Go code)"},
+      {"id": "1.3", "text": "Mentions that intuition about bottlenecks is often wrong (~80% of the time)"},
+      {"id": "1.4", "text": "Does NOT primarily focus on micro-optimizing strings.ToUpper or JSON encoding"},
+      {"id": "1.5", "text": "Suggests investigating the database query (query tuning, caching, connection pool)"}
+    ]
+  },
+  {
+    "id": 2,
+    "name": "fgprof-off-cpu-bottleneck",
+    "description": "Tests whether the model recommends fgprof for off-CPU bottlenecks instead of only standard CPU profiling",
+    "prompt": "Our Go service has high latency (p99 = 2s) but CPU usage is only 5%. Standard pprof CPU profile shows almost nothing — the hot functions consume negligible CPU time. What profiling approach should we use to find the bottleneck?",
+    "trap": "Standard CPU profiling only captures on-CPU time. When CPU usage is low but latency is high, the bottleneck is off-CPU (I/O wait, network, blocked goroutines). The skill specifically recommends fgprof for this. Without the skill, the model may suggest heap profiles, goroutine dumps, or other approaches that miss the key tool.",
+    "assertions": [
+      {"id": "2.1", "text": "Recommends fgprof as the primary tool for capturing off-CPU wait time"},
+      {"id": "2.2", "text": "Explains that standard pprof CPU profile only captures on-CPU time, which is why it shows nothing"},
+      {"id": "2.3", "text": "Suggests the bottleneck is likely I/O wait (network, database, filesystem)"},
+      {"id": "2.4", "text": "Mentions goroutine profile as a complementary diagnostic (blocked goroutines in net.Read or database/sql)"},
+      {"id": "2.5", "text": "Suggests distributed tracing (OpenTelemetry) for identifying slow upstream services"}
+    ]
+  },
+  {
+    "id": 3,
+    "name": "iterative-benchmark-methodology",
+    "description": "Tests whether the model follows the iterative benchmark methodology (one change at a time, benchstat comparison)",
+    "prompt": "I profiled my Go service and found that the ProcessRecords function is the bottleneck. It allocates heavily and has slow JSON parsing. I want to optimize it. Here's the function:\n\n```go\nfunc ProcessRecords(data []byte) ([]Record, error) {\n    var records []Record\n    if err := json.Unmarshal(data, &records); err != nil {\n        return nil, err\n    }\n    var results []Record\n    for _, r := range records {\n        if r.IsValid() {\n            r.Name = strings.ToUpper(r.Name)\n            results = append(results, r)\n        }\n    }\n    return results, nil\n}\n```\n\nHow should I approach optimizing this?",
+    "trap": "Without the skill, the model will apply all optimizations at once. The skill teaches an iterative approach: write benchmark first, measure baseline with -count=6, apply ONE change at a time, compare with benchstat, then repeat.",
+    "assertions": [
+      {"id": "3.1", "text": "Recommends writing an atomic benchmark for ProcessRecords first"},
+      {"id": "3.2", "text": "Recommends measuring a baseline with -benchmem and -count=6 (or similar count for statistical significance)"},
+      {"id": "3.3", "text": "Recommends applying ONE optimization at a time, not all at once"},
+      {"id": "3.4", "text": "Recommends using benchstat to compare before/after with statistical significance"},
+      {"id": "3.5", "text": "Suggests keeping report files as an audit trail (e.g., /tmp/report-1.txt, /tmp/report-2.txt)"}
+    ]
+  },
+  {
+    "id": 4,
+    "name": "slice-reuse-append-zero",
+    "description": "Tests knowledge of the append(s[:0], ...) pattern for reusing slice backing arrays",
+    "prompt": "In our hot-path Go request handler, we have a buffer that's reset each iteration. Profiling shows this function has high alloc_objects. How can we reduce allocations?\n\n```go\nfunc processRequests(requests []Request) {\n    for _, req := range requests {\n        mode := []Tag{req.PrimaryTag}\n        // ... use mode ...\n        _ = mode\n    }\n}\n```",
+    "trap": "The natural approach is to declare mode outside the loop or use sync.Pool. The skill teaches the specific pattern append(mode[:0], item) to reuse the backing array with zero allocations. This is a non-obvious Go idiom.",
+    "assertions": [
+      {"id": "4.1", "text": "Suggests using append(mode[:0], item) to reuse the backing array"},
+      {"id": "4.2", "text": "Explains that reslicing to zero length retains the backing array, avoiding allocation"},
+      {"id": "4.3", "text": "Moves the mode variable declaration outside the loop to enable reuse"},
+      {"id": "4.4", "text": "Does NOT suggest sync.Pool as the primary solution for this simple case"}
+    ]
+  },
+  {
+    "id": 5,
+    "name": "direct-indexing-vs-append",
+    "description": "Tests whether the model prefers direct indexing over append when output size equals input size",
+    "prompt": "Optimize this Go transformation function. Profiling shows it's called 100K times/sec with input slices of ~1000 elements.\n\n```go\nfunc Transform(input []Data) []Result {\n    result := make([]Result, 0, len(input))\n    for i := range input {\n        result = append(result, convert(input[i]))\n    }\n    return result\n}\n```\n\nThe output always has exactly the same number of elements as the input.",
+    "trap": "The code already preallocates capacity. Without the skill, the model may not realize that make([]T, len) with direct assignment is faster than make([]T, 0, cap) with append, because direct assignment avoids per-element bounds checking and length increment.",
+    "assertions": [
+      {"id": "5.1", "text": "Suggests using make([]Result, len(input)) with direct assignment result[i] = convert(...)"},
+      {"id": "5.2", "text": "Explains that direct assignment avoids per-element append overhead (bounds check, length increment)"},
+      {"id": "5.3", "text": "Notes that append is better when the result might be smaller (filtering)"}
+    ]
+  },
+  {
+    "id": 6,
+    "name": "map-range-double-lookup",
+    "description": "Tests whether the model avoids double map lookups when writing new map iteration code",
+    "prompt": "Write a Go function that counts how many values in a map satisfy a threshold. The map is large (1M entries) and the function is called frequently.\n\n```go\nfunc CountAbove(scores map[string]int, threshold int) int {\n    // TODO: implement\n}\n```\n\nWrite the most efficient implementation.",
+    "trap": "The natural/idiomatic instinct when writing map iteration code is to use 'for k := range m { if m[k] > threshold { count++ } }' because it looks clean. This does 2 lookups per iteration. The skill teaches 'for k, v := range m { if v > threshold { count++ } }' for a single lookup. The model will likely write the double-lookup version without the skill prompting it to use the k, v form.",
+    "assertions": [
+      {"id": "6.1", "text": "Uses 'for k, v := range scores' (capturing the value in range) rather than 'for k := range scores { scores[k] }'"},
+      {"id": "6.2", "text": "Does NOT perform a second lookup into the map inside the loop body (i.e., does not use scores[k] inside the loop)"}
+    ]
+  },
+  {
+    "id": 7,
+    "name": "sentinel-errors-hot-path",
+    "description": "Tests whether the model avoids fmt.Errorf for static errors in allocation-sensitive hot paths when writing new error-returning code",
+    "prompt": "Write a Go function that parses a configuration value. It must return descriptive errors and will be called thousands of times per second during request processing.\n\n```go\n// parseTimeout parses a timeout string like \"30s\", \"5m\".\n// Returns error if empty, if the unit is unrecognized, or if the value is negative.\nfunc parseTimeout(s string) (time.Duration, error) {\n    // TODO: implement\n}\n```\n\nImplement this function.",
+    "trap": "The natural way to write descriptive errors is to use fmt.Errorf for all cases: fmt.Errorf(\"empty timeout\"), fmt.Errorf(\"unrecognized unit %q\", unit), fmt.Errorf(\"negative timeout: %v\", d). The skill teaches that static, predictable errors (like 'empty timeout') should be preallocated sentinels at package level (errors.New) to avoid allocation on every call. Only errors needing dynamic values should use fmt.Errorf. Without the skill the model writes fmt.Errorf for every error case.",
+    "assertions": [
+      {"id": "7.1", "text": "Uses errors.New at package level for the static 'empty string' error case (no dynamic content)"},
+      {"id": "7.2", "text": "Uses fmt.Errorf (or errors.New with dynamic content) for error cases that need to embed runtime values like the unrecognized unit"},
+      {"id": "7.3", "text": "Does NOT use fmt.Errorf for error messages that contain no dynamic values"},
+      {"id": "7.4", "text": "Explains that fmt.Errorf allocates on every call while package-level errors.New allocates once"}
+    ]
+  },
+  {
+    "id": 8,
+    "name": "interface-boxing-hot-path",
+    "description": "Tests knowledge of interface boxing allocation cost and the fix using generics or typed parameters",
+    "prompt": "Our Go analytics pipeline processes events at high throughput. Profiling shows unexpectedly high allocation rates in this function:\n\n```go\nfunc SumValues(values []any) float64 {\n    var total float64\n    for _, v := range values {\n        switch n := v.(type) {\n        case int:\n            total += float64(n)\n        case float64:\n            total += n\n        }\n    }\n    return total\n}\n```\n\nCallers always pass either all ints or all float64s. How can we reduce allocations?",
+    "trap": "Passing concrete types through any/interface{} forces heap allocation for boxing. The skill teaches using typed parameters or generics. Without it, the model may focus on the type switch optimization rather than the fundamental boxing problem.",
+    "assertions": [
+      {"id": "8.1", "text": "Identifies interface boxing (any parameter) as the source of allocations"},
+      {"id": "8.2", "text": "Suggests typed functions (e.g., SumInts([]int)) or generics (func Sum[T ~int|~float64]([]T)) to eliminate boxing"},
+      {"id": "8.3", "text": "Explains that each concrete value passed through any requires a heap allocation for boxing"},
+      {"id": "8.4", "text": "Does NOT focus only on the type switch as the optimization target"}
+    ]
+  },
+  {
+    "id": 9,
+    "name": "backing-array-leak-slice",
+    "description": "Tests whether the model avoids backing array retention when writing a function that stores subslices long-term",
+    "prompt": "Write a Go function that caches the first 16 bytes of each incoming network packet for later audit logging. Packets are large (up to 64KB) and are pooled via sync.Pool — they get reused after the call returns.\n\n```go\nvar auditLog [][]byte\n\nfunc recordPacketPrefix(pkt []byte) {\n    // TODO: store first 16 bytes of pkt in auditLog\n}\n```\n\nImplement this function.",
+    "trap": "The obvious, idiomatic implementation is 'auditLog = append(auditLog, pkt[:16])' — a simple reslice. This looks correct but retains the entire 64KB backing array per entry because the subslice shares the original buffer. Since packets come from a sync.Pool and are reused, the retained backing arrays also prevent correct pool behavior. The fix is to copy: 'prefix := make([]byte, 16); copy(prefix, pkt[:16]); auditLog = append(auditLog, prefix)'. Without the skill the model writes the reslice version.",
+    "assertions": [
+      {"id": "9.1", "text": "Does NOT use pkt[:16] directly as the stored value (reslice retains the entire backing array)"},
+      {"id": "9.2", "text": "Creates an independent copy using make([]byte, 16) + copy, or equivalent"},
+      {"id": "9.3", "text": "Explains that storing a reslice retains the entire original backing array, preventing GC"},
+      {"id": "9.4", "text": "Notes the interaction with sync.Pool: retained backing arrays prevent buffer reuse or cause data corruption"}
+    ]
+  },
+  {
+    "id": 10,
+    "name": "substring-memory-leak",
+    "description": "Tests knowledge of the strings.Clone pattern for substring memory leaks",
+    "prompt": "Our Go log processing service extracts request IDs from log lines. Memory keeps growing even though we only store short strings. Go 1.20+ project.\n\n```go\nvar requestIDs = make(map[string]time.Time)\n\nfunc ProcessLogLine(line string) {\n    // line is typically 500-2000 bytes\n    id := line[12:48] // extract 36-char UUID\n    requestIDs[id] = time.Now()\n}\n```",
+    "trap": "Substrings share the backing array of the original string. Each 36-char id retains the full 500-2000 byte log line. The skill teaches strings.Clone (Go 1.20+) as the fix. Without it, the model may not know about strings.Clone or may suggest string([]byte(s)) which is also correct but less idiomatic.",
+    "assertions": [
+      {"id": "10.1", "text": "Identifies that substrings share the backing array of the original string"},
+      {"id": "10.2", "text": "Suggests strings.Clone(line[12:48]) to create an independent copy"},
+      {"id": "10.3", "text": "Explains that each 36-char ID retains the entire 500-2000 byte log line in memory"}
+    ]
+  },
+  {
+    "id": 11,
+    "name": "map-never-shrinks",
+    "description": "Tests whether the model avoids using a long-lived map for a high-churn cache without addressing bucket retention",
+    "prompt": "Design a Go in-memory rate-limiter that tracks per-IP request counts. Counts reset every minute. At peak there are 500K active IPs, but off-peak only ~200 IPs are active.\n\n```go\ntype RateLimiter struct {\n    mu     sync.Mutex\n    counts map[string]int\n}\n\nfunc NewRateLimiter() *RateLimiter {\n    return &RateLimiter{counts: make(map[string]int)}\n}\n\nfunc (r *RateLimiter) reset() {\n    r.mu.Lock()\n    defer r.mu.Unlock()\n    // TODO: implement the per-minute reset\n}\n```\n\nImplement the reset method.",
+    "trap": "The natural, obvious implementation is to range over the map and delete each key: 'for k := range r.counts { delete(r.counts, k) }'. This looks correct and idiomatic but leaves all 500K bucket slots allocated — the map retains its peak allocation forever. The skill teaches that maps never release bucket memory; the fix is to replace the map entirely: 'r.counts = make(map[string]int)'. Without the skill the model writes the delete-loop version.",
+    "assertions": [
+      {"id": "11.1", "text": "Replaces the map with a fresh allocation (r.counts = make(map[string]int)) rather than deleting keys in a loop"},
+      {"id": "11.2", "text": "Does NOT use 'for k := range r.counts { delete(r.counts, k) }' as the reset strategy"},
+      {"id": "11.3", "text": "Explains that Go maps never release bucket memory when keys are deleted, so delete-loop retains peak allocation"},
+      {"id": "11.4", "text": "Notes that reassigning to a new map allows the old bucket array to be GC'd"}
+    ]
+  },
+  {
+    "id": 12,
+    "name": "sync-pool-rules",
+    "description": "Tests proper sync.Pool usage: reset before Put, return copies not pooled buffers, size limits",
+    "prompt": "Review this sync.Pool usage in our Go HTTP handler for correctness:\n\n```go\nvar bufPool = sync.Pool{\n    New: func() any { return make([]byte, 0, 64*1024) },\n}\n\nfunc HandleRequest(w http.ResponseWriter, r *http.Request) {\n    buf := bufPool.Get().([]byte)\n    // ... fill buf with response data ...\n    buf = append(buf[:0], responseData...)\n    w.Write(buf)\n    bufPool.Put(buf)\n}\n\nfunc HandleLargeUpload(w http.ResponseWriter, r *http.Request) {\n    buf := bufPool.Get().([]byte)\n    data, _ := io.ReadAll(r.Body) // could be 100MB+\n    buf = append(buf[:0], data...)\n    processData(buf)\n    bufPool.Put(buf)\n}\n```\n\nIdentify all issues with this pool usage.",
+    "trap": "Multiple issues: (1) HandleRequest returns the pooled buffer directly via w.Write — the caller (net/http) may retain it after Put, (2) HandleLargeUpload puts enormous buffers (100MB+) back into the pool — don't pool objects >32KB, (3) the pool stores []byte values not pointers, which causes an allocation on Get. The skill covers all these rules.",
+    "assertions": [
+      {"id": "12.1", "text": "Identifies that HandleLargeUpload puts oversized buffers (100MB+) back into the pool"},
+      {"id": "12.2", "text": "Mentions the 32KB guideline — don't pool objects larger than ~32KB"},
+      {"id": "12.3", "text": "Identifies that w.Write(buf) may retain the buffer after bufPool.Put(buf) in the same function"},
+      {"id": "12.4", "text": "Suggests pooling pointers (*[]byte) instead of values to avoid allocation on Get"},
+      {"id": "12.5", "text": "Recommends resetting/clearing state before Put to avoid retaining large object graphs"}
+    ]
+  },
+  {
+    "id": 13,
+    "name": "struct-field-alignment",
+    "description": "Tests knowledge of struct field ordering for optimal memory layout",
+    "prompt": "Our Go service creates millions of these structs. Memory profiling shows they consume more space than expected. Can we reduce memory usage?\n\n```go\ntype Event struct {\n    Active    bool\n    Timestamp int64\n    Priority  bool\n    UserID    int32\n    Processed bool\n    Score     float64\n}\n```\n\nHow large is this struct and can we make it smaller?",
+    "trap": "The struct has poor field alignment. bool (1 byte) followed by int64 (8 bytes) adds 7 bytes of padding. The skill teaches reordering fields largest-to-smallest and using fieldalignment tool. Without it, the model may not compute the correct size or suggest the optimal reordering.",
+    "assertions": [
+      {"id": "13.1", "text": "Identifies that the struct has wasted padding bytes due to alignment"},
+      {"id": "13.2", "text": "Suggests reordering fields from largest to smallest (int64/float64 first, then int32, then bools)"},
+      {"id": "13.3", "text": "Provides a reordered struct that is smaller than the original"},
+      {"id": "13.4", "text": "Mentions the fieldalignment tool for automated detection"},
+      {"id": "13.5", "text": "States alignment requirements (bool=1, int32=4, int64/float64=8)"}
+    ]
+  },
+  {
+    "id": 14,
+    "name": "zero-size-field-end-of-struct",
+    "description": "Tests knowledge that struct{} at end of struct adds word-sized padding",
+    "prompt": "We're optimizing memory in our Go event system. This struct is allocated millions of times:\n\n```go\ntype Entry struct {\n    Value int64\n    Flag  struct{}\n}\n```\n\nWe expected it to be 8 bytes (just the int64) since struct{} is zero-size. But unsafe.Sizeof reports 16 bytes. Why?",
+    "trap": "When the last field has zero size (struct{}), the compiler adds word-sized padding (8 bytes on 64-bit) to prevent a pointer to that field from overlapping the next memory block. The fix is to move struct{} to the beginning. This is a very obscure Go internals detail.",
+    "assertions": [
+      {"id": "14.1", "text": "Explains that a zero-size field at the end of a struct causes word-sized padding"},
+      {"id": "14.2", "text": "Explains the reason: preventing a pointer to the zero-size field from overlapping the next memory block"},
+      {"id": "14.3", "text": "Suggests moving struct{} to the beginning of the struct to eliminate the padding"},
+      {"id": "14.4", "text": "Shows the fix: type Entry struct { Flag struct{}; Value int64 } which is 8 bytes"}
+    ]
+  },
+  {
+    "id": 15,
+    "name": "map-pointer-vs-value-tradeoff",
+    "description": "Tests knowledge of map[K]*V vs map[K]V tradeoff for large frequently-updated structs",
+    "prompt": "Our Go game server updates player scores frequently. This pattern is inefficient:\n\n```go\ntype Player struct {\n    Name      string\n    Score     int\n    Level     int\n    Inventory [256]byte\n    Stats     [64]float64\n}\n\nvar players = make(map[string]Player)\n\nfunc UpdateScore(id string, delta int) {\n    p := players[id]\n    p.Score += delta\n    players[id] = p // full copy\n}\n```\n\nHow can we optimize the update pattern?",
+    "trap": "Map values are not addressable — you can't do players[id].Score += delta. The copy-modify-reassign pattern copies the entire large struct. Using map[string]*Player allows direct modification. But the skill also teaches the tradeoff: pointer maps add GC pressure from separate heap allocations. Without it, the model may suggest pointers without mentioning the tradeoff.",
+    "assertions": [
+      {"id": "15.1", "text": "Suggests using map[string]*Player to allow direct field modification"},
+      {"id": "15.2", "text": "Explains that map values are not addressable (can't modify in place)"},
+      {"id": "15.3", "text": "Shows players[id].Score += delta with pointer map"},
+      {"id": "15.4", "text": "Mentions the tradeoff: pointer maps add GC pressure from separate heap allocations"},
+      {"id": "15.5", "text": "Notes that for small, mostly-read structs, map[K]V (value) is better"}
+    ]
+  },
+  {
+    "id": 16,
+    "name": "inlining-log-in-hot-path",
+    "description": "Tests knowledge that log calls prevent function inlining",
+    "prompt": "This Go helper function is called millions of times per second in a tight loop. The CPU profile shows it takes much more time than expected for such a simple function.\n\n```go\nfunc clamp(val, minVal, maxVal int) int {\n    if val < minVal {\n        log.Printf(\"clamped %d below minimum %d\", val, minVal)\n        return minVal\n    }\n    if val > maxVal {\n        log.Printf(\"clamped %d above maximum %d\", val, maxVal)\n        return maxVal\n    }\n    return val\n}\n```\n\nWhy is this function slow and how do we fix it?",
+    "trap": "The log.Printf calls prevent the compiler from inlining the function. In a tight loop called millions of times, function call overhead is significant. The skill specifically warns about logging in hot loops preventing inlining. Without it, the model may focus on the log formatting cost rather than the inlining prevention.",
+    "assertions": [
+      {"id": "16.1", "text": "Identifies that log calls prevent the function from being inlined by the compiler"},
+      {"id": "16.2", "text": "Suggests removing log calls from the hot-path function or moving them outside"},
+      {"id": "16.3", "text": "Mentions using go build -gcflags=\"-m\" to verify inlining decisions"},
+      {"id": "16.4", "text": "Explains that function call overhead matters when called millions of times in a tight loop"}
+    ]
+  },
+  {
+    "id": 17,
+    "name": "value-receiver-inlining",
+    "description": "Tests knowledge that value receivers enable inlining for fluent method chains",
+    "prompt": "We have a Go config builder used in a hot path. Profiling shows the fluent chain is slower than expected:\n\n```go\ntype Config struct {\n    timeout  time.Duration\n    retries  int\n    verbose  bool\n}\n\nfunc (c *Config) WithTimeout(d time.Duration) *Config {\n    c.timeout = d\n    return c\n}\n\nfunc (c *Config) WithRetries(n int) *Config {\n    c.retries = n\n    return c\n}\n\nfunc (c *Config) WithVerbose(v bool) *Config {\n    c.verbose = v\n    return c\n}\n```\n\nThis is called as: `cfg := (&Config{}).WithTimeout(5*time.Second).WithRetries(3).WithVerbose(true)`\n\nHow can we make the fluent chain faster?",
+    "trap": "Pointer receivers add indirection that blocks inlining of fluent method chains. Value receivers allow the compiler to fully inline the chain. The skill quantifies this as -80% time. Without the skill, the model may suggest unrelated optimizations.",
+    "assertions": [
+      {"id": "17.1", "text": "Suggests changing to value receivers instead of pointer receivers"},
+      {"id": "17.2", "text": "Explains that value receivers allow the compiler to inline the fluent chain"},
+      {"id": "17.3", "text": "Explains that pointer receivers add indirection that blocks inlining"},
+      {"id": "17.4", "text": "Shows the value receiver signature: func (c Config) WithTimeout(d time.Duration) Config"}
+    ]
+  },
+  {
+    "id": 18,
+    "name": "cache-locality-matrix-traversal",
+    "description": "Tests knowledge of row-major vs column-major traversal and cache effects",
+    "prompt": "This Go matrix computation is unexpectedly slow. The matrix is 4096x4096 float64. CPU profile shows the loop itself (not the computation) is the bottleneck.\n\n```go\nfunc ColumnSum(matrix [4096][4096]float64) [4096]float64 {\n    var sums [4096]float64\n    for col := 0; col < 4096; col++ {\n        for row := 0; row < 4096; row++ {\n            sums[col] += matrix[row][col]\n        }\n    }\n    return sums\n}\n```\n\nWhy is this slow and how do we fix it?",
+    "trap": "Column-first traversal on row-major storage causes cache misses on every access. The fix is to swap loop order. The skill quantifies the difference as 10-50x from cache effects alone. Without it, the model may suggest parallelism or SIMD rather than the simple loop reorder.",
+    "assertions": [
+      {"id": "18.1", "text": "Identifies the column-first traversal as the cause (cache misses)"},
+      {"id": "18.2", "text": "Explains that Go stores 2D arrays in row-major order"},
+      {"id": "18.3", "text": "Suggests swapping loop order to row-first (outer loop over rows)"},
+      {"id": "18.4", "text": "Mentions the performance difference from cache effects (10-50x or similar magnitude)"},
+      {"id": "18.5", "text": "Does NOT primarily suggest parallelism or SIMD as the first fix"}
+    ]
+  },
+  {
+    "id": 19,
+    "name": "contiguous-2d-allocation",
+    "description": "Tests whether the model uses contiguous allocation when writing new 2D matrix code for a performance-critical context",
+    "prompt": "Write a Go function that creates an NxM grid of float64 values initialized to zero, for use in a finite-element simulation that iterates row by row over the grid millions of times per second.\n\n```go\nfunc NewGrid(rows, cols int) [][]float64 {\n    // TODO\n}\n```\n\nImplement this function.",
+    "trap": "The standard idiomatic Go way to create a 2D slice is the row-by-row allocation loop: make([][]float64, rows) followed by make([]float64, cols) per row. Every Go tutorial and example uses this pattern. However for performance-critical numeric code the skill teaches a single contiguous allocation (make([]float64, rows*cols)) sliced into row views, which has far better cache locality. Without the skill the model writes the idiomatic per-row allocation.",
+    "assertions": [
+      {"id": "19.1", "text": "Allocates a single contiguous backing slice: make([]float64, rows*cols)"},
+      {"id": "19.2", "text": "Slices it into row views: data[i*cols : (i+1)*cols]"},
+      {"id": "19.3", "text": "Does NOT allocate each row independently with a separate make([]float64, cols) call"},
+      {"id": "19.4", "text": "Explains that contiguous allocation improves cache locality for row-sequential access"}
+    ]
+  },
+  {
+    "id": 20,
+    "name": "soa-vs-aos",
+    "description": "Tests knowledge of Struct of Arrays vs Array of Structs for single-field iteration",
+    "prompt": "Our Go physics simulation iterates over millions of particles but only reads the X coordinate for collision detection in the first pass:\n\n```go\ntype Particle struct {\n    X, Y, Z    float64\n    VX, VY, VZ float64\n    Mass       float64\n    Radius     float64\n}\n\nvar particles []Particle // millions of elements\n\nfunc FindCollisionCandidates() []int {\n    var candidates []int\n    for i := range particles {\n        if particles[i].X > threshold {\n            candidates = append(candidates, i)\n        }\n    }\n    return candidates\n}\n```\n\nCPU profile shows this loop is slow. We only need the X field in this pass. How can we speed it up?",
+    "trap": "Loading each 64-byte Particle to read only X (8 bytes) wastes 87.5% of cache space. The skill teaches SoA (Struct of Arrays) where all X values are contiguous for 100% cache utilization. Without it, the model may suggest parallelism or preallocation rather than the data layout change.",
+    "assertions": [
+      {"id": "20.1", "text": "Identifies that loading entire Particle structs wastes cache space when only X is needed"},
+      {"id": "20.2", "text": "Suggests Struct of Arrays (SoA) layout with separate slices for X, Y, Z, etc."},
+      {"id": "20.3", "text": "Explains cache utilization improvement (contiguous X values vs scattered across structs)"},
+      {"id": "20.4", "text": "Notes that AoS is fine when accessing all fields together or for small structs"}
+    ]
+  },
+  {
+    "id": 21,
+    "name": "false-sharing-concurrent-counters",
+    "description": "Tests knowledge of false sharing and cache-line padding",
+    "prompt": "Our Go service has per-goroutine counters that are updated concurrently. Adding more goroutines makes it SLOWER, not faster. Profiling shows atomic operations on counters consuming unexpectedly high CPU.\n\n```go\ntype Metrics struct {\n    RequestCount int64\n    ErrorCount   int64\n    BytesRead    int64\n    BytesWritten int64\n}\n\nvar metrics Metrics\n\n// Each goroutine increments different counters concurrently\nfunc recordRequest(bytes int64) {\n    atomic.AddInt64(&metrics.RequestCount, 1)\n    atomic.AddInt64(&metrics.BytesRead, bytes)\n}\n\nfunc recordError(bytes int64) {\n    atomic.AddInt64(&metrics.ErrorCount, 1)\n    atomic.AddInt64(&metrics.BytesWritten, bytes)\n}\n```\n\nWhy does adding goroutines make it slower?",
+    "trap": "All four int64 fields fit within a single 64-byte cache line. When different goroutines update different fields, each write invalidates the other core's cache line (false sharing). The fix is cache-line padding. Without the skill, the model may suggest mutexes or sharding rather than identifying false sharing.",
+    "assertions": [
+      {"id": "21.1", "text": "Identifies false sharing as the cause (fields share the same cache line)"},
+      {"id": "21.2", "text": "Explains that writes to one field invalidate the cache line for other cores"},
+      {"id": "21.3", "text": "Suggests cache-line padding (56-byte [56]byte array between fields) to separate cache lines"},
+      {"id": "21.4", "text": "Mentions the 64-byte cache line size"},
+      {"id": "21.5", "text": "Notes this should only be applied when profiling confirms contention"}
+    ]
+  },
+  {
+    "id": 22,
+    "name": "ilp-multi-accumulator",
+    "description": "Tests knowledge of instruction-level parallelism with multiple accumulators",
+    "prompt": "This Go function sums a large float64 slice (10M elements). Profiling shows it's CPU-bound with the loop body consuming most of the time. The computation is simple addition — how can we speed it up without parallelizing across goroutines?\n\n```go\nfunc Sum(data []float64) float64 {\n    var total float64\n    for _, v := range data {\n        total += v\n    }\n    return total\n}\n```",
+    "trap": "The single accumulator creates a dependency chain — each addition waits for the previous one. The skill teaches using 4 independent accumulators to exploit CPU instruction-level parallelism (2-4x improvement). Without it, the model may suggest SIMD or goroutine-based parallelism rather than the simpler multi-accumulator approach.",
+    "assertions": [
+      {"id": "22.1", "text": "Identifies the sequential dependency chain as the bottleneck (each addition waits for the previous)"},
+      {"id": "22.2", "text": "Suggests using multiple accumulators (e.g., 4) for instruction-level parallelism"},
+      {"id": "22.3", "text": "Shows code with 4 independent accumulators summing every 4th element"},
+      {"id": "22.4", "text": "Handles the remainder elements (when len(data) is not divisible by 4)"},
+      {"id": "22.5", "text": "Mentions expected 2-4x improvement from ILP"}
+    ]
+  },
+  {
+    "id": 23,
+    "name": "index-based-tree-cache-locality",
+    "description": "Tests whether the model uses index-based node storage when implementing a high-performance tree from scratch",
+    "prompt": "Implement a Go binary search tree for a high-throughput in-memory lookup service. The tree will hold ~1M integer keys and be traversed millions of times per second. Write the node and tree type definitions and the Insert method.\n\n```go\n// TODO: define types and implement Insert\n```",
+    "trap": "Every Go tutorial, textbook, and LeetCode solution defines a binary tree with pointer-based nodes: 'type Node struct { Value int; Left, Right *Node }'. This is the universal default. However the skill teaches that pointer-based trees scatter each node across the heap causing random cache misses on every traversal. For high-throughput lookup the correct approach is index-based nodes stored in a contiguous slice: 'type Node struct { Value, Left, Right int }' inside a Tree struct with a Nodes []Node backing array. Without the skill the model writes the pointer-based version.",
+    "assertions": [
+      {"id": "23.1", "text": "Stores nodes in a contiguous slice (e.g., Nodes []Node field on the tree struct)"},
+      {"id": "23.2", "text": "Uses integer indices (not pointers) for left/right child references"},
+      {"id": "23.3", "text": "Does NOT define nodes with *Node pointer fields as the primary implementation"},
+      {"id": "23.4", "text": "Explains that index-based nodes stay in contiguous memory, reducing cache misses compared to scattered heap pointers"}
+    ]
+  },
+  {
+    "id": 24,
+    "name": "tight-loop-scheduler-starvation",
+    "description": "Tests knowledge of tight CPU loops starving the Go scheduler",
+    "prompt": "Our Go service has a CPU-intensive computation goroutine that runs for several seconds. Other goroutines (HTTP handlers) become unresponsive during the computation, even though GOMAXPROCS is set to 4.\n\n```go\nfunc heavyCompute(data []float64) float64 {\n    var result float64\n    for i := 0; i < len(data); i++ {\n        result = result*0.99 + data[i]*0.01\n    }\n    return result\n}\n```\n\nThe data slice has 100M elements. Why are other goroutines starved?",
+    "trap": "A tight CPU loop with fully inlined operations may not yield to the scheduler, despite Go 1.14+ async preemption. The skill teaches using non-inlined function calls as preemption points, or //go:noinline. Without it, the model may suggest runtime.Gosched() (which works but isn't the recommended approach) or parallelism.",
+    "assertions": [
+      {"id": "24.1", "text": "Explains that tight CPU loops with inlined operations can delay scheduler preemption"},
+      {"id": "24.2", "text": "Suggests breaking the work into batches processed by a non-inlined function call"},
+      {"id": "24.3", "text": "Mentions //go:noinline as an option to force preemption points"},
+      {"id": "24.4", "text": "Explains the tradeoff: //go:noinline adds function call overhead but ensures scheduler fairness"},
+      {"id": "24.5", "text": "Mentions that Go 1.14+ has async preemption but tight loops with inlined ops can still cause issues"}
+    ]
+  },
+  {
+    "id": 25,
+    "name": "reflect-deepequal-performance",
+    "description": "Tests knowledge of reflect.DeepEqual being 50-200x slower than typed comparisons",
+    "prompt": "Review this Go function for performance. It compares two configuration objects for equality in a hot path (called on every request):\n\n```go\nfunc ConfigChanged(old, new Config) bool {\n    return !reflect.DeepEqual(old, new)\n}\n\ntype Config struct {\n    Hosts    []string\n    Settings map[string]string\n    Timeout  int\n    Debug    bool\n}\n```",
+    "trap": "reflect.DeepEqual is 50-200x slower than typed comparison. The skill specifically calls this out as a common mistake and recommends slices.Equal, maps.Equal for the structured fields. Without it, the model may say it's fine or suggest a less specific alternative.",
+    "assertions": [
+      {"id": "25.1", "text": "Identifies reflect.DeepEqual as 50-200x slower than typed comparison"},
+      {"id": "25.2", "text": "Suggests using slices.Equal for the Hosts field"},
+      {"id": "25.3", "text": "Suggests using maps.Equal for the Settings field"},
+      {"id": "25.4", "text": "Provides a hand-written typed comparison function"}
+    ]
+  },
+  {
+    "id": 26,
+    "name": "type-switch-vs-repeated-assertions",
+    "description": "Tests whether the model uses a type switch (not repeated assertions) when writing new interface dispatch code for a hot path",
+    "prompt": "Write a Go function that formats any scalar value as a string for a high-throughput metrics labeling system. It must handle string, int, int64, float64, and bool. Called ~500K times/sec.\n\n```go\nfunc FormatLabel(v any) string {\n    // TODO\n}\n```\n\nImplement this function.",
+    "trap": "The natural way many Go developers write multi-type dispatch is a chain of if-assertions: 'if s, ok := v.(string); ok { return s }' etc. — it looks clear and matches the pattern from many examples. A type switch 'switch v := v.(type) { case string: ... }' dispatches in a single evaluation of the interface type and is the correct pattern for hot paths. Without the skill the model may write the if-chain of repeated assertions, evaluating the interface type multiple times.",
+    "assertions": [
+      {"id": "26.1", "text": "Uses a type switch (switch v := v.(type)) rather than a chain of individual if-assertions"},
+      {"id": "26.2", "text": "Does NOT use repeated v.(T) comma-ok assertions in separate if-blocks"},
+      {"id": "26.3", "text": "Handles all required types: string, int (or int64), float64, and bool in the switch cases"}
+    ]
+  },
+  {
+    "id": 27,
+    "name": "http-transport-maxidleconnsperhost",
+    "description": "Tests knowledge that default http.Client MaxIdleConnsPerHost is only 2",
+    "prompt": "Our Go microservice calls an upstream API with high concurrency (200 goroutines making requests simultaneously). Under load, we see many TCP connections being created and destroyed. Why doesn't connection pooling work?\n\n```go\nvar client = &http.Client{\n    Timeout: 30 * time.Second,\n}\n\nfunc CallAPI(ctx context.Context, id string) ([]byte, error) {\n    resp, err := client.Get(fmt.Sprintf(\"https://api.example.com/v1/items/%s\", id))\n    if err != nil {\n        return nil, err\n    }\n    defer resp.Body.Close()\n    return io.ReadAll(resp.Body)\n}\n```",
+    "trap": "The default http.Transport has MaxIdleConnsPerHost=2. With 200 concurrent goroutines, 198 connections are created and destroyed for each request. The skill specifically calls this out as a common mistake. Without it, the model may suggest connection pool libraries instead of tuning the built-in transport.",
+    "assertions": [
+      {"id": "27.1", "text": "Identifies MaxIdleConnsPerHost defaulting to 2 as the root cause"},
+      {"id": "27.2", "text": "Suggests configuring http.Transport with higher MaxIdleConnsPerHost (e.g., 20-100)"},
+      {"id": "27.3", "text": "Shows complete Transport configuration with MaxIdleConns, MaxIdleConnsPerHost, and MaxConnsPerHost"},
+      {"id": "27.4", "text": "Mentions draining resp.Body for connection reuse (io.Copy to io.Discard)"},
+      {"id": "27.5", "text": "Does NOT suggest using a third-party connection pool library as the primary solution"}
+    ]
+  },
+  {
+    "id": 28,
+    "name": "response-body-drain",
+    "description": "Tests whether the model drains the response body when writing a new HTTP health-check function",
+    "prompt": "Write a Go function that polls a list of service endpoints and returns which ones are healthy (HTTP 200). It will run every 5 seconds against ~50 endpoints with a shared http.Client.\n\n```go\nfunc CheckHealthy(client *http.Client, urls []string) []string {\n    // TODO: return URLs that respond with 200\n}\n```\n\nImplement this function.",
+    "trap": "The natural implementation closes the body with 'defer resp.Body.Close()' and reads the status code — which looks correct and complete. Most developers do not know that the transport only returns the connection to the pool after the body is fully consumed. Without draining via 'io.Copy(io.Discard, resp.Body)', each health check creates a new TCP connection and the 50-endpoint poll exhausts the connection pool. Without the skill the model writes the close-only version.",
+    "assertions": [
+      {"id": "28.1", "text": "Drains the response body using io.Copy(io.Discard, resp.Body) or io.ReadAll before closing"},
+      {"id": "28.2", "text": "Does NOT only call resp.Body.Close() without first reading/draining the body"},
+      {"id": "28.3", "text": "Explains that connections are only returned to the pool after the body is fully consumed"}
+    ]
+  },
+  {
+    "id": 29,
+    "name": "streaming-vs-readall",
+    "description": "Tests knowledge of streaming vs buffering for large payloads",
+    "prompt": "Our Go service proxies file downloads. Under load with large files (1-5GB), the service runs out of memory and gets OOM killed.\n\n```go\nfunc ProxyDownload(w http.ResponseWriter, r *http.Request) {\n    resp, err := http.Get(upstreamURL + r.URL.Path)\n    if err != nil {\n        http.Error(w, \"upstream error\", 502)\n        return\n    }\n    defer resp.Body.Close()\n\n    data, err := io.ReadAll(resp.Body)\n    if err != nil {\n        http.Error(w, \"read error\", 500)\n        return\n    }\n\n    w.Header().Set(\"Content-Type\", resp.Header.Get(\"Content-Type\"))\n    w.Write(data)\n}\n```",
+    "trap": "io.ReadAll loads the entire response into memory. For a 5GB file, that's a 5GB allocation. The fix is io.Copy which streams with a 32KB buffer. The skill specifically warns about io.ReadAll for large payloads.",
+    "assertions": [
+      {"id": "29.1", "text": "Identifies io.ReadAll as the cause of OOM (loads entire file into memory)"},
+      {"id": "29.2", "text": "Suggests using io.Copy(w, resp.Body) to stream with constant memory"},
+      {"id": "29.3", "text": "Mentions the 32KB internal buffer of io.Copy"},
+      {"id": "29.4", "text": "Notes that io.ReadAll is fine for small, bounded payloads (< 1MB)"}
+    ]
+  },
+  {
+    "id": 30,
+    "name": "json-streaming-decoder",
+    "description": "Tests knowledge of json.NewDecoder for streaming large JSON payloads",
+    "prompt": "Our Go API receives large JSON arrays (10K-100K items). Memory spikes during unmarshaling cause GC pressure.\n\n```go\nfunc HandleBulkImport(w http.ResponseWriter, r *http.Request) {\n    data, _ := io.ReadAll(r.Body)\n    var items []Item\n    if err := json.Unmarshal(data, &items); err != nil {\n        http.Error(w, err.Error(), 400)\n        return\n    }\n    for _, item := range items {\n        processItem(item)\n    }\n}\n```\n\nHow can we reduce memory usage while processing the same JSON input?",
+    "trap": "json.Unmarshal buffers the entire body. json.NewDecoder streams tokens. The skill teaches the decoder.More() + decoder.Decode() pattern for processing one item at a time. Without it, the model may suggest chunking or pagination rather than streaming JSON.",
+    "assertions": [
+      {"id": "30.1", "text": "Suggests using json.NewDecoder with r.Body directly (no io.ReadAll)"},
+      {"id": "30.2", "text": "Shows the dec.More() + dec.Decode(&item) streaming pattern"},
+      {"id": "30.3", "text": "Explains that this processes one item at a time with O(1) memory per item"}
+    ]
+  },
+  {
+    "id": 31,
+    "name": "cgo-overhead-tight-loop",
+    "description": "Tests knowledge of cgo call overhead (~50-100ns per crossing) and batching strategy",
+    "prompt": "Our Go numerical library calls a C function for each element. Profiling shows the cgo calls dominate execution time even though the C function itself is simple.\n\n```go\n/*\n#include <math.h>\n*/\nimport \"C\"\n\nfunc TransformAll(values []float64) {\n    for i, v := range values {\n        values[i] = float64(C.sqrt(C.double(v)))\n    }\n}\n```\n\nHow can we optimize this?",
+    "trap": "Each cgo call costs ~50-100ns due to stack switching. For math.Sqrt, the pure Go stdlib is equally fast and inlineable. For unavoidable C code, batch the call. The skill teaches both approaches. Without it, the model may not know the cgo overhead magnitude or suggest batching.",
+    "assertions": [
+      {"id": "31.1", "text": "Identifies cgo overhead (~50-100ns per call) as the bottleneck in the tight loop"},
+      {"id": "31.2", "text": "Suggests using math.Sqrt (pure Go, inlineable) instead of C.sqrt"},
+      {"id": "31.3", "text": "For unavoidable C code, suggests batching: pass the entire array to C in one call"},
+      {"id": "31.4", "text": "Mentions that goroutine is pinned to OS thread during cgo calls"}
+    ]
+  },
+  {
+    "id": 32,
+    "name": "gogc-gomemlimit-container",
+    "description": "Tests knowledge of GOMEMLIMIT for containerized applications",
+    "prompt": "Our Go service runs in a Kubernetes pod with 512MB memory limit. It periodically gets OOM killed even though heap usage appears to be only 200MB when checked via runtime.MemStats.Alloc.\n\nHow should we configure the Go runtime for this container?",
+    "trap": "The service needs GOMEMLIMIT set to ~80-90% of container memory (400-450MiB). Without it, the GC doesn't know about the container limit and may let the heap grow too large. The skill specifically calls this out as a common mistake ('No GC tuning in containers'). Without it, the model may suggest GOGC tuning alone.",
+    "assertions": [
+      {"id": "32.1", "text": "Recommends setting GOMEMLIMIT to 80-90% of the container memory limit (400-450MiB)"},
+      {"id": "32.2", "text": "Explains that the GC needs GOMEMLIMIT to know about the container's memory ceiling"},
+      {"id": "32.3", "text": "Shows the GOMEMLIMIT=450MiB environment variable or debug.SetMemoryLimit equivalent"},
+      {"id": "32.4", "text": "Explains the gap between Alloc and container limit (goroutine stacks, OS buffers, non-heap memory)"},
+      {"id": "32.5", "text": "Does NOT recommend the ballast pattern (obsolete since Go 1.19)"}
+    ]
+  },
+  {
+    "id": 33,
+    "name": "ballast-pattern-obsolete",
+    "description": "Tests whether the model avoids the ballast pattern and uses GOMEMLIMIT when configuring GC for a new service",
+    "prompt": "We're deploying a new Go 1.22 service in a Kubernetes pod with 2GB memory limit. The service is allocation-heavy during bursts and we want to reduce GC frequency to avoid latency spikes. A senior engineer suggested allocating a large byte array at startup to inflate the live heap. How should we configure the runtime?\n\n```go\nfunc main() {\n    // TODO: configure GC behavior\n    startServer()\n}\n```",
+    "trap": "The suggestion to 'allocate a large byte array at startup' is a direct hint toward the ballast pattern, which was the standard advice before Go 1.19. A model without the skill may implement it as suggested: 'var ballast = make([]byte, 1<<30)'. The skill explicitly teaches that the ballast pattern is obsolete since Go 1.19 — GOMEMLIMIT is strictly better because it achieves the same reduction in GC frequency without wasting physical memory. Without the skill the model follows the senior engineer's suggestion and implements the ballast.",
+    "assertions": [
+      {"id": "33.1", "text": "Does NOT implement the ballast pattern (large byte array allocation at startup)"},
+      {"id": "33.2", "text": "Recommends setting GOMEMLIMIT (e.g., GOMEMLIMIT=1800MiB or debug.SetMemoryLimit)"},
+      {"id": "33.3", "text": "Explains that the ballast pattern is obsolete since Go 1.19"},
+      {"id": "33.4", "text": "Explains that GOMEMLIMIT provides the same GC-frequency benefit without wasting physical memory"}
+    ]
+  },
+  {
+    "id": 34,
+    "name": "gomaxprocs-container-go125",
+    "description": "Tests knowledge of Go 1.25+ container-aware GOMAXPROCS vs automaxprocs",
+    "prompt": "Our Go service runs in a container with 2 CPU cores on a 64-core host. We're on Go 1.25. A colleague suggested adding `go.uber.org/automaxprocs`. Is that necessary?\n\n```go\nimport _ \"go.uber.org/automaxprocs\"\n\nfunc main() {\n    startServer()\n}\n```",
+    "trap": "Go 1.25+ automatically detects container CPU limits (cgroup v1/v2). automaxprocs is unnecessary. For Go 1.24 and earlier, it IS needed. The skill makes this version-dependent distinction clear.",
+    "assertions": [
+      {"id": "34.1", "text": "States that Go 1.25+ automatically detects container CPU limits"},
+      {"id": "34.2", "text": "Recommends removing the automaxprocs dependency"},
+      {"id": "34.3", "text": "Mentions that automaxprocs IS needed for Go 1.24 and earlier"},
+      {"id": "34.4", "text": "Mentions cgroup CPU quota detection as the mechanism"}
+    ]
+  },
+  {
+    "id": 35,
+    "name": "pgo-workflow",
+    "description": "Tests knowledge of Profile-Guided Optimization workflow and expected gains",
+    "prompt": "We want to improve our Go service's performance with minimal code changes. The service is interface-heavy with many small methods. We're on Go 1.22. What low-effort optimization can we apply?",
+    "trap": "PGO (Profile-Guided Optimization) gives 2-7% improvement with minimal effort: collect production profile, save as default.pgo, rebuild. The skill specifically describes when PGO helps most (interface calls, hot inlining). Without it, the model may suggest code-level optimizations rather than the build-level PGO approach.",
+    "assertions": [
+      {"id": "35.1", "text": "Recommends Profile-Guided Optimization (PGO)"},
+      {"id": "35.2", "text": "Describes the workflow: collect production CPU profile, save as default.pgo, rebuild"},
+      {"id": "35.3", "text": "Mentions expected improvement of 2-7%"},
+      {"id": "35.4", "text": "Explains PGO benefits: more aggressive inlining and devirtualization of interface calls"},
+      {"id": "35.5", "text": "Notes that profiles should be refreshed after significant code changes"}
+    ]
+  },
+  {
+    "id": 36,
+    "name": "slog-logattrs-hot-path",
+    "description": "Tests knowledge of slog.LogAttrs for zero-allocation logging when level is disabled",
+    "prompt": "Profiling shows our Go service's Debug logging allocates memory even though Debug level is disabled in production. We're using slog.\n\n```go\nfunc processItem(ctx context.Context, item Item) {\n    slog.Debug(\"processing item\",\n        \"id\", item.ID,\n        \"name\", item.Name,\n        \"data\", item.Data, // item.Data is a large struct\n    )\n    // ... actual processing ...\n}\n```\n\nWhy does disabled logging still allocate, and how do we fix it?",
+    "trap": "Even with slog, arguments are evaluated before the level check. The 'data' field is boxed into any, allocating. The skill teaches slog.LogAttrs with typed attributes (slog.Int, slog.String) for zero allocations when the level is disabled. Without it, the model may suggest level checks or not know about LogAttrs.",
+    "assertions": [
+      {"id": "36.1", "text": "Explains that log arguments are evaluated/boxed before the level check"},
+      {"id": "36.2", "text": "Recommends slog.LogAttrs for zero allocations when level is disabled"},
+      {"id": "36.3", "text": "Shows typed attributes: slog.Int(\"id\", item.ID), slog.String(\"name\", item.Name)"},
+      {"id": "36.4", "text": "Notes that slog.Any can still allocate even with slog, so typed attributes are preferred"}
+    ]
+  },
+  {
+    "id": 37,
+    "name": "regexp-compile-per-call",
+    "description": "Tests knowledge of compiled pattern caching vs per-call compilation",
+    "prompt": "Profiling shows our Go validation function has high CPU usage from regexp:\n\n```go\nfunc ValidateEmail(email string) bool {\n    re := regexp.MustCompile(`^[a-z0-9._%+-]+@[a-z0-9.-]+\\.[a-z]{2,}$`)\n    return re.MatchString(email)\n}\n\nfunc ValidatePhone(phone string) bool {\n    re := regexp.MustCompile(`^\\+?[1-9]\\d{1,14}$`)\n    return re.MatchString(phone)\n}\n```\n\nBoth functions are called thousands of times per second.",
+    "trap": "regexp.Compile/MustCompile parses the pattern into a state machine (~5,700ns) on every call. The match itself is ~450ns. The skill quantifies the 10-12x waste. Fix: compile at package level. Without the skill, the model may suggest simpler regex or string operations instead of caching.",
+    "assertions": [
+      {"id": "37.1", "text": "Identifies that regexp compilation happens on every call (~5,700ns per compile)"},
+      {"id": "37.2", "text": "Suggests moving regexp.MustCompile to package-level variables"},
+      {"id": "37.3", "text": "Notes that compiled regexps are safe for concurrent use"},
+      {"id": "37.4", "text": "Quantifies the waste (10-12x overhead from recompilation vs match-only)"}
+    ]
+  },
+  {
+    "id": 38,
+    "name": "singleflight-cache-stampede",
+    "description": "Tests whether the model uses singleflight (not a mutex) when writing a new cache-with-fetch function serving high concurrency",
+    "prompt": "Write a Go function that fetches and caches country metadata (name, currency, timezone). The cache has a 10-minute TTL. The service handles 2000 req/s with ~50 unique countries. Implement GetCountry.\n\n```go\nvar cache sync.Map\n\nfunc GetCountry(code string) (Country, error) {\n    // TODO: check cache, fetch from API if missing, store result\n}\n\nfunc fetchFromAPI(code string) (Country, error) { /* external call, ~200ms */ }\n```",
+    "trap": "The natural implementation is a simple cache-aside: load from cache, on miss fetch from API, store result. This is what every cache tutorial shows. Under 2000 req/s with 200ms fetch latency, a cache miss for any country causes 400 concurrent goroutines to all call fetchFromAPI for the same key simultaneously — a cache stampede. The fix requires singleflight.Group so only one goroutine fetches per key while others wait and share the result. A mutex would serialize all countries, not just the same one. Without the skill the model writes the naive cache-aside without stampede protection.",
+    "assertions": [
+      {"id": "38.1", "text": "Uses singleflight.Group (golang.org/x/sync/singleflight) to deduplicate concurrent fetches for the same key"},
+      {"id": "38.2", "text": "Does NOT use a global mutex that would serialize requests for different country codes"},
+      {"id": "38.3", "text": "Shows the sf.Do(code, func) pattern so concurrent requests for the same key share one fetch"},
+      {"id": "38.4", "text": "Explains that without singleflight, a cache miss causes all concurrent waiters to call the API simultaneously"}
+    ]
+  },
+  {
+    "id": 39,
+    "name": "algorithmic-complexity-slice-contains-loop",
+    "description": "Tests knowledge of algorithmic complexity traps (O(n*m) from slices.Contains in a loop)",
+    "prompt": "This Go function checks which requested IDs are valid. It's slow when both lists are large (10K items each).\n\n```go\nfunc FilterValid(requested []string, valid []string) []string {\n    var result []string\n    for _, id := range requested {\n        if slices.Contains(valid, id) {\n            result = append(result, id)\n        }\n    }\n    return result\n}\n```\n\nOptimize for large inputs.",
+    "trap": "slices.Contains in a loop creates O(n*m) complexity. The skill teaches building a map[T]struct{} first for O(n+m). Without it, the model may suggest sorting + binary search (O(n log n)) rather than the optimal map approach.",
+    "assertions": [
+      {"id": "39.1", "text": "Identifies O(n*m) complexity from slices.Contains inside a loop"},
+      {"id": "39.2", "text": "Suggests building a map[string]struct{} from the valid slice first"},
+      {"id": "39.3", "text": "Shows the O(n+m) solution with map lookup"},
+      {"id": "39.4", "text": "Uses struct{} (0 bytes) for the map value type, not bool"}
+    ]
+  },
+  {
+    "id": 40,
+    "name": "early-return-full-scan",
+    "description": "Tests whether the model uses early return when writing a new existence-check loop over a large collection",
+    "prompt": "Write a Go function that checks whether any order in a large list has been flagged for fraud review. Orders are checked on every API request; the slice typically holds 50,000+ entries.\n\n```go\ntype Order struct {\n    ID         string\n    FraudScore float64\n    // ...\n}\n\nfunc HasFraudulentOrder(orders []Order, threshold float64) bool {\n    // TODO\n}\n```\n\nImplement this function.",
+    "trap": "When asked to write a boolean existence check, many developers reach for the accumulator pattern: 'found := false; for _, o := range orders { if o.FraudScore > threshold { found = true } }; return found'. This always scans all 50K entries even when the very first entry matches. The correct approach returns immediately on the first match. Without the skill explicitly teaching early-return as a performance pattern, the model may write the full-scan accumulator version, especially since it is a common pattern in introductory Go code.",
+    "assertions": [
+      {"id": "40.1", "text": "Returns true immediately upon finding the first matching order (early return inside the loop)"},
+      {"id": "40.2", "text": "Does NOT use an accumulator variable (found := false) that defers the return until after the full loop"},
+      {"id": "40.3", "text": "Returns false after the loop without having scanned entries unnecessarily past the first match"}
+    ]
+  },
+  {
+    "id": 41,
+    "name": "iterator-chain-vs-direct-loop",
+    "description": "Tests whether the model avoids iterator chains and writes a direct loop for a hot-path find-first operation",
+    "prompt": "Write a Go function for a hot path (~1M calls/sec) that finds the first active user with a given role from a slice. Use whatever approach you think is most appropriate.\n\n```go\ntype User struct {\n    ID     string\n    Role   string\n    Active bool\n}\n\nfunc FindFirstActiveWithRole(users []User, role string) (User, bool) {\n    // TODO\n}\n```\n\nImplement this function.",
+    "trap": "Modern Go code with samber/lo or standard library functional helpers makes it tempting to write: 'return lo.First(lo.Filter(users, func(u User) bool { return u.Active && u.Role == role }))'. This is idiomatic, concise, and readable — and it is what many developers reach for. However Filter processes ALL elements before First picks one, and each closure call has function-call overhead. In a hot path the direct loop is significantly faster: it short-circuits on first match and has no closure overhead. Without the skill the model may use the iterator-chain style since it looks clean and modern.",
+    "assertions": [
+      {"id": "41.1", "text": "Uses a direct for-loop with an early return/break rather than chained Filter+First (or equivalent iterator helpers)"},
+      {"id": "41.2", "text": "Does NOT call a Filter-style function that processes all elements before returning the first match"},
+      {"id": "41.3", "text": "Returns immediately upon finding the first matching user (short-circuit)"},
+      {"id": "41.4", "text": "Explains that iterator chains process all elements and add closure overhead, while a direct loop short-circuits"}
+    ]
+  },
+  {
+    "id": 42,
+    "name": "indirect-function-calls-closure",
+    "description": "Tests knowledge that closure indirection prevents inlining in generic wrappers",
+    "prompt": "We profiled our Go utility library and found this wrapper function is slower than expected:\n\n```go\nfunc DereferenceAll[T any](ptrs []*T) []T {\n    return Map(ptrs, func(p *T) T { return *p })\n}\n\nfunc Map[T, R any](items []T, fn func(T) R) []R {\n    result := make([]R, len(items))\n    for i := range items {\n        result[i] = fn(items[i])\n    }\n    return result\n}\n```\n\nHow can we make DereferenceAll faster?",
+    "trap": "The closure passed to Map prevents inlining at the call site. The skill teaches replacing indirect function calls (Map + closure) with direct loops for 13-17% improvement. Without it, the model may not know that the closure indirection is the bottleneck.",
+    "assertions": [
+      {"id": "42.1", "text": "Suggests replacing the Map+closure pattern with a direct loop"},
+      {"id": "42.2", "text": "Explains that the closure/function call indirection prevents inlining"},
+      {"id": "42.3", "text": "Shows the direct loop: result[i] = *ptrs[i]"},
+      {"id": "42.4", "text": "Mentions the expected improvement range (13-17% or similar)"}
+    ]
+  },
+  {
+    "id": 43,
+    "name": "http-server-no-timeouts",
+    "description": "Tests whether the model sets timeouts when writing a new HTTP server from scratch",
+    "prompt": "Write the main function for a Go HTTP API server that listens on port 8080 and serves two routes: POST /ingest and GET /health.\n\n```go\nfunc main() {\n    // TODO: set up and start the HTTP server\n}\n```\n\nImplement this.",
+    "trap": "The idiomatic, minimal Go HTTP server that every tutorial shows is: 'http.HandleFunc(...); http.ListenAndServe(\":8080\", nil)'. This is the first result for 'Go http server example' and what most developers write by default. It uses the zero-value DefaultServeMux with no timeouts — a slow or malicious client can hold connections open indefinitely, exhausting file descriptors. The correct approach creates an explicit http.Server{} with ReadTimeout, WriteTimeout, and IdleTimeout. Without the skill the model writes the default ListenAndServe shortcut.",
+    "assertions": [
+      {"id": "43.1", "text": "Creates an explicit http.Server struct rather than calling http.ListenAndServe directly"},
+      {"id": "43.2", "text": "Sets ReadTimeout on the server"},
+      {"id": "43.3", "text": "Sets WriteTimeout on the server"},
+      {"id": "43.4", "text": "Sets IdleTimeout on the server"}
+    ]
+  },
+  {
+    "id": 44,
+    "name": "http-keepalive-crawler",
+    "description": "Tests knowledge of disabling keep-alive for crawlers hitting many hosts",
+    "prompt": "Our Go web crawler scrapes 100,000 different domains. After running for a while, it runs out of file descriptors. The crawler uses an http.Client with tuned Transport:\n\n```go\nvar crawlerClient = &http.Client{\n    Timeout: 10 * time.Second,\n    Transport: &http.Transport{\n        MaxIdleConns:        1000,\n        MaxIdleConnsPerHost: 10,\n        IdleConnTimeout:     90 * time.Second,\n    },\n}\n```\n\nWhy does it exhaust file descriptors?",
+    "trap": "For crawlers hitting many different hosts, idle connections accumulate because MaxIdleConns caps total idle connections but each host has up to 10 idle. With 100K hosts, connections pile up. The skill teaches DisableKeepAlives: true for this use case. Without it, the model may suggest lowering MaxIdleConnsPerHost instead of disabling keep-alive entirely.",
+    "assertions": [
+      {"id": "44.1", "text": "Identifies that idle connections accumulate across many different hosts"},
+      {"id": "44.2", "text": "Suggests DisableKeepAlives: true for the crawler client"},
+      {"id": "44.3", "text": "Explains that keep-alive is counterproductive when crawling many unique hosts"}
+    ]
+  },
+  {
+    "id": 45,
+    "name": "buffered-io-syscall-reduction",
+    "description": "Tests whether the model uses buffered I/O when writing a new file-writing function that emits many small records",
+    "prompt": "Write a Go function that appends audit log entries to an open file. Each entry is a short string (~100 bytes). The function is called in a tight loop and may write thousands of entries per second.\n\n```go\nfunc WriteAuditEntries(f *os.File, entries []string) error {\n    // TODO\n}\n```\n\nImplement this function.",
+    "trap": "The natural implementation uses f.WriteString(entry) or fmt.Fprintln(f, entry) directly on the *os.File in a loop — that is what every beginner and intermediate Go example does. Each such call issues a separate syscall, which at thousands of entries per second is extremely expensive. The skill teaches wrapping with bufio.NewWriter(f) to batch writes into larger chunks and call Flush() at the end. Without the skill the model writes the direct unbuffered version.",
+    "assertions": [
+      {"id": "45.1", "text": "Wraps the file with bufio.NewWriter (or bufio.NewWriterSize) before writing"},
+      {"id": "45.2", "text": "Writes entries through the buffered writer, not directly to the *os.File"},
+      {"id": "45.3", "text": "Calls w.Flush() after all entries are written"},
+      {"id": "45.4", "text": "Does NOT write each entry directly to f with f.WriteString or fmt.Fprintln(f, ...) in a loop without buffering"}
+    ]
+  },
+  {
+    "id": 46,
+    "name": "concurrent-pipeline-when-not-to-use",
+    "description": "Tests knowledge of when concurrent pipelines are NOT beneficial",
+    "prompt": "Our Go data pipeline has 3 stages. We want to make it faster by running stages concurrently:\n\n1. Stage A: Compress data (CPU-bound)\n2. Stage B: Encrypt data (CPU-bound)\n3. Stage C: Calculate checksum (CPU-bound)\n\nAll stages are CPU-bound. Should we run them concurrently in goroutines with channels between stages?",
+    "trap": "When all stages compete for the same resource (CPU), concurrency adds context-switching overhead with no resource utilization gain. The skill explicitly says 'If A and B both compete for CPU, concurrency causes context-switching overhead with no resource utilization gain.' Without it, the model may recommend the concurrent pipeline pattern.",
+    "assertions": [
+      {"id": "46.1", "text": "Recommends AGAINST concurrent pipelines for this case"},
+      {"id": "46.2", "text": "Explains that all three stages compete for the same resource (CPU)"},
+      {"id": "46.3", "text": "Notes that concurrency only helps when stages saturate DIFFERENT resources"},
+      {"id": "46.4", "text": "Mentions context-switching overhead as a cost of unnecessary concurrency"},
+      {"id": "46.5", "text": "Suggests sequential processing or batching as a simpler alternative"}
+    ]
+  },
+  {
+    "id": 47,
+    "name": "batch-db-inserts",
+    "description": "Tests whether the model uses batch inserts (not row-by-row) when writing a new bulk ingestion function",
+    "prompt": "Write a Go function that persists a slice of sensor readings to a PostgreSQL database. The function is called every second with ~1000 readings.\n\n```go\ntype Reading struct {\n    SensorID  string\n    Value     float64\n    Timestamp time.Time\n}\n\nfunc SaveReadings(db *sql.DB, readings []Reading) error {\n    // TODO\n}\n```\n\nImplement this function.",
+    "trap": "The natural implementation iterates over readings and calls db.Exec(INSERT ...) once per reading — that is what every Go+SQL tutorial shows and what most developers write first. At 1000 readings/second that means 1000 round-trips/second: 1000 query parses, 1000 network round-trips, 1000 transaction commits. The skill teaches batching: a single multi-row INSERT or the COPY protocol in one round-trip. Without the skill the model writes the per-row loop with a single INSERT per call.",
+    "assertions": [
+      {"id": "47.1", "text": "Does NOT call db.Exec with a single-row INSERT inside a for-loop over all readings"},
+      {"id": "47.2", "text": "Uses a batching strategy: multi-row VALUES clause, COPY protocol, or chunked batch inserts"},
+      {"id": "47.3", "text": "Reduces the number of database round-trips to O(1) or O(n/batchSize) rather than O(n)"},
+      {"id": "47.4", "text": "Wraps the batch operation in a transaction"},
+      {"id": "47.5", "text": "Explains that per-row inserts cause one round-trip per record, which is the primary bottleneck at 1000 records/second"}
+    ]
+  },
+  {
+    "id": 48,
+    "name": "panic-recover-control-flow",
+    "description": "Tests knowledge that panic/recover should not be used for control flow",
+    "prompt": "Review this Go parsing function for performance:\n\n```go\nfunc SafeParse(s string) (result int, err error) {\n    defer func() {\n        if r := recover(); r != nil {\n            err = fmt.Errorf(\"parse failed: %v\", r)\n        }\n    }()\n    return strconv.Atoi(s)\n}\n```\n\nThis is called 100K times per second with a mix of valid and invalid inputs.",
+    "trap": "strconv.Atoi returns an error, not a panic. The defer/recover is unnecessary overhead: panic allocates a stack trace and unwinds the stack. The skill specifically warns against panic/recover as control flow. Without it, the model may accept the pattern as defensive programming.",
+    "assertions": [
+      {"id": "48.1", "text": "Identifies that panic/recover is unnecessary since strconv.Atoi returns errors"},
+      {"id": "48.2", "text": "Explains that panic allocates a stack trace and unwinds the stack (10-100x overhead)"},
+      {"id": "48.3", "text": "Suggests using simple error checking: v, err := strconv.Atoi(s)"},
+      {"id": "48.4", "text": "States that panic/recover should only be used for truly unrecoverable situations"}
+    ]
+  },
+  {
+    "id": 49,
+    "name": "monotonic-time-since",
+    "description": "Tests whether the model uses time.Since (monotonic clock) rather than wall-clock subtraction when writing a new duration measurement",
+    "prompt": "Write a Go middleware that records the latency of each HTTP request in milliseconds and logs it. The service runs in a cloud environment where NTP adjustments happen occasionally.\n\n```go\nfunc LatencyMiddleware(next http.Handler) http.Handler {\n    return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {\n        // TODO: measure and log request latency\n        next.ServeHTTP(w, r)\n    })\n}\n```\n\nImplement this middleware.",
+    "trap": "A common pattern for measuring time in Go that looks correct but is subtly fragile is: 'start := time.Now().UTC(); ...; elapsed := time.Now().UTC().Sub(start)'. Calling .UTC() strips the monotonic clock reading, leaving only the wall clock. An NTP adjustment during the request would then produce incorrect (or negative) latency measurements. The skill teaches that time.Since(start) uses the monotonic clock and is immune to wall-clock adjustments. Without the skill the model may call .UTC() or .Unix() on the start time, discarding the monotonic component.",
+    "assertions": [
+      {"id": "49.1", "text": "Captures start time with time.Now() without stripping the monotonic component (no .UTC(), .Unix(), or .Round() on the start time)"},
+      {"id": "49.2", "text": "Computes elapsed time using time.Since(start) or end.Sub(start) where both times come from time.Now()"},
+      {"id": "49.3", "text": "Does NOT call .UTC() or .UnixNano() on the start time before computing the elapsed duration (which would strip the monotonic clock)"},
+      {"id": "49.4", "text": "Explains that time.Since uses the monotonic clock, making it immune to NTP or wall-clock adjustments"}
+    ]
+  },
+  {
+    "id": 50,
+    "name": "prometheus-gc-pressure-queries",
+    "description": "Tests knowledge of specific PromQL queries for GC pressure monitoring",
+    "prompt": "Our Go service in production has occasional latency spikes. We suspect GC pauses. We have Prometheus monitoring with default Go metrics. What PromQL queries should we use to diagnose GC pressure?",
+    "trap": "The skill provides specific PromQL queries for GC diagnosis. Without it, the model may suggest generic approaches or incorrect metric names. The key queries are rate(go_gc_duration_seconds_count[5m]) for frequency and the worst-case pause quantile.",
+    "assertions": [
+      {"id": "50.1", "text": "Provides rate(go_gc_duration_seconds_count[5m]) for GC frequency"},
+      {"id": "50.2", "text": "Provides go_gc_duration_seconds{quantile=\"1\"} for worst-case GC pause"},
+      {"id": "50.3", "text": "Mentions >2 cycles/s sustained as a signal of excessive allocation rate"},
+      {"id": "50.4", "text": "Suggests rate(go_memstats_alloc_bytes_total[5m]) for allocation rate monitoring"}
+    ]
+  },
+  {
+    "id": 51,
+    "name": "goroutine-leak-prometheus",
+    "description": "Tests knowledge of PromQL for detecting goroutine leaks",
+    "prompt": "We suspect our Go service has a goroutine leak in production. The service gets slower over time and eventually needs to be restarted. What Prometheus queries can confirm a goroutine leak?",
+    "trap": "The skill provides specific goroutine leak PromQL queries. go_goroutines should correlate with load; growing independently of traffic indicates a leak. delta(go_goroutines[1h]) shows net change.",
+    "assertions": [
+      {"id": "51.1", "text": "Provides go_goroutines metric for goroutine count monitoring"},
+      {"id": "51.2", "text": "Suggests delta(go_goroutines[1h]) for detecting net goroutine increase over time"},
+      {"id": "51.3", "text": "Notes that goroutine count should correlate with load — growing independently means leak"}
+    ]
+  },
+  {
+    "id": 52,
+    "name": "continuous-profiling-tools",
+    "description": "Tests knowledge of continuous profiling tools and their tradeoffs",
+    "prompt": "We want to detect performance regressions across deployments in production. Our Go service runs on Kubernetes. We need historical profiling data to compare flamegraphs between versions. What tools should we evaluate?",
+    "trap": "The skill lists specific continuous profiling tools with overhead and best-for guidance: Grafana Pyroscope (push/pull, 2-5%), Parca (eBPF, <1%), Datadog, GCP Profiler. Without it, the model may only suggest pprof endpoints without mentioning continuous profiling platforms.",
+    "assertions": [
+      {"id": "52.1", "text": "Recommends Grafana Pyroscope, Parca, or similar continuous profiling platform"},
+      {"id": "52.2", "text": "Mentions overhead estimates (1-5% range)"},
+      {"id": "52.3", "text": "Describes push vs pull collection modes"},
+      {"id": "52.4", "text": "Mentions historical flamegraph comparison as a key feature"},
+      {"id": "52.5", "text": "Suggests feeding profiles into PGO for build optimization"}
+    ]
+  },
+  {
+    "id": 53,
+    "name": "gogc-high-vs-low-tradeoff",
+    "description": "Tests whether the model avoids recommending GOGC=200 for a latency-sensitive service when tuning GC",
+    "prompt": "A colleague reviewed our Go API service (p99 latency target: 5ms, running in a pod with 4GB memory limit) and recommended setting GOGC=200 to reduce GC overhead. The service currently uses ~800MB heap. Should we follow this advice?\n\nThe service currently runs with the default GOGC=100.",
+    "trap": "GOGC=200 doubles the heap growth allowed before the next GC cycle. For a throughput-oriented batch processor this is correct advice. But for a latency-sensitive API it is the wrong direction: larger heap means GC pauses take longer when they do occur, which hurts p99 latency. The skill explicitly teaches GOGC=50 for latency-sensitive services (more frequent but shorter pauses) and GOGC=200 for throughput-oriented batch processors. Without the skill the model may blindly agree with the suggestion since 'reducing GC overhead' sounds universally good.",
+    "assertions": [
+      {"id": "53.1", "text": "Recommends AGAINST GOGC=200 for this latency-sensitive API"},
+      {"id": "53.2", "text": "Explains that higher GOGC allows a larger heap, which means longer GC pauses when they occur — hurting p99 latency"},
+      {"id": "53.3", "text": "Suggests GOGC=50 (or lower than default) for latency-sensitive services: more frequent but shorter pauses"},
+      {"id": "53.4", "text": "Notes that GOGC=200 is appropriate for throughput-oriented batch processors, not latency-sensitive APIs"}
+    ]
+  },
+  {
+    "id": 54,
+    "name": "godebug-gctrace",
+    "description": "Tests knowledge of GODEBUG=gctrace=1 output interpretation",
+    "prompt": "We ran our Go service with GODEBUG=gctrace=1 and got this output:\n\n```\ngc 142 @23.456s 12%: 0.015+89+1.2 ms clock, 0.3+72/150+24 ms cpu, 180->340->200 MB, 400 MB goal, 8 P\n```\n\nInterpret this GC trace line. What does it tell us about the service's health?",
+    "trap": "The skill provides a field-by-field breakdown of gctrace output. The 12% CPU, 89ms pause, and 180->340->200 MB heap growth are concerning. Without the skill, the model may not correctly parse all fields or identify the implications.",
+    "assertions": [
+      {"id": "54.1", "text": "Correctly identifies gc 142 as the 142nd GC cycle"},
+      {"id": "54.2", "text": "Identifies 12% as total CPU time spent in GC (which is high)"},
+      {"id": "54.3", "text": "Interprets 180->340->200 MB as heap before, peak during, and after collection"},
+      {"id": "54.4", "text": "Identifies 400 MB goal as the target heap size based on GOGC/GOMEMLIMIT"},
+      {"id": "54.5", "text": "Notes that 12% GC CPU is concerning and suggests reducing allocation rate or tuning GOGC"}
+    ]
+  },
+  {
+    "id": 55,
+    "name": "unsafe-without-benchmark-proof",
+    "description": "Tests that the model warns against premature unsafe usage",
+    "prompt": "A colleague proposed using unsafe.Pointer to avoid string-to-byte-slice copy in our Go HTTP handler:\n\n```go\nfunc unsafeStringToBytes(s string) []byte {\n    return unsafe.Slice(unsafe.StringData(s), len(s))\n}\n\nfunc HandleRequest(w http.ResponseWriter, r *http.Request) {\n    body := unsafeStringToBytes(requestBody)\n    w.Write(body)\n}\n```\n\nIs this a good optimization? The handler processes about 100 requests per second.",
+    "trap": "The skill states unsafe is 'Only justified when profiling shows >10% improvement in a verified hot path.' At 100 req/s, this is not a hot path and the copy cost is negligible. Without the skill, the model may accept the optimization or only warn about safety without the benchmark threshold.",
+    "assertions": [
+      {"id": "55.1", "text": "Recommends against using unsafe here"},
+      {"id": "55.2", "text": "Notes that 100 req/s is not a hot path where this optimization is justified"},
+      {"id": "55.3", "text": "States that unsafe requires benchmark proof showing >10% improvement"},
+      {"id": "55.4", "text": "Mentions safety risks of unsafe (mutating string backing store, GC interaction)"}
+    ]
+  },
+  {
+    "id": 56,
+    "name": "precomputed-lookup-table",
+    "description": "Tests knowledge of precomputed lookup tables for pure functions with small input space",
+    "prompt": "Optimize this Go hex encoding function that's called billions of times in our data pipeline:\n\n```go\nfunc byteToHex(b byte) (byte, byte) {\n    high := b >> 4\n    low := b & 0x0f\n    var h, l byte\n    if high < 10 {\n        h = '0' + high\n    } else {\n        h = 'a' + high - 10\n    }\n    if low < 10 {\n        l = '0' + low\n    } else {\n        l = 'a' + low - 10\n    }\n    return h, l\n}\n```",
+    "trap": "The function is pure with a 16-element input space per nibble. The skill teaches precomputed lookup tables for this exact pattern. Two array lookups are faster than conditional branches. Without the skill, the model may suggest bitwise tricks rather than the lookup table approach.",
+    "assertions": [
+      {"id": "56.1", "text": "Suggests a precomputed lookup table (e.g., var hexDigit = [16]byte{...})"},
+      {"id": "56.2", "text": "Shows the table lookup: hexDigit[b>>4], hexDigit[b&0x0f]"},
+      {"id": "56.3", "text": "Explains that the lookup table fits in L1 cache and is faster than branching"}
+    ]
+  },
+  {
+    "id": 57,
+    "name": "json-performance-alternatives",
+    "description": "Tests knowledge of JSON performance alternatives beyond encoding/json",
+    "prompt": "Our Go API server spends 40% of CPU time in encoding/json according to pprof. We serialize thousands of Response structs per second. What options do we have to speed up JSON encoding?\n\n```go\ntype Response struct {\n    ID        int       `json:\"id\"`\n    Name      string    `json:\"name\"`\n    Values    []float64 `json:\"values\"`\n    Metadata  map[string]string `json:\"metadata\"`\n    CreatedAt time.Time `json:\"created_at\"`\n}\n```",
+    "trap": "The skill lists specific alternatives: custom MarshalJSON methods, code-gen libraries (easyjson, ffjson), drop-in replacements (goccy/go-json, json-iterator, bytedance/sonic), and treats encoding/json/v2 as an explicit GOEXPERIMENT=jsonv2 choice rather than a default production recommendation. Without it, the model may only suggest one approach.",
+    "assertions": [
+      {"id": "57.1", "text": "Mentions custom MarshalJSON/UnmarshalJSON methods as an option"},
+      {"id": "57.2", "text": "Mentions code-generation libraries (easyjson, ffjson)"},
+      {"id": "57.3", "text": "Mentions drop-in replacement libraries (goccy/go-json, json-iterator, or bytedance/sonic)"},
+      {"id": "57.4", "text": "Explains that encoding/json uses reflection which causes CPU and allocation overhead"},
+      {"id": "57.5", "text": "Quantifies expected improvement (2-5x or similar)"}
+    ]
+  },
+  {
+    "id": 58,
+    "name": "channel-batch-processing",
+    "description": "Tests knowledge of batch processing from channels with timeout flush",
+    "prompt": "Our Go service receives events from a channel and needs to batch them for bulk database insert. Events arrive at varying rates. We need to flush either when the batch is full (1000 items) OR after a timeout (100ms), whichever comes first.\n\nDesign the batch processor function.",
+    "trap": "The skill shows the exact pattern: select on channel + ticker, with batch accumulation, flush on size threshold or timer. The key detail is reusing batch via batch[:0] and handling the channel close. Without the skill, the model may miss the ticker-based timeout or the clean shutdown.",
+    "assertions": [
+      {"id": "58.1", "text": "Uses select with both channel receive and ticker/timer for timeout"},
+      {"id": "58.2", "text": "Flushes on batch size threshold"},
+      {"id": "58.3", "text": "Flushes on timeout (ticker)"},
+      {"id": "58.4", "text": "Handles channel close (flushes remaining items)"},
+      {"id": "58.5", "text": "Reuses the batch slice (batch[:0] or similar) to reduce allocations"}
+    ]
+  },
+  {
+    "id": 59,
+    "name": "allocation-reduction-vs-gc-tuning",
+    "description": "Tests knowledge that reducing allocations is better than tuning GOGC",
+    "prompt": "Our Go service has high GC overhead (8% CPU). Should we increase GOGC to reduce GC frequency, or is there a better approach?",
+    "trap": "The skill explicitly states: 'Reducing allocations helps more than tuning GOGC — it addresses the root cause instead of managing the symptom.' Without it, the model may recommend GOGC tuning as the primary solution.",
+    "assertions": [
+      {"id": "59.1", "text": "Recommends reducing allocations as the primary approach over GOGC tuning"},
+      {"id": "59.2", "text": "Explains that GOGC tuning manages the symptom while allocation reduction addresses the root cause"},
+      {"id": "59.3", "text": "Suggests specific allocation reduction strategies (value types, sync.Pool, preallocation, avoid interface boxing)"},
+      {"id": "59.4", "text": "Acknowledges GOGC tuning as a secondary measure after allocation reduction"}
+    ]
+  },
+  {
+    "id": 60,
+    "name": "gctrace-key-fields",
+    "description": "Tests knowledge of what to monitor in GC traces (frequency, pause times, CPU%)",
+    "prompt": "We're monitoring our Go service with GODEBUG=gctrace=1. What specific patterns in the output should alarm us?",
+    "trap": "The skill lists three key signals: GC frequency (too often = too many allocations), pause times (high = large heap or many pointers), CPU% (high = tune GOGC or reduce allocations). Without it, the model may give generic advice.",
+    "assertions": [
+      {"id": "60.1", "text": "Mentions high GC frequency as a signal of too many allocations"},
+      {"id": "60.2", "text": "Mentions high pause times as a signal of large heap or many pointers"},
+      {"id": "60.3", "text": "Mentions high GC CPU% (>5%) as concerning"},
+      {"id": "60.4", "text": "Provides the GODEBUG=gctrace=1 command or assumes it's already running"}
+    ]
+  },
+  {
+    "id": 61,
+    "name": "non-go-memory-leak-detection",
+    "description": "Tests knowledge of detecting non-Go memory leaks via Prometheus",
+    "prompt": "Our Go service uses cgo to call a C image processing library. process_resident_memory_bytes keeps growing but go_memstats_alloc_bytes is stable. What PromQL query helps diagnose this?",
+    "trap": "The skill provides the specific PromQL: process_resident_memory_bytes - go_memstats_sys_bytes. A growing gap indicates non-Go memory (cgo, mmap). Without it, the model may suggest Go heap tools that won't find the C memory leak.",
+    "assertions": [
+      {"id": "61.1", "text": "Suggests process_resident_memory_bytes - go_memstats_sys_bytes to isolate non-Go memory"},
+      {"id": "61.2", "text": "Identifies this as a likely C/cgo memory leak (not a Go leak)"},
+      {"id": "61.3", "text": "Explains that growing gap between RSS and Go sys bytes indicates non-Go memory growth"},
+      {"id": "61.4", "text": "Suggests C-level memory profiling tools (valgrind, AddressSanitizer) for further diagnosis"}
+    ]
+  },
+  {
+    "id": 62,
+    "name": "cpu-saturation-prometheus",
+    "description": "Tests knowledge of detecting CPU saturation via Prometheus",
+    "prompt": "How do we detect if our Go service is CPU-saturated in production using Prometheus metrics?",
+    "trap": "The skill provides specific PromQL: rate(process_cpu_seconds_total[5m]) / GOMAXPROCS. A ratio >0.8 sustained means CPU-saturated. Without the skill, the model may suggest system-level metrics rather than Go-specific ones.",
+    "assertions": [
+      {"id": "62.1", "text": "Provides rate(process_cpu_seconds_total[5m]) for CPU cores consumed"},
+      {"id": "62.2", "text": "Divides by GOMAXPROCS to get utilization ratio"},
+      {"id": "62.3", "text": "States that >0.8 sustained indicates CPU saturation"}
+    ]
+  },
+  {
+    "id": 63,
+    "name": "document-optimizations",
+    "description": "Tests whether the model recommends documenting optimizations with comments",
+    "prompt": "I optimized a Go function from using reflect.DeepEqual to a hand-written comparison, and from column-first to row-first matrix traversal. Should I add comments explaining why?",
+    "trap": "The skill's core philosophy #3 states: 'Document optimizations — add code comments explaining why a pattern is faster, with benchmark numbers when available. Future readers need context to avoid reverting an unnecessary optimization.' Without it, the model may skip this guidance.",
+    "assertions": [
+      {"id": "63.1", "text": "Strongly recommends adding comments explaining WHY the optimization was made"},
+      {"id": "63.2", "text": "Suggests including benchmark numbers in the comments"},
+      {"id": "63.3", "text": "Explains that future readers may revert optimizations they don't understand"}
+    ]
+  },
+  {
+    "id": 64,
+    "name": "lru-cache-freelru",
+    "description": "Tests knowledge of high-performance LRU cache alternatives",
+    "prompt": "We need a bounded LRU cache in Go for our hot path. We considered using container/list from the standard library. Is that the best option for performance?",
+    "trap": "The skill mentions that container/list has poor cache locality (each node is a separate heap allocation). It recommends elastic/go-freelru (37x faster, contiguous memory) or hashicorp/golang-lru. Without it, the model may recommend container/list as sufficient.",
+    "assertions": [
+      {"id": "64.1", "text": "Notes that container/list has poor cache locality (separate heap allocation per node)"},
+      {"id": "64.2", "text": "Recommends elastic/go-freelru or hashicorp/golang-lru as alternatives"},
+      {"id": "64.3", "text": "Mentions the performance advantage of contiguous memory layouts for LRU"}
+    ]
+  },
+  {
+    "id": 65,
+    "name": "simd-when-not-worth",
+    "description": "Tests whether the model avoids recommending SIMD when the real bottleneck is allocations, not CPU arithmetic",
+    "prompt": "Our Go image thumbnail service resizes JPEG images. pprof shows:\n- 55% of CPU time in runtime.mallocgc and runtime.gcBgMarkWorker\n- 20% in image/jpeg.Decode\n- 15% in image.(*NRGBA).At (per-pixel reads using the image.Image interface)\n- 10% other\n\nA performance consultant recommended implementing SIMD pixel-processing routines to speed up the resize operation. Should we pursue SIMD as our first optimization?",
+    "trap": "55% of CPU time is in GC — the bottleneck is heap allocations, not arithmetic throughput. SIMD accelerates CPU-bound numeric operations; it has zero effect on allocation rate or GC pauses. Additionally, the 15% in image.Image interface calls is an interface boxing / reflection overhead issue, not a SIMD opportunity. The skill explicitly states 'If your bottleneck is allocations or I/O, SIMD won't help.' Without the skill the model may agree with the consultant since image processing 'sounds like' a SIMD use case.",
+    "assertions": [
+      {"id": "65.1", "text": "Recommends against SIMD as the first optimization"},
+      {"id": "65.2", "text": "Identifies the primary bottleneck as heap allocations and GC (55% of CPU in mallocgc/GC)"},
+      {"id": "65.3", "text": "States that SIMD only helps CPU-bound numeric inner loops, not allocation or GC overhead"},
+      {"id": "65.4", "text": "Suggests reducing allocations (e.g., reusing pixel buffers, avoiding per-pixel interface calls) as the correct first step"}
+    ]
+  },
+  {
+    "id": 66,
+    "name": "set-map-struct-zero-size",
+    "description": "Tests whether the model uses struct{} (not bool) for set map values when writing a new deduplication function",
+    "prompt": "Write a Go function that deduplicates a large slice of string event IDs. The slice may contain up to 5 million entries. Return a new slice with duplicates removed, preserving order.\n\n```go\nfunc Deduplicate(ids []string) []string {\n    // TODO\n}\n```\n\nImplement this function.",
+    "trap": "The natural instinct when building a 'seen' set in Go is to use map[string]bool, since bool reads naturally: 'if seen[id] { ... }'. This is what most Go developers write and what most deduplication examples show. The skill specifically teaches using map[string]struct{} instead: struct{} occupies 0 bytes vs bool at 1 byte per entry, saving ~5MB for 5M entries. Without the skill the model writes map[string]bool.",
+    "assertions": [
+      {"id": "66.1", "text": "Uses map[string]struct{} (not map[string]bool) as the seen-set type"},
+      {"id": "66.2", "text": "Does NOT use map[string]bool for the membership tracking map"},
+      {"id": "66.3", "text": "Explains that struct{} occupies 0 bytes vs bool at 1 byte, saving memory at large scale"}
+    ]
+  },
+  {
+    "id": 67,
+    "name": "regression-detection-prometheus",
+    "description": "Tests knowledge of PromQL queries for deployment regression detection",
+    "prompt": "We just deployed a new version of our Go service. How can we use Prometheus to detect if this deployment introduced a performance regression?",
+    "trap": "The skill provides specific regression detection PromQL: rate(go_memstats_alloc_bytes_total[5m]) for allocation rate comparison and histogram_quantile(0.99, ...) for p99 latency. Without it, the model may suggest generic monitoring.",
+    "assertions": [
+      {"id": "67.1", "text": "Suggests comparing rate(go_memstats_alloc_bytes_total[5m]) before and after deploy"},
+      {"id": "67.2", "text": "Suggests monitoring p99 latency histogram_quantile for increase after deploy"},
+      {"id": "67.3", "text": "Mentions comparing metrics between old and new deployment versions"}
+    ]
+  },
+  {
+    "id": 68,
+    "name": "statsviz-development-profiling",
+    "description": "Tests knowledge of real-time development visualization tools",
+    "prompt": "I'm developing a Go service locally and want to see real-time GC behavior, heap usage, and goroutine count in a browser dashboard without setting up Prometheus/Grafana. What tool can I use?",
+    "trap": "The skill specifically mentions statsviz (github.com/arl/statsviz) for real-time browser dashboard during local development. Without it, the model may suggest full monitoring stacks or pprof web UI which doesn't provide real-time visualization.",
+    "assertions": [
+      {"id": "68.1", "text": "Recommends statsviz (github.com/arl/statsviz) for real-time browser visualization"},
+      {"id": "68.2", "text": "Mentions the /debug/statsviz endpoint or statsviz.Register pattern"},
+      {"id": "68.3", "text": "Notes that it shows heap, GC pauses, goroutines, and scheduler in real-time"}
+    ]
+  }
+]
