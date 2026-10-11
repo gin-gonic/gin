@@ -403,6 +403,14 @@ func TestMappingMultipleDefaultWithCollectionFormat(t *testing.T) {
 		ArrayStringSsv   [2]string `form:",default=1 2" collection_format:"ssv"`
 		ArrayStringTsv   [2]string `form:",default=1\t2" collection_format:"tsv"`
 		ArrayStringPipes [2]string `form:",default=1|2" collection_format:"pipes"`
+		SlicePtr         *[]int    `form:",default=1;2;3"`
+		SlicePtrMulti    *[]int    `form:",default=1;2;3" collection_format:"multi"`
+		SlicePtrCsv      *[]int    `form:",default=1;2;3" collection_format:"csv"`
+		ArrayPtr         *[2]int   `form:",default=1;2"`
+		ArrayPtrMulti    *[2]int   `form:",default=1;2" collection_format:"multi"`
+		ArrayPtrCsv      *[2]int   `form:",default=1;2" collection_format:"csv"`
+		SliceStringPtr   *[]string `form:",default=one;two"`
+		SlicePtrPtr      **[]int   `form:",default=1;2;3"`
 	}
 	err := mappingByPtr(&s, formSource{}, "form")
 	require.NoError(t, err)
@@ -427,6 +435,15 @@ func TestMappingMultipleDefaultWithCollectionFormat(t *testing.T) {
 	assert.Equal(t, [2]string{"1", "2"}, s.ArrayStringSsv)
 	assert.Equal(t, [2]string{"1", "2"}, s.ArrayStringTsv)
 	assert.Equal(t, [2]string{"1", "2"}, s.ArrayStringPipes)
+	assert.Equal(t, &[]int{1, 2, 3}, s.SlicePtr)
+	assert.Equal(t, &[]int{1, 2, 3}, s.SlicePtrMulti)
+	assert.Equal(t, &[]int{1, 2, 3}, s.SlicePtrCsv)
+	assert.Equal(t, &[2]int{1, 2}, s.ArrayPtr)
+	assert.Equal(t, &[2]int{1, 2}, s.ArrayPtrMulti)
+	assert.Equal(t, &[2]int{1, 2}, s.ArrayPtrCsv)
+	assert.Equal(t, &[]string{"one", "two"}, s.SliceStringPtr)
+	slicePtr := &[]int{1, 2, 3}
+	assert.Equal(t, &slicePtr, s.SlicePtrPtr)
 }
 
 func TestMappingStructField(t *testing.T) {
