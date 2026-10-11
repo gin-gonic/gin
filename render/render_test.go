@@ -7,6 +7,7 @@ package render
 import (
 	"encoding/xml"
 	"errors"
+	"fmt"
 	"html/template"
 	"io"
 	"net"
@@ -14,6 +15,7 @@ import (
 	"net/http/httptest"
 	"strconv"
 	"strings"
+	"sync"
 	"testing"
 
 	testdata "github.com/gin-gonic/gin/testdata/protoexample"
@@ -814,4 +816,118 @@ func TestRenderWriteError(t *testing.T) {
 	err := r.Render(ew)
 	require.Error(t, err)
 	assert.Equal(t, "write error", err.Error())
+}
+
+func TestRendererContentTypeResponseIsolation(t *testing.T) {
+	tests := []struct {
+		name        string
+		renderer    Render
+		contentType string
+	}{
+		{"JSON", JSON{}, "application/json; charset=utf-8"},
+		{"IndentedJSON", IndentedJSON{}, "application/json; charset=utf-8"},
+		{"SecureJSON", SecureJSON{}, "application/json; charset=utf-8"},
+		{"PureJSON", PureJSON{}, "application/json; charset=utf-8"},
+		{"JSONP", JsonpJSON{}, "application/javascript; charset=utf-8"},
+		{"AsciiJSON", AsciiJSON{}, "application/json"},
+		{"XML", XML{}, "application/xml; charset=utf-8"},
+		{"YAML", YAML{}, "application/yaml; charset=utf-8"},
+		{"TOML", TOML{}, "application/toml; charset=utf-8"},
+		{"ProtoBuf", ProtoBuf{}, "application/x-protobuf"},
+		{"BSON", BSON{}, "application/bson"},
+		{"HTML", HTML{}, "text/html; charset=utf-8"},
+		{"String", String{}, "text/plain; charset=utf-8"},
+		{"PDF", PDF{}, "application/pdf"},
+		{"Data", Data{ContentType: "application/custom"}, "application/custom"},
+		{"Reader", Reader{ContentType: "application/custom"}, "application/custom"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			first := httptest.NewRecorder()
+			second := httptest.NewRecorder()
+			tt.renderer.WriteContentType(first)
+			tt.renderer.WriteContentType(second)
+			require.Equal(t, tt.contentType, first.Header().Get("Content-Type"))
+			original := first.Header()["Content-Type"]
+			t.Cleanup(func() { original[0] = tt.contentType })
+			original[0] = "application/first-response"
+			require.Equal(t, tt.contentType, second.Header().Get("Content-Type"))
+			second.Header()["Content-Type"][0] = "application/second-response"
+			require.Equal(t, "application/first-response", first.Header().Get("Content-Type"))
+			fresh := httptest.NewRecorder()
+			tt.renderer.WriteContentType(fresh)
+			require.Equal(t, tt.contentType, fresh.Header().Get("Content-Type"))
+		})
+	}
+}
+
+func TestWriteContentTypeInputIsolation(t *testing.T) {
+	source := []string{"application/custom", "application/fallback"}
+	first := httptest.NewRecorder()
+	second := httptest.NewRecorder()
+	writeContentType(first, source)
+	writeContentType(second, source)
+	source[0] = "application/source-change"
+	require.Equal(t, []string{"application/custom", "application/fallback"}, first.Header()["Content-Type"])
+	require.Equal(t, []string{"application/custom", "application/fallback"}, second.Header()["Content-Type"])
+	first.Header()["Content-Type"][1] = "application/response-change"
+	require.Equal(t, "application/fallback", source[1])
+	require.Equal(t, "application/fallback", second.Header()["Content-Type"][1])
+	require.Equal(t, "application/source-change", source[0])
+}
+
+func TestWriteContentTypeExistingValues(t *testing.T) {
+	tests := []struct {
+		name     string
+		initial  []string
+		expected []string
+	}{
+		{"nil", nil, []string{"application/default", "application/fallback"}},
+		{"empty", []string{}, []string{"application/default", "application/fallback"}},
+		{"explicit", []string{"application/explicit"}, []string{"application/explicit"}},
+		{"multiple", []string{"application/explicit", "application/other"}, []string{"application/explicit", "application/other"}},
+		{"empty value", []string{""}, []string{""}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			w := httptest.NewRecorder()
+			w.Header()["Content-Type"] = tt.initial
+			source := []string{"application/default", "application/fallback"}
+			writeContentType(w, source)
+			require.Equal(t, tt.expected, w.Header()["Content-Type"])
+			require.Equal(t, []string{"application/default", "application/fallback"}, source)
+		})
+	}
+}
+
+func TestRendererContentTypeConcurrentResponses(t *testing.T) {
+	const workers = 8
+	errors := make(chan string, workers)
+	var wg sync.WaitGroup
+	for worker := range workers {
+		wg.Go(func() {
+			for range 32 {
+				w := httptest.NewRecorder()
+				JSON{}.WriteContentType(w)
+				if got := w.Header().Get("Content-Type"); got != "application/json; charset=utf-8" {
+					errors <- fmt.Sprintf("worker %d inherited %q", worker, got)
+					return
+				}
+				w.Header()["Content-Type"][0] = fmt.Sprintf("application/worker-%d", worker)
+				w.WriteHeader(http.StatusOK)
+				if got := w.Result().Header.Get("Content-Type"); got != fmt.Sprintf("application/worker-%d", worker) {
+					errors <- fmt.Sprintf("worker %d response was changed to %q", worker, got)
+					return
+				}
+			}
+		})
+	}
+	wg.Wait()
+	close(errors)
+	for err := range errors {
+		t.Error(err)
+	}
+	fresh := httptest.NewRecorder()
+	JSON{}.WriteContentType(fresh)
+	require.Equal(t, "application/json; charset=utf-8", fresh.Header().Get("Content-Type"))
 }

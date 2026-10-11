@@ -4055,3 +4055,39 @@ func BenchmarkGetMapFromFormData(b *testing.B) {
 		})
 	}
 }
+
+type contentTypeCaseWriter struct {
+	ResponseWriter
+}
+
+func (w *contentTypeCaseWriter) Write(data []byte) (int, error) {
+	values := w.Header()["Content-Type"]
+	for i, value := range values {
+		values[i] = strings.ReplaceAll(value, "charset=utf-8", "charset=UTF-8")
+	}
+	return w.ResponseWriter.Write(data)
+}
+
+func TestContextRendererContentTypeIsolation(t *testing.T) {
+	router := New()
+	router.GET("/normalized", func(c *Context) {
+		c.Writer = &contentTypeCaseWriter{ResponseWriter: c.Writer}
+		c.JSON(http.StatusOK, H{"message": "ok"})
+	})
+	router.GET("/plain", func(c *Context) {
+		c.JSON(http.StatusOK, H{"message": "ok"})
+	})
+	first := httptest.NewRecorder()
+	router.ServeHTTP(first, httptest.NewRequest(http.MethodGet, "/normalized", nil))
+	t.Cleanup(func() {
+		first.Header()["Content-Type"][0] = "application/json; charset=utf-8"
+	})
+	require.Equal(t, http.StatusOK, first.Code)
+	require.Equal(t, "application/json; charset=UTF-8", first.Header().Get("Content-Type"))
+	second := httptest.NewRecorder()
+	router.ServeHTTP(second, httptest.NewRequest(http.MethodGet, "/plain", nil))
+	require.Equal(t, http.StatusOK, second.Code)
+	require.Equal(t, "application/json; charset=utf-8", second.Header().Get("Content-Type"))
+	require.JSONEq(t, first.Body.String(), second.Body.String())
+	require.Equal(t, "application/json; charset=UTF-8", first.Header().Get("Content-Type"))
+}
