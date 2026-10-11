@@ -125,3 +125,9 @@ func validate(obj any) error {
 	}
 	return Validator.ValidateStruct(obj)
 }
+
+// MaxBodySize is the maximum request body size in bytes that BSON and
+// Protobuf binders will read. If the request body exceeds this limit,
+// the binding returns an error. Defaults to 32 MB.
+var MaxBodySize int64 = 32 << 20
+
