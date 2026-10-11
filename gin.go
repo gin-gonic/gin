@@ -121,6 +121,14 @@ type Engine struct {
 	// RedirectTrailingSlash is independent of this option.
 	RedirectFixedPath bool
 
+	// MatchTrailingSlash if enabled, a request for /foo/ is served directly by the
+	// handler registered for /foo (or vice versa) instead of issuing a redirect.
+	// The request's URL.Path is left unchanged, so c.Request.URL.Path and c.FullPath()
+	// still reflect the path that was actually requested.
+	// When both this and RedirectTrailingSlash are enabled, MatchTrailingSlash takes
+	// precedence: the route is served directly and no redirect is issued.
+	MatchTrailingSlash bool
+
 	// HandleMethodNotAllowed if enabled, the router checks if another method is allowed for the
 	// current route, if the current request can not be routed.
 	// If this is the case, the request is answered with 'Method Not Allowed'
@@ -753,9 +761,30 @@ func (engine *Engine) handleHTTPRequest(c *Context) {
 			return
 		}
 		if httpMethod != http.MethodConnect && rPath != "/" {
-			if value.tsr && engine.RedirectTrailingSlash {
-				redirectTrailingSlash(c)
-				return
+			if value.tsr {
+				if engine.MatchTrailingSlash {
+					// value.params may already hold entries filled in by the lookup
+					// above; reset before reusing the same backing slice so the
+					// second lookup doesn't append past its capacity.
+					if c.params != nil {
+						*c.params = (*c.params)[:0]
+					}
+					tsrValue := root.getValue(toggleTrailingSlash(rPath), c.params, c.skippedNodes, unescape)
+					if tsrValue.handlers != nil {
+						if tsrValue.params != nil {
+							c.Params = *tsrValue.params
+						}
+						c.handlers = tsrValue.handlers
+						c.fullPath = tsrValue.fullPath
+						c.Next()
+						c.writermem.WriteHeaderNow()
+						return
+					}
+				}
+				if engine.RedirectTrailingSlash {
+					redirectTrailingSlash(c)
+					return
+				}
 			}
 			if engine.RedirectFixedPath && redirectFixedPath(c, root, engine.RedirectFixedPath) {
 				return
@@ -805,6 +834,15 @@ func serveError(c *Context, code int, defaultMessage []byte) {
 		return
 	}
 	c.writermem.WriteHeaderNow()
+}
+
+// toggleTrailingSlash returns path with its trailing slash added if absent,
+// or removed if present.
+func toggleTrailingSlash(path string) string {
+	if length := len(path); length > 0 && path[length-1] == '/' {
+		return path[:length-1]
+	}
+	return path + "/"
 }
 
 func redirectTrailingSlash(c *Context) {
