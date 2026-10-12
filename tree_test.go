@@ -6,6 +6,8 @@ package gin
 
 import (
 	"fmt"
+	"net/http"
+	"net/http/httptest"
 	"reflect"
 	"regexp"
 	"strings"
@@ -1109,5 +1111,92 @@ func TestTreeFindCaseInsensitivePathWildcardParamAndStaticChild(t *testing.T) {
 		t.Error("Route '/prefix/something' not found via param match")
 	} else if string(out) != "/prefix/something" {
 		t.Errorf("Wrong result for '/prefix/something': %s", string(out))
+	}
+}
+
+func TestTreeSkippedNodesDynamicGrowth(t *testing.T) {
+	engine := New()
+	engine.GET("/a", func(c *Context) {
+		fakeHandlerValue = "/a"
+	})
+
+	// Allocate a Context while engine.maxSections == 1 so *c.skippedNodes
+	// starts with a pooled backing array of capacity 1.
+	c := engine.allocateContext(engine.maxParams)
+	c.reset()
+	if cap(*c.skippedNodes) != 1 {
+		t.Fatalf("expected initial skippedNodes capacity 1, got %d", cap(*c.skippedNodes))
+	}
+
+	tree := engine.trees.get("GET")
+	val := tree.getValue("/a", c.params, c.skippedNodes, false)
+	if val.handlers == nil || val.fullPath != "/a" || val.tsr {
+		t.Fatalf("unexpected initial lookup result: %+v", val)
+	}
+
+	// Reset the pooled context before registering deeper routes that push
+	// 5 backtrack frames during a single getValue walk (exceeding both the
+	// initial capacity of 1 and a single slice doubling to 2).
+	c.reset()
+	lateRoutes := [...]string{
+		"/x/y/z/w/v",
+		"/:p1/y/z/w/v",
+		"/x/:p2/z/w/v",
+		"/x/y/:p3/w/v",
+		"/x/y/z/:p4/v",
+		"/x/y/z/w/:p5/tail",
+	}
+	for _, route := range lateRoutes {
+		r := route
+		engine.GET(r, func(c *Context) {
+			fakeHandlerValue = r
+		})
+	}
+
+	val = tree.getValue("/x/y/z/w/v/extra", nil, c.skippedNodes, false)
+	if val.handlers != nil {
+		t.Fatalf("expected nil handlers, got %v", val.handlers)
+	}
+	if val.tsr {
+		t.Fatalf("expected tsr=false, got true")
+	}
+	if val.params != nil {
+		t.Fatalf("expected nil params, got %v", val.params)
+	}
+	if val.fullPath != "" {
+		t.Fatalf("expected empty fullPath, got %q", val.fullPath)
+	}
+	if cap(*c.skippedNodes) < 5 {
+		t.Fatalf("expected skippedNodes capacity to grow to at least 5, got %d", cap(*c.skippedNodes))
+	}
+
+	// Verify backtracking resolves a matching wildcard branch and populates nodeValue fields.
+	c.reset()
+	val = tree.getValue("/x/y/z/w/v/tail", c.params, c.skippedNodes, false)
+	if val.handlers == nil {
+		t.Fatalf("expected non-nil handlers for backtracked route")
+	}
+	val.handlers[0](nil)
+	if fakeHandlerValue != "/x/y/z/w/:p5/tail" {
+		t.Fatalf("expected handler for '/x/y/z/w/:p5/tail', got %q", fakeHandlerValue)
+	}
+	if val.tsr {
+		t.Fatalf("expected tsr=false, got true")
+	}
+	if val.fullPath != "/x/y/z/w/:p5/tail" {
+		t.Fatalf("expected fullPath '/x/y/z/w/:p5/tail', got %q", val.fullPath)
+	}
+	wantParams := Params{{Key: "p5", Value: "v"}}
+	if val.params == nil || !reflect.DeepEqual(*val.params, wantParams) {
+		t.Fatalf("expected params %v, got %v", wantParams, val.params)
+	}
+
+	// Exercise full ServeHTTP execution through engine.pool with HandleMethodNotAllowed enabled.
+	engine.HandleMethodNotAllowed = true
+	req := httptest.NewRequest(http.MethodPost, "/x/y/z/w/v/extra", nil)
+	w := httptest.NewRecorder()
+	engine.ServeHTTP(w, req)
+	if w.Code != http.StatusNotFound {
+		t.Fatalf("expected status 404, got %d", w.Code)
 	}
 }
