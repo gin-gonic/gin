@@ -123,6 +123,7 @@ func stack(skip int) []byte {
 	var (
 		nLine    string
 		lastFile string
+		lastLine int
 		err      error
 	)
 	for i := skip; ; i++ { // Skip the expected number of frames
@@ -132,12 +133,13 @@ func stack(skip int) []byte {
 		}
 		// Print this much at least.  If we can't find the source, it won't show.
 		fmt.Fprintf(buf, "%s:%d (0x%x)\n", file, line, pc)
-		if file != lastFile {
+		if file != lastFile || line != lastLine {
 			nLine, err = readNthLine(file, line-1)
 			if err != nil {
 				continue
 			}
 			lastFile = file
+			lastLine = line
 		}
 		fmt.Fprintf(buf, "\t%s: %s\n", function(pc), cmp.Or(nLine, dunno))
 	}
