@@ -100,6 +100,9 @@ func mapping(value reflect.Value, field reflect.StructField, setter setter, tag 
 			return false, err
 		}
 		if isNew && isSet {
+			if !value.CanSet() {
+				return false, fmt.Errorf("cannot initialize unsettable pointer of type %s", value.Type())
+			}
 			value.Set(vPtr)
 		}
 		return isSet, nil

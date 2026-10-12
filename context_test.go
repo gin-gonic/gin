@@ -41,6 +41,54 @@ var _ context.Context = (*Context)(nil)
 
 var errTestRender = errors.New("TestRender")
 
+func TestContextShouldBindQueryEmbeddedPointers(t *testing.T) {
+	type formFields struct {
+		Name string `form:"name"`
+	}
+	type ExportedFormFields struct {
+		Name string `form:"name"`
+	}
+
+	newContext := func(query string) *Context {
+		c, _ := CreateTestContext(httptest.NewRecorder())
+		c.Request = httptest.NewRequest(http.MethodGet, "/?"+query, nil)
+		return c
+	}
+
+	t.Run("nil unexported embedded pointer", func(t *testing.T) {
+		var obj struct{ *formFields }
+		var err error
+		require.NotPanics(t, func() {
+			err = newContext("name=Alice").ShouldBindQuery(&obj)
+		})
+		require.EqualError(t, err, "cannot initialize unsettable pointer of type *gin.formFields")
+		assert.Nil(t, obj.formFields)
+	})
+	t.Run("initialized unexported embedded pointer", func(t *testing.T) {
+		obj := struct{ *formFields }{&formFields{Name: "before"}}
+		require.NoError(t, newContext("name=Alice").ShouldBindQuery(&obj))
+		assert.Equal(t, "Alice", obj.Name)
+	})
+	t.Run("nil exported embedded pointer", func(t *testing.T) {
+		var obj struct{ *ExportedFormFields }
+		require.NoError(t, newContext("name=Alice").ShouldBindQuery(&obj))
+		require.NotNil(t, obj.ExportedFormFields)
+		assert.Equal(t, "Alice", obj.Name)
+	})
+	t.Run("absent input", func(t *testing.T) {
+		var obj struct{ *formFields }
+		require.NoError(t, newContext("other=value").ShouldBindQuery(&obj))
+		assert.Nil(t, obj.formFields)
+	})
+	t.Run("ignored embedded pointer", func(t *testing.T) {
+		var obj struct {
+			*formFields `form:"-"`
+		}
+		require.NoError(t, newContext("name=Alice").ShouldBindQuery(&obj))
+		assert.Nil(t, obj.formFields)
+	})
+}
+
 // Unit tests TODO
 // func (c *Context) File(filepath string) {
 // func (c *Context) Negotiate(code int, config Negotiate) {

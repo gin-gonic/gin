@@ -405,6 +405,20 @@ func TestBindingQuery(t *testing.T) {
 		"foo=unused", "bar2=foo")
 }
 
+func TestBindingQueryNilUnexportedEmbeddedPointer(t *testing.T) {
+	type formFields struct {
+		Name string `form:"name"`
+	}
+	var obj struct{ *formFields }
+	req := requestWithBody(http.MethodGet, "/?name=Alice", "")
+	var err error
+	require.NotPanics(t, func() {
+		err = Query.Bind(req, &obj)
+	})
+	require.EqualError(t, err, "cannot initialize unsettable pointer of type *binding.formFields")
+	assert.Nil(t, obj.formFields)
+}
+
 func TestBindingQuery2(t *testing.T) {
 	testQueryBinding(t, http.MethodGet,
 		"/?foo=bar&bar=foo", "/?bar2=foo",
