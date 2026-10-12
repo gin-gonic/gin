@@ -700,6 +700,7 @@ func (engine *Engine) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
 	engine.handleHTTPRequest(c)
 
+	c.cleanupMultipartForm()
 	engine.pool.Put(c)
 }
 
