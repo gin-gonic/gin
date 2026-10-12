@@ -29,6 +29,7 @@ var (
 	_ Render     = (*YAML)(nil)
 	_ Render     = (*Reader)(nil)
 	_ Render     = (*AsciiJSON)(nil)
+	_ Render     = (*ProblemJSON)(nil)
 	_ Render     = (*ProtoBuf)(nil)
 	_ Render     = (*TOML)(nil)
 	_ Render     = (*PDF)(nil)
