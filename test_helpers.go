@@ -14,6 +14,13 @@ import (
 // This is useful for tests that need to set up a new Gin engine instance
 // along with a context, for example, to test middleware that doesn't depend on
 // specific routes. The ResponseWriter `w` is used to initialize the context's writer.
+//
+// Unlike Engine.ServeHTTP, CreateTestContext does not flush the response at the
+// end of the handler. The status code set by Context.Status is buffered until
+// the response body is written (Context.Writer.Write/WriteString) or
+// Context.Writer.WriteHeaderNow is called. To observe the status code in the
+// ResponseWriter after a handler that only calls Context.Status, call
+// c.Writer.WriteHeaderNow() explicitly.
 func CreateTestContext(w http.ResponseWriter) (c *Context, r *Engine) {
 	r = New()
 	c = r.allocateContext(0)
@@ -27,6 +34,9 @@ func CreateTestContext(w http.ResponseWriter) (c *Context, r *Engine) {
 // Gin engine instance and need a new context for it.
 // The ResponseWriter `w` is used to initialize the context's writer.
 // The context is allocated with the `maxParams` setting from the provided engine.
+//
+// Unlike Engine.ServeHTTP, CreateTestContextOnly does not flush the response at the
+// end of the handler. See CreateTestContext for details on observing the status code.
 func CreateTestContextOnly(w http.ResponseWriter, r *Engine) (c *Context) {
 	c = r.allocateContext(r.maxParams)
 	c.reset()
