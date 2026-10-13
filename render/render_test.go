@@ -5,6 +5,7 @@
 package render
 
 import (
+	"encoding/json"
 	"encoding/xml"
 	"errors"
 	"html/template"
@@ -259,6 +260,36 @@ func TestRenderAsciiJSON(t *testing.T) {
 	err = (AsciiJSON{data2}).Render(w2)
 	require.NoError(t, err)
 	assert.Equal(t, "3.1415926", w2.Body.String())
+}
+
+func TestRenderAsciiJSONNonBMP(t *testing.T) {
+	// Non-BMP characters (code points above U+FFFF) must be encoded as UTF-16
+	// surrogate pairs in JSON \u escapes (RFC 8259 §7). Previously, AsciiJSON
+	// emitted a single \uXXXXX escape with 5+ hex digits, which is syntactically
+	// valid JSON but silently decodes to the wrong character.
+	inputs := []string{
+		"\U0001F600", // U+1F600 GRINNING FACE
+		"\U0001F602", // U+1F602 FACE WITH TEARS OF JOY
+		"\U0001F680", // U+1F680 ROCKET
+		"\U00020000", // U+20000 CJK Extension B
+	}
+	for _, input := range inputs {
+		w := httptest.NewRecorder()
+		err := (AsciiJSON{input}).Render(w)
+		require.NoError(t, err)
+
+		body := w.Body.String()
+
+		// Output must be pure ASCII.
+		for i, b := range []byte(body) {
+			assert.Less(t, b, byte(128), "non-ASCII byte at index %d in rendered output for input %q", i, input)
+		}
+
+		// Round-trip: json.Unmarshal must recover the original string.
+		var decoded string
+		require.NoError(t, json.Unmarshal([]byte(body), &decoded), "input %q", input)
+		assert.Equal(t, input, decoded, "round-trip failed for %q", input)
+	}
 }
 
 func TestRenderAsciiJSONFail(t *testing.T) {
