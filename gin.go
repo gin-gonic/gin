@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"os"
 	"path"
+	"slices"
 	"strings"
 	"sync"
 	"time"
@@ -507,8 +508,8 @@ func (engine *Engine) validateHeader(header string) (clientIP string, valid bool
 		return "", false
 	}
 	items := strings.Split(header, ",")
-	for i := len(items) - 1; i >= 0; i-- {
-		ipStr := strings.TrimSpace(items[i])
+	for i, item := range slices.Backward(items) {
+		ipStr := strings.TrimSpace(item)
 		ip := net.ParseIP(ipStr)
 		if ip == nil {
 			break
