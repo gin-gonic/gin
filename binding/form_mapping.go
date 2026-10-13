@@ -373,7 +373,24 @@ func setWithProperType(val string, value reflect.Value, field reflect.StructFiel
 		case multipart.FileHeader:
 			return nil
 		}
-		return json.API.Unmarshal(bytesconv.StringToBytes(val), value.Addr().Interface())
+		// Most struct values are JSON-encoded, but a struct type that
+		// implements encoding.TextUnmarshaler (e.g. decimal.Decimal)
+		// may also be bound from plain text such as ".1", which is not
+		// valid JSON. Try JSON first so existing behavior is preserved,
+		// then fall back to UnmarshalText. If both fail, report the
+		// JSON error to keep existing error messages unchanged.
+		jsonErr := json.API.Unmarshal(bytesconv.StringToBytes(val), value.Addr().Interface())
+		if jsonErr == nil {
+			return nil
+		}
+		if value.CanAddr() {
+			if unmarshaler, ok := value.Addr().Interface().(encoding.TextUnmarshaler); ok {
+				if textErr := unmarshaler.UnmarshalText(bytesconv.StringToBytes(val)); textErr == nil {
+					return nil
+				}
+			}
+		}
+		return jsonErr
 	case reflect.Map:
 		return json.API.Unmarshal(bytesconv.StringToBytes(val), value.Addr().Interface())
 	case reflect.Ptr:

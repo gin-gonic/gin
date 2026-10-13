@@ -7,6 +7,7 @@ package binding
 import (
 	"encoding"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"mime/multipart"
 	"reflect"
@@ -1061,6 +1062,101 @@ func TestMappingUsingTextUnmarshalerWhenBindUnmarshalerAlsoDefined(t *testing.T)
 	require.NoError(t, err)
 
 	assert.EqualValues(t, 0xf5, s.Hex)
+}
+
+// decimalLike mimics shopspring/decimal.Decimal for #4089: it implements
+// encoding.TextUnmarshaler via a string-based parse that accepts
+// leading-dot fractions such as ".1", but it has no custom JSON
+// unmarshaling, so decoding ".1" as JSON fails.
+type decimalLike struct {
+	value float64
+}
+
+func (d *decimalLike) UnmarshalText(text []byte) error {
+	v, err := strconv.ParseFloat(string(text), 64)
+	if err != nil {
+		return err
+	}
+	d.value = v
+	return nil
+}
+
+var _ encoding.TextUnmarshaler = (*decimalLike)(nil)
+
+// A struct field implementing encoding.TextUnmarshaler should bind from a
+// plain-text form value even without the parser=encoding.TextUnmarshaler
+// tag when the value is not valid JSON (e.g. ".1", see #4089).
+func TestMappingStructTextUnmarshalerFallbackForm(t *testing.T) {
+	var s struct {
+		Amount decimalLike `form:"a"`
+	}
+	err := mappingByPtr(&s, formSource{"a": {`.1`}}, "form")
+	require.NoError(t, err)
+	assert.InEpsilon(t, 0.1, s.Amount.value, 1e-9)
+}
+
+func TestMappingStructTextUnmarshalerFallbackUri(t *testing.T) {
+	var s struct {
+		Amount decimalLike `uri:"a"`
+	}
+	err := mappingByPtr(&s, formSource{"a": {`.1`}}, "uri")
+	require.NoError(t, err)
+	assert.InEpsilon(t, 0.1, s.Amount.value, 1e-9)
+}
+
+func TestMappingStructPointerTextUnmarshalerFallbackForm(t *testing.T) {
+	var s struct {
+		Amount *decimalLike `form:"a"`
+	}
+	err := mappingByPtr(&s, formSource{"a": {`.1`}}, "form")
+	require.NoError(t, err)
+	require.NotNil(t, s.Amount)
+	assert.InEpsilon(t, 0.1, s.Amount.value, 1e-9)
+}
+
+// bothJSONAndText implements both json.Unmarshaler and
+// encoding.TextUnmarshaler with different syntaxes, to pin that JSON
+// decoding is attempted before the TextUnmarshaler fallback.
+type bothJSONAndText struct {
+	Value string
+}
+
+func (b *bothJSONAndText) UnmarshalJSON(data []byte) error {
+	var v struct {
+		Value string `json:"value"`
+	}
+	if err := json.Unmarshal(data, &v); err != nil {
+		return err
+	}
+	b.Value = "json:" + v.Value
+	return nil
+}
+
+func (b *bothJSONAndText) UnmarshalText(text []byte) error {
+	b.Value = "text:" + string(text)
+	return nil
+}
+
+var _ encoding.TextUnmarshaler = (*bothJSONAndText)(nil)
+
+// JSON decoding still takes precedence: a value that is valid JSON keeps
+// binding through JSON even when the type implements TextUnmarshaler.
+func TestMappingStructTextUnmarshalerJSONTakesPrecedence(t *testing.T) {
+	var s struct {
+		FileData bothJSONAndText `form:"data"`
+	}
+	err := mappingByPtr(&s, formSource{"data": {`{"value":"x"}`}}, "form")
+	require.NoError(t, err)
+	assert.Equal(t, "json:x", s.FileData.Value)
+}
+
+// Values that are neither valid JSON nor valid text still fail.
+func TestMappingStructTextUnmarshalerFallbackInvalid(t *testing.T) {
+	var s struct {
+		Amount decimalLike `form:"a"`
+	}
+	err := mappingByPtr(&s, formSource{"a": {`not-a-number`}}, "form")
+	require.Error(t, err)
 }
 
 // ====  TextUnmarshaler tests END ====
