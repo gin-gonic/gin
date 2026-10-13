@@ -4,35 +4,14 @@ GO_VERSION=$(shell $(GO) version | cut -c 14- | cut -d' ' -f1 | cut -d'.' -f2)
 PACKAGES ?= $(shell $(GO) list ./...)
 VETPACKAGES ?= $(shell $(GO) list ./... | grep -v /examples/)
 GOFILES := $(shell find . -name "*.go")
-TESTFOLDER := $(shell $(GO) list ./... | grep -E 'gin$$|ginS$$|binding$$|render$$' | grep -v examples)
-TESTTAGS ?= ""
+TESTFOLDER := . ./binding ./ginS ./render
+TESTTAGS ?=
 
 .PHONY: test
 # Run tests to verify code functionality.
 test:
-	echo "mode: count" > coverage.out
-	for d in $(TESTFOLDER); do \
-		if [ -n "$(TESTTAGS)" ]; then \
-			$(GO) test $(TESTTAGS) -v -covermode=count -coverprofile=profile.out $$d > tmp.out; \
-		else \
-			$(GO) test -v -covermode=count -coverprofile=profile.out $$d > tmp.out; \
-		fi; \
-		cat tmp.out; \
-		if grep -q "^--- FAIL" tmp.out; then \
-			rm tmp.out; \
-			exit 1; \
-		elif grep -q "build failed" tmp.out; then \
-			rm tmp.out; \
-			exit 1; \
-		elif grep -q "setup failed" tmp.out; then \
-			rm tmp.out; \
-			exit 1; \
-		fi; \
-		if [ -f profile.out ]; then \
-			cat profile.out | grep -v "mode:" >> coverage.out; \
-			rm profile.out; \
-		fi; \
-	done
+	# Let Go select atomic coverage when the race detector is enabled.
+	$(GO) test $(TESTTAGS) -v -coverprofile=coverage.out $(TESTFOLDER)
 
 .PHONY: fmt
 # Ensure consistent code formatting.
