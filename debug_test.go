@@ -93,7 +93,7 @@ func TestDebugPrintLoadTemplate(t *testing.T) {
 		debugPrintLoadTemplate(templ)
 		SetMode(TestMode)
 	})
-	assert.Regexp(t, `^\[GIN-debug\] Loaded HTML Templates \(2\): \n(\t- \n|\t- hello\.tmpl\n){2}\n`, re)
+	assert.Regexp(t, `^\[GIN-debug\] Loaded HTML Templates \(1\): \n\t- hello\.tmpl\n\n`, re)
 }
 
 func TestDebugPrintWARNINGSetHTMLTemplate(t *testing.T) {

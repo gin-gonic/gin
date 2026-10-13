@@ -44,12 +44,19 @@ func debugPrintRoute(httpMethod, absolutePath string, handlers HandlersChain) {
 func debugPrintLoadTemplate(tmpl *template.Template) {
 	if IsDebugging() {
 		var buf strings.Builder
-		for _, tmpl := range tmpl.Templates() {
+		var count int
+		for _, t := range tmpl.Templates() {
+			name := t.Name()
+			// Skip the empty-named root created by template.New("").
+			if name == "" {
+				continue
+			}
 			buf.WriteString("\t- ")
-			buf.WriteString(tmpl.Name())
+			buf.WriteString(name)
 			buf.WriteString("\n")
+			count++
 		}
-		debugPrint("Loaded HTML Templates (%d): \n%s\n", len(tmpl.Templates()), buf.String())
+		debugPrint("Loaded HTML Templates (%d): \n%s\n", count, buf.String())
 	}
 }
 
