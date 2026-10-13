@@ -2126,7 +2126,7 @@ func main() {
 }
 ```
 
-See a complete example in the `https://github.com/gin-gonic/examples/tree/master/assets-in-binary/example02` directory.
+See a complete example in the [`assets-in-binary`](https://github.com/gin-gonic/examples/tree/master/assets-in-binary) directory.
 
 ## Server Configuration
 
