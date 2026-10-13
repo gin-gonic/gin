@@ -420,10 +420,11 @@ func (n *node) getValue(path string, params *Params, skippedNodes *[]skippedNode
 
 	// Reset the skipped-nodes stack on entry. getValue is called once per
 	// method tree (e.g. in the HandleMethodNotAllowed loop) reusing the same
-	// pooled Context stack, and the walk below grows it via a raw reslice that
-	// cannot exceed engine.maxSections. Without this reset the residue from a
-	// previous tree leaks into the next call and can panic with "slice bounds
-	// out of range" once the accumulated length passes the capacity.
+	// pooled Context stack. Without this reset the residue from a previous
+	// tree leaks into the next call. The walk grows the stack with append:
+	// a context allocated before addRoute raised maxSections must still be
+	// able to record one more backtrack frame. A raw reslice of the capacity
+	// captured at pool allocation panics with "slice bounds out of range".
 	*skippedNodes = (*skippedNodes)[:0]
 
 walk: // Outer loop for walking the tree
@@ -439,9 +440,7 @@ walk: // Outer loop for walking the tree
 					if c == idxc {
 						//  strings.HasPrefix(n.children[len(n.children)-1].path, ":") == n.wildChild
 						if n.wildChild {
-							index := len(*skippedNodes)
-							*skippedNodes = (*skippedNodes)[:index+1]
-							(*skippedNodes)[index] = skippedNode{
+							*skippedNodes = append(*skippedNodes, skippedNode{
 								path: prefix + path,
 								node: &node{
 									path:      n.path,
@@ -453,7 +452,7 @@ walk: // Outer loop for walking the tree
 									fullPath:  n.fullPath,
 								},
 								paramsCount: globalParamsCount,
-							}
+							})
 						}
 
 						n = n.children[i]
