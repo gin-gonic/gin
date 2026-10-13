@@ -7,6 +7,8 @@ package binding
 import (
 	"errors"
 	"testing"
+
+	"github.com/go-playground/validator/v10"
 )
 
 func TestSliceValidationError(t *testing.T) {
@@ -86,5 +88,22 @@ func TestDefaultValidator(t *testing.T) {
 				t.Errorf("defaultValidator.Validate() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
+	}
+}
+
+func TestNewStructValidatorWithOptions(t *testing.T) {
+	type customID struct {
+		value string
+	}
+	type createRequest struct {
+		ID customID `binding:"required"`
+	}
+
+	v := NewStructValidator(validator.WithRequiredStructEnabled())
+	if err := v.ValidateStruct(createRequest{}); err == nil {
+		t.Fatal("expected required validation to reject a zero-value struct")
+	}
+	if err := v.ValidateStruct(createRequest{ID: customID{value: "present"}}); err != nil {
+		t.Fatalf("expected non-zero struct to pass validation: %v", err)
 	}
 }
