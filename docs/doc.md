@@ -45,7 +45,7 @@
   - [Bind HTML checkboxes](#bind-html-checkboxes)
   - [Multipart/Urlencoded binding](#multiparturlencoded-binding)
   - [Bind form-data request with custom struct](#bind-form-data-request-with-custom-struct)
-  - [Try to bind body into different structs](#try-to-bind-body-into-different-structs)
+  - [Reuse the request body (middleware or multiple binds)](#reuse-the-request-body-middleware-or-multiple-binds)
   - [Bind form-data request with custom struct and custom tag](#bind-form-data-request-with-custom-struct-and-custom-tag)
 - [Response Rendering](#response-rendering)
   - [XML, JSON, YAML, TOML and ProtoBuf rendering](#xml-json-yaml-toml-and-protobuf-rendering)
@@ -873,6 +873,8 @@ Also, Gin provides two sets of methods for binding:
 
 When using the Bind-method, Gin tries to infer the binder depending on the Content-Type header. If you are sure what you are binding, you can use `MustBindWith` or `ShouldBindWith`.
 
+**Request body is one-shot:** methods such as `ShouldBindJSON` / `BindJSON` read and consume `c.Request.Body`. Calling them a second time (for example once in middleware and again in a handler) returns `EOF`. To bind the same body more than once, use `ShouldBindBodyWithJSON` or `ShouldBindBodyWith` instead. See [Reuse the request body (middleware or multiple binds)](#reuse-the-request-body-middleware-or-multiple-binds).
+
 You can also specify that specific fields are required. If a field is decorated with `binding:"required"` and has an empty value when binding, an error will be returned.
 
 ```go
@@ -1582,10 +1584,51 @@ $ curl "http://localhost:8080/getd?field_x=hello&field_d=world"
 {"d":"world","x":{"FieldX":"hello"}}
 ```
 
-### Try to bind body into different structs
+### Reuse the request body (middleware or multiple binds)
 
-The normal methods for binding request body consumes `c.Request.Body` and they
-cannot be called multiple times.
+Body binders such as `ShouldBindJSON` and `BindJSON` read `c.Request.Body` once.
+A second call gets `EOF`. That often shows up when middleware binds the body and
+the handler tries to bind it again.
+
+Use `ShouldBindBodyWith` (or the shortcuts below). They store the body in the
+context on the first call and reuse it afterward.
+
+- `c.ShouldBindBodyWithJSON` is a shortcut for `c.ShouldBindBodyWith(obj, binding.JSON)`.
+- `c.ShouldBindBodyWithXML` is a shortcut for `c.ShouldBindBodyWith(obj, binding.XML)`.
+- `c.ShouldBindBodyWithYAML` is a shortcut for `c.ShouldBindBodyWith(obj, binding.YAML)`.
+- `c.ShouldBindBodyWithTOML` is a shortcut for `c.ShouldBindBodyWith(obj, binding.TOML)`.
+
+```go
+type Payload struct {
+  Message string `json:"message" binding:"required"`
+}
+
+// Middleware and handler can both bind the same JSON body.
+func CacheBody() gin.HandlerFunc {
+  return func(c *gin.Context) {
+    var payload Payload
+    if err := c.ShouldBindBodyWithJSON(&payload); err != nil {
+      c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+      return
+    }
+    c.Set("payload", payload)
+    c.Next()
+  }
+}
+
+func HandlePayload(c *gin.Context) {
+  var payload Payload
+  // Reuses the body cached by ShouldBindBodyWithJSON above - no EOF.
+  if err := c.ShouldBindBodyWithJSON(&payload); err != nil {
+    c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+    return
+  }
+  c.JSON(http.StatusOK, payload)
+}
+```
+
+The same helpers also work when you want to try binding one body into different
+structs:
 
 ```go
 type formA struct {
@@ -1599,51 +1642,46 @@ type formB struct {
 func SomeHandler(c *gin.Context) {
   objA := formA{}
   objB := formB{}
-  // Calling c.ShouldBind consumes c.Request.Body and it cannot be reused.
-  if errA := c.ShouldBind(&objA); errA == nil {
+  // First call reads the body and stores it in the context.
+  if errA := c.ShouldBindBodyWithJSON(&objA); errA == nil {
     c.String(http.StatusOK, `the body should be formA`)
-  // Always an error is occurred by this because c.Request.Body is EOF now.
-  } else if errB := c.ShouldBind(&objB); errB == nil {
-    c.String(http.StatusOK, `the body should be formB`)
+  // Later calls reuse the cached body.
+  } else if errB := c.ShouldBindBodyWithJSON(&objB); errB == nil {
+    c.String(http.StatusOK, `the body should be formB JSON`)
+  } else if errB2 := c.ShouldBindBodyWithXML(&objB); errB2 == nil {
+    c.String(http.StatusOK, `the body should be formB XML`)
   } else {
-    ...
+    c.String(http.StatusBadRequest, "no matching body shape")
   }
 }
 ```
 
-For this, you can use `c.ShouldBindBodyWith` or shortcuts.
-
-- `c.ShouldBindBodyWithJSON` is a shortcut for c.ShouldBindBodyWith(obj, binding.JSON).
-- `c.ShouldBindBodyWithXML` is a shortcut for c.ShouldBindBodyWith(obj, binding.XML).
-- `c.ShouldBindBodyWithYAML` is a shortcut for c.ShouldBindBodyWith(obj, binding.YAML).
-- `c.ShouldBindBodyWithTOML` is a shortcut for c.ShouldBindBodyWith(obj, binding.TOML).
+For contrast, plain `ShouldBind` / `ShouldBindJSON` consume the stream and cannot
+be repeated:
 
 ```go
 func SomeHandler(c *gin.Context) {
   objA := formA{}
   objB := formB{}
-  // This reads c.Request.Body and stores the result into the context.
-  if errA := c.ShouldBindBodyWith(&objA, binding.Form); errA == nil {
+  // Consumes c.Request.Body - it cannot be reused.
+  if errA := c.ShouldBindJSON(&objA); errA == nil {
     c.String(http.StatusOK, `the body should be formA`)
-  // At this time, it reuses body stored in the context.
-  } else if errB := c.ShouldBindBodyWith(&objB, binding.JSON); errB == nil {
-    c.String(http.StatusOK, `the body should be formB JSON`)
-  // And it can accepts other formats
-  } else if errB2 := c.ShouldBindBodyWithXML(&objB); errB2 == nil {
-    c.String(http.StatusOK, `the body should be formB XML`)
+  // Second bind fails with EOF because the body was already read.
+  } else if errB := c.ShouldBindJSON(&objB); errB == nil {
+    c.String(http.StatusOK, `the body should be formB`)
   } else {
-    ...
+    c.String(http.StatusBadRequest, errB.Error())
   }
 }
 ```
 
-1. `c.ShouldBindBodyWith` stores body into the context before binding. This has
-   a slight impact to performance, so you should not use this method if you are
-   enough to call binding at once.
-2. This feature is only needed for some formats -- `JSON`, `XML`, `MsgPack`,
-   `ProtoBuf`. For other formats, `Query`, `Form`, `FormPost`, `FormMultipart`,
-   can be called by `c.ShouldBind()` multiple times without any damage to
-   performance (See [#1341](https://github.com/gin-gonic/gin/pull/1341)).
+1. `c.ShouldBindBodyWith` stores the body in the context before binding. That has
+   a slight performance cost, so prefer `ShouldBindJSON` / `ShouldBindWith` when
+   you only need to bind once.
+2. Reuse is mainly needed for stream-based formats such as `JSON`, `XML`,
+   `MsgPack`, and `ProtoBuf`. `Query`, `Form`, `FormPost`, and `FormMultipart`
+   can usually be bound more than once with `c.ShouldBind()` (see
+   [#1341](https://github.com/gin-gonic/gin/pull/1341)).
 
 ### Bind form-data request with custom struct and custom tag
 
