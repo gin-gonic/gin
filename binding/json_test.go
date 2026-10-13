@@ -6,6 +6,7 @@ package binding
 
 import (
 	"io"
+	"net/http"
 	"net/http/httptest"
 	"testing"
 	"time"
@@ -214,3 +215,50 @@ func (tpc timePointerCodec) Decode(ptr unsafe.Pointer, iter *jsoniter.Iterator) 
 }
 
 // endregion
+
+func TestJSONBindingEmptyBody(t *testing.T) {
+	var obj struct {
+		Foo string `json:"foo" binding:"required"`
+	}
+
+	t.Run("empty BindBody", func(t *testing.T) {
+		err := jsonBinding{}.BindBody([]byte(""), &obj)
+		require.Error(t, err)
+		require.ErrorIs(t, err, io.EOF)
+		assert.Contains(t, err.Error(), "empty JSON body")
+	})
+
+	t.Run("whitespace BindBody", func(t *testing.T) {
+		err := jsonBinding{}.BindBody([]byte("   \n\t"), &obj)
+		require.Error(t, err)
+		require.ErrorIs(t, err, io.EOF)
+		assert.Contains(t, err.Error(), "empty JSON body")
+	})
+
+	t.Run("empty request body Bind", func(t *testing.T) {
+		req := requestWithBody(http.MethodPost, "/", "")
+		err := jsonBinding{}.Bind(req, &obj)
+		require.Error(t, err)
+		require.ErrorIs(t, err, io.EOF)
+		assert.Contains(t, err.Error(), "empty JSON body")
+	})
+
+	t.Run("valid JSON still binds", func(t *testing.T) {
+		var ok struct {
+			Foo string `json:"foo" binding:"required"`
+		}
+		err := jsonBinding{}.BindBody([]byte(`{"foo":"bar"}`), &ok)
+		require.NoError(t, err)
+		assert.Equal(t, "bar", ok.Foo)
+	})
+
+	t.Run("empty object still validates", func(t *testing.T) {
+		var missing struct {
+			Foo string `json:"foo" binding:"required"`
+		}
+		err := jsonBinding{}.BindBody([]byte(`{}`), &missing)
+		require.Error(t, err)
+		require.NotErrorIs(t, err, io.EOF)
+		assert.NotContains(t, err.Error(), "empty JSON body")
+	})
+}

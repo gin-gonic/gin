@@ -7,6 +7,7 @@ package binding
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 
@@ -50,6 +51,12 @@ func decodeJSON(r io.Reader, obj any) error {
 		decoder.DisallowUnknownFields()
 	}
 	if err := decoder.Decode(obj); err != nil {
+		// encoding/json (and compatible codecs) return io.EOF for an empty or
+		// whitespace-only body. Surface a clearer message while preserving
+		// errors.Is(err, io.EOF) for callers that already check for it.
+		if errors.Is(err, io.EOF) {
+			return fmt.Errorf("empty JSON body: %w", err)
+		}
 		return err
 	}
 	return validate(obj)
