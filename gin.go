@@ -185,6 +185,10 @@ type Engine struct {
 	// ContextWithFallback enable fallback Context.Deadline(), Context.Done(), Context.Err() and Context.Value() when Context.Request.Context() is not nil.
 	ContextWithFallback bool
 
+	// MaxConns limits the maximum number of concurrent connections.
+	// 0 means no limit (default behavior).
+	MaxConns int64
+
 	delims           render.Delims
 	secureJSONPrefix string
 	HTMLRender       render.HTMLRender
@@ -557,6 +561,17 @@ func parseIP(ip string) net.IP {
 	return parsedIP
 }
 
+// wrapListener wraps a net.Listener with connection limiting if MaxConns > 0.
+func (engine *Engine) wrapListener(ln net.Listener) net.Listener {
+	if engine.MaxConns <= 0 {
+		return ln
+	}
+	return &limitedListener{
+		Listener: ln,
+		sem:      make(chan struct{}, engine.MaxConns),
+	}
+}
+
 // Run attaches the router to a http.Server and starts listening and serving HTTP requests.
 // It is a shortcut for http.ListenAndServe(addr, router)
 // Note: this method will block the calling goroutine indefinitely unless an error happens.
@@ -573,12 +588,16 @@ func (engine *Engine) Run(addr ...string) (err error) {
 	engine.updateRouteTrees()
 	address := resolveAddress(addr)
 	debugPrint("Listening and serving HTTP on %s\n", address)
+	ln, err := net.Listen("tcp", address)
+	if err != nil {
+		return
+	}
 	server := &http.Server{ // #nosec G112
 		Addr:              address,
 		Handler:           engine.Handler(),
 		ReadHeaderTimeout: engine.getReadHeaderTimeout(),
 	}
-	err = server.ListenAndServe()
+	err = server.Serve(engine.wrapListener(ln))
 	return
 }
 
@@ -599,7 +618,11 @@ func (engine *Engine) RunTLS(addr, certFile, keyFile string) (err error) {
 		Handler:           engine.Handler(),
 		ReadHeaderTimeout: engine.getReadHeaderTimeout(),
 	}
-	err = server.ListenAndServeTLS(certFile, keyFile)
+	ln, err := net.Listen("tcp", addr)
+	if err != nil {
+		return
+	}
+	err = server.ServeTLS(engine.wrapListener(ln), certFile, keyFile)
 	return
 }
 
@@ -625,7 +648,7 @@ func (engine *Engine) RunUnix(file string) (err error) {
 	server := &http.Server{ // #nosec G112
 		Handler: engine.Handler(),
 	}
-	err = server.Serve(listener)
+	err = server.Serve(engine.wrapListener(listener))
 	return
 }
 
@@ -655,6 +678,7 @@ func (engine *Engine) RunFd(fd int) (err error) {
 // RunQUIC attaches the router to a http.Server and starts listening and serving QUIC requests.
 // It is a shortcut for http3.ListenAndServeQUIC(addr, certFile, keyFile, router)
 // Note: this method will block the calling goroutine indefinitely unless an error happens.
+// Note: MaxConns is not supported for QUIC due to protocol limitations.
 func (engine *Engine) RunQUIC(addr, certFile, keyFile string) (err error) {
 	debugPrint("Listening and serving QUIC on %s\n", addr)
 	defer func() { debugPrintError(err) }()
@@ -683,7 +707,7 @@ func (engine *Engine) RunListener(listener net.Listener) (err error) {
 		Handler:           engine.Handler(),
 		ReadHeaderTimeout: engine.getReadHeaderTimeout(),
 	}
-	err = server.Serve(listener)
+	err = server.Serve(engine.wrapListener(listener))
 	return
 }
 
