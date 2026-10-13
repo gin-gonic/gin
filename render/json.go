@@ -115,14 +115,14 @@ func (r SecureJSON) WriteContentType(w http.ResponseWriter) {
 
 // Render (JsonpJSON) marshals the given interface object and writes it and its callback with custom ContentType.
 func (r JsonpJSON) Render(w http.ResponseWriter) (err error) {
-	r.WriteContentType(w)
-	ret, err := json.API.Marshal(r.Data)
-	if err != nil {
-		return err
+	if r.Callback == "" {
+		return WriteJSON(w, r.Data)
 	}
 
-	if r.Callback == "" {
-		_, err = w.Write(ret)
+	r.WriteContentType(w)
+
+	ret, err := json.API.Marshal(r.Data)
+	if err != nil {
 		return err
 	}
 
