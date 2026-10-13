@@ -151,6 +151,7 @@ type Engine struct {
 	UseEscapedPath bool
 
 	// UnescapePathValues if true, the path value will be unescaped.
+	// Percent-encoded bytes are decoded with url.PathUnescape; literal '+' characters are preserved.
 	// If UseRawPath and UseEscapedPath are false (by default), the UnescapePathValues effectively is true,
 	// as url.Path gonna be used, which is already unescaped.
 	UnescapePathValues bool
