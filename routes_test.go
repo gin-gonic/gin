@@ -303,6 +303,18 @@ func TestRouteRedirectTrailingSlash(t *testing.T) {
 	assert.Equal(t, http.StatusNotFound, w.Code)
 }
 
+func TestRouteRedirectTrailingSlashWildcardAndCommonPrefix(t *testing.T) {
+	router := New()
+	router.RedirectTrailingSlash = true
+	router.GET("/:c/bb", func(c *Context) {})
+	router.GET("/aa/", func(c *Context) {})
+	router.GET("/aa_id", func(c *Context) {})
+
+	w := PerformRequest(router, http.MethodGet, "/aa")
+	assert.Equal(t, "/aa/", w.Header().Get("Location"))
+	assert.Equal(t, http.StatusMovedPermanently, w.Code)
+}
+
 func TestRouteRedirectFixedPath(t *testing.T) {
 	router := New()
 	router.RedirectFixedPath = true

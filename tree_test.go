@@ -1111,3 +1111,17 @@ func TestTreeFindCaseInsensitivePathWildcardParamAndStaticChild(t *testing.T) {
 		t.Errorf("Wrong result for '/prefix/something': %s", string(out))
 	}
 }
+
+func TestRedirectTrailingSlashWildcardAndCommonPrefix(t *testing.T) {
+	routes := []string{"/:c/bb", "/aa/", "/aa_id"}
+	tree := &node{}
+	for _, r := range routes {
+		tree.addRoute(r, fakeHandler(r))
+	}
+
+	skippedNodes := make([]skippedNode, 0)
+	value := tree.getValue("/aa", nil, &skippedNodes, false)
+	if !value.tsr {
+		t.Fatalf("expected TSR recommendation for '/aa', got tsr=false, handlers=%v", value.handlers)
+	}
+}

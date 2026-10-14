@@ -482,7 +482,7 @@ walk: // Outer loop for walking the tree
 					// Nothing found.
 					// We can recommend to redirect to the same URL without a
 					// trailing slash if a leaf exists for that path.
-					value.tsr = path == "/" && n.handlers != nil
+					value.tsr = value.tsr || (path == "/" && n.handlers != nil)
 					return value
 				}
 
@@ -537,11 +537,12 @@ walk: // Outer loop for walking the tree
 						}
 
 						// ... but we can't
-						value.tsr = len(path) == end+1
+						value.tsr = value.tsr || len(path) == end+1
 						return value
 					}
 
 					if value.handlers = n.handlers; value.handlers != nil {
+						value.tsr = false
 						value.fullPath = n.fullPath
 						return value
 					}
@@ -549,7 +550,7 @@ walk: // Outer loop for walking the tree
 						// No handle found. Check if a handle for this path + a
 						// trailing slash exists for TSR recommendation
 						n = n.children[0]
-						value.tsr = (n.path == "/" && n.handlers != nil) || (n.path == "" && n.indices == "/")
+						value.tsr = value.tsr || (n.path == "/" && n.handlers != nil) || (n.path == "" && n.indices == "/")
 					}
 					return value
 
@@ -582,6 +583,7 @@ walk: // Outer loop for walking the tree
 					}
 
 					value.handlers = n.handlers
+					value.tsr = false
 					value.fullPath = n.fullPath
 					return value
 
@@ -592,27 +594,10 @@ walk: // Outer loop for walking the tree
 		}
 
 		if path == prefix {
-			// If the current path does not equal '/' and the node does not have a registered handle and the most recently matched node has a child node
-			// the current node needs to roll back to last valid skippedNode
-			if n.handlers == nil && path != "/" {
-				for length := len(*skippedNodes); length > 0; length-- {
-					skippedNode := (*skippedNodes)[length-1]
-					*skippedNodes = (*skippedNodes)[:length-1]
-					if strings.HasSuffix(skippedNode.path, path) {
-						path = skippedNode.path
-						n = skippedNode.node
-						if value.params != nil {
-							*value.params = (*value.params)[:skippedNode.paramsCount]
-						}
-						globalParamsCount = skippedNode.paramsCount
-						continue walk
-					}
-				}
-				//	n = latestNode.children[len(latestNode.children)-1]
-			}
 			// We should have reached the node containing the handle.
 			// Check if this node has a handle registered.
 			if value.handlers = n.handlers; value.handlers != nil {
+				value.tsr = false
 				value.fullPath = n.fullPath
 				return value
 			}
@@ -634,10 +619,30 @@ walk: // Outer loop for walking the tree
 			// trailing slash exists for trailing slash recommendation
 			for i, c := range []byte(n.indices) {
 				if c == '/' {
-					n = n.children[i]
-					value.tsr = (len(n.path) == 1 && n.handlers != nil) ||
-						(n.nType == catchAll && n.children[0].handlers != nil)
-					return value
+					child := n.children[i]
+					if (len(child.path) == 1 && child.handlers != nil) ||
+						(child.nType == catchAll && child.children[0].handlers != nil) {
+						value.tsr = true
+					}
+					break
+				}
+			}
+
+			// If the current path does not equal '/' and the node does not have a registered handle and the most recently matched node has a child node
+			// the current node needs to roll back to last valid skippedNode
+			if path != "/" {
+				for length := len(*skippedNodes); length > 0; length-- {
+					skippedNode := (*skippedNodes)[length-1]
+					*skippedNodes = (*skippedNodes)[:length-1]
+					if strings.HasSuffix(skippedNode.path, path) {
+						path = skippedNode.path
+						n = skippedNode.node
+						if value.params != nil {
+							*value.params = (*value.params)[:skippedNode.paramsCount]
+						}
+						globalParamsCount = skippedNode.paramsCount
+						continue walk
+					}
 				}
 			}
 
@@ -646,7 +651,7 @@ walk: // Outer loop for walking the tree
 
 		// Nothing found. We can recommend to redirect to the same URL with an
 		// extra trailing slash if a leaf exists for that path
-		value.tsr = path == "/" ||
+		value.tsr = value.tsr || path == "/" ||
 			(len(prefix) == len(path)+1 && prefix[len(path)] == '/' &&
 				path == prefix[:len(prefix)-1] && n.handlers != nil)
 
