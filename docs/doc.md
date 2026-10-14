@@ -109,7 +109,7 @@ Gin enables `MsgPack` rendering feature by default. But you can disable this fea
 go build -tags=nomsgpack .
 ```
 
-This is useful to reduce the binary size of executable files. See the [detail information](https://github.com/gin-gonic/gin/pull/1852).
+This is useful to reduce the binary size of executable files. See the [detailed information](https://github.com/gin-gonic/gin/pull/1852).
 
 ## Routing
 
@@ -316,7 +316,7 @@ ids: map[b:hello a:1234]; names: map[second:tianou first:thinkerou]
 
 #### Single file
 
-References issue [#774](https://github.com/gin-gonic/gin/issues/774) and detail [example code](https://github.com/gin-gonic/examples/tree/master/upload-file/single).
+References issue [#774](https://github.com/gin-gonic/gin/issues/774) and the [example code](https://github.com/gin-gonic/examples/tree/master/upload-file/single).
 
 `file.Filename` **SHOULD NOT** be trusted. See [`Content-Disposition` on MDN](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Disposition#Directives) and [#1693](https://github.com/gin-gonic/gin/issues/1693)
 
@@ -1039,7 +1039,7 @@ See the [struct-lvl-validation example](https://github.com/gin-gonic/examples/tr
 
 ### Only Bind Query String
 
-`ShouldBindQuery` function only binds the query params and not the post data. See the [detail information](https://github.com/gin-gonic/gin/issues/742#issuecomment-315953017).
+`ShouldBindQuery` function only binds the query params and not the post data. See the [detailed information](https://github.com/gin-gonic/gin/issues/742#issuecomment-315953017).
 
 ```go
 package main
@@ -1076,7 +1076,7 @@ func startPage(c *gin.Context) {
 
 ### Bind Query String or Post Data
 
-See the [detail information](https://github.com/gin-gonic/gin/issues/742#issuecomment-264681292).
+See the [detailed information](https://github.com/gin-gonic/gin/issues/742#issuecomment-264681292).
 
 ```go
 package main
@@ -1232,7 +1232,7 @@ curl -X GET "localhost:8085/testing?name=appleboy&addresses=foo,bar&birthday=199
 
 ### Bind Uri
 
-See the [detail information](https://github.com/gin-gonic/gin/issues/846).
+See the [detailed information](https://github.com/gin-gonic/gin/issues/846).
 
 ```go
 package main
@@ -1420,7 +1420,7 @@ func main() {
 
 ### Bind HTML checkboxes
 
-See the [detail information](https://github.com/gin-gonic/gin/issues/129#issuecomment-124260092)
+See the [detailed information](https://github.com/gin-gonic/gin/issues/129#issuecomment-124260092)
 
 main.go
 
@@ -2455,7 +2455,7 @@ func main() {
 
 ### http2 server push
 
-http.Pusher is supported only **go1.8+**. See the [golang blog](https://go.dev/blog/h2push) for detail information.
+http.Pusher is supported only **go1.8+**. See the [golang blog](https://go.dev/blog/h2push) for detailed information.
 
 ```go
 package main
