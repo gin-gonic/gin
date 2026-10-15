@@ -27,6 +27,7 @@ func (xmlBinding) BindBody(body []byte, obj any) error {
 
 func decodeXML(r io.Reader, obj any) error {
 	decoder := xml.NewDecoder(r)
+	decoder.Entity = map[string]string{}
 	if err := decoder.Decode(obj); err != nil {
 		return err
 	}
