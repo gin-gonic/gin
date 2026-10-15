@@ -251,3 +251,16 @@ func TestMiddlewareWrite(t *testing.T) {
 	assert.Equal(t, http.StatusBadRequest, w.Code)
 	assert.Equal(t, strings.ReplaceAll("hola\n<map><foo>bar</foo></map>{\"foo\":\"bar\"}{\"foo\":\"bar\"}event:test\ndata:message\n\n", " ", ""), strings.ReplaceAll(w.Body.String(), " ", ""))
 }
+
+func TestMultipleResponseWritesWarning(t *testing.T) {
+	router := New()
+	router.GET("/", func(c *Context) {
+		c.String(http.StatusOK, "first\n")
+		c.String(http.StatusOK, "second\n")
+	})
+
+	w := PerformRequest(router, http.MethodGet, "/")
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Equal(t, "first\nsecond\n", w.Body.String())
+}
