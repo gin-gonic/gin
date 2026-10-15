@@ -1,0 +1,49 @@
+// Copyright 2026 Gin Core Team. All rights reserved.
+// Use of this source code is governed by a MIT style
+// license that can be found in the LICENSE file.
+
+package binding
+
+import (
+	"net/http"
+	"strings"
+)
+
+type allBinding struct{}
+
+var _ BindingMany = allBinding{}
+
+func (allBinding) Name() string {
+	return "all"
+}
+
+func (allBinding) BindMany(req *http.Request, uriParams map[string][]string, obj any) error {
+	// from binding.Header
+	if err := mapHeader(obj, req.Header); err != nil {
+		return err
+	}
+
+	// from binding.Uri
+	if err := mapURI(obj, uriParams); err != nil {
+		return err
+	}
+
+	// from context.Bind (for body/post-form/anything else)
+	contentType := req.Header.Get("Content-Type")
+	contentTypeLastIdx := strings.IndexAny(contentType, " ;") // trim "application/json; charset=utf-8" -> "application/json"
+	if contentTypeLastIdx != -1 {
+		contentType = contentType[:contentTypeLastIdx]
+	}
+	b := Default(req.Method, contentType)
+
+	// Since req.ParseForm() reads body and query, check whether the selected binding includes query parsing before parsing query values explicitly.
+	if !bindingIncludesQueryParsing(b) {
+		// from binding.Query
+		if err := mapForm(obj, req.URL.Query()); err != nil {
+			return err
+		}
+	}
+
+	// final validation done by whatever binding was selected by Default
+	return b.Bind(req, obj)
+}
