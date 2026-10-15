@@ -18,13 +18,21 @@ func (bsonBinding) Name() string {
 }
 
 func (b bsonBinding) Bind(req *http.Request, obj any) error {
+	return b.BindNoValidate(req, obj)
+}
+
+func (b bsonBinding) BindNoValidate(req *http.Request, obj any) error {
 	buf, err := io.ReadAll(req.Body)
 	if err == nil {
-		err = b.BindBody(buf, obj)
+		err = b.BindBodyNoValidate(buf, obj)
 	}
 	return err
 }
 
 func (bsonBinding) BindBody(body []byte, obj any) error {
+	return bson.Unmarshal(body, obj)
+}
+
+func (bsonBinding) BindBodyNoValidate(body []byte, obj any) error {
 	return bson.Unmarshal(body, obj)
 }

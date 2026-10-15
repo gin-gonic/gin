@@ -16,6 +16,10 @@ func (plainBinding) Name() string {
 }
 
 func (plainBinding) Bind(req *http.Request, obj any) error {
+	return (plainBinding{}).BindNoValidate(req, obj)
+}
+
+func (plainBinding) BindNoValidate(req *http.Request, obj any) error {
 	all, err := io.ReadAll(req.Body)
 	if err != nil {
 		return err
@@ -25,6 +29,10 @@ func (plainBinding) Bind(req *http.Request, obj any) error {
 }
 
 func (plainBinding) BindBody(body []byte, obj any) error {
+	return decodePlain(body, obj)
+}
+
+func (plainBinding) BindBodyNoValidate(body []byte, obj any) error {
 	return decodePlain(body, obj)
 }
 
