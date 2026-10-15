@@ -7,6 +7,7 @@ package gin
 import (
 	"fmt"
 	"io"
+	"maps"
 	"net/http"
 	"os"
 	"time"
@@ -286,10 +287,18 @@ func LoggerWithConfig(conf LoggerConfig) HandlerFunc {
 			return
 		}
 
+		// Load the request keys under the context mutex, exactly like Copy
+		// and Set do, so this read cannot race a concurrent Set. The map is
+		// cloned while the read lock is held: the formatter iterates the
+		// snapshot later, when the live map may change again.
+		c.mu.RLock()
+		keys := maps.Clone(c.Keys)
+		c.mu.RUnlock()
+
 		param := LogFormatterParams{
 			Request: c.Request,
 			isTerm:  isTerm,
-			Keys:    c.Keys,
+			Keys:    keys,
 		}
 
 		// Stop timer
