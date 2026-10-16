@@ -7,6 +7,7 @@ package binding
 import (
 	"encoding"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"mime/multipart"
 	"reflect"
@@ -482,6 +483,50 @@ func TestMappingMapField(t *testing.T) {
 	err := mappingByPtr(&s, formSource{"M": {`{"one": 1}`}}, "form")
 	require.NoError(t, err)
 	assert.Equal(t, map[string]int{"one": 1}, s.M)
+}
+
+// customDateTime is a custom type that implements json.Unmarshaler.
+// It expects a JSON-quoted string in "2006/01/02 15:04:05" format.
+type customDateTime time.Time
+
+const customDateTimeFormat = "2006/01/02 15:04:05"
+
+func (t *customDateTime) UnmarshalJSON(data []byte) error {
+	var s string
+	if err := json.Unmarshal(data, &s); err != nil {
+		return err
+	}
+	parsed, err := time.Parse(customDateTimeFormat, s)
+	if err != nil {
+		return err
+	}
+	*t = customDateTime(parsed)
+	return nil
+}
+
+func TestMappingCustomJSONUnmarshalerStructFromForm(t *testing.T) {
+	var s struct {
+		Time customDateTime `form:"Time"`
+	}
+
+	err := mappingByPtr(&s, formSource{"Time": {"2020/09/23 13:20:49"}}, "form")
+	require.NoError(t, err)
+
+	expected, _ := time.Parse(customDateTimeFormat, "2020/09/23 13:20:49")
+	assert.Equal(t, customDateTime(expected), s.Time)
+}
+
+func TestMappingCustomJSONUnmarshalerStructValidJSON(t *testing.T) {
+	// When the form value is already valid JSON, it should still work.
+	var s struct {
+		J struct {
+			I int
+		}
+	}
+
+	err := mappingByPtr(&s, formSource{"J": {`{"I": 9}`}}, "form")
+	require.NoError(t, err)
+	assert.Equal(t, 9, s.J.I)
 }
 
 func TestMappingIgnoredCircularRef(t *testing.T) {
