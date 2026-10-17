@@ -283,7 +283,7 @@ func TestRenderPureJSON(t *testing.T) {
 
 type xmlmap map[string]any
 
-// Allows type H to be used with xml.Marshal
+// MarshalXML allows xmlmap to be used with xml.Marshal.
 func (h xmlmap) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
 	start.Name = xml.Name{
 		Space: "",
@@ -331,7 +331,7 @@ b:
 
 type fail struct{}
 
-// Hook MarshalYAML
+// MarshalYAML returns an error for YAML rendering failure tests.
 func (ft *fail) MarshalYAML() (any, error) {
 	return nil, errors.New("fail")
 }

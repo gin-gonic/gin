@@ -220,7 +220,8 @@ func TestResponseWriterHijackAfterWrite(t *testing.T) {
 	}
 }
 
-// Test: WebSocket compatibility - allow hijack after WriteHeaderNow(), but block after body data.
+// TestResponseWriterHijackAfterWriteHeaderNow verifies that hijacking is allowed after
+// WriteHeaderNow but blocked after body data is written.
 func TestResponseWriterHijackAfterWriteHeaderNow(t *testing.T) {
 	tests := []struct {
 		name                      string
