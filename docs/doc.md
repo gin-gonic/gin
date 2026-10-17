@@ -167,9 +167,9 @@ Use the `gin.MethodQuery` constant wherever an HTTP method name is expected, for
 req := httptest.NewRequest(gin.MethodQuery, "/search", body)
 ```
 
-Two things to keep in mind:
+Keep in mind:
 
-- `router.Any` does not register `QUERY`, so existing catch-all routes keep matching exactly the methods they matched before. Use `router.QUERY` or `router.Match([]string{gin.MethodQuery, http.MethodPost}, ...)` when you want it.
+- `router.Any` also registers `QUERY` alongside standard HTTP methods. Handlers registered with `Any` should respect QUERY's safe and idempotent semantics when processing that method.
 - `QUERY` is not part of the `gin.IRoutes` interface. `*gin.Engine` and `*gin.RouterGroup` expose it directly; if you only hold an `IRoutes` value, assert to `gin.IQueryRoutes` first.
 
 ```go
@@ -1167,7 +1167,7 @@ func main() {
 
 ```sh
 curl -X POST http://localhost:8080/person
-{"Name":"William","Age":10,"Friends":["Will","Bill"],"Colors":["red","blue"],"LapTimes":[1,2,3]}
+{"Name":"William","Age":10,"Friends":["Will","Bill"],"Addresses":["foo","bar"],"LapTimes":[1,2,3]}
 ```
 
 NOTE: For default [collection values](#collection-format-for-arrays), the following rules apply:
@@ -1762,7 +1762,7 @@ func main() {
 
 #### SecureJSON
 
-Using SecureJSON to prevent json hijacking. Default prepends `"while(1),"` to response body if the given struct is array values.
+Using SecureJSON to prevent json hijacking. Default prepends `"while(1);"` to response body if the given struct is array values.
 
 ```go
 func main() {
