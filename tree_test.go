@@ -711,6 +711,22 @@ func TestRedirectTrailingSlash(t *testing.T) {
 	}
 }
 
+func TestRedirectTrailingSlashWildcardAndCommonPrefix(t *testing.T) {
+	routes := []string{"/:c/bb", "/aa/", "/aa_id"}
+	tree := &node{}
+	for _, r := range routes {
+		tree.addRoute(r, fakeHandler(r))
+	}
+
+	value := tree.getValue("/aa", nil, getSkippedNodes(), false)
+	if value.handlers != nil {
+		t.Fatalf("unexpected handler for '/aa'")
+	}
+	if !value.tsr {
+		t.Fatalf("expected TSR recommendation for '/aa'")
+	}
+}
+
 func TestTreeFindCaseInsensitivePath(t *testing.T) {
 	tree := &node{}
 

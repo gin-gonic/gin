@@ -303,6 +303,34 @@ func TestRouteRedirectTrailingSlash(t *testing.T) {
 	assert.Equal(t, http.StatusNotFound, w.Code)
 }
 
+func TestRouteRedirectTrailingSlashWildcardAndCommonPrefix(t *testing.T) {
+	router := New()
+	router.GET("/:c/bb", func(c *Context) {})
+	router.GET("/aa/", func(c *Context) {})
+	router.GET("/aa_id", func(c *Context) {})
+
+	w := PerformRequest(router, http.MethodGet, "/aa")
+	assert.Equal(t, "/aa/", w.Header().Get("Location"))
+	assert.Equal(t, http.StatusMovedPermanently, w.Code)
+
+	// The registered routes must still be reachable.
+	w = PerformRequest(router, http.MethodGet, "/aa/")
+	assert.Equal(t, http.StatusOK, w.Code)
+	w = PerformRequest(router, http.MethodGet, "/aa_id")
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	// A param route matching the request exactly takes precedence over the
+	// trailing slash redirect.
+	router = New()
+	router.GET("/:c", func(c *Context) { c.String(http.StatusOK, c.Param("c")) })
+	router.GET("/aa/", func(c *Context) {})
+	router.GET("/aa_id", func(c *Context) {})
+
+	w = PerformRequest(router, http.MethodGet, "/aa")
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Equal(t, "aa", w.Body.String())
+}
+
 func TestRouteRedirectFixedPath(t *testing.T) {
 	router := New()
 	router.RedirectFixedPath = true
