@@ -1177,6 +1177,38 @@ func TestUpdateRouteTreesCalledOnce(t *testing.T) {
 	}
 }
 
+func TestValidateHeaderForwardedForForms(t *testing.T) {
+	engine := New()
+	// Disable trusted proxies so the rightmost parseable entry is returned.
+	require.NoError(t, engine.SetTrustedProxies(nil))
+
+	tests := []struct {
+		name   string
+		header string
+		wantIP string
+		wantOK bool
+	}{
+		{"plain IPv4", "192.168.8.39", "192.168.8.39", true},
+		{"plain IPv6", "240e:318:2f4a:de56::240", "240e:318:2f4a:de56::240", true},
+		{"bracketed IPv6", "[240e:318:2f4a:de56::240]", "240e:318:2f4a:de56::240", true},
+		{"IPv4 with port", "192.168.8.39:38792", "192.168.8.39", true},
+		{"bracketed IPv6 with port", "[240e:318:2f4a:de56::240]:38792", "240e:318:2f4a:de56::240", true},
+		{"bracketed IPv6 loopback", "[::1]", "::1", true},
+		{"chain with port on last entry", "1.2.3.4, 5.6.7.8:9000", "5.6.7.8", true},
+		{"empty", "", "", false},
+		{"garbage", "not-an-ip", "", false},
+		{"bracketed garbage", "[not-an-ip]", "", false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gotIP, gotOK := engine.validateHeader(tt.header)
+			assert.Equal(t, tt.wantOK, gotOK)
+			assert.Equal(t, tt.wantIP, gotIP)
+		})
+	}
+}
+
 func TestRouterQueryMethod(t *testing.T) {
 	router := New()
 	router.QUERY("/test", func(c *Context) {

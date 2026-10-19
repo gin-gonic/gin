@@ -1304,6 +1304,26 @@ func TestContextClientIPWithSingleHeader(t *testing.T) {
 	assert.Equal(t, "1.2.3.4", c.ClientIP())
 }
 
+func TestContextClientIPWithNonStandardForwardedFor(t *testing.T) {
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	c.Request, _ = http.NewRequest(http.MethodGet, "/test", nil)
+	c.Request.RemoteAddr = localhostIP + ":1234"
+
+	c.engine.ForwardedByClientIP = true
+	c.engine.RemoteIPHeaders = []string{"X-Forwarded-For"}
+	require.NoError(t, c.engine.SetTrustedProxies([]string{localhostIP}))
+
+	tests := map[string]string{
+		"[240e:318:2f4a:de56::240]":       "240e:318:2f4a:de56::240",
+		"192.168.8.39:38792":              "192.168.8.39",
+		"[240e:318:2f4a:de56::240]:38792": "240e:318:2f4a:de56::240",
+	}
+	for header, want := range tests {
+		c.Request.Header.Set("X-Forwarded-For", header)
+		assert.Equal(t, want, c.ClientIP(), "header %q", header)
+	}
+}
+
 // Tests that the response is serialized as Secure JSON
 // and Content-Type is set to application/json
 func TestContextRenderSecureJSON(t *testing.T) {

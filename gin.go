@@ -508,8 +508,7 @@ func (engine *Engine) validateHeader(header string) (clientIP string, valid bool
 	}
 	items := strings.Split(header, ",")
 	for i := len(items) - 1; i >= 0; i-- {
-		ipStr := strings.TrimSpace(items[i])
-		ip := net.ParseIP(ipStr)
+		ipStr, ip := parseForwardedForItem(strings.TrimSpace(items[i]))
 		if ip == nil {
 			break
 		}
@@ -521,6 +520,34 @@ func (engine *Engine) validateHeader(header string) (clientIP string, valid bool
 		}
 	}
 	return "", false
+}
+
+// parseForwardedForItem normalizes a single X-Forwarded-For entry and parses it.
+// It accepts the forms commonly emitted by reverse proxies:
+//
+//   - "1.2.3.4"
+//   - "2001:db8::1"
+//   - "[2001:db8::1]"             (IIS/ARR style)
+//   - "1.2.3.4:12345"             (with port, some load balancers)
+//   - "[2001:db8::1]:12345"       (IIS/ARR with port)
+//
+// The returned string is the IP without brackets or port.
+func parseForwardedForItem(item string) (string, net.IP) {
+	// Try the host:port form first (handles "ip:port" and "[ipv6]:port").
+	if host, _, err := net.SplitHostPort(item); err == nil {
+		if ip := net.ParseIP(host); ip != nil {
+			return host, ip
+		}
+	}
+	// Strip optional surrounding brackets for a bare "[ipv6]" without a port.
+	unbracketed := item
+	if strings.HasPrefix(unbracketed, "[") && strings.HasSuffix(unbracketed, "]") {
+		unbracketed = unbracketed[1 : len(unbracketed)-1]
+	}
+	if ip := net.ParseIP(unbracketed); ip != nil {
+		return unbracketed, ip
+	}
+	return "", nil
 }
 
 // updateRouteTree do update to the route tree recursively
