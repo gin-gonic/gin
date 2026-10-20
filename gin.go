@@ -194,6 +194,7 @@ type Engine struct {
 	noRoute          HandlersChain
 	noMethod         HandlersChain
 	pool             sync.Pool
+	treesMutex       sync.RWMutex
 	trees            methodTrees
 	maxParams        uint16
 	maxSections      uint16
@@ -333,7 +334,10 @@ func (engine *Engine) LoadHTMLFS(fs http.FileSystem, patterns ...string) {
 
 // SetHTMLTemplate associate a template with HTML renderer.
 func (engine *Engine) SetHTMLTemplate(templ *template.Template) {
-	if len(engine.trees) > 0 {
+	engine.treesMutex.RLock()
+	hasTrees := len(engine.trees) > 0
+	engine.treesMutex.RUnlock()
+	if hasTrees {
 		debugPrintWARNINGSetHTMLTemplate()
 	}
 
@@ -391,6 +395,9 @@ func (engine *Engine) addRoute(method, path string, handlers HandlersChain) {
 
 	debugPrintRoute(method, path, handlers)
 
+	engine.treesMutex.Lock()
+	defer engine.treesMutex.Unlock()
+
 	root := engine.trees.get(method)
 	if root == nil {
 		root = new(node)
@@ -411,6 +418,9 @@ func (engine *Engine) addRoute(method, path string, handlers HandlersChain) {
 // Routes returns a slice of registered routes, including some useful information, such as:
 // the http method, path, and the handler name.
 func (engine *Engine) Routes() (routes RoutesInfo) {
+	engine.treesMutex.RLock()
+	defer engine.treesMutex.RUnlock()
+
 	for _, tree := range engine.trees {
 		routes = iterate("", tree.method, routes, tree.root)
 	}
@@ -538,6 +548,9 @@ func updateRouteTree(n *node) {
 
 // updateRouteTrees do update to the route trees
 func (engine *Engine) updateRouteTrees() {
+	engine.treesMutex.Lock()
+	defer engine.treesMutex.Unlock()
+
 	for _, tree := range engine.trees {
 		updateRouteTree(tree.root)
 	}
@@ -570,7 +583,7 @@ func (engine *Engine) Run(addr ...string) (err error) {
 		debugPrint("[WARNING] You trusted all proxies, this is NOT safe. We recommend you to set a value.\n" +
 			"Please check https://github.com/gin-gonic/gin/blob/master/docs/doc.md#dont-trust-all-proxies for details.")
 	}
-	engine.updateRouteTrees()
+	engine.routeTreesUpdated.Do(engine.updateRouteTrees)
 	address := resolveAddress(addr)
 	debugPrint("Listening and serving HTTP on %s\n", address)
 	server := &http.Server{ // #nosec G112
@@ -593,6 +606,7 @@ func (engine *Engine) RunTLS(addr, certFile, keyFile string) (err error) {
 		debugPrint("[WARNING] You trusted all proxies, this is NOT safe. We recommend you to set a value.\n" +
 			"Please check https://github.com/gin-gonic/gin/blob/master/docs/doc.md#dont-trust-all-proxies for details.")
 	}
+	engine.routeTreesUpdated.Do(engine.updateRouteTrees)
 
 	server := &http.Server{ // #nosec G112
 		Addr:              addr,
@@ -614,6 +628,7 @@ func (engine *Engine) RunUnix(file string) (err error) {
 		debugPrint("[WARNING] You trusted all proxies, this is NOT safe. We recommend you to set a value.\n" +
 			"Please check https://github.com/gin-gonic/gin/blob/master/docs/doc.md#dont-trust-all-proxies for details.")
 	}
+	engine.routeTreesUpdated.Do(engine.updateRouteTrees)
 
 	listener, err := net.Listen("unix", file)
 	if err != nil {
@@ -663,6 +678,7 @@ func (engine *Engine) RunQUIC(addr, certFile, keyFile string) (err error) {
 		debugPrint("[WARNING] You trusted all proxies, this is NOT safe. We recommend you to set a value.\n" +
 			"Please check https://github.com/gin-gonic/gin/blob/master/docs/doc.md#dont-trust-all-proxies for details.")
 	}
+	engine.routeTreesUpdated.Do(engine.updateRouteTrees)
 
 	err = http3.ListenAndServeQUIC(addr, certFile, keyFile, engine.Handler())
 	return
@@ -678,6 +694,7 @@ func (engine *Engine) RunListener(listener net.Listener) (err error) {
 		debugPrint("[WARNING] You trusted all proxies, this is NOT safe. We recommend you to set a value.\n" +
 			"Please check https://github.com/gin-gonic/gin/blob/master/docs/doc.md#dont-trust-all-proxies for details.")
 	}
+	engine.routeTreesUpdated.Do(engine.updateRouteTrees)
 
 	server := &http.Server{ // #nosec G112
 		Handler:           engine.Handler(),
@@ -689,9 +706,7 @@ func (engine *Engine) RunListener(listener net.Listener) (err error) {
 
 // ServeHTTP conforms to the http.Handler interface.
 func (engine *Engine) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-	engine.routeTreesUpdated.Do(func() {
-		engine.updateRouteTrees()
-	})
+	engine.routeTreesUpdated.Do(engine.updateRouteTrees)
 
 	c := engine.pool.Get().(*Context)
 	c.writermem.reset(w)
