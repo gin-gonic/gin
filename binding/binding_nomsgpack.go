@@ -72,6 +72,7 @@ var Validator StructValidator = &defaultValidator{}
 // present in the request to struct instances.
 var (
 	JSON          = jsonBinding{}
+	StrictJSON    = strictJSONBinding{}
 	XML           = xmlBinding{}
 	Form          = formBinding{}
 	Query         = queryBinding{}

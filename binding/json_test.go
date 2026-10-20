@@ -6,6 +6,7 @@ package binding
 
 import (
 	"io"
+	"net/http"
 	"net/http/httptest"
 	"testing"
 	"time"
@@ -35,6 +36,98 @@ func TestJSONBindingBindBodyMap(t *testing.T) {
 	assert.Len(t, s, 2)
 	assert.Equal(t, "FOO", s["foo"])
 	assert.Equal(t, "world", s["hello"])
+}
+
+func TestStrictJSONBindingName(t *testing.T) {
+	assert.Equal(t, "strict-json", StrictJSON.Name())
+}
+
+func TestStrictJSONBindingBind(t *testing.T) {
+	type fooStruct struct {
+		Foo string `json:"foo" binding:"required"`
+	}
+
+	s := fooStruct{}
+	req := requestWithBody(http.MethodPost, "/", `{"foo": "FOO"}`)
+	require.NoError(t, StrictJSON.Bind(req, &s))
+	assert.Equal(t, "FOO", s.Foo)
+
+	s = fooStruct{}
+	req = requestWithBody(http.MethodPost, "/", `{"foo": "FOO", "what": "this"}`)
+	err := StrictJSON.Bind(req, &s)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "what")
+
+	// validation still runs
+	s = fooStruct{}
+	req = requestWithBody(http.MethodPost, "/", `{}`)
+	require.Error(t, StrictJSON.Bind(req, &s))
+
+	require.Error(t, StrictJSON.Bind(nil, &s))
+}
+
+func TestStrictJSONBindingBindBody(t *testing.T) {
+	var s struct {
+		Foo    string `json:"foo"`
+		Nested struct {
+			Bar string `json:"bar"`
+		} `json:"nested"`
+	}
+	err := StrictJSON.BindBody([]byte(`{"foo": "FOO", "nested": {"bar": "BAR"}}`), &s)
+	require.NoError(t, err)
+	assert.Equal(t, "FOO", s.Foo)
+	assert.Equal(t, "BAR", s.Nested.Bar)
+
+	err = StrictJSON.BindBody([]byte(`{"foo": "FOO", "nested": {"bar": "BAR", "what": "this"}}`), &s)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "what")
+}
+
+func TestStrictJSONBindingBindNilValidator(t *testing.T) {
+	type fooStruct struct {
+		Foo string `json:"foo" binding:"required"`
+	}
+
+	// Restore the global validator so other tests aren't affected.
+	orig := Validator
+	Validator = nil
+	t.Cleanup(func() { Validator = orig })
+
+	// Empty body: decoding fails with an error and must not panic,
+	// even though no validator is configured.
+	s := fooStruct{}
+	req := requestWithBody(http.MethodPost, "/", "")
+	assert.NotPanics(t, func() {
+		err := StrictJSON.Bind(req, &s)
+		require.Error(t, err)
+		assert.ErrorIs(t, err, io.EOF)
+	})
+
+	// Same for BindBody.
+	s = fooStruct{}
+	assert.NotPanics(t, func() {
+		err := StrictJSON.BindBody([]byte(""), &s)
+		require.Error(t, err)
+	})
+
+	// Sanity check: a valid body with a nil validator decodes fine and
+	// skips validation entirely (so the `required` tag isn't enforced).
+	s = fooStruct{}
+	req = requestWithBody(http.MethodPost, "/", `{}`)
+	assert.NotPanics(t, func() {
+		require.NoError(t, StrictJSON.Bind(req, &s))
+	})
+	assert.Empty(t, s.Foo)
+}
+
+func TestStrictJSONBindingDoesNotAffectJSON(t *testing.T) {
+	var s struct {
+		Foo string `json:"foo"`
+	}
+	body := []byte(`{"foo": "FOO", "what": "this"}`)
+	require.Error(t, StrictJSON.BindBody(body, &s))
+	require.NoError(t, JSON.BindBody(body, &s))
+	assert.False(t, EnableDecoderDisallowUnknownFields)
 }
 
 func TestCustomJsonCodec(t *testing.T) {
