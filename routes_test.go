@@ -303,6 +303,49 @@ func TestRouteRedirectTrailingSlash(t *testing.T) {
 	assert.Equal(t, http.StatusNotFound, w.Code)
 }
 
+// A param route beside two static routes that share a prefix must still
+// redirect "/aa" to the registered "/aa/".
+// See https://github.com/gin-gonic/gin/issues/4890.
+func TestRedirectTrailingSlashSharedPrefixWithParam(t *testing.T) {
+	routeSets := [][]string{
+		{"/aa/", "/aa_id"},
+		{"/:c/bb", "/aa/"},
+		{"/:c/bb", "/aa/", "/aa_id"},
+	}
+	for _, routes := range routeSets {
+		router := New()
+		router.RedirectFixedPath = false
+		for _, route := range routes {
+			router.GET(route, func(c *Context) {})
+		}
+
+		w := PerformRequest(router, http.MethodGet, "/aa")
+		assert.Equal(t, http.StatusMovedPermanently, w.Code, "routes %v", routes)
+		assert.Equal(t, "/aa/", w.Header().Get("Location"), "routes %v", routes)
+	}
+
+	router := New()
+	router.GET("/:c/bb", func(c *Context) { c.String(http.StatusOK, "wild") })
+	router.GET("/aa/", func(c *Context) { c.String(http.StatusOK, "slash") })
+	router.GET("/aa_id", func(c *Context) { c.String(http.StatusOK, "id") })
+
+	w := PerformRequest(router, http.MethodGet, "/aa/")
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Equal(t, "slash", w.Body.String())
+
+	w = PerformRequest(router, http.MethodGet, "/aa_id")
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Equal(t, "id", w.Body.String())
+
+	w = PerformRequest(router, http.MethodGet, "/x/bb")
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Equal(t, "wild", w.Body.String())
+
+	w = PerformRequest(router, http.MethodGet, "/aa")
+	assert.Equal(t, http.StatusMovedPermanently, w.Code)
+	assert.Equal(t, "/aa/", w.Header().Get("Location"))
+}
+
 func TestRouteRedirectFixedPath(t *testing.T) {
 	router := New()
 	router.RedirectFixedPath = true

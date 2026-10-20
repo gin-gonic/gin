@@ -592,6 +592,21 @@ walk: // Outer loop for walking the tree
 		}
 
 		if path == prefix {
+			// "/aa/" and "/aa_id" share the handler-less node "/aa". Redirect to
+			// the registered slash route before backtracking to a wildcard (#4890).
+			if n.handlers == nil {
+				for i, c := range []byte(n.indices) {
+					if c == '/' {
+						child := n.children[i]
+						if len(child.path) == 1 && child.handlers != nil {
+							value.tsr = true
+							return value
+						}
+						break
+					}
+				}
+			}
+
 			// If the current path does not equal '/' and the node does not have a registered handle and the most recently matched node has a child node
 			// the current node needs to roll back to last valid skippedNode
 			if n.handlers == nil && path != "/" {
