@@ -66,17 +66,19 @@ func (r JSON) WriteContentType(w http.ResponseWriter) {
 // WriteJSON marshals the given interface object and writes it with custom ContentType.
 func WriteJSON(w http.ResponseWriter, obj any) error {
 	writeContentType(w, jsonContentType)
-	jsonBytes, err := json.API.Marshal(obj)
-	if err != nil {
-		return err
-	}
-	_, err = w.Write(jsonBytes)
-	return err
+	return json.API.NewEncoder(w).Encode(obj)
 }
 
 // Render (IndentedJSON) marshals the given interface object and writes it with custom ContentType.
 func (r IndentedJSON) Render(w http.ResponseWriter) error {
 	r.WriteContentType(w)
+
+	enc := json.API.NewEncoder(w)
+	if indentEnc, ok := enc.(json.EncoderIndent); ok {
+		indentEnc.SetIndent("", "    ")
+		return indentEnc.Encode(r.Data)
+	}
+
 	jsonBytes, err := json.API.MarshalIndent(r.Data, "", "    ")
 	if err != nil {
 		return err

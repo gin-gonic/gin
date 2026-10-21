@@ -1064,7 +1064,7 @@ func TestCustomUnmarshalStruct(t *testing.T) {
 	w := httptest.NewRecorder()
 	route.ServeHTTP(w, req)
 	assert.Equal(t, 200, w.Code)
-	assert.Equal(t, `"2000/01/01"`, w.Body.String())
+	assert.Equal(t, "\"2000/01/01\"\n", w.Body.String())
 }
 
 // Test the fix for https://github.com/gin-gonic/gin/issues/4002

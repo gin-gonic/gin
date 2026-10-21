@@ -397,7 +397,7 @@ func TestErrorLogger(t *testing.T) {
 
 	w = PerformRequest(router, http.MethodGet, "/print")
 	assert.Equal(t, http.StatusInternalServerError, w.Code)
-	assert.Equal(t, "hola!{\"error\":\"this is an error\"}", w.Body.String())
+	assert.Equal(t, "hola!{\"error\":\"this is an error\"}\n", w.Body.String())
 }
 
 func TestLoggerWithWriterSkippingPaths(t *testing.T) {

@@ -37,6 +37,13 @@ type Encoder interface {
 	Encode(v any) error
 }
 
+// EncoderIndent is an interface for json marshallers that support setting an
+// indentation character.
+type EncoderIndent interface {
+	Encoder
+	SetIndent(prefix, indent string)
+}
+
 // Decoder an interface reads and decodes JSON values from an input stream.
 type Decoder interface {
 	// UseNumber causes the Decoder to unmarshal a number into an any as a
