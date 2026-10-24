@@ -22,10 +22,16 @@ type Reader struct {
 func (r Reader) Render(w http.ResponseWriter) (err error) {
 	r.WriteContentType(w)
 	if r.ContentLength >= 0 {
-		if r.Headers == nil {
-			r.Headers = map[string]string{}
+		// Copy the caller's headers map before adding Content-Length so the
+		// map passed via DataFromReader is never mutated. Mutating it leaks a
+		// stale Content-Length into later responses that reuse the map and
+		// races when concurrent requests share it. See #4899.
+		headers := make(map[string]string, len(r.Headers)+1)
+		for k, v := range r.Headers {
+			headers[k] = v
 		}
-		r.Headers["Content-Length"] = strconv.FormatInt(r.ContentLength, 10)
+		headers["Content-Length"] = strconv.FormatInt(r.ContentLength, 10)
+		r.Headers = headers
 	}
 	r.writeHeaders(w)
 	_, err = io.Copy(w, r.Reader)
