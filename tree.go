@@ -595,6 +595,35 @@ walk: // Outer loop for walking the tree
 			// If the current path does not equal '/' and the node does not have a registered handle and the most recently matched node has a child node
 			// the current node needs to roll back to last valid skippedNode
 			if n.handlers == nil && path != "/" {
+				// Before rolling back, check whether this static node itself
+				// recommends a trailing-slash redirect (a '/' child with a
+				// handler, e.g. /aa/ registered alongside /aa_id). A wildcard
+				// branch match still wins over the redirect, but when the
+				// rollback finds no handler the redirect must not be lost.
+				// See #4890.
+				tsr := false
+				for i, c := range []byte(n.indices) {
+					if c == '/' {
+						child := n.children[i]
+						tsr = (len(child.path) == 1 && child.handlers != nil) ||
+							(child.nType == catchAll && child.children[0].handlers != nil)
+						break
+					}
+				}
+				if tsr {
+					for length := len(*skippedNodes); length > 0; length-- {
+						skippedNode := (*skippedNodes)[length-1]
+						*skippedNodes = (*skippedNodes)[:length-1]
+						if strings.HasSuffix(skippedNode.path, path) {
+							if v := skippedNode.node.getValue(skippedNode.path, params, skippedNodes, unescape); v.handlers != nil {
+								return v
+							}
+							break
+						}
+					}
+					value.tsr = true
+					return value
+				}
 				for length := len(*skippedNodes); length > 0; length-- {
 					skippedNode := (*skippedNodes)[length-1]
 					*skippedNodes = (*skippedNodes)[:length-1]

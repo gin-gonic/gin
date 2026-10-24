@@ -711,6 +711,33 @@ func TestRedirectTrailingSlash(t *testing.T) {
 	}
 }
 
+func TestRedirectTrailingSlashWithSkippedWildcard(t *testing.T) {
+	// Regression test for #4890: when a wildcard route makes the walk roll back
+	// to a skipped node, the static branch's trailing-slash recommendation must
+	// not be lost (a 301 to /aa/ is expected, not a 404).
+	tr := &node{}
+	tr.addRoute("/:c/bb", fakeHandler("/:c/bb"))
+	tr.addRoute("/aa/", fakeHandler("/aa/"))
+	tr.addRoute("/aa_id", fakeHandler("/aa_id"))
+
+	value := tr.getValue("/aa", nil, getSkippedNodes(), false)
+	if value.tsr != true {
+		t.Fatalf("want true, is false")
+	}
+	if value.handlers != nil {
+		t.Fatalf("want no handlers for /aa")
+	}
+
+	// A wildcard branch that does match still wins over the redirect.
+	tr2 := &node{}
+	tr2.addRoute("/:c/bb", fakeHandler("/:c/bb"))
+	tr2.addRoute("/aa/", fakeHandler("/aa/"))
+	value2 := tr2.getValue("/aa/bb", nil, getSkippedNodes(), false)
+	if value2.handlers == nil {
+		t.Fatalf("wildcard route /:c/bb no longer matched")
+	}
+}
+
 func TestTreeFindCaseInsensitivePath(t *testing.T) {
 	tree := &node{}
 
