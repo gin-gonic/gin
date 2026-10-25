@@ -134,10 +134,13 @@ func (w *responseWriter) CloseNotify() <-chan bool {
 
 // Flush implements the http.Flusher interface.
 func (w *responseWriter) Flush() {
+	_ = w.FlushError()
+}
+
+// FlushError flushes buffered data and returns any error from the underlying writer.
+func (w *responseWriter) FlushError() error {
 	w.WriteHeaderNow()
-	if f, ok := w.ResponseWriter.(http.Flusher); ok {
-		f.Flush()
-	}
+	return http.NewResponseController(w.ResponseWriter).Flush()
 }
 
 func (w *responseWriter) Pusher() (pusher http.Pusher) {

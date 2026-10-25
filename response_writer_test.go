@@ -9,7 +9,9 @@ import (
 	"net"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -32,6 +34,7 @@ func TestResponseWriterFlushWithNonFlusher(t *testing.T) {
 	require.NotPanics(t, func() {
 		writer.Flush()
 	})
+	require.ErrorIs(t, http.NewResponseController(writer).Flush(), http.ErrNotSupported)
 }
 
 // nonFlusherWriter is a minimal http.ResponseWriter that does NOT implement http.Flusher.
@@ -293,6 +296,40 @@ func TestResponseWriterFlush(t *testing.T) {
 	resp, err := http.Get(testServer.URL)
 	require.NoError(t, err)
 	assert.Equal(t, http.StatusInternalServerError, resp.StatusCode)
+}
+
+func TestResponseControllerFlushWriteDeadline(t *testing.T) {
+	type result struct {
+		deadlineErr error
+		writeErr    error
+		flushErr    error
+	}
+	results := make(chan result, 1)
+	router := New()
+	router.GET("/", func(c *Context) {
+		controller := http.NewResponseController(c.Writer)
+		deadlineErr := controller.SetWriteDeadline(time.Now().Add(-time.Second))
+		_, writeErr := c.Writer.WriteString("buffered response")
+		flushErr := controller.Flush()
+		results <- result{deadlineErr: deadlineErr, writeErr: writeErr, flushErr: flushErr}
+	})
+	server := httptest.NewServer(router)
+	t.Cleanup(server.Close)
+	client := server.Client()
+	client.Timeout = 5 * time.Second
+	response, err := client.Get(server.URL)
+	if response != nil {
+		_ = response.Body.Close()
+	}
+	require.Error(t, err)
+	select {
+	case got := <-results:
+		require.NoError(t, got.deadlineErr)
+		require.NoError(t, got.writeErr)
+		require.ErrorIs(t, got.flushErr, os.ErrDeadlineExceeded)
+	case <-time.After(5 * time.Second):
+		t.Fatal("handler did not report its flush result")
+	}
 }
 
 func TestResponseWriterStatusCode(t *testing.T) {
