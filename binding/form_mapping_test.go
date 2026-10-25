@@ -23,6 +23,9 @@ func TestMappingBaseTypes(t *testing.T) {
 	intPtr := func(i int) *int {
 		return &i
 	}
+	text := " \ttest\n "
+	textPtr := &text
+	whitespace := " \t\n "
 	for _, tt := range []struct {
 		name   string
 		value  any
@@ -44,6 +47,14 @@ func TestMappingBaseTypes(t *testing.T) {
 		{"base type", struct{ F float64 }{}, "9.1", float64(9.1)},
 		{"base type", struct{ F string }{}, "test", string("test")},
 		{"base type", struct{ F *int }{}, "9", intPtr(9)},
+
+		// Preserve string whitespace through collection element pointers.
+		{"whitespace", struct{ F []*string }{}, text, []*string{&text}},
+		{"whitespace", struct{ F [1]*string }{}, text, [1]*string{&text}},
+		{"whitespace", struct{ F []**string }{}, text, []**string{&textPtr}},
+		{"whitespace only", struct{ F []*string }{}, whitespace, []*string{&whitespace}},
+		{"whitespace only", struct{ F [1]*string }{}, whitespace, [1]*string{&whitespace}},
+		{"whitespace", struct{ F []*int }{}, " \t9\n ", []*int{intPtr(9)}},
 
 		// zero values
 		{"zero value", struct{ F int }{}, "", int(0)},

@@ -328,8 +328,8 @@ func setWithProperType(val string, value reflect.Value, field reflect.StructFiel
 		return err
 	}
 
-	// If it is a string type, no spaces are removed, and the user data is not modified here
-	if value.Kind() != reflect.String {
+	// Preserve string whitespace; defer pointers until their element type is known.
+	if value.Kind() != reflect.String && value.Kind() != reflect.Ptr {
 		val = strings.TrimSpace(val)
 	}
 
