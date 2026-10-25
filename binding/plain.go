@@ -47,7 +47,7 @@ func decodePlain(data []byte, obj any) error {
 		return nil
 	}
 
-	if _, ok := v.Interface().([]byte); ok {
+	if v.Kind() == reflect.Slice && v.Type().Elem().Kind() == reflect.Uint8 {
 		v.SetBytes(data)
 		return nil
 	}

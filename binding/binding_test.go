@@ -1403,6 +1403,17 @@ func TestPlainBinding(t *testing.T) {
 	require.NoError(t, p.Bind(req, ptr))
 }
 
+func TestPlainBindingNamedBytes(t *testing.T) {
+	data := []byte(`{"message":"raw body"}`)
+	var body json.RawMessage
+	require.NoError(t, Plain.Bind(requestWithBody(http.MethodPost, "/", string(data)), &body))
+	assert.Equal(t, data, []byte(body))
+
+	body = nil
+	require.NoError(t, Plain.BindBody(data, &body))
+	assert.Equal(t, data, []byte(body))
+}
+
 func testProtoBodyBindingFail(t *testing.T, b Binding, name, path, badPath, body, badBody string) {
 	assert.Equal(t, name, b.Name())
 

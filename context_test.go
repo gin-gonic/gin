@@ -2598,6 +2598,24 @@ func TestContextShouldBindPlain(t *testing.T) {
 	assert.Equal(t, 0, w.Body.Len())
 }
 
+func TestContextShouldBindPlainNamedBytes(t *testing.T) {
+	type bodyBytes []byte
+	data := []byte{'a', 0, 0xff, 'z'}
+	router := New()
+	router.POST("/", func(c *Context) {
+		var body bodyBytes
+		if err := c.ShouldBindPlain(&body); err != nil {
+			c.String(http.StatusBadRequest, "%s", err)
+			return
+		}
+		c.Data(http.StatusOK, "application/octet-stream", []byte(body))
+	})
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, httptest.NewRequest(http.MethodPost, "/", bytes.NewReader(data)))
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Equal(t, data, w.Body.Bytes())
+}
+
 func TestContextShouldBindHeader(t *testing.T) {
 	w := httptest.NewRecorder()
 	c, _ := CreateTestContext(w)
