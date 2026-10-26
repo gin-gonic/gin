@@ -207,7 +207,8 @@ func main() {
 
   // This handler will add a new router for /user/groups.
   // Exact routes are resolved before param routes, regardless of the order they were defined.
-  // Routes starting with /user/groups are never interpreted as /user/:name/... routes
+  // Only the exact path /user/groups is matched here. A longer path such as
+  // /user/groups/admin still matches /user/:name/*action, with name set to "groups".
   router.GET("/user/groups", func(c *gin.Context) {
     c.String(http.StatusOK, "The available groups are [...]")
   })
@@ -309,7 +310,7 @@ func main() {
 ```
 
 ```sh
-ids: map[b:hello a:1234]; names: map[second:tianou first:thinkerou]
+ids: map[a:1234 b:hello]; names: map[first:thinkerou second:tianou]
 ```
 
 ### Upload files
@@ -866,7 +867,7 @@ Also, Gin provides two sets of methods for binding:
 
 - **Type** - Must bind
   - **Methods** - `Bind`, `BindJSON`, `BindXML`, `BindQuery`, `BindYAML`, `BindHeader`, `BindTOML`
-  - **Behavior** - These methods use `MustBindWith` under the hood. If there is a binding error, the request is aborted with `c.AbortWithError(400, err).SetType(ErrorTypeBind)`. This sets the response status code to 400 and the `Content-Type` header is set to `text/plain; charset=utf-8`. Note that if you try to set the response code after this, it will result in a warning `[GIN-debug] [WARNING] Headers were already written. Wanted to override status code 400 with 422`. If you wish to have greater control over the behavior, consider using the `ShouldBind` equivalent method.
+  - **Behavior** - These methods use `MustBindWith` under the hood. If there is a binding error, the request is aborted with `c.AbortWithError(400, err).SetType(ErrorTypeBind)`. This sets the response status code to 400 and writes the response headers right away, with an empty body and no `Content-Type` header. Note that if you try to set the response code after this, it will result in a warning `[GIN-debug] [WARNING] Headers were already written. Wanted to override status code 400 with 422`. If you wish to have greater control over the behavior, consider using the `ShouldBind` equivalent method.
 - **Type** - Should bind
   - **Methods** - `ShouldBind`, `ShouldBindJSON`, `ShouldBindXML`, `ShouldBindQuery`, `ShouldBindYAML`, `ShouldBindHeader`, `ShouldBindTOML`,
   - **Behavior** - These methods use `ShouldBindWith` under the hood. If there is a binding error, the error is returned and it is the developer's responsibility to handle the request and error appropriately.
@@ -1797,7 +1798,7 @@ func main() {
     }
 
     //callback is x
-    // Will output  :   x({\"foo\":\"bar\"})
+    // Will output  :   x({"foo":"bar"});
     c.JSONP(http.StatusOK, data)
   })
 
@@ -2519,19 +2520,7 @@ func main() {
 
     if err != nil {
       cookie = "NotSet"
-      // Using http.Cookie struct for more control
-      c.SetCookieData(&http.Cookie{
-        Name:       "gin_cookie",
-        Value:      "test",
-        Path:       "/",
-        Domain:     "localhost",
-        MaxAge:     3600,
-        Secure:     false,
-        HttpOnly:   true,
-        // Additional fields available in http.Cookie
-        Expires:    time.Now().Add(24 * time.Hour),
-        // Partitioned: true, // Available in newer Go versions
-      })
+      c.SetCookie("gin_cookie", "test", 3600, "/", "localhost", false, true)
     }
 
     fmt.Printf("Cookie value: %s \n", cookie)
