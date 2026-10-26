@@ -8,6 +8,7 @@ import (
 	"encoding/base64"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -79,6 +80,80 @@ func TestBasicAuthSearchCredential(t *testing.T) {
 
 func TestBasicAuthAuthorizationHeader(t *testing.T) {
 	assert.Equal(t, "Basic YWRtaW46cGFzc3dvcmQ=", authorizationHeader("admin", "password"))
+}
+
+func TestBasicAuthSchemeCase(t *testing.T) {
+	accounts := Accounts{"admin": "password"}
+	credentials := strings.TrimPrefix(authorizationHeader("admin", "password"), "Basic ")
+	tests := []struct {
+		name   string
+		header string
+		valid  bool
+	}{
+		{name: "canonical", header: "Basic " + credentials, valid: true},
+		{name: "lowercase", header: "basic " + credentials, valid: true},
+		{name: "uppercase", header: "BASIC " + credentials, valid: true},
+		{name: "mixed case", header: "bAsIc " + credentials, valid: true},
+		{name: "empty"},
+		{name: "missing credentials", header: "Basic "},
+		{name: "missing space", header: "Basic" + credentials},
+		{name: "tab separator", header: "Basic\t" + credentials},
+		{name: "other scheme", header: "Bearer " + credentials},
+		{name: "longer scheme", header: "BasicX " + credentials},
+		{name: "non-ASCII scheme", header: "ba\u017fic " + credentials},
+		{name: "credential case", header: "basic " + strings.ToLower(credentials)},
+		{name: "username case", header: authorizationHeader("Admin", "password")},
+		{name: "password case", header: authorizationHeader("admin", "Password")},
+		{name: "malformed credentials", header: "basic !invalid!"},
+	}
+	middlewares := []struct {
+		name      string
+		handler   HandlerFunc
+		header    string
+		userKey   string
+		challenge string
+		realm     string
+		status    int
+	}{
+		{
+			name: "origin", handler: BasicAuth(accounts),
+			header: "Authorization", userKey: AuthUserKey,
+			challenge: "WWW-Authenticate", realm: `Basic realm="Authorization Required"`,
+			status: http.StatusUnauthorized,
+		},
+		{
+			name: "proxy", handler: BasicAuthForProxy(accounts, ""),
+			header: "Proxy-Authorization", userKey: AuthProxyUserKey,
+			challenge: "Proxy-Authenticate", realm: `Basic realm="Proxy Authorization Required"`,
+			status: http.StatusProxyAuthRequired,
+		},
+	}
+	for _, middleware := range middlewares {
+		t.Run(middleware.name, func(t *testing.T) {
+			router := New()
+			router.Use(middleware.handler)
+			router.GET("/", func(c *Context) {
+				c.String(http.StatusOK, c.MustGet(middleware.userKey).(string))
+			})
+			for _, tt := range tests {
+				t.Run(tt.name, func(t *testing.T) {
+					w := httptest.NewRecorder()
+					req := httptest.NewRequest(http.MethodGet, "/", nil)
+					req.Header.Set(middleware.header, tt.header)
+					router.ServeHTTP(w, req)
+					if tt.valid {
+						assert.Equal(t, http.StatusOK, w.Code)
+						assert.Equal(t, "admin", w.Body.String())
+						assert.Empty(t, w.Header().Get(middleware.challenge))
+					} else {
+						assert.Equal(t, middleware.status, w.Code)
+						assert.Empty(t, w.Body.String())
+						assert.Equal(t, middleware.realm, w.Header().Get(middleware.challenge))
+					}
+				})
+			}
+		})
+	}
 }
 
 func TestBasicAuthSucceed(t *testing.T) {
