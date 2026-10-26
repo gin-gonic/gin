@@ -250,12 +250,24 @@ func TestSaveUploadedFileWithPermission(t *testing.T) {
 	var mode fs.FileMode = 0o755
 	dst := filepath.Join(t.TempDir(), "subdir", "permission_test")
 	require.NoError(t, c.SaveUploadedFile(f, dst, mode))
-	info, err := os.Stat(filepath.Dir(dst))
+	content, err := os.ReadFile(dst)
 	require.NoError(t, err)
-	assert.Equal(t, mode, info.Mode().Perm())
+	assert.Equal(t, "permission_test", string(content))
+
+	t.Run("directory permissions", func(t *testing.T) {
+		if isWindows() {
+			t.Skip("Windows does not support Unix permission bits")
+		}
+		info, err := os.Stat(filepath.Dir(dst))
+		require.NoError(t, err)
+		assert.Equal(t, mode, info.Mode().Perm())
+	})
 }
 
 func TestSaveUploadedFileWithPermissionFailed(t *testing.T) {
+	if isWindows() {
+		t.Skip("Windows does not enforce Unix directory search permissions")
+	}
 	buf := new(bytes.Buffer)
 	mw := multipart.NewWriter(buf)
 	w, err := mw.CreateFormFile("file", "permission_test")
@@ -279,7 +291,7 @@ func TestSaveUploadedFileWithPermissionFailed(t *testing.T) {
 // because the process may not own it (e.g. /tmp on Linux/macOS), where chmod
 // fails with "operation not permitted". This asserts the behavioral contract
 // directly — a pre-existing directory's permissions are left unchanged — so it
-// catches the regression on every platform, including environments (root/CI,
+// catches the regression on systems with Unix permission bits, including environments (root/CI,
 // user-owned $TMPDIR) where chmod on the temp dir would otherwise succeed.
 func TestSaveUploadedFileToExistingDir(t *testing.T) {
 	buf := new(bytes.Buffer)
@@ -299,6 +311,8 @@ func TestSaveUploadedFileToExistingDir(t *testing.T) {
 	// A pre-existing directory owned by this process, set to a known mode.
 	dir := t.TempDir()
 	require.NoError(t, os.Chmod(dir, 0o700))
+	before, err := os.Stat(dir)
+	require.NoError(t, err)
 
 	// Pass a perm that differs from the directory's current mode. The fix must
 	// not apply it to the pre-existing directory; the old code chmod'd it
@@ -309,7 +323,7 @@ func TestSaveUploadedFileToExistingDir(t *testing.T) {
 	// The pre-existing directory's permissions must be unchanged.
 	info, err := os.Stat(dir)
 	require.NoError(t, err)
-	assert.Equal(t, os.FileMode(0o700), info.Mode().Perm(),
+	assert.Equal(t, before.Mode().Perm(), info.Mode().Perm(),
 		"permissions of a pre-existing directory must not be modified")
 
 	// The file must still be written with the correct content.

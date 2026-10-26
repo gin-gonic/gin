@@ -304,16 +304,9 @@ func TestFileDescriptor(t *testing.T) {
 	listener, err := net.ListenTCP("tcp", addr)
 	require.NoError(t, err)
 	socketFile, err := listener.File()
-	if isWindows() {
-		// not supported by windows, it is unimplemented now
-		require.Error(t, err)
-	} else {
-		require.NoError(t, err)
-	}
-
-	if socketFile == nil {
-		return
-	}
+	require.NoError(t, err)
+	defer listener.Close()
+	defer socketFile.Close()
 
 	go func() {
 		router.GET("/example", func(c *Context) { c.String(http.StatusOK, "it worked") })
