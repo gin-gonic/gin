@@ -9,6 +9,7 @@ import (
 	"encoding/base64"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/gin-gonic/gin/internal/bytesconv"
 )
@@ -30,11 +31,14 @@ type authPair struct {
 type authPairs []authPair
 
 func (a authPairs) searchCredential(authValue string) (string, bool) {
-	if authValue == "" {
+	const prefix = "Basic "
+	// Authentication schemes are case-insensitive (RFC 9110, Section 11.1).
+	if len(authValue) < len(prefix) || !strings.EqualFold(authValue[:len(prefix)], prefix) {
 		return "", false
 	}
+	authValue = authValue[len(prefix):]
 	for _, pair := range a {
-		if subtle.ConstantTimeCompare(bytesconv.StringToBytes(pair.value), bytesconv.StringToBytes(authValue)) == 1 {
+		if subtle.ConstantTimeCompare(bytesconv.StringToBytes(pair.value[len(prefix):]), bytesconv.StringToBytes(authValue)) == 1 {
 			return pair.user, true
 		}
 	}
