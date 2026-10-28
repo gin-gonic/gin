@@ -29,7 +29,7 @@ const localhostIPv6 = "::1"
 // It panics if val is a pointer; pass the struct value directly (e.g., gin.Bind(Struct{}) not gin.Bind(&Struct{})).
 func Bind(val any) HandlerFunc {
 	value := reflect.ValueOf(val)
-	if value.Kind() == reflect.Ptr {
+	if value.Kind() == reflect.Pointer {
 		panic(`Bind struct can not be a pointer. Example:
 	Use: gin.Bind(Struct{}) instead of gin.Bind(&Struct{})
 `)

@@ -713,7 +713,7 @@ func TestBindingFormMultipartForMapFail(t *testing.T) {
 
 func TestBindingProtoBuf(t *testing.T) {
 	test := &protoexample.Test{
-		Label: proto.String("yes"),
+		Label: new("yes"),
 	}
 	data, _ := proto.Marshal(test)
 
@@ -725,7 +725,7 @@ func TestBindingProtoBuf(t *testing.T) {
 
 func TestBindingProtoBufFail(t *testing.T) {
 	test := &protoexample.Test{
-		Label: proto.String("yes"),
+		Label: new("yes"),
 	}
 	data, _ := proto.Marshal(test)
 

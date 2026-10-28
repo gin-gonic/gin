@@ -160,7 +160,7 @@ func readNthLine(file string, n int) (string, error) {
 	defer f.Close()
 
 	scanner := bufio.NewScanner(f)
-	for i := 0; i < n; i++ {
+	for range n {
 		if !scanner.Scan() {
 			return "", nil
 		}

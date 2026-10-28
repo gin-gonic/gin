@@ -715,13 +715,13 @@ func TestCopyConcurrentWithSet(t *testing.T) {
 	wg.Add(2)
 	go func() {
 		defer wg.Done()
-		for i := 0; i < 100; i++ {
+		for i := range 100 {
 			c.Set(i, i)
 		}
 	}()
 	go func() {
 		defer wg.Done()
-		for i := 0; i < 100; i++ {
+		for range 100 {
 			cp := c.Copy()
 			for k, v := range cp.Keys {
 				if k != v {

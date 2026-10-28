@@ -13,7 +13,7 @@ import (
 func BenchmarkSliceValidationError(b *testing.B) {
 	const size int = 100
 	e := make(SliceValidationError, size)
-	for j := 0; j < size; j++ {
+	for j := range size {
 		e[j] = errors.New(strconv.Itoa(j))
 	}
 
