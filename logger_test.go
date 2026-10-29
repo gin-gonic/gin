@@ -8,10 +8,12 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"os"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/mattn/go-isatty"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -341,6 +343,9 @@ func TestResetColor(t *testing.T) {
 }
 
 func TestIsOutputColor(t *testing.T) {
+	previousMode := consoleColorMode
+	t.Cleanup(func() { consoleColorMode = previousMode })
+
 	// test with isTerm flag true.
 	p := LogFormatterParams{
 		isTerm: true,
@@ -368,9 +373,54 @@ func TestIsOutputColor(t *testing.T) {
 
 	DisableConsoleColor()
 	assert.False(t, p.IsOutputColor())
+}
 
-	// reset console color mode.
-	consoleColorMode = autoColor
+func TestIsTerminal(t *testing.T) {
+	t.Setenv("TERM", "xterm")
+	assert.False(t, isTerminal(nil))
+	assert.False(t, isTerminal(new(strings.Builder)))
+
+	file, err := os.Open(os.DevNull)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { assert.NoError(t, file.Close()) })
+	assert.False(t, isTerminal(file))
+}
+
+func TestTerminalColorDetection(t *testing.T) {
+	terminal, err := os.OpenFile("/dev/ptmx", os.O_RDWR, 0)
+	if err != nil {
+		t.Skipf("pseudo-terminal unavailable: %v", err)
+	}
+	t.Cleanup(func() { assert.NoError(t, terminal.Close()) })
+	if !isatty.IsTerminal(terminal.Fd()) && !isatty.IsCygwinTerminal(terminal.Fd()) {
+		t.Skip("pseudo-terminal unavailable")
+	}
+
+	previousMode := consoleColorMode
+	t.Cleanup(func() { consoleColorMode = previousMode })
+	for _, tc := range []struct {
+		name      string
+		term      string
+		mode      consoleColorModeValue
+		isTerm    bool
+		wantColor bool
+	}{
+		{"automatic terminal", "xterm", autoColor, true, true},
+		{"disabled terminal", "xterm", disableColor, true, false},
+		{"forced terminal", "xterm", forceColor, true, true},
+		{"automatic dumb", "dumb", autoColor, false, false},
+		{"forced dumb", "dumb", forceColor, false, true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Setenv("TERM", tc.term)
+			consoleColorMode = tc.mode
+			isTerm := isTerminal(terminal)
+			assert.Equal(t, tc.isTerm, isTerm)
+			assert.Equal(t, tc.wantColor, isColorEnabled(isTerm))
+		})
+	}
 }
 
 func TestErrorLogger(t *testing.T) {

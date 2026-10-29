@@ -5,16 +5,295 @@
 package gin
 
 import (
+	"bytes"
 	"errors"
+	"io"
 	"net"
 	"net/http"
 	"os"
 	"strings"
+	"sync"
 	"syscall"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
+
+func TestRecoveryDisableConsoleColor(t *testing.T) {
+	previousMode := consoleColorMode
+	previousWriter := DefaultErrorWriter
+	t.Cleanup(func() {
+		consoleColorMode = previousMode
+		DefaultErrorWriter = previousWriter
+	})
+
+	DisableConsoleColor()
+	buffer := new(strings.Builder)
+	DefaultErrorWriter = buffer
+	router := New()
+	router.Use(Recovery())
+	router.GET("/recovery", func(_ *Context) {
+		panic("recovery color regression")
+	})
+
+	w := PerformRequest(router, http.MethodGet, "/recovery")
+	assert.Equal(t, http.StatusInternalServerError, w.Code)
+	assert.Contains(t, buffer.String(), "recovery color regression")
+	assert.NotContains(t, buffer.String(), "\x1b[")
+}
+
+func TestRecoveryColorModes(t *testing.T) {
+	previousMode := consoleColorMode
+	previousWriter := DefaultErrorWriter
+	previousGinMode := Mode()
+	t.Cleanup(func() {
+		consoleColorMode = previousMode
+		DefaultErrorWriter = previousWriter
+		SetMode(previousGinMode)
+	})
+	SetMode(DebugMode)
+
+	handle := func(c *Context, _ any) {
+		c.AbortWithStatus(http.StatusTeapot)
+	}
+	constructors := []struct {
+		name   string
+		new    func(io.Writer) HandlerFunc
+		status int
+	}{
+		{"Recovery", func(out io.Writer) HandlerFunc {
+			DefaultErrorWriter = out
+			return Recovery()
+		}, http.StatusInternalServerError},
+		{"RecoveryWithWriter", func(out io.Writer) HandlerFunc {
+			return RecoveryWithWriter(out)
+		}, http.StatusInternalServerError},
+		{"RecoveryWithWriterCustom", func(out io.Writer) HandlerFunc {
+			return RecoveryWithWriter(out, handle)
+		}, http.StatusTeapot},
+		{"CustomRecovery", func(out io.Writer) HandlerFunc {
+			DefaultErrorWriter = out
+			return CustomRecovery(handle)
+		}, http.StatusTeapot},
+		{"CustomRecoveryWithWriter", func(out io.Writer) HandlerFunc {
+			return CustomRecoveryWithWriter(out, handle)
+		}, http.StatusTeapot},
+	}
+	modes := []struct {
+		name      string
+		set       func()
+		term      string
+		wantColor bool
+	}{
+		{"disabled", DisableConsoleColor, "xterm", false},
+		{"forced", ForceConsoleColor, "xterm", true},
+		{"automatic buffer", func() { consoleColorMode = autoColor }, "xterm", false},
+		{"automatic dumb", func() { consoleColorMode = autoColor }, "dumb", false},
+		{"forced dumb", ForceConsoleColor, "dumb", true},
+	}
+	panics := []struct {
+		name  string
+		value any
+	}{
+		{"normal", "color panic"},
+		{"broken pipe", &net.OpError{Err: &os.SyscallError{Err: syscall.EPIPE}}},
+	}
+
+	for _, constructor := range constructors {
+		for _, mode := range modes {
+			for _, panicCase := range panics {
+				t.Run(constructor.name+"/"+mode.name+"/"+panicCase.name, func(t *testing.T) {
+					t.Setenv("TERM", mode.term)
+					mode.set()
+					buffer := new(strings.Builder)
+					password := "Bearer secret-token"
+					router := New()
+					router.Use(constructor.new(buffer))
+					router.GET("/recovery", func(_ *Context) {
+						panic(panicCase.value)
+					})
+
+					w := PerformRequest(router, http.MethodGet, "/recovery", header{Key: "Authorization", Value: password})
+					out := buffer.String()
+					if panicCase.name == "broken pipe" {
+						assert.Equal(t, http.StatusOK, w.Code)
+						assert.Contains(t, strings.ToLower(out), "broken pipe")
+						assert.NotContains(t, out, "panic recovered")
+					} else {
+						assert.Equal(t, constructor.status, w.Code)
+						assert.Contains(t, out, "panic recovered")
+						assert.Contains(t, out, "color panic")
+					}
+					assert.Contains(t, out, "Authorization: *")
+					assert.NotContains(t, out, password)
+					if mode.wantColor {
+						assert.Contains(t, out, "\x1b[31m")
+						assert.Contains(t, out, reset)
+					} else {
+						assert.NotContains(t, out, "\x1b[")
+					}
+				})
+			}
+		}
+	}
+}
+
+func TestRecoveryColorModeChanges(t *testing.T) {
+	previousMode := consoleColorMode
+	t.Cleanup(func() { consoleColorMode = previousMode })
+
+	buffer := new(strings.Builder)
+	DisableConsoleColor()
+	router := New()
+	router.Use(RecoveryWithWriter(buffer))
+	router.GET("/recovery", func(_ *Context) {
+		panic("changing color mode")
+	})
+
+	modes := []struct {
+		name      string
+		set       func()
+		wantColor bool
+	}{
+		{"forced after disabled", ForceConsoleColor, true},
+		{"disabled after forced", DisableConsoleColor, false},
+		{"automatic after disabled", func() { consoleColorMode = autoColor }, false},
+		{"forced after automatic", ForceConsoleColor, true},
+	}
+	for _, mode := range modes {
+		t.Run(mode.name, func(t *testing.T) {
+			mode.set()
+			buffer.Reset()
+			w := PerformRequest(router, http.MethodGet, "/recovery")
+			assert.Equal(t, http.StatusInternalServerError, w.Code)
+			assert.Contains(t, buffer.String(), "changing color mode")
+			if mode.wantColor {
+				assert.Contains(t, buffer.String(), "\x1b[31m")
+				assert.Contains(t, buffer.String(), reset)
+			} else {
+				assert.NotContains(t, buffer.String(), "\x1b[")
+			}
+		})
+	}
+}
+
+func TestRecoveryNilWriterColorModes(t *testing.T) {
+	previousMode := consoleColorMode
+	t.Cleanup(func() { consoleColorMode = previousMode })
+
+	for _, mode := range []struct {
+		name string
+		set  func()
+	}{
+		{"disabled", DisableConsoleColor},
+		{"forced", ForceConsoleColor},
+		{"automatic", func() { consoleColorMode = autoColor }},
+	} {
+		t.Run(mode.name, func(t *testing.T) {
+			mode.set()
+			for _, custom := range []bool{false, true} {
+				called := false
+				handle := func(c *Context, err any) {
+					called = true
+					assert.Equal(t, "nil writer panic", err)
+					c.AbortWithStatus(http.StatusTeapot)
+				}
+				router := New()
+				if custom {
+					router.Use(CustomRecoveryWithWriter(nil, handle))
+				} else {
+					router.Use(RecoveryWithWriter(nil))
+				}
+				router.GET("/recovery", func(_ *Context) { panic("nil writer panic") })
+				w := PerformRequest(router, http.MethodGet, "/recovery")
+				if custom {
+					assert.True(t, called)
+					assert.Equal(t, http.StatusTeapot, w.Code)
+				} else {
+					assert.Equal(t, http.StatusInternalServerError, w.Code)
+				}
+			}
+		})
+	}
+}
+
+func TestRecoveryConcurrentColorModes(t *testing.T) {
+	previousMode := consoleColorMode
+	t.Cleanup(func() { consoleColorMode = previousMode })
+
+	for _, mode := range []struct {
+		name      string
+		set       func()
+		wantColor bool
+	}{
+		{"disabled", DisableConsoleColor, false},
+		{"forced", ForceConsoleColor, true},
+		{"automatic", func() { consoleColorMode = autoColor }, false},
+	} {
+		t.Run(mode.name, func(t *testing.T) {
+			mode.set()
+			var buffer bytes.Buffer
+			router := New()
+			router.Use(RecoveryWithWriter(&buffer))
+			router.GET("/recovery", func(_ *Context) { panic("concurrent panic") })
+
+			const requests = 20
+			statuses := make([]int, requests)
+			var wg sync.WaitGroup
+			for i := range requests {
+				wg.Add(1)
+				go func() {
+					defer wg.Done()
+					statuses[i] = PerformRequest(router, http.MethodGet, "/recovery").Code
+				}()
+			}
+			wg.Wait()
+
+			for _, status := range statuses {
+				assert.Equal(t, http.StatusInternalServerError, status)
+			}
+			out := buffer.String()
+			assert.Equal(t, requests, strings.Count(out, "panic recovered"))
+			if mode.wantColor {
+				assert.Equal(t, requests, strings.Count(out, "\x1b[31m"))
+				assert.Equal(t, requests, strings.Count(out, reset))
+			} else {
+				assert.NotContains(t, out, "\x1b[")
+			}
+			entries := strings.Split(out, "\n\n")
+			assert.Len(t, entries, requests+1)
+			for _, entry := range entries[1:] {
+				assert.Contains(t, entry, "panic recovered")
+				if mode.wantColor {
+					assert.True(t, strings.HasPrefix(strings.TrimLeft(entry, "\n"), "\x1b[31m"))
+					assert.True(t, strings.HasSuffix(strings.TrimSpace(entry), reset))
+				}
+			}
+		})
+	}
+}
+
+func recoveryStackFrameHandler(_ *Context) {
+	panic("stack frame panic")
+}
+
+func TestRecoveryStackFrames(t *testing.T) {
+	previousMode := Mode()
+	t.Cleanup(func() { SetMode(previousMode) })
+	for _, mode := range []string{TestMode, DebugMode} {
+		t.Run(mode, func(t *testing.T) {
+			SetMode(mode)
+			var buffer strings.Builder
+			router := New()
+			router.Use(RecoveryWithWriter(&buffer))
+			router.GET("/recovery", recoveryStackFrameHandler)
+
+			w := PerformRequest(router, http.MethodGet, "/recovery")
+			assert.Equal(t, http.StatusInternalServerError, w.Code)
+			assert.Regexp(t, `stack frame panic\n[^\n]*recovery_test\.go:[0-9]+ \(0x[0-9a-f]+\)\n\trecoveryStackFrameHandler:`, buffer.String())
+		})
+	}
+}
 
 func TestPanicClean(t *testing.T) {
 	buffer := new(strings.Builder)

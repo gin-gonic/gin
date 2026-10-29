@@ -160,7 +160,17 @@ func (p *LogFormatterParams) ResetColor() string {
 
 // IsOutputColor indicates whether can colors be outputted to the log.
 func (p *LogFormatterParams) IsOutputColor() bool {
-	return consoleColorMode == forceColor || (consoleColorMode == autoColor && p.isTerm)
+	return isColorEnabled(p.isTerm)
+}
+
+func isColorEnabled(isTerm bool) bool {
+	return consoleColorMode == forceColor || (consoleColorMode == autoColor && isTerm)
+}
+
+func isTerminal(out io.Writer) bool {
+	file, ok := out.(*os.File)
+	return ok && os.Getenv("TERM") != "dumb" &&
+		(isatty.IsTerminal(file.Fd()) || isatty.IsCygwinTerminal(file.Fd()))
 }
 
 // defaultLogFormatter is the default log format function Logger middleware uses.
@@ -255,12 +265,7 @@ func LoggerWithConfig(conf LoggerConfig) HandlerFunc {
 
 	notlogged := conf.SkipPaths
 
-	isTerm := true
-
-	if w, ok := out.(*os.File); !ok || os.Getenv("TERM") == "dumb" ||
-		(!isatty.IsTerminal(w.Fd()) && !isatty.IsCygwinTerminal(w.Fd())) {
-		isTerm = false
-	}
+	isTerm := isTerminal(out)
 
 	var skip map[string]struct{}
 

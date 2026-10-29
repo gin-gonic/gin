@@ -17,6 +17,7 @@ import (
 	"os"
 	"runtime"
 	"strings"
+	"sync"
 	"syscall"
 	"time"
 
@@ -52,8 +53,16 @@ func RecoveryWithWriter(out io.Writer, recovery ...RecoveryFunc) HandlerFunc {
 // CustomRecoveryWithWriter returns a middleware for a given writer that recovers from any panics and calls the provided handle func to handle it.
 func CustomRecoveryWithWriter(out io.Writer, handle RecoveryFunc) HandlerFunc {
 	var logger *log.Logger
+	var loggerMutex sync.Mutex
+	isTerm := isTerminal(out)
 	if out != nil {
-		logger = log.New(out, "\n\n\x1b[31m", log.LstdFlags)
+		logger = log.New(out, "\n\n", log.LstdFlags)
+	}
+	logMessage := func(color, format string, args ...any) {
+		loggerMutex.Lock()
+		defer loggerMutex.Unlock()
+		logger.SetPrefix("\n\n" + color)
+		logger.Printf(format, args...)
 	}
 	return func(c *Context) {
 		defer func() {
@@ -68,14 +77,23 @@ func CustomRecoveryWithWriter(out io.Writer, handle RecoveryFunc) HandlerFunc {
 						errors.Is(err, http.ErrAbortHandler)
 				}
 				if logger != nil {
+					var color, resetColor string
+					if isColorEnabled(isTerm) {
+						color, resetColor = "\x1b[31m", reset
+					}
 					if isBrokenPipe {
-						logger.Printf("%s\n%s%s", rec, secureRequestDump(c.Request), reset)
+						logMessage(color, "%s\n%s%s", rec, secureRequestDump(c.Request), resetColor)
 					} else if IsDebugging() {
-						logger.Printf("[Recovery] %s panic recovered:\n%s\n%s\n%s%s",
-							timeFormat(time.Now()), secureRequestDump(c.Request), rec, stack(stackSkip), reset)
+						logTime := timeFormat(time.Now())
+						requestDump := secureRequestDump(c.Request)
+						stackTrace := stack(stackSkip)
+						logMessage(color, "[Recovery] %s panic recovered:\n%s\n%s\n%s%s",
+							logTime, requestDump, rec, stackTrace, resetColor)
 					} else {
-						logger.Printf("[Recovery] %s panic recovered:\n%s\n%s%s",
-							timeFormat(time.Now()), rec, stack(stackSkip), reset)
+						logTime := timeFormat(time.Now())
+						stackTrace := stack(stackSkip)
+						logMessage(color, "[Recovery] %s panic recovered:\n%s\n%s%s",
+							logTime, rec, stackTrace, resetColor)
 					}
 				}
 				if isBrokenPipe {
