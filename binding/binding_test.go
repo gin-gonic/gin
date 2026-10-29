@@ -855,6 +855,53 @@ func TestUriInnerBinding(t *testing.T) {
 	assert.Equal(t, expectedAge, tag.S.Age)
 }
 
+func TestBindingRecursiveStruct(t *testing.T) {
+	type node struct {
+		Name   string `form:"name" header:"name" uri:"name"`
+		Parent *node
+	}
+
+	t.Run("query", func(t *testing.T) {
+		var obj node
+		req := requestWithBody(http.MethodGet, "/?name=root", "")
+		require.NoError(t, Query.Bind(req, &obj))
+		assert.Equal(t, "root", obj.Name)
+		assert.Nil(t, obj.Parent)
+	})
+
+	t.Run("form", func(t *testing.T) {
+		var obj node
+		req := requestWithBody(http.MethodPost, "/", "name=root")
+		req.Header.Set("Content-Type", MIMEPOSTForm)
+		require.NoError(t, Form.Bind(req, &obj))
+		assert.Equal(t, "root", obj.Name)
+		assert.Nil(t, obj.Parent)
+	})
+
+	t.Run("multipart", func(t *testing.T) {
+		var obj node
+		req := createFormMultipartRequest(t)
+		require.NoError(t, FormMultipart.Bind(req, &obj))
+		assert.Nil(t, obj.Parent)
+	})
+
+	t.Run("header", func(t *testing.T) {
+		var obj node
+		req := requestWithBody(http.MethodGet, "/", "")
+		req.Header.Set("name", "root")
+		require.NoError(t, Header.Bind(req, &obj))
+		assert.Equal(t, "root", obj.Name)
+		assert.Nil(t, obj.Parent)
+	})
+
+	t.Run("uri", func(t *testing.T) {
+		var obj node
+		require.NoError(t, Uri.BindUri(map[string][]string{"name": {"root"}}, &obj))
+		assert.Equal(t, "root", obj.Name)
+		assert.Nil(t, obj.Parent)
+	})
+}
+
 func testFormBindingEmbeddedStruct(t *testing.T, method, path, badPath, body, badBody string) {
 	b := Form
 	assert.Equal(t, "form", b.Name())

@@ -11,6 +11,7 @@ import (
 	"maps"
 	"mime/multipart"
 	"reflect"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -77,11 +78,15 @@ func (form formSource) TrySet(value reflect.Value, field reflect.StructField, ta
 }
 
 func mappingByPtr(ptr any, setter setter, tag string) error {
-	_, err := mapping(reflect.ValueOf(ptr), emptyField, setter, tag)
+	_, err := mapping(reflect.ValueOf(ptr), emptyField, setter, tag, nil)
 	return err
 }
 
-func mapping(value reflect.Value, field reflect.StructField, setter setter, tag string) (bool, error) {
+// mapping sets value from setter, walking struct fields recursively.
+// parents holds the struct types whose fields are being mapped on the
+// current path; a struct type that is already there is not walked again,
+// which stops self-referencing types from recursing forever.
+func mapping(value reflect.Value, field reflect.StructField, setter setter, tag string, parents []reflect.Type) (bool, error) {
 	if field.Tag.Get(tag) == "-" { // just ignoring this field
 		return false, nil
 	}
@@ -95,7 +100,7 @@ func mapping(value reflect.Value, field reflect.StructField, setter setter, tag 
 			isNew = true
 			vPtr = reflect.New(value.Type().Elem())
 		}
-		isSet, err := mapping(vPtr.Elem(), field, setter, tag)
+		isSet, err := mapping(vPtr.Elem(), field, setter, tag, parents)
 		if err != nil {
 			return false, err
 		}
@@ -117,6 +122,10 @@ func mapping(value reflect.Value, field reflect.StructField, setter setter, tag 
 
 	if vKind == reflect.Struct {
 		tValue := value.Type()
+		if slices.Contains(parents, tValue) {
+			return false, nil
+		}
+		parents = append(parents, tValue)
 
 		var isSet bool
 		for i := range value.NumField() {
@@ -124,7 +133,7 @@ func mapping(value reflect.Value, field reflect.StructField, setter setter, tag 
 			if sf.PkgPath != "" && !sf.Anonymous { // unexported
 				continue
 			}
-			ok, err := mapping(value.Field(i), sf, setter, tag)
+			ok, err := mapping(value.Field(i), sf, setter, tag, parents)
 			if err != nil {
 				return false, err
 			}

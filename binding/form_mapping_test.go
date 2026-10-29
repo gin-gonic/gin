@@ -60,7 +60,7 @@ func TestMappingBaseTypes(t *testing.T) {
 
 		field := val.Elem().Type().Field(0)
 
-		_, err := mapping(val, emptyField, formSource{field.Name: {tt.form}}, "form")
+		_, err := mapping(val, emptyField, formSource{field.Name: {tt.form}}, "form", nil)
 		require.NoError(t, err, testName)
 
 		actual := val.Elem().Field(0).Interface()
@@ -492,6 +492,94 @@ func TestMappingIgnoredCircularRef(t *testing.T) {
 
 	err := mappingByPtr(&s, formSource{}, "form")
 	require.NoError(t, err)
+}
+
+type recursiveNode struct {
+	Name   string `form:"name"`
+	Parent *recursiveNode
+}
+
+type cycleA struct {
+	B *cycleB
+}
+
+type cycleB struct {
+	X int `form:"x"`
+	A *cycleA
+}
+
+func TestMappingRecursiveStruct(t *testing.T) {
+	var s recursiveNode
+	err := mappingByPtr(&s, formSource{}, "form")
+	require.NoError(t, err)
+	assert.Nil(t, s.Parent)
+}
+
+func TestMappingRecursiveStructSetsFieldsOutsideCycle(t *testing.T) {
+	var s recursiveNode
+	err := mappingByPtr(&s, formSource{"name": {"root"}}, "form")
+	require.NoError(t, err)
+	assert.Equal(t, "root", s.Name)
+	assert.Nil(t, s.Parent)
+}
+
+func TestMappingRecursiveStructFieldAsWholeValue(t *testing.T) {
+	var s recursiveNode
+	err := mappingByPtr(&s, formSource{"Parent": {`{"Name": "p"}`}}, "form")
+	require.NoError(t, err)
+	require.NotNil(t, s.Parent)
+	assert.Equal(t, "p", s.Parent.Name)
+}
+
+func TestMappingMutuallyRecursiveStructs(t *testing.T) {
+	var s cycleA
+	err := mappingByPtr(&s, formSource{}, "form")
+	require.NoError(t, err)
+	assert.Nil(t, s.B)
+
+	err = mappingByPtr(&s, formSource{"x": {"1"}}, "form")
+	require.NoError(t, err)
+	require.NotNil(t, s.B)
+	assert.Equal(t, 1, s.B.X)
+	assert.Nil(t, s.B.A)
+}
+
+func TestMappingDeepNonRecursiveStruct(t *testing.T) {
+	type chainL6 struct {
+		Leaf string `form:"leaf"`
+	}
+	type chainL5 struct{ N *chainL6 }
+	type chainL4 struct{ N *chainL5 }
+	type chainL3 struct{ N *chainL4 }
+	type chainL2 struct{ N *chainL3 }
+	type chainL1 struct{ N *chainL2 }
+
+	var s chainL1
+	err := mappingByPtr(&s, formSource{"leaf": {"hello"}}, "form")
+	require.NoError(t, err)
+	require.NotNil(t, s.N)
+	require.NotNil(t, s.N.N)
+	require.NotNil(t, s.N.N.N)
+	require.NotNil(t, s.N.N.N.N)
+	require.NotNil(t, s.N.N.N.N.N)
+	assert.Equal(t, "hello", s.N.N.N.N.N.Leaf)
+}
+
+func TestMappingSameTypeSiblingFields(t *testing.T) {
+	type siblingT struct {
+		V int `form:"v"`
+	}
+	var s struct {
+		X *siblingT
+		Y *siblingT
+	}
+
+	err := mappingByPtr(&s, formSource{"v": {"1"}}, "form")
+	require.NoError(t, err)
+	require.NotNil(t, s.X)
+	require.NotNil(t, s.Y)
+	assert.Equal(t, 1, s.X.V)
+	assert.Equal(t, 1, s.Y.V)
 }
 
 type customUnmarshalParamHex int
