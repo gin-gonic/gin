@@ -1111,3 +1111,110 @@ func TestTreeFindCaseInsensitivePathWildcardParamAndStaticChild(t *testing.T) {
 		t.Errorf("Wrong result for '/prefix/something': %s", string(out))
 	}
 }
+
+func TestTreeTrailingSlashAndParamRoute(t *testing.T) {
+	// Case 1: Route /b/ and /:name, request /b
+	// GET /b should match /:name with param name="b", rather than redirecting to /b/
+	tree := &node{}
+	routes := []string{
+		"/b/",
+		"/:name",
+	}
+	for _, route := range routes {
+		tree.addRoute(route, fakeHandler(route))
+	}
+
+	checkRequests(t, tree, testRequests{
+		{"/b", false, "/:name", Params{Param{Key: "name", Value: "b"}}},
+		{"/c", false, "/:name", Params{Param{Key: "name", Value: "c"}}},
+		{"/b/", false, "/b/", nil},
+	})
+	checkPriorities(t, tree)
+
+	// Case 2: Mirror case: /a/b and /:p/b/, request /a/b/
+	// GET /a/b/ should match /:p/b/ with param p="a", rather than redirecting to /a/b
+	tree2 := &node{}
+	routes2 := []string{
+		"/a/b",
+		"/:p/b/",
+	}
+	for _, route := range routes2 {
+		tree2.addRoute(route, fakeHandler(route))
+	}
+
+	checkRequests(t, tree2, testRequests{
+		{"/a/b/", false, "/:p/b/", Params{Param{Key: "p", Value: "a"}}},
+		{"/a/b", false, "/a/b", nil},
+	})
+	checkPriorities(t, tree2)
+
+	// Case 3: When no wildcard route matches the exact request,
+	// TSR should still be recommended for candidate static route
+	tree3 := &node{}
+	routes3 := []string{
+		"/b/",
+		"/:name/x",
+	}
+	for _, route := range routes3 {
+		tree3.addRoute(route, fakeHandler(route))
+	}
+
+	val := tree3.getValue("/b", nil, getSkippedNodes(), false)
+	if val.handlers != nil {
+		t.Errorf("Expected nil handler for '/b', got: %v", val.handlers)
+	}
+	if !val.tsr {
+		t.Errorf("Expected TSR=true for '/b' when '/b/' exists and '/:name/x' does not match")
+	}
+
+	// Case 4: Mirror TSR fallback when no wildcard route matches
+	tree4 := &node{}
+	routes4 := []string{
+		"/a/b",
+		"/:p/b/x",
+	}
+	for _, route := range routes4 {
+		tree4.addRoute(route, fakeHandler(route))
+	}
+
+	val4 := tree4.getValue("/a/b/", nil, getSkippedNodes(), false)
+	if val4.handlers != nil {
+		t.Errorf("Expected nil handler for '/a/b/', got: %v", val4.handlers)
+	}
+	if !val4.tsr {
+		t.Errorf("Expected TSR=true for '/a/b/' when '/a/b' exists and '/:p/b/x' does not match")
+	}
+
+	// Case 5: Wildcard sibling interaction: /:a/b/ and /:a/b, request /foo/b
+	// GET /foo/b should match /:a/b with param a="foo", rather than redirecting to /:a/b/
+	tree5 := &node{}
+	routes5 := []string{
+		"/:a/b/",
+		"/:a/b",
+	}
+	for _, route := range routes5 {
+		tree5.addRoute(route, fakeHandler(route))
+	}
+
+	checkRequests(t, tree5, testRequests{
+		{"/foo/b", false, "/:a/b", Params{Param{Key: "a", Value: "foo"}}},
+		{"/foo/b/", false, "/:a/b/", Params{Param{Key: "a", Value: "foo"}}},
+	})
+	checkPriorities(t, tree5)
+
+	// Case 6: Reverse registration order of wildcard sibling routes
+	tree6 := &node{}
+	routes6 := []string{
+		"/:a/b",
+		"/:a/b/",
+	}
+	for _, route := range routes6 {
+		tree6.addRoute(route, fakeHandler(route))
+	}
+
+	checkRequests(t, tree6, testRequests{
+		{"/foo/b", false, "/:a/b", Params{Param{Key: "a", Value: "foo"}}},
+		{"/foo/b/", false, "/:a/b/", Params{Param{Key: "a", Value: "foo"}}},
+	})
+	checkPriorities(t, tree6)
+}

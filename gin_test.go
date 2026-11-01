@@ -1195,3 +1195,109 @@ func TestRouterQueryMethod(t *testing.T) {
 	router.ServeHTTP(w2, req2)
 	assert.Equal(t, http.StatusNotFound, w2.Code)
 }
+
+func TestRouterParamRouteWithTrailingSlashSibling(t *testing.T) {
+	for _, redirectTrailingSlash := range []bool{false, true} {
+		// Case 1: Route /b/ and /:name, request /b
+		router1 := New()
+		router1.RedirectTrailingSlash = redirectTrailingSlash
+
+		var matchedRoute string
+		var matchedParams Params
+
+		router1.GET("/b/", func(c *Context) {
+			matchedRoute = "/b/"
+			matchedParams = c.Params
+			c.String(http.StatusOK, "b_slash")
+		})
+		router1.GET("/:name", func(c *Context) {
+			matchedRoute = "/:name"
+			matchedParams = c.Params
+			c.String(http.StatusOK, "name")
+		})
+
+		// GET /b -> should match /:name with name=b
+		w := httptest.NewRecorder()
+		req, _ := http.NewRequest(http.MethodGet, "/b", nil)
+		router1.ServeHTTP(w, req)
+		assert.Equal(t, http.StatusOK, w.Code)
+		assert.Equal(t, "/:name", matchedRoute)
+		assert.Equal(t, Params{Param{Key: "name", Value: "b"}}, matchedParams)
+
+		// GET /b/ -> should match /b/
+		w = httptest.NewRecorder()
+		req, _ = http.NewRequest(http.MethodGet, "/b/", nil)
+		router1.ServeHTTP(w, req)
+		assert.Equal(t, http.StatusOK, w.Code)
+		assert.Equal(t, "/b/", matchedRoute)
+
+		// GET /c -> should match /:name with name=c
+		w = httptest.NewRecorder()
+		req, _ = http.NewRequest(http.MethodGet, "/c", nil)
+		router1.ServeHTTP(w, req)
+		assert.Equal(t, http.StatusOK, w.Code)
+		assert.Equal(t, "/:name", matchedRoute)
+		assert.Equal(t, Params{Param{Key: "name", Value: "c"}}, matchedParams)
+
+		// Case 2: Mirror case: /a/b and /:p/b/, request /a/b/
+		router2 := New()
+		router2.RedirectTrailingSlash = redirectTrailingSlash
+
+		router2.GET("/a/b", func(c *Context) {
+			matchedRoute = "/a/b"
+			matchedParams = c.Params
+			c.String(http.StatusOK, "ab")
+		})
+		router2.GET("/:p/b/", func(c *Context) {
+			matchedRoute = "/:p/b/"
+			matchedParams = c.Params
+			c.String(http.StatusOK, "pb_slash")
+		})
+
+		// GET /a/b/ -> should match /:p/b/ with p=a
+		w = httptest.NewRecorder()
+		req, _ = http.NewRequest(http.MethodGet, "/a/b/", nil)
+		router2.ServeHTTP(w, req)
+		assert.Equal(t, http.StatusOK, w.Code)
+		assert.Equal(t, "/:p/b/", matchedRoute)
+		assert.Equal(t, Params{Param{Key: "p", Value: "a"}}, matchedParams)
+
+		// GET /a/b -> should match /a/b
+		w = httptest.NewRecorder()
+		req, _ = http.NewRequest(http.MethodGet, "/a/b", nil)
+		router2.ServeHTTP(w, req)
+		assert.Equal(t, http.StatusOK, w.Code)
+		assert.Equal(t, "/a/b", matchedRoute)
+
+		// Case 3: Wildcard sibling interaction: /:a/b/ and /:a/b, request /foo/b
+		router3 := New()
+		router3.RedirectTrailingSlash = redirectTrailingSlash
+
+		router3.GET("/:a/b/", func(c *Context) {
+			matchedRoute = "/:a/b/"
+			matchedParams = c.Params
+			c.String(http.StatusOK, "ab_slash")
+		})
+		router3.GET("/:a/b", func(c *Context) {
+			matchedRoute = "/:a/b"
+			matchedParams = c.Params
+			c.String(http.StatusOK, "ab")
+		})
+
+		// GET /foo/b -> should match /:a/b with a=foo
+		w = httptest.NewRecorder()
+		req, _ = http.NewRequest(http.MethodGet, "/foo/b", nil)
+		router3.ServeHTTP(w, req)
+		assert.Equal(t, http.StatusOK, w.Code)
+		assert.Equal(t, "/:a/b", matchedRoute)
+		assert.Equal(t, Params{Param{Key: "a", Value: "foo"}}, matchedParams)
+
+		// GET /foo/b/ -> should match /:a/b/ with a=foo
+		w = httptest.NewRecorder()
+		req, _ = http.NewRequest(http.MethodGet, "/foo/b/", nil)
+		router3.ServeHTTP(w, req)
+		assert.Equal(t, http.StatusOK, w.Code)
+		assert.Equal(t, "/:a/b/", matchedRoute)
+		assert.Equal(t, Params{Param{Key: "a", Value: "foo"}}, matchedParams)
+	}
+}
