@@ -1268,5 +1268,36 @@ func TestRouterParamRouteWithTrailingSlashSibling(t *testing.T) {
 		router2.ServeHTTP(w, req)
 		assert.Equal(t, http.StatusOK, w.Code)
 		assert.Equal(t, "/a/b", matchedRoute)
+
+		// Case 3: Wildcard sibling interaction: /:a/b/ and /:a/b, request /foo/b
+		router3 := New()
+		router3.RedirectTrailingSlash = redirectTrailingSlash
+
+		router3.GET("/:a/b/", func(c *Context) {
+			matchedRoute = "/:a/b/"
+			matchedParams = c.Params
+			c.String(http.StatusOK, "ab_slash")
+		})
+		router3.GET("/:a/b", func(c *Context) {
+			matchedRoute = "/:a/b"
+			matchedParams = c.Params
+			c.String(http.StatusOK, "ab")
+		})
+
+		// GET /foo/b -> should match /:a/b with a=foo
+		w = httptest.NewRecorder()
+		req, _ = http.NewRequest(http.MethodGet, "/foo/b", nil)
+		router3.ServeHTTP(w, req)
+		assert.Equal(t, http.StatusOK, w.Code)
+		assert.Equal(t, "/:a/b", matchedRoute)
+		assert.Equal(t, Params{Param{Key: "a", Value: "foo"}}, matchedParams)
+
+		// GET /foo/b/ -> should match /:a/b/ with a=foo
+		w = httptest.NewRecorder()
+		req, _ = http.NewRequest(http.MethodGet, "/foo/b/", nil)
+		router3.ServeHTTP(w, req)
+		assert.Equal(t, http.StatusOK, w.Code)
+		assert.Equal(t, "/:a/b/", matchedRoute)
+		assert.Equal(t, Params{Param{Key: "a", Value: "foo"}}, matchedParams)
 	}
 }

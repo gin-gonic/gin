@@ -1184,4 +1184,37 @@ func TestTreeTrailingSlashAndParamRoute(t *testing.T) {
 	if !val4.tsr {
 		t.Errorf("Expected TSR=true for '/a/b/' when '/a/b' exists and '/:p/b/x' does not match")
 	}
+
+	// Case 5: Wildcard sibling interaction: /:a/b/ and /:a/b, request /foo/b
+	// GET /foo/b should match /:a/b with param a="foo", rather than redirecting to /:a/b/
+	tree5 := &node{}
+	routes5 := []string{
+		"/:a/b/",
+		"/:a/b",
+	}
+	for _, route := range routes5 {
+		tree5.addRoute(route, fakeHandler(route))
+	}
+
+	checkRequests(t, tree5, testRequests{
+		{"/foo/b", false, "/:a/b", Params{Param{Key: "a", Value: "foo"}}},
+		{"/foo/b/", false, "/:a/b/", Params{Param{Key: "a", Value: "foo"}}},
+	})
+	checkPriorities(t, tree5)
+
+	// Case 6: Reverse registration order of wildcard sibling routes
+	tree6 := &node{}
+	routes6 := []string{
+		"/:a/b",
+		"/:a/b/",
+	}
+	for _, route := range routes6 {
+		tree6.addRoute(route, fakeHandler(route))
+	}
+
+	checkRequests(t, tree6, testRequests{
+		{"/foo/b", false, "/:a/b", Params{Param{Key: "a", Value: "foo"}}},
+		{"/foo/b/", false, "/:a/b/", Params{Param{Key: "a", Value: "foo"}}},
+	})
+	checkPriorities(t, tree6)
 }

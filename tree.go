@@ -426,6 +426,7 @@ func (n *node) getValue(path string, params *Params, skippedNodes *[]skippedNode
 	// able to record one more backtrack frame. A raw reslice of the capacity
 	// captured at pool allocation panics with "slice bounds out of range".
 	*skippedNodes = (*skippedNodes)[:0]
+	value.tsr = false
 
 walk: // Outer loop for walking the tree
 	for {
@@ -538,20 +539,6 @@ walk: // Outer loop for walking the tree
 
 						// ... but we can't
 						cTsr := len(path) == end+1
-						for length := len(*skippedNodes); length > 0; length-- {
-							skippedNode := (*skippedNodes)[length-1]
-							*skippedNodes = (*skippedNodes)[:length-1]
-							if strings.HasSuffix(skippedNode.path, path) {
-								path = skippedNode.path
-								n = skippedNode.node
-								if value.params != nil {
-									*value.params = (*value.params)[:skippedNode.paramsCount]
-								}
-								globalParamsCount = skippedNode.paramsCount
-								value.tsr = value.tsr || cTsr
-								continue walk
-							}
-						}
 						value.tsr = value.tsr || cTsr
 						return value
 					}
@@ -567,20 +554,6 @@ walk: // Outer loop for walking the tree
 						// trailing slash exists for TSR recommendation
 						n = n.children[0]
 						cTsr = (n.path == "/" && n.handlers != nil) || (n.path == "" && n.indices == "/")
-					}
-					for length := len(*skippedNodes); length > 0; length-- {
-						skippedNode := (*skippedNodes)[length-1]
-						*skippedNodes = (*skippedNodes)[:length-1]
-						if strings.HasSuffix(skippedNode.path, path) {
-							path = skippedNode.path
-							n = skippedNode.node
-							if value.params != nil {
-								*value.params = (*value.params)[:skippedNode.paramsCount]
-							}
-							globalParamsCount = skippedNode.paramsCount
-							value.tsr = value.tsr || cTsr
-							continue walk
-						}
 					}
 					value.tsr = value.tsr || cTsr
 					return value
@@ -627,7 +600,7 @@ walk: // Outer loop for walking the tree
 		if path == prefix {
 			// If the current node does not have a registered handle,
 			// the current node needs to roll back to last valid skippedNode
-			if n.handlers == nil {
+			if n.handlers == nil && path != "/" {
 				for length := len(*skippedNodes); length > 0; length-- {
 					skippedNode := (*skippedNodes)[length-1]
 					*skippedNodes = (*skippedNodes)[:length-1]
@@ -653,20 +626,38 @@ walk: // Outer loop for walking the tree
 			// If there is no handle for this route, but this route has a
 			// wildcard child, there must be a handle for this path with an
 			// additional trailing slash
-			cTsr := (path == "/" && n.wildChild && n.nType != root) || (path == "/" && n.nType == static)
-			if !cTsr {
-				// No handle found. Check if a handle for this path + a
-				// trailing slash exists for trailing slash recommendation
-				for i, c := range []byte(n.indices) {
-					if c == '/' {
-						n = n.children[i]
-						cTsr = (len(n.path) == 1 && n.handlers != nil) ||
-							(n.nType == catchAll && n.children[0].handlers != nil)
-						break
-					}
+			if path == "/" && n.wildChild && n.nType != root {
+				value.tsr = true
+				return value
+			}
+
+			if path == "/" && n.nType == static {
+				value.tsr = true
+				return value
+			}
+
+			// No handle found. Check if a handle for this path + a
+			// trailing slash exists for trailing slash recommendation
+			for i, c := range []byte(n.indices) {
+				if c == '/' {
+					n = n.children[i]
+					value.tsr = (len(n.path) == 1 && n.handlers != nil) ||
+						(n.nType == catchAll && len(n.children) > 0 && n.children[0].handlers != nil)
+					return value
 				}
 			}
 
+			return value
+		}
+
+		// Nothing found. We can recommend to redirect to the same URL with an
+		// extra trailing slash if a leaf exists for that path
+		cTsr := path == "/" ||
+			(len(prefix) == len(path)+1 && prefix[len(path)] == '/' &&
+				path == prefix[:len(prefix)-1] && n.handlers != nil)
+
+		// roll back to last valid skippedNode
+		if path != "/" {
 			for length := len(*skippedNodes); length > 0; length-- {
 				skippedNode := (*skippedNodes)[length-1]
 				*skippedNodes = (*skippedNodes)[:length-1]
@@ -680,31 +671,6 @@ walk: // Outer loop for walking the tree
 					value.tsr = value.tsr || cTsr
 					continue walk
 				}
-			}
-
-			value.tsr = value.tsr || cTsr
-			return value
-		}
-
-		// Nothing found. We can recommend to redirect to the same URL with an
-		// extra trailing slash if a leaf exists for that path
-		cTsr := path == "/" ||
-			(len(prefix) == len(path)+1 && prefix[len(path)] == '/' &&
-				path == prefix[:len(prefix)-1] && n.handlers != nil)
-
-		// roll back to last valid skippedNode
-		for length := len(*skippedNodes); length > 0; length-- {
-			skippedNode := (*skippedNodes)[length-1]
-			*skippedNodes = (*skippedNodes)[:length-1]
-			if strings.HasSuffix(skippedNode.path, path) {
-				path = skippedNode.path
-				n = skippedNode.node
-				if value.params != nil {
-					*value.params = (*value.params)[:skippedNode.paramsCount]
-				}
-				globalParamsCount = skippedNode.paramsCount
-				value.tsr = value.tsr || cTsr
-				continue walk
 			}
 		}
 
