@@ -3143,6 +3143,35 @@ func TestWebsocketsRequired(t *testing.T) {
 	assert.False(t, c.IsWebsocket())
 }
 
+func TestContextIsWebsocketHeaders(t *testing.T) {
+	tests := []struct {
+		name   string
+		header http.Header
+		want   bool
+	}{
+		{"standard handshake", http.Header{"Connection": {"Upgrade"}, "Upgrade": {"websocket"}}, true},
+		{"mixed case values", http.Header{"Connection": {"UPGRADE"}, "Upgrade": {"WebSocket"}}, true},
+		{"connection token list", http.Header{"Connection": {"keep-alive, Upgrade"}, "Upgrade": {"websocket"}}, true},
+		{"connection on separate lines", http.Header{"Connection": {"keep-alive", "Upgrade"}, "Upgrade": {"websocket"}}, true},
+		{"upgrade token list", http.Header{"Connection": {"Upgrade"}, "Upgrade": {"websocket, foo"}}, true},
+		{"connection token is only a substring", http.Header{"Connection": {"not-upgrade"}, "Upgrade": {"websocket"}}, false},
+		{"missing upgrade header", http.Header{"Connection": {"Upgrade"}}, false},
+		{"missing connection header", http.Header{"Upgrade": {"websocket"}}, false},
+		{"upgrade to another protocol", http.Header{"Connection": {"Upgrade"}, "Upgrade": {"h2c"}}, false},
+		{"no headers", http.Header{}, false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			c, _ := CreateTestContext(httptest.NewRecorder())
+			c.Request, _ = http.NewRequest(http.MethodGet, "/chat", nil)
+			c.Request.Header = tt.header
+
+			assert.Equal(t, tt.want, c.IsWebsocket())
+		})
+	}
+}
+
 func TestContextScheme(t *testing.T) {
 	// TLS connection takes highest priority.
 	c, _ := CreateTestContext(httptest.NewRecorder())
