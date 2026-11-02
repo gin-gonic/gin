@@ -538,6 +538,22 @@ walk: // Outer loop for walking the tree
 
 						// ... but we can't
 						value.tsr = len(path) == end+1
+						if !value.tsr && path != "/" {
+							// roll back to last valid skippedNode
+							for length := len(*skippedNodes); length > 0; length-- {
+								skippedNode := (*skippedNodes)[length-1]
+								*skippedNodes = (*skippedNodes)[:length-1]
+								if strings.HasSuffix(skippedNode.path, path) {
+									path = skippedNode.path
+									n = skippedNode.node
+									if value.params != nil {
+										*value.params = (*value.params)[:skippedNode.paramsCount]
+									}
+									globalParamsCount = skippedNode.paramsCount
+									continue walk
+								}
+							}
+						}
 						return value
 					}
 
@@ -550,6 +566,22 @@ walk: // Outer loop for walking the tree
 						// trailing slash exists for TSR recommendation
 						n = n.children[0]
 						value.tsr = (n.path == "/" && n.handlers != nil) || (n.path == "" && n.indices == "/")
+					}
+					if !value.tsr && path != "/" {
+						// roll back to last valid skippedNode
+						for length := len(*skippedNodes); length > 0; length-- {
+							skippedNode := (*skippedNodes)[length-1]
+							*skippedNodes = (*skippedNodes)[:length-1]
+							if strings.HasSuffix(skippedNode.path, path) {
+								path = skippedNode.path
+								n = skippedNode.node
+								if value.params != nil {
+									*value.params = (*value.params)[:skippedNode.paramsCount]
+								}
+								globalParamsCount = skippedNode.paramsCount
+								continue walk
+							}
+						}
 					}
 					return value
 
