@@ -743,6 +743,78 @@ func TestEngineHandleContextPreventsMiddlewareReEntry(t *testing.T) {
 	assert.Equal(t, int64(1), handlerCounterV2)
 }
 
+func TestEngineHandleContextNoRouteWithGroupMiddleware(t *testing.T) {
+	// Scenario from issue #1848:
+	// - Engine with no global middleware (gin.New())
+	// - A group with middleware
+	// - A route in that group
+	// - NoRoute handler that redirects via HandleContext
+	// The group middleware should run exactly once per HandleContext call,
+	// not accumulate across redirects.
+
+	var middlewareCount, handlerCount int64
+
+	r := New()
+	grp := r.Group("", func(c *Context) {
+		atomic.AddInt64(&middlewareCount, 1)
+		c.Next()
+	})
+	grp.GET("/target", func(c *Context) {
+		atomic.AddInt64(&handlerCount, 1)
+		c.String(http.StatusOK, "ok")
+	})
+
+	r.NoRoute(func(c *Context) {
+		c.Request.URL.Path = "/target"
+		r.HandleContext(c)
+	})
+
+	// Access a non-existent route to trigger NoRoute -> HandleContext
+	w := PerformRequest(r, "GET", "/nonexistent")
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Equal(t, "ok", w.Body.String())
+	// Middleware and handler should each run exactly once
+	assert.Equal(t, int64(1), atomic.LoadInt64(&middlewareCount))
+	assert.Equal(t, int64(1), atomic.LoadInt64(&handlerCount))
+}
+
+func TestEngineHandleContextNoRouteWithEngineMiddleware(t *testing.T) {
+	// When engine middleware exists and NoRoute redirects via HandleContext,
+	// verify the handlers run the expected number of times.
+
+	var engineMwCount, groupMwCount, handlerCount int64
+
+	r := New()
+	r.Use(func(c *Context) {
+		atomic.AddInt64(&engineMwCount, 1)
+		c.Next()
+	})
+
+	grp := r.Group("", func(c *Context) {
+		atomic.AddInt64(&groupMwCount, 1)
+		c.Next()
+	})
+	grp.GET("/target", func(c *Context) {
+		atomic.AddInt64(&handlerCount, 1)
+		c.String(http.StatusOK, "ok")
+	})
+
+	r.NoRoute(func(c *Context) {
+		c.Request.URL.Path = "/target"
+		r.HandleContext(c)
+	})
+
+	w := PerformRequest(r, "GET", "/nonexistent")
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Equal(t, "ok", w.Body.String())
+	// Handler and group middleware should each run once (from HandleContext)
+	assert.Equal(t, int64(1), atomic.LoadInt64(&handlerCount))
+	assert.Equal(t, int64(1), atomic.LoadInt64(&groupMwCount))
+	// Engine middleware runs twice: once for the NoRoute chain, once for the HandleContext chain
+	// This is expected behavior since HandleContext re-enters the full handler chain
+	assert.Equal(t, int64(2), atomic.LoadInt64(&engineMwCount))
+}
+
 func TestEngineHandleContextUseEscapedPathPercentEncoded(t *testing.T) {
 	r := New()
 	r.UseEscapedPath = true
@@ -952,6 +1024,26 @@ func TestWithOptionFunc(t *testing.T) {
 	assertRoutePresent(t, routes, RouteInfo{Path: "/test2", Method: http.MethodGet, Handler: "github.com/gin-gonic/gin.handlerTest2"})
 }
 
+func TestReadHeaderTimeoutDefault(t *testing.T) {
+	engine := New()
+	assert.Equal(t, defaultReadHeaderTimeout, engine.ReadHeaderTimeout)
+	assert.Equal(t, defaultReadHeaderTimeout, engine.getReadHeaderTimeout())
+}
+
+func TestReadHeaderTimeoutCustom(t *testing.T) {
+	engine := New(func(e *Engine) {
+		e.ReadHeaderTimeout = 30 * time.Second
+	})
+	assert.Equal(t, 30*time.Second, engine.ReadHeaderTimeout)
+	assert.Equal(t, 30*time.Second, engine.getReadHeaderTimeout())
+}
+
+func TestReadHeaderTimeoutZeroFallsBackToDefault(t *testing.T) {
+	engine := New()
+	engine.ReadHeaderTimeout = 0
+	assert.Equal(t, defaultReadHeaderTimeout, engine.getReadHeaderTimeout())
+}
+
 type Birthday string
 
 func (b *Birthday) UnmarshalParam(param string) error {
@@ -1083,4 +1175,23 @@ func TestUpdateRouteTreesCalledOnce(t *testing.T) {
 		assert.Equal(t, http.StatusOK, w.Code)
 		assert.Equal(t, "ok", w.Body.String())
 	}
+}
+
+func TestRouterQueryMethod(t *testing.T) {
+	router := New()
+	router.QUERY("/test", func(c *Context) {
+		c.String(http.StatusOK, "query ok")
+	})
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("QUERY", "/test", nil)
+	router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Equal(t, "query ok", w.Body.String())
+
+	// Other methods should not match
+	w2 := httptest.NewRecorder()
+	req2, _ := http.NewRequest(http.MethodGet, "/test", nil)
+	router.ServeHTTP(w2, req2)
+	assert.Equal(t, http.StatusNotFound, w2.Code)
 }

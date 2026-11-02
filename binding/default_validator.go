@@ -32,7 +32,10 @@ func (err SliceValidationError) Error() string {
 			if b.Len() > 0 {
 				b.WriteString("\n")
 			}
-			b.WriteString("[" + strconv.Itoa(i) + "]: " + err[i].Error())
+			b.WriteString("[")
+			b.WriteString(strconv.Itoa(i))
+			b.WriteString("]: ")
+			b.WriteString(err[i].Error())
 		}
 	}
 	return b.String()

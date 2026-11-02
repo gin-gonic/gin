@@ -67,6 +67,11 @@ func GET(relativePath string, handlers ...gin.HandlerFunc) gin.IRoutes {
 	return engine().GET(relativePath, handlers...)
 }
 
+// QUERY is a shortcut for router.Handle("QUERY", path, handle)
+func QUERY(relativePath string, handlers ...gin.HandlerFunc) gin.IRoutes {
+	return engine().QUERY(relativePath, handlers...)
+}
+
 // DELETE is a shortcut for router.Handle("DELETE", path, handle)
 func DELETE(relativePath string, handlers ...gin.HandlerFunc) gin.IRoutes {
 	return engine().DELETE(relativePath, handlers...)
