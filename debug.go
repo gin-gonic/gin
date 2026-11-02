@@ -13,7 +13,7 @@ import (
 	"sync/atomic"
 )
 
-const ginSupportMinGoVer = 24
+const ginSupportMinGoVer = 25
 
 var runtimeVersion = runtime.Version()
 
@@ -80,7 +80,7 @@ func getMinVer(v string) (uint64, error) {
 
 func debugPrintWARNINGDefault() {
 	if v, e := getMinVer(runtimeVersion); e == nil && v < ginSupportMinGoVer {
-		debugPrint(`[WARNING] Now Gin requires Go 1.24+.
+		debugPrint(`[WARNING] Now Gin requires Go 1.25+.
 
 `)
 	}

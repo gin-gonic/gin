@@ -7,6 +7,7 @@ package gin
 import (
 	"bytes"
 	"context"
+	"crypto/tls"
 	"errors"
 	"fmt"
 	"html/template"
@@ -32,6 +33,7 @@ import (
 	testdata "github.com/gin-gonic/gin/testdata/protoexample"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.mongodb.org/mongo-driver/v2/bson"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -246,13 +248,11 @@ func TestSaveUploadedFileWithPermission(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, "permission_test", f.Filename)
 	var mode fs.FileMode = 0o755
-	require.NoError(t, c.SaveUploadedFile(f, "permission_test", mode))
-	t.Cleanup(func() {
-		assert.NoError(t, os.Remove("permission_test"))
-	})
-	info, err := os.Stat(filepath.Dir("permission_test"))
+	dst := filepath.Join(t.TempDir(), "subdir", "permission_test")
+	require.NoError(t, c.SaveUploadedFile(f, dst, mode))
+	info, err := os.Stat(filepath.Dir(dst))
 	require.NoError(t, err)
-	assert.Equal(t, info.Mode().Perm(), mode)
+	assert.Equal(t, mode, info.Mode().Perm())
 }
 
 func TestSaveUploadedFileWithPermissionFailed(t *testing.T) {
@@ -270,7 +270,52 @@ func TestSaveUploadedFileWithPermissionFailed(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, "permission_test", f.Filename)
 	var mode fs.FileMode = 0o644
-	require.Error(t, c.SaveUploadedFile(f, "test/permission_test", mode))
+	dst := filepath.Join(t.TempDir(), "test", "permission_test")
+	require.Error(t, c.SaveUploadedFile(f, dst, mode))
+}
+
+// TestSaveUploadedFileToExistingDir is a regression test for issue #4622.
+// SaveUploadedFile must not call os.Chmod on a directory that already exists,
+// because the process may not own it (e.g. /tmp on Linux/macOS), where chmod
+// fails with "operation not permitted". This asserts the behavioral contract
+// directly — a pre-existing directory's permissions are left unchanged — so it
+// catches the regression on every platform, including environments (root/CI,
+// user-owned $TMPDIR) where chmod on the temp dir would otherwise succeed.
+func TestSaveUploadedFileToExistingDir(t *testing.T) {
+	buf := new(bytes.Buffer)
+	mw := multipart.NewWriter(buf)
+	w, err := mw.CreateFormFile("file", "existing_dir_test")
+	require.NoError(t, err)
+	_, err = w.Write([]byte("existing_dir_test"))
+	require.NoError(t, err)
+	mw.Close()
+
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	c.Request, _ = http.NewRequest(http.MethodPost, "/", buf)
+	c.Request.Header.Set("Content-Type", mw.FormDataContentType())
+	f, err := c.FormFile("file")
+	require.NoError(t, err)
+
+	// A pre-existing directory owned by this process, set to a known mode.
+	dir := t.TempDir()
+	require.NoError(t, os.Chmod(dir, 0o700))
+
+	// Pass a perm that differs from the directory's current mode. The fix must
+	// not apply it to the pre-existing directory; the old code chmod'd it
+	// unconditionally, which also failed outright on unowned dirs like /tmp.
+	dst := filepath.Join(dir, "existing_dir_test.txt")
+	require.NoError(t, c.SaveUploadedFile(f, dst, 0o755))
+
+	// The pre-existing directory's permissions must be unchanged.
+	info, err := os.Stat(dir)
+	require.NoError(t, err)
+	assert.Equal(t, os.FileMode(0o700), info.Mode().Perm(),
+		"permissions of a pre-existing directory must not be modified")
+
+	// The file must still be written with the correct content.
+	content, err := os.ReadFile(dst)
+	require.NoError(t, err)
+	assert.Equal(t, "existing_dir_test", string(content))
 }
 
 func TestContextReset(t *testing.T) {
@@ -664,6 +709,30 @@ func TestContextGetStringMapStringSlice(t *testing.T) {
 	assert.Equal(t, []string{"foo"}, c.GetStringMapStringSlice("map")["foo"])
 }
 
+func TestCopyConcurrentWithSet(t *testing.T) {
+	c := &Context{}
+	var wg sync.WaitGroup
+	wg.Add(2)
+	go func() {
+		defer wg.Done()
+		for i := 0; i < 100; i++ {
+			c.Set(i, i)
+		}
+	}()
+	go func() {
+		defer wg.Done()
+		for i := 0; i < 100; i++ {
+			cp := c.Copy()
+			for k, v := range cp.Keys {
+				if k != v {
+					t.Errorf("copied key %v = %v, want %v", k, v, k)
+				}
+			}
+		}
+	}()
+	wg.Wait()
+}
+
 func TestContextCopy(t *testing.T) {
 	c, _ := CreateTestContext(httptest.NewRecorder())
 	c.index = 2
@@ -685,6 +754,50 @@ func TestContextCopy(t *testing.T) {
 	cp.Set("foo", "notBar")
 	assert.NotEqual(t, cp.Keys["foo"], c.Keys["foo"])
 	assert.Equal(t, cp.fullPath, c.fullPath)
+}
+
+func TestContextCopyCopiesErrors(t *testing.T) {
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	c.Request, _ = http.NewRequest(http.MethodGet, "/", nil)
+	_ = c.Error(errors.New("first error"))
+	_ = c.Error(errors.New("second error"))
+
+	cp := c.Copy()
+
+	// copied context has the same errors
+	assert.Len(t, cp.Errors, 2)
+	assert.Equal(t, c.Errors[0].Error(), cp.Errors[0].Error())
+	assert.Equal(t, c.Errors[1].Error(), cp.Errors[1].Error())
+
+	// mutations on the copy do not affect the original
+	_ = cp.Error(errors.New("third error"))
+	assert.Len(t, c.Errors, 2)
+	assert.Len(t, cp.Errors, 3)
+}
+
+func TestContextCopyCopiesAccepted(t *testing.T) {
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	c.Request, _ = http.NewRequest(http.MethodGet, "/", nil)
+	c.SetAccepted("application/json", "text/html")
+
+	cp := c.Copy()
+
+	assert.Equal(t, c.Accepted, cp.Accepted)
+
+	// mutations on the copy do not affect the original
+	cp.SetAccepted("text/plain")
+	assert.Equal(t, []string{"application/json", "text/html"}, c.Accepted)
+	assert.Equal(t, []string{"text/plain"}, cp.Accepted)
+}
+
+func TestContextCopyNilErrorsAndAccepted(t *testing.T) {
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	c.Request, _ = http.NewRequest(http.MethodGet, "/", nil)
+
+	cp := c.Copy()
+
+	assert.Nil(t, cp.Errors)
+	assert.Nil(t, cp.Accepted)
 }
 
 func TestContextHandlerName(t *testing.T) {
@@ -1030,6 +1143,7 @@ func TestContextGetCookie(t *testing.T) {
 }
 
 func TestContextBodyAllowedForStatus(t *testing.T) {
+	assert.False(t, bodyAllowedForStatus(http.StatusContinue))
 	assert.False(t, bodyAllowedForStatus(http.StatusProcessing))
 	assert.False(t, bodyAllowedForStatus(http.StatusNoContent))
 	assert.False(t, bodyAllowedForStatus(http.StatusNotModified))
@@ -1255,6 +1369,82 @@ func TestContextRenderHTML(t *testing.T) {
 	assert.Equal(t, "text/html; charset=utf-8", w.Header().Get("Content-Type"))
 }
 
+func TestContextRenderHTMLWithoutRenderer(t *testing.T) {
+	tests := []struct {
+		name           string
+		method         string
+		status         int
+		wantErrors     []string
+		wantAborted    bool
+		wantNextCalled bool
+	}{
+		{
+			name:        "body allowed",
+			method:      http.MethodGet,
+			status:      http.StatusAccepted,
+			wantErrors:  []string{"html renderer is not configured"},
+			wantAborted: true,
+		},
+		{
+			name:           "no content",
+			method:         http.MethodGet,
+			status:         http.StatusNoContent,
+			wantNextCalled: true,
+		},
+		{
+			name:           "not modified",
+			method:         http.MethodGet,
+			status:         http.StatusNotModified,
+			wantNextCalled: true,
+		},
+		{
+			name:        "head",
+			method:      http.MethodHead,
+			status:      http.StatusOK,
+			wantErrors:  []string{"html renderer is not configured"},
+			wantAborted: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			w := httptest.NewRecorder()
+			router := New()
+			var contextErrors []string
+			var contextAborted bool
+			nextHandlerCalled := false
+
+			handlers := []HandlerFunc{
+				func(c *Context) {
+					c.HTML(tt.status, "index.tmpl", H{"title": "Main website"})
+					contextErrors = c.Errors.Errors()
+					contextAborted = c.IsAborted()
+				},
+				func(_ *Context) {
+					nextHandlerCalled = true
+				},
+			}
+			if tt.method == http.MethodHead {
+				router.HEAD("/", handlers...)
+			} else {
+				router.GET("/", handlers...)
+			}
+
+			req := httptest.NewRequest(tt.method, "/", nil)
+			require.NotPanics(t, func() {
+				router.ServeHTTP(w, req)
+			})
+
+			assert.Equal(t, tt.status, w.Code)
+			assert.Equal(t, "text/html; charset=utf-8", w.Header().Get("Content-Type"))
+			assert.Equal(t, tt.wantErrors, contextErrors)
+			assert.Equal(t, tt.wantAborted, contextAborted)
+			assert.Equal(t, tt.wantNextCalled, nextHandlerCalled)
+			assert.Empty(t, w.Body.String())
+		})
+	}
+}
+
 func TestContextRenderHTML2(t *testing.T) {
 	w := httptest.NewRecorder()
 	c, router := CreateTestContext(w)
@@ -1316,6 +1506,33 @@ func TestContextRenderNoContentXML(t *testing.T) {
 	assert.Equal(t, http.StatusNoContent, w.Code)
 	assert.Empty(t, w.Body.String())
 	assert.Equal(t, "application/xml; charset=utf-8", w.Header().Get("Content-Type"))
+}
+
+// TestContextRenderPDF tests that the response is serialized as PDF
+// and Content-Type is set to application/pdf
+func TestContextRenderPDF(t *testing.T) {
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
+
+	data := []byte("%Test pdf content")
+	c.PDF(http.StatusCreated, data)
+
+	assert.Equal(t, http.StatusCreated, w.Code)
+	assert.Equal(t, data, w.Body.Bytes())
+	assert.Equal(t, "application/pdf", w.Header().Get("Content-Type"))
+}
+
+// Tests that no PDF is rendered if code is 204
+func TestContextRenderNoContentPDF(t *testing.T) {
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
+
+	data := []byte("%Test pdf content")
+	c.PDF(http.StatusNoContent, data)
+
+	assert.Equal(t, http.StatusNoContent, w.Code)
+	assert.Empty(t, w.Body.Bytes())
+	assert.Equal(t, "application/pdf", w.Header().Get("Content-Type"))
 }
 
 // TestContextRenderString tests that the response is returned
@@ -1699,6 +1916,23 @@ func TestContextNegotiationWithPROTOBUF(t *testing.T) {
 	assert.Equal(t, http.StatusCreated, w.Code)
 	assert.Equal(t, string(protoData), w.Body.String())
 	assert.Equal(t, "application/x-protobuf", w.Header().Get("Content-Type"))
+}
+
+func TestContextNegotiationWithBSON(t *testing.T) {
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
+	c.Request, _ = http.NewRequest(http.MethodPost, "", nil)
+
+	c.Negotiate(http.StatusOK, Negotiate{
+		Offered: []string{MIMEBSON, MIMEXML, MIMEJSON, MIMEYAML, MIMEYAML2},
+		Data:    H{"foo": "bar"},
+	})
+
+	bData, _ := bson.Marshal(H{"foo": "bar"})
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Equal(t, string(bData), w.Body.String())
+	assert.Equal(t, "application/bson", w.Header().Get("Content-Type"))
 }
 
 func TestContextNegotiationNotSupport(t *testing.T) {
@@ -2909,6 +3143,65 @@ func TestWebsocketsRequired(t *testing.T) {
 	assert.False(t, c.IsWebsocket())
 }
 
+func TestContextScheme(t *testing.T) {
+	// TLS connection takes highest priority.
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	c.Request, _ = http.NewRequest(http.MethodGet, "/", nil)
+	c.Request.TLS = &tls.ConnectionState{}
+	assert.Equal(t, "https", c.Scheme())
+
+	// X-Forwarded-Proto header.
+	c, _ = CreateTestContext(httptest.NewRecorder())
+	c.Request, _ = http.NewRequest(http.MethodGet, "/", nil)
+	c.Request.Header.Set("X-Forwarded-Proto", "https")
+	assert.Equal(t, "https", c.Scheme())
+
+	c, _ = CreateTestContext(httptest.NewRecorder())
+	c.Request, _ = http.NewRequest(http.MethodGet, "/", nil)
+	c.Request.Header.Set("X-Forwarded-Proto", "http")
+	assert.Equal(t, "http", c.Scheme())
+
+	// X-Forwarded-Protocol header.
+	c, _ = CreateTestContext(httptest.NewRecorder())
+	c.Request, _ = http.NewRequest(http.MethodGet, "/", nil)
+	c.Request.Header.Set("X-Forwarded-Protocol", "https")
+	assert.Equal(t, "https", c.Scheme())
+
+	// X-Forwarded-Ssl: on header.
+	c, _ = CreateTestContext(httptest.NewRecorder())
+	c.Request, _ = http.NewRequest(http.MethodGet, "/", nil)
+	c.Request.Header.Set("X-Forwarded-Ssl", "on")
+	assert.Equal(t, "https", c.Scheme())
+
+	c, _ = CreateTestContext(httptest.NewRecorder())
+	c.Request, _ = http.NewRequest(http.MethodGet, "/", nil)
+	c.Request.Header.Set("X-Forwarded-Ssl", "off")
+	assert.Equal(t, "http", c.Scheme())
+
+	// X-Url-Scheme header.
+	c, _ = CreateTestContext(httptest.NewRecorder())
+	c.Request, _ = http.NewRequest(http.MethodGet, "/", nil)
+	c.Request.Header.Set("X-Url-Scheme", "https")
+	assert.Equal(t, "https", c.Scheme())
+
+	// Request.URL.Scheme fallback.
+	c, _ = CreateTestContext(httptest.NewRecorder())
+	c.Request, _ = http.NewRequest(http.MethodGet, "https://example.com/", nil)
+	assert.Equal(t, "https", c.Scheme())
+
+	// Default fallback: plain http.
+	c, _ = CreateTestContext(httptest.NewRecorder())
+	c.Request, _ = http.NewRequest(http.MethodGet, "/", nil)
+	assert.Equal(t, "http", c.Scheme())
+
+	// TLS takes priority over X-Forwarded-Proto.
+	c, _ = CreateTestContext(httptest.NewRecorder())
+	c.Request, _ = http.NewRequest(http.MethodGet, "/", nil)
+	c.Request.TLS = &tls.ConnectionState{}
+	c.Request.Header.Set("X-Forwarded-Proto", "http")
+	assert.Equal(t, "https", c.Scheme())
+}
+
 func TestGetRequestHeaderValue(t *testing.T) {
 	c, _ := CreateTestContext(httptest.NewRecorder())
 	c.Request, _ = http.NewRequest(http.MethodGet, "/chat", nil)
@@ -2927,6 +3220,16 @@ func TestContextGetRawData(t *testing.T) {
 	data, err := c.GetRawData()
 	require.NoError(t, err)
 	assert.Equal(t, "Fetch binary post data", string(data))
+}
+
+func TestContextGetRawDataNilBody(t *testing.T) {
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	c.Request, _ = http.NewRequest(http.MethodPost, "/", nil)
+
+	data, err := c.GetRawData()
+	assert.Nil(t, data)
+	require.Error(t, err)
+	assert.Equal(t, "cannot read nil body", err.Error())
 }
 
 func TestContextRenderDataFromReader(t *testing.T) {
@@ -3516,6 +3819,24 @@ func TestContextSetCookieData(t *testing.T) {
 		c.SetCookieData(cookie)
 		setCookie := c.Writer.Header().Get("Set-Cookie")
 		assert.Contains(t, setCookie, "SameSite=None")
+	})
+
+	// Test that SameSiteDefaultMode inherits from context's sameSite
+	t.Run("SameSiteDefaultMode inherits context sameSite", func(t *testing.T) {
+		c, _ := CreateTestContext(httptest.NewRecorder())
+		c.SetSameSite(http.SameSiteStrictMode)
+		cookie := &http.Cookie{
+			Name:     "user",
+			Value:    "gin",
+			Path:     "/",
+			Domain:   "localhost",
+			Secure:   true,
+			HttpOnly: true,
+			SameSite: http.SameSiteDefaultMode,
+		}
+		c.SetCookieData(cookie)
+		setCookie := c.Writer.Header().Get("Set-Cookie")
+		assert.Contains(t, setCookie, "SameSite=Strict")
 	})
 }
 

@@ -4,7 +4,7 @@ GO_VERSION=$(shell $(GO) version | cut -c 14- | cut -d' ' -f1 | cut -d'.' -f2)
 PACKAGES ?= $(shell $(GO) list ./...)
 VETPACKAGES ?= $(shell $(GO) list ./... | grep -v /examples/)
 GOFILES := $(shell find . -name "*.go")
-TESTFOLDER := $(shell $(GO) list ./... | grep -E 'gin$$|binding$$|render$$' | grep -v examples)
+TESTFOLDER := $(shell $(GO) list ./... | grep -E 'gin$$|ginS$$|binding$$|render$$' | grep -v examples)
 TESTTAGS ?= ""
 
 .PHONY: test
@@ -12,7 +12,11 @@ TESTTAGS ?= ""
 test:
 	echo "mode: count" > coverage.out
 	for d in $(TESTFOLDER); do \
-		$(GO) test $(TESTTAGS) -v -covermode=count -coverprofile=profile.out $$d > tmp.out; \
+		if [ -n "$(TESTTAGS)" ]; then \
+			$(GO) test $(TESTTAGS) -v -covermode=count -coverprofile=profile.out $$d > tmp.out; \
+		else \
+			$(GO) test -v -covermode=count -coverprofile=profile.out $$d > tmp.out; \
+		fi; \
 		cat tmp.out; \
 		if grep -q "^--- FAIL" tmp.out; then \
 			rm tmp.out; \

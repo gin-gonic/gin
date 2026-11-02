@@ -106,7 +106,12 @@ func secureRequestDump(r *http.Request) string {
 	return strings.Join(lines, "\r\n")
 }
 
-func defaultHandleRecovery(c *Context, _ any) {
+func defaultHandleRecovery(c *Context, err any) {
+	e, ok := err.(error)
+	if !ok {
+		e = fmt.Errorf("%v", err)
+	}
+	c.Error(e) //nolint: errcheck
 	c.AbortWithStatus(http.StatusInternalServerError)
 }
 
