@@ -25,6 +25,7 @@ import (
 	"github.com/gin-contrib/sse"
 	"github.com/gin-gonic/gin/binding"
 	"github.com/gin-gonic/gin/render"
+	"golang.org/x/net/http/httpguts"
 )
 
 // Content-Type MIME of the most common data formats.
@@ -1062,11 +1063,9 @@ func (c *Context) ContentType() string {
 // IsWebsocket returns true if the request headers indicate that a websocket
 // handshake is being initiated by the client.
 func (c *Context) IsWebsocket() bool {
-	if strings.Contains(strings.ToLower(c.requestHeader("Connection")), "upgrade") &&
-		strings.EqualFold(c.requestHeader("Upgrade"), "websocket") {
-		return true
-	}
-	return false
+	header := c.Request.Header
+	return httpguts.HeaderValuesContainsToken(header["Connection"], "upgrade") &&
+		httpguts.HeaderValuesContainsToken(header["Upgrade"], "websocket")
 }
 
 // Scheme returns the HTTP scheme of the request ("http" or "https").
