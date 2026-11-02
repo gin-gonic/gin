@@ -1111,3 +1111,46 @@ func TestTreeFindCaseInsensitivePathWildcardParamAndStaticChild(t *testing.T) {
 		t.Errorf("Wrong result for '/prefix/something': %s", string(out))
 	}
 }
+
+// TestTreeParamFallbackAfterStaticDeadEnd ensures the walk falls back to a
+// previously skipped wildcard node when the preferred static branch dead-ends
+// inside the param case of getValue: either more path remains but the param
+// node has no child to descend into, or the param node consumed the whole
+// remaining path but has no handler registered. Both dead ends must retry the
+// skipped wildcard instead of returning not-found.
+func TestTreeParamFallbackAfterStaticDeadEnd(t *testing.T) {
+	tests := []struct {
+		name     string
+		routes   []string
+		requests testRequests
+	}{
+		{
+			name:   "param consumed the whole path but has no handler",
+			routes: []string{"/:p0/:p1", "/bc/:p1/a"},
+			requests: testRequests{
+				{"/bc/bc/a", false, "/bc/:p1/a", Params{Param{Key: "p1", Value: "bc"}}},
+				{"/bc/bc", false, "/:p0/:p1", Params{Param{Key: "p0", Value: "bc"}, Param{Key: "p1", Value: "bc"}}},
+				{"/x/y", false, "/:p0/:p1", Params{Param{Key: "p0", Value: "x"}, Param{Key: "p1", Value: "y"}}},
+			},
+		},
+		{
+			name:   "more path remains but the param node has no child",
+			routes: []string{"/:p0/:p1/:p2", "/bc/:p1"},
+			requests: testRequests{
+				{"/bc/bc", false, "/bc/:p1", Params{Param{Key: "p1", Value: "bc"}}},
+				{"/bc/bc/2", false, "/:p0/:p1/:p2", Params{Param{Key: "p0", Value: "bc"}, Param{Key: "p1", Value: "bc"}, Param{Key: "p2", Value: "2"}}},
+				{"/x/y/2", false, "/:p0/:p1/:p2", Params{Param{Key: "p0", Value: "x"}, Param{Key: "p1", Value: "y"}, Param{Key: "p2", Value: "2"}}},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tree := &node{}
+			for _, route := range tt.routes {
+				tree.addRoute(route, fakeHandler(route))
+			}
+			checkRequests(t, tree, tt.requests)
+		})
+	}
+}
