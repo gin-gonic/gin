@@ -173,6 +173,52 @@ func TestMappingFormWithEmptyToDefault(t *testing.T) {
 	assert.Equal(t, "DefVal", s.F)
 }
 
+func TestMappingEmptyValueLeavesPointerFieldsNil(t *testing.T) {
+	var s struct {
+		Age   *int     `form:"age"`
+		Count *uint    `form:"count"`
+		Score *float64 `form:"score"`
+		Flag  *bool    `form:"flag"`
+		Name  *string  `form:"name"`
+		Plain int      `form:"plain"`
+	}
+	err := mapForm(&s, map[string][]string{
+		"age":   {""},
+		"count": {""},
+		"score": {""},
+		"flag":  {""},
+		"name":  {""},
+		"plain": {""},
+	})
+	require.NoError(t, err)
+	assert.Nil(t, s.Age)
+	assert.Nil(t, s.Count)
+	assert.Nil(t, s.Score)
+	assert.Nil(t, s.Flag)
+	// Strings keep their previous behavior: a present but empty value
+	// still produces a pointer to "".
+	require.NotNil(t, s.Name)
+	assert.Equal(t, "", *s.Name)
+	assert.Equal(t, 0, s.Plain)
+}
+
+func TestMappingPointerFieldZeroValueStaysSet(t *testing.T) {
+	var s struct {
+		Age *int `form:"age"`
+	}
+	err := mapForm(&s, map[string][]string{"age": {"0"}})
+	require.NoError(t, err)
+	require.NotNil(t, s.Age)
+	assert.Equal(t, 0, *s.Age)
+
+	var missing struct {
+		Age *int `form:"age"`
+	}
+	err = mapForm(&missing, map[string][]string{})
+	require.NoError(t, err)
+	assert.Nil(t, missing.Age)
+}
+
 func TestMapFormWithTag(t *testing.T) {
 	var s struct {
 		F int `externalTag:"field"`

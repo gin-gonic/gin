@@ -306,6 +306,21 @@ func setByForm(value reflect.Value, field reflect.StructField, form map[string][
 	default:
 		var val string
 		if !ok || len(vs) == 0 || (len(vs) > 0 && vs[0] == "") {
+			// An empty value with no default is the same as no value for
+			// numeric and boolean fields. Reporting it as unset keeps a
+			// pointer field nil instead of pointing at a zero value, so
+			// callers can tell "age=" apart from "age=0". Plain fields
+			// are unaffected: they keep their zero value either way.
+			// time.Duration keeps its existing handling and is left out
+			// of this change.
+			if !opt.isDefaultExists && !isDuration(value) {
+				switch value.Kind() {
+				case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64,
+					reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64,
+					reflect.Float32, reflect.Float64, reflect.Bool:
+					return false, nil
+				}
+			}
 			val = opt.defaultValue
 		} else if len(vs) > 0 {
 			val = vs[0]
@@ -505,6 +520,10 @@ func setSlice(vals []string, value reflect.Value, field reflect.StructField, opt
 	}
 	value.Set(slice)
 	return nil
+}
+
+func isDuration(value reflect.Value) bool {
+	return value.Type() == reflect.TypeOf(time.Duration(0))
 }
 
 func setTimeDuration(val string, value reflect.Value) error {
