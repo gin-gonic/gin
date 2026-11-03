@@ -318,6 +318,10 @@ func TestRouteRedirectTrailingSlashKeepsEscapedPath(t *testing.T) {
 		w = PerformRequest(router, http.MethodGet, "/dirs/a%2Fb")
 		assert.Equal(t, http.StatusMovedPermanently, w.Code)
 		assert.Equal(t, "/dirs/a%2Fb/", w.Header().Get("Location"))
+
+		w = PerformRequest(router, http.MethodGet, "/files/a%2Fb/", header{Key: "X-Forwarded-Prefix", Value: "/api"})
+		assert.Equal(t, http.StatusMovedPermanently, w.Code)
+		assert.Equal(t, "/api/files/a%2Fb", w.Header().Get("Location"))
 	}
 }
 
