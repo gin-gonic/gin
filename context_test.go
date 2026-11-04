@@ -1304,6 +1304,22 @@ func TestContextClientIPWithSingleHeader(t *testing.T) {
 	assert.Equal(t, "1.2.3.4", c.ClientIP())
 }
 
+func TestContextClientIPWithZonedIPv6RemoteAddr(t *testing.T) {
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	c.Request, _ = http.NewRequest(http.MethodGet, "/test", nil)
+	c.Request.Header.Set("X-Forwarded-For", "1.2.3.4")
+	// A client connecting over a link-local IPv6 address gets a zone in RemoteAddr.
+	c.Request.RemoteAddr = "[fe80::1%eth0]:1234"
+
+	c.engine.ForwardedByClientIP = true
+	c.engine.RemoteIPHeaders = []string{"X-Forwarded-For"}
+	_ = c.engine.SetTrustedProxies([]string{"fe80::/10"})
+	assert.Equal(t, "1.2.3.4", c.ClientIP())
+
+	_ = c.engine.SetTrustedProxies(nil)
+	assert.Equal(t, "fe80::1", c.ClientIP())
+}
+
 // Tests that the response is serialized as Secure JSON
 // and Content-Type is set to application/json
 func TestContextRenderSecureJSON(t *testing.T) {
