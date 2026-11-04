@@ -1026,7 +1026,10 @@ func (c *Context) ClientIP() string {
 		// It also checks if the remoteIP is a trusted proxy or not.
 		// In order to perform this validation, it will see if the IP is contained within at least one of the CIDR blocks
 		// defined by Engine.SetTrustedProxies()
-		remoteIP = net.ParseIP(c.RemoteIP())
+		// net.ParseIP rejects IPv6 zones, so drop the zone of a link-local
+		// address such as "fe80::1%eth0" first.
+		ip, _, _ := strings.Cut(c.RemoteIP(), "%")
+		remoteIP = net.ParseIP(ip)
 		if remoteIP == nil {
 			return ""
 		}
