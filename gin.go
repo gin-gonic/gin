@@ -815,6 +815,11 @@ func redirectTrailingSlash(c *Context) {
 		prefix = removeRepeatedChar(prefix, '/')
 
 		p = prefix + "/" + req.URL.Path
+		// Keep the redirect target rooted at this server. Sanitizing can leave a
+		// prefix that is empty or has no leading slash, and then p starts with
+		// "//", which a client reads as a host, or with a path segment, which it
+		// resolves against the request path and so repeats the prefix.
+		p = "/" + strings.TrimLeft(p, "/")
 	}
 	req.URL.Path = p + "/"
 	if length := len(p); length > 1 && p[length-1] == '/' {

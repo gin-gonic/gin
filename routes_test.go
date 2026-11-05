@@ -260,7 +260,7 @@ func TestRouteRedirectTrailingSlash(t *testing.T) {
 	assert.Equal(t, http.StatusMovedPermanently, w.Code)
 
 	w = PerformRequest(router, http.MethodGet, "/path/", header{Key: "X-Forwarded-Prefix", Value: "api/../../"})
-	assert.Equal(t, "//path", w.Header().Get("Location"))
+	assert.Equal(t, "/path", w.Header().Get("Location"))
 	assert.Equal(t, http.StatusMovedPermanently, w.Code)
 
 	w = PerformRequest(router, http.MethodGet, "/path/", header{Key: "X-Forwarded-Prefix", Value: "api/../../../"})
@@ -276,11 +276,11 @@ func TestRouteRedirectTrailingSlash(t *testing.T) {
 	assert.Equal(t, http.StatusMovedPermanently, w.Code)
 
 	w = PerformRequest(router, http.MethodGet, "/path/", header{Key: "X-Forwarded-Prefix", Value: "https://gin-gonic.com/#"})
-	assert.Equal(t, "https/gin-goniccom/https/gin-goniccom/path", w.Header().Get("Location"))
+	assert.Equal(t, "/https/gin-goniccom/path", w.Header().Get("Location"))
 	assert.Equal(t, http.StatusMovedPermanently, w.Code)
 
 	w = PerformRequest(router, http.MethodGet, "/path/", header{Key: "X-Forwarded-Prefix", Value: "#api"})
-	assert.Equal(t, "api/api/path", w.Header().Get("Location"))
+	assert.Equal(t, "/api/path", w.Header().Get("Location"))
 	assert.Equal(t, http.StatusMovedPermanently, w.Code)
 
 	w = PerformRequest(router, http.MethodGet, "/path/", header{Key: "X-Forwarded-Prefix", Value: "/nor-mal/#?a=1"})
@@ -289,6 +289,12 @@ func TestRouteRedirectTrailingSlash(t *testing.T) {
 
 	w = PerformRequest(router, http.MethodGet, "/path/", header{Key: "X-Forwarded-Prefix", Value: "/nor-mal/%2e%2e/"})
 	assert.Equal(t, "/nor-mal/2e2e/path", w.Header().Get("Location"))
+	assert.Equal(t, http.StatusMovedPermanently, w.Code)
+
+	// A prefix that sanitizes to nothing must not leave a Location starting
+	// with "//", which a client reads as the start of a host.
+	w = PerformRequest(router, http.MethodGet, "/path2", header{Key: "X-Forwarded-Prefix", Value: ".."})
+	assert.Equal(t, "/path2/", w.Header().Get("Location"))
 	assert.Equal(t, http.StatusMovedPermanently, w.Code)
 
 	router.RedirectTrailingSlash = false
