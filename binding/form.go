@@ -21,11 +21,16 @@ func (formBinding) Name() string {
 	return "form"
 }
 
-func (formBinding) Bind(req *http.Request, obj any) error {
+func (b formBinding) Bind(req *http.Request, obj any) error {
+	return b.BindWithMemory(req, obj, defaultMemory)
+}
+
+// BindWithMemory binds form data using the given multipart memory threshold.
+func (formBinding) BindWithMemory(req *http.Request, obj any, maxMemory int64) error {
 	if err := req.ParseForm(); err != nil {
 		return err
 	}
-	if err := req.ParseMultipartForm(defaultMemory); err != nil && !errors.Is(err, http.ErrNotMultipart) {
+	if err := req.ParseMultipartForm(maxMemory); err != nil && !errors.Is(err, http.ErrNotMultipart) {
 		return err
 	}
 	if err := mapForm(obj, req.Form); err != nil {
@@ -52,8 +57,13 @@ func (formMultipartBinding) Name() string {
 	return "multipart/form-data"
 }
 
-func (formMultipartBinding) Bind(req *http.Request, obj any) error {
-	if err := req.ParseMultipartForm(defaultMemory); err != nil {
+func (b formMultipartBinding) Bind(req *http.Request, obj any) error {
+	return b.BindWithMemory(req, obj, defaultMemory)
+}
+
+// BindWithMemory binds multipart form data using the given memory threshold.
+func (formMultipartBinding) BindWithMemory(req *http.Request, obj any, maxMemory int64) error {
+	if err := req.ParseMultipartForm(maxMemory); err != nil {
 		return err
 	}
 	if err := mappingByPtr(obj, (*multipartRequest)(req), "form"); err != nil {

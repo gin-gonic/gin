@@ -25,6 +25,7 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"testing/iotest"
 	"time"
 
 	"github.com/gin-contrib/sse"
@@ -2534,6 +2535,120 @@ func TestContextAutoShouldBindJSON(t *testing.T) {
 	assert.Equal(t, "foo", obj.Bar)
 	assert.Equal(t, "bar", obj.Foo)
 	assert.Empty(t, c.Errors)
+}
+
+func TestContextShouldBindMultipartMemory(t *testing.T) {
+	binders := []struct {
+		name string
+		bind func(*Context, any) error
+	}{
+		{"ShouldBind", (*Context).ShouldBind},
+		{"Bind", (*Context).Bind},
+		{"Form", func(c *Context, obj any) error { return c.ShouldBindWith(obj, binding.Form) }},
+		{"FormMultipart", func(c *Context, obj any) error { return c.ShouldBindWith(obj, binding.FormMultipart) }},
+	}
+	tests := []struct {
+		name       string
+		memory     int64
+		parsed     bool
+		expectDisk bool
+	}{
+		{"zero memory", 0, false, true},
+		{"above threshold", 32, false, true},
+		{"at threshold", 64, false, false},
+		{"below threshold", 128, false, false},
+		{"already parsed", 0, true, false},
+	}
+	for _, b := range binders {
+		t.Run(b.name, func(t *testing.T) {
+			for _, tt := range tests {
+				t.Run(tt.name, func(t *testing.T) {
+					body := new(bytes.Buffer)
+					mw := multipart.NewWriter(body)
+					require.NoError(t, mw.WriteField("name", "report"))
+					part, err := mw.CreateFormFile("file", "report.csv")
+					require.NoError(t, err)
+					_, err = io.WriteString(part, strings.Repeat("a", 64))
+					require.NoError(t, err)
+					require.NoError(t, mw.Close())
+
+					c, _ := CreateTestContext(httptest.NewRecorder())
+					c.engine.MaxMultipartMemory = tt.memory
+					c.Request = httptest.NewRequest(http.MethodPost, "/", body)
+					c.Request.Header.Set("Content-Type", mw.FormDataContentType())
+					if tt.parsed {
+						require.NoError(t, c.Request.ParseMultipartForm(128))
+					}
+					t.Cleanup(func() {
+						if c.Request.MultipartForm != nil {
+							require.NoError(t, c.Request.MultipartForm.RemoveAll())
+						}
+					})
+
+					var obj struct {
+						Name string `form:"name" binding:"required"`
+					}
+					require.NoError(t, b.bind(c, &obj))
+					assert.Equal(t, "report", obj.Name)
+					require.NotNil(t, c.Request.MultipartForm)
+					require.Len(t, c.Request.MultipartForm.File["file"], 1)
+					file, err := c.Request.MultipartForm.File["file"][0].Open()
+					require.NoError(t, err)
+					t.Cleanup(func() { require.NoError(t, file.Close()) })
+					_, onDisk := file.(*os.File)
+					assert.Equal(t, tt.expectDisk, onDisk)
+					data, err := io.ReadAll(file)
+					require.NoError(t, err)
+					assert.Equal(t, strings.Repeat("a", 64), string(data))
+				})
+			}
+		})
+	}
+}
+
+func TestContextShouldBindMultipartReadError(t *testing.T) {
+	for _, b := range []binding.Binding{binding.Form, binding.FormMultipart} {
+		t.Run(b.Name(), func(t *testing.T) {
+			c, _ := CreateTestContext(httptest.NewRecorder())
+			c.Request = httptest.NewRequest(http.MethodPost, "/", iotest.ErrReader(io.ErrUnexpectedEOF))
+			c.Request.Header.Set("Content-Type", MIMEMultipartPOSTForm+"; boundary=test")
+			var obj struct{ Name string }
+			require.ErrorIs(t, c.ShouldBindWith(&obj, b), io.ErrUnexpectedEOF)
+		})
+	}
+}
+
+func TestContextShouldBindFormWithoutEngine(t *testing.T) {
+	c := &Context{Request: httptest.NewRequest(http.MethodPost, "/", strings.NewReader("name=report"))}
+	c.Request.Header.Set("Content-Type", MIMEPOSTForm)
+	var obj struct {
+		Name string `form:"name"`
+	}
+	require.NoError(t, c.ShouldBind(&obj))
+	assert.Equal(t, "report", obj.Name)
+}
+
+type testMultipartBinding []string
+
+func (testMultipartBinding) Name() string { return "multipart/form-data" }
+
+func (testMultipartBinding) Bind(req *http.Request, obj any) error {
+	data, err := io.ReadAll(req.Body)
+	if err != nil {
+		return err
+	}
+	*obj.(*string) = string(data)
+	return nil
+}
+
+func TestContextShouldBindWithCustomMultipartBinding(t *testing.T) {
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	c.Request = httptest.NewRequest(http.MethodPost, "/", strings.NewReader("custom multipart body"))
+	c.Request.Header.Set("Content-Type", MIMEMultipartPOSTForm)
+	var obj string
+	require.NoError(t, c.ShouldBindWith(&obj, testMultipartBinding{}))
+	assert.Equal(t, "custom multipart body", obj)
+	assert.Nil(t, c.Request.MultipartForm)
 }
 
 func TestContextShouldBindWithJSON(t *testing.T) {
