@@ -96,6 +96,10 @@ type Context struct {
 	sameSite http.SameSite
 }
 
+type bindingWithMemory interface {
+	BindWithMemory(*http.Request, any, int64) error
+}
+
 /************************************/
 /********** CONTEXT CREATION ********/
 /************************************/
@@ -939,6 +943,9 @@ func (c *Context) ShouldBindUri(obj any) error {
 // ShouldBindWith binds the passed struct pointer using the specified binding engine.
 // See the binding package.
 func (c *Context) ShouldBindWith(obj any, b binding.Binding) error {
+	if b, ok := b.(bindingWithMemory); ok && c.engine != nil {
+		return b.BindWithMemory(c.Request, obj, c.engine.MaxMultipartMemory)
+	}
 	return b.Bind(c.Request, obj)
 }
 
