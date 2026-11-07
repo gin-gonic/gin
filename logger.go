@@ -9,7 +9,9 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"strconv"
 	"time"
+	"unicode/utf8"
 
 	"github.com/mattn/go-isatty"
 )
@@ -182,15 +184,56 @@ var defaultLogFormatter = func(param LogFormatterParams) string {
 		param.Latency = param.Latency.Truncate(time.Microsecond * 10)
 	}
 
-	return fmt.Sprintf("[GIN] %v |%s %3d %s|%s %8v %s| %15s |%s %-7s %s %#v\n%s",
-		param.TimeStamp.Format("2006/01/02 - 15:04:05"),
-		statusColor, param.StatusCode, resetColor,
-		latencyColor, param.Latency, resetColor,
-		param.ClientIP,
-		methodColor, param.Method, resetColor,
-		param.Path,
-		param.ErrorMessage,
-	)
+	// Built by hand instead of fmt.Sprintf to cut per-request allocations;
+	// the output matches "[GIN] %v |%s %3d %s|%s %8v %s| %15s |%s %-7s %s %#v\n%s".
+	buf := make([]byte, 0, 256)
+	buf = append(buf, "[GIN] "...)
+	buf = param.TimeStamp.AppendFormat(buf, "2006/01/02 - 15:04:05")
+	buf = append(buf, " |"...)
+	buf = append(buf, statusColor...)
+	buf = append(buf, ' ')
+	var num [20]byte
+	status := strconv.AppendInt(num[:0], int64(param.StatusCode), 10)
+	for i := len(status); i < 3; i++ {
+		buf = append(buf, ' ')
+	}
+	buf = append(buf, status...)
+	buf = append(buf, ' ')
+	buf = append(buf, resetColor...)
+	buf = append(buf, '|')
+	buf = append(buf, latencyColor...)
+	buf = append(buf, ' ')
+	buf = appendPadded(buf, param.Latency.String(), 8, false)
+	buf = append(buf, ' ')
+	buf = append(buf, resetColor...)
+	buf = append(buf, "| "...)
+	buf = appendPadded(buf, param.ClientIP, 15, false)
+	buf = append(buf, " |"...)
+	buf = append(buf, methodColor...)
+	buf = append(buf, ' ')
+	buf = appendPadded(buf, param.Method, 7, true)
+	buf = append(buf, ' ')
+	buf = append(buf, resetColor...)
+	buf = append(buf, ' ')
+	buf = strconv.AppendQuote(buf, param.Path)
+	buf = append(buf, '\n')
+	buf = append(buf, param.ErrorMessage...)
+	return string(buf)
+}
+
+// appendPadded appends s padded with spaces to width runes, like fmt's %*s / %-*s.
+func appendPadded(buf []byte, s string, width int, left bool) []byte {
+	pad := width - utf8.RuneCountInString(s)
+	if left {
+		buf = append(buf, s...)
+	}
+	for ; pad > 0; pad-- {
+		buf = append(buf, ' ')
+	}
+	if !left {
+		buf = append(buf, s...)
+	}
+	return buf
 }
 
 // DisableConsoleColor disables color output in the console.
