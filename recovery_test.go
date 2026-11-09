@@ -6,14 +6,17 @@ package gin
 
 import (
 	"errors"
+	"io"
 	"net"
 	"net/http"
+	"net/http/httptest"
 	"os"
 	"strings"
 	"syscall"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestPanicClean(t *testing.T) {
@@ -141,13 +144,16 @@ func TestPanicWithAbortHandler(t *testing.T) {
 		c.Header("X-Test", "Value")
 		c.Status(expectCode)
 
-		// Panic with ErrAbortHandler which should be treated as broken pipe
+		// Panic with ErrAbortHandler which should be treated as special
 		panic(http.ErrAbortHandler)
 	})
 	// RUN
-	w := PerformRequest(router, http.MethodGet, "/recovery")
+	srv := httptest.NewServer(router)
+	defer srv.Close()
+	_, err := srv.Client().Get(srv.URL + "/recovery")
+	require.Error(t, err)
+	require.ErrorIs(t, err, io.EOF)
 	// TEST
-	assert.Equal(t, expectCode, w.Code)
 	out := buf.String()
 	assert.Contains(t, out, "net/http: abort Handler")
 	assert.NotContains(t, out, "panic recovered")

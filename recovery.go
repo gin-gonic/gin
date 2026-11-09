@@ -60,15 +60,18 @@ func CustomRecoveryWithWriter(out io.Writer, handle RecoveryFunc) HandlerFunc {
 			if rec := recover(); rec != nil {
 				// Check for a broken connection, as it is not really a
 				// condition that warrants a panic stack trace.
-				var isBrokenPipe bool
+				var (
+					isBrokenPipe   bool
+					isAbortHandler bool
+				)
 				err, ok := rec.(error)
 				if ok {
+					isAbortHandler = errors.Is(err, http.ErrAbortHandler)
 					isBrokenPipe = errors.Is(err, syscall.EPIPE) ||
-						errors.Is(err, syscall.ECONNRESET) ||
-						errors.Is(err, http.ErrAbortHandler)
+						errors.Is(err, syscall.ECONNRESET)
 				}
 				if logger != nil {
-					if isBrokenPipe {
+					if isBrokenPipe || isAbortHandler {
 						logger.Printf("%s\n%s%s", rec, secureRequestDump(c.Request), reset)
 					} else if IsDebugging() {
 						logger.Printf("[Recovery] %s panic recovered:\n%s\n%s\n%s%s",
@@ -78,12 +81,16 @@ func CustomRecoveryWithWriter(out io.Writer, handle RecoveryFunc) HandlerFunc {
 							timeFormat(time.Now()), rec, stack(stackSkip), reset)
 					}
 				}
-				if isBrokenPipe {
+				if isBrokenPipe || isAbortHandler {
 					// If the connection is dead, we can't write a status to it.
 					c.Error(err) //nolint: errcheck
 					c.Abort()
 				} else {
 					handle(c, rec)
+				}
+				// Re-panic error for http.Server to handle it properly.
+				if isAbortHandler {
+					panic(rec)
 				}
 			}
 		}()
