@@ -152,7 +152,7 @@ func TestPanicWithAbortHandler(t *testing.T) {
 	defer srv.Close()
 	_, err := srv.Client().Get(srv.URL + "/recovery")
 	require.Error(t, err)
-	assert.ErrorIs(t, err, io.EOF)
+	require.ErrorIs(t, err, io.EOF)
 	// TEST
 	out := buf.String()
 	assert.Contains(t, out, "net/http: abort Handler")
