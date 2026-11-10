@@ -5,6 +5,7 @@
 package binding
 
 import (
+	"errors"
 	"reflect"
 	"strconv"
 	"strings"
@@ -20,6 +21,11 @@ type defaultValidator struct {
 
 type SliceValidationError []error
 
+type indexedValidationError struct {
+	error
+	index int
+}
+
 // Error concatenates all error elements in SliceValidationError into a single string separated by \n.
 func (err SliceValidationError) Error() string {
 	if len(err) == 0 {
@@ -29,16 +35,25 @@ func (err SliceValidationError) Error() string {
 	var b strings.Builder
 	for i := range len(err) {
 		if err[i] != nil {
+			index := i
+			if indexed, ok := errors.AsType[indexedValidationError](err[i]); ok {
+				index = indexed.index
+			}
 			if b.Len() > 0 {
 				b.WriteString("\n")
 			}
 			b.WriteString("[")
-			b.WriteString(strconv.Itoa(i))
+			b.WriteString(strconv.Itoa(index))
 			b.WriteString("]: ")
 			b.WriteString(err[i].Error())
 		}
 	}
 	return b.String()
+}
+
+// Unwrap returns the original validation error.
+func (err indexedValidationError) Unwrap() error {
+	return err.error
 }
 
 var _ StructValidator = (*defaultValidator)(nil)
@@ -63,6 +78,9 @@ func (v *defaultValidator) ValidateStruct(obj any) error {
 		validateRet := make(SliceValidationError, 0)
 		for i := range count {
 			if err := v.ValidateStruct(value.Index(i).Interface()); err != nil {
+				if i != len(validateRet) {
+					err = indexedValidationError{error: err, index: i}
+				}
 				validateRet = append(validateRet, err)
 			}
 		}

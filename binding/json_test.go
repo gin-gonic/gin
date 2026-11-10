@@ -7,12 +7,14 @@ package binding
 import (
 	"io"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 	"unsafe"
 
 	"github.com/gin-gonic/gin/codec/json"
 	"github.com/gin-gonic/gin/render"
+	"github.com/go-playground/validator/v10"
 	jsoniter "github.com/json-iterator/go"
 	"github.com/modern-go/reflect2"
 	"github.com/stretchr/testify/assert"
@@ -35,6 +37,29 @@ func TestJSONBindingBindBodyMap(t *testing.T) {
 	assert.Len(t, s, 2)
 	assert.Equal(t, "FOO", s["foo"])
 	assert.Equal(t, "world", s["hello"])
+}
+
+func TestJSONBindingBindBodySliceValidationIndex(t *testing.T) {
+	type item struct {
+		Name string `json:"name" binding:"required"`
+	}
+
+	var items []item
+	err := jsonBinding{}.BindBody([]byte(`[{},{"name":"valid"},{}]`), &items)
+
+	var failures SliceValidationError
+	require.ErrorAs(t, err, &failures)
+	require.Len(t, failures, 2)
+
+	lines := strings.Split(err.Error(), "\n")
+	require.Len(t, lines, 2)
+	assert.True(t, strings.HasPrefix(lines[0], "[0]:"), "error = %q", lines[0])
+	assert.True(t, strings.HasPrefix(lines[1], "[2]:"), "error = %q", lines[1])
+
+	var fields validator.ValidationErrors
+	require.ErrorAs(t, failures[1], &fields)
+	require.Len(t, fields, 1)
+	assert.Equal(t, "Name", fields[0].Field())
 }
 
 func TestCustomJsonCodec(t *testing.T) {
