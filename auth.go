@@ -5,6 +5,7 @@
 package gin
 
 import (
+	"crypto/sha256"
 	"crypto/subtle"
 	"encoding/base64"
 	"net/http"
@@ -23,8 +24,9 @@ const AuthProxyUserKey = "proxy_user"
 type Accounts map[string]string
 
 type authPair struct {
-	value string
-	user  string
+	value  string
+	user   string
+	digest [sha256.Size]byte
 }
 
 type authPairs []authPair
@@ -33,12 +35,20 @@ func (a authPairs) searchCredential(authValue string) (string, bool) {
 	if authValue == "" {
 		return "", false
 	}
+	authDigest := sha256.Sum256(bytesconv.StringToBytes(authValue))
+	var matchedUser string
+	var found bool
 	for _, pair := range a {
-		if subtle.ConstantTimeCompare(bytesconv.StringToBytes(pair.value), bytesconv.StringToBytes(authValue)) == 1 {
-			return pair.user, true
+		// Compare fixed-size SHA-256 digests so subtle.ConstantTimeCompare
+		// does not return early on length mismatch and leak credential length.
+		if subtle.ConstantTimeCompare(pair.digest[:], authDigest[:]) == 1 &&
+			subtle.ConstantTimeCompare(bytesconv.StringToBytes(pair.value), bytesconv.StringToBytes(authValue)) == 1 &&
+			!found {
+			matchedUser = pair.user
+			found = true
 		}
 	}
-	return "", false
+	return matchedUser, found
 }
 
 // BasicAuthForRealm returns a Basic HTTP Authorization middleware. It takes as arguments a map[string]string where
@@ -81,8 +91,9 @@ func processAccounts(accounts Accounts) authPairs {
 		assert1(user != "", "User can not be empty")
 		value := authorizationHeader(user, password)
 		pairs = append(pairs, authPair{
-			value: value,
-			user:  user,
+			value:  value,
+			user:   user,
+			digest: sha256.Sum256(bytesconv.StringToBytes(value)),
 		})
 	}
 	return pairs
