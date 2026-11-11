@@ -5,6 +5,7 @@
 package gin
 
 import (
+	"crypto/sha256"
 	"encoding/base64"
 	"net/http"
 	"net/http/httptest"
@@ -22,16 +23,19 @@ func TestBasicAuth(t *testing.T) {
 
 	assert.Len(t, pairs, 3)
 	assert.Contains(t, pairs, authPair{
-		user:  "bar",
-		value: "Basic YmFyOmZvbw==",
+		user:   "bar",
+		value:  "Basic YmFyOmZvbw==",
+		digest: sha256.Sum256([]byte("Basic YmFyOmZvbw==")),
 	})
 	assert.Contains(t, pairs, authPair{
-		user:  "foo",
-		value: "Basic Zm9vOmJhcg==",
+		user:   "foo",
+		value:  "Basic Zm9vOmJhcg==",
+		digest: sha256.Sum256([]byte("Basic Zm9vOmJhcg==")),
 	})
 	assert.Contains(t, pairs, authPair{
-		user:  "admin",
-		value: "Basic YWRtaW46cGFzc3dvcmQ=",
+		user:   "admin",
+		value:  "Basic YWRtaW46cGFzc3dvcmQ=",
+		digest: sha256.Sum256([]byte("Basic YWRtaW46cGFzc3dvcmQ=")),
 	})
 }
 
@@ -73,6 +77,73 @@ func TestBasicAuthSearchCredential(t *testing.T) {
 	assert.False(t, found)
 
 	user, found = pairs.searchCredential("")
+	assert.Empty(t, user)
+	assert.False(t, found)
+}
+
+func TestBasicAuthSearchCredentialLengthAndCollisionGuard(t *testing.T) {
+	pairs := processAccounts(Accounts{
+		"a":        "",
+		"admin":    "password",
+		"longuser": "very-long-secret-password-value",
+	})
+
+	for _, tc := range []struct {
+		name      string
+		header    string
+		wantUser  string
+		wantFound bool
+	}{
+		{
+			name:      "empty password account matches",
+			header:    authorizationHeader("a", ""),
+			wantUser:  "a",
+			wantFound: true,
+		},
+		{
+			name:      "long account matches",
+			header:    authorizationHeader("longuser", "very-long-secret-password-value"),
+			wantUser:  "longuser",
+			wantFound: true,
+		},
+		{
+			name:   "shorter than any credential",
+			header: "Basic YQ==",
+		},
+		{
+			name:   "prefix of valid credential",
+			header: authorizationHeader("admin", "password")[:10],
+		},
+		{
+			name:   "longer than any credential",
+			header: authorizationHeader("longuser", "very-long-secret-password-value-extra"),
+		},
+		{
+			name:   "same length wrong password",
+			header: authorizationHeader("admin", "passworx"),
+		},
+		{
+			name:   "non-basic scheme",
+			header: "Bearer some-token",
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			user, found := pairs.searchCredential(tc.header)
+			assert.Equal(t, tc.wantUser, user)
+			assert.Equal(t, tc.wantFound, found)
+		})
+	}
+
+	// Verify exact value check prevents false positives even on matching digests.
+	candidate := authorizationHeader("admin", "wrong")
+	forged := authPairs{
+		{
+			user:   "admin",
+			value:  authorizationHeader("admin", "password"),
+			digest: sha256.Sum256([]byte(candidate)),
+		},
+	}
+	user, found := forged.searchCredential(candidate)
 	assert.Empty(t, user)
 	assert.False(t, found)
 }
