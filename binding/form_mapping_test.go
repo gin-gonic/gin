@@ -1144,3 +1144,15 @@ func TestMappingEmptyValues(t *testing.T) {
 		assert.Equal(t, []int{1, 2, 3}, s.SliceCsv)
 	})
 }
+
+func TestMappingFileHeaderFieldNames(t *testing.T) {
+	var s struct {
+		FileValue multipart.FileHeader  `form:"file"`
+		FilePtr   *multipart.FileHeader `form:"file"`
+	}
+
+	err := mapForm(&s, map[string][]string{"Filename": {"report.pdf"}, "Size": {"12345"}})
+	require.NoError(t, err)
+	assert.Equal(t, multipart.FileHeader{}, s.FileValue)
+	assert.Nil(t, s.FilePtr)
+}

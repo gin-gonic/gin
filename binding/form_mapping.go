@@ -43,6 +43,9 @@ func MapFormWithTag(ptr any, form map[string][]string, tag string) error {
 
 var emptyField = reflect.StructField{}
 
+// fileHeaderType is bound as a whole from an uploaded file, see setByMultipartFormFile.
+var fileHeaderType = reflect.TypeFor[multipart.FileHeader]()
+
 func mapFormByTag(ptr any, form map[string][]string, tag string) error {
 	// Check if ptr is a map
 	ptrVal := reflect.ValueOf(ptr)
@@ -117,6 +120,9 @@ func mapping(value reflect.Value, field reflect.StructField, setter setter, tag 
 
 	if vKind == reflect.Struct {
 		tValue := value.Type()
+		if tValue == fileHeaderType { // its fields are not request parameters
+			return false, nil
+		}
 
 		var isSet bool
 		for i := range value.NumField() {

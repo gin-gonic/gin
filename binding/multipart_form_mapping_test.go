@@ -137,3 +137,27 @@ func assertMultipartFileHeader(t *testing.T, fh *multipart.FileHeader, file test
 	err = fl.Close()
 	require.NoError(t, err)
 }
+
+func TestFormMultipartBindingIgnoresFileHeaderFieldNames(t *testing.T) {
+	var s struct {
+		FileValue multipart.FileHeader  `form:"file"`
+		FilePtr   *multipart.FileHeader `form:"file"`
+	}
+
+	// No file is uploaded, but the text fields are named like the exported
+	// fields of multipart.FileHeader.
+	var body bytes.Buffer
+	mw := multipart.NewWriter(&body)
+	require.NoError(t, mw.WriteField("Filename", "report.pdf"))
+	require.NoError(t, mw.WriteField("Size", "XL"))
+	require.NoError(t, mw.WriteField("Header", "plain text"))
+	require.NoError(t, mw.Close())
+
+	req, err := http.NewRequest(http.MethodPost, "/", &body)
+	require.NoError(t, err)
+	req.Header.Set("Content-Type", mw.FormDataContentType())
+
+	require.NoError(t, FormMultipart.Bind(req, &s))
+	assert.Equal(t, multipart.FileHeader{}, s.FileValue)
+	assert.Nil(t, s.FilePtr)
+}
