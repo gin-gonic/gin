@@ -28,7 +28,7 @@ const (
 	ErrorTypeAny ErrorType = 1<<64 - 1
 )
 
-// Error represents a error's specification.
+// Error represents an error's specification.
 type Error struct {
 	Err  error
 	Type ErrorType
