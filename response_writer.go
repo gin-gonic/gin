@@ -70,6 +70,10 @@ func (w *responseWriter) WriteHeader(code int) {
 			debugPrint("[WARNING] Headers were already written. Wanted to override status code %d with %d", w.status, code)
 			return
 		}
+		if code >= http.StatusContinue && code < http.StatusOK && code != http.StatusSwitchingProtocols {
+			w.ResponseWriter.WriteHeader(code)
+			return
+		}
 		w.status = code
 	}
 }
