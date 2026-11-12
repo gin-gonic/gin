@@ -6,9 +6,13 @@ package gin
 
 import (
 	"bufio"
+	"io"
 	"net"
 	"net/http"
 	"net/http/httptest"
+	"net/http/httptrace"
+	"net/textproto"
+	"strconv"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -293,6 +297,41 @@ func TestResponseWriterFlush(t *testing.T) {
 	resp, err := http.Get(testServer.URL)
 	require.NoError(t, err)
 	assert.Equal(t, http.StatusInternalServerError, resp.StatusCode)
+}
+
+func TestResponseWriterWriteHeaderInformational(t *testing.T) {
+	testServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		writer := &responseWriter{}
+		writer.reset(w)
+
+		writer.Header().Set("Link", "</style.css>; rel=preload; as=style")
+		writer.WriteHeader(http.StatusEarlyHints)
+		writer.WriteHeader(http.StatusCreated)
+		_, _ = writer.WriteString(strconv.Itoa(writer.Status()))
+	}))
+	defer testServer.Close()
+
+	var informational []int
+	var link string
+	trace := &httptrace.ClientTrace{
+		Got1xxResponse: func(code int, header textproto.MIMEHeader) error {
+			informational = append(informational, code)
+			link = header.Get("Link")
+			return nil
+		},
+	}
+	req, err := http.NewRequestWithContext(httptrace.WithClientTrace(t.Context(), trace), http.MethodGet, testServer.URL, nil)
+	require.NoError(t, err)
+	resp, err := http.DefaultClient.Do(req)
+	require.NoError(t, err)
+	defer resp.Body.Close()
+	body, err := io.ReadAll(resp.Body)
+	require.NoError(t, err)
+
+	assert.Equal(t, []int{http.StatusEarlyHints}, informational)
+	assert.Equal(t, "</style.css>; rel=preload; as=style", link)
+	assert.Equal(t, http.StatusCreated, resp.StatusCode)
+	assert.Equal(t, "201", string(body))
 }
 
 func TestResponseWriterStatusCode(t *testing.T) {
