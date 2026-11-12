@@ -33,7 +33,11 @@ func (r Reader) Render(w http.ResponseWriter) (err error) {
 }
 
 // WriteContentType (Reader) writes custom ContentType.
+// An empty ContentType is not written, so that net/http detects it from the body.
 func (r Reader) WriteContentType(w http.ResponseWriter) {
+	if r.ContentType == "" {
+		return
+	}
 	writeContentType(w, []string{r.ContentType})
 }
 
