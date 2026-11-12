@@ -69,6 +69,31 @@ func TestFormMultipartBindingBindTwoFiles(t *testing.T) {
 	}
 }
 
+func TestFormMultipartBindingBindEmptyFile(t *testing.T) {
+	var s struct {
+		FilePtr     *multipart.FileHeader    `form:"file"`
+		SliceValues []multipart.FileHeader   `form:"file"`
+		SlicePtrs   []*multipart.FileHeader  `form:"file"`
+		ArrayPtrs   [1]*multipart.FileHeader `form:"file"`
+	}
+	req := createRequestMultipartFiles(t, testFile{"file", "", nil})
+	err := FormMultipart.Bind(req, &s)
+	require.NoError(t, err)
+
+	assert.Nil(t, s.FilePtr)
+	assert.Nil(t, s.SliceValues)
+	assert.Nil(t, s.SlicePtrs)
+	assert.Nil(t, s.ArrayPtrs[0])
+
+	var required struct {
+		File *multipart.FileHeader `form:"file" binding:"required"`
+	}
+	req = createRequestMultipartFiles(t, testFile{"file", "", nil})
+	err = FormMultipart.Bind(req, &required)
+	require.Error(t, err)
+	assert.Nil(t, required.File)
+}
+
 func TestFormMultipartBindingBindError(t *testing.T) {
 	files := []testFile{
 		{"file", "file1", []byte("hello")},

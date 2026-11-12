@@ -28,6 +28,9 @@ func (r *multipartRequest) TrySet(value reflect.Value, field reflect.StructField
 	if files := r.MultipartForm.File[key]; len(files) != 0 {
 		return setByMultipartFormFile(value, field, files)
 	}
+	if isFileHeaderType(value.Type()) {
+		return false, nil
+	}
 
 	return setByForm(value, field, r.MultipartForm.Value, key, opt)
 }
@@ -71,4 +74,16 @@ func setArrayOfMultipartFormFiles(value reflect.Value, field reflect.StructField
 		}
 	}
 	return true, nil
+}
+
+var fileHeaderType = reflect.TypeOf(multipart.FileHeader{})
+
+func isFileHeaderType(t reflect.Type) bool {
+	if t.Kind() == reflect.Slice || t.Kind() == reflect.Array {
+		t = t.Elem()
+	}
+	if t.Kind() == reflect.Ptr {
+		t = t.Elem()
+	}
+	return t == fileHeaderType
 }
