@@ -71,10 +71,10 @@ func CustomRecoveryWithWriter(out io.Writer, handle RecoveryFunc) HandlerFunc {
 					if isBrokenPipe {
 						logger.Printf("%s\n%s%s", rec, secureRequestDump(c.Request), reset)
 					} else if IsDebugging() {
-						logger.Printf("[Recovery] %s panic recovered:\n%s\n%s\n%s%s",
+						logger.Printf("[Recovery] %s panic recovered:\n%s\n%v\n%s%s",
 							timeFormat(time.Now()), secureRequestDump(c.Request), rec, stack(stackSkip), reset)
 					} else {
-						logger.Printf("[Recovery] %s panic recovered:\n%s\n%s%s",
+						logger.Printf("[Recovery] %s panic recovered:\n%v\n%s%s",
 							timeFormat(time.Now()), rec, stack(stackSkip), reset)
 					}
 				}
