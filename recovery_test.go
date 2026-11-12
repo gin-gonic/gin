@@ -76,6 +76,39 @@ func TestPanicInHandler(t *testing.T) {
 }
 
 // TestPanicWithAbort assert that panic has been recovered even if context.Abort was used.
+// TestPanicWithNonStringValue asserts that a panic value which is neither a
+// string nor an error is logged the way the runtime prints it.
+func TestPanicWithNonStringValue(t *testing.T) {
+	type code int
+
+	for _, mode := range []string{TestMode, DebugMode} {
+		SetMode(mode)
+		buffer := new(strings.Builder)
+		router := New()
+		router.Use(RecoveryWithWriter(buffer))
+		router.GET("/int", func(_ *Context) {
+			panic(42)
+		})
+		router.GET("/typed", func(_ *Context) {
+			panic(code(7))
+		})
+		// RUN
+		w := PerformRequest(router, http.MethodGet, "/int")
+		// TEST
+		assert.Equal(t, http.StatusInternalServerError, w.Code)
+		assert.Contains(t, buffer.String(), "\n42\n")
+
+		// RUN
+		w = PerformRequest(router, http.MethodGet, "/typed")
+		// TEST
+		assert.Equal(t, http.StatusInternalServerError, w.Code)
+		assert.Contains(t, buffer.String(), "\n7\n")
+		assert.NotContains(t, buffer.String(), "%!s")
+	}
+
+	SetMode(TestMode)
+}
+
 func TestPanicWithAbort(t *testing.T) {
 	router := New()
 	router.Use(RecoveryWithWriter(nil))
