@@ -1193,7 +1193,11 @@ func (c *Context) Cookie(name string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	val, _ := url.QueryUnescape(cookie.Value)
+	val := cookie.Value
+	// A value that cannot be unescaped was not written by SetCookie, return it as received.
+	if unescaped, err := url.QueryUnescape(val); err == nil {
+		val = unescaped
+	}
 	return val, nil
 }
 

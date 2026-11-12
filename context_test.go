@@ -1142,6 +1142,27 @@ func TestContextGetCookie(t *testing.T) {
 	require.Error(t, err)
 }
 
+func TestContextGetCookieNotEscaped(t *testing.T) {
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	c.Request, _ = http.NewRequest(http.MethodGet, "/get", nil)
+	// Cookies set by other software are not necessarily query-escaped.
+	c.Request.Header.Set("Cookie", "discount=50%; progress=100%done; user=John+Doe%21")
+
+	for name, want := range map[string]string{
+		"discount": "50%",
+		"progress": "100%done",
+		"user":     "John Doe!",
+	} {
+		std, err := c.Request.Cookie(name)
+		require.NoError(t, err)
+		assert.NotEmpty(t, std.Value)
+
+		cookie, err := c.Cookie(name)
+		require.NoError(t, err)
+		assert.Equal(t, want, cookie)
+	}
+}
+
 func TestContextBodyAllowedForStatus(t *testing.T) {
 	assert.False(t, bodyAllowedForStatus(http.StatusContinue))
 	assert.False(t, bodyAllowedForStatus(http.StatusProcessing))
