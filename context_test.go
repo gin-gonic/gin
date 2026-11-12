@@ -1844,6 +1844,23 @@ func TestContextNegotiationWithXML(t *testing.T) {
 	assert.Equal(t, "application/xml; charset=utf-8", w.Header().Get("Content-Type"))
 }
 
+func TestContextNegotiationWithXML2(t *testing.T) {
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
+	c.Request, _ = http.NewRequest(http.MethodGet, "/", nil)
+	c.Request.Header.Set("Accept", MIMEXML2)
+
+	c.Negotiate(http.StatusOK, Negotiate{
+		Offered: []string{MIMEJSON, MIMEXML2},
+		Data:    H{"foo": "bar"},
+	})
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Equal(t, "<map><foo>bar</foo></map>", w.Body.String())
+	assert.Equal(t, "application/xml; charset=utf-8", w.Header().Get("Content-Type"))
+	assert.False(t, c.IsAborted())
+}
+
 func TestContextNegotiationWithYAML(t *testing.T) {
 	w := httptest.NewRecorder()
 	c, _ := CreateTestContext(w)

@@ -1425,7 +1425,7 @@ func (c *Context) Negotiate(code int, config Negotiate) {
 		data := chooseData(config.HTMLData, config.Data)
 		c.HTML(code, config.HTMLName, data)
 
-	case binding.MIMEXML:
+	case binding.MIMEXML, binding.MIMEXML2:
 		data := chooseData(config.XMLData, config.Data)
 		c.XML(code, data)
 
