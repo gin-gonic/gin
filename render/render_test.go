@@ -815,3 +815,42 @@ func TestRenderWriteError(t *testing.T) {
 	require.Error(t, err)
 	assert.Equal(t, "write error", err.Error())
 }
+
+func TestRenderEmptyContentType(t *testing.T) {
+	const page = "<html><body>hello</body></html>"
+
+	handlers := map[string]http.HandlerFunc{
+		// What net/http does when the handler sets no Content-Type.
+		"net/http": func(w http.ResponseWriter, _ *http.Request) {
+			_, err := io.WriteString(w, page)
+			assert.NoError(t, err)
+		},
+		"Data": func(w http.ResponseWriter, _ *http.Request) {
+			assert.NoError(t, Data{Data: []byte(page)}.Render(w))
+		},
+		"Reader": func(w http.ResponseWriter, _ *http.Request) {
+			assert.NoError(t, Reader{ContentLength: int64(len(page)), Reader: strings.NewReader(page)}.Render(w))
+		},
+	}
+
+	for name, handler := range handlers {
+		t.Run(name, func(t *testing.T) {
+			srv := httptest.NewServer(handler)
+			t.Cleanup(srv.Close)
+
+			resp, err := http.Get(srv.URL)
+			require.NoError(t, err)
+			defer resp.Body.Close()
+
+			assert.Equal(t, []string{"text/html; charset=utf-8"}, resp.Header.Values("Content-Type"))
+			body, err := io.ReadAll(resp.Body)
+			require.NoError(t, err)
+			assert.Equal(t, page, string(body))
+		})
+	}
+
+	w := httptest.NewRecorder()
+	Data{}.WriteContentType(w)
+	Reader{}.WriteContentType(w)
+	assert.NotContains(t, w.Header(), "Content-Type")
+}
