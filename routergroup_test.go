@@ -42,7 +42,7 @@ func TestRouterGroupBasicHandle(t *testing.T) {
 	performRequestInGroup(t, http.MethodDelete)
 	performRequestInGroup(t, http.MethodHead)
 	performRequestInGroup(t, http.MethodOptions)
-	performRequestInGroup(t, MethodQuery)
+	performRequestInGroup(t, http.MethodQuery)
 }
 
 func performRequestInGroup(t *testing.T, method string) {
@@ -79,7 +79,7 @@ func performRequestInGroup(t *testing.T, method string) {
 	case http.MethodOptions:
 		v1.OPTIONS("/test", handler)
 		login.OPTIONS("/test", handler)
-	case MethodQuery:
+	case http.MethodQuery:
 		v1.QUERY("/test", handler)
 		login.QUERY("/test", handler)
 	default:

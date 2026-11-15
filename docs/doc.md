@@ -161,10 +161,10 @@ func main() {
 }
 ```
 
-Use the `gin.MethodQuery` constant wherever an HTTP method name is expected, for example when building a request in a test:
+Use Go's `http.MethodQuery` constant wherever an HTTP method name is expected, for example when building a request in a test:
 
 ```go
-req := httptest.NewRequest(gin.MethodQuery, "/search", body)
+req := httptest.NewRequest(http.MethodQuery, "/search", body)
 ```
 
 Keep in mind:
