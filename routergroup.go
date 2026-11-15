@@ -11,10 +11,9 @@ import (
 	"strings"
 )
 
-// MethodQuery is the HTTP QUERY method defined by RFC 10008. It is declared
-// here because the standard library does not provide http.MethodQuery yet.
-// Once it does, this constant keeps the same value and stays valid.
-const MethodQuery = "QUERY"
+// MethodQuery aliases the HTTP QUERY method defined by RFC 10008.
+// Deprecated: use http.MethodQuery instead.
+const MethodQuery = http.MethodQuery
 
 var (
 	// regEnLetter matches english letters for http method name
@@ -24,7 +23,7 @@ var (
 	anyMethods = []string{
 		http.MethodGet, http.MethodPost, http.MethodPut, http.MethodPatch,
 		http.MethodHead, http.MethodOptions, http.MethodDelete, http.MethodConnect,
-		http.MethodTrace, MethodQuery,
+		http.MethodTrace, http.MethodQuery,
 	}
 )
 
@@ -174,7 +173,7 @@ func (group *RouterGroup) HEAD(relativePath string, handlers ...HandlerFunc) IRo
 // query in the request body. The body is read like any other body, for example
 // with c.ShouldBindJSON.
 func (group *RouterGroup) QUERY(relativePath string, handlers ...HandlerFunc) IRoutes {
-	return group.handle(MethodQuery, relativePath, handlers)
+	return group.handle(http.MethodQuery, relativePath, handlers)
 }
 
 // Any registers a route that matches all the HTTP methods.

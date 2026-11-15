@@ -101,7 +101,7 @@ func TestRouteQuery(t *testing.T) {
 		c.String(http.StatusOK, body.Term)
 	})
 
-	req := httptest.NewRequest(MethodQuery, "/search", strings.NewReader(`{"term":"gin"}`))
+	req := httptest.NewRequest(http.MethodQuery, "/search", strings.NewReader(`{"term":"gin"}`))
 	req.Header.Set("Content-Type", MIMEJSON)
 	w := httptest.NewRecorder()
 	router.ServeHTTP(w, req)
@@ -117,7 +117,7 @@ func TestRouteQueryRegisteredByAny(t *testing.T) {
 		c.Status(http.StatusOK)
 	})
 
-	w := PerformRequest(router, MethodQuery, "/test")
+	w := PerformRequest(router, http.MethodQuery, "/test")
 
 	assert.Equal(t, http.StatusOK, w.Code)
 }
@@ -135,7 +135,7 @@ func TestQueryRoutesInterface(t *testing.T) {
 		c.Status(http.StatusOK)
 	})
 
-	w := PerformRequest(router, MethodQuery, "/v1/search")
+	w := PerformRequest(router, http.MethodQuery, "/v1/search")
 
 	assert.Equal(t, http.StatusOK, w.Code)
 }
@@ -170,7 +170,7 @@ func TestRouterGroupRouteOK(t *testing.T) {
 	testRouteOK(http.MethodDelete, t)
 	testRouteOK(http.MethodConnect, t)
 	testRouteOK(http.MethodTrace, t)
-	testRouteOK(MethodQuery, t)
+	testRouteOK(http.MethodQuery, t)
 }
 
 func TestRouteNotOK(t *testing.T) {
@@ -183,7 +183,7 @@ func TestRouteNotOK(t *testing.T) {
 	testRouteNotOK(http.MethodDelete, t)
 	testRouteNotOK(http.MethodConnect, t)
 	testRouteNotOK(http.MethodTrace, t)
-	testRouteNotOK(MethodQuery, t)
+	testRouteNotOK(http.MethodQuery, t)
 }
 
 func TestRouteNotOK2(t *testing.T) {
@@ -196,7 +196,7 @@ func TestRouteNotOK2(t *testing.T) {
 	testRouteNotOK2(http.MethodDelete, t)
 	testRouteNotOK2(http.MethodConnect, t)
 	testRouteNotOK2(http.MethodTrace, t)
-	testRouteNotOK2(MethodQuery, t)
+	testRouteNotOK2(http.MethodQuery, t)
 }
 
 func TestRouteRedirectTrailingSlash(t *testing.T) {

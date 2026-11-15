@@ -36,7 +36,7 @@ func TestQUERY(t *testing.T) {
 		c.String(http.StatusOK, "query")
 	})
 
-	req := httptest.NewRequest(gin.MethodQuery, "/query", nil)
+	req := httptest.NewRequest(http.MethodQuery, "/query", nil)
 	w := httptest.NewRecorder()
 	engine().ServeHTTP(w, req)
 
