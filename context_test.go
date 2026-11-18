@@ -4055,3 +4055,16 @@ func BenchmarkGetMapFromFormData(b *testing.B) {
 		})
 	}
 }
+
+func TestContextGetRequestAndWriter(t *testing.T) {
+	c, _ := CreateTestContext(httptest.NewRecorder())
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	c.Request = req
+
+	if got := c.GetRequest(); got != req {
+		t.Fatalf("GetRequest() = %p, want %p", got, req)
+	}
+	if got := c.GetWriter(); got != c.Writer {
+		t.Fatalf("GetWriter() = %p, want %p", got, c.Writer)
+	}
+}
