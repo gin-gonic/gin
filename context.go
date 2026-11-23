@@ -1159,7 +1159,7 @@ func (c *Context) SetCookie(name, value string, maxAge int, path, domain string,
 	if path == "" {
 		path = "/"
 	}
-	http.SetCookie(c.Writer, &http.Cookie{
+	http.SetCookie(c.Writer, &http.Cookie{ //nolint:gosec // G124: cookie security attributes are configured by caller
 		Name:     name,
 		Value:    url.QueryEscape(value),
 		MaxAge:   maxAge,
@@ -1174,7 +1174,7 @@ func (c *Context) SetCookie(name, value string, maxAge int, path, domain string,
 // SetCookieData adds a Set-Cookie header to the ResponseWriter's headers.
 // It accepts a pointer to http.Cookie structure for more flexibility in setting cookie attributes.
 // The provided cookie must have a valid Name. Invalid cookies may be silently dropped.
-func (c *Context) SetCookieData(cookie *http.Cookie) {
+func (c *Context) SetCookieData(cookie *http.Cookie) { //nolint:gosec // G124: cookie security attributes are configured by caller
 	if cookie.Path == "" {
 		cookie.Path = "/"
 	}

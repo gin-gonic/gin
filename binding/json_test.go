@@ -131,12 +131,12 @@ func (te *TimeEx) CreateEncoder(typ reflect2.Type) jsoniter.ValEncoder {
 type timeCodec struct{}
 
 func (tc timeCodec) IsEmpty(ptr unsafe.Pointer) bool {
-	t := *((*time.Time)(ptr))
+	t := *(*time.Time)(ptr)
 	return t.Equal(zeroTime)
 }
 
 func (tc timeCodec) Encode(ptr unsafe.Pointer, stream *jsoniter.Stream) {
-	t := *((*time.Time)(ptr))
+	t := *(*time.Time)(ptr)
 	if t.Equal(zeroTime) {
 		stream.WriteNil()
 		return
@@ -147,14 +147,14 @@ func (tc timeCodec) Encode(ptr unsafe.Pointer, stream *jsoniter.Stream) {
 func (tc timeCodec) Decode(ptr unsafe.Pointer, iter *jsoniter.Iterator) {
 	ts := iter.ReadString()
 	if len(ts) == 0 {
-		*((*time.Time)(ptr)) = zeroTime
+		*(*time.Time)(ptr) = zeroTime
 		return
 	}
 	t, err := time.ParseInLocation("2006-01-02 15:04:05.000", ts, time.Local)
 	if err != nil {
 		panic(err)
 	}
-	*((*time.Time)(ptr)) = t
+	*(*time.Time)(ptr) = t
 }
 
 // endregion
@@ -187,12 +187,12 @@ func (tpe *TimePointerEx) CreateEncoder(typ reflect2.Type) jsoniter.ValEncoder {
 type timePointerCodec struct{}
 
 func (tpc timePointerCodec) IsEmpty(ptr unsafe.Pointer) bool {
-	t := *((**time.Time)(ptr))
+	t := *(**time.Time)(ptr)
 	return t == nil || (*t).Equal(zeroTime)
 }
 
 func (tpc timePointerCodec) Encode(ptr unsafe.Pointer, stream *jsoniter.Stream) {
-	t := *((**time.Time)(ptr))
+	t := *(**time.Time)(ptr)
 	if t == nil || (*t).Equal(zeroTime) {
 		stream.WriteNil()
 		return
@@ -203,14 +203,14 @@ func (tpc timePointerCodec) Encode(ptr unsafe.Pointer, stream *jsoniter.Stream) 
 func (tpc timePointerCodec) Decode(ptr unsafe.Pointer, iter *jsoniter.Iterator) {
 	ts := iter.ReadString()
 	if len(ts) == 0 {
-		*((**time.Time)(ptr)) = nil
+		*(**time.Time)(ptr) = nil
 		return
 	}
 	t, err := time.ParseInLocation("2006-01-02 15:04:05.000", ts, time.Local)
 	if err != nil {
 		panic(err)
 	}
-	*((**time.Time)(ptr)) = &t
+	*(**time.Time)(ptr) = &t
 }
 
 // endregion
