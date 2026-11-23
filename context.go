@@ -292,6 +292,16 @@ func (c *Context) Set(key any, value any) {
 	c.Keys[key] = value
 }
 
+// GetRequest returns the underlying *http.Request for the current context.
+func (c *Context) GetRequest() *http.Request {
+	return c.Request
+}
+
+// GetWriter returns the underlying ResponseWriter for the current context.
+func (c *Context) GetWriter() ResponseWriter {
+	return c.Writer
+}
+
 // Get returns the value for the given key, ie: (value, true).
 // If the value does not exist it returns (nil, false)
 func (c *Context) Get(key any) (value any, exists bool) {
