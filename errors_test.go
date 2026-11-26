@@ -57,6 +57,16 @@ func TestError(t *testing.T) {
 		"data":   "some data",
 	}, err.JSON())
 
+	err.SetMeta(map[int]string{ //nolint: errcheck
+		1: "one",
+		2: "two",
+	})
+	assert.Equal(t, H{
+		"error": baseError.Error(),
+		"1":     "one",
+		"2":     "two",
+	}, err.JSON())
+
 	type customError struct {
 		status string
 		data   string

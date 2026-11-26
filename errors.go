@@ -61,7 +61,12 @@ func (msg *Error) JSON() any {
 			return msg.Meta
 		case reflect.Map:
 			for _, key := range value.MapKeys() {
-				jsonData[key.String()] = value.MapIndex(key).Interface()
+				// key.String() returns "<T Value>" for non-string kinds.
+				k := key.String()
+				if key.Kind() != reflect.String {
+					k = fmt.Sprint(key.Interface())
+				}
+				jsonData[k] = value.MapIndex(key).Interface()
 			}
 		default:
 			jsonData["meta"] = msg.Meta
