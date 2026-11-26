@@ -1042,6 +1042,10 @@ func (c *Context) ClientIP() string {
 			}
 		}
 	}
+	// remoteIP is not parsed when listening on a unix socket.
+	if remoteIP == nil {
+		return ""
+	}
 	return remoteIP.String()
 }
 

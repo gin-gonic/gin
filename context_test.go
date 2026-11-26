@@ -2171,6 +2171,17 @@ func TestContextClientIP(t *testing.T) {
 	c.Request.RemoteAddr = addr.String()
 	assert.Equal(t, "20.20.20.20", c.ClientIP())
 
+	// unix address without a valid forwarding header
+	c.Request.Header.Del("X-Forwarded-For")
+	c.Request.Header.Del("X-Real-IP")
+	assert.Empty(t, c.ClientIP())
+
+	// unix address with ForwardedByClientIP disabled
+	c.Request.Header.Set("X-Forwarded-For", "20.20.20.20")
+	c.engine.ForwardedByClientIP = false
+	assert.Empty(t, c.ClientIP())
+	c.engine.ForwardedByClientIP = true
+
 	// reset
 	c.Request = c.Request.WithContext(context.Background())
 	resetContextForClientIPTests(c)
