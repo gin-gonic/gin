@@ -1698,6 +1698,17 @@ func TestContextRenderUTF8Attachment(t *testing.T) {
 	assert.Equal(t, `attachment; filename*=UTF-8''`+url.QueryEscape(newFilename), w.Header().Get("Content-Disposition"))
 }
 
+func TestContextRenderUTF8AttachmentWithSpaces(t *testing.T) {
+	w := httptest.NewRecorder()
+	c, _ := CreateTestContext(w)
+
+	c.Request, _ = http.NewRequest(http.MethodGet, "/", nil)
+	c.FileAttachment("./gin.go", "relatório final+v2.go")
+
+	assert.Equal(t, 200, w.Code)
+	assert.Equal(t, `attachment; filename*=UTF-8''relat%C3%B3rio%20final%2Bv2.go`, w.Header().Get("Content-Disposition"))
+}
+
 // TestContextRenderYAML tests that the response is serialized as YAML
 // and Content-Type is set to application/yaml
 func TestContextRenderYAML(t *testing.T) {
