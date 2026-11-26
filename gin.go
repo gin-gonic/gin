@@ -623,7 +623,8 @@ func (engine *Engine) RunUnix(file string) (err error) {
 	defer os.Remove(file)
 
 	server := &http.Server{ // #nosec G112
-		Handler: engine.Handler(),
+		Handler:           engine.Handler(),
+		ReadHeaderTimeout: engine.getReadHeaderTimeout(),
 	}
 	err = server.Serve(listener)
 	return
