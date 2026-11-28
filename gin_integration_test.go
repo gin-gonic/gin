@@ -275,6 +275,36 @@ func TestUnixSocket(t *testing.T) {
 	assert.Contains(t, response, "it worked", "resp body should match")
 }
 
+func TestUnixSocketReadHeaderTimeout(t *testing.T) {
+	router := New()
+	router.ReadHeaderTimeout = 200 * time.Millisecond
+
+	unixTestSocket := filepath.Join(os.TempDir(), "unix_unit_test_timeout")
+
+	defer os.Remove(unixTestSocket)
+
+	go func() {
+		router.GET("/example", func(c *Context) { c.String(http.StatusOK, "it worked") })
+		assert.NoError(t, router.RunUnix(unixTestSocket))
+	}()
+	// have to wait for the goroutine to start and run the server
+	// otherwise the main thread will complete
+	time.Sleep(5 * time.Millisecond)
+
+	c, err := net.Dial("unix", unixTestSocket)
+	require.NoError(t, err)
+	defer c.Close()
+
+	// headers without the final CRLF keep the server waiting for them
+	fmt.Fprint(c, "GET /example HTTP/1.1\r\nHost: gin.example\r\n")
+
+	start := time.Now()
+	require.NoError(t, c.SetReadDeadline(time.Now().Add(5*time.Second)))
+	buf := make([]byte, 512)
+	_, _ = c.Read(buf)
+	assert.Less(t, time.Since(start), 2*time.Second, "server should close the connection after ReadHeaderTimeout")
+}
+
 func TestBadUnixSocket(t *testing.T) {
 	router := New()
 	require.Error(t, router.RunUnix("#/tmp/unix_unit_test"))
