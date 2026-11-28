@@ -1225,7 +1225,7 @@ func testBodyBinding(t *testing.T, b Binding, name, path, badPath, body, badBody
 
 	obj = FooStruct{}
 	req = requestWithBody(http.MethodPost, badPath, badBody)
-	err = JSON.Bind(req, &obj)
+	err = b.Bind(req, &obj)
 	require.Error(t, err)
 }
 
@@ -1336,7 +1336,7 @@ func testBodyBindingFail(t *testing.T, b Binding, name, path, badPath, body, bad
 
 	obj = FooStruct{}
 	req = requestWithBody(http.MethodPost, badPath, badBody)
-	err = JSON.Bind(req, &obj)
+	err = b.Bind(req, &obj)
 	require.Error(t, err)
 }
 
