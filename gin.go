@@ -9,6 +9,7 @@ import (
 	"html/template"
 	"net"
 	"net/http"
+	"net/url"
 	"os"
 	"path"
 	"strings"
@@ -810,15 +811,27 @@ func serveError(c *Context, code int, defaultMessage []byte) {
 func redirectTrailingSlash(c *Context) {
 	req := c.Request
 	p := req.URL.Path
+	// Routing matched the escaped path, so build the redirect from it too;
+	// otherwise an encoded slash (%2F) would turn into a real path separator.
+	escaped := c.engine.UseEscapedPath || (c.engine.UseRawPath && req.URL.RawPath != "")
+	if escaped {
+		p = req.URL.EscapedPath()
+	}
 	if prefix := path.Clean(c.Request.Header.Get("X-Forwarded-Prefix")); prefix != "." {
 		prefix = sanitizePathChars(prefix)
 		prefix = removeRepeatedChar(prefix, '/')
 
-		p = prefix + "/" + req.URL.Path
+		p = prefix + "/" + p
 	}
 	req.URL.Path = p + "/"
 	if length := len(p); length > 1 && p[length-1] == '/' {
 		req.URL.Path = p[:length-1]
+	}
+	if escaped {
+		if unescaped, err := url.PathUnescape(req.URL.Path); err == nil {
+			req.URL.RawPath = req.URL.Path
+			req.URL.Path = unescaped
+		}
 	}
 	redirectRequest(c)
 }
