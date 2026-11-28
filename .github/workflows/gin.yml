@@ -77,6 +77,10 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-go-
 
+      - name: Test Makefile
+        if: matrix.test-tags == ''
+        run: sh .github/scripts/test-makefile.sh
+
       - name: Run Tests
         run: make test
 
