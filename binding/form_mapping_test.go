@@ -1144,3 +1144,15 @@ func TestMappingEmptyValues(t *testing.T) {
 		assert.Equal(t, []int{1, 2, 3}, s.SliceCsv)
 	})
 }
+
+func TestMappingNilMap(t *testing.T) {
+	form := map[string][]string{"foo": {"bar"}, "hello": {"world", "gin"}}
+
+	var m map[string]string
+	require.NoError(t, mapForm(&m, form))
+	assert.Equal(t, map[string]string{"foo": "bar", "hello": "gin"}, m)
+
+	var ms map[string][]string
+	require.NoError(t, mapForm(&ms, form))
+	assert.Equal(t, form, ms)
+}

@@ -1432,3 +1432,10 @@ func requestWithBody(method, path, body string) (req *http.Request) {
 	req, _ = http.NewRequest(method, path, bytes.NewBufferString(body))
 	return
 }
+
+func TestBindingQueryNilMap(t *testing.T) {
+	req := requestWithBody(http.MethodGet, "/?foo=bar&hello=world", "")
+	var m map[string]string
+	require.NoError(t, Query.Bind(req, &m))
+	assert.Equal(t, map[string]string{"foo": "bar", "hello": "world"}, m)
+}
