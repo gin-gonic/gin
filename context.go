@@ -102,19 +102,34 @@ type Context struct {
 
 func (c *Context) reset() {
 	c.Writer = &c.writermem
-	c.Params = c.Params[:0]
+	paramsCleared := len(c.Params)
+	if paramsCleared > 0 {
+		clear(c.Params)
+		c.Params = c.Params[:0]
+	}
 	c.handlers = nil
 	c.index = -1
 
 	c.fullPath = ""
 	c.Keys = nil
-	c.Errors = c.Errors[:0]
+	if len(c.Errors) > 0 {
+		clear(c.Errors)
+		c.Errors = c.Errors[:0]
+	}
 	c.Accepted = nil
 	c.queryCache = nil
 	c.formCache = nil
 	c.sameSite = 0
-	*c.params = (*c.params)[:0]
-	*c.skippedNodes = (*c.skippedNodes)[:0]
+	if len(*c.params) > 0 {
+		if paramsCleared < len(*c.params) || &(*c.params)[0] != &c.Params[:1][0] {
+			clear(*c.params)
+		}
+		*c.params = (*c.params)[:0]
+	}
+	if len(*c.skippedNodes) > 0 {
+		clear(*c.skippedNodes)
+		*c.skippedNodes = (*c.skippedNodes)[:0]
+	}
 }
 
 // Copy returns a copy of the current context that can be safely used outside the request's scope.

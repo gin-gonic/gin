@@ -4055,3 +4055,32 @@ func BenchmarkGetMapFromFormData(b *testing.B) {
 		})
 	}
 }
+
+func TestContextResetClearsSliceBackingArrays(t *testing.T) {
+	c, _ := CreateTestContext(httptest.NewRecorder())
+
+	c.Params = Params{{Key: "id", Value: "12345"}}
+	*c.params = append(*c.params, Param{Key: "name", Value: "alice"})
+	*c.skippedNodes = append(*c.skippedNodes, skippedNode{path: "/a/b", node: &node{}})
+	_ = c.Error(errors.New("boom")).SetMeta(map[string]string{"payload": "large"})
+
+	c.reset()
+
+	assert.Empty(t, c.Params)
+	assert.Empty(t, c.Errors)
+	assert.Empty(t, *c.params)
+	assert.Empty(t, *c.skippedNodes)
+
+	for i, p := range c.Params[:cap(c.Params)] {
+		assert.Equal(t, Param{}, p, "c.Params backing array element %d should be zeroed", i)
+	}
+	for i, err := range c.Errors[:cap(c.Errors)] {
+		assert.Nil(t, err, "c.Errors backing array element %d should be nil", i)
+	}
+	for i, p := range (*c.params)[:cap(*c.params)] {
+		assert.Equal(t, Param{}, p, "*c.params backing array element %d should be zeroed", i)
+	}
+	for i, sn := range (*c.skippedNodes)[:cap(*c.skippedNodes)] {
+		assert.Equal(t, skippedNode{}, sn, "*c.skippedNodes backing array element %d should be zeroed", i)
+	}
+}
