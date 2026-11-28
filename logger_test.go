@@ -7,8 +7,11 @@ package gin
 import (
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
+	"net/http/httptest"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -485,4 +488,30 @@ func TestLoggerWithConfigSkipQueryString(t *testing.T) {
 	PerformRequest(router, "GET", "/logged?a=21")
 	assert.Contains(t, buffer.String(), "200")
 	assert.NotContains(t, buffer.String(), "a=21")
+}
+
+func TestLoggerConcurrentWithKeysSet(t *testing.T) {
+	// The logger middleware reads the request keys after the handler chain
+	// returns, while another goroutine started by a handler can still call
+	// Set. Both accesses must share the context mutex, exactly like Copy and
+	// Set do, otherwise the race detector reports the unsynchronized read of
+	// Context.Keys.
+	handler := LoggerWithWriter(io.Discard)
+
+	var wg sync.WaitGroup
+	for i := 0; i < 200; i++ {
+		c, _ := CreateTestContext(httptest.NewRecorder())
+		c.Request = httptest.NewRequest(http.MethodGet, "/", nil)
+
+		wg.Add(1)
+		go func(c *Context) {
+			defer wg.Done()
+			for j := 0; j < 200; j++ {
+				c.Set(j, j)
+			}
+		}(c)
+
+		handler(c)
+	}
+	wg.Wait()
 }
