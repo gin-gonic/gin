@@ -216,6 +216,14 @@ func main() {
 }
 ```
 
+When `UseEscapedPath` or `UseRawPath` selects an encoded path and
+`UnescapePathValues` is `true`, Gin decodes path parameters using
+`url.PathUnescape`. Both `+` and `%2B` represent a literal plus sign; use `%20`
+for a space. This applies to named parameters (`:name`) and catch-all parameters
+(`*action`). For example, `/user/first+last` gives `first+last`, while
+`/user/first%20last` gives `first last`. Query strings retain their usual
+behavior: `?name=first+last` gives `first last` through `c.Query("name")`.
+
 ### Querystring parameters
 
 ```go
