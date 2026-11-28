@@ -284,6 +284,47 @@ func TestDefaultLogFormatter(t *testing.T) {
 	assert.Equal(t, "[GIN] 2018/12/07 - 09:11:42 |\x1b[97;42m 200 \x1b[0m|\x1b[97;41m 2743h29m0s \x1b[0m|     20.20.20.20 |\x1b[97;44m GET     \x1b[0m \"/\"\n", defaultLogFormatter(termTrueLongDurationParam))
 }
 
+func TestDefaultLogFormatterPadding(t *testing.T) {
+	timeStamp := time.Unix(1544173902, 0).UTC()
+
+	// Padding counts runes ("µs"), long fields are not truncated, and the path is Go-quoted.
+	param := LogFormatterParams{
+		TimeStamp:    timeStamp,
+		StatusCode:   404,
+		Latency:      25 * time.Microsecond,
+		ClientIP:     "::1",
+		Method:       http.MethodOptions,
+		Path:         "/caf\u00e9/\"q\"",
+		ErrorMessage: "Error #01: not found\n",
+	}
+	assert.Equal(t, "[GIN] 2018/12/07 - 09:11:42 | 404 |     25\u00b5s |             ::1 | OPTIONS  \"/caf\u00e9/\\\"q\\\"\"\nError #01: not found\n", defaultLogFormatter(param))
+
+	param = LogFormatterParams{
+		TimeStamp:  timeStamp,
+		StatusCode: 0,
+		Latency:    1500 * time.Microsecond,
+		ClientIP:   "2001:db8:85a3::8a2e:370:7334",
+		Method:     "PROPFIND",
+		Path:       "/a\tb\x00",
+	}
+	assert.Equal(t, "[GIN] 2018/12/07 - 09:11:42 |   0 |    1.5ms | 2001:db8:85a3::8a2e:370:7334 | PROPFIND  \"/a\\tb\\x00\"\n", defaultLogFormatter(param))
+}
+
+func BenchmarkDefaultLogFormatter(b *testing.B) {
+	param := LogFormatterParams{
+		TimeStamp:  time.Now(),
+		StatusCode: http.StatusOK,
+		Latency:    1234567 * time.Nanosecond,
+		ClientIP:   "192.168.100.200",
+		Method:     http.MethodGet,
+		Path:       "/api/v1/users/12345",
+	}
+	b.ReportAllocs()
+	for b.Loop() {
+		_ = defaultLogFormatter(param)
+	}
+}
+
 func TestColorForMethod(t *testing.T) {
 	colorForMethod := func(method string) string {
 		p := LogFormatterParams{
