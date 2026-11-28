@@ -15,6 +15,7 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -1194,4 +1195,83 @@ func TestRouterQueryMethod(t *testing.T) {
 	req2, _ := http.NewRequest(http.MethodGet, "/test", nil)
 	router.ServeHTTP(w2, req2)
 	assert.Equal(t, http.StatusNotFound, w2.Code)
+}
+
+func TestConcurrentRouteRegistrationAndUpdateTrees(t *testing.T) {
+	SetMode(TestMode)
+	router := New()
+	var wg sync.WaitGroup
+
+	for i := 0; i < 30; i++ {
+		wg.Add(1)
+		go func(id int) {
+			defer wg.Done()
+			router.GET(fmt.Sprintf("/get/%d", id), func(c *Context) {
+				c.String(http.StatusOK, "get")
+			})
+			router.POST(fmt.Sprintf("/post\\:%d", id), func(c *Context) {
+				c.String(http.StatusOK, "post")
+			})
+		}(i)
+	}
+
+	for i := 0; i < 15; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			router.routeTreesUpdated.Do(router.updateRouteTrees)
+		}()
+	}
+
+	for i := 0; i < 10; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			_ = router.Routes()
+		}()
+	}
+
+	wg.Wait()
+}
+
+func TestConcurrentRouteRegistrationAndRun(t *testing.T) {
+	SetMode(TestMode)
+	router := New()
+	var wg sync.WaitGroup
+
+	for i := 0; i < 30; i++ {
+		wg.Add(1)
+		go func(id int) {
+			defer wg.Done()
+			router.GET(fmt.Sprintf("/route/%d", id), func(c *Context) {
+				c.String(http.StatusOK, "ok")
+			})
+		}(i)
+	}
+
+	for i := 0; i < 5; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			_ = router.Run("invalid_address")
+		}()
+	}
+
+	for i := 0; i < 5; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			_ = router.RunUnix("/invalid/unix/socket/path")
+		}()
+	}
+
+	for i := 0; i < 5; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			_ = router.RunTLS("invalid_address", "nonexistent.crt", "nonexistent.key")
+		}()
+	}
+
+	wg.Wait()
 }
