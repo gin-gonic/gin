@@ -117,8 +117,11 @@ func (c *Context) reset() {
 	*c.skippedNodes = (*c.skippedNodes)[:0]
 }
 
-// Copy returns a copy of the current context that can be safely used outside the request's scope.
+// Copy returns a copy of the current context for use outside the request's scope.
 // This has to be used when the context has to be passed to a goroutine.
+//
+// The copy's underlying http.ResponseWriter is nil, so it cannot write the HTTP response.
+// Do not call response-writing methods such as JSON, String, or Stream on the copy.
 func (c *Context) Copy() *Context {
 	cp := Context{
 		writermem: c.writermem,

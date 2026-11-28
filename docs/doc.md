@@ -617,6 +617,8 @@ func main() {
 
 When starting new Goroutines inside a middleware or handler, you **SHOULD NOT** use the original context inside it, you have to use a read-only copy.
 
+The copy's underlying `http.ResponseWriter` is `nil`, so it cannot write the HTTP response. Do not call response-writing methods such as `JSON`, `String`, or `Stream` on the copy. Write the response from the original handler before it returns.
+
 ```go
 func main() {
   r := gin.Default()
