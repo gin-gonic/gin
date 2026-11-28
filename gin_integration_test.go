@@ -275,6 +275,32 @@ func TestUnixSocket(t *testing.T) {
 	assert.Contains(t, response, "it worked", "resp body should match")
 }
 
+func TestUnixSocketReadHeaderTimeout(t *testing.T) {
+	router := New()
+	router.ReadHeaderTimeout = 50 * time.Millisecond
+
+	unixTestSocket := filepath.Join(os.TempDir(), "unix_header_timeout_test")
+
+	defer os.Remove(unixTestSocket)
+
+	go func() {
+		assert.NoError(t, router.RunUnix(unixTestSocket))
+	}()
+	// have to wait for the goroutine to start and run the server
+	time.Sleep(5 * time.Millisecond)
+
+	c, err := net.Dial("unix", unixTestSocket)
+	require.NoError(t, err)
+	defer c.Close()
+
+	// send an incomplete request header and wait for the server to drop it
+	fmt.Fprint(c, "GET /example HTTP/1.1\r\nHost: localhost\r\n")
+	require.NoError(t, c.SetReadDeadline(time.Now().Add(2*time.Second)))
+
+	_, err = io.ReadAll(c)
+	require.NoError(t, err, "server should close the connection before the read deadline")
+}
+
 func TestBadUnixSocket(t *testing.T) {
 	router := New()
 	require.Error(t, router.RunUnix("#/tmp/unix_unit_test"))
